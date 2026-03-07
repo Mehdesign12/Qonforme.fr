@@ -49,9 +49,11 @@ export default function HomePage() {
               Commencer gratuitement
             </Button>
           </Link>
-          <Button size="lg" variant="outline">
-            Voir une démo →
-          </Button>
+          <Link href="/demo">
+            <Button size="lg" variant="outline" className="gap-2">
+              ✦ Voir la démo interactive
+            </Button>
+          </Link>
         </div>
         <p className="text-sm text-slate-400 mt-4">7 jours d&apos;essai · Sans carte bancaire · Sans engagement</p>
       </section>
