@@ -1,32 +1,101 @@
 import { TrendingUp, TrendingDown, FileText, Clock, AlertTriangle } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/invoice"
+import { createClient } from "@/lib/supabase/server"
 
-// Données mock — seront remplacées par des appels Supabase
-const MOCK_STATS = {
-  revenue_current_month: 8450,
-  revenue_previous_month: 6200,
-  invoices_sent_count: 12,
-  invoices_pending_amount: 3200,
-  invoices_overdue_amount: 950,
+async function getStats() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0]
+  const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split("T")[0]
+  const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split("T")[0]
+  const today = now.toISOString().split("T")[0]
+
+  const [
+    { data: currMonth },
+    { data: prevMonth },
+    { count: sentCount },
+    { data: pending },
+    { data: overdue },
+  ] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("total_ttc")
+      .eq("user_id", user.id)
+      .in("status", ["sent", "accepted", "paid"])
+      .gte("issue_date", startOfMonth),
+
+    supabase
+      .from("invoices")
+      .select("total_ttc")
+      .eq("user_id", user.id)
+      .in("status", ["sent", "accepted", "paid"])
+      .gte("issue_date", startOfPrevMonth)
+      .lte("issue_date", endOfPrevMonth),
+
+    supabase
+      .from("invoices")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .neq("status", "draft")
+      .gte("issue_date", startOfMonth),
+
+    supabase
+      .from("invoices")
+      .select("total_ttc")
+      .eq("user_id", user.id)
+      .in("status", ["sent", "pending", "received"]),
+
+    supabase
+      .from("invoices")
+      .select("total_ttc")
+      .eq("user_id", user.id)
+      .in("status", ["sent", "pending"])
+      .lt("due_date", today),
+  ])
+
+  return {
+    revenue_current_month: currMonth?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0,
+    revenue_previous_month: prevMonth?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0,
+    invoices_sent_count: sentCount || 0,
+    invoices_pending_amount: pending?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0,
+    invoices_overdue_amount: overdue?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0,
+  }
 }
 
 export async function DashboardStats() {
-  const stats = MOCK_STATS
-  const revenueDiff = stats.revenue_current_month - stats.revenue_previous_month
-  const revenuePercent = Math.round((revenueDiff / stats.revenue_previous_month) * 100)
+  const stats = await getStats()
+
+  // Valeurs par défaut si pas encore de données
+  const s = stats || {
+    revenue_current_month: 0,
+    revenue_previous_month: 0,
+    invoices_sent_count: 0,
+    invoices_pending_amount: 0,
+    invoices_overdue_amount: 0,
+  }
+
+  const revenueDiff = s.revenue_current_month - s.revenue_previous_month
+  const revenuePercent = s.revenue_previous_month > 0
+    ? Math.round((revenueDiff / s.revenue_previous_month) * 100)
+    : 0
 
   const cards = [
     {
       title: "CA ce mois",
-      value: formatCurrency(stats.revenue_current_month),
-      sub: `${revenuePercent > 0 ? "+" : ""}${revenuePercent}% vs mois dernier`,
+      value: formatCurrency(s.revenue_current_month),
+      sub: s.revenue_previous_month > 0
+        ? `${revenuePercent > 0 ? "+" : ""}${revenuePercent}% vs mois dernier`
+        : "Pas encore de données",
       icon: revenuePercent >= 0 ? TrendingUp : TrendingDown,
       iconColor: revenuePercent >= 0 ? "text-[#10B981]" : "text-[#EF4444]",
       iconBg: revenuePercent >= 0 ? "bg-[#D1FAE5]" : "bg-[#FEE2E2]",
     },
     {
       title: "Factures émises",
-      value: stats.invoices_sent_count.toString(),
+      value: s.invoices_sent_count.toString(),
       sub: "ce mois",
       icon: FileText,
       iconColor: "text-[#2563EB]",
@@ -34,7 +103,7 @@ export async function DashboardStats() {
     },
     {
       title: "En attente",
-      value: formatCurrency(stats.invoices_pending_amount),
+      value: formatCurrency(s.invoices_pending_amount),
       sub: "à encaisser",
       icon: Clock,
       iconColor: "text-[#D97706]",
@@ -42,11 +111,11 @@ export async function DashboardStats() {
     },
     {
       title: "En retard",
-      value: formatCurrency(stats.invoices_overdue_amount),
-      sub: "à relancer",
+      value: formatCurrency(s.invoices_overdue_amount),
+      sub: s.invoices_overdue_amount > 0 ? "à relancer" : "Aucun retard 🎉",
       icon: AlertTriangle,
-      iconColor: "text-[#EF4444]",
-      iconBg: "bg-[#FEE2E2]",
+      iconColor: s.invoices_overdue_amount > 0 ? "text-[#EF4444]" : "text-[#10B981]",
+      iconBg: s.invoices_overdue_amount > 0 ? "bg-[#FEE2E2]" : "bg-[#D1FAE5]",
     },
   ]
 
@@ -57,7 +126,7 @@ export async function DashboardStats() {
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm text-slate-500">{card.title}</p>
             <div className={`w-9 h-9 rounded-lg ${card.iconBg} flex items-center justify-center`}>
-              <card.icon className={`w-4.5 h-4.5 ${card.iconColor}`} />
+              <card.icon className={`w-4 h-4 ${card.iconColor}`} />
             </div>
           </div>
           <p className="text-2xl font-bold text-[#0F172A] font-mono">{card.value}</p>

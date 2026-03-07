@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -15,9 +15,9 @@ import { calculateLineTotals, calculateInvoiceTotals, formatCurrency, VAT_RATES 
 
 const lineSchema = z.object({
   description: z.string().min(1, "Description requise"),
-  quantity: z.number().positive("Quantité invalide"),
-  unit_price_ht: z.number().nonnegative("Prix invalide"),
-  vat_rate: z.number().refine((v) => [0, 5.5, 10, 20].includes(v)),
+  quantity: z.coerce.number().positive("Quantité invalide"),
+  unit_price_ht: z.coerce.number().nonnegative("Prix invalide"),
+  vat_rate: z.coerce.number().refine((v) => [0, 5.5, 10, 20].includes(v)),
 })
 
 const invoiceSchema = z.object({
@@ -28,13 +28,18 @@ const invoiceSchema = z.object({
   notes: z.string().optional(),
 })
 
-type FormData = z.infer<typeof invoiceSchema>
+type FormData = {
+  client_id: string
+  issue_date: string
+  due_date: string
+  lines: { description: string; quantity: number; unit_price_ht: number; vat_rate: number }[]
+  notes?: string
+}
 
-const MOCK_CLIENTS = [
-  { id: "1", name: "Renovbat SARL" },
-  { id: "2", name: "Martin Plomberie" },
-  { id: "3", name: "Électricité Dupont" },
-]
+interface Client {
+  id: string
+  name: string
+}
 
 const today = new Date().toISOString().split("T")[0]
 const in30days = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
@@ -43,9 +48,22 @@ export default function NewInvoiceForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [clients, setClients] = useState<Client[]>([])
+  const [clientsLoading, setClientsLoading] = useState(true)
+
+  // Charger les clients depuis l'API
+  useEffect(() => {
+    fetch("/api/clients")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.clients) setClients(json.clients)
+      })
+      .finally(() => setClientsLoading(false))
+  }, [])
 
   const { register, handleSubmit, watch, control, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(invoiceSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(invoiceSchema) as any,
     defaultValues: {
       issue_date: today,
       due_date: in30days,
@@ -72,12 +90,40 @@ export default function NewInvoiceForm() {
     if (action === "send") setLoading(true)
     else setSaving(true)
     try {
-      // TODO: appel API POST /api/invoices
-      await new Promise((r) => setTimeout(r, 1200)) // Simulation
-      toast.success(action === "send" ? "Facture envoyée !" : "Brouillon sauvegardé")
+      // Enrichir les lignes avec les totaux calculés
+      const enrichedLines = data.lines.map((line, i) => ({
+        ...line,
+        quantity: Number(line.quantity),
+        unit_price_ht: Number(line.unit_price_ht),
+        vat_rate: Number(line.vat_rate),
+        total_ht: computedLines[i]?.totalHT || 0,
+        total_vat: computedLines[i]?.totalVAT || 0,
+        total_ttc: computedLines[i]?.totalTTC || 0,
+      }))
+
+      const payload = {
+        ...data,
+        lines: enrichedLines,
+        status: action === "draft" ? "draft" : "sent",
+      }
+
+      const res = await fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json()
+
+      if (!res.ok) {
+        toast.error(json.error || "Erreur lors de la sauvegarde")
+        return
+      }
+
+      toast.success(action === "send" ? "Facture créée et envoyée !" : "Brouillon sauvegardé")
       router.push("/invoices")
+      router.refresh()
     } catch {
-      toast.error("Erreur lors de la sauvegarde")
+      toast.error("Erreur réseau")
     } finally {
       setLoading(false)
       setSaving(false)
@@ -92,15 +138,27 @@ export default function NewInvoiceForm() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-1">
             <Label>Client *</Label>
-            <select
-              {...register("client_id")}
-              className="mt-1 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-            >
-              <option value="">Sélectionner un client…</option>
-              {MOCK_CLIENTS.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            {clientsLoading ? (
+              <div className="mt-1 w-full h-10 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] flex items-center px-3">
+                <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+              </div>
+            ) : clients.length === 0 ? (
+              <div className="mt-1">
+                <div className="w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg bg-[#FEF3C7] text-[#92400E]">
+                  Aucun client — <a href="/clients/new" className="underline">Créer un client d&apos;abord</a>
+                </div>
+              </div>
+            ) : (
+              <select
+                {...register("client_id")}
+                className="mt-1 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+              >
+                <option value="">Sélectionner un client…</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            )}
             {errors.client_id && <p className="text-xs text-red-500 mt-1">{errors.client_id.message}</p>}
           </div>
           <div>
@@ -131,7 +189,7 @@ export default function NewInvoiceForm() {
         </div>
 
         {/* Header colonnes */}
-        <div className="grid grid-cols-12 gap-2 text-xs font-medium text-slate-400 pb-1 border-b border-[#E2E8F0]">
+        <div className="hidden sm:grid grid-cols-12 gap-2 text-xs font-medium text-slate-400 pb-1 border-b border-[#E2E8F0]">
           <div className="col-span-5">Description</div>
           <div className="col-span-2 text-right">Qté</div>
           <div className="col-span-2 text-right">Prix HT (€)</div>
@@ -141,14 +199,14 @@ export default function NewInvoiceForm() {
 
         {fields.map((field, index) => (
           <div key={field.id} className="grid grid-cols-12 gap-2 items-start">
-            <div className="col-span-5">
+            <div className="col-span-12 sm:col-span-5">
               <Input
                 placeholder="Description de la prestation"
                 className="text-sm"
                 {...register(`lines.${index}.description`)}
               />
             </div>
-            <div className="col-span-2">
+            <div className="col-span-4 sm:col-span-2">
               <Input
                 type="number"
                 min="0"
@@ -158,7 +216,7 @@ export default function NewInvoiceForm() {
                 {...register(`lines.${index}.quantity`)}
               />
             </div>
-            <div className="col-span-2">
+            <div className="col-span-4 sm:col-span-2">
               <Input
                 type="number"
                 min="0"
@@ -168,7 +226,7 @@ export default function NewInvoiceForm() {
                 {...register(`lines.${index}.unit_price_ht`)}
               />
             </div>
-            <div className="col-span-2">
+            <div className="col-span-3 sm:col-span-2">
               <select
                 {...register(`lines.${index}.vat_rate`)}
                 className="w-full px-2 py-2 text-sm border border-[#E2E8F0] rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB] font-mono"
@@ -241,7 +299,7 @@ export default function NewInvoiceForm() {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 pb-8">
+      <div className="flex flex-wrap items-center gap-3 pb-8">
         <Button
           type="button"
           variant="outline"
