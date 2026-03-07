@@ -3,6 +3,7 @@ import { AlertCircle, CheckCircle2, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export const metadata: Metadata = { title: "Connexion transmission" }
+export const dynamic = "force-dynamic"
 
 export default function PPFSettingsPage() {
   const isConnected = false // viendra de Supabase

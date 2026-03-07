@@ -4,6 +4,7 @@ import { Zap } from "lucide-react";
 import CompanyForm from "@/components/auth/CompanyForm";
 
 export const metadata: Metadata = { title: "Ton entreprise" };
+export const dynamic = "force-dynamic"
 
 export default function SignupCompanyPage() {
   return (

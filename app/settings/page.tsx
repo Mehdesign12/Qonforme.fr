@@ -3,6 +3,7 @@ import Link from "next/link"
 import { ChevronRight, Building2, FileText, Wifi, Bell, CreditCard } from "lucide-react"
 
 export const metadata: Metadata = { title: "Paramètres" }
+export const dynamic = "force-dynamic"
 
 const settingsLinks = [
   { href: "/settings/company", label: "Mon entreprise", desc: "Raison sociale, SIREN, adresse, IBAN", icon: Building2 },

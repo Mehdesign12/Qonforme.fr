@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = { title: "Tableau de bord" }
+export const dynamic = "force-dynamic"
 
 export default function DashboardPage() {
   return (

@@ -4,6 +4,7 @@ import { formatCurrency, formatDate, INVOICE_STATUS_LABELS } from "@/lib/utils/i
 import { InvoiceStatus } from "@/types"
 
 export const metadata: Metadata = { title: "Factures" }
+export const dynamic = "force-dynamic"
 
 // Mock data — remplacé par Supabase
 const MOCK_INVOICES = [

@@ -4,6 +4,7 @@ import { Zap } from "lucide-react";
 import SignupForm from "@/components/auth/SignupForm";
 
 export const metadata: Metadata = { title: "Créer un compte" };
+export const dynamic = "force-dynamic"
 
 export default function SignupPage() {
   return (

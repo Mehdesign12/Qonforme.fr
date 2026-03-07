@@ -3,6 +3,7 @@ import Link from "next/link"
 import { formatCurrency } from "@/lib/utils/invoice"
 
 export const metadata: Metadata = { title: "Clients" }
+export const dynamic = "force-dynamic"
 
 const MOCK_CLIENTS = [
   { id: "1", name: "Renovbat SARL", siren: "123456789", email: "contact@renovbat.fr", city: "Paris", invoices_count: 4, total_amount: 8200 },
