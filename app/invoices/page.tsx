@@ -123,11 +123,15 @@ export default function InvoicesPage() {
             </thead>
             <tbody>
               {invoices.map((inv) => (
-                <tr key={inv.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0">
+                <tr
+                  key={inv.id}
+                  onClick={() => window.location.href = `/invoices/${inv.id}`}
+                  className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0 cursor-pointer"
+                >
                   <td className="px-5 py-4">
-                    <Link href={`/invoices/${inv.id}`} className="font-mono text-sm text-[#2563EB] hover:underline font-medium">
+                    <span className="font-mono text-sm text-[#2563EB] hover:underline font-medium">
                       {inv.invoice_number}
-                    </Link>
+                    </span>
                   </td>
                   <td className="px-5 py-4 text-sm text-[#0F172A] font-medium">
                     {inv.client?.name || "—"}
