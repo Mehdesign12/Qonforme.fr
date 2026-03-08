@@ -13,18 +13,21 @@ interface Params {
 // U+00A0 = espace insécable
 function sanitize(text: string): string {
   return text
-    .replace(/\u202F/g, " ")  // espace fine insécable → espace normale
-    .replace(/\u00A0/g, " ")  // espace insécable → espace normale
-    .replace(/\u2019/g, "'") // apostrophe typographique → apostrophe simple
+    .replace(/\u202F/g, " ")   // espace fine insécable → espace normale
+    .replace(/\u00A0/g, " ")   // espace insécable → espace normale
+    .replace(/\u20AC/g, "EUR") // € → EUR (WinAnsi ne supporte pas U+20AC)
+    .replace(/\u2019/g, "'")   // apostrophe typographique → apostrophe simple
     .replace(/\u2026/g, "...") // ellipse → trois points
-    .replace(/[^\x00-\xFF]/g, "?") // tout autre caractère non-latin → ?
+    .replace(/\u00E9/g, "e")   // é → e  (sécurité extra)
+    .replace(/[^\x20-\x7E\xA1-\xFF]/g, "?") // autres non-Latin1 → ?
 }
 
 function fmt(n: number) {
-  const raw = new Intl.NumberFormat("fr-FR", {
-    style: "currency", currency: "EUR", minimumFractionDigits: 2,
-  }).format(n)
-  return sanitize(raw)
+  // Formater manuellement pour éviter les caractères Unicode problématiques
+  // ex: 1250.50 → "1 250,50 EUR"
+  const parts = n.toFixed(2).split(".")
+  const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+  return `${intPart},${parts[1]} EUR`
 }
 
 function fmtDate(d: string) {
@@ -59,10 +62,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
       .single()
     if (invErr || !invoice) return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
 
-    // 2. Charger entreprise
+    // 2. Charger entreprise (logo_url inclus)
     const { data: company } = await supabase
       .from("companies")
-      .select("name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color")
+      .select("name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color,logo_url")
       .eq("user_id", user.id)
       .single()
 
@@ -108,11 +111,43 @@ export async function GET(_req: NextRequest, { params }: Params) {
       page.drawLine({ start: { x: x1, y: yPos }, end: { x: x2, y: yPos }, thickness, color })
     }
 
+    // 4. Logo (optionnel) ────────────────────────────────────────────────────
+    let logoImg: Awaited<ReturnType<typeof doc.embedPng>> | null = null
+    if (company?.logo_url) {
+      try {
+        const logoRes = await fetch(company.logo_url)
+        if (logoRes.ok) {
+          const logoBytes = await logoRes.arrayBuffer()
+          const contentType = logoRes.headers.get("content-type") ?? ""
+          if (contentType.includes("png") || company.logo_url.endsWith(".png")) {
+            logoImg = await doc.embedPng(logoBytes)
+          } else {
+            // JPG/JPEG/WEBP — essai JPG
+            try { logoImg = await doc.embedJpg(logoBytes) } catch { logoImg = null }
+          }
+        }
+      } catch (e) {
+        console.warn("Logo non chargé:", e)
+        logoImg = null
+      }
+    }
+
     let y = height - 40
 
     // ── HEADER ───────────────────────────────────────────────────────────────
-    draw(sanitize(company?.name ?? "Votre entreprise"), marginL, y, { size: 18, font: bold, color: accent })
-    y -= 18
+    // Logo ou nom de l'entreprise
+    if (logoImg) {
+      const logoMaxW = 120
+      const logoMaxH = 50
+      const scale = Math.min(logoMaxW / logoImg.width, logoMaxH / logoImg.height, 1)
+      const lw = logoImg.width * scale
+      const lh = logoImg.height * scale
+      page.drawImage(logoImg, { x: marginL, y: y - lh + 12, width: lw, height: lh })
+      y -= lh + 4
+    } else {
+      draw(sanitize(company?.name ?? "Votre entreprise"), marginL, y, { size: 18, font: bold, color: accent })
+      y -= 18
+    }
     if (company?.address)              { draw(sanitize(company.address), marginL, y, { size: 8, color: gray }); y -= lineH }
     if (company?.zip_code || company?.city) {
       draw(sanitize(`${company?.zip_code ?? ""} ${company?.city ?? ""}`).trim(), marginL, y, { size: 8, color: gray }); y -= lineH
