@@ -52,28 +52,32 @@ export function generateInvoiceNumber(prefix: string, sequence: number): string 
 
 // ---- Statuts factures ----
 export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
-  draft: 'Brouillon',
-  sent: 'Envoyée',
-  pending: 'En attente',
-  received: 'Reçue',
-  accepted: 'Acceptée',
-  rejected: 'Rejetée',
-  paid: 'Payée',
-  overdue: 'En retard',
+  draft:     'Brouillon',
+  sent:      'Envoyée',
+  pending:   'En attente',
+  received:  'Reçue',
+  accepted:  'Acceptée',
+  rejected:  'Rejetée',
+  paid:      'Payée',
+  overdue:   'En retard',
+  cancelled: 'Annulée',
+  credited:  'Avoir émis',
 }
 
 export const INVOICE_STATUS_STYLES: Record<
   InvoiceStatus,
   { bg: string; text: string }
 > = {
-  draft:    { bg: '#F1F5F9', text: '#475569' },
-  sent:     { bg: '#DBEAFE', text: '#1E40AF' },
-  pending:  { bg: '#FEF3C7', text: '#92400E' },
-  received: { bg: '#EDE9FE', text: '#5B21B6' },
-  accepted: { bg: '#D1FAE5', text: '#065F46' },
-  rejected: { bg: '#FEE2E2', text: '#991B1B' },
-  paid:     { bg: '#D1FAE5', text: '#065F46' },
-  overdue:  { bg: '#FEE2E2', text: '#991B1B' },
+  draft:     { bg: '#F1F5F9', text: '#475569' },
+  sent:      { bg: '#DBEAFE', text: '#1E40AF' },
+  pending:   { bg: '#FEF3C7', text: '#92400E' },
+  received:  { bg: '#EDE9FE', text: '#5B21B6' },
+  accepted:  { bg: '#D1FAE5', text: '#065F46' },
+  rejected:  { bg: '#FEE2E2', text: '#991B1B' },
+  paid:      { bg: '#D1FAE5', text: '#065F46' },
+  overdue:   { bg: '#FEE2E2', text: '#991B1B' },
+  cancelled: { bg: '#F1F5F9', text: '#64748B' },
+  credited:  { bg: '#FFF7ED', text: '#C2410C' },
 }
 
 export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {

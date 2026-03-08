@@ -53,14 +53,16 @@ export interface Client {
 
 // ---- Facture ----
 export type InvoiceStatus =
-  | 'draft'     // Brouillon
-  | 'sent'      // Envoyée
-  | 'pending'   // En attente PPF
-  | 'received'  // Reçue par le PPF
-  | 'accepted'  // Acceptée
-  | 'rejected'  // Rejetée
-  | 'paid'      // Payée
-  | 'overdue'   // En retard
+  | 'draft'      // Brouillon
+  | 'sent'       // Envoyée
+  | 'pending'    // En attente PPF
+  | 'received'   // Reçue par le PPF
+  | 'accepted'   // Acceptée
+  | 'rejected'   // Rejetée
+  | 'paid'       // Payée
+  | 'overdue'    // En retard
+  | 'cancelled'  // Annulée
+  | 'credited'   // Avoir émis
 
 export interface InvoiceLine {
   id: string

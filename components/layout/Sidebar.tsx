@@ -11,6 +11,7 @@ import {
   Zap,
   LogOut,
   ChevronRight,
+  RotateCcw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/invoices", label: "Factures", icon: FileText },
   { href: "/quotes", label: "Devis", icon: FileCheck2 },
+  { href: "/credit-notes", label: "Avoirs", icon: RotateCcw },
   { href: "/clients", label: "Clients", icon: Users },
 ]
 

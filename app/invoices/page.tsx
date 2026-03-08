@@ -10,14 +10,16 @@ import { Plus, Loader2, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const STATUS_STYLE: Record<InvoiceStatus, string> = {
-  draft:    "bg-[#F1F5F9] text-[#475569] border-[#CBD5E1]",
-  sent:     "bg-[#DBEAFE] text-[#1E40AF] border-[#93C5FD]",
-  pending:  "bg-[#FEF3C7] text-[#92400E] border-[#FCD34D]",
-  received: "bg-[#EDE9FE] text-[#5B21B6] border-[#C4B5FD]",
-  accepted: "bg-[#D1FAE5] text-[#065F46] border-[#6EE7B7]",
-  rejected: "bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]",
-  paid:     "bg-[#D1FAE5] text-[#065F46] border-[#6EE7B7]",
-  overdue:  "bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]",
+  draft:     "bg-[#F1F5F9] text-[#475569] border-[#CBD5E1]",
+  sent:      "bg-[#DBEAFE] text-[#1E40AF] border-[#93C5FD]",
+  pending:   "bg-[#FEF3C7] text-[#92400E] border-[#FCD34D]",
+  received:  "bg-[#EDE9FE] text-[#5B21B6] border-[#C4B5FD]",
+  accepted:  "bg-[#D1FAE5] text-[#065F46] border-[#6EE7B7]",
+  rejected:  "bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]",
+  paid:      "bg-[#D1FAE5] text-[#065F46] border-[#6EE7B7]",
+  overdue:   "bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]",
+  cancelled: "bg-[#F1F5F9] text-[#64748B] border-[#CBD5E1]",
+  credited:  "bg-[#FFF7ED] text-[#C2410C] border-[#FED7AA]",
 }
 
 type StatusFilter = "all" | InvoiceStatus
