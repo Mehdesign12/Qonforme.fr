@@ -2,9 +2,6 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,63 +10,102 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/client"
 
-const schema = z.object({
-  first_name: z.string().min(1, "Prénom requis").min(2, "Minimum 2 caractères"),
-  last_name: z.string().min(1, "Nom requis").min(2, "Minimum 2 caractères"),
-  email: z.string().min(1, "Email requis").email("Email invalide"),
-  password: z.string().min(1, "Mot de passe requis").min(8, "8 caractères minimum"),
-  confirm_password: z.string().min(1, "Confirmation requise"),
-}).refine((d) => d.password === d.confirm_password, {
-  message: "Les mots de passe ne correspondent pas",
-  path: ["confirm_password"],
-})
-
-type FormData = z.infer<typeof schema>
+function validate(fields: {
+  first_name: string; last_name: string
+  email: string; password: string; confirm_password: string
+}) {
+  const errs: Record<string, string> = {}
+  if (!fields.first_name || fields.first_name.trim().length < 2)
+    errs.first_name = "Prénom requis (2 caractères min.)"
+  if (!fields.last_name || fields.last_name.trim().length < 2)
+    errs.last_name = "Nom requis (2 caractères min.)"
+  if (!fields.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email))
+    errs.email = "Email invalide"
+  if (!fields.password || fields.password.length < 8)
+    errs.password = "8 caractères minimum"
+  if (!fields.confirm_password)
+    errs.confirm_password = "Confirmation requise"
+  else if (fields.password !== fields.confirm_password)
+    errs.confirm_password = "Les mots de passe ne correspondent pas"
+  return errs
+}
 
 export default function SignupForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      first_name: "",
-      last_name: "",
-      email: "",
-      password: "",
-      confirm_password: "",
-    },
+  const [fields, setFields] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    password: "",
+    confirm_password: "",
   })
+
+  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFields(prev => ({ ...prev, [key]: e.target.value }))
+    // Effacer l'erreur dès que l'utilisateur tape
+    if (errors[key]) setErrors(prev => { const n = { ...prev }; delete n[key]; return n })
+  }
 
   const supabase = createClient()
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const errs = validate(fields)
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: {
-          first_name: data.first_name,
-          last_name: data.last_name,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: fields.email.trim(),
+        password: fields.password,
+        options: {
+          data: {
+            first_name: fields.first_name.trim(),
+            last_name: fields.last_name.trim(),
+          },
         },
-      },
-    })
-    if (error) {
-      toast.error(error.message)
+      })
+      if (error) {
+        console.error("Supabase signUp error:", error)
+        if (error.message.includes("already registered") || error.message.includes("User already registered")) {
+          toast.error("Cet email est déjà utilisé. Connectez-vous.", { duration: 6000 })
+        } else if (error.message.includes("Email rate limit")) {
+          toast.error("Trop de tentatives. Patientez quelques minutes.", { duration: 6000 })
+        } else if (error.message.includes("Signups not allowed")) {
+          toast.error("Les inscriptions sont désactivées. Contactez l'administrateur.", { duration: 8000 })
+        } else if (error.message.includes("Anonymous sign-ins are disabled")) {
+          toast.error("Configuration Supabase incorrecte. Contactez le support.", { duration: 8000 })
+        } else {
+          toast.error(`Erreur : ${error.message}`, { duration: 8000 })
+        }
+        setLoading(false)
+        return
+      }
+      console.log("signUp success:", data)
+      // Supabase peut retourner un user sans erreur même si l'email existe déjà (email confirmation off)
+      if (data?.user?.identities?.length === 0) {
+        toast.error("Cet email est déjà utilisé. Connectez-vous.", { duration: 6000 })
+        setLoading(false)
+        return
+      }
+      toast.success("Compte créé ! Complète ton profil entreprise.")
+      router.push("/signup/company")
+    } catch (err) {
+      console.error("Unexpected signUp error:", err)
+      toast.error("Une erreur inattendue s'est produite. Réessayez.", { duration: 8000 })
       setLoading(false)
-      return
     }
-    toast.success("Compte créé ! Complète ton profil entreprise.")
-    router.push("/signup/company")
   }
 
   const handleGoogle = async () => {
     setGoogleLoading(true)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
     })
     if (error) {
       toast.error("Erreur lors de la connexion Google")
@@ -79,8 +115,17 @@ export default function SignupForm() {
 
   return (
     <div className="space-y-4">
-      <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={googleLoading}>
-        {googleLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : (
+      {/* Google OAuth */}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={handleGoogle}
+        disabled={googleLoading}
+      >
+        {googleLoading ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
           <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -97,35 +142,91 @@ export default function SignupForm() {
         <Separator className="flex-1" />
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label htmlFor="first_name">Prénom</Label>
-            <Input id="first_name" placeholder="Jean" className="mt-1" {...register("first_name")} />
-            {errors.first_name && <p className="text-xs text-red-500 mt-1">{errors.first_name.message}</p>}
+            <Input
+              id="first_name"
+              placeholder="Jean"
+              className="mt-1"
+              value={fields.first_name}
+              onChange={set("first_name")}
+              autoComplete="given-name"
+            />
+            {errors.first_name && (
+              <p className="text-xs text-red-500 mt-1">{errors.first_name}</p>
+            )}
           </div>
           <div>
             <Label htmlFor="last_name">Nom</Label>
-            <Input id="last_name" placeholder="Dupont" className="mt-1" {...register("last_name")} />
-            {errors.last_name && <p className="text-xs text-red-500 mt-1">{errors.last_name.message}</p>}
+            <Input
+              id="last_name"
+              placeholder="Dupont"
+              className="mt-1"
+              value={fields.last_name}
+              onChange={set("last_name")}
+              autoComplete="family-name"
+            />
+            {errors.last_name && (
+              <p className="text-xs text-red-500 mt-1">{errors.last_name}</p>
+            )}
           </div>
         </div>
+
         <div>
           <Label htmlFor="email">Email professionnel</Label>
-          <Input id="email" type="email" placeholder="jean@monentreprise.fr" className="mt-1" {...register("email")} />
-          {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
+          <Input
+            id="email"
+            type="email"
+            placeholder="jean@monentreprise.fr"
+            className="mt-1"
+            value={fields.email}
+            onChange={set("email")}
+            autoComplete="email"
+          />
+          {errors.email && (
+            <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+          )}
         </div>
+
         <div>
           <Label htmlFor="password">Mot de passe</Label>
-          <Input id="password" type="password" placeholder="8 caractères minimum" className="mt-1" {...register("password")} />
-          {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
+          <Input
+            id="password"
+            type="password"
+            placeholder="8 caractères minimum"
+            className="mt-1"
+            value={fields.password}
+            onChange={set("password")}
+            autoComplete="new-password"
+          />
+          {errors.password && (
+            <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+          )}
         </div>
+
         <div>
           <Label htmlFor="confirm_password">Confirmer le mot de passe</Label>
-          <Input id="confirm_password" type="password" placeholder="••••••••" className="mt-1" {...register("confirm_password")} />
-          {errors.confirm_password && <p className="text-xs text-red-500 mt-1">{errors.confirm_password.message}</p>}
+          <Input
+            id="confirm_password"
+            type="password"
+            placeholder="••••••••"
+            className="mt-1"
+            value={fields.confirm_password}
+            onChange={set("confirm_password")}
+            autoComplete="new-password"
+          />
+          {errors.confirm_password && (
+            <p className="text-xs text-red-500 mt-1">{errors.confirm_password}</p>
+          )}
         </div>
-        <Button type="submit" className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white" disabled={loading}>
+
+        <Button
+          type="submit"
+          className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+          disabled={loading}
+        >
           {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           Créer mon compte →
         </Button>

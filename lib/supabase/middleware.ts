@@ -49,10 +49,11 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Rediriger vers /dashboard si déjà connecté et sur page auth
+  // Exclure /signup/company car c'est l'étape 2 d'inscription (accessible même connecté)
   const authPaths = ['/login', '/signup']
   const isAuthPage = authPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
-  )
+  ) && !request.nextUrl.pathname.startsWith('/signup/company')
 
   if (isAuthPage && user) {
     const url = request.nextUrl.clone()
