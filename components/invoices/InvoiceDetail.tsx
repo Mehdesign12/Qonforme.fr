@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import {
   ArrowLeft, Loader2, Send, CheckCircle2, XCircle,
   Printer, Pencil, Trash2, Download,
-  Clock, AlertTriangle, CreditCard, RotateCcw, X, FileX
+  Clock, AlertTriangle, CreditCard, RotateCcw, X, FileX, Archive, ArchiveX
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -35,6 +35,7 @@ interface Invoice {
   id: string
   invoice_number: string
   status: InvoiceStatus
+  is_archived: boolean
   issue_date: string
   due_date: string
   lines: InvoiceLine[]
@@ -341,7 +342,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [statusLoading, setStatusLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [pdfLoading, setPdfLoading]     = useState(false)
-  const [showCreditModal, setShowCreditModal] = useState(false)
+  const [showCreditModal, setShowCreditModal]   = useState(false)
+  const [archiveLoading, setArchiveLoading]     = useState(false)
 
   useEffect(() => {
     fetch(`/api/invoices/${invoiceId}`)
@@ -393,6 +395,25 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       else { const json = await res.json(); toast.error(json.error) }
     } catch { toast.error("Erreur réseau") }
     finally { setDeleteLoading(false) }
+  }
+
+  const toggleArchive = async () => {
+    if (!invoice) return
+    const next = !invoice.is_archived
+    const label = next ? "archivée" : "désarchivée"
+    setArchiveLoading(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_archived: next }),
+      })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error); return }
+      setInvoice({ ...invoice, is_archived: next })
+      toast.success(`Facture ${label}`)
+    } catch { toast.error("Erreur réseau") }
+    finally { setArchiveLoading(false) }
   }
 
   const handleCreditSuccess = (creditNoteId: string) => {
@@ -471,6 +492,26 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
               </Button>
             )}
 
+            {/* Archiver / Désarchiver */}
+            <Button
+              variant="outline" size="sm"
+              className={`gap-1.5 ${
+                invoice.is_archived
+                  ? "border-[#93C5FD] text-[#2563EB] hover:bg-[#EFF6FF]"
+                  : "border-[#CBD5E1] text-slate-500 hover:bg-[#F1F5F9]"
+              }`}
+              onClick={toggleArchive}
+              disabled={archiveLoading}
+            >
+              {archiveLoading
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : invoice.is_archived
+                  ? <ArchiveX className="w-4 h-4" />
+                  : <Archive className="w-4 h-4" />
+              }
+              {invoice.is_archived ? "Désarchiver" : "Archiver"}
+            </Button>
+
             {/* Émettre un avoir */}
             {canCredit && (
               <Button
@@ -498,6 +539,24 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             ))}
           </div>
         </div>
+
+        {/* Bandeau archivée */}
+        {invoice.is_archived && (
+          <div className="bg-[#F1F5F9] border border-[#CBD5E1] rounded-xl p-4 flex items-center gap-3">
+            <Archive className="w-5 h-5 text-slate-400 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-slate-600">Facture archivée</p>
+              <p className="text-xs text-slate-400 mt-0.5">Cette facture n&apos;apparaît plus dans la liste principale. Vous pouvez la désarchiver à tout moment.</p>
+            </div>
+            <Button
+              size="sm" variant="outline"
+              className="shrink-0 border-[#93C5FD] text-[#2563EB] hover:bg-[#EFF6FF] gap-1.5"
+              onClick={toggleArchive} disabled={archiveLoading}
+            >
+              <ArchiveX className="w-3.5 h-3.5" /> Désarchiver
+            </Button>
+          </div>
+        )}
 
         {/* Alerte retard */}
         {isOverdue && (

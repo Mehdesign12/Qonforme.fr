@@ -8,7 +8,8 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
-  const status = searchParams.get("status")
+  const status   = searchParams.get("status")
+  const archived = searchParams.get("archived") // "true" pour voir les archivées
 
   let query = supabase
     .from("invoices")
@@ -16,8 +17,14 @@ export async function GET(request: NextRequest) {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
 
-  if (status && status !== "all") {
-    query = query.eq("status", status)
+  // Par défaut on masque les archivées ; ?archived=true les affiche exclusivement
+  if (archived === "true") {
+    query = query.eq("is_archived", true)
+  } else {
+    query = query.eq("is_archived", false)
+    if (status && status !== "all") {
+      query = query.eq("status", status)
+    }
   }
 
   const { data, error } = await query

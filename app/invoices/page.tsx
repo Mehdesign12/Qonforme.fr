@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { formatCurrency, formatDate, INVOICE_STATUS_LABELS } from "@/lib/utils/invoice"
 import { InvoiceStatus } from "@/types"
-import { Plus, Loader2, FileText } from "lucide-react"
+import { Plus, Loader2, FileText, Archive } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const STATUS_STYLE: Record<InvoiceStatus, string> = {
@@ -22,12 +22,13 @@ const STATUS_STYLE: Record<InvoiceStatus, string> = {
   credited:  "bg-[#FFF7ED] text-[#C2410C] border-[#FED7AA]",
 }
 
-type StatusFilter = "all" | InvoiceStatus
+type StatusFilter = "all" | InvoiceStatus | "archived"
 
 interface Invoice {
   id: string
   invoice_number: string
   status: InvoiceStatus
+  is_archived: boolean
   issue_date: string
   due_date: string
   total_ttc: number
@@ -35,58 +36,80 @@ interface Invoice {
 }
 
 const FILTERS: { key: StatusFilter; label: string }[] = [
-  { key: "all", label: "Toutes" },
-  { key: "draft", label: "Brouillons" },
-  { key: "sent", label: "Envoyées" },
-  { key: "pending", label: "En attente" },
-  { key: "overdue", label: "En retard" },
-  { key: "paid", label: "Payées" },
+  { key: "all",      label: "Toutes" },
+  { key: "draft",    label: "Brouillons" },
+  { key: "sent",     label: "Envoyées" },
+  { key: "pending",  label: "En attente" },
+  { key: "overdue",  label: "En retard" },
+  { key: "paid",     label: "Payées" },
+  { key: "archived", label: "Archivées" },
 ]
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>([])
-  const [loading, setLoading] = useState(true)
+  const [invoices, setInvoices]       = useState<Invoice[]>([])
+  const [loading, setLoading]         = useState(true)
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all")
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true)
-    const url = activeFilter === "all" ? "/api/invoices" : `/api/invoices?status=${activeFilter}`
-    const res = await fetch(url)
+    let url: string
+    if (activeFilter === "archived") {
+      url = "/api/invoices?archived=true"
+    } else if (activeFilter === "all") {
+      url = "/api/invoices"
+    } else {
+      url = `/api/invoices?status=${activeFilter}`
+    }
+    const res  = await fetch(url)
     const json = await res.json()
     if (json.invoices) setInvoices(json.invoices)
     setLoading(false)
   }, [activeFilter])
 
-  useEffect(() => {
-    fetchInvoices()
-  }, [fetchInvoices])
+  useEffect(() => { fetchInvoices() }, [fetchInvoices])
+
+  const isArchiveView = activeFilter === "archived"
 
   return (
     <div className="space-y-5 animate-fade-in">
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           {FILTERS.map((f) => (
             <button
               key={f.key}
               onClick={() => setActiveFilter(f.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors flex items-center gap-1.5 ${
                 activeFilter === f.key
-                  ? "bg-[#2563EB] text-white border-[#2563EB]"
+                  ? f.key === "archived"
+                    ? "bg-slate-600 text-white border-slate-600"
+                    : "bg-[#2563EB] text-white border-[#2563EB]"
                   : "bg-white text-slate-600 border-[#E2E8F0] hover:border-[#2563EB] hover:text-[#2563EB]"
               }`}
             >
+              {f.key === "archived" && <Archive className="w-3 h-3" />}
               {f.label}
             </button>
           ))}
         </div>
         <Link href="/invoices/new">
-          <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2">
+          <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2 shrink-0">
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nouvelle facture</span>
           </Button>
         </Link>
       </div>
+
+      {/* Bandeau info archives */}
+      {isArchiveView && (
+        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-3 flex items-center gap-2">
+          <Archive className="w-4 h-4 text-slate-400 shrink-0" />
+          <p className="text-xs text-slate-500">
+            Les factures archivées n&apos;apparaissent pas dans les autres filtres. Vous pouvez les désarchiver depuis leur page de détail.
+          </p>
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
@@ -96,9 +119,17 @@ export default function InvoicesPage() {
           </div>
         ) : invoices.length === 0 ? (
           <div className="py-16 text-center">
-            <FileText className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+            {isArchiveView
+              ? <Archive className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+              : <FileText className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+            }
             <p className="text-sm font-medium text-slate-600 mb-1">
-              {activeFilter === "all" ? "Aucune facture pour l'instant" : `Aucune facture avec le statut "${INVOICE_STATUS_LABELS[activeFilter as InvoiceStatus]}"`}
+              {isArchiveView
+                ? "Aucune facture archivée"
+                : activeFilter === "all"
+                  ? "Aucune facture pour l'instant"
+                  : `Aucune facture "${INVOICE_STATUS_LABELS[activeFilter as InvoiceStatus]}"`
+              }
             </p>
             {activeFilter === "all" && (
               <>
@@ -128,12 +159,17 @@ export default function InvoicesPage() {
                 <tr
                   key={inv.id}
                   onClick={() => window.location.href = `/invoices/${inv.id}`}
-                  className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0 cursor-pointer"
+                  className={`border-b border-[#F1F5F9] transition-colors last:border-0 cursor-pointer ${
+                    inv.is_archived ? "bg-[#F8FAFC] hover:bg-[#F1F5F9] opacity-75" : "hover:bg-[#F8FAFC]"
+                  }`}
                 >
                   <td className="px-5 py-4">
-                    <span className="font-mono text-sm text-[#2563EB] hover:underline font-medium">
-                      {inv.invoice_number}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {inv.is_archived && <Archive className="w-3 h-3 text-slate-300 shrink-0" />}
+                      <span className="font-mono text-sm text-[#2563EB] hover:underline font-medium">
+                        {inv.invoice_number}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-5 py-4 text-sm text-[#0F172A] font-medium">
                     {inv.client?.name || "—"}

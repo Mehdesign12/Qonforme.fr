@@ -48,6 +48,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   if (body.status) updateData.status = body.status
+  if (body.is_archived !== undefined) updateData.is_archived = body.is_archived
   if (body.client_id) updateData.client_id = body.client_id
   if (body.issue_date) updateData.issue_date = body.issue_date
   if (body.due_date) updateData.due_date = body.due_date
