@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { isValidSiren, sirenToVAT } from "@/lib/utils/invoice"
+import { createClient } from "@/lib/supabase/client"
 
 type Fields = {
   siren: string
@@ -105,9 +106,23 @@ export default function CompanyForm() {
 
     setLoading(true)
     try {
+      // Récupérer le token de session (disponible côté client juste après signUp)
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const accessToken = session?.access_token
+
+      if (!accessToken) {
+        toast.error("Session expirée. Veuillez vous reconnecter.", { duration: 6000 })
+        setLoading(false)
+        return
+      }
+
       const res = await fetch("/api/company", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({
           siren: fields.siren.trim(),
           name: fields.name.trim(),

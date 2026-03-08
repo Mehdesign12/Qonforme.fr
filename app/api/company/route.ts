@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createClientWithToken } from "@/lib/supabase/server"
+
+// Helper : résout le bon client selon qu'un Bearer token est présent ou non
+async function resolveClient(request: NextRequest) {
+  const authHeader = request.headers.get("Authorization")
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7)
+    return createClientWithToken(token)
+  }
+  return createClient()
+}
 
 // GET /api/company — récupère les infos de l'entreprise de l'utilisateur connecté
-export async function GET() {
-  const supabase = await createClient()
+export async function GET(request: NextRequest) {
+  const supabase = await resolveClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
@@ -22,7 +32,7 @@ export async function GET() {
 
 // POST /api/company — création (onboarding)
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
+  const supabase = await resolveClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
@@ -48,7 +58,7 @@ export async function POST(request: NextRequest) {
 
 // PATCH /api/company — mise à jour des infos entreprise
 export async function PATCH(request: NextRequest) {
-  const supabase = await createClient()
+  const supabase = await resolveClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
