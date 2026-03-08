@@ -73,8 +73,8 @@ export default function SignupForm() {
         console.error("Supabase signUp error:", error)
         if (error.message.includes("already registered") || error.message.includes("User already registered")) {
           toast.error("Cet email est déjà utilisé. Connectez-vous.", { duration: 6000 })
-        } else if (error.message.includes("Email rate limit")) {
-          toast.error("Trop de tentatives. Patientez quelques minutes.", { duration: 6000 })
+        } else if (error.message.includes("Email rate limit") || error.message.includes("rate limit") || error.status === 429) {
+          toast.error("Limite d'emails atteinte (plan gratuit Supabase). Réessayez dans 1 heure ou désactivez la confirmation email dans Supabase Dashboard.", { duration: 10000 })
         } else if (error.message.includes("Signups not allowed")) {
           toast.error("Les inscriptions sont désactivées. Contactez l'administrateur.", { duration: 8000 })
         } else if (error.message.includes("Anonymous sign-ins are disabled")) {
