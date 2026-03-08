@@ -89,96 +89,8 @@ function buildXmpMetadata(invoiceNumber: string, invoiceDate: string): string {
 <?xpacket end="w"?>`
 }
 
-// ── Embed fichier dans le PDF (PDF/A-3 EmbeddedFile) ────────────────────────
-
-function embedXmlInPdf(pdfBytes: Uint8Array, xmlContent: string, filename: string): Uint8Array {
-  /**
-   * pdf-lib ne supporte pas nativement les EmbeddedFiles PDF/A-3.
-   * On utilise une injection manuelle dans le dictionnaire PDF :
-   * 1. On encode le XML en bytes
-   * 2. On insère un objet /EmbeddedFile dans le PDF
-   * 3. On l'associe via /Names → /EmbeddedFiles
-   *
-   * Approche : patch du PDF bytes directement en ajoutant les objets nécessaires.
-   */
-
-  const xmlBytes = new TextEncoder().encode(xmlContent)
-
-  // Convertir le PDF en string pour manipulation
-  const pdfStr = new TextDecoder("latin1").decode(pdfBytes)
-
-  // Trouver le dernier numéro d'objet dans le PDF
-  const objRegex = /^(\d+)\s+0\s+obj/gm
-  let lastObjNum = 100
-  let m: RegExpExecArray | null
-  while ((m = objRegex.exec(pdfStr)) !== null) {
-    const n = parseInt(m[1])
-    if (n > lastObjNum) lastObjNum = n
-  }
-
-  const streamObjNum  = lastObjNum + 1
-  const filespecObjNum = lastObjNum + 2
-
-  // Encoder le XML en latin1 pour l'injection dans le PDF
-  const xmlLatin1 = Array.from(xmlBytes).map(b => String.fromCharCode(b)).join("")
-  const xmlLen = xmlBytes.length
-
-  // Date courante au format PDF
-  const now = new Date()
-  const pdfDate = `D:${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}${String(now.getSeconds()).padStart(2,"0")}+00'00'`
-
-  // Objet EmbeddedFile stream
-  const embeddedFileObj = `${streamObjNum} 0 obj\n<</Type /EmbeddedFile\n/Subtype /text#2Fxml\n/Params <</ModDate (${pdfDate})\n/Size ${xmlLen}>>\n/Length ${xmlLen}>>\nstream\n${xmlLatin1}\nendstream\nendobj\n`
-
-  // Objet Filespec
-  const filenameHex = Array.from(new TextEncoder().encode("\xFE\xFF" + filename.split("").map(c => "\x00" + c).join("")))
-    .map(b => b.toString(16).padStart(2, "0")).join("")
-
-  const filespecObj = `${filespecObjNum} 0 obj\n<</Type /Filespec\n/F (${filename})\n/UF <${filenameHex}>\n/AFRelationship /Data\n/EF <</F ${streamObjNum} 0 R\n/UF ${streamObjNum} 0 R>>>>\nendobj\n`
-
-  // Injecter avant le xref final
-  const xrefPos = pdfStr.lastIndexOf("\nxref")
-  if (xrefPos === -1) {
-    // Fallback : retourner le PDF inchangé si structure inconnue
-    return pdfBytes
-  }
-
-  // Positions des nouveaux objets
-  const insertPos = xrefPos
-  const streamObjOffset  = pdfStr.slice(0, insertPos).length + 1
-  void streamObjOffset // utilisé pour calculer les offsets xref (réservé)
-
-  const beforeXref = pdfStr.slice(0, insertPos)
-  const fromXref   = pdfStr.slice(insertPos)
-
-  // Reconstruire avec les nouveaux objets
-  const newPdfStr = beforeXref + "\n" + embeddedFileObj + filespecObj + fromXref
-
-  // Patcher le catalogue pour ajouter /AF et /Names /EmbeddedFiles
-  // On cherche l'objet Catalog et on y ajoute la référence
-  const patchedPdf = patchCatalog(newPdfStr, filespecObjNum)
-
-  return new TextEncoder().encode(patchedPdf)
-}
-
-function patchCatalog(pdfStr: string, filespecObjNum: number): string {
-  // Chercher le dictionnaire /Catalog — sans flag /s (ES2018 non dispo)
-  // On cherche la position de /Type /Catalog et on remonte au << précédent
-  const typeIdx = pdfStr.indexOf("/Type /Catalog")
-  if (typeIdx === -1) return pdfStr
-
-  // Trouver le >> de fermeture après /Type /Catalog
-  const closeIdx = pdfStr.indexOf(">>", typeIdx)
-  if (closeIdx === -1) return pdfStr
-
-  const original = pdfStr.slice(0, closeIdx + 2)
-  const beforeClose = original.slice(0, closeIdx)
-  const patched = beforeClose +
-    `\n/AF [${filespecObjNum} 0 R]\n/Names <</EmbeddedFiles <</Names [(factur-x.xml) ${filespecObjNum} 0 R]>>>>` +
-    ">>"
-
-  return patched + pdfStr.slice(closeIdx + 2)
-}
+// ── Embed XML Factur-X via pdf-lib (attachments natifs) ─────────────────────
+// Pas de manipulation manuelle des bytes — pdf-lib gère l'EmbeddedFile proprement.
 
 // ── Route GET ────────────────────────────────────────────────────────────────
 
@@ -492,12 +404,20 @@ export async function GET(_req: NextRequest, { params }: Params) {
       })
     )
 
-    // ── 6. Sauvegarder le PDF ───────────────────────────────────────────────
-    const pdfBytes = await doc.save()
+    // ── 6. Attacher le XML Factur-X via l'API native pdf-lib ──────────────
+    // doc.attach() ajoute un EmbeddedFile conforme PDF/A-3 sans manipulation
+    // manuelle des bytes (évite la corruption du PDF).
+    const xmlBytes = new TextEncoder().encode(xmlContent)
+    await doc.attach(xmlBytes, "factur-x.xml", {
+      mimeType:    "application/xml",
+      description: "Factur-X EN 16931",
+      creationDate: new Date(),
+      modificationDate: new Date(),
+    })
 
-    // ── 7. Embarquer le XML Factur-X dans le PDF ───────────────────────────
-    const finalPdfBytes = embedXmlInPdf(pdfBytes, xmlContent, "factur-x.xml")
-    const buffer = Buffer.from(finalPdfBytes)
+    // ── 7. Sauvegarder le PDF final ────────────────────────────────────────
+    const pdfBytes = await doc.save()
+    const buffer = Buffer.from(pdfBytes)
 
     return new NextResponse(buffer, {
       status: 200,
