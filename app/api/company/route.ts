@@ -66,9 +66,11 @@ export async function PATCH(request: NextRequest) {
       city: body.city,
       country: body.country || "FR",
       iban: body.iban || null,
-      logo_url: body.logo_url || null,
+      logo_url: body.logo_url ?? undefined,
       invoice_prefix: body.invoice_prefix || "F",
       payment_terms: body.payment_terms || null,
+      legal_notice: body.legal_notice || null,
+      accent_color: body.accent_color || "#2563EB",
     })
     .eq("user_id", user.id)
     .select()
