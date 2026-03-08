@@ -14,11 +14,11 @@ import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/client"
 
 const schema = z.object({
-  first_name: z.string().min(2, "Prénom requis"),
-  last_name: z.string().min(2, "Nom requis"),
-  email: z.string().email("Email invalide"),
-  password: z.string().min(8, "8 caractères minimum"),
-  confirm_password: z.string(),
+  first_name: z.string().min(1, "Prénom requis").min(2, "Minimum 2 caractères"),
+  last_name: z.string().min(1, "Nom requis").min(2, "Minimum 2 caractères"),
+  email: z.string().min(1, "Email requis").email("Email invalide"),
+  password: z.string().min(1, "Mot de passe requis").min(8, "8 caractères minimum"),
+  confirm_password: z.string().min(1, "Confirmation requise"),
 }).refine((d) => d.password === d.confirm_password, {
   message: "Les mots de passe ne correspondent pas",
   path: ["confirm_password"],
@@ -33,6 +33,13 @@ export default function SignupForm() {
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
+    defaultValues: {
+      first_name: "",
+      last_name: "",
+      email: "",
+      password: "",
+      confirm_password: "",
+    },
   })
 
   const supabase = createClient()

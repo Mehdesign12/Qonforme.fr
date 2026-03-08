@@ -14,8 +14,8 @@ import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/client"
 
 const schema = z.object({
-  email: z.string().email("Email invalide"),
-  password: z.string().min(8, "8 caractères minimum"),
+  email: z.string().min(1, "Email requis").email("Email invalide"),
+  password: z.string().min(1, "Mot de passe requis").min(8, "8 caractères minimum"),
 })
 
 type FormData = z.infer<typeof schema>
@@ -27,6 +27,7 @@ export default function LoginForm() {
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
+    defaultValues: { email: "", password: "" },
   })
 
   const supabase = createClient()
