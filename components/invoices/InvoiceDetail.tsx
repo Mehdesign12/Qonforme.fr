@@ -480,6 +480,15 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
               <Printer className="w-4 h-4" /> Imprimer
             </Button>
 
+            {/* Modifier brouillon */}
+            {invoice.status === "draft" && (
+              <Link href={`/invoices/${invoice.id}/edit`}>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <Pencil className="w-4 h-4" /> Modifier
+                </Button>
+              </Link>
+            )}
+
             {/* Supprimer brouillon */}
             {invoice.status === "draft" && (
               <Button

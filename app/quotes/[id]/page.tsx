@@ -8,7 +8,7 @@ import Link from "next/link"
 import { toast } from "sonner"
 import {
   ArrowLeft, Loader2, Send, CheckCircle2, XCircle,
-  Printer, Trash2, Download, AlertTriangle, FileText, RotateCcw,
+  Printer, Trash2, Download, AlertTriangle, FileText, RotateCcw, Pencil,
 } from "lucide-react"
 import { Button }    from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -207,6 +207,15 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
             <Printer className="w-4 h-4" /> Imprimer
           </Button>
+
+          {/* Modifier brouillon */}
+          {quote.status === "draft" && (
+            <Link href={`/quotes/${params.id}/edit`}>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Pencil className="w-4 h-4" /> Modifier
+              </Button>
+            </Link>
+          )}
 
           {/* Supprimer brouillon */}
           {quote.status === "draft" && (

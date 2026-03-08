@@ -122,9 +122,14 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
 
           <div className="space-y-0.5">
             {item.sub!.map((s) => {
-              const sActive =
+              // Pour les hrefs avec query string (ex: /invoices?archived=true),
+              // le pathname Next.js ne contient jamais le query → jamais actif par le pathname seul
+              const sHrefBase = s.href.split("?")[0]
+              const sHasQuery = s.href.includes("?")
+              const sActive   = !sHasQuery && (
                 pathname === s.href ||
-                (pathname.startsWith(s.href.split("?")[0]) && s.href !== item.href)
+                (pathname.startsWith(sHrefBase) && sHrefBase !== item.href)
+              )
 
               return (
                 <div key={s.href} className="relative flex items-center">
