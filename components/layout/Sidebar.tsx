@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, Users, FileText, FileCheck2,
-  Settings, Zap, LogOut, ChevronRight,
+  Settings, Zap, LogOut, ChevronDown,
   Plus, Archive, RotateCcw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -58,7 +58,7 @@ const NAV: NavItem[] = [
     label: "Factures",
     icon: FileText,
     sub: [
-      { href: "/credit-notes", label: "Avoirs",    icon: RotateCcw },
+      { href: "/credit-notes", label: "Avoirs",   icon: RotateCcw },
       { href: "/invoices?archived=true", label: "Archives", icon: Archive },
     ],
   },
@@ -78,76 +78,77 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
   )
 
   const hasChildren = !!item.sub?.length
+  const isActive    = isParentActive || !!isSubActive
 
-  // Ouvert si parent ou sous-item actif
-  const [open, setOpen] = useState(isParentActive || !!isSubActive)
+  const [open, setOpen] = useState(isActive)
 
-  // Ré-ouvrir quand on navigue vers un enfant depuis l'extérieur
   useEffect(() => {
-    if (isParentActive || isSubActive) setOpen(true)
-  }, [isParentActive, isSubActive])
-
-  const isActive = isParentActive || !!isSubActive
+    if (isActive) setOpen(true)
+  }, [isActive])
 
   return (
     <div>
-      {/* Item principal */}
-      <div className="flex items-center group">
+      {/* ── Item principal — tout le bloc est cliquable ── */}
+      <button
+        onClick={() => {
+          if (hasChildren) setOpen((o) => !o)
+        }}
+        className={cn(
+          "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+          isActive
+            ? "bg-[#EFF6FF] text-[#2563EB]"
+            : "text-slate-600 hover:bg-slate-50 hover:text-[#0F172A]"
+        )}
+      >
+        {/* Lien vers la page parent */}
         <Link
           href={item.href}
-          className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex-1 min-w-0",
-            isActive
-              ? "bg-[#EFF6FF] text-[#2563EB]"
-              : "text-slate-600 hover:bg-slate-50 hover:text-[#0F172A]"
-          )}
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-3 flex-1 min-w-0"
         >
           <item.icon className="w-4 h-4 shrink-0" />
-          <span className="flex-1 truncate">{item.label}</span>
+          <span className="flex-1 text-left truncate">{item.label}</span>
         </Link>
 
-        {/* Chevron toggle si sous-items */}
+        {/* Chevron intégré — tourne vers le bas quand ouvert */}
         {hasChildren && (
-          <button
-            onClick={() => setOpen((o) => !o)}
+          <ChevronDown
             className={cn(
-              "p-1.5 rounded-md transition-all duration-150 mr-1 shrink-0",
-              isActive ? "text-[#2563EB] hover:bg-[#DBEAFE]" : "text-slate-400 hover:bg-slate-100"
+              "w-3.5 h-3.5 shrink-0 transition-transform duration-200",
+              open ? "rotate-0" : "-rotate-90"
             )}
-          >
-            <ChevronRight
-              className={cn(
-                "w-3.5 h-3.5 transition-transform duration-200",
-                open && "rotate-90"
-              )}
-            />
-          </button>
+          />
         )}
-      </div>
+      </button>
 
-      {/* Sous-menu */}
+      {/* ── Sous-menu avec ligne verticale solide ── */}
       {hasChildren && open && (
-        <div className="ml-3.5 mt-0.5 mb-1 pl-3.5 border-l-2 border-dashed border-[#E2E8F0] space-y-0.5">
-          {item.sub!.map((s) => {
-            const sActive =
-              pathname === s.href ||
-              pathname.startsWith(s.href.split("?")[0]) && s.href !== item.href
-            return (
-              <Link
-                key={s.href}
-                href={s.href}
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150",
-                  sActive
-                    ? "bg-[#EFF6FF] text-[#2563EB]"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-[#0F172A]"
-                )}
-              >
-                {s.icon && <s.icon className="w-3.5 h-3.5 shrink-0" />}
-                {s.label}
-              </Link>
-            )
-          })}
+        <div className="relative ml-[22px] mt-0.5 mb-1">
+          {/* Ligne verticale continue */}
+          <span className="absolute left-0 top-0 bottom-0 w-px bg-[#BFDBFE]" />
+
+          <div className="pl-4 space-y-0.5">
+            {item.sub!.map((s) => {
+              const sActive =
+                pathname === s.href ||
+                (pathname.startsWith(s.href.split("?")[0]) && s.href !== item.href)
+              return (
+                <Link
+                  key={s.href}
+                  href={s.href}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                    sActive
+                      ? "bg-[#EFF6FF] text-[#2563EB]"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-[#0F172A]"
+                  )}
+                >
+                  {s.icon && <s.icon className="w-4 h-4 shrink-0" />}
+                  {s.label}
+                </Link>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>
