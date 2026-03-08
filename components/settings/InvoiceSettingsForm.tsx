@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { createClient } from "@/lib/supabase/client"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -85,6 +86,16 @@ export function InvoiceSettingsForm() {
       .finally(() => setLoading(false))
   }, [reset])
 
+  /* Récupère le Bearer token de la session active */
+  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token) {
+      return { Authorization: `Bearer ${session.access_token}` }
+    }
+    return {}
+  }
+
   /* Upload logo */
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -97,9 +108,14 @@ export function InvoiceSettingsForm() {
 
     setLogoUploading(true)
     try {
+      const authHeaders = await getAuthHeaders()
       const fd = new FormData()
       fd.append("file", file)
-      const res = await fetch("/api/company/logo", { method: "POST", body: fd })
+      const res = await fetch("/api/company/logo", {
+        method: "POST",
+        headers: authHeaders,
+        body: fd,
+      })
       const json = await res.json()
       if (!res.ok) { toast.error(json.error); setLogoPreview(logoUrl); return }
       setLogoUrl(json.logo_url)
@@ -113,7 +129,8 @@ export function InvoiceSettingsForm() {
     if (!confirm("Supprimer le logo ?")) return
     setLogoUploading(true)
     try {
-      await fetch("/api/company/logo", { method: "DELETE" })
+      const authHeaders = await getAuthHeaders()
+      await fetch("/api/company/logo", { method: "DELETE", headers: authHeaders })
       setLogoUrl(null)
       setLogoPreview(null)
       toast.success("Logo supprimé")
@@ -209,20 +226,7 @@ export function InvoiceSettingsForm() {
           </div>
         </div>
 
-        {/* Note si bucket pas encore créé */}
-        <div className="bg-[#FEF3C7] border border-[#FCD34D] rounded-lg p-3 flex gap-2">
-          <Info className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
-          <div className="text-xs text-[#92400E]">
-            <p className="font-medium mb-1">Bucket Supabase Storage requis</p>
-            <p>Créez un bucket public <span className="font-mono bg-[#FEF3C7] px-1 rounded">company-assets</span> dans{" "}
-              <a
-                href="https://supabase.com/dashboard/project/lxnowrmyyaylvnognifu/storage/buckets"
-                target="_blank" rel="noreferrer"
-                className="underline"
-              >Supabase → Storage → Buckets</a>.
-            </p>
-          </div>
-        </div>
+
       </div>
 
       {/* ---- Couleur d'accentuation ---- */}

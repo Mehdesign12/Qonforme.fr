@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createClientWithToken } from "@/lib/supabase/server"
+
+/* Résout le client Supabase selon le mode d'auth :
+   - Header Authorization: Bearer <token>  → après signUp (cookies pas encore synchro)
+   - Cookies de session                    → flux normal */
+async function resolveClient(request: NextRequest) {
+  const authHeader = request.headers.get("Authorization")
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7)
+    return createClientWithToken(token)
+  }
+  return createClient()
+}
 
 // POST /api/company/logo — upload logo vers Supabase Storage
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
+  const supabase = await resolveClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
@@ -37,6 +49,7 @@ export async function POST(request: NextRequest) {
     })
 
   if (uploadError) {
+    console.error("Upload error:", uploadError)
     return NextResponse.json({ error: uploadError.message }, { status: 500 })
   }
 
@@ -52,6 +65,7 @@ export async function POST(request: NextRequest) {
     .eq("user_id", user.id)
 
   if (updateError) {
+    console.error("Update error:", updateError)
     return NextResponse.json({ error: updateError.message }, { status: 500 })
   }
 
@@ -59,15 +73,21 @@ export async function POST(request: NextRequest) {
 }
 
 // DELETE /api/company/logo — supprimer le logo
-export async function DELETE() {
-  const supabase = await createClient()
+export async function DELETE(request: NextRequest) {
+  const supabase = await resolveClient(request)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
-  // Supprimer dans storage
+  // Supprimer toutes les variantes possibles dans storage
   await supabase.storage
     .from("company-assets")
-    .remove([`logos/${user.id}/logo.png`, `logos/${user.id}/logo.jpg`, `logos/${user.id}/logo.webp`, `logos/${user.id}/logo.svg`])
+    .remove([
+      `logos/${user.id}/logo.png`,
+      `logos/${user.id}/logo.jpg`,
+      `logos/${user.id}/logo.jpeg`,
+      `logos/${user.id}/logo.webp`,
+      `logos/${user.id}/logo.svg`,
+    ])
 
   // Effacer l'URL en DB
   await supabase
