@@ -79,7 +79,6 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const black     = rgb(0.06, 0.09, 0.17)
     const grayDark  = rgb(0.28, 0.34, 0.41)
     const grayLight = rgb(0.58, 0.64, 0.70)
-    const white     = rgb(1, 1, 1)
     const rowAlt    = rgb(0.97, 0.98, 0.99)
     const separator = rgb(0.89, 0.91, 0.94)
 
@@ -294,13 +293,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
     hLine(curY, totX, mR, 0.8, grayLight)
     curY -= 16
 
-    // Total TTC — encadré accent
-    const ttcH = 30
-    const ttcW = totBlockW
-    rect(totX - 8, curY - 8, ttcW + 8, ttcH, accent)
-    draw("TOTAL TTC",           totX, curY + 7,  { size: 9, bold: true, color: white })
-    draw(fmt(invoice.total_ttc), totValX, curY + 7, { size: 13, bold: true, color: white, align: "right" })
-    curY -= ttcH + 4
+    // Total TTC — trait de séparation + texte couleur accent
+    hLine(curY, totX, mR, 1.5, accent)
+    curY -= 14
+    draw("TOTAL TTC",            totX,    curY, { size: 10, bold: true, color: accent })
+    draw(fmt(invoice.total_ttc), totValX, curY, { size: 14, bold: true, color: accent, align: "right" })
+    curY -= 18
 
     // IBAN
     if (company?.iban) {
