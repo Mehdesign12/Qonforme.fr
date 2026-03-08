@@ -8,10 +8,23 @@ interface Params {
 
 // ── helpers globaux ──────────────────────────────────────────────────────────
 
+// Nettoie les caractères Unicode non supportés par WinAnsi (pdf-lib polices standard)
+// U+202F = espace fine insécable (utilisée par Intl fr-FR dans les nombres)
+// U+00A0 = espace insécable
+function sanitize(text: string): string {
+  return text
+    .replace(/\u202F/g, " ")  // espace fine insécable → espace normale
+    .replace(/\u00A0/g, " ")  // espace insécable → espace normale
+    .replace(/\u2019/g, "'") // apostrophe typographique → apostrophe simple
+    .replace(/\u2026/g, "...") // ellipse → trois points
+    .replace(/[^\x00-\xFF]/g, "?") // tout autre caractère non-latin → ?
+}
+
 function fmt(n: number) {
-  return new Intl.NumberFormat("fr-FR", {
+  const raw = new Intl.NumberFormat("fr-FR", {
     style: "currency", currency: "EUR", minimumFractionDigits: 2,
   }).format(n)
+  return sanitize(raw)
 }
 
 function fmtDate(d: string) {
@@ -98,21 +111,21 @@ export async function GET(_req: NextRequest, { params }: Params) {
     let y = height - 40
 
     // ── HEADER ───────────────────────────────────────────────────────────────
-    draw(company?.name ?? "Votre entreprise", marginL, y, { size: 18, font: bold, color: accent })
+    draw(sanitize(company?.name ?? "Votre entreprise"), marginL, y, { size: 18, font: bold, color: accent })
     y -= 18
-    if (company?.address)              { draw(company.address, marginL, y, { size: 8, color: gray }); y -= lineH }
+    if (company?.address)              { draw(sanitize(company.address), marginL, y, { size: 8, color: gray }); y -= lineH }
     if (company?.zip_code || company?.city) {
-      draw(`${company?.zip_code ?? ""} ${company?.city ?? ""}`.trim(), marginL, y, { size: 8, color: gray }); y -= lineH
+      draw(sanitize(`${company?.zip_code ?? ""} ${company?.city ?? ""}`).trim(), marginL, y, { size: 8, color: gray }); y -= lineH
     }
-    if (company?.siren)                { draw(`SIREN : ${company.siren}`, marginL, y, { size: 8, color: gray }); y -= lineH }
-    if (company?.vat_number)           { draw(`TVA : ${company.vat_number}`, marginL, y, { size: 8, color: gray }); y -= lineH }
+    if (company?.siren)                { draw(sanitize(`SIREN : ${company.siren}`), marginL, y, { size: 8, color: gray }); y -= lineH }
+    if (company?.vat_number)           { draw(sanitize(`TVA : ${company.vat_number}`), marginL, y, { size: 8, color: gray }); y -= lineH }
 
     // Titre droite
     const titleY = height - 40
-    draw("FACTURE",              marginR, titleY,      { size: 24, font: bold, color: black, align: "right" })
-    draw(invoice.invoice_number, marginR, titleY - 22, { size: 12, font: bold, color: accent, align: "right" })
-    draw(`Émission : ${fmtDate(invoice.issue_date)}`, marginR, titleY - 38, { size: 9, color: gray, align: "right" })
-    draw(`Échéance : ${fmtDate(invoice.due_date)}`,   marginR, titleY - 52, { size: 9, color: gray, align: "right" })
+    draw("FACTURE",                         marginR, titleY,      { size: 24, font: bold, color: black, align: "right" })
+    draw(sanitize(invoice.invoice_number),   marginR, titleY - 22, { size: 12, font: bold, color: accent, align: "right" })
+    draw(sanitize(`Emission : ${fmtDate(invoice.issue_date)}`), marginR, titleY - 38, { size: 9, color: gray, align: "right" })
+    draw(sanitize(`Echeance : ${fmtDate(invoice.due_date)}`),   marginR, titleY - 52, { size: 9, color: gray, align: "right" })
 
     // ── BARRE ACCENT ─────────────────────────────────────────────────────────
     y = height - 130
@@ -129,24 +142,24 @@ export async function GET(_req: NextRequest, { params }: Params) {
     hLine(y, col2,    col2 + 120,    0.8, accent)
     y -= 10
 
-    draw(company?.name ?? "—", marginL, y, { size: 10, font: bold })
-    draw(invoice.client?.name ?? "—", col2, y, { size: 10, font: bold })
+    draw(sanitize(company?.name ?? "—"), marginL, y, { size: 10, font: bold })
+    draw(sanitize(invoice.client?.name ?? "—"), col2, y, { size: 10, font: bold })
     y -= lineH
 
-    if (company?.address)   draw(company.address, marginL, y, { size: 8, color: gray })
-    if (invoice.client?.address) draw(invoice.client.address, col2, y, { size: 8, color: gray })
+    if (company?.address)        draw(sanitize(company.address),        marginL, y, { size: 8, color: gray })
+    if (invoice.client?.address) draw(sanitize(invoice.client.address), col2,    y, { size: 8, color: gray })
     y -= lineH
 
-    draw(`${company?.zip_code ?? ""} ${company?.city ?? ""}`.trim(), marginL, y, { size: 8, color: gray })
-    draw(`${invoice.client?.zip_code ?? ""} ${invoice.client?.city ?? ""}`.trim(), col2, y, { size: 8, color: gray })
+    draw(sanitize(`${company?.zip_code ?? ""} ${company?.city ?? ""}`).trim(),             marginL, y, { size: 8, color: gray })
+    draw(sanitize(`${invoice.client?.zip_code ?? ""} ${invoice.client?.city ?? ""}`).trim(), col2,    y, { size: 8, color: gray })
     y -= lineH
 
-    if (company?.siren)          draw(`SIREN ${company.siren}`, marginL, y, { size: 7.5, color: light })
-    if (invoice.client?.email)   draw(invoice.client.email,     col2,    y, { size: 8,   color: gray })
+    if (company?.siren)          draw(sanitize(`SIREN ${company.siren}`),          marginL, y, { size: 7.5, color: light })
+    if (invoice.client?.email)   draw(sanitize(invoice.client.email),               col2,    y, { size: 8,   color: gray })
     y -= lineH
 
-    if (company?.vat_number)     draw(`TVA ${company.vat_number}`,    marginL, y, { size: 7.5, color: light })
-    if (invoice.client?.siren)   draw(`SIREN ${invoice.client.siren}`, col2,    y, { size: 7.5, color: light })
+    if (company?.vat_number)     draw(sanitize(`TVA ${company.vat_number}`),         marginL, y, { size: 7.5, color: light })
+    if (invoice.client?.siren)   draw(sanitize(`SIREN ${invoice.client.siren}`),    col2,    y, { size: 7.5, color: light })
     y -= 20
 
     // ── TABLEAU ───────────────────────────────────────────────────────────────
@@ -173,7 +186,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
       if (i % 2 === 1) {
         page.drawRectangle({ x: marginL, y: y - 4, width: marginR - marginL, height: 16, color: rgb(0.992, 0.992, 0.996) })
       }
-      const desc = line.description.length > 45 ? line.description.slice(0, 42) + "…" : line.description
+      const descRaw = line.description.length > 45 ? line.description.slice(0, 42) + "..." : line.description
+      const desc = sanitize(descRaw)
       draw(desc,                     colX.desc,  y + 2, { size: 8.5 })
       draw(String(line.quantity),    colX.qty,   y + 2, { size: 8.5, color: gray, align: "right" })
       draw(fmt(line.unit_price_ht),  colX.pu,    y + 2, { size: 8.5, color: gray, align: "right" })
@@ -203,8 +217,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     if (company?.iban) {
       hLine(y, totX, marginR, 0.3)
       y -= 8
-      draw("IBAN",       totX,    y, { size: 7.5, color: light })
-      draw(company.iban, totValX, y, { size: 7.5, color: gray, align: "right" })
+      draw("IBAN",                  totX,    y, { size: 7.5, color: light })
+      draw(sanitize(company.iban),  totValX, y, { size: 7.5, color: gray, align: "right" })
       y -= lineH
     }
     y -= 16
@@ -214,7 +228,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       page.drawRectangle({ x: marginL, y: y - 8, width: 4, height: 32, color: accent })
       draw("CONDITIONS DE PAIEMENT / NOTES", marginL + 10, y + 14, { size: 7.5, font: bold, color: gray })
       invoice.notes.split("\n").slice(0, 2).forEach((l: string) => {
-        draw(l, marginL + 10, y, { size: 8, color: gray })
+        draw(sanitize(l), marginL + 10, y, { size: 8, color: gray })
         y -= lineH
       })
       y -= 10
@@ -225,16 +239,17 @@ export async function GET(_req: NextRequest, { params }: Params) {
       hLine(y, marginL, marginR)
       y -= 10
       company.legal_notice.split("\n").slice(0, 3).forEach((l: string) => {
-        const lw = regular.widthOfTextAtSize(l, 7)
-        draw(l, (width - lw) / 2, y, { size: 7, color: light })
+        const ls = sanitize(l)
+        const lw = regular.widthOfTextAtSize(ls, 7)
+        draw(ls, (width - lw) / 2, y, { size: 7, color: light })
         y -= 10
       })
     }
 
     // ── FOOTER ───────────────────────────────────────────────────────────────
     hLine(30, marginL, marginR, 0.5, rgb(0.886, 0.914, 0.937))
-    draw(`${company?.name ?? "Qonforme"} — ${invoice.invoice_number}`, marginL, 20, { size: 7, color: light })
-    draw("Généré par Qonforme", marginR, 20, { size: 7, color: accent, align: "right" })
+    draw(sanitize(`${company?.name ?? "Qonforme"} - ${invoice.invoice_number}`), marginL, 20, { size: 7, color: light })
+    draw("Genere par Qonforme", marginR, 20, { size: 7, color: accent, align: "right" })
 
     // ── Sauvegarder ──────────────────────────────────────────────────────────
     const uint8 = await doc.save()
