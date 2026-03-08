@@ -107,6 +107,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [loading, setLoading] = useState(true)
   const [statusLoading, setStatusLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   /* Chargement */
   useEffect(() => {
@@ -132,6 +133,34 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       toast.success(`Statut mis à jour : ${INVOICE_STATUS_LABELS[newStatus]}`)
     } catch { toast.error("Erreur réseau") }
     finally { setStatusLoading(false) }
+  }
+
+  /* Téléchargement PDF */
+  const downloadPDF = async () => {
+    if (!invoice) return
+    setPdfLoading(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/pdf`)
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        toast.error(json.error || "Erreur lors de la génération du PDF")
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${invoice.invoice_number}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success("PDF téléchargé !")
+    } catch {
+      toast.error("Erreur lors du téléchargement")
+    } finally {
+      setPdfLoading(false)
+    }
   }
 
   /* Suppression (brouillons uniquement) */
@@ -190,17 +219,23 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Imprimer / télécharger */}
+          {/* Télécharger PDF */}
+          <Button
+            variant="outline" size="sm"
+            className="gap-1.5"
+            onClick={downloadPDF}
+            disabled={pdfLoading}
+          >
+            {pdfLoading
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Download className="w-4 h-4" />
+            }
+            {pdfLoading ? "Génération..." : "Télécharger PDF"}
+          </Button>
+          {/* Imprimer */}
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
             <Printer className="w-4 h-4" /> Imprimer
           </Button>
-          {invoice.pdf_url && (
-            <a href={invoice.pdf_url} download>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Download className="w-4 h-4" /> PDF
-              </Button>
-            </a>
-          )}
 
           {/* Suppression brouillon */}
           {invoice.status === "draft" && (
