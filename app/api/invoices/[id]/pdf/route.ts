@@ -416,15 +416,17 @@ export async function GET(_req: NextRequest, { params }: Params) {
     })
 
     // ── 7. Sauvegarder le PDF final ────────────────────────────────────────
+    // Utiliser Response (Web API standard) avec Uint8Array directement.
+    // NextResponse + Buffer peut corrompre les données binaires dans Next.js App Router.
+    // On supprime Content-Length pour éviter toute troncature liée au chunking.
     const pdfBytes = await doc.save()
     const buffer = Buffer.from(pdfBytes)
 
-    return new NextResponse(buffer, {
+    return new Response(buffer, {
       status: 200,
       headers: {
         "Content-Type":        "application/pdf",
         "Content-Disposition": `attachment; filename="${invoice.invoice_number}.pdf"`,
-        "Content-Length":      buffer.length.toString(),
         "Cache-Control":       "no-store",
         "X-Facturx-Profile":   "EN 16931",
       },

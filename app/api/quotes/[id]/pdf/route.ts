@@ -249,15 +249,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
     draw(`${company?.name ?? "Qonforme"} — ${quote.quote_number}`, mL, 20, { size: 7, color: grayLight })
     draw("Généré par Qonforme", mR, 20, { size: 7, color: quoteGreen, align: "right" })
 
-    const uint8  = await doc.save()
-    const buffer = Buffer.from(uint8)
+    const pdfBytes = await doc.save()
+    const buffer = Buffer.from(pdfBytes)
 
-    return new NextResponse(buffer, {
+    return new Response(buffer, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${quote.quote_number}.pdf"`,
-        "Content-Length": buffer.length.toString(),
         "Cache-Control": "no-store",
       },
     })
