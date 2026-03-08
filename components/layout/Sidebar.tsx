@@ -4,14 +4,13 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, Users, FileText, FileCheck2,
-  Settings, Zap, LogOut, ChevronDown,
+  Settings, Zap, LogOut, Minus,
   Plus, Archive, RotateCcw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { useState, useEffect } from "react"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -65,6 +64,17 @@ const NAV: NavItem[] = [
 ]
 
 /* ------------------------------------------------------------------ */
+/* Constantes de layout — à ajuster en un seul endroit                 */
+/* ------------------------------------------------------------------ */
+
+// px-3 = 12px de padding gauche sur l'item parent
+// L'icône fait 16px (w-4), gap-3 = 12px
+// Centre de l'icône = 12 + 8 = 20px depuis le bord gauche du nav (px-2 = 8px)
+// Donc depuis le bord gauche du NavGroup : 12 + 8 = 20px → ml-[20px]
+const TREE_INDENT = "ml-[20px]"   // aligne la ligne sous le centre de l'icône parent
+const BRANCH_W   = "w-[16px]"    // longueur de la branche horizontale
+
+/* ------------------------------------------------------------------ */
 /* Composant NavGroup                                                   */
 /* ------------------------------------------------------------------ */
 
@@ -80,72 +90,63 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
   const hasChildren = !!item.sub?.length
   const isActive    = isParentActive || !!isSubActive
 
-  const [open, setOpen] = useState(isActive)
-
-  useEffect(() => {
-    if (isActive) setOpen(true)
-  }, [isActive])
-
   return (
     <div>
-      {/* ── Item principal — tout le bloc est cliquable ── */}
-      <button
-        onClick={() => {
-          if (hasChildren) setOpen((o) => !o)
-        }}
+      {/* ── Item principal ── */}
+      <Link
+        href={item.href}
         className={cn(
-          "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
           isActive
             ? "bg-[#EFF6FF] text-[#2563EB]"
             : "text-slate-600 hover:bg-slate-50 hover:text-[#0F172A]"
         )}
       >
-        {/* Lien vers la page parent */}
-        <Link
-          href={item.href}
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-3 flex-1 min-w-0"
-        >
-          <item.icon className="w-4 h-4 shrink-0" />
-          <span className="flex-1 text-left truncate">{item.label}</span>
-        </Link>
-
-        {/* Chevron intégré — tourne vers le bas quand ouvert */}
+        <item.icon className="w-4 h-4 shrink-0" />
+        <span className="flex-1 truncate">{item.label}</span>
+        {/* Tiret — indique que le groupe est ouvert (toujours) */}
         {hasChildren && (
-          <ChevronDown
-            className={cn(
-              "w-3.5 h-3.5 shrink-0 transition-transform duration-200",
-              open ? "rotate-0" : "-rotate-90"
-            )}
-          />
+          <Minus className={cn(
+            "w-3.5 h-3.5 shrink-0",
+            isActive ? "text-[#2563EB]" : "text-slate-400"
+          )} />
         )}
-      </button>
+      </Link>
 
-      {/* ── Sous-menu avec ligne verticale solide ── */}
-      {hasChildren && open && (
-        <div className="relative ml-[22px] mt-0.5 mb-1">
-          {/* Ligne verticale continue */}
+      {/* ── Sous-menu — toujours visible si hasChildren ── */}
+      {hasChildren && (
+        <div className={cn("relative mt-0.5 mb-1", TREE_INDENT)}>
+
+          {/* Ligne verticale — centrée sous l'icône parent */}
           <span className="absolute left-0 top-0 bottom-0 w-px bg-[#BFDBFE]" />
 
-          <div className="pl-4 space-y-0.5">
+          <div className="space-y-0.5">
             {item.sub!.map((s) => {
               const sActive =
                 pathname === s.href ||
                 (pathname.startsWith(s.href.split("?")[0]) && s.href !== item.href)
+
               return (
-                <Link
-                  key={s.href}
-                  href={s.href}
-                  className={cn(
-                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
-                    sActive
-                      ? "bg-[#EFF6FF] text-[#2563EB]"
-                      : "text-slate-500 hover:bg-slate-50 hover:text-[#0F172A]"
-                  )}
-                >
-                  {s.icon && <s.icon className="w-4 h-4 shrink-0" />}
-                  {s.label}
-                </Link>
+                <div key={s.href} className="relative flex items-center">
+                  {/* Branche horizontale */}
+                  <span className={cn(
+                    "shrink-0 h-px bg-[#BFDBFE]",
+                    BRANCH_W
+                  )} />
+
+                  <Link
+                    href={s.href}
+                    className={cn(
+                      "flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                      sActive
+                        ? "bg-[#EFF6FF] text-[#2563EB]"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-[#0F172A]"
+                    )}
+                  >
+                    {s.icon && <s.icon className="w-4 h-4 shrink-0" />}
+                    {s.label}
+                  </Link>
+                </div>
               )
             })}
           </div>
