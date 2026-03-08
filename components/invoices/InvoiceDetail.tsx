@@ -466,13 +466,20 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_BADGE[invoice.status] ?? STATUS_BADGE.draft}`}>
               {STATUS_LABELS[invoice.status] ?? invoice.status}
             </span>
+            {/* Badge Factur-X — visible uniquement si facture non brouillon */}
+            {invoice.status !== "draft" && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]" title="Facture électronique conforme EN 16931">
+                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="#2563EB"/><path d="M3.5 6l1.8 1.8L8.5 4" stroke="#2563EB" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Factur-X
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* PDF */}
+            {/* PDF Factur-X */}
             <Button variant="outline" size="sm" className="gap-1.5" onClick={downloadPDF} disabled={pdfLoading}>
               {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              {pdfLoading ? "Génération…" : "Télécharger PDF"}
+              {pdfLoading ? "Génération…" : invoice.status !== "draft" ? "Télécharger Factur-X" : "Télécharger PDF"}
             </Button>
 
             {/* Imprimer */}

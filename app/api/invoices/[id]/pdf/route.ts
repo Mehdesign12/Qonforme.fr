@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { PDFDocument, rgb, PageSizes } from "pdf-lib"
 import fontkit from "@pdf-lib/fontkit"
 import { createClient } from "@/lib/supabase/server"
+import { generateFacturXml } from "@/lib/facturx/xml"
+import type { FxInvoice } from "@/lib/facturx/xml"
 import path from "path"
 import fs from "fs"
 
@@ -9,7 +11,7 @@ interface Params {
   params: Promise<{ id: string }>
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers visuels ──────────────────────────────────────────────────────────
 
 function hexToRgb(hex: string) {
   const h = (hex ?? "#2563EB").replace("#", "").padEnd(6, "0")
@@ -27,11 +29,155 @@ function fmt(n: number): string {
 }
 
 function fmtDate(d: string): string {
-  try {
-    return new Intl.DateTimeFormat("fr-FR").format(new Date(d))
-  } catch {
-    return d
+  try { return new Intl.DateTimeFormat("fr-FR").format(new Date(d)) }
+  catch { return d }
+}
+
+// ── XMP metadata PDF/A-3 + Factur-X ─────────────────────────────────────────
+
+function buildXmpMetadata(invoiceNumber: string, invoiceDate: string): string {
+  const now = new Date().toISOString()
+  return `<?xpacket begin="\uFEFF" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+
+    <!-- PDF/A-3 conformance -->
+    <rdf:Description rdf:about=""
+      xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">
+      <pdfaid:part>3</pdfaid:part>
+      <pdfaid:conformance>B</pdfaid:conformance>
+    </rdf:Description>
+
+    <!-- Factur-X -->
+    <rdf:Description rdf:about=""
+      xmlns:fx="urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#">
+      <fx:DocumentFileName>factur-x.xml</fx:DocumentFileName>
+      <fx:DocumentType>INVOICE</fx:DocumentType>
+      <fx:Version>1.0</fx:Version>
+      <fx:ConformanceLevel>EN 16931</fx:ConformanceLevel>
+    </rdf:Description>
+
+    <!-- Dublin Core -->
+    <rdf:Description rdf:about=""
+      xmlns:dc="http://purl.org/dc/elements/1.1/">
+      <dc:format>application/pdf</dc:format>
+      <dc:title>
+        <rdf:Alt><rdf:li xml:lang="x-default">Facture ${invoiceNumber}</rdf:li></rdf:Alt>
+      </dc:title>
+      <dc:description>
+        <rdf:Alt><rdf:li xml:lang="x-default">Facture électronique Factur-X ${invoiceNumber} du ${invoiceDate}</rdf:li></rdf:Alt>
+      </dc:description>
+      <dc:creator><rdf:Seq><rdf:li>Qonforme</rdf:li></rdf:Seq></dc:creator>
+    </rdf:Description>
+
+    <!-- XMP Basic -->
+    <rdf:Description rdf:about=""
+      xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+      <xmp:CreatorTool>Qonforme Factur-X Generator</xmp:CreatorTool>
+      <xmp:CreateDate>${now}</xmp:CreateDate>
+      <xmp:ModifyDate>${now}</xmp:ModifyDate>
+    </rdf:Description>
+
+    <!-- PDF metadata -->
+    <rdf:Description rdf:about=""
+      xmlns:pdf="http://ns.adobe.com/pdf/1.3/">
+      <pdf:Producer>Qonforme — pdf-lib</pdf:Producer>
+    </rdf:Description>
+
+  </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>`
+}
+
+// ── Embed fichier dans le PDF (PDF/A-3 EmbeddedFile) ────────────────────────
+
+function embedXmlInPdf(pdfBytes: Uint8Array, xmlContent: string, filename: string): Uint8Array {
+  /**
+   * pdf-lib ne supporte pas nativement les EmbeddedFiles PDF/A-3.
+   * On utilise une injection manuelle dans le dictionnaire PDF :
+   * 1. On encode le XML en bytes
+   * 2. On insère un objet /EmbeddedFile dans le PDF
+   * 3. On l'associe via /Names → /EmbeddedFiles
+   *
+   * Approche : patch du PDF bytes directement en ajoutant les objets nécessaires.
+   */
+
+  const xmlBytes = new TextEncoder().encode(xmlContent)
+
+  // Convertir le PDF en string pour manipulation
+  const pdfStr = new TextDecoder("latin1").decode(pdfBytes)
+
+  // Trouver le dernier numéro d'objet dans le PDF
+  const objRegex = /^(\d+)\s+0\s+obj/gm
+  let lastObjNum = 100
+  let m: RegExpExecArray | null
+  while ((m = objRegex.exec(pdfStr)) !== null) {
+    const n = parseInt(m[1])
+    if (n > lastObjNum) lastObjNum = n
   }
+
+  const streamObjNum  = lastObjNum + 1
+  const filespecObjNum = lastObjNum + 2
+
+  // Encoder le XML en latin1 pour l'injection dans le PDF
+  const xmlLatin1 = Array.from(xmlBytes).map(b => String.fromCharCode(b)).join("")
+  const xmlLen = xmlBytes.length
+
+  // Date courante au format PDF
+  const now = new Date()
+  const pdfDate = `D:${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}${String(now.getSeconds()).padStart(2,"0")}+00'00'`
+
+  // Objet EmbeddedFile stream
+  const embeddedFileObj = `${streamObjNum} 0 obj\n<</Type /EmbeddedFile\n/Subtype /text#2Fxml\n/Params <</ModDate (${pdfDate})\n/Size ${xmlLen}>>\n/Length ${xmlLen}>>\nstream\n${xmlLatin1}\nendstream\nendobj\n`
+
+  // Objet Filespec
+  const filenameHex = Array.from(new TextEncoder().encode("\xFE\xFF" + filename.split("").map(c => "\x00" + c).join("")))
+    .map(b => b.toString(16).padStart(2, "0")).join("")
+
+  const filespecObj = `${filespecObjNum} 0 obj\n<</Type /Filespec\n/F (${filename})\n/UF <${filenameHex}>\n/AFRelationship /Data\n/EF <</F ${streamObjNum} 0 R\n/UF ${streamObjNum} 0 R>>>>\nendobj\n`
+
+  // Injecter avant le xref final
+  const xrefPos = pdfStr.lastIndexOf("\nxref")
+  if (xrefPos === -1) {
+    // Fallback : retourner le PDF inchangé si structure inconnue
+    return pdfBytes
+  }
+
+  // Positions des nouveaux objets
+  const insertPos = xrefPos
+  const streamObjOffset  = pdfStr.slice(0, insertPos).length + 1
+  void streamObjOffset // utilisé pour calculer les offsets xref (réservé)
+
+  const beforeXref = pdfStr.slice(0, insertPos)
+  const fromXref   = pdfStr.slice(insertPos)
+
+  // Reconstruire avec les nouveaux objets
+  const newPdfStr = beforeXref + "\n" + embeddedFileObj + filespecObj + fromXref
+
+  // Patcher le catalogue pour ajouter /AF et /Names /EmbeddedFiles
+  // On cherche l'objet Catalog et on y ajoute la référence
+  const patchedPdf = patchCatalog(newPdfStr, filespecObjNum)
+
+  return new TextEncoder().encode(patchedPdf)
+}
+
+function patchCatalog(pdfStr: string, filespecObjNum: number): string {
+  // Chercher le dictionnaire /Catalog — sans flag /s (ES2018 non dispo)
+  // On cherche la position de /Type /Catalog et on remonte au << précédent
+  const typeIdx = pdfStr.indexOf("/Type /Catalog")
+  if (typeIdx === -1) return pdfStr
+
+  // Trouver le >> de fermeture après /Type /Catalog
+  const closeIdx = pdfStr.indexOf(">>", typeIdx)
+  if (closeIdx === -1) return pdfStr
+
+  const original = pdfStr.slice(0, closeIdx + 2)
+  const beforeClose = original.slice(0, closeIdx)
+  const patched = beforeClose +
+    `\n/AF [${filespecObjNum} 0 R]\n/Names <</EmbeddedFiles <</Names [(factur-x.xml) ${filespecObjNum} 0 R]>>>>` +
+    ">>"
+
+  return patched + pdfStr.slice(closeIdx + 2)
 }
 
 // ── Route GET ────────────────────────────────────────────────────────────────
@@ -60,21 +206,66 @@ export async function GET(_req: NextRequest, { params }: Params) {
       .eq("user_id", user.id)
       .single()
 
-    // 3. PDF setup
+    // ── 3. Générer le XML Factur-X ──────────────────────────────────────────
+    const fxData: FxInvoice = {
+      invoice_number: invoice.invoice_number,
+      issue_date:     invoice.issue_date,
+      due_date:       invoice.due_date,
+      currency:       "EUR",
+      seller: {
+        name:          company?.name        ?? "",
+        address:       company?.address     ?? "",
+        zip_code:      company?.zip_code    ?? "",
+        city:          company?.city        ?? "",
+        country:       "FR",
+        siren:         company?.siren       ?? undefined,
+        siret:         company?.siret       ?? undefined,
+        vat_number:    company?.vat_number  ?? undefined,
+        iban:          company?.iban        ?? undefined,
+        legal_notice:  company?.legal_notice ?? undefined,
+      },
+      buyer: {
+        name:       invoice.client?.name      ?? "Client inconnu",
+        address:    invoice.client?.address   ?? undefined,
+        zip_code:   invoice.client?.zip_code  ?? undefined,
+        city:       invoice.client?.city      ?? undefined,
+        country:    "FR",
+        siren:      invoice.client?.siren     ?? undefined,
+        vat_number: invoice.client?.vat_number ?? undefined,
+        email:      invoice.client?.email     ?? undefined,
+      },
+      lines: (invoice.lines ?? []).map((l: {
+        description: string; quantity: number; unit_price_ht: number
+        vat_rate: number; total_ht: number; total_vat: number; total_ttc: number
+      }, i: number) => ({
+        id:            i + 1,
+        description:   l.description,
+        quantity:      l.quantity,
+        unit_price_ht: l.unit_price_ht,
+        vat_rate:      l.vat_rate,
+        total_ht:      l.total_ht,
+        total_vat:     l.total_vat,
+        total_ttc:     l.total_ttc,
+      })),
+      subtotal_ht: invoice.subtotal_ht,
+      total_vat:   invoice.total_vat,
+      total_ttc:   invoice.total_ttc,
+      notes:       invoice.notes ?? null,
+    }
+
+    const xmlContent = generateFacturXml(fxData)
+
+    // ── 4. Générer le PDF visuel ────────────────────────────────────────────
     const doc = await PDFDocument.create()
     doc.registerFontkit(fontkit)
 
-    // Charger Roboto depuis le filesystem (dispo au build time dans /public/fonts)
-    const fontsDir = path.join(process.cwd(), "public", "fonts")
-    const regularBytes = fs.readFileSync(path.join(fontsDir, "Roboto-Regular.ttf"))
-    const boldBytes    = fs.readFileSync(path.join(fontsDir, "Roboto-Bold.ttf"))
-    const fontRegular  = await doc.embedFont(regularBytes)
-    const fontBold     = await doc.embedFont(boldBytes)
+    const fontsDir    = path.join(process.cwd(), "public", "fonts")
+    const fontRegular = await doc.embedFont(fs.readFileSync(path.join(fontsDir, "Roboto-Regular.ttf")))
+    const fontBold    = await doc.embedFont(fs.readFileSync(path.join(fontsDir, "Roboto-Bold.ttf")))
 
     const page = doc.addPage(PageSizes.A4)
-    const { width, height } = page.getSize() // 595 × 842
+    const { width, height } = page.getSize()
 
-    // Couleurs
     const accent    = hexToRgb(company?.accent_color ?? "#2563EB")
     const black     = rgb(0.06, 0.09, 0.17)
     const grayDark  = rgb(0.28, 0.34, 0.41)
@@ -82,31 +273,19 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const rowAlt    = rgb(0.97, 0.98, 0.99)
     const separator = rgb(0.89, 0.91, 0.94)
 
-    const mL = 48   // margin left
-    const mR = width - 48  // margin right
-    const cW = mR - mL     // content width
+    const mL = 48
+    const mR = width - 48
+    const cW = mR - mL
 
-    // Helper draw
     const draw = (
-      text: string,
-      x: number,
-      y: number,
-      opts: {
-        size?: number
-        bold?: boolean
-        color?: ReturnType<typeof rgb>
-        align?: "left" | "right" | "center"
-        maxWidth?: number
-      } = {}
+      text: string, x: number, y: number,
+      opts: { size?: number; bold?: boolean; color?: ReturnType<typeof rgb>; align?: "left" | "right" | "center"; maxWidth?: number } = {}
     ) => {
       const { size = 9, bold: isBold = false, color = black, align = "left", maxWidth } = opts
       const font = isBold ? fontBold : fontRegular
       let str = text ?? ""
-      // Tronquer si maxWidth
       if (maxWidth) {
-        while (str.length > 0 && font.widthOfTextAtSize(str, size) > maxWidth) {
-          str = str.slice(0, -1)
-        }
+        while (str.length > 0 && font.widthOfTextAtSize(str, size) > maxWidth) str = str.slice(0, -1)
         if (str.length < (text ?? "").length) str = str.slice(0, -1) + "…"
       }
       const tw = font.widthOfTextAtSize(str, size)
@@ -120,7 +299,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const rect = (x: number, y: number, w: number, h: number, color: ReturnType<typeof rgb>) =>
       page.drawRectangle({ x, y, width: w, height: h, color })
 
-    // ── 4. Logo ───────────────────────────────────────────────────────────────
+    // Logo
     let logoImg: Awaited<ReturnType<typeof doc.embedPng>> | null = null
     if (company?.logo_url) {
       try {
@@ -137,72 +316,60 @@ export async function GET(_req: NextRequest, { params }: Params) {
       } catch { logoImg = null }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // HEADER
-    // ═══════════════════════════════════════════════════════════════════════
+    // ═══ HEADER ═══════════════════════════════════════════════════════════════
     let curY = height - 44
 
-    // --- Logo ou nom entreprise (gauche) ---
-    const logoMaxH = 52
-    const logoMaxW = 130
+    const logoMaxH = 52, logoMaxW = 130
     if (logoImg) {
       const scale = Math.min(logoMaxW / logoImg.width, logoMaxH / logoImg.height, 1)
-      const lw = logoImg.width * scale
-      const lh = logoImg.height * scale
-      page.drawImage(logoImg, { x: mL, y: curY - lh + 4, width: lw, height: lh })
+      page.drawImage(logoImg, { x: mL, y: curY - logoImg.height * scale + 4, width: logoImg.width * scale, height: logoImg.height * scale })
     } else {
       draw(company?.name ?? "Votre entreprise", mL, curY, { size: 16, bold: true, color: accent })
     }
 
-    // --- Bloc FACTURE (droite) ---
     draw("FACTURE", mR, curY, { size: 22, bold: true, color: black, align: "right" })
     draw(invoice.invoice_number, mR, curY - 20, { size: 11, bold: true, color: accent, align: "right" })
     draw(`Émission : ${fmtDate(invoice.issue_date)}`, mR, curY - 36, { size: 8.5, color: grayDark, align: "right" })
     draw(`Échéance : ${fmtDate(invoice.due_date)}`,   mR, curY - 50, { size: 8.5, color: grayDark, align: "right" })
 
-    // --- Infos entreprise sous le logo ---
-    let infoY = curY - logoMaxH - 4
-    if (company?.address) {
-      draw(company.address, mL, infoY, { size: 8, color: grayDark }); infoY -= 12
-    }
-    const cityLine = [company?.zip_code, company?.city].filter(Boolean).join(" ")
-    if (cityLine) { draw(cityLine, mL, infoY, { size: 8, color: grayDark }); infoY -= 12 }
-    if (company?.siren)      { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 7.5, color: grayLight }); infoY -= 11 }
-    if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 7.5, color: grayLight }) }
+    // Badge Factur-X en haut à droite (sous l'échéance)
+    const badgeY  = curY - 66
+    const badgeX  = mR - 64
+    rect(badgeX, badgeY - 4, 64, 14, rgb(0.94, 0.97, 1.0))
+    draw("✓ Factur-X", mR - 4, badgeY + 2, { size: 7, bold: true, color: accent, align: "right" })
 
-    // --- Barre accent ---
+    let infoY = curY - logoMaxH - 4
+    if (company?.address)      { draw(company.address, mL, infoY, { size: 8, color: grayDark }); infoY -= 12 }
+    const cityLine = [company?.zip_code, company?.city].filter(Boolean).join(" ")
+    if (cityLine)              { draw(cityLine, mL, infoY, { size: 8, color: grayDark }); infoY -= 12 }
+    if (company?.siren)        { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 7.5, color: grayLight }); infoY -= 11 }
+    if (company?.vat_number)   { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 7.5, color: grayLight }) }
+
     const barY = height - 130
     rect(mL, barY, cW, 3, accent)
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // SECTION ÉMETTEUR / FACTURÉ À
-    // ═══════════════════════════════════════════════════════════════════════
+    // ═══ ÉMETTEUR / FACTURÉ À ═════════════════════════════════════════════════
     curY = barY - 20
     const col2 = mL + cW / 2 + 8
     const colW2 = cW / 2 - 8
 
-    // Labels
     draw("ÉMETTEUR",  mL,   curY, { size: 7, bold: true, color: accent })
     draw("FACTURÉ À", col2, curY, { size: 7, bold: true, color: accent })
     curY -= 4
-    // Soulignement
     hLine(curY, mL, mL + 80, 0.8, accent)
     hLine(curY, col2, col2 + 80, 0.8, accent)
     curY -= 13
 
-    // Nom
     draw(company?.name ?? "—", mL,   curY, { size: 10, bold: true, color: black, maxWidth: colW2 })
     draw(invoice.client?.name ?? "—", col2, curY, { size: 10, bold: true, color: black, maxWidth: colW2 })
     curY -= 14
 
-    // Adresse
     if (company?.address || invoice.client?.address) {
       draw(company?.address ?? "", mL,   curY, { size: 8.5, color: grayDark, maxWidth: colW2 })
       draw(invoice.client?.address ?? "", col2, curY, { size: 8.5, color: grayDark, maxWidth: colW2 })
       curY -= 13
     }
 
-    // CP + Ville
     const compCity   = [company?.zip_code, company?.city].filter(Boolean).join(" ")
     const clientCity = [invoice.client?.zip_code, invoice.client?.city].filter(Boolean).join(" ")
     if (compCity || clientCity) {
@@ -211,39 +378,21 @@ export async function GET(_req: NextRequest, { params }: Params) {
       curY -= 13
     }
 
-    // Email client
-    if (invoice.client?.email) {
-      draw(invoice.client.email, col2, curY, { size: 8, color: grayDark })
-    }
-    // SIREN émetteur
-    if (company?.siren) {
-      draw(`SIREN ${company.siren}`, mL, curY, { size: 7.5, color: grayLight })
-    }
+    if (invoice.client?.email)  draw(invoice.client.email, col2, curY, { size: 8, color: grayDark })
+    if (company?.siren)         draw(`SIREN ${company.siren}`, mL, curY, { size: 7.5, color: grayLight })
     curY -= 13
 
-    // SIREN/TVA client
     if (company?.vat_number || invoice.client?.siren) {
-      if (company?.vat_number) draw(`TVA ${company.vat_number}`, mL, curY, { size: 7.5, color: grayLight })
-      if (invoice.client?.siren) draw(`SIREN ${invoice.client.siren}`, col2, curY, { size: 7.5, color: grayLight })
+      if (company?.vat_number)    draw(`TVA ${company.vat_number}`, mL, curY, { size: 7.5, color: grayLight })
+      if (invoice.client?.siren)  draw(`SIREN ${invoice.client.siren}`, col2, curY, { size: 7.5, color: grayLight })
       curY -= 13
     }
-
     curY -= 12
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // TABLEAU DES PRESTATIONS
-    // ═══════════════════════════════════════════════════════════════════════
-
-    // Dimensions colonnes
-    const colDesc  = mL
-    const colQty   = mL + 250
-    const colPU    = mL + 300
-    const colTVA   = mL + 378
-    const colTotal = mR
-
+    // ═══ TABLEAU DES PRESTATIONS ══════════════════════════════════════════════
+    const colDesc = mL, colQty = mL + 250, colPU = mL + 300, colTVA = mL + 378, colTotal = mR
     const tableHeaderH = 20
 
-    // Header fond
     rect(mL, curY - 4, cW, tableHeaderH, rgb(0.95, 0.97, 1.00))
     draw("Désignation", colDesc,  curY + 4, { size: 7.5, bold: true, color: grayDark })
     draw("Qté",         colQty,   curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
@@ -252,118 +401,116 @@ export async function GET(_req: NextRequest, { params }: Params) {
     draw("Total HT",    colTotal, curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
     curY -= tableHeaderH + 2
 
-    const lines: {
-      description: string
-      quantity: number
-      unit_price_ht: number
-      vat_rate: number
-      total_ht: number
-    }[] = invoice.lines ?? []
-
+    const lines: { description: string; quantity: number; unit_price_ht: number; vat_rate: number; total_ht: number }[] = invoice.lines ?? []
     const rowH = 18
     lines.forEach((line, i) => {
       if (i % 2 === 1) rect(mL, curY - 4, cW, rowH, rowAlt)
-      draw(line.description, colDesc, curY + 2, { size: 8.5, color: black, maxWidth: 240 })
-      draw(String(line.quantity),       colQty,   curY + 2, { size: 8.5, color: grayDark, align: "right" })
-      draw(fmt(line.unit_price_ht),     colPU,    curY + 2, { size: 8.5, color: grayDark, align: "right" })
-      draw(`${line.vat_rate} %`,        colTVA,   curY + 2, { size: 8.5, color: grayDark, align: "right" })
-      draw(fmt(line.total_ht),          colTotal, curY + 2, { size: 8.5, bold: true, color: black, align: "right" })
+      draw(line.description,          colDesc,  curY + 2, { size: 8.5, color: black, maxWidth: 240 })
+      draw(String(line.quantity),     colQty,   curY + 2, { size: 8.5, color: grayDark, align: "right" })
+      draw(fmt(line.unit_price_ht),   colPU,    curY + 2, { size: 8.5, color: grayDark, align: "right" })
+      draw(`${line.vat_rate} %`,      colTVA,   curY + 2, { size: 8.5, color: grayDark, align: "right" })
+      draw(fmt(line.total_ht),        colTotal, curY + 2, { size: 8.5, bold: true, color: black, align: "right" })
       curY -= rowH
       hLine(curY + 2, mL, mR, 0.3, rgb(0.92, 0.93, 0.95))
     })
-
     curY -= 16
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // TOTAUX
-    // ═══════════════════════════════════════════════════════════════════════
-    const totBlockW = 210
-    const totX      = mR - totBlockW
-    const totValX   = mR
+    // ═══ TOTAUX ═══════════════════════════════════════════════════════════════
+    const totBlockW = 210, totX = mR - totBlockW, totValX = mR
 
-    // Sous-total HT
     draw("Sous-total HT", totX, curY, { size: 8.5, color: grayDark })
     draw(fmt(invoice.subtotal_ht), totValX, curY, { size: 8.5, color: black, align: "right" })
     curY -= 14
 
-    // TVA
     draw("TVA", totX, curY, { size: 8.5, color: grayDark })
     draw(fmt(invoice.total_vat), totValX, curY, { size: 8.5, color: black, align: "right" })
     curY -= 8
     hLine(curY, totX, mR, 0.8, grayLight)
     curY -= 16
 
-    // Total TTC — trait de séparation + texte couleur accent
     hLine(curY, totX, mR, 1.5, accent)
     curY -= 14
     draw("TOTAL TTC",            totX,    curY, { size: 10, bold: true, color: accent })
     draw(fmt(invoice.total_ttc), totValX, curY, { size: 14, bold: true, color: accent, align: "right" })
     curY -= 18
 
-    // IBAN
     if (company?.iban) {
       curY -= 8
       hLine(curY, totX, mR, 0.4, separator)
       curY -= 10
-      draw("IBAN",        totX,    curY, { size: 7.5, color: grayLight })
-      draw(company.iban,  totValX, curY, { size: 7.5, color: grayDark, align: "right" })
+      draw("IBAN",       totX,    curY, { size: 7.5, color: grayLight })
+      draw(company.iban, totValX, curY, { size: 7.5, color: grayDark, align: "right" })
       curY -= 14
     }
-
     curY -= 16
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // NOTES / CONDITIONS DE PAIEMENT
-    // ═══════════════════════════════════════════════════════════════════════
+    // ═══ NOTES ════════════════════════════════════════════════════════════════
     if (invoice.notes?.trim()) {
       rect(mL, curY - 2, 3, 28, accent)
       draw("CONDITIONS DE PAIEMENT / NOTES", mL + 10, curY + 14, { size: 7.5, bold: true, color: grayDark })
-      const noteLines = invoice.notes.trim().split("\n").slice(0, 3)
-      noteLines.forEach((l: string) => {
+      invoice.notes.trim().split("\n").slice(0, 3).forEach((l: string) => {
         draw(l, mL + 10, curY, { size: 8, color: grayDark, maxWidth: cW - 20 })
         curY -= 13
       })
       curY -= 10
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // MENTIONS LÉGALES
-    // ═══════════════════════════════════════════════════════════════════════
+    // ═══ MENTIONS LÉGALES ═════════════════════════════════════════════════════
     if (company?.legal_notice?.trim()) {
       hLine(curY, mL, mR, 0.5, separator)
       curY -= 12
-      const legalLines = company.legal_notice.trim().split("\n").slice(0, 4)
-      legalLines.forEach((l: string) => {
+      company.legal_notice.trim().split("\n").slice(0, 4).forEach((l: string) => {
         const tw = fontRegular.widthOfTextAtSize(l, 7)
-        const lx = Math.max(mL, (width - tw) / 2)
-        draw(l, lx, curY, { size: 7, color: grayLight })
+        draw(l, Math.max(mL, (width - tw) / 2), curY, { size: 7, color: grayLight })
         curY -= 10
       })
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // FOOTER
-    // ═══════════════════════════════════════════════════════════════════════
+    // ═══ FOOTER ═══════════════════════════════════════════════════════════════
     hLine(32, mL, mR, 0.5, separator)
-    const footerY = 20
-    draw(`${company?.name ?? "Qonforme"} — ${invoice.invoice_number}`, mL, footerY, { size: 7, color: grayLight })
-    draw("Généré par Qonforme", mR, footerY, { size: 7, color: accent, align: "right" })
+    draw(`${company?.name ?? "Qonforme"} — ${invoice.invoice_number}`, mL, 20, { size: 7, color: grayLight })
+    draw("Factur-X EN 16931 — Généré par Qonforme", mR, 20, { size: 7, color: accent, align: "right" })
 
-    // ── Exporter ────────────────────────────────────────────────────────────
-    const uint8  = await doc.save()
-    const buffer = Buffer.from(uint8)
+    // ── 5. Injecter les métadonnées XMP ────────────────────────────────────
+    const xmpXml = buildXmpMetadata(invoice.invoice_number, fmtDate(invoice.issue_date))
+    doc.setTitle(`Facture ${invoice.invoice_number}`)
+    doc.setAuthor(company?.name ?? "Qonforme")
+    doc.setSubject(`Facture électronique Factur-X — ${invoice.invoice_number}`)
+    doc.setProducer("Qonforme — pdf-lib + Factur-X")
+    doc.setCreator("Qonforme Factur-X Generator")
+
+    // Injecter le XMP comme metadata raw
+    // pdf-lib expose setMetadata via l'objet interne
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(doc as any).catalog.set(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (doc as any).context.obj("Metadata"),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (doc as any).context.stream(xmpXml, {
+        Type:    "Metadata",
+        Subtype: "XML",
+      })
+    )
+
+    // ── 6. Sauvegarder le PDF ───────────────────────────────────────────────
+    const pdfBytes = await doc.save()
+
+    // ── 7. Embarquer le XML Factur-X dans le PDF ───────────────────────────
+    const finalPdfBytes = embedXmlInPdf(pdfBytes, xmlContent, "factur-x.xml")
+    const buffer = Buffer.from(finalPdfBytes)
 
     return new NextResponse(buffer, {
       status: 200,
       headers: {
-        "Content-Type": "application/pdf",
+        "Content-Type":        "application/pdf",
         "Content-Disposition": `attachment; filename="${invoice.invoice_number}.pdf"`,
-        "Content-Length": buffer.length.toString(),
-        "Cache-Control": "no-store",
+        "Content-Length":      buffer.length.toString(),
+        "Cache-Control":       "no-store",
+        "X-Facturx-Profile":   "EN 16931",
       },
     })
   } catch (err) {
-    console.error("PDF generation error:", err)
-    return NextResponse.json({ error: "Erreur génération PDF" }, { status: 500 })
+    console.error("PDF/Factur-X generation error:", err)
+    return NextResponse.json({ error: "Erreur génération PDF Factur-X" }, { status: 500 })
   }
 }
