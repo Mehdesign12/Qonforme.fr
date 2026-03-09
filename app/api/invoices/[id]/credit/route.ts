@@ -66,29 +66,27 @@ export async function POST(request: NextRequest, { params }: Params) {
   const total_ttc   = subtotal_ht + total_vat
 
   // 6. Numérotation de l'avoir : AV-{ANNÉE}-{SEQ}
-  const year = new Date().getFullYear()
+  const year   = new Date().getFullYear()
+  const avPfx  = `AV-${year}-`
 
-  // Lire ou créer la séquence
-  const { data: seqRow } = await supabase
-    .from("credit_note_sequences")
-    .select("sequence")
+  // Numérotation robuste : MAX des avoirs existants pour cet utilisateur
+  const { data: existingAv } = await supabase
+    .from("credit_notes")
+    .select("credit_note_number")
     .eq("user_id", user.id)
-    .single()
+    .like("credit_note_number", `${avPfx}%`)
+    .order("credit_note_number", { ascending: false })
+    .limit(1)
 
-  const currentSeq = seqRow?.sequence ?? 1
-  const credit_note_number = `AV-${year}-${String(currentSeq).padStart(3, "0")}`
-
-  // Incrémenter la séquence
-  if (seqRow) {
-    await supabase
-      .from("credit_note_sequences")
-      .update({ sequence: currentSeq + 1 })
-      .eq("user_id", user.id)
-  } else {
-    await supabase
-      .from("credit_note_sequences")
-      .insert({ user_id: user.id, sequence: 2 })
+  let nextAvSeq = 1
+  if (existingAv && existingAv.length > 0) {
+    const lastNum = existingAv[0].credit_note_number
+    const parts   = lastNum.split("-")
+    const lastSeq = parseInt(parts[parts.length - 1], 10)
+    if (!isNaN(lastSeq)) nextAvSeq = lastSeq + 1
   }
+
+  const credit_note_number = `${avPfx}${String(nextAvSeq).padStart(3, "0")}`
 
   // 7. Créer l'avoir
   const { data: creditNote, error: cnErr } = await supabase

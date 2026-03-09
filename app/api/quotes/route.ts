@@ -33,23 +33,28 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
 
-  // Lire ou créer la séquence
-  const { data: seqRow } = await supabase
-    .from("quote_sequences")
-    .select("sequence")
+  // ── Numérotation robuste : MAX des numéros existants pour cet utilisateur ──
+  // Format attendu : "D-YYYY-NNN"
+  const year = new Date().getFullYear()
+  const prefix = `D-${year}-`
+
+  const { data: existing } = await supabase
+    .from("quotes")
+    .select("quote_number")
     .eq("user_id", user.id)
-    .single()
+    .like("quote_number", `${prefix}%`)
+    .order("quote_number", { ascending: false })
+    .limit(1)
 
-  const currentSeq = seqRow?.sequence ?? 1
-  const year        = new Date().getFullYear()
-  const quote_number = `D-${year}-${String(currentSeq).padStart(3, "0")}`
-
-  // Incrémenter
-  if (seqRow) {
-    await supabase.from("quote_sequences").update({ sequence: currentSeq + 1 }).eq("user_id", user.id)
-  } else {
-    await supabase.from("quote_sequences").insert({ user_id: user.id, sequence: 2 })
+  let nextSeq = 1
+  if (existing && existing.length > 0) {
+    const lastNum = existing[0].quote_number // ex: "D-2026-003"
+    const parts   = lastNum.split("-")
+    const lastSeq = parseInt(parts[parts.length - 1], 10)
+    if (!isNaN(lastSeq)) nextSeq = lastSeq + 1
   }
+
+  const quote_number = `${prefix}${String(nextSeq).padStart(3, "0")}`
 
   // Calcul totaux
   const lines       = body.lines || []
