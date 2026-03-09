@@ -53,6 +53,14 @@ const NAV: NavItem[] = [
     ],
   },
   {
+    href: "/purchase-orders",
+    label: "Bons de commande",
+    icon: ShoppingCart,
+    sub: [
+      { href: "/purchase-orders/new", label: "Nouveau BdC", icon: Plus },
+    ],
+  },
+  {
     href: "/invoices",
     label: "Factures",
     icon: FileText,
@@ -63,16 +71,8 @@ const NAV: NavItem[] = [
   },
   {
     href: "/products",
-    label: "Catalogue",
+    label: "Catalogue produits",
     icon: Package,
-  },
-  {
-    href: "/purchase-orders",
-    label: "Bons de commande",
-    icon: ShoppingCart,
-    sub: [
-      { href: "/purchase-orders/new", label: "Nouveau BdC", icon: Plus },
-    ],
   },
 ]
 
