@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { calculateLineTotals, calculateInvoiceTotals, formatCurrency, VAT_RATES } from "@/lib/utils/invoice"
+import { ProductCombobox, type ProductSuggestion } from "@/components/products/ProductCombobox"
 
 type VatRate = 0 | 5.5 | 10 | 20
 
@@ -78,6 +79,18 @@ export default function NewQuoteForm() {
 
   const addLine    = () => setForm(prev => ({ ...prev, lines: [...prev.lines, newLine()] }))
   const removeLine = (id: string) => setForm(prev => ({ ...prev, lines: prev.lines.filter(l => l.id !== id) }))
+
+  // Insérer un produit du catalogue comme nouvelle ligne
+  const insertFromProduct = (product: ProductSuggestion) => {
+    const newL: Line = {
+      id:            crypto.randomUUID(),
+      description:   product.name + (product.description ? ` — ${product.description}` : ""),
+      quantity:      "1",
+      unit_price_ht: String(product.unit_price_ht),
+      vat_rate:      product.vat_rate as VatRate,
+    }
+    setForm(prev => ({ ...prev, lines: [...prev.lines, newL] }))
+  }
 
   const computedLines = form.lines.map(line => {
     const qty   = parseFloat(line.quantity) || 0
@@ -195,9 +208,12 @@ export default function NewQuoteForm() {
       <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-[#0F172A]">Prestations / Produits</h2>
-          <Button type="button" variant="outline" size="sm" onClick={addLine} className="gap-1.5">
-            <Plus className="w-3.5 h-3.5" /> Ajouter une ligne
-          </Button>
+          <div className="flex items-center gap-2">
+            <ProductCombobox onSelect={insertFromProduct} />
+            <Button type="button" variant="outline" size="sm" onClick={addLine} className="gap-1.5">
+              <Plus className="w-3.5 h-3.5" /> Ajouter une ligne
+            </Button>
+          </div>
         </div>
 
         <div className="hidden sm:grid grid-cols-12 gap-2 text-xs font-medium text-slate-400 pb-1 border-b border-[#E2E8F0]">

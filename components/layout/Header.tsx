@@ -13,6 +13,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/quotes": "Devis",
   "/quotes/new": "Nouveau devis",
   "/clients": "Clients",
+  "/products": "Catalogue produits",
   "/settings": "Paramètres",
   "/settings/company": "Mon entreprise",
   "/settings/billing": "Abonnement",
