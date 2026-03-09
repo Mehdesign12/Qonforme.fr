@@ -2,18 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/resend"
 import { buildCreditNoteEmail } from "@/lib/email/templates/credit-note"
+import { generateCreditNotePdf } from "@/lib/pdf/credit-note"
 
 interface Params { params: Promise<{ id: string }> }
-
-// Génère le PDF avoir en appelant la route interne GET /api/credit-notes/[id]/pdf
-async function generateCreditNotePdfBuffer(creditNoteId: string, accessToken: string): Promise<Buffer> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
-  const res = await fetch(`${baseUrl}/api/credit-notes/${creditNoteId}/pdf`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-  if (!res.ok) throw new Error("Impossible de générer le PDF de l'avoir")
-  return Buffer.from(await res.arrayBuffer())
-}
 
 export async function POST(_req: NextRequest, { params }: Params) {
   try {
@@ -23,9 +14,15 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
     const { id } = await params
 
+    // 1. Avoir + client + facture originale
     const { data: creditNote, error: cnErr } = await supabase
       .from("credit_notes")
-      .select("*, client:clients(id,name,email), invoice:invoices(invoice_number)")
+      .select(`
+        *,
+        client:clients(id,name,email,address,zip_code,city,siren,vat_number),
+        original_invoice:invoices(id,invoice_number,issue_date,total_ttc),
+        invoice:invoices(invoice_number)
+      `)
       .eq("id", id)
       .eq("user_id", user.id)
       .single()
@@ -34,36 +31,37 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const clientEmail = creditNote.client?.email
     if (!clientEmail) return NextResponse.json({ error: "Le client n'a pas d'adresse email" }, { status: 422 })
 
+    // 2. Entreprise
     const { data: company } = await supabase
       .from("companies")
-      .select("name,accent_color,email")
+      .select("name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color,logo_url,email")
       .eq("user_id", user.id)
       .single()
 
-    const companyName = (company as { name?: string } | null)?.name?.trim() || user.email?.split("@")[0] || "Votre prestataire"
-    const senderEmail = (company as { email?: string } | null)?.email?.trim() || user.email
+    const companyName = company?.name?.trim() || user.email?.split("@")[0] || "Votre prestataire"
+    const senderEmail = company?.email?.trim() || user.email
     const clientName  = creditNote.client?.name ?? ""
 
-    // Récupérer le token de session pour appel interne
-    const { data: { session } } = await supabase.auth.getSession()
-    const accessToken = session?.access_token ?? ""
-    const pdfBuffer = await generateCreditNotePdfBuffer(id, accessToken)
+    // 3. Générer le PDF via la lib partagée — identique au téléchargement (logo, SIRET, etc.)
+    const pdfBuffer = await generateCreditNotePdf({ creditNote, company })
 
+    // 4. Construire et envoyer l'email
     const { subject, html } = buildCreditNoteEmail({
       creditNoteNumber: creditNote.credit_note_number,
       issueDate:        creditNote.issue_date,
       subtotalHt:       creditNote.subtotal_ht,
       totalVat:         creditNote.total_vat,
       totalTtc:         creditNote.total_ttc,
-      invoiceNumber:    creditNote.invoice?.invoice_number ?? null,
+      invoiceNumber:    creditNote.invoice?.invoice_number ?? creditNote.original_invoice?.invoice_number ?? null,
       notes:            creditNote.notes,
       companyName,
-      accentColor:      (company as { accent_color?: string } | null)?.accent_color ?? "#EA580C",
+      accentColor:      company?.accent_color ?? "#EA580C",
       clientName,
     })
 
     const cc        = senderEmail ? [senderEmail] : []
     const ccSubject = `Copie — Avoir ${creditNote.credit_note_number} pour ${clientName}`
+
     await sendEmail({
       to:          clientEmail,
       subject,
@@ -75,6 +73,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       attachments: [{ filename: `${creditNote.credit_note_number}.pdf`, content: pdfBuffer }],
     })
 
+    // 5. Mettre à jour sent_at
     await supabase
       .from("credit_notes")
       .update({ sent_at: new Date().toISOString() })

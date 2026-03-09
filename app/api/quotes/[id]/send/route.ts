@@ -2,19 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/resend"
 import { buildQuoteEmail } from "@/lib/email/templates/quote"
+import { generateQuotePdf } from "@/lib/pdf/quote"
 
 interface Params { params: Promise<{ id: string }> }
-
-// Génère le PDF devis en appelant la route interne GET /api/quotes/[id]/pdf
-// → identique au PDF téléchargé depuis l'interface (avec logo, TVA, etc.)
-async function generateQuotePdfBuffer(quoteId: string, accessToken: string): Promise<Buffer> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
-  const res = await fetch(`${baseUrl}/api/quotes/${quoteId}/pdf`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-  if (!res.ok) throw new Error("Impossible de générer le PDF du devis")
-  return Buffer.from(await res.arrayBuffer())
-}
 
 export async function POST(_req: NextRequest, { params }: Params) {
   try {
@@ -24,12 +14,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
     const { id } = await params
 
-    // 1. Récupérer le token de session pour l'appel interne PDF
-    const { data: { session } } = await supabase.auth.getSession()
-    const accessToken = session?.access_token
-    if (!accessToken) return NextResponse.json({ error: "Session invalide" }, { status: 401 })
-
-    // 2. Devis + client
+    // 1. Devis + client
     const { data: quote, error: qErr } = await supabase
       .from("quotes")
       .select("*, client:clients(id,name,email,address,zip_code,city,siren,vat_number)")
@@ -41,10 +26,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const clientEmail = quote.client?.email
     if (!clientEmail) return NextResponse.json({ error: "Le client n'a pas d'adresse email" }, { status: 422 })
 
-    // 3. Entreprise
+    // 2. Entreprise
     const { data: company } = await supabase
       .from("companies")
-      .select("name,accent_color,email")
+      .select("name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color,logo_url,email")
       .eq("user_id", user.id)
       .single()
 
@@ -53,10 +38,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const accentColor = company?.accent_color ?? "#15803D"
     const clientName  = quote.client?.name ?? ""
 
-    // 4. Générer le PDF via la route /pdf — identique au téléchargement
-    const pdfBuffer = await generateQuotePdfBuffer(id, accessToken)
+    // 3. Générer le PDF via la lib partagée — identique au téléchargement (logo, SIRET, etc.)
+    const pdfBuffer = await generateQuotePdf({ quote, company })
 
-    // 5. Construire et envoyer l'email
+    // 4. Construire et envoyer l'email
     const { subject, html } = buildQuoteEmail({
       quoteNumber:  quote.quote_number,
       issueDate:    quote.issue_date,
@@ -85,7 +70,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       attachments: [{ filename: `${quote.quote_number}.pdf`, content: pdfBuffer }],
     })
 
-    // 6. Mettre à jour le statut
+    // 5. Mettre à jour le statut
     await supabase
       .from("quotes")
       .update({ status: "sent", sent_at: new Date().toISOString() })

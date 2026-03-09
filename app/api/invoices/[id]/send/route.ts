@@ -2,22 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/resend"
 import { buildInvoiceEmail } from "@/lib/email/templates/invoice"
+import { generateInvoicePdf } from "@/lib/pdf/invoice"
 
 interface Params { params: Promise<{ id: string }> }
-
-// Génère le PDF facture en appelant la route interne GET /api/invoices/[id]/pdf
-// → identique au PDF téléchargé depuis l'interface (avec logo, SIRET, TVA, etc.)
-async function generateInvoicePdfBuffer(invoiceId: string, accessToken: string): Promise<Buffer> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
-  const res = await fetch(`${baseUrl}/api/invoices/${invoiceId}/pdf`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "")
-    throw new Error(`Impossible de générer le PDF de la facture (${res.status}): ${errText}`)
-  }
-  return Buffer.from(await res.arrayBuffer())
-}
 
 export async function POST(_req: NextRequest, { params }: Params) {
   try {
@@ -27,12 +14,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
     const { id } = await params
 
-    // 1. Récupérer le token de session pour l'appel interne PDF
-    const { data: { session } } = await supabase.auth.getSession()
-    const accessToken = session?.access_token
-    if (!accessToken) return NextResponse.json({ error: "Session invalide" }, { status: 401 })
-
-    // 2. Facture + client
+    // 1. Facture + client
     const { data: invoice, error: invErr } = await supabase
       .from("invoices")
       .select("*, client:clients(id,name,email,address,zip_code,city,siren,vat_number)")
@@ -46,10 +28,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Le client n'a pas d'adresse email" }, { status: 422 })
     }
 
-    // 3. Entreprise (pour l'email uniquement — le PDF utilise sa propre requête)
+    // 2. Entreprise
     const { data: company } = await supabase
       .from("companies")
-      .select("name,accent_color,email,iban")
+      .select("name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color,logo_url,email")
       .eq("user_id", user.id)
       .single()
 
@@ -58,10 +40,11 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const senderEmail = company?.email?.trim() || user.email
     const clientName  = invoice.client?.name ?? ""
 
-    // 4. Générer le PDF via la route /pdf — identique au téléchargement (avec logo, SIRET, etc.)
-    const pdfBuffer = await generateInvoicePdfBuffer(id, accessToken)
+    // 3. Générer le PDF via la lib partagée — identique au téléchargement (logo, SIRET, etc.)
+    const pdfBytes  = await generateInvoicePdf({ invoice, company })
+    const pdfBuffer = Buffer.from(pdfBytes)
 
-    // 5. Construire et envoyer l'email
+    // 4. Construire et envoyer l'email
     const { subject, html } = buildInvoiceEmail({
       invoiceNumber: invoice.invoice_number,
       issueDate:     invoice.issue_date,
@@ -75,7 +58,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       accentColor,
       clientName,
       clientEmail,
-      appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://qonforme.fr",
+      appUrl:        process.env.NEXT_PUBLIC_APP_URL ?? "https://qonforme.fr",
     })
 
     const cc        = senderEmail ? [senderEmail] : []
@@ -95,7 +78,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       }],
     })
 
-    // 6. Mettre à jour statut + sent_at
+    // 5. Mettre à jour statut + sent_at
     await supabase
       .from("invoices")
       .update({ status: "sent", sent_at: new Date().toISOString() })
