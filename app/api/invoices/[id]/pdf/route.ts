@@ -33,65 +33,6 @@ function fmtDate(d: string): string {
   catch { return d }
 }
 
-// ── XMP metadata PDF/A-3 + Factur-X ─────────────────────────────────────────
-
-function buildXmpMetadata(invoiceNumber: string, invoiceDate: string): string {
-  const now = new Date().toISOString()
-  return `<?xpacket begin="\uFEFF" id="W5M0MpCehiHzreSzNTczkc9d"?>
-<x:xmpmeta xmlns:x="adobe:ns:meta/">
-  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-
-    <!-- PDF/A-3 conformance -->
-    <rdf:Description rdf:about=""
-      xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">
-      <pdfaid:part>3</pdfaid:part>
-      <pdfaid:conformance>B</pdfaid:conformance>
-    </rdf:Description>
-
-    <!-- Factur-X -->
-    <rdf:Description rdf:about=""
-      xmlns:fx="urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#">
-      <fx:DocumentFileName>factur-x.xml</fx:DocumentFileName>
-      <fx:DocumentType>INVOICE</fx:DocumentType>
-      <fx:Version>1.0</fx:Version>
-      <fx:ConformanceLevel>EN 16931</fx:ConformanceLevel>
-    </rdf:Description>
-
-    <!-- Dublin Core -->
-    <rdf:Description rdf:about=""
-      xmlns:dc="http://purl.org/dc/elements/1.1/">
-      <dc:format>application/pdf</dc:format>
-      <dc:title>
-        <rdf:Alt><rdf:li xml:lang="x-default">Facture ${invoiceNumber}</rdf:li></rdf:Alt>
-      </dc:title>
-      <dc:description>
-        <rdf:Alt><rdf:li xml:lang="x-default">Facture électronique Factur-X ${invoiceNumber} du ${invoiceDate}</rdf:li></rdf:Alt>
-      </dc:description>
-      <dc:creator><rdf:Seq><rdf:li>Qonforme</rdf:li></rdf:Seq></dc:creator>
-    </rdf:Description>
-
-    <!-- XMP Basic -->
-    <rdf:Description rdf:about=""
-      xmlns:xmp="http://ns.adobe.com/xap/1.0/">
-      <xmp:CreatorTool>Qonforme Factur-X Generator</xmp:CreatorTool>
-      <xmp:CreateDate>${now}</xmp:CreateDate>
-      <xmp:ModifyDate>${now}</xmp:ModifyDate>
-    </rdf:Description>
-
-    <!-- PDF metadata -->
-    <rdf:Description rdf:about=""
-      xmlns:pdf="http://ns.adobe.com/pdf/1.3/">
-      <pdf:Producer>Qonforme — pdf-lib</pdf:Producer>
-    </rdf:Description>
-
-  </rdf:RDF>
-</x:xmpmeta>
-<?xpacket end="w"?>`
-}
-
-// ── Embed XML Factur-X via pdf-lib (attachments natifs) ─────────────────────
-// Pas de manipulation manuelle des bytes — pdf-lib gère l'EmbeddedFile proprement.
-
 // ── Route GET ────────────────────────────────────────────────────────────────
 
 export async function GET(_req: NextRequest, { params }: Params) {
@@ -383,26 +324,13 @@ export async function GET(_req: NextRequest, { params }: Params) {
     draw(`${company?.name ?? "Qonforme"} — ${invoice.invoice_number}`, mL, 20, { size: 7, color: grayLight })
     draw("Factur-X EN 16931 — Généré par Qonforme", mR, 20, { size: 7, color: accent, align: "right" })
 
-    // ── 5. Injecter les métadonnées XMP ────────────────────────────────────
-    const xmpXml = buildXmpMetadata(invoice.invoice_number, fmtDate(invoice.issue_date))
+    // ── 5. Métadonnées standard (API officielle pdf-lib — aucune manipulation binaire)
     doc.setTitle(`Facture ${invoice.invoice_number}`)
     doc.setAuthor(company?.name ?? "Qonforme")
-    doc.setSubject(`Facture électronique Factur-X — ${invoice.invoice_number}`)
+    doc.setSubject(`Facture electronique Factur-X — ${invoice.invoice_number}`)
     doc.setProducer("Qonforme — pdf-lib + Factur-X")
     doc.setCreator("Qonforme Factur-X Generator")
-
-    // Injecter le XMP comme metadata raw
-    // pdf-lib expose setMetadata via l'objet interne
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(doc as any).catalog.set(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (doc as any).context.obj("Metadata"),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (doc as any).context.stream(xmpXml, {
-        Type:    "Metadata",
-        Subtype: "XML",
-      })
-    )
+    doc.setKeywords(["facture", "factur-x", "EN 16931", invoice.invoice_number])
 
     // ── 6. Attacher le XML Factur-X via l'API native pdf-lib ──────────────
     // doc.attach() ajoute un EmbeddedFile conforme PDF/A-3 sans manipulation
