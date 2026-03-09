@@ -9,6 +9,7 @@ export interface SendEmailOptions {
   to: string
   subject: string
   html: string
+  fromName?: string   // Nom de l'expéditeur affiché (ex: nom de l'entreprise)
   replyTo?: string
   cc?: string[]
   attachments?: EmailAttachment[]
@@ -23,7 +24,7 @@ export interface SendEmailOptions {
  *   Utile tant que le domaine d'envoi n'est pas vérifié sur resend.com/domains.
  *
  * MODE PRODUCTION (RESEND_FROM_EMAIL + domaine vérifié) :
- *   Les emails partent directement vers le vrai destinataire.
+ *   Les emails partent directement vers le vrai destinataire depuis factures@qonforme.fr.
  *   Supprimer RESEND_TEST_EMAIL pour activer ce mode.
  */
 export async function sendEmail(opts: SendEmailOptions): Promise<{ id: string }> {
@@ -35,26 +36,27 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ id: string }>
   const resend = new Resend(apiKey)
 
   // ── Détection du mode sandbox ─────────────────────────────────────────────
-  const testEmail = process.env.RESEND_TEST_EMAIL  // ex: "qonforme@gmail.com"
-  const fromEmail = process.env.RESEND_FROM_EMAIL  // ex: "factures@qonforme.fr" (prod)
-  const isSandbox = !!testEmail
+  const testEmail  = process.env.RESEND_TEST_EMAIL   // ex: "qonforme@gmail.com"
+  const fromEmail  = process.env.RESEND_FROM_EMAIL   // ex: "factures@qonforme.fr"
+  const isSandbox  = !!testEmail
+
+  // Nom affiché dans le champ "De" : nom de l'entreprise ou "Qonforme" par défaut
+  const senderName = opts.fromName?.trim() || "Qonforme"
 
   const finalTo      = isSandbox ? testEmail! : opts.to
-  const finalSubject = isSandbox
-    ? `[TEST → ${opts.to}] ${opts.subject}`
-    : opts.subject
+  const finalSubject = isSandbox ? `[TEST → ${opts.to}] ${opts.subject}` : opts.subject
   // En sandbox on vide le CC pour éviter d'envoyer des copies non souhaitées
-  const finalCc     = isSandbox ? [] : (opts.cc ?? [])
-  const fromAddress = fromEmail
-    ? `Qonforme <${fromEmail}>`
-    : "Qonforme <onboarding@resend.dev>"
+  const finalCc      = isSandbox ? [] : (opts.cc ?? [])
+  const fromAddress  = fromEmail
+    ? `${senderName} <${fromEmail}>`
+    : `${senderName} <onboarding@resend.dev>`
 
   const { data, error } = await resend.emails.send({
     from:    fromAddress,
     to:      finalTo,
     subject: finalSubject,
     html:    opts.html,
-    replyTo: opts.replyTo,
+    replyTo: opts.replyTo ?? (isSandbox ? undefined : opts.replyTo),
     cc:      finalCc.length > 0 ? finalCc : undefined,
     attachments: opts.attachments?.map(a => ({
       filename: a.filename,

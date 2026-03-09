@@ -66,6 +66,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       to:          clientEmail,
       subject,
       html,
+      fromName:    companyName,
       replyTo:     senderEmail,
       cc,
       attachments: [{ filename: `${creditNote.credit_note_number}.pdf`, content: pdfBuffer }],
