@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { PDFDocument, rgb, PageSizes } from "pdf-lib"
 import fontkit from "@pdf-lib/fontkit"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createClientWithToken } from "@/lib/supabase/server"
 import path from "path"
 import fs from "fs"
 
 interface Params { params: Promise<{ id: string }> }
+
+// Support Bearer token (appel interne depuis /send) ET cookies (navigation browser)
+async function resolveClient(request: NextRequest) {
+  const authHeader = request.headers.get("Authorization")
+  if (authHeader?.startsWith("Bearer ")) {
+    return createClientWithToken(authHeader.slice(7))
+  }
+  return createClient()
+}
 
 function hexToRgb(hex: string) {
   const h = (hex ?? "#2563EB").replace("#", "").padEnd(6, "0")
@@ -27,9 +36,9 @@ function fmtDate(d: string): string {
   catch { return d }
 }
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(request: NextRequest, { params }: Params) {
   try {
-    const supabase = await createClient()
+    const supabase = await resolveClient(request)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
@@ -131,7 +140,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     if (company?.address) { draw(company.address, mL, infoY, { size: 8, color: grayDark }); infoY -= 12 }
     const cityLine = [company?.zip_code, company?.city].filter(Boolean).join(" ")
     if (cityLine)            { draw(cityLine, mL, infoY, { size: 8, color: grayDark }); infoY -= 12 }
-    if (company?.siren)      { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 7.5, color: grayLight }); infoY -= 11 }
+    if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 7.5, color: grayLight }); infoY -= 11 }
+    else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 7.5, color: grayLight }); infoY -= 11 }
     if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 7.5, color: grayLight }) }
 
     // Barre accent verte pour le devis
@@ -168,7 +178,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     }
 
     if (quote.client?.email)  draw(quote.client.email, col2, curY, { size: 8, color: grayDark })
-    if (company?.siren)       draw(`SIREN ${company.siren}`, mL, curY, { size: 7.5, color: grayLight })
+    if (company?.siret)       draw(`SIRET ${company.siret}`, mL, curY, { size: 7.5, color: grayLight })
+    else if (company?.siren)  draw(`SIREN ${company.siren}`, mL, curY, { size: 7.5, color: grayLight })
     curY -= 13
 
     if (company?.vat_number || quote.client?.siren) {

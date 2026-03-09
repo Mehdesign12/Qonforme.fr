@@ -209,7 +209,8 @@ export async function generateInvoicePdf({ invoice, company }: InvoicePdfInput):
   if (company?.address)    { draw(company.address, mL, infoY, { size: 8, color: grayDark }); infoY -= 12 }
   const cityLine = [company?.zip_code, company?.city].filter(Boolean).join(" ")
   if (cityLine)            { draw(cityLine, mL, infoY, { size: 8, color: grayDark }); infoY -= 12 }
-  if (company?.siren)      { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 7.5, color: grayLight }); infoY -= 11 }
+  if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 7.5, color: grayLight }); infoY -= 11 }
+  else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 7.5, color: grayLight }); infoY -= 11 }
   if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 7.5, color: grayLight }) }
 
   const barY = height - 130
@@ -245,7 +246,8 @@ export async function generateInvoicePdf({ invoice, company }: InvoicePdfInput):
     curY -= 13
   }
   if (invoice.client?.email) draw(invoice.client.email, col2, curY, { size: 8, color: grayDark })
-  if (company?.siren)        draw(`SIREN ${company.siren}`, mL, curY, { size: 7.5, color: grayLight })
+  if (company?.siret)        draw(`SIRET ${company.siret}`, mL, curY, { size: 7.5, color: grayLight })
+  else if (company?.siren)   draw(`SIREN ${company.siren}`, mL, curY, { size: 7.5, color: grayLight })
   curY -= 13
   if (company?.vat_number || invoice.client?.siren) {
     if (company?.vat_number)    draw(`TVA ${company.vat_number}`, mL, curY, { size: 7.5, color: grayLight })
