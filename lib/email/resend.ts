@@ -1,11 +1,5 @@
 import { Resend } from "resend"
 
-if (!process.env.RESEND_API_KEY) {
-  throw new Error("RESEND_API_KEY est manquante dans les variables d'environnement")
-}
-
-export const resend = new Resend(process.env.RESEND_API_KEY)
-
 export interface EmailAttachment {
   filename: string
   content: Buffer
@@ -25,6 +19,13 @@ export interface SendEmailOptions {
  * From : "Qonforme <onboarding@resend.dev>" (domaine de test Resend)
  */
 export async function sendEmail(opts: SendEmailOptions): Promise<{ id: string }> {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY est manquante dans les variables d'environnement")
+  }
+
+  const resend = new Resend(apiKey)
+
   const { data, error } = await resend.emails.send({
     from: "Qonforme <onboarding@resend.dev>",
     to:   opts.to,
