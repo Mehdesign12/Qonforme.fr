@@ -21,6 +21,7 @@ interface FormData {
   iban: string
   invoice_prefix: string
   payment_terms: string
+  email: string
 }
 
 const DEFAULT_PAYMENT_TERMS =
@@ -30,6 +31,7 @@ const EMPTY: FormData = {
   name: "", siren: "", siret: "", vat_number: "",
   address: "", zip_code: "", city: "", country: "FR",
   iban: "", invoice_prefix: "F", payment_terms: DEFAULT_PAYMENT_TERMS,
+  email: "",
 }
 
 export function CompanySettingsForm() {
@@ -77,6 +79,8 @@ export function CompanySettingsForm() {
           iban:           company.iban           ?? "",
           invoice_prefix: company.invoice_prefix ?? "F",
           payment_terms:  company.payment_terms  ?? DEFAULT_PAYMENT_TERMS,
+          // Si pas d'email entreprise enregistré, pré-remplir avec l'email de connexion
+          email:          company.email          ?? user.email ?? "",
         }
         setFields(loaded)
         setSaved(loaded)
@@ -160,6 +164,7 @@ export function CompanySettingsForm() {
         iban:           fields.iban.trim()       || null,
         invoice_prefix: fields.invoice_prefix    || "F",
         payment_terms:  fields.payment_terms     || null,
+        email:          fields.email.trim()      || null,
       }
 
       let dbError
@@ -334,6 +339,27 @@ export function CompanySettingsForm() {
             />
             {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city}</p>}
           </div>
+        </div>
+      </div>
+
+      {/* Email professionnel */}
+      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-[#0F172A]">Email professionnel</h2>
+        <div>
+          <Label htmlFor="email">Adresse email de l&apos;entreprise</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="contact@monentreprise.fr"
+            className="mt-1"
+            value={fields.email}
+            onChange={set("email")}
+            autoComplete="email"
+          />
+          <p className="text-xs text-slate-400 mt-1">
+            Utilisée comme expéditeur et en copie (CC) sur tous les emails envoyés à vos clients.
+            Si vide, l&apos;email de votre compte est utilisé à la place.
+          </p>
         </div>
       </div>
 
