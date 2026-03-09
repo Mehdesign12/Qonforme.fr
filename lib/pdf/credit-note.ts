@@ -167,15 +167,15 @@ export async function generateCreditNotePdf({ creditNote, company }: CreditNoteP
     )
   }
 
-  let infoY = curY - logoMaxH - 4
-  if (company?.address)    { draw(company.address, mL, infoY, { size: 8, color: grayDark }); infoY -= 12 }
+  let infoY = curY - logoMaxH - 12
+  if (company?.address)    { draw(company.address, mL, infoY, { size: 8.5, color: grayDark }); infoY -= 14 }
   const cityLine = [company?.zip_code, company?.city].filter(Boolean).join(" ")
-  if (cityLine)            { draw(cityLine, mL, infoY, { size: 8, color: grayDark }); infoY -= 12 }
-  if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 7.5, color: grayLight }); infoY -= 11 }
-  else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 7.5, color: grayLight }); infoY -= 11 }
-  if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 7.5, color: grayLight }) }
+  if (cityLine)            { draw(cityLine, mL, infoY, { size: 8.5, color: grayDark }); infoY -= 14 }
+  if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 8, color: grayLight }); infoY -= 13 }
+  else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 8, color: grayLight }); infoY -= 13 }
+  if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 8, color: grayLight }) }
 
-  const barY = height - 130
+  const barY = height - 155
   rect(mL, barY, cW, 3, creditOrange)
 
   // ── ÉMETTEUR / FACTURÉ À ─────────────────────────────────────────────────
