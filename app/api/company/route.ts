@@ -81,6 +81,7 @@ export async function PATCH(request: NextRequest) {
       payment_terms: body.payment_terms || null,
       legal_notice: body.legal_notice || null,
       accent_color: body.accent_color || "#2563EB",
+      // email: body.email || null, // colonne à ajouter via: ALTER TABLE companies ADD COLUMN IF NOT EXISTS email TEXT;
     })
     .eq("user_id", user.id)
     .select()

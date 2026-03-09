@@ -22,7 +22,6 @@ interface CompanyForm {
   iban: string
   invoice_prefix: string
   payment_terms: string
-  email: string
 }
 
 interface SireneResult {
@@ -37,23 +36,32 @@ interface SireneResult {
 export function CompanySettingsForm() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [hasCompany, setHasCompany] = useState(false)
+  const [companyId, setCompanyId] = useState<string | null>(null)
+
   const [sirenSearch, setSirenSearch] = useState("")
   const [sirenLoading, setSirenLoading] = useState(false)
   const [sirenFound, setSirenFound] = useState(false)
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isDirty } } = useForm<CompanyForm>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isDirty },
+  } = useForm<CompanyForm>({
+    mode: "onChange",   // validation en temps réel → pas d'erreurs résiduelles
     defaultValues: {
       name: "", siren: "", siret: "", vat_number: "",
       address: "", zip_code: "", city: "", country: "FR",
-      iban: "", invoice_prefix: "F", email: "",
+      iban: "", invoice_prefix: "F",
       payment_terms: "Paiement par virement bancaire sous 30 jours.\nPénalités de retard : 3 fois le taux d'intérêt légal en vigueur.",
     },
   })
 
   const invoicePrefix = watch("invoice_prefix")
 
-  /* Chargement des données — directement via le client Supabase browser */
+  /* ───────────────────────── Chargement ───────────────────────── */
   useEffect(() => {
     const supabase = createClient()
 
@@ -74,6 +82,7 @@ export function CompanySettingsForm() {
       }
 
       if (company) {
+        setCompanyId(company.id)
         reset({
           name:           company.name           ?? "",
           siren:          company.siren          ?? "",
@@ -85,16 +94,14 @@ export function CompanySettingsForm() {
           country:        company.country        ?? "FR",
           iban:           company.iban           ?? "",
           invoice_prefix: company.invoice_prefix ?? "F",
-          email:          company.email          ?? "",
           payment_terms:  company.payment_terms  ?? "Paiement par virement bancaire sous 30 jours.\nPénalités de retard : 3 fois le taux d'intérêt légal en vigueur.",
         })
-        setHasCompany(true)
       }
       setLoading(false)
     })
   }, [reset])
 
-  /* Lookup SIREN INSEE */
+  /* ─────────────────── Lookup SIREN INSEE ─────────────────────── */
   const lookupSiren = async () => {
     if (sirenSearch.length !== 9) { toast.error("Le SIREN doit faire 9 chiffres"); return }
     setSirenLoading(true); setSirenFound(false)
@@ -103,11 +110,11 @@ export function CompanySettingsForm() {
       const json = await res.json()
       if (json.result) {
         const r: SireneResult = json.result
-        setValue("name", r.name, { shouldDirty: true })
-        setValue("siren", r.siren, { shouldDirty: true })
-        setValue("address", r.address ?? "", { shouldDirty: true })
-        setValue("zip_code", r.zip_code ?? "", { shouldDirty: true })
-        setValue("city", r.city ?? "", { shouldDirty: true })
+        setValue("name",     r.name,        { shouldDirty: true, shouldValidate: true })
+        setValue("siren",    r.siren,       { shouldDirty: true, shouldValidate: true })
+        setValue("address",  r.address ?? "", { shouldDirty: true, shouldValidate: true })
+        setValue("zip_code", r.zip_code ?? "", { shouldDirty: true, shouldValidate: true })
+        setValue("city",     r.city ?? "",  { shouldDirty: true, shouldValidate: true })
         if (r.vat_number) setValue("vat_number", r.vat_number, { shouldDirty: true })
         setSirenFound(true)
         toast.success(`${r.name} trouvé`)
@@ -118,26 +125,67 @@ export function CompanySettingsForm() {
     finally { setSirenLoading(false) }
   }
 
-  /* Sauvegarde */
+  /* ─────────────────────────── Sauvegarde ─────────────────────── */
   const onSubmit = async (data: CompanyForm) => {
     setSaving(true)
     try {
-      const method = hasCompany ? "PATCH" : "POST"
-      const res = await fetch("/api/company", {
-        method,
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      })
-      const json = await res.json()
-      if (!res.ok) { toast.error(json.error || "Erreur lors de la sauvegarde"); return }
-      setHasCompany(true)
-      reset(data) // réinitialise isDirty
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { toast.error("Session expirée, veuillez vous reconnecter"); return }
+
+      const payload = {
+        user_id:        user.id,
+        name:           data.name.trim(),
+        siren:          data.siren.trim(),
+        siret:          data.siret.trim()      || null,
+        vat_number:     data.vat_number.trim() || null,
+        address:        data.address.trim(),
+        zip_code:       data.zip_code.trim(),
+        city:           data.city.trim(),
+        country:        data.country          || "FR",
+        iban:           data.iban.trim()      || null,
+        invoice_prefix: data.invoice_prefix   || "F",
+        payment_terms:  data.payment_terms    || null,
+      }
+
+      let error
+      if (companyId) {
+        // Mise à jour
+        const res = await supabase
+          .from("companies")
+          .update(payload)
+          .eq("id", companyId)
+          .select()
+          .single()
+        error = res.error
+      } else {
+        // Création (ne devrait pas arriver après l'onboarding, mais sécurité)
+        const res = await supabase
+          .from("companies")
+          .upsert({ ...payload, invoice_sequence: 1 }, { onConflict: "user_id" })
+          .select()
+          .single()
+        error = res.error
+        if (!error && res.data) setCompanyId(res.data.id)
+      }
+
+      if (error) {
+        console.error("Erreur sauvegarde:", error)
+        toast.error(error.message || "Erreur lors de la sauvegarde")
+        return
+      }
+
+      reset(data) // remet isDirty à false
       toast.success("Informations sauvegardées ✓")
-    } catch { toast.error("Erreur réseau") }
-    finally { setSaving(false) }
+    } catch (err) {
+      console.error(err)
+      toast.error("Erreur réseau")
+    } finally {
+      setSaving(false)
+    }
   }
 
+  /* ───────────────────────────── UI ───────────────────────────── */
   if (loading) return (
     <div className="flex items-center justify-center py-20">
       <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
@@ -185,15 +233,28 @@ export function CompanySettingsForm() {
 
         <div>
           <Label htmlFor="name">Raison sociale *</Label>
-          <Input id="name" placeholder="Mon Entreprise SARL" className="mt-1" {...register("name", { required: "Requis" })} />
+          <Input
+            id="name"
+            placeholder="Mon Entreprise SARL"
+            className="mt-1"
+            {...register("name", { required: "Requis", minLength: { value: 2, message: "2 caractères minimum" } })}
+          />
           {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="siren">SIREN *</Label>
-            <Input id="siren" placeholder="123456789" className="mt-1 font-mono" maxLength={9}
-              {...register("siren", { required: "Requis", pattern: { value: /^\d{9}$/, message: "9 chiffres" } })} />
+            <Input
+              id="siren"
+              placeholder="123456789"
+              className="mt-1 font-mono"
+              maxLength={9}
+              {...register("siren", {
+                required: "Requis",
+                pattern: { value: /^\d{9}$/, message: "9 chiffres exactement" },
+              })}
+            />
             {errors.siren && <p className="text-xs text-red-500 mt-1">{errors.siren.message}</p>}
           </div>
           <div>
@@ -215,39 +276,36 @@ export function CompanySettingsForm() {
 
         <div>
           <Label htmlFor="address">Adresse *</Label>
-          <Input id="address" placeholder="10 rue de la Paix" className="mt-1" {...register("address", { required: "Requis" })} />
+          <Input
+            id="address"
+            placeholder="10 rue de la Paix"
+            className="mt-1"
+            {...register("address", { required: "Requis" })}
+          />
           {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address.message}</p>}
         </div>
 
         <div className="grid grid-cols-3 gap-4">
           <div>
             <Label htmlFor="zip_code">Code postal *</Label>
-            <Input id="zip_code" placeholder="75001" className="mt-1 font-mono" {...register("zip_code", { required: "Requis" })} />
+            <Input
+              id="zip_code"
+              placeholder="75001"
+              className="mt-1 font-mono"
+              {...register("zip_code", { required: "Requis" })}
+            />
             {errors.zip_code && <p className="text-xs text-red-500 mt-1">{errors.zip_code.message}</p>}
           </div>
           <div className="col-span-2">
             <Label htmlFor="city">Ville *</Label>
-            <Input id="city" placeholder="Paris" className="mt-1" {...register("city", { required: "Requis" })} />
+            <Input
+              id="city"
+              placeholder="Paris"
+              className="mt-1"
+              {...register("city", { required: "Requis" })}
+            />
             {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city.message}</p>}
           </div>
-        </div>
-      </div>
-
-      {/* Email de contact */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A]">Contact & envois</h2>
-        <div>
-          <Label htmlFor="email">Email professionnel</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="contact@monentreprise.fr"
-            className="mt-1"
-            {...register("email")}
-          />
-          <p className="text-xs text-slate-400 mt-1">
-            Utilisé comme expéditeur et copie CC sur les emails envoyés à vos clients
-          </p>
         </div>
       </div>
 
@@ -256,7 +314,12 @@ export function CompanySettingsForm() {
         <h2 className="text-sm font-semibold text-[#0F172A]">Coordonnées bancaires</h2>
         <div>
           <Label htmlFor="iban">IBAN</Label>
-          <Input id="iban" placeholder="FR76 3000 6000 0112 3456 7890 189" className="mt-1 font-mono text-sm" {...register("iban")} />
+          <Input
+            id="iban"
+            placeholder="FR76 3000 6000 0112 3456 7890 189"
+            className="mt-1 font-mono text-sm"
+            {...register("iban")}
+          />
           <p className="text-xs text-slate-400 mt-1">Affiché dans les conditions de paiement sur vos factures</p>
         </div>
       </div>
@@ -267,7 +330,13 @@ export function CompanySettingsForm() {
         <div className="grid grid-cols-2 gap-4 items-end">
           <div>
             <Label htmlFor="invoice_prefix">Préfixe</Label>
-            <Input id="invoice_prefix" placeholder="F" className="mt-1 font-mono uppercase" maxLength={5} {...register("invoice_prefix")} />
+            <Input
+              id="invoice_prefix"
+              placeholder="F"
+              className="mt-1 font-mono uppercase"
+              maxLength={5}
+              {...register("invoice_prefix")}
+            />
           </div>
           <div>
             <p className="text-xs text-slate-400 mb-1">Aperçu</p>
@@ -276,7 +345,9 @@ export function CompanySettingsForm() {
             </div>
           </div>
         </div>
-        <p className="text-xs text-slate-400">Le numéro est généré automatiquement : {exampleNumber}, {invoicePrefix || "F"}-{currentYear}-002…</p>
+        <p className="text-xs text-slate-400">
+          Le numéro est généré automatiquement : {exampleNumber}, {invoicePrefix || "F"}-{currentYear}-002…
+        </p>
       </div>
 
       {/* Conditions de paiement par défaut */}
