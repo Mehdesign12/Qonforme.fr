@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { createClient } from "@/lib/supabase/client"
 
 interface CompanyForm {
   name: string
@@ -21,6 +22,7 @@ interface CompanyForm {
   iban: string
   invoice_prefix: string
   payment_terms: string
+  email: string
 }
 
 interface SireneResult {
@@ -44,36 +46,52 @@ export function CompanySettingsForm() {
     defaultValues: {
       name: "", siren: "", siret: "", vat_number: "",
       address: "", zip_code: "", city: "", country: "FR",
-      iban: "", invoice_prefix: "F",
+      iban: "", invoice_prefix: "F", email: "",
       payment_terms: "Paiement par virement bancaire sous 30 jours.\nPénalités de retard : 3 fois le taux d'intérêt légal en vigueur.",
     },
   })
 
   const invoicePrefix = watch("invoice_prefix")
 
-  /* Chargement des données existantes */
+  /* Chargement des données — directement via le client Supabase browser */
   useEffect(() => {
-    fetch("/api/company")
-      .then(r => r.json())
-      .then(json => {
-        if (json.company) {
-          reset({
-            name: json.company.name ?? "",
-            siren: json.company.siren ?? "",
-            siret: json.company.siret ?? "",
-            vat_number: json.company.vat_number ?? "",
-            address: json.company.address ?? "",
-            zip_code: json.company.zip_code ?? "",
-            city: json.company.city ?? "",
-            country: json.company.country ?? "FR",
-            iban: json.company.iban ?? "",
-            invoice_prefix: json.company.invoice_prefix ?? "F",
-            payment_terms: json.company.payment_terms ?? "Paiement par virement bancaire sous 30 jours.\nPénalités de retard : 3 fois le taux d'intérêt légal en vigueur.",
-          })
-          setHasCompany(true)
-        }
-      })
-      .finally(() => setLoading(false))
+    const supabase = createClient()
+
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) { setLoading(false); return }
+
+      const { data: company, error } = await supabase
+        .from("companies")
+        .select("*")
+        .eq("user_id", user.id)
+        .single()
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Erreur chargement entreprise:", error)
+        toast.error("Impossible de charger les informations de l'entreprise")
+        setLoading(false)
+        return
+      }
+
+      if (company) {
+        reset({
+          name:           company.name           ?? "",
+          siren:          company.siren          ?? "",
+          siret:          company.siret          ?? "",
+          vat_number:     company.vat_number     ?? "",
+          address:        company.address        ?? "",
+          zip_code:       company.zip_code       ?? "",
+          city:           company.city           ?? "",
+          country:        company.country        ?? "FR",
+          iban:           company.iban           ?? "",
+          invoice_prefix: company.invoice_prefix ?? "F",
+          email:          company.email          ?? "",
+          payment_terms:  company.payment_terms  ?? "Paiement par virement bancaire sous 30 jours.\nPénalités de retard : 3 fois le taux d'intérêt légal en vigueur.",
+        })
+        setHasCompany(true)
+      }
+      setLoading(false)
+    })
   }, [reset])
 
   /* Lookup SIREN INSEE */
@@ -108,6 +126,7 @@ export function CompanySettingsForm() {
       const res = await fetch("/api/company", {
         method,
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
       })
       const json = await res.json()
@@ -211,6 +230,24 @@ export function CompanySettingsForm() {
             <Input id="city" placeholder="Paris" className="mt-1" {...register("city", { required: "Requis" })} />
             {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city.message}</p>}
           </div>
+        </div>
+      </div>
+
+      {/* Email de contact */}
+      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-[#0F172A]">Contact & envois</h2>
+        <div>
+          <Label htmlFor="email">Email professionnel</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="contact@monentreprise.fr"
+            className="mt-1"
+            {...register("email")}
+          />
+          <p className="text-xs text-slate-400 mt-1">
+            Utilisé comme expéditeur et copie CC sur les emails envoyés à vos clients
+          </p>
         </div>
       </div>
 
