@@ -40,8 +40,9 @@ export async function POST(_req: NextRequest, { params }: Params) {
       .eq("user_id", user.id)
       .single()
 
-    const companyName = (company as { name?: string } | null)?.name ?? "Votre prestataire"
-    const senderEmail = (company as { email?: string } | null)?.email ?? user.email
+    const companyName = (company as { name?: string } | null)?.name?.trim() || user.email?.split("@")[0] || "Votre prestataire"
+    const senderEmail = (company as { email?: string } | null)?.email?.trim() || user.email
+    const clientName  = creditNote.client?.name ?? ""
 
     // Récupérer le token de session pour appel interne
     const { data: { session } } = await supabase.auth.getSession()
@@ -58,15 +59,17 @@ export async function POST(_req: NextRequest, { params }: Params) {
       notes:            creditNote.notes,
       companyName,
       accentColor:      (company as { accent_color?: string } | null)?.accent_color ?? "#EA580C",
-      clientName:       creditNote.client?.name ?? "",
+      clientName,
     })
 
-    const cc = senderEmail ? [senderEmail] : []
+    const cc        = senderEmail ? [senderEmail] : []
+    const ccSubject = `Copie — Avoir ${creditNote.credit_note_number} pour ${clientName}`
     await sendEmail({
       to:          clientEmail,
       subject,
       html,
       fromName:    companyName,
+      ccSubject,
       replyTo:     senderEmail,
       cc,
       attachments: [{ filename: `${creditNote.credit_note_number}.pdf`, content: pdfBuffer }],

@@ -10,6 +10,7 @@ export interface SendEmailOptions {
   subject: string
   html: string
   fromName?: string   // Nom de l'expéditeur affiché (ex: nom de l'entreprise)
+  ccSubject?: string  // Sujet spécifique pour la copie CC (ex: "Copie — Facture F-2026-001 pour Client X")
   replyTo?: string
   cc?: string[]
   attachments?: EmailAttachment[]
@@ -51,13 +52,13 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ id: string }>
     ? `${senderName} <${fromEmail}>`
     : `${senderName} <onboarding@resend.dev>`
 
+  // ── Email principal vers le client ───────────────────────────────────────
   const { data, error } = await resend.emails.send({
     from:    fromAddress,
     to:      finalTo,
     subject: finalSubject,
     html:    opts.html,
-    replyTo: opts.replyTo ?? (isSandbox ? undefined : opts.replyTo),
-    cc:      finalCc.length > 0 ? finalCc : undefined,
+    replyTo: opts.replyTo,
     attachments: opts.attachments?.map(a => ({
       filename: a.filename,
       content:  a.content,
@@ -66,6 +67,21 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ id: string }>
 
   if (error || !data) {
     throw new Error(`Resend error: ${error?.message ?? "Réponse vide"}`)
+  }
+
+  // ── Copie CC séparée (avec sujet personnalisé si fourni) ──────────────────
+  if (!isSandbox && finalCc.length > 0) {
+    const ccSubject = opts.ccSubject ?? `Copie — ${opts.subject}`
+    await resend.emails.send({
+      from:    fromAddress,
+      to:      finalCc,
+      subject: ccSubject,
+      html:    opts.html,
+      attachments: opts.attachments?.map(a => ({
+        filename: a.filename,
+        content:  a.content,
+      })),
+    })
   }
 
   return { id: data.id }
