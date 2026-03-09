@@ -344,6 +344,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [pdfLoading, setPdfLoading]     = useState(false)
   const [showCreditModal, setShowCreditModal]   = useState(false)
   const [archiveLoading, setArchiveLoading]     = useState(false)
+  const [showSendModal, setShowSendModal]       = useState(false)
+  const [sendLoading, setSendLoading]           = useState(false)
 
   useEffect(() => {
     fetch(`/api/invoices/${invoiceId}`)
@@ -416,6 +418,20 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     finally { setArchiveLoading(false) }
   }
 
+  const sendByEmail = async () => {
+    if (!invoice) return
+    setSendLoading(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/send`, { method: "POST" })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return }
+      setInvoice({ ...invoice, status: "sent" as InvoiceStatus })
+      toast.success(`Facture envoyée à ${json.sentTo}`)
+      setShowSendModal(false)
+    } catch { toast.error("Erreur réseau") }
+    finally { setSendLoading(false) }
+  }
+
   const handleCreditSuccess = (creditNoteId: string) => {
     setShowCreditModal(false)
     // Mettre à jour le statut local
@@ -443,6 +459,58 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
   return (
     <>
+      {/* Modal envoi email */}
+      {showSendModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0]">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
+                  <Send className="w-4 h-4 text-[#2563EB]" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-[#0F172A] text-sm">Envoyer la facture</h2>
+                  <p className="text-xs text-slate-400">{invoice?.invoice_number}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowSendModal(false)} className="p-1.5 rounded-lg hover:bg-[#F1F5F9] transition-colors">
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-4">
+                <p className="text-sm text-[#1E40AF] font-medium mb-1">Destinataire</p>
+                <p className="text-sm text-[#1E293B]">{invoice?.client?.name}</p>
+                {invoice?.client?.email
+                  ? <p className="text-xs text-[#2563EB] font-mono mt-0.5">{invoice.client.email}</p>
+                  : <p className="text-xs text-red-500 mt-0.5">Aucune adresse email — ajoutez-en une dans la fiche client</p>
+                }
+              </div>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                La facture <strong>{invoice?.invoice_number}</strong> sera envoyée avec le PDF Factur-X en pièce jointe.
+                Le statut passera automatiquement à <strong>Envoyée</strong>.
+              </p>
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3">
+                <p className="text-xs text-slate-500">Objet : <span className="font-medium text-slate-700">Facture {invoice?.invoice_number} — votre entreprise</span></p>
+              </div>
+            </div>
+            <div className="flex gap-3 p-6 pt-0">
+              <Button variant="outline" className="flex-1" onClick={() => setShowSendModal(false)} disabled={sendLoading}>
+                Annuler
+              </Button>
+              <Button
+                className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2"
+                onClick={sendByEmail}
+                disabled={sendLoading || !invoice?.client?.email}
+              >
+                {sendLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {sendLoading ? "Envoi en cours…" : "Envoyer"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal avoir */}
       {showCreditModal && (
         <CreditNoteModal
@@ -539,8 +607,21 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
               </Button>
             )}
 
-            {/* Transitions de statut */}
-            {actions.map(action => (
+            {/* Bouton Envoyer par email (statut draft uniquement) */}
+            {invoice.status === "draft" && invoice.client?.email && (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+                onClick={() => setShowSendModal(true)}
+                disabled={sendLoading}
+              >
+                <Send className="w-4 h-4" />
+                Envoyer par email
+              </Button>
+            )}
+
+            {/* Transitions de statut (manuelles — hors envoi email) */}
+            {actions.filter(a => a.status !== "sent" || invoice.status !== "draft").map(action => (
               <Button
                 key={action.status}
                 variant={action.variant}

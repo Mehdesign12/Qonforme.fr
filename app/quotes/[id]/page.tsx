@@ -8,7 +8,7 @@ import Link from "next/link"
 import { toast } from "sonner"
 import {
   ArrowLeft, Loader2, Send, CheckCircle2, XCircle,
-  Printer, Trash2, Download, AlertTriangle, FileText, RotateCcw, Pencil,
+  Printer, Trash2, Download, AlertTriangle, FileText, RotateCcw, Pencil, X,
 } from "lucide-react"
 import { Button }    from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -95,6 +95,8 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [pdfLoading, setPdfLoading]     = useState(false)
   const [convertLoading, setConvertLoading] = useState(false)
+  const [showSendModal, setShowSendModal]   = useState(false)
+  const [sendLoading, setSendLoading]       = useState(false)
 
   useEffect(() => {
     fetch(`/api/quotes/${params.id}`)
@@ -148,6 +150,20 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
     finally { setDeleteLoading(false) }
   }
 
+  const sendByEmail = async () => {
+    if (!quote) return
+    setSendLoading(true)
+    try {
+      const res  = await fetch(`/api/quotes/${params.id}/send`, { method: "POST" })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return }
+      setQuote({ ...quote, status: "sent" as QuoteStatus })
+      toast.success(`Devis envoyé à ${json.sentTo}`)
+      setShowSendModal(false)
+    } catch { toast.error("Erreur réseau") }
+    finally { setSendLoading(false) }
+  }
+
   const convertToInvoice = async () => {
     if (!quote || !confirm("Convertir ce devis en facture brouillon ?")) return
     setConvertLoading(true)
@@ -180,6 +196,58 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
   const canConvert = (quote.status === "accepted" || quote.status === "sent") && !quote.converted_invoice_id
 
   return (
+    <>
+    {/* Modal envoi email */}
+    {showSendModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0]">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-[#F0FDF4] flex items-center justify-center">
+                <Send className="w-4 h-4 text-[#0f9457]" />
+              </div>
+              <div>
+                <h2 className="font-bold text-[#0F172A] text-sm">Envoyer le devis</h2>
+                <p className="text-xs text-slate-400">{quote?.quote_number}</p>
+              </div>
+            </div>
+            <button onClick={() => setShowSendModal(false)} className="p-1.5 rounded-lg hover:bg-[#F1F5F9] transition-colors">
+              <X className="w-4 h-4 text-slate-400" />
+            </button>
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-xl p-4">
+              <p className="text-sm text-[#166534] font-medium mb-1">Destinataire</p>
+              <p className="text-sm text-[#1E293B]">{quote?.client?.name}</p>
+              {quote?.client?.email
+                ? <p className="text-xs text-[#0f9457] font-mono mt-0.5">{quote.client.email}</p>
+                : <p className="text-xs text-red-500 mt-0.5">Aucune adresse email — ajoutez-en une dans la fiche client</p>
+              }
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Le devis <strong>{quote?.quote_number}</strong> sera envoyé avec le PDF en pièce jointe.
+              Le statut passera automatiquement à <strong>Envoyé</strong>.
+            </p>
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3">
+              <p className="text-xs text-slate-500">Objet : <span className="font-medium text-slate-700">Devis {quote?.quote_number} — votre entreprise</span></p>
+            </div>
+          </div>
+          <div className="flex gap-3 p-6 pt-0">
+            <Button variant="outline" className="flex-1" onClick={() => setShowSendModal(false)} disabled={sendLoading}>
+              Annuler
+            </Button>
+            <Button
+              className="flex-1 bg-[#0f9457] hover:bg-[#0a7a47] text-white gap-2"
+              onClick={sendByEmail}
+              disabled={sendLoading || !quote?.client?.email}
+            >
+              {sendLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {sendLoading ? "Envoi en cours…" : "Envoyer"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
     <div className="space-y-6 max-w-4xl">
 
       {/* Header */}
@@ -237,8 +305,21 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
             </Button>
           )}
 
-          {/* Transitions de statut */}
-          {actions.map(action => (
+          {/* Bouton Envoyer par email (brouillon uniquement) */}
+          {quote.status === "draft" && quote.client?.email && (
+            <Button
+              size="sm"
+              className="gap-1.5 bg-[#0f9457] hover:bg-[#0a7a47] text-white"
+              onClick={() => setShowSendModal(true)}
+              disabled={sendLoading}
+            >
+              <Send className="w-4 h-4" />
+              Envoyer par email
+            </Button>
+          )}
+
+          {/* Transitions de statut (manuelles — hors envoi email) */}
+          {actions.filter(a => a.status !== "sent" || quote.status !== "draft").map(action => (
             <Button key={action.status} variant={action.variant} size="sm"
               className={`gap-1.5 ${action.className ?? ""}`}
               onClick={() => changeStatus(action.status)} disabled={statusLoading}>
@@ -397,5 +478,6 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
         ))}
       </div>
     </div>
+    </>
   )
 }

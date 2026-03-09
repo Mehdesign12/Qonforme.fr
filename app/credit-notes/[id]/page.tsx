@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import {
-  ArrowLeft, Loader2, Download, Printer, RotateCcw
+  ArrowLeft, Loader2, Download, Printer, RotateCcw, Send, X
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -56,6 +56,8 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
   const [creditNote, setCreditNote] = useState<CreditNote | null>(null)
   const [loading, setLoading]       = useState(true)
   const [pdfLoading, setPdfLoading] = useState(false)
+  const [showSendModal, setShowSendModal] = useState(false)
+  const [sendLoading, setSendLoading]     = useState(false)
 
   useEffect(() => {
     fetch(`/api/credit-notes/${params.id}`)
@@ -83,6 +85,19 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
     finally { setPdfLoading(false) }
   }
 
+  const sendByEmail = async () => {
+    if (!creditNote) return
+    setSendLoading(true)
+    try {
+      const res  = await fetch(`/api/credit-notes/${params.id}/send`, { method: "POST" })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return }
+      toast.success(`Avoir envoyé à ${json.sentTo}`)
+      setShowSendModal(false)
+    } catch { toast.error("Erreur réseau") }
+    finally { setSendLoading(false) }
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center py-24">
       <Loader2 className="w-8 h-8 text-[#C2410C] animate-spin" />
@@ -97,6 +112,57 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
   )
 
   return (
+    <>
+    {/* Modal envoi email */}
+    {showSendModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0]">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-[#FFF7ED] flex items-center justify-center">
+                <Send className="w-4 h-4 text-[#C2410C]" />
+              </div>
+              <div>
+                <h2 className="font-bold text-[#0F172A] text-sm">Envoyer l&apos;avoir</h2>
+                <p className="text-xs text-slate-400">{creditNote?.credit_note_number}</p>
+              </div>
+            </div>
+            <button onClick={() => setShowSendModal(false)} className="p-1.5 rounded-lg hover:bg-[#F1F5F9] transition-colors">
+              <X className="w-4 h-4 text-slate-400" />
+            </button>
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="bg-[#FFF7ED] border border-[#FED7AA] rounded-xl p-4">
+              <p className="text-sm text-[#9A3412] font-medium mb-1">Destinataire</p>
+              <p className="text-sm text-[#1E293B]">{creditNote?.client?.name}</p>
+              {creditNote?.client?.email
+                ? <p className="text-xs text-[#C2410C] font-mono mt-0.5">{creditNote.client.email}</p>
+                : <p className="text-xs text-red-500 mt-0.5">Aucune adresse email — ajoutez-en une dans la fiche client</p>
+              }
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              L&apos;avoir <strong>{creditNote?.credit_note_number}</strong> sera envoyé avec le PDF en pièce jointe.
+            </p>
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3">
+              <p className="text-xs text-slate-500">Objet : <span className="font-medium text-slate-700">Avoir {creditNote?.credit_note_number} — votre entreprise</span></p>
+            </div>
+          </div>
+          <div className="flex gap-3 p-6 pt-0">
+            <Button variant="outline" className="flex-1" onClick={() => setShowSendModal(false)} disabled={sendLoading}>
+              Annuler
+            </Button>
+            <Button
+              className="flex-1 bg-[#C2410C] hover:bg-[#9A3412] text-white gap-2"
+              onClick={sendByEmail}
+              disabled={sendLoading || !creditNote?.client?.email}
+            >
+              {sendLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {sendLoading ? "Envoi en cours…" : "Envoyer"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -125,6 +191,18 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
             <Printer className="w-4 h-4" /> Imprimer
           </Button>
+          {/* Bouton Envoyer par email */}
+          {creditNote.client?.email && (
+            <Button
+              size="sm"
+              className="gap-1.5 bg-[#C2410C] hover:bg-[#9A3412] text-white"
+              onClick={() => setShowSendModal(true)}
+              disabled={sendLoading}
+            >
+              <Send className="w-4 h-4" />
+              Envoyer par email
+            </Button>
+          )}
         </div>
       </div>
 
@@ -258,5 +336,6 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
         ))}
       </div>
     </div>
+    </>
   )
 }
