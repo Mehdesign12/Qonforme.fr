@@ -13,6 +13,7 @@ import {
 import { Button }    from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { formatCurrency, formatDate } from "@/lib/utils/invoice"
+import { createClient } from "@/lib/supabase/client"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -90,6 +91,7 @@ const NEXT_ACTIONS: Partial<Record<QuoteStatus, { label: string; status: QuoteSt
 export default function QuoteDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [quote, setQuote]               = useState<Quote | null>(null)
+  const [company, setCompany]           = useState<{ name: string; address?: string | null; zip_code?: string | null; city?: string | null; siret?: string | null; siren?: string | null; vat_number?: string | null } | null>(null)
   const [loading, setLoading]           = useState(true)
   const [statusLoading, setStatusLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -99,10 +101,15 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
   const [sendLoading, setSendLoading]       = useState(false)
 
   useEffect(() => {
-    fetch(`/api/quotes/${params.id}`)
-      .then(r => r.json())
-      .then(json => { if (json.quote) setQuote(json.quote) })
-      .finally(() => setLoading(false))
+    const supabase = createClient()
+    // Charger le devis et l'entreprise en parallèle
+    Promise.all([
+      fetch(`/api/quotes/${params.id}`).then(r => r.json()),
+      supabase.from("companies").select("name,address,zip_code,city,siret,siren,vat_number").single(),
+    ]).then(([json, { data: comp }]) => {
+      if (json.quote) setQuote(json.quote)
+      if (comp) setCompany(comp)
+    }).finally(() => setLoading(false))
   }, [params.id])
 
   const changeStatus = async (newStatus: QuoteStatus) => {
@@ -366,8 +373,28 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
           <div className="flex flex-wrap justify-between gap-6">
             <div>
               <p className="text-xs font-medium text-slate-400 mb-1">DE</p>
-              <p className="text-sm font-bold text-[#0F172A]">Votre entreprise</p>
-              <p className="text-xs text-slate-500 mt-0.5">Complétez dans Paramètres → Entreprise</p>
+              {company ? (
+                <div>
+                  <p className="text-sm font-bold text-[#0F172A]">{company.name}</p>
+                  {company.address && <p className="text-xs text-slate-500 mt-0.5">{company.address}</p>}
+                  {(company.zip_code || company.city) && (
+                    <p className="text-xs text-slate-500">{[company.zip_code, company.city].filter(Boolean).join(" ")}</p>
+                  )}
+                  {(company.siret || company.siren) && (
+                    <p className="text-xs text-slate-400 font-mono mt-0.5">
+                      {company.siret ? `SIRET ${company.siret}` : `SIREN ${company.siren}`}
+                    </p>
+                  )}
+                  {company.vat_number && (
+                    <p className="text-xs text-slate-400 font-mono">TVA {company.vat_number}</p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm font-bold text-[#0F172A]">Votre entreprise</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Complétez dans Paramètres → Entreprise</p>
+                </div>
+              )}
             </div>
             <div>
               <p className="text-xs font-medium text-slate-400 mb-1">POUR</p>

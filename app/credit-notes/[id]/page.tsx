@@ -10,6 +10,7 @@ import {
   ArrowLeft, Loader2, Download, Printer, RotateCcw, Send, X
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/client"
 import { Separator } from "@/components/ui/separator"
 import { formatCurrency, formatDate } from "@/lib/utils/invoice"
 
@@ -54,18 +55,21 @@ interface CreditNote {
 export default function CreditNoteDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [creditNote, setCreditNote] = useState<CreditNote | null>(null)
+  const [company, setCompany]       = useState<{ name: string; address?: string | null; zip_code?: string | null; city?: string | null; siret?: string | null; siren?: string | null; vat_number?: string | null } | null>(null)
   const [loading, setLoading]       = useState(true)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [showSendModal, setShowSendModal] = useState(false)
   const [sendLoading, setSendLoading]     = useState(false)
 
   useEffect(() => {
-    fetch(`/api/credit-notes/${params.id}`)
-      .then(r => r.json())
-      .then(json => {
-        if (json.credit_note) setCreditNote(json.credit_note)
-      })
-      .finally(() => setLoading(false))
+    const supabase = createClient()
+    Promise.all([
+      fetch(`/api/credit-notes/${params.id}`).then(r => r.json()),
+      supabase.from("companies").select("name,address,zip_code,city,siret,siren,vat_number").single(),
+    ]).then(([json, { data: comp }]) => {
+      if (json.credit_note) setCreditNote(json.credit_note)
+      if (comp) setCompany(comp)
+    }).finally(() => setLoading(false))
   }, [params.id])
 
   const downloadPDF = async () => {
@@ -236,7 +240,28 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
           <div className="flex flex-wrap justify-between gap-6">
             <div>
               <p className="text-xs font-medium text-slate-400 mb-1">DE</p>
-              <p className="text-sm font-bold text-[#0F172A]">Votre entreprise</p>
+              {company ? (
+                <div>
+                  <p className="text-sm font-bold text-[#0F172A]">{company.name}</p>
+                  {company.address && <p className="text-xs text-slate-500 mt-0.5">{company.address}</p>}
+                  {(company.zip_code || company.city) && (
+                    <p className="text-xs text-slate-500">{[company.zip_code, company.city].filter(Boolean).join(" ")}</p>
+                  )}
+                  {(company.siret || company.siren) && (
+                    <p className="text-xs text-slate-400 font-mono mt-0.5">
+                      {company.siret ? `SIRET ${company.siret}` : `SIREN ${company.siren}`}
+                    </p>
+                  )}
+                  {company.vat_number && (
+                    <p className="text-xs text-slate-400 font-mono">TVA {company.vat_number}</p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm font-bold text-[#0F172A]">Votre entreprise</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Complétez dans Paramètres → Entreprise</p>
+                </div>
+              )}
             </div>
             <div>
               <p className="text-xs font-medium text-slate-400 mb-1">POUR</p>
