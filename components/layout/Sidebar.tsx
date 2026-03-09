@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, Users, FileText, FileCheck2,
   Settings, Zap, LogOut, Minus,
-  Plus, Archive, RotateCcw, Package,
+  Plus, Archive, RotateCcw, Package, ShoppingCart,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -65,6 +65,14 @@ const NAV: NavItem[] = [
     href: "/products",
     label: "Catalogue",
     icon: Package,
+  },
+  {
+    href: "/purchase-orders",
+    label: "Bons de commande",
+    icon: ShoppingCart,
+    sub: [
+      { href: "/purchase-orders/new", label: "Nouveau BdC", icon: Plus },
+    ],
   },
 ]
 
