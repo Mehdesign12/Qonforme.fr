@@ -3,6 +3,7 @@ import Image from "next/image";
 import { CheckCircle2, Zap, Shield, ArrowRight, FileText, Send, Archive, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { LandingHero } from "@/components/landing/LandingHero";
 
 const LOGO_URL =
@@ -109,7 +110,7 @@ function FeatureSection({
             <span className="inline-flex w-fit items-center rounded-full border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-1 text-[12px] font-semibold uppercase tracking-widest text-[#2563EB]">
               {tag}
             </span>
-            <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-[#0F172A] sm:text-4xl">
+            <h2 className="text-3xl font-extrabold leading-tight tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: 'var(--font-bricolage)' }}>
               {title}{" "}
               {titleHighlight && (
                 <span className="text-[#2563EB]">{titleHighlight}</span>
@@ -131,10 +132,16 @@ function FeatureSection({
                 </li>
               ))}
             </ul>
-            <Link href="/signup" className="w-fit">
-              <Button className="mt-2 h-10 rounded-xl bg-[#0F172A] px-5 text-sm font-semibold text-white hover:bg-[#1E293B] gap-2">
+            <Link href="/signup" className="w-fit mt-2">
+              <ShimmerButton
+                background="rgba(37,99,235,1)"
+                shimmerColor="#ffffff"
+                shimmerDuration="2.5s"
+                borderRadius="10px"
+                className="h-10 px-5 text-sm font-semibold gap-2"
+              >
                 Essayer gratuitement <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
+              </ShimmerButton>
             </Link>
           </div>
 
@@ -301,7 +308,7 @@ export default function HomePage() {
       <section id="pricing" className="bg-white py-20 sm:py-24">
         <div className="max-w-5xl mx-auto px-5">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] mb-3">
+            <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] mb-3" style={{ fontFamily: 'var(--font-bricolage)' }}>
               Tarifs simples, sans surprise
             </h2>
             <p className="text-slate-500">

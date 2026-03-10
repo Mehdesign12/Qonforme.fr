@@ -5,105 +5,106 @@ import React, { useId } from "react";
 
 interface LightRaysProps {
   className?: string;
-  /** Nombre de rayons (défaut : 10) */
   rayCount?: number;
-  /** Couleur principale des rayons */
   rayColor?: string;
-  /** Opacité max d'un rayon (0-1) */
   rayOpacity?: number;
-  /** Largeur en % de chaque rayon */
   rayWidth?: number;
-  /** Durée animation en secondes */
   duration?: number;
 }
 
 /**
- * LightRays — rayons lumineux animés qui émanent du haut.
- * Positionner en absolu à l'intérieur d'un conteneur `relative overflow-hidden`.
+ * LightRays — rayons lumineux animés (CSS pur, compatible SSR/CSP).
+ * À placer dans un conteneur `relative overflow-hidden`.
  */
 export function LightRays({
   className,
   rayCount = 10,
-  rayColor = "#ffffff",
-  rayOpacity = 0.25,
-  rayWidth = 12,
+  rayColor = "#93c5fd",
+  rayOpacity = 0.22,
+  rayWidth = 10,
   duration = 6,
 }: LightRaysProps) {
-  const id = useId();
+  const id = useId().replace(/:/g, "");
 
   const rays = Array.from({ length: rayCount }, (_, i) => {
-    // Distribution sur la largeur, légèrement aléatoire mais déterministe
-    const seed = (i * 137.508) % 100; // golden angle distribution
-    const left = (seed / 100) * 110 - 5; // de -5% à 105%
-    const delay = (i * 0.7) % duration;
-    const individualOpacity = rayOpacity * (0.5 + ((i * 0.3) % 0.6));
-    const width = rayWidth * (0.6 + ((i * 0.4) % 0.8));
-    const animDuration = duration * (0.7 + ((i * 0.2) % 0.6));
-
-    return { left, delay, opacity: individualOpacity, width, animDuration };
+    const seed = (i * 137.508) % 100;
+    const left = (seed / 100) * 105 - 2.5;
+    const delay = (i * 0.65) % duration;
+    const opacity = rayOpacity * (0.5 + ((i * 0.31) % 0.55));
+    const width = rayWidth * (0.55 + ((i * 0.38) % 0.9));
+    const dur = duration * (0.65 + ((i * 0.19) % 0.7));
+    const skew = -6 - ((i * 3) % 8);
+    return { left, delay, opacity, width, dur, skew };
   });
 
-  return (
-    <div
-      aria-hidden="true"
-      className={cn(
-        "pointer-events-none absolute inset-0 overflow-hidden",
-        className
-      )}
-    >
-      <svg
-        className="absolute inset-0 h-full w-full"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-      >
-        <defs>
-          {/* Gradient vertical : opaque en haut, transparent en bas */}
-          <linearGradient
-            id={`${id}-ray-gradient`}
-            x1="0"
-            y1="0"
-            x2="0"
-            y2="1"
-          >
-            <stop offset="0%" stopColor={rayColor} stopOpacity="1" />
-            <stop offset="60%" stopColor={rayColor} stopOpacity="0.15" />
-            <stop offset="100%" stopColor={rayColor} stopOpacity="0" />
-          </linearGradient>
-        </defs>
+  // keyframes injectés en <style> globale (une seule fois par rendu)
+  const css = `
+    ${rays.map((r, i) => `
+      @keyframes lr-${id}-${i} {
+        0%   { opacity: ${(r.opacity * 0.35).toFixed(3)}; transform: skewX(${r.skew}deg) scaleX(0.88); }
+        45%  { opacity: ${r.opacity.toFixed(3)};           transform: skewX(${r.skew - 2}deg) scaleX(1.06); }
+        100% { opacity: ${(r.opacity * 0.55).toFixed(3)}; transform: skewX(${r.skew + 2}deg) scaleX(0.93); }
+      }
+    `).join("")}
+  `;
 
-        {rays.map((ray, i) => (
-          <g key={i}>
+  return (
+    <>
+      {/* Inject keyframes into <head> */}
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+
+      <div
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute inset-0 overflow-hidden",
+          className
+        )}
+      >
+        <svg
+          className="absolute inset-0 h-full w-full"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+        >
+          <defs>
+            <linearGradient
+              id={`${id}-grad`}
+              x1="0" y1="0" x2="0" y2="1"
+            >
+              <stop offset="0%"   stopColor={rayColor} stopOpacity="1" />
+              <stop offset="55%"  stopColor={rayColor} stopOpacity="0.12" />
+              <stop offset="100%" stopColor={rayColor} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+
+          {rays.map((ray, i) => (
             <rect
+              key={i}
               x={`${ray.left}%`}
-              y="-5%"
+              y="-2%"
               width={`${ray.width}%`}
-              height="110%"
-              fill={`url(#${id}-ray-gradient)`}
-              opacity={ray.opacity}
-              transform={`skewX(-8)`}
+              height="102%"
+              fill={`url(#${id}-grad)`}
               style={{
-                transformOrigin: `${ray.left + ray.width / 2}% 0`,
-                animation: `light-ray-pulse-${id}-${i} ${ray.animDuration}s ease-in-out ${ray.delay}s infinite alternate`,
+                animationName: `lr-${id}-${i}`,
+                animationDuration: `${ray.dur}s`,
+                animationDelay: `${ray.delay}s`,
+                animationTimingFunction: "ease-in-out",
+                animationIterationCount: "infinite",
+                animationDirection: "alternate",
+                transformOrigin: `${ray.left + ray.width / 2}% 0%`,
               }}
             />
-            <style>{`
-              @keyframes light-ray-pulse-${id}-${i} {
-                0%   { opacity: ${ray.opacity * 0.4}; transform: skewX(-8deg) scaleX(0.9); }
-                50%  { opacity: ${ray.opacity};       transform: skewX(-6deg) scaleX(1.05); }
-                100% { opacity: ${ray.opacity * 0.6}; transform: skewX(-10deg) scaleX(0.95); }
-              }
-            `}</style>
-          </g>
-        ))}
-      </svg>
+          ))}
+        </svg>
 
-      {/* Lueur diffuse en haut */}
-      <div
-        className="absolute inset-x-0 top-0 h-48 opacity-30"
-        style={{
-          background: `radial-gradient(ellipse 80% 40% at 50% -10%, ${rayColor} 0%, transparent 70%)`,
-        }}
-      />
-    </div>
+        {/* Lueur douce en haut */}
+        <div
+          className="absolute inset-x-0 top-0 h-52"
+          style={{
+            background: `radial-gradient(ellipse 70% 35% at 50% -5%, ${rayColor}55 0%, transparent 70%)`,
+          }}
+        />
+      </div>
+    </>
   );
 }
