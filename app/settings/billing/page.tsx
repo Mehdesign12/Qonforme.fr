@@ -10,8 +10,8 @@ import type Stripe from 'stripe'
 export const metadata: Metadata = { title: 'Abonnement — Qonforme' }
 export const dynamic = 'force-dynamic'
 
-function mapStripeStatus(stripeStatus: string): Subscription['status'] {
-  switch (stripeStatus) {
+function mapStripeStatus(s: string): Subscription['status'] {
+  switch (s) {
     case 'active':
     case 'trialing':
       return 'active'
@@ -26,40 +26,11 @@ function mapStripeStatus(stripeStatus: string): Subscription['status'] {
   }
 }
 
-async function syncFromStripe(
+async function applyStripeData(
   sub: Subscription,
+  stripeSub: Stripe.Subscription,
   userId: string
 ): Promise<Subscription> {
-  let stripeSub: Stripe.Subscription | null = null
-
-  // Priorité 1 : récupérer via stripe_subscription_id
-  if (sub.stripe_subscription_id) {
-    try {
-      stripeSub = await stripe.subscriptions.retrieve(sub.stripe_subscription_id)
-    } catch (err) {
-      console.error('[BillingPage] retrieve subscription error:', err)
-    }
-  }
-
-  // Priorité 2 : récupérer la subscription active via stripe_customer_id
-  if (!stripeSub && sub.stripe_customer_id) {
-    try {
-      const list = await stripe.subscriptions.list({
-        customer: sub.stripe_customer_id,
-        status: 'all',
-        limit: 1,
-      })
-      stripeSub = list.data[0] ?? null
-    } catch (err) {
-      console.error('[BillingPage] list subscriptions error:', err)
-    }
-  }
-
-  if (!stripeSub) {
-    console.warn('[BillingPage] Aucune subscription Stripe trouvée pour user', userId)
-    return sub
-  }
-
   const priceId = stripeSub.items.data[0]?.price?.id
   const planInfo = priceId ? getPlanByPriceId(priceId) : null
   const item = stripeSub.items?.data?.[0] as unknown as { current_period_end?: number }
@@ -68,7 +39,7 @@ async function syncFromStripe(
     : null
   const realStatus = mapStripeStatus(stripeSub.status)
 
-  const updatePayload: Record<string, unknown> = {
+  const payload: Record<string, unknown> = {
     stripe_subscription_id: stripeSub.id,
     stripe_customer_id: stripeSub.customer as string,
     status: realStatus,
@@ -76,22 +47,15 @@ async function syncFromStripe(
     updated_at: new Date().toISOString(),
   }
   if (planInfo) {
-    updatePayload.plan = planInfo.plan
-    updatePayload.billing_period = planInfo.period
-    updatePayload.stripe_price_id = priceId
+    payload.plan = planInfo.plan
+    payload.billing_period = planInfo.period
+    payload.stripe_price_id = priceId
   }
 
   const admin = createAdminClient()
-  const { error } = await admin
-    .from('subscriptions')
-    .update(updatePayload)
-    .eq('user_id', userId)
+  await admin.from('subscriptions').update(payload).eq('user_id', userId)
 
-  if (error) {
-    console.error('[BillingPage] update error:', error)
-  } else {
-    console.log(`[BillingPage] Synchro OK — plan: ${planInfo?.plan ?? 'inconnu'}, status: ${realStatus}`)
-  }
+  console.log(`[BillingPage] Synchro OK → plan:${planInfo?.plan ?? '?'} status:${realStatus}`)
 
   return {
     ...sub,
@@ -100,13 +64,68 @@ async function syncFromStripe(
     status: realStatus,
     current_period_end: periodEnd,
     ...(planInfo
-      ? {
-          plan: planInfo.plan,
-          billing_period: planInfo.period,
-          stripe_price_id: priceId ?? sub.stripe_price_id,
-        }
+      ? { plan: planInfo.plan, billing_period: planInfo.period, stripe_price_id: priceId ?? sub.stripe_price_id }
       : {}),
   }
+}
+
+async function syncFromStripe(
+  sub: Subscription,
+  userId: string,
+  userEmail: string | undefined
+): Promise<Subscription> {
+  let stripeSub: Stripe.Subscription | null = null
+
+  // Priorité 1 : stripe_subscription_id direct
+  if (sub.stripe_subscription_id) {
+    try {
+      stripeSub = await stripe.subscriptions.retrieve(sub.stripe_subscription_id)
+    } catch { /* ignore */ }
+  }
+
+  // Priorité 2 : liste via stripe_customer_id
+  if (!stripeSub && sub.stripe_customer_id) {
+    try {
+      const list = await stripe.subscriptions.list({
+        customer: sub.stripe_customer_id,
+        status: 'all',
+        limit: 1,
+      })
+      stripeSub = list.data[0] ?? null
+    } catch { /* ignore */ }
+  }
+
+  // Priorité 3 : recherche customer par email → liste ses subscriptions
+  if (!stripeSub && userEmail) {
+    try {
+      const customers = await stripe.customers.list({ email: userEmail, limit: 5 })
+      for (const customer of customers.data) {
+        const list = await stripe.subscriptions.list({
+          customer: customer.id,
+          status: 'all',
+          limit: 1,
+        })
+        if (list.data.length > 0) {
+          stripeSub = list.data[0]
+          // Mettre à jour user_id dans les métadonnées du customer pour les prochains webhooks
+          await stripe.customers.update(customer.id, {
+            metadata: { user_id: userId, supabase_user_id: userId },
+          })
+          console.log(`[BillingPage] Customer trouvé par email: ${customer.id}`)
+          break
+        }
+      }
+    } catch (err) {
+      console.error('[BillingPage] Erreur recherche par email:', err)
+    }
+  }
+
+  if (!stripeSub) {
+    console.warn(`[BillingPage] Aucune subscription Stripe trouvée pour user ${userId}`)
+    return sub
+  }
+
+  return applyStripeData(sub, stripeSub, userId)
 }
 
 export default async function BillingPage() {
@@ -125,13 +144,11 @@ export default async function BillingPage() {
 
     if (sub) {
       const enriched = sub as Subscription
-
-      // Toujours synchro si plan invalide OU statut 'incomplete'
       const planIsUnknown = !enriched.plan || !(enriched.plan in PLANS)
       const statusStale = enriched.status === 'incomplete' || !enriched.status
 
       if (planIsUnknown || statusStale) {
-        subscription = await syncFromStripe(enriched, user.id)
+        subscription = await syncFromStripe(enriched, user.id, user.email)
       } else {
         subscription = enriched
       }

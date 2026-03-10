@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe/client'
 import { PLANS, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { getSubscriptionByUserId } from '@/lib/stripe/subscription'
@@ -16,7 +17,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { planId, billingPeriod } = body as { planId: PlanId; billingPeriod: BillingPeriod }
 
-    // Valider les paramètres
     if (!planId || !['starter', 'pro'].includes(planId)) {
       return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
     }
@@ -29,58 +29,99 @@ export async function POST(request: NextRequest) {
 
     if (!priceId) {
       return NextResponse.json(
-        { error: 'Prix Stripe non configuré. Vérifie les variables d\'environnement.' },
+        { error: "Prix Stripe non configuré. Vérifie les variables d'environnement." },
         { status: 500 }
       )
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://qonforme.fr'
+    const admin = createAdminClient()
 
-    // Récupérer ou créer le customer Stripe
-    let stripeCustomerId: string | undefined
+    // ── Récupérer ou créer le customer Stripe ───────────────────────────────
+    let stripeCustomerId: string
 
     const existingSub = await getSubscriptionByUserId(user.id)
     if (existingSub?.stripe_customer_id) {
       stripeCustomerId = existingSub.stripe_customer_id
     } else {
-      // Récupérer l'email de l'utilisateur et le nom de l'entreprise
-      const { data: company } = await supabase
-        .from('companies')
-        .select('name, email')
+      // Vérifier si un customer existe déjà dans Stripe pour cet email (évite les doublons)
+      let existingCustomerId: string | null = null
+      if (user.email) {
+        const existing = await stripe.customers.list({ email: user.email, limit: 1 })
+        if (existing.data.length > 0) {
+          existingCustomerId = existing.data[0].id
+          // S'assurer que les métadonnées contiennent le user_id
+          await stripe.customers.update(existingCustomerId, {
+            metadata: { user_id: user.id, supabase_user_id: user.id },
+          })
+        }
+      }
+
+      if (existingCustomerId) {
+        stripeCustomerId = existingCustomerId
+      } else {
+        const { data: company } = await supabase
+          .from('companies')
+          .select('name, email')
+          .eq('user_id', user.id)
+          .single()
+
+        const customer = await stripe.customers.create({
+          email: user.email ?? company?.email ?? undefined,
+          name: company?.name ?? undefined,
+          metadata: {
+            user_id: user.id,
+            supabase_user_id: user.id,
+          },
+        })
+        stripeCustomerId = customer.id
+      }
+
+      // ✅ CRITIQUE : sauvegarder stripe_customer_id en DB DÈS MAINTENANT
+      // Même avant le paiement, ça permet à la page billing de retrouver le customer
+      const { data: existingRow } = await admin
+        .from('subscriptions')
+        .select('id')
         .eq('user_id', user.id)
         .single()
 
-      const customer = await stripe.customers.create({
-        email: user.email ?? company?.email ?? undefined,
-        name: company?.name ?? undefined,
-        metadata: {
-          user_id: user.id,
-          supabase_user_id: user.id,
-        },
-      })
-      stripeCustomerId = customer.id
+      if (existingRow) {
+        await admin
+          .from('subscriptions')
+          .update({
+            stripe_customer_id: stripeCustomerId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id)
+      } else {
+        // Créer la ligne avec statut 'incomplete' — sera mise à jour par le webhook
+        await admin
+          .from('subscriptions')
+          .insert({
+            user_id: user.id,
+            stripe_customer_id: stripeCustomerId,
+            plan: planId,
+            billing_period: billingPeriod,
+            status: 'incomplete',
+          })
+      }
+
+      console.log(`[checkout] stripe_customer_id ${stripeCustomerId} sauvegardé pour user ${user.id}`)
     }
 
-    // Créer la Checkout Session — paiement immédiat, sans trial
+    // ── Créer la Checkout Session ────────────────────────────────────────────
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      // client_reference_id = user_id pour fiabilité maximale dans le webhook
+      line_items: [{ price: priceId, quantity: 1 }],
+      // Triple filet pour récupérer user_id dans le webhook
       client_reference_id: user.id,
-      // Métadonnées dans la session ET dans subscription_data (double filet)
       metadata: {
         user_id: user.id,
         plan: planId,
         billing_period: billingPeriod,
       },
-      // Pas de trial : accès uniquement après paiement confirmé
       subscription_data: {
         metadata: {
           user_id: user.id,
