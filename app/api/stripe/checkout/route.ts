@@ -109,9 +109,10 @@ export async function POST(request: NextRequest) {
       console.log(`[checkout] stripe_customer_id ${stripeCustomerId} sauvegardé pour user ${user.id}`)
     }
 
-    // ── Créer la Checkout Session ────────────────────────────────────────────
+    // ── Créer la Checkout Session en mode embedded ──────────────────────────
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
+      ui_mode: 'embedded',
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
@@ -129,17 +130,16 @@ export async function POST(request: NextRequest) {
           billing_period: billingPeriod,
         },
       },
-      success_url: `${appUrl}/dashboard?welcome=1`,
-      cancel_url: `${appUrl}/pricing`,
+      // En mode embedded, return_url remplace success_url
+      return_url: `${appUrl}/pricing/return?session_id={CHECKOUT_SESSION_ID}`,
       locale: 'fr',
       allow_promotion_codes: false,
-      // Produit digital : pas besoin d'adresse de facturation
+      // Produit digital : on ne collecte pas l'adresse
       billing_address_collection: 'auto',
-      // Désactiver la collecte du code postal (champ inutile pour SaaS)
-      phone_number_collection: { enabled: false },
     })
 
-    return NextResponse.json({ url: session.url })
+    // Retourner le client_secret (pas l'URL) pour l'Embedded Checkout
+    return NextResponse.json({ clientSecret: session.client_secret })
   } catch (err) {
     console.error('[/api/stripe/checkout] Erreur:', err)
     return NextResponse.json(
