@@ -87,7 +87,7 @@ export async function RecentInvoices() {
           {invoices.map((inv) => (
             <tr
               key={inv.id}
-              onClick={() => {}}
+  
               className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0"
             >
               <td className="px-5 py-3.5">
