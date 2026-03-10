@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   CheckCircle2,
   AlertCircle,
@@ -65,14 +64,17 @@ export default function BillingPageClient({
   subscription,
   invoicesThisMonth,
 }: BillingPageClientProps) {
-  const router = useRouter()
   const [loadingPortal, setLoadingPortal] = useState(false)
   const [portalError, setPortalError] = useState<string | null>(null)
 
   const plan = subscription ? PLANS[subscription.plan] : null
-  const statusConfig = subscription
-    ? STATUS_CONFIG[subscription.status]
-    : STATUS_CONFIG.incomplete
+
+  // Fallback sur 'incomplete' si le status reçu n'est pas dans STATUS_CONFIG
+  // (valeur inattendue BDD, ex: 'trialing', null, etc.)
+  const statusKey = subscription?.status && STATUS_CONFIG[subscription.status as keyof typeof STATUS_CONFIG]
+    ? subscription.status as keyof typeof STATUS_CONFIG
+    : 'incomplete'
+  const statusConfig = STATUS_CONFIG[statusKey]
   const StatusIcon = statusConfig.icon
 
   async function handleManageSubscription() {
@@ -107,7 +109,7 @@ export default function BillingPageClient({
           Choisis un plan pour accéder à toutes les fonctionnalités de Qonforme.
         </p>
         <button
-          onClick={() => router.push('/pricing')}
+          onClick={() => window.location.href = '/pricing'}
           className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           <Zap className="w-4 h-4" />
