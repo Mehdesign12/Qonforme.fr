@@ -174,7 +174,7 @@ function Hero() {
             <h1 className="text-[2.6rem] font-extrabold leading-[1.08] tracking-[-0.03em] text-[#0F172A] sm:text-5xl lg:text-[3.25rem]">
               En 3&nbsp;clics,{" "}
               <span
-                className="bg-gradient-to-r from-[#2563EB] to-[#7C3AED] bg-clip-text text-transparent"
+                className="text-[#2563EB]"
                 style={{ fontFamily: "var(--font-bricolage)" }}
               >
                 ta&nbsp;facture
