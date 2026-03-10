@@ -363,7 +363,7 @@ PPF_CLIENT_SECRET=
 INSEE_API_KEY=
 
 # App
-NEXT_PUBLIC_APP_URL=https://app.qonforme.fr
+NEXT_PUBLIC_APP_URL=https://qonforme.fr
 ```
 
 ---

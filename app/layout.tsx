@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Qonforme — Facturation électronique simplifiée",
     description: "Facturation électronique conforme pour artisans et TPE",
-    url: "https://app.qonforme.fr",
+    url: "https://qonforme.fr",
     siteName: "Qonforme",
     locale: "fr_FR",
     type: "website",

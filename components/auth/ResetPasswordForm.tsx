@@ -33,7 +33,7 @@ export default function ResetPasswordForm() {
 
   // ── Échange du code PKCE au montage ─────────────────────────────────────
   // Supabase envoie un lien de la forme :
-  //   https://app.qonforme.fr/reset-password?code=xxxxx
+  //   https://qonforme.fr/reset-password?code=xxxxx
   // On doit échanger ce code contre une session avant d'appeler updateUser()
   useEffect(() => {
     const code = searchParams.get("code")
