@@ -49,7 +49,8 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Rediriger vers /dashboard si déjà connecté et sur page auth
-  // Exclure /signup/company car c'est l'étape 2 d'inscription (accessible même connecté)
+  // Exclure /signup/company (étape 2 d'inscription), /forgot-password et /reset-password
+  // car ces pages doivent rester accessibles même connecté (ex: reset depuis lien email)
   const authPaths = ['/login', '/signup']
   const isAuthPage = authPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)

@@ -22,15 +22,15 @@
 
 | Couche | Technologie |
 |--------|-------------|
-| Frontend | Next.js 14 (App Router) |
-| Styles | Tailwind CSS + Shadcn/UI |
-| État global | Redux Toolkit |
+| Frontend | Next.js 15 (App Router) |
+| Styles | Tailwind CSS + Base UI |
 | Backend / BDD | Supabase (PostgreSQL + Auth + Storage) |
-| Paiements | Stripe Billing |
+| Paiements | Stripe Billing *(non branché)* |
 | Déploiement | Vercel |
-| Transmission PPF | API REST Chorus Pro (sandbox DGFiP) |
-| Format facture | Factur-X (PDF/A-3 + XML) |
+| Transmission PPF | API REST Chorus Pro *(UI prête, logique à brancher)* |
+| Format facture | Factur-X XML EN 16931 (générateur prêt) |
 | Email | Resend |
+| PDF | pdf-lib (génération server-side) |
 
 ---
 
@@ -48,8 +48,8 @@
 - Création de devis
 - Transmission automatique PPF/PDP
 - Archivage légal 10 ans
-- Relances automatiques (J+30, J+45)
-- Tableau de bord CA complet
+- Relances automatiques (J+30, J+45) *(non implémenté)*
+- Tableau de bord CA complet *(partiel)*
 - Support email 24h
 
 ### Règles communes
@@ -59,99 +59,192 @@
 
 ---
 
-## Fonctionnalités MVP
+## État actuel du projet (Mars 2026)
 
-### P0 — Bloquant pour le lancement
+### ✅ Infrastructure & Auth
+- [x] Authentification Supabase (email/mot de passe)
+- [x] Inscription 2 étapes : compte → infos entreprise
+- [x] Connexion / déconnexion
+- [x] Middleware de protection des routes
+- [x] Layout responsive (sidebar + header + hamburger mobile)
+- [x] Page d'accueil marketing (hero, features, pricing, footer)
+- [x] Démo interactive `/demo` avec données fictives
+- [ ] **Mot de passe oublié / reset** ← *en cours*
+- [ ] Connexion OAuth Google
 
-#### Authentification & onboarding
-- Inscription par email/mot de passe
-- Connexion OAuth Google
-- Onboarding en 2 étapes :
-  - Étape 1 : Prénom, nom, email, mot de passe
-  - Étape 2 : Raison sociale, SIREN (recherche auto API INSEE Sirene), adresse, numéro TVA, IBAN
-- Middleware de protection des routes (utilisateur non connecté → redirigé vers /login)
+### ✅ Gestion des clients
+- [x] Liste clients avec recherche + archivage
+- [x] Fiche client détaillée
+- [x] Création / édition client
+- [x] Lookup SIREN automatique via API INSEE Sirene
+- [x] Validation SIREN, email, champs obligatoires
+- [ ] Historique factures par client (affichage dans la fiche)
+- [ ] Import clients CSV
 
-#### Gestion des clients
-- Créer / modifier / archiver un client
-- Champs : nom, SIREN, email, adresse, ville, numéro TVA
-- Recherche auto par SIREN via API INSEE (pré-remplissage)
-- Historique des factures par client
+### ✅ Facturation — Factures
+- [x] Liste avec filtres par statut (brouillon, envoyée, payée, retard, archivée)
+- [x] Création facture (client, lignes, HT/TVA/TTC auto, numérotation séquentielle)
+- [x] Édition facture (brouillon uniquement)
+- [x] Détail facture complet
+- [x] Génération PDF (avec logo, couleur accent, mentions légales)
+- [x] Envoi email client (Resend, PDF en pièce jointe + copie émetteur)
+- [x] Archivage factures
+- [x] Statuts : brouillon → envoyée → payée / en retard / archivée
+- [ ] Transmission PPF/Chorus Pro *(UI prête, logique à brancher)*
+- [ ] Aperçu PDF inline (avant envoi)
+- [ ] Paiement en ligne (lien Stripe sur la facture)
+- [ ] Relances automatiques J+30/J+45 *(promis Plan Pro)*
 
-#### Facturation
-- Créer une facture avec :
-  - Sélection client (recherche)
-  - Lignes de prestation : description, quantité, prix HT, taux TVA (0 / 5,5 / 10 / 20 %)
-  - Calcul automatique HT / TVA / TTC
-  - Numérotation automatique séquentielle (ex : F-2025-001)
-  - Date d'émission + date d'échéance
-  - Notes / conditions de paiement
-- Aperçu PDF avant envoi
-- Envoi par email au client
-- Transmission automatique au PPF en arrière-plan (format Factur-X)
-- Statuts : `brouillon` → `envoyée` → `reçue` → `acceptée` / `rejetée`
-- Retour de statut via webhook PPF
+### ✅ Facturation — Devis
+- [x] Liste avec filtres par statut
+- [x] Création / édition devis
+- [x] Détail devis complet
+- [x] Génération PDF
+- [x] Envoi email client
+- [x] Conversion devis → facture en 1 clic
+- [x] Statuts : brouillon → envoyé → accepté / refusé → converti
 
-#### Archivage
-- Stockage sécurisé des PDF + XML Factur-X (Supabase Storage)
-- Durée : 10 ans minimum
-- Téléchargement individuel par facture
+### ✅ Facturation — Bons de commande
+- [x] Liste avec filtres par statut
+- [x] Création / édition BdC
+- [x] Détail BdC complet
+- [x] Génération PDF
+- [x] Envoi email client
+- [x] Statuts : brouillon → envoyé → confirmé → livré / annulé
 
-#### Tableau de bord
-- CA du mois en cours vs mois précédent
-- Nombre de factures émises ce mois
-- Montant total en attente de paiement
-- Montant total en retard
-- Liste des 5 dernières factures avec statut
-- Bannière statut connexion PPF (connecté / déconnecté)
+### ✅ Avoirs
+- [x] Création d'avoir depuis une facture (avec motif + lignes)
+- [x] Liste avoirs
+- [x] Détail avoir complet
+- [x] Génération PDF
+- [x] Envoi email client
+- [ ] Avoir partiel (sélection de lignes)
 
-### P1 — Important mais pas bloquant
+### ✅ Catalogue Produits
+- [x] Création / édition produit (nom, description, référence, prix HT, TVA, unité)
+- [x] Activation / désactivation
+- [x] Recherche dans le catalogue
+- [x] Combobox produits intégrée dans les formulaires devis / facture / BdC
 
-#### Devis
-- Créer un devis (même structure qu'une facture)
-- Conversion devis → facture en 1 clic
-- Statuts devis : `brouillon` / `envoyé` / `accepté` / `refusé`
+### ✅ Tableau de bord
+- [x] CA mois courant vs mois précédent (avec % évolution)
+- [x] Nombre de factures émises ce mois
+- [x] Montant en attente de paiement
+- [x] Montant en retard
+- [x] Tableau des 5 dernières factures
+- [x] Bannière statut connexion PPF
+- [ ] Graphique CA mensuel sur 12 mois *(promis Plan Pro)*
+- [ ] Taux de recouvrement
+- [ ] Top 5 clients par CA
 
-#### Relances automatiques (Plan Pro uniquement)
-- Email automatique au client à J+30, J+45, J+60 après échéance si facture impayée
-- Désactivable par facture
+### ✅ Paramètres
+- [x] Infos entreprise (nom, SIREN, SIRET, TVA, adresse, email, IBAN, logo)
+- [x] Préférences factures (couleur accent, logo, mention légale, préfixe numérotation)
+- [x] Page PPF/Chorus Pro *(UI credentials prête, logique à brancher)*
+- [ ] Notifications *(placeholder)*
+- [ ] Billing / Abonnement *(placeholder)*
 
-#### Notifications
-- Email de confirmation après transmission PPF réussie
-- Alerte email si facture rejetée par le PPF
-- Notification dans l'interface pour les factures en retard
+### ✅ Technique
+- [x] Génération PDF factures, devis, BdC, avoirs (shared lib, logo, couleur, mentions)
+- [x] Envoi email Resend (templates HTML, PDF joint, copie émetteur)
+- [x] Générateur XML Factur-X EN 16931/EXTENDED *(prêt, non branché)*
+- [x] Numérotation automatique robuste (séquentielle, par utilisateur/année)
+- [x] Responsive mobile-first complet (toutes les pages)
 
-### Hors MVP (V2)
-- Export FEC / connecteur expert-comptable
-- Multi-utilisateurs / accès collaborateur
-- Paiement en ligne intégré
-- Connexion PDP agréée (Yooz, Quadient...)
-- Application mobile
-- Plan Expert pour cabinets comptables
+---
+
+## Roadmap — Ce qui reste à faire
+
+### 🔴 Priorité 1 — Conversion & rétention (critique business)
+
+| # | Quoi | Détail | Impact |
+|---|------|--------|--------|
+| P1-1 | **Stripe Billing** | Checkout, webhooks, gestion des plans, page billing | Sans ça = 0 revenu |
+| P1-2 | **Mot de passe oublié** | Page request + page reset + email Resend | Bloquant UX ← *en cours* |
+| P1-3 | **Email de bienvenue** | Envoyé après signup, avec guide démarrage | Réduit churn J1 |
+| P1-4 | **Onboarding guidé** | 3 étapes : logo → 1er client → 1ère facture (progress bar) | 40-60% drop sans ça |
+| P1-5 | **PPF/Chorus Pro branché** | Connecter la lib XML + API Chorus Pro aux routes d'envoi | Cœur de la promesse |
+
+### 🟠 Priorité 2 — Valeur perçue & différenciation
+
+| # | Quoi | Détail | Impact |
+|---|------|--------|--------|
+| P2-1 | **Relances automatiques** | Cron J+30/J+45, email au client, log dans la facture | Promis Plan Pro |
+| P2-2 | **Dashboard CA étendu** | Graphique 12 mois, taux recouvrement, top clients | Promis Plan Pro |
+| P2-3 | **Export comptable** | CSV transactions + FEC (Format d'Échanges Comptables) | Besoin N°1 des TPE |
+| P2-4 | **Notifications email** | Facture vue / acceptée / retard — via webhook PPF | Promis dans settings |
+| P2-5 | **Page de paiement publique** | Lien Stripe sur la facture, paiement en ligne client | Réduit délai paiement |
+| P2-6 | **Historique par client** | Liste factures / devis / BdC dans la fiche client | UX attendue |
+
+### 🟡 Priorité 3 — Finition & polish
+
+| # | Quoi | Détail | Impact |
+|---|------|--------|--------|
+| P3-1 | **Pagination** | Listes factures, devis, clients (cursor-based) | Perf > 50 entrées |
+| P3-2 | **Modals de confirmation** | Remplacer `window.confirm()` par modal custom | Polish UX |
+| P3-3 | **Empty states avec CTA** | Illustration + bouton créer sur listes vides | Conversion |
+| P3-4 | **Aperçu PDF inline** | Modale prévisualisation avant envoi | Réassurance |
+| P3-5 | **Favicon + meta OG** | Image de marque, partage social | Branding |
+| P3-6 | **CGU / Mentions légales** | Pages `/cgu` et `/mentions-legales` | Légalement requis |
+| P3-7 | **Page 404 custom** | Page not found avec retour accueil | UX |
+| P3-8 | **Connexion OAuth Google** | Via Supabase Auth | Friction signup |
+
+### 🟢 Priorité 4 — Croissance (V2)
+
+| # | Quoi | Détail | Impact |
+|---|------|--------|--------|
+| P4-1 | **Import clients CSV** | Upload + mapping colonnes | Adoption |
+| P4-2 | **Parrainage / referral** | Code promo, mois offert | CAC réduit |
+| P4-3 | **Multi-utilisateurs** | Invit collaborateur, rôles | SARL/SAS |
+| P4-4 | **API publique** | REST API documentée pour intégrations | Écosystème |
+| P4-5 | **Connexion PDP agréée** | Yooz, Quadient, Chorus Pro direct | Grandes entreprises |
+| P4-6 | **Application mobile** | PWA ou React Native | Artisans terrain |
 
 ---
 
 ## Structure des pages (routes Next.js)
 
 ```
-/                        → Landing page (publique)
-/login                   → Connexion
-/signup                  → Inscription étape 1
-/signup/company          → Inscription étape 2 (infos entreprise)
+/                          → Landing page (publique)
+/login                     → Connexion
+/signup                    → Inscription étape 1
+/signup/company            → Inscription étape 2 (infos entreprise)
+/forgot-password           → Demande de réinitialisation mdp
+/reset-password            → Formulaire nouveau mdp (lien email)
+/demo                      → Démo interactive (données fictives)
 
-/dashboard               → Accueil (protégé)
-/invoices                → Liste des factures (protégé)
-/invoices/new            → Créer une facture (protégé)
-/invoices/[id]           → Détail d'une facture (protégé)
-/quotes                  → Liste des devis (protégé)
-/quotes/new              → Créer un devis (protégé)
-/clients                 → Liste des clients (protégé)
-/clients/[id]            → Détail d'un client (protégé)
-/settings                → Paramètres compte (protégé)
-/settings/company        → Infos entreprise
-/settings/invoices       → Préférences factures
-/settings/ppf            → Connexion PPF/PDP
-/settings/notifications  → Notifications
-/settings/billing        → Abonnement & facturation
+/dashboard                 → Tableau de bord (protégé)
+
+/clients                   → Liste des clients
+/clients/new               → Créer un client
+/clients/[id]              → Fiche client
+
+/invoices                  → Liste des factures
+/invoices/new              → Créer une facture
+/invoices/[id]             → Détail facture
+/invoices/[id]/edit        → Modifier une facture
+
+/quotes                    → Liste des devis
+/quotes/new                → Créer un devis
+/quotes/[id]               → Détail devis
+/quotes/[id]/edit          → Modifier un devis
+
+/purchase-orders           → Liste des bons de commande
+/purchase-orders/new       → Créer un BdC
+/purchase-orders/[id]      → Détail BdC
+/purchase-orders/[id]/edit → Modifier un BdC
+
+/credit-notes              → Liste des avoirs
+/credit-notes/[id]         → Détail avoir
+
+/products                  → Catalogue produits
+
+/settings                  → Paramètres (index)
+/settings/company          → Infos entreprise
+/settings/invoices         → Préférences factures
+/settings/ppf              → Connexion PPF/Chorus Pro
+/settings/notifications    → Notifications (placeholder)
+/settings/billing          → Abonnement & facturation (placeholder)
 ```
 
 ---
@@ -177,7 +270,7 @@
 | Erreur | `#EF4444` |
 | Avertissement | `#D97706` |
 
-### Statuts des factures (badges couleur)
+### Statuts factures (badges)
 | Statut | Label FR | Fond | Texte |
 |--------|----------|------|-------|
 | `draft` | Brouillon | `#F1F5F9` | `#475569` |
@@ -187,119 +280,56 @@
 | `paid` | Payée | `#D1FAE5` | `#065F46` |
 | `rejected` | Rejetée | `#FEE2E2` | `#991B1B` |
 | `accepted` | Acceptée | `#D1FAE5` | `#065F46` |
+| `credited` | Avoir émis | `#F3E8FF` | `#6B21A8` |
+| `archived` | Archivée | `#F1F5F9` | `#94A3B8` |
 
 ---
 
 ## Intégration PPF (Portail Public de Facturation)
 
-### Flux complet
+### Flux prévu
 ```
 1. Utilisateur clique "Envoyer la facture"
-2. Qonforme génère le fichier Factur-X (PDF/A-3 + XML CII)
-3. Qonforme ajoute toutes les mentions légales obligatoires
-4. Transmission au PPF via API Chorus Pro
-5. PPF valide et notifie le client destinataire
-6. PPF renvoie un webhook avec le statut (acceptée / rejetée)
-7. Qonforme met à jour le statut dans l'interface
-8. Notification email envoyée à l'utilisateur
+2. Qonforme génère le fichier Factur-X (PDF + XML CII EN 16931)
+3. Transmission au PPF via API Chorus Pro (OAuth2 client credentials)
+4. PPF valide et notifie le client destinataire
+5. PPF renvoie un webhook avec le statut (acceptée / rejetée)
+6. Qonforme met à jour le statut dans l'interface
+7. Notification email envoyée à l'utilisateur
 ```
 
-### Sandbox de développement
-- URL sandbox : `https://sandbox.api.chorus-pro.gouv.fr`
-- Documentation : `https://developer.chorus-pro.gouv.fr`
-- Authentification : OAuth2 client credentials
-
-### Mentions légales obligatoires sur chaque facture
-- Numéro de facture séquentiel
-- Date d'émission
-- SIREN du vendeur + adresse complète
-- Numéro TVA intracommunautaire (si assujetti)
-- SIREN de l'acheteur (obligatoire en B2B)
-- Désignation précise des prestations
-- Montants HT, taux TVA, montant TVA, TTC
-- Conditions de paiement et pénalités de retard
+### État actuel
+- Générateur XML Factur-X : ✅ prêt (`lib/facturx/xml.ts`)
+- Générateur PDF : ✅ prêt (`lib/pdf/`)
+- API Chorus Pro : ❌ non branchée (credentials UI prête dans settings/ppf)
+- Webhooks retour statut : ❌ non implémentés
 
 ---
 
 ## Gestion des abonnements (Stripe)
 
-### Produits Stripe
+### État actuel : ❌ Non implémenté
+- Page landing pricing : ✅ affichée
+- `lib/stripe/` : dossier créé, vide
+- Page `/settings/billing` : placeholder
+
+### À implémenter
 ```
-product: "Qonforme Starter"
-  price: 9.00 EUR / month  (id: price_starter_monthly)
-  price: 90.00 EUR / year  (id: price_starter_yearly)
+Produits Stripe :
+  "Qonforme Starter"  → 9€/mois ou 90€/an
+  "Qonforme Pro"      → 19€/mois ou 190€/an
 
-product: "Qonforme Pro"
-  price: 19.00 EUR / month  (id: price_pro_monthly)
-  price: 190.00 EUR / year  (id: price_pro_yearly)
+Webhooks à gérer :
+  customer.subscription.created   → activer le plan
+  customer.subscription.updated   → mettre à jour le plan
+  customer.subscription.deleted   → accès lecture seule
+  invoice.payment_failed          → notifier + bloquer après 3 échecs
+
+Limites :
+  Starter : bloquer création si invoices_this_month >= 10
+  Pro     : aucune limite
+  Trial   : 7 jours, sans CB, puis accès lecture seule
 ```
-
-### Logique des limites
-- Plan Starter : bloquer la création de facture si `invoices_this_month >= 10`
-- Plan Pro : aucune limite
-- Période d'essai : 7 jours sur les deux plans, sans carte bancaire
-- À expiration de l'essai sans CB renseignée : accès lecture seule, création bloquée
-
-### Webhooks Stripe à gérer
-- `customer.subscription.created` → activer le plan
-- `customer.subscription.updated` → mettre à jour le plan
-- `customer.subscription.deleted` → repasser en accès limité
-- `invoice.payment_failed` → notifier l'utilisateur, accès limité après 3 échecs
-
----
-
-## Roadmap de développement
-
-### Phase 0 — Setup ⚙️
-- [ ] Initialisation Next.js 14 + Tailwind + Shadcn
-- [ ] Configuration Supabase (projet, auth, storage)
-- [ ] Configuration Vercel (déploiement continu)
-- [ ] Variables d'environnement (Supabase, Stripe, Resend, PPF sandbox)
-- [ ] Middleware auth (protection des routes)
-
-### Phase 1 — Auth & Onboarding 🔐
-- [ ] Pages `/login` et `/signup`
-- [ ] OAuth Google via Supabase Auth
-- [ ] Onboarding 2 étapes avec création du profil entreprise
-- [ ] Redirection post-login vers `/dashboard`
-
-### Phase 2 — Clients 👥
-- [ ] Page `/clients` — liste + recherche
-- [ ] Formulaire création/édition client
-- [ ] Intégration API INSEE Sirene (recherche par SIREN)
-
-### Phase 3 — Factures 🧾
-- [ ] Page `/invoices` — liste avec filtres par statut
-- [ ] Page `/invoices/new` — formulaire complet
-- [ ] Calcul HT/TVA/TTC en temps réel
-- [ ] Génération PDF (mentions légales incluses)
-- [ ] Génération Factur-X (PDF + XML)
-- [ ] Envoi email client (Resend)
-- [ ] Transmission PPF sandbox
-- [ ] Gestion webhook retour statut PPF
-
-### Phase 4 — Dashboard 📊
-- [ ] Page `/dashboard` avec stats en temps réel
-- [ ] Bannière statut connexion PPF
-- [ ] Liste des dernières factures
-
-### Phase 5 — Abonnements 💳
-- [ ] Intégration Stripe Billing
-- [ ] Page `/settings/billing`
-- [ ] Gestion des limites par plan
-- [ ] Webhooks Stripe
-- [ ] Page succès / échec paiement
-
-### Phase 6 — Devis & Relances 📨
-- [ ] Module devis (conversion → facture)
-- [ ] Relances automatiques email (J+30 / J+45 — Plan Pro)
-- [ ] Notifications in-app
-
-### Phase 7 — Polishing & QA ✅
-- [ ] Tests sur mobile (responsive)
-- [ ] Gestion des erreurs (échec PPF, Stripe, email)
-- [ ] Optimisation performances
-- [ ] Tests de bout en bout (Playwright)
 
 ---
 
@@ -347,4 +377,4 @@ NEXT_PUBLIC_APP_URL=https://app.qonforme.fr
 
 ---
 
-*Document de référence MVP v1.0 — Qonforme*
+*Document de référence — Qonforme v1.0*
