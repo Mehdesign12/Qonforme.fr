@@ -9,12 +9,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
 
-type Status = "idle" | "loading" | "success" | "invalid" | "verifying"
+type Status = "verifying" | "idle" | "loading" | "success" | "invalid"
 
-// Règles de mot de passe
 const RULES = [
-  { id: "length", label: "8 caractères minimum",  test: (p: string) => p.length >= 8 },
-  { id: "upper",  label: "Une majuscule",           test: (p: string) => /[A-Z]/.test(p) },
+  { id: "length", label: "8 caractères minimum", test: (p: string) => p.length >= 8 },
+  { id: "upper",  label: "Une majuscule",          test: (p: string) => /[A-Z]/.test(p) },
   { id: "lower",  label: "Une minuscule",           test: (p: string) => /[a-z]/.test(p) },
   { id: "digit",  label: "Un chiffre",              test: (p: string) => /\d/.test(p) },
 ]
@@ -31,60 +30,29 @@ export default function ResetPasswordForm() {
   const [errors, setErrors]             = useState<{ password?: string; confirm?: string }>({})
   const [status, setStatus]             = useState<Status>("verifying")
 
-  // ── Vérification du lien au montage ─────────────────────────────────────
-  //
-  // Supabase génère deux types de liens selon la config du projet :
-  //
-  //  1. PKCE flow  → ?code=xxxx  (query param, lisible côté serveur)
-  //  2. Token flow → #access_token=xxx&type=recovery  (fragment hash, client only)
-  //
-  // On supporte les deux.
+  // ── Vérification de la session au montage ────────────────────────────────
+  // Le callback /api/auth/callback a déjà établi la session via cookie.
+  // On vérifie juste qu'une session active existe.
+  // Si ?error=invalid → le token était invalide/expiré (détecté dans le callback).
   useEffect(() => {
-    const code = searchParams.get("code")
-
-    // ── Cas 1 : PKCE flow (?code=) ──────────────────────────────────────
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (error) {
-          console.error("exchangeCodeForSession:", error.message)
-          setStatus("invalid")
-        } else {
-          setStatus("idle")
-        }
-      })
+    const errorParam = searchParams.get("error")
+    if (errorParam === "invalid") {
+      setStatus("invalid")
       return
     }
 
-    // ── Cas 2 : Token flow (#access_token) ──────────────────────────────
-    // Le SDK Supabase détecte automatiquement le fragment hash dans l'URL
-    // et émet un événement PASSWORD_RECOVERY quand le token est valide.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        // Token valide, session établie — on affiche le formulaire
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
         setStatus("idle")
-        subscription.unsubscribe()
-      } else if (event === "SIGNED_IN") {
-        // Peut arriver juste avant PASSWORD_RECOVERY, on attend
-      }
-    })
-
-    // Timeout de sécurité : si aucun événement après 4s → lien invalide
-    const timeout = setTimeout(() => {
-      const currentStatus = status
-      if (currentStatus === "verifying") {
-        subscription.unsubscribe()
+      } else {
+        // Pas de session active → lien non utilisé ou déjà consommé
         setStatus("invalid")
       }
-    }, 4000)
-
-    return () => {
-      clearTimeout(timeout)
-      subscription.unsubscribe()
-    }
+    })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Validation ───────────────────────────────────────────────────────────
+  // ── Validation ────────────────────────────────────────────────────────────
   const validate = (): boolean => {
     const errs: typeof errors = {}
     if (!password)
@@ -99,7 +67,7 @@ export default function ResetPasswordForm() {
     return Object.keys(errs).length === 0
   }
 
-  // ── Soumission ───────────────────────────────────────────────────────────
+  // ── Soumission ────────────────────────────────────────────────────────────
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
@@ -117,7 +85,6 @@ export default function ResetPasswordForm() {
         setStatus("idle")
         return
       }
-      // Déconnexion propre après reset (bonne pratique sécurité)
       await supabase.auth.signOut()
       setStatus("success")
     } catch {
@@ -126,17 +93,17 @@ export default function ResetPasswordForm() {
     }
   }
 
-  // ── État : vérification en cours ─────────────────────────────────────────
+  // ── Spinner de vérification ───────────────────────────────────────────────
   if (status === "verifying") {
     return (
-      <div className="flex flex-col items-center gap-4 py-6">
+      <div className="flex flex-col items-center gap-3 py-8">
         <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
-        <p className="text-sm text-slate-500">Vérification du lien…</p>
+        <p className="text-sm text-slate-500">Vérification en cours…</p>
       </div>
     )
   }
 
-  // ── État : lien invalide ou expiré ───────────────────────────────────────
+  // ── Lien invalide ou expiré ───────────────────────────────────────────────
   if (status === "invalid") {
     return (
       <div className="text-center space-y-4">
@@ -162,7 +129,7 @@ export default function ResetPasswordForm() {
     )
   }
 
-  // ── État : succès ────────────────────────────────────────────────────────
+  // ── Succès ────────────────────────────────────────────────────────────────
   if (status === "success") {
     return (
       <div className="text-center space-y-4">
@@ -188,13 +155,12 @@ export default function ResetPasswordForm() {
     )
   }
 
-  // ── État : formulaire ────────────────────────────────────────────────────
+  // ── Formulaire ────────────────────────────────────────────────────────────
   const allRulesPassed = RULES.every(r => r.test(password))
 
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
 
-      {/* Nouveau mot de passe */}
       <div>
         <Label htmlFor="password">Nouveau mot de passe</Label>
         <div className="relative mt-1">
@@ -222,10 +188,7 @@ export default function ResetPasswordForm() {
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
-        {errors.password && (
-          <p className="text-xs text-red-500 mt-1">{errors.password}</p>
-        )}
-        {/* Indicateurs règles */}
+        {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
         {password.length > 0 && !allRulesPassed && (
           <ul className="mt-2 space-y-1">
             {RULES.map(rule => {
@@ -244,7 +207,6 @@ export default function ResetPasswordForm() {
         )}
       </div>
 
-      {/* Confirmation */}
       <div>
         <Label htmlFor="confirm">Confirme le mot de passe</Label>
         <div className="relative mt-1">
@@ -271,9 +233,7 @@ export default function ResetPasswordForm() {
             {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
-        {errors.confirm && (
-          <p className="text-xs text-red-500 mt-1">{errors.confirm}</p>
-        )}
+        {errors.confirm && <p className="text-xs text-red-500 mt-1">{errors.confirm}</p>}
       </div>
 
       <Button
@@ -282,10 +242,7 @@ export default function ResetPasswordForm() {
         disabled={status === "loading"}
       >
         {status === "loading" ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Mise à jour…
-          </>
+          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Mise à jour…</>
         ) : (
           "Enregistrer le nouveau mot de passe"
         )}
