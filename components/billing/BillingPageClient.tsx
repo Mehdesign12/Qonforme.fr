@@ -13,6 +13,8 @@ import {
   CreditCard,
   Check,
   ArrowUpRight,
+  Calendar,
+  RefreshCw,
 } from 'lucide-react'
 import { PLANS } from '@/lib/stripe/plans'
 import type { Subscription } from '@/lib/stripe/subscription'
@@ -55,7 +57,7 @@ const STATUS_CONFIG = {
   },
   incomplete: {
     icon: Clock,
-    label: 'En attente de paiement',
+    label: 'En attente',
     color: 'text-[#6B7280]',
     bg: 'bg-[#F1F5F9]',
     border: 'border-[#CBD5E1]',
@@ -69,7 +71,7 @@ export default function BillingPageClient({
   const [loadingPortal, setLoadingPortal] = useState<'manage' | 'upgrade' | null>(null)
   const [portalError, setPortalError] = useState<string | null>(null)
 
-  const plan = subscription?.plan ? PLANS[subscription.plan] : null
+  const plan = subscription?.plan ? PLANS[subscription.plan as keyof typeof PLANS] : null
   const statusKey =
     subscription?.status && STATUS_CONFIG[subscription.status as keyof typeof STATUS_CONFIG]
       ? (subscription.status as keyof typeof STATUS_CONFIG)
@@ -128,41 +130,66 @@ export default function BillingPageClient({
     ? Math.min(100, Math.round((invoicesThisMonth / invoiceLimit) * 100))
     : 0
   const isNearLimit = invoiceLimit !== null && invoicesThisMonth >= invoiceLimit * 0.8
+
+  // Features du plan courant ; features Pro exclusives
+  const currentFeatures = plan?.features ?? []
   const proFeatures = PLANS.pro.features
-  const starterFeatures = plan?.features ?? []
+  const proExclusiveFeatures = proFeatures.filter((f) => !currentFeatures.includes(f))
+
+  // Prix affiché
+  const displayPrice = plan
+    ? subscription.billing_period === 'monthly'
+      ? `${plan.monthlyPrice} €/mois HT`
+      : `${plan.yearlyPrice} €/an HT`
+    : null
 
   return (
     <div className="space-y-5 max-w-2xl">
 
-      {/* ── Alerte abonnement inactif ─────────────────────────────────── */}
-      {(statusKey === 'past_due' || statusKey === 'canceled' || statusKey === 'incomplete') && (
+      {/* ── Alerte si abonnement inactif ──────────────────────────────────── */}
+      {statusKey === 'past_due' && (
         <div className="bg-[#FEF3C7] border border-[#FCD34D] rounded-xl px-4 py-3 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-[#D97706] shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-[#92400E]">
-              {statusKey === 'past_due'
-                ? "Paiement en échec — Mets à jour ta carte bancaire pour rétablir l'accès"
-                : statusKey === 'canceled'
-                ? "Abonnement annulé — Renouvelle ton abonnement pour retrouver l'accès"
-                : "Paiement en attente — Finalise ton paiement pour accéder à l'application"}
+              Paiement en échec — Mets à jour ta carte bancaire pour rétablir l&apos;accès
             </p>
             <button
               onClick={() => openPortal('manage')}
               className="text-sm font-semibold text-[#92400E] underline mt-1"
             >
-              Gérer mon abonnement →
+              Mettre à jour mes informations de paiement →
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Carte plan actuel ─────────────────────────────────────────── */}
+      {statusKey === 'canceled' && (
+        <div className="bg-[#FEE2E2] border border-[#FCA5A5] rounded-xl px-4 py-3 flex items-start gap-3">
+          <XCircle className="w-5 h-5 text-[#EF4444] shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-[#991B1B]">
+              Abonnement annulé — Renouvelle ton abonnement pour retrouver l&apos;accès
+            </p>
+            <button
+              onClick={() => (window.location.href = '/pricing')}
+              className="text-sm font-semibold text-[#991B1B] underline mt-1"
+            >
+              Voir les plans →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Carte plan actuel ─────────────────────────────────────────────── */}
       <div className={`bg-white rounded-xl border-2 p-6 ${isPro ? 'border-[#2563EB]' : 'border-[#E2E8F0]'}`}>
 
         {/* En-tête plan */}
         <div className="flex items-start justify-between gap-4 mb-5">
           <div className="flex items-center gap-3">
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${isStarter ? 'bg-[#EFF6FF]' : 'bg-gradient-to-br from-[#1D4ED8] to-[#7C3AED]'}`}>
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+              isStarter ? 'bg-[#EFF6FF]' : 'bg-gradient-to-br from-[#1D4ED8] to-[#7C3AED]'
+            }`}>
               {isStarter
                 ? <Zap className="w-5 h-5 text-[#2563EB]" />
                 : <Crown className="w-5 h-5 text-white" />
@@ -174,14 +201,10 @@ export default function BillingPageClient({
               </h2>
               <p className="text-sm text-slate-500">
                 {subscription.billing_period === 'monthly' ? 'Facturation mensuelle' : 'Facturation annuelle'}
-                {plan && (
+                {displayPrice && (
                   <>
                     {' · '}
-                    <span className="font-semibold text-[#0F172A]">
-                      {subscription.billing_period === 'monthly'
-                        ? `${plan.monthlyPrice} €/mois HT`
-                        : `${plan.yearlyPrice} €/an HT`}
-                    </span>
+                    <span className="font-semibold text-[#0F172A]">{displayPrice}</span>
                   </>
                 )}
               </p>
@@ -198,27 +221,34 @@ export default function BillingPageClient({
         </div>
 
         {/* Dates */}
-        <div className="grid grid-cols-2 gap-4 text-sm mb-5 pb-5 border-b border-[#F1F5F9]">
-          <div>
-            <p className="text-slate-400 text-xs mb-0.5 uppercase tracking-wide">Prochain débit</p>
-            <p className="font-semibold text-[#0F172A]">
-              {statusKey === 'canceled' ? '—' : formatDate(subscription.current_period_end)}
-            </p>
+        {subscription.current_period_end && statusKey !== 'canceled' && (
+          <div className="flex items-center gap-2 text-sm text-slate-500 mb-5 pb-5 border-b border-[#F1F5F9]">
+            <Calendar className="w-4 h-4 shrink-0 text-slate-400" />
+            <span>
+              {statusKey === 'active' ? 'Prochain renouvellement le' : 'Valable jusqu&apos;au'}{' '}
+              <span className="font-semibold text-[#0F172A]">
+                {formatDate(subscription.current_period_end)}
+              </span>
+            </span>
           </div>
-          {subscription.canceled_at && (
-            <div>
-              <p className="text-slate-400 text-xs mb-0.5 uppercase tracking-wide">Annulé le</p>
-              <p className="font-semibold text-[#EF4444]">{formatDate(subscription.canceled_at)}</p>
-            </div>
-          )}
-        </div>
+        )}
+
+        {subscription.canceled_at && (
+          <div className="flex items-center gap-2 text-sm text-[#EF4444] mb-5 pb-5 border-b border-[#F1F5F9]">
+            <XCircle className="w-4 h-4 shrink-0" />
+            <span>
+              Annulé le{' '}
+              <span className="font-semibold">{formatDate(subscription.canceled_at)}</span>
+            </span>
+          </div>
+        )}
 
         {/* Compteur factures Starter */}
         {isStarter && invoiceLimit !== null && (
           <div className="mb-5 p-4 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0]">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-[#0F172A]">Factures ce mois-ci</p>
-              <p className={`text-sm font-bold ${isNearLimit ? 'text-[#D97706]' : 'text-[#0F172A]'}`}>
+              <p className={`text-sm font-bold ${invoicePercent >= 80 ? 'text-[#D97706]' : 'text-[#0F172A]'}`}>
                 {invoicesThisMonth} / {invoiceLimit}
               </p>
             </div>
@@ -234,6 +264,14 @@ export default function BillingPageClient({
                 style={{ width: `${invoicePercent}%` }}
               />
             </div>
+            {isNearLimit && invoicesThisMonth < invoiceLimit && (
+              <p className="text-xs text-[#D97706] mt-2">
+                Tu approches de ta limite mensuelle.{' '}
+                <button onClick={() => openPortal('upgrade')} className="underline font-semibold">
+                  Passer au Pro pour des factures illimitées
+                </button>
+              </p>
+            )}
             {invoicesThisMonth >= invoiceLimit && (
               <p className="text-xs text-[#EF4444] mt-2">
                 Limite atteinte — les nouvelles factures sont bloquées.{' '}
@@ -246,21 +284,23 @@ export default function BillingPageClient({
         )}
 
         {/* Features du plan actuel */}
-        <div className="mb-5">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-            Inclus dans ton plan
-          </p>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
-            {starterFeatures.map((feature) => (
-              <li key={feature} className="flex items-start gap-2 text-sm text-[#374151]">
-                <Check className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </div>
+        {currentFeatures.length > 0 && (
+          <div className="mb-5">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
+              Inclus dans ton plan
+            </p>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+              {currentFeatures.map((feature) => (
+                <li key={feature} className="flex items-start gap-2 text-sm text-[#374151]">
+                  <Check className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-        {/* Bouton portail */}
+        {/* Bouton portail Stripe */}
         <button
           onClick={() => openPortal('manage')}
           disabled={loadingPortal !== null}
@@ -284,12 +324,12 @@ export default function BillingPageClient({
         )}
 
         <p className="text-xs text-slate-400 text-center mt-3">
-          Changement de plan, mise à jour CB, annulation — via le portail sécurisé Stripe
+          Changement de CB, annulation, historique de facturation — via le portail sécurisé Stripe
         </p>
       </div>
 
-      {/* ── Carte upgrade Pro (Starter uniquement + abonnement actif) ─── */}
-      {isStarter && statusKey === 'active' && (
+      {/* ── Bloc upgrade Pro — visible pour tous les Starter ──────────────── */}
+      {isStarter && statusKey !== 'canceled' && (
         <div className="bg-gradient-to-br from-[#1E3A8A] to-[#1D4ED8] rounded-xl p-6 text-white">
           <div className="flex items-start justify-between mb-4">
             <div>
@@ -310,23 +350,48 @@ export default function BillingPageClient({
             </div>
           </div>
 
-          {/* Features Pro que Starter n'a pas */}
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-4 mb-5">
-            {proFeatures.map((feature) => {
-              const isNew = !starterFeatures.includes(feature)
-              return (
-                <li key={feature} className={`flex items-start gap-2 text-sm ${isNew ? 'text-white font-medium' : 'text-blue-200'}`}>
-                  <Check className={`w-4 h-4 shrink-0 mt-0.5 ${isNew ? 'text-yellow-300' : 'text-blue-300'}`} />
-                  {feature}
-                  {isNew && (
-                    <span className="ml-1 text-[10px] font-bold bg-yellow-300 text-yellow-900 px-1.5 py-0.5 rounded-full leading-none self-center">
+          {/* Ce que Pro ajoute par rapport à Starter */}
+          {proExclusiveFeatures.length > 0 && (
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-blue-300 uppercase tracking-wide mb-2">
+                Uniquement en Pro
+              </p>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-4">
+                {proExclusiveFeatures.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2 text-sm text-white font-medium">
+                    <Check className="w-4 h-4 shrink-0 mt-0.5 text-yellow-300" />
+                    {feature}
+                    <span className="ml-1 text-[10px] font-bold bg-yellow-300 text-yellow-900 px-1.5 py-0.5 rounded-full leading-none self-center whitespace-nowrap">
                       NEW
                     </span>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Toutes les features Pro */}
+          <div className="mb-5">
+            <p className="text-xs font-semibold text-blue-300 uppercase tracking-wide mb-2">
+              Tout ce qui est inclus
+            </p>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-4">
+              {proFeatures.map((feature) => {
+                const isNew = !currentFeatures.includes(feature)
+                return (
+                  <li
+                    key={feature}
+                    className={`flex items-start gap-2 text-sm ${isNew ? 'text-white font-medium' : 'text-blue-200'}`}
+                  >
+                    <Check
+                      className={`w-4 h-4 shrink-0 mt-0.5 ${isNew ? 'text-yellow-300' : 'text-blue-300'}`}
+                    />
+                    {feature}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
 
           <button
             onClick={() => openPortal('upgrade')}
@@ -345,6 +410,26 @@ export default function BillingPageClient({
               </>
             )}
           </button>
+
+          <p className="text-xs text-blue-300 text-center mt-3">
+            Changement immédiat · Au prorata · Sans engagement
+          </p>
+        </div>
+      )}
+
+      {/* ── Message de rechargement si données manquantes ─────────────────── */}
+      {!plan && subscription && (
+        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 flex items-center gap-3">
+          <RefreshCw className="w-4 h-4 text-slate-400 shrink-0" />
+          <p className="text-sm text-slate-500">
+            Synchronisation en cours…{' '}
+            <button
+              onClick={() => window.location.reload()}
+              className="underline text-[#2563EB] font-medium"
+            >
+              Recharger la page
+            </button>
+          </p>
         </div>
       )}
     </div>

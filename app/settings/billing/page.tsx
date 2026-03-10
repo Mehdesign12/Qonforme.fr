@@ -146,8 +146,10 @@ export default async function BillingPage() {
       const enriched = sub as Subscription
       const planIsUnknown = !enriched.plan || !(enriched.plan in PLANS)
       const statusStale = enriched.status === 'incomplete' || !enriched.status
+      // Sync aussi si current_period_end est absent ou si stripe_subscription_id manque
+      const missingDetails = !enriched.current_period_end || !enriched.stripe_subscription_id
 
-      if (planIsUnknown || statusStale) {
+      if (planIsUnknown || statusStale || missingDetails) {
         subscription = await syncFromStripe(enriched, user.id, user.email)
       } else {
         subscription = enriched
