@@ -40,11 +40,17 @@ export default function CheckoutPageClient({
   // Ref pour éviter double-redirect en StrictMode
   const redirected = useRef(false)
 
+  // Mémoïsé une seule fois — Stripe refuse les changements de onComplete après mount
+  const handleComplete = useCallback(() => {
+    setIsComplete(true)
+  }, []) // dépendances vides = stable pour toute la durée de vie du composant
+
   // Redirige vers le dashboard dès que Stripe confirme le paiement
   useEffect(() => {
     if (isComplete && !redirected.current) {
       redirected.current = true
-      router.replace('/dashboard?welcome=1')
+      // Petit délai pour que Stripe finisse d'afficher sa confirmation avant nav
+      setTimeout(() => router.replace('/dashboard?welcome=1'), 800)
     }
   }, [isComplete, router])
 
@@ -229,7 +235,7 @@ export default function CheckoutPageClient({
                 stripe={stripePromise}
                 options={{
                   fetchClientSecret,
-                  onComplete: () => setIsComplete(true),
+                  onComplete: handleComplete, // stable grâce à useCallback([], [])
                 }}
               >
                 <EmbeddedCheckout />

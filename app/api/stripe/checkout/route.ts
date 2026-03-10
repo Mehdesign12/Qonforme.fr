@@ -130,8 +130,9 @@ export async function POST(request: NextRequest) {
           billing_period: billingPeriod,
         },
       },
-      // En mode embedded, return_url remplace success_url
-      return_url: `${appUrl}/pricing/return?session_id={CHECKOUT_SESSION_ID}`,
+      // return_url = fallback Stripe si onComplete client ne se déclenche pas
+      // Pointe directement vers le dashboard (le webhook aura déjà mis à jour la DB)
+      return_url: `${appUrl}/dashboard?welcome=1`,
       locale: 'fr',
       allow_promotion_codes: false,
       // Produit digital : on ne collecte pas l'adresse
