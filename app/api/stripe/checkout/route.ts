@@ -133,7 +133,10 @@ export async function POST(request: NextRequest) {
       cancel_url: `${appUrl}/pricing`,
       locale: 'fr',
       allow_promotion_codes: false,
-      billing_address_collection: 'required',
+      // Produit digital : pas besoin d'adresse de facturation
+      billing_address_collection: 'auto',
+      // Désactiver la collecte du code postal (champ inutile pour SaaS)
+      phone_number_collection: { enabled: false },
     })
 
     return NextResponse.json({ url: session.url })

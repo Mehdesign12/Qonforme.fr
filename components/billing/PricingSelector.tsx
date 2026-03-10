@@ -30,9 +30,10 @@ export default function PricingSelector() {
         return
       }
 
-      // Redirection vers Stripe Checkout
+      // Redirection vers Stripe Checkout dans le même onglet
       if (data.url) {
-        window.location.href = data.url
+        // Utiliser assign() plutôt que href pour garantir même onglet
+        window.location.assign(data.url)
       }
     } catch {
       setError('Impossible de contacter le serveur. Réessaie.')
