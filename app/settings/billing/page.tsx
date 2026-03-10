@@ -2,12 +2,112 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import BillingPageClient from '@/components/billing/BillingPageClient'
 import { stripe } from '@/lib/stripe/client'
-import { getPlanByPriceId } from '@/lib/stripe/plans'
+import { getPlanByPriceId, PLANS } from '@/lib/stripe/plans'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { Subscription } from '@/lib/stripe/subscription'
+import type Stripe from 'stripe'
 
 export const metadata: Metadata = { title: 'Abonnement — Qonforme' }
 export const dynamic = 'force-dynamic'
+
+function mapStripeStatus(stripeStatus: string): Subscription['status'] {
+  switch (stripeStatus) {
+    case 'active':
+    case 'trialing':
+      return 'active'
+    case 'past_due':
+    case 'unpaid':
+      return 'past_due'
+    case 'canceled':
+    case 'incomplete_expired':
+      return 'canceled'
+    default:
+      return 'incomplete'
+  }
+}
+
+async function syncFromStripe(
+  sub: Subscription,
+  userId: string
+): Promise<Subscription> {
+  let stripeSub: Stripe.Subscription | null = null
+
+  // Priorité 1 : récupérer via stripe_subscription_id
+  if (sub.stripe_subscription_id) {
+    try {
+      stripeSub = await stripe.subscriptions.retrieve(sub.stripe_subscription_id)
+    } catch (err) {
+      console.error('[BillingPage] retrieve subscription error:', err)
+    }
+  }
+
+  // Priorité 2 : récupérer la subscription active via stripe_customer_id
+  if (!stripeSub && sub.stripe_customer_id) {
+    try {
+      const list = await stripe.subscriptions.list({
+        customer: sub.stripe_customer_id,
+        status: 'all',
+        limit: 1,
+      })
+      stripeSub = list.data[0] ?? null
+    } catch (err) {
+      console.error('[BillingPage] list subscriptions error:', err)
+    }
+  }
+
+  if (!stripeSub) {
+    console.warn('[BillingPage] Aucune subscription Stripe trouvée pour user', userId)
+    return sub
+  }
+
+  const priceId = stripeSub.items.data[0]?.price?.id
+  const planInfo = priceId ? getPlanByPriceId(priceId) : null
+  const item = stripeSub.items?.data?.[0] as unknown as { current_period_end?: number }
+  const periodEnd = item?.current_period_end
+    ? new Date(item.current_period_end * 1000).toISOString()
+    : null
+  const realStatus = mapStripeStatus(stripeSub.status)
+
+  const updatePayload: Record<string, unknown> = {
+    stripe_subscription_id: stripeSub.id,
+    stripe_customer_id: stripeSub.customer as string,
+    status: realStatus,
+    current_period_end: periodEnd,
+    updated_at: new Date().toISOString(),
+  }
+  if (planInfo) {
+    updatePayload.plan = planInfo.plan
+    updatePayload.billing_period = planInfo.period
+    updatePayload.stripe_price_id = priceId
+  }
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('subscriptions')
+    .update(updatePayload)
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error('[BillingPage] update error:', error)
+  } else {
+    console.log(`[BillingPage] Synchro OK — plan: ${planInfo?.plan ?? 'inconnu'}, status: ${realStatus}`)
+  }
+
+  return {
+    ...sub,
+    stripe_subscription_id: stripeSub.id,
+    stripe_customer_id: stripeSub.customer as string,
+    status: realStatus,
+    current_period_end: periodEnd,
+    ...(planInfo
+      ? {
+          plan: planInfo.plan,
+          billing_period: planInfo.period,
+          stripe_price_id: priceId ?? sub.stripe_price_id,
+        }
+      : {}),
+  }
+}
 
 export default async function BillingPage() {
   const supabase = await createClient()
@@ -17,7 +117,6 @@ export default async function BillingPage() {
   let invoicesThisMonth = 0
 
   if (user) {
-    // Récupérer l'abonnement
     const { data: sub } = await supabase
       .from('subscriptions')
       .select('*')
@@ -25,51 +124,17 @@ export default async function BillingPage() {
       .single()
 
     if (sub) {
-      let enriched = sub as Subscription
+      const enriched = sub as Subscription
 
-      // Si plan ou billing_period manquant → enrichir depuis Stripe
-      if ((!enriched.plan || !enriched.billing_period) && enriched.stripe_subscription_id) {
-        try {
-          const stripeSub = await stripe.subscriptions.retrieve(enriched.stripe_subscription_id)
-          const priceId = stripeSub.items.data[0]?.price?.id
-          if (priceId) {
-            const planInfo = getPlanByPriceId(priceId)
-            if (planInfo) {
-              // Mettre à jour la DB avec les vraies valeurs (auto-correction)
-              const admin = createAdminClient()
-              const item = stripeSub.items?.data?.[0] as unknown as { current_period_end?: number }
-              const periodEnd = item?.current_period_end
-                ? new Date(item.current_period_end * 1000).toISOString()
-                : null
+      // Toujours synchro si plan invalide OU statut 'incomplete'
+      const planIsUnknown = !enriched.plan || !(enriched.plan in PLANS)
+      const statusStale = enriched.status === 'incomplete' || !enriched.status
 
-              await admin
-                .from('subscriptions')
-                .update({
-                  plan: planInfo.plan,
-                  billing_period: planInfo.period,
-                  stripe_price_id: priceId,
-                  status: 'active',
-                  current_period_end: periodEnd,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('user_id', user.id)
-
-              enriched = {
-                ...enriched,
-                plan: planInfo.plan,
-                billing_period: planInfo.period,
-                stripe_price_id: priceId,
-                status: 'active',
-                current_period_end: periodEnd,
-              }
-            }
-          }
-        } catch (err) {
-          console.error('[BillingPage] Erreur enrichissement Stripe:', err)
-        }
+      if (planIsUnknown || statusStale) {
+        subscription = await syncFromStripe(enriched, user.id)
+      } else {
+        subscription = enriched
       }
-
-      subscription = enriched
     }
 
     // Compter les factures du mois courant
