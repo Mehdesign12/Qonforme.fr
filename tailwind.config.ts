@@ -66,6 +66,11 @@ const config: Config = {
           "65%, 85%": { transform: "translateZ(0) rotate(270deg)" },
           "100%": { transform: "translateZ(0) rotate(360deg)" },
         },
+        // Marquee logos
+        marquee: {
+          from: { transform: "translateX(0)" },
+          to:   { transform: "translateX(-50%)" },
+        },
         // Aurora keyframes — déplace le background-position pour l'effet mouvant
         aurora: {
           "0%":   { backgroundPosition: "0% 50%" },
@@ -81,6 +86,7 @@ const config: Config = {
         "fade-in": "fade-in 0.2s ease-out",
         "shimmer-slide": "shimmer-slide var(--speed) ease-in-out infinite alternate",
         "spin-around": "spin-around calc(var(--speed) * 2) infinite linear",
+        marquee: "marquee 28s linear infinite",
         aurora: "aurora 30s linear infinite",
       },
     },

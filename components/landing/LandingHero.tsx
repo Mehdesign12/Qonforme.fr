@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { AuroraBackground } from "@/components/ui/aurora-background";
+import { LightRays } from "@/components/ui/light-rays";
 
 const LOGO_URL =
   "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20simple%20bleu%20avec%20fond.webp";
@@ -355,6 +356,15 @@ function Hero() {
 export function LandingHero() {
   return (
     <AuroraBackground className="bg-white" showRadialGradient={true}>
+      {/* Rayons lumineux animés */}
+      <LightRays
+        rayCount={9}
+        rayColor="#93c5fd"
+        rayOpacity={0.18}
+        rayWidth={14}
+        duration={7}
+        className="z-0"
+      />
       <Header />
       <Hero />
     </AuroraBackground>
