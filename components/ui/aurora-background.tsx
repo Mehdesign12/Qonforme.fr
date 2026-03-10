@@ -8,11 +8,6 @@ interface AuroraBackgroundProps extends React.HTMLProps<HTMLDivElement> {
   showRadialGradient?: boolean;
 }
 
-/**
- * AuroraBackground — fond animé aurora.
- * ⚠️ Ce composant est un simple wrapper relatif, sans hauteur forcée.
- * Il hérite des dimensions de son parent.
- */
 export const AuroraBackground = ({
   className,
   children,
@@ -21,30 +16,39 @@ export const AuroraBackground = ({
 }: AuroraBackgroundProps) => {
   return (
     <div
-      className={cn("relative w-full overflow-hidden", className)}
+      className={cn("relative w-full", className)}
       {...props}
     >
-      {/* Couche aurora — positionnée en absolu derrière tout le contenu */}
+      {/* ── Couche aurora animée ── */}
       <div
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute inset-0 -z-10",
-          // Dégradés aurora
-          "[--white-gradient:repeating-linear-gradient(100deg,#fff_0%,#fff_7%,transparent_10%,transparent_12%,#fff_16%)]",
-          "[--aurora:repeating-linear-gradient(100deg,#3b82f6_10%,#a5b4fc_15%,#93c5fd_20%,#ddd6fe_25%,#60a5fa_30%)]",
-          "bg-[image:var(--white-gradient),var(--aurora)]",
-          "bg-[length:300%,200%] bg-[position:50%_50%,50%_50%]",
-          "filter blur-[12px] invert",
-          "after:absolute after:inset-0 after:content-['']",
-          "after:bg-[image:var(--white-gradient),var(--aurora)]",
-          "after:bg-[length:200%,100%]",
-          "after:animate-aurora",
-          "after:mix-blend-difference",
-          "opacity-40",
+          "pointer-events-none absolute inset-0 -z-10 overflow-hidden",
           showRadialGradient &&
-            "[mask-image:radial-gradient(ellipse_80%_60%_at_50%_0%,black_40%,transparent_100%)]"
+            "[mask-image:radial-gradient(ellipse_100%_80%_at_50%_-10%,black_30%,transparent_90%)]"
         )}
-      />
+      >
+        <div
+          className={cn(
+            "absolute inset-[-20%] opacity-50",
+            // Gradient blanc pour le mode light (invert)
+            "[--white-gradient:repeating-linear-gradient(100deg,#ffffff_0%,#ffffff_7%,transparent_10%,transparent_12%,#ffffff_16%)]",
+            // Couleurs aurora : bleu, indigo, violet, cyan
+            "[--aurora:repeating-linear-gradient(100deg,#3b82f6_10%,#818cf8_15%,#93c5fd_20%,#c4b5fd_25%,#60a5fa_30%)]",
+            "bg-[image:var(--white-gradient),var(--aurora)]",
+            "bg-[length:300%_300%,200%_200%]",
+            "bg-[position:50%_50%,50%_50%]",
+            "blur-[8px] invert",
+            // Pseudo-élément animé
+            "after:absolute after:inset-0 after:content-['']",
+            "after:bg-[image:var(--white-gradient),var(--aurora)]",
+            "after:bg-[length:200%_200%,150%_150%]",
+            "after:animate-aurora",
+            "after:mix-blend-difference"
+          )}
+        />
+      </div>
+
       {children}
     </div>
   );
