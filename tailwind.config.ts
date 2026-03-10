@@ -82,7 +82,7 @@ const config: Config = {
         "fade-in": "fade-in 0.2s ease-out",
         "shimmer-slide": "shimmer-slide var(--speed) ease-in-out infinite alternate",
         "spin-around": "spin-around calc(var(--speed) * 2) infinite linear",
-        aurora: "aurora 8s linear infinite",
+        aurora: "aurora 30s linear infinite",
       },
     },
   },
