@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, DM_Mono } from "next/font/google";
+import { DM_Sans, DM_Mono, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
 import { ReduxProvider } from "@/components/shared/ReduxProvider";
 import { Toaster } from "@/components/ui/sonner";
@@ -14,6 +14,13 @@ const dmMono = DM_Mono({
   variable: "--font-dm-mono",
   subsets: ["latin"],
   weight: ["300", "400", "500"],
+});
+
+const bricolageGrotesque = Bricolage_Grotesque({
+  variable: "--font-bricolage",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -42,7 +49,7 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <body
-        className={`${dmSans.variable} ${dmMono.variable} font-sans antialiased bg-[#F8FAFC] text-[#0F172A]`}
+        className={`${dmSans.variable} ${dmMono.variable} ${bricolageGrotesque.variable} font-sans antialiased bg-[#F8FAFC] text-[#0F172A]`}
       >
         <ReduxProvider>
           {children}

@@ -66,14 +66,13 @@ const config: Config = {
           "65%, 85%": { transform: "translateZ(0) rotate(270deg)" },
           "100%": { transform: "translateZ(0) rotate(360deg)" },
         },
-        // Aurora keyframes
+        // Aurora keyframes — déplace le background-position pour l'effet mouvant
         aurora: {
-          from: {
-            backgroundPosition: "50% 50%, 50% 50%",
-          },
-          to: {
-            backgroundPosition: "350% 50%, 350% 50%",
-          },
+          "0%":   { backgroundPosition: "0% 50%" },
+          "25%":  { backgroundPosition: "50% 0%" },
+          "50%":  { backgroundPosition: "100% 50%" },
+          "75%":  { backgroundPosition: "50% 100%" },
+          "100%": { backgroundPosition: "0% 50%" },
         },
       },
       animation: {
