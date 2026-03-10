@@ -66,7 +66,7 @@ export default function BillingPageClient({
   subscription,
   invoicesThisMonth,
 }: BillingPageClientProps) {
-  const [loadingPortal, setLoadingPortal] = useState(false)
+  const [loadingPortal, setLoadingPortal] = useState<'manage' | 'upgrade' | null>(null)
   const [portalError, setPortalError] = useState<string | null>(null)
 
   const plan = subscription?.plan ? PLANS[subscription.plan] : null
@@ -77,21 +77,25 @@ export default function BillingPageClient({
   const statusConfig = STATUS_CONFIG[statusKey]
   const StatusIcon = statusConfig.icon
 
-  async function handleManageSubscription() {
-    setLoadingPortal(true)
+  async function openPortal(action: 'manage' | 'upgrade') {
+    setLoadingPortal(action)
     setPortalError(null)
     try {
-      const res = await fetch('/api/stripe/portal')
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
       const data = await res.json()
       if (!res.ok) {
         setPortalError(data.error ?? "Erreur lors de l'ouverture du portail")
-        setLoadingPortal(false)
+        setLoadingPortal(null)
         return
       }
       window.location.href = data.url
     } catch {
       setPortalError('Erreur réseau. Réessaie.')
-      setLoadingPortal(false)
+      setLoadingPortal(null)
     }
   }
 
@@ -143,7 +147,7 @@ export default function BillingPageClient({
                 : "Paiement en attente — Finalise ton paiement pour accéder à l'application"}
             </p>
             <button
-              onClick={handleManageSubscription}
+              onClick={() => openPortal('manage')}
               className="text-sm font-semibold text-[#92400E] underline mt-1"
             >
               Gérer mon abonnement →
@@ -233,7 +237,7 @@ export default function BillingPageClient({
             {invoicesThisMonth >= invoiceLimit && (
               <p className="text-xs text-[#EF4444] mt-2">
                 Limite atteinte — les nouvelles factures sont bloquées.{' '}
-                <button onClick={handleManageSubscription} className="underline font-semibold">
+                <button onClick={() => openPortal('upgrade')} className="underline font-semibold">
                   Passer au Pro
                 </button>
               </p>
@@ -258,11 +262,11 @@ export default function BillingPageClient({
 
         {/* Bouton portail */}
         <button
-          onClick={handleManageSubscription}
-          disabled={loadingPortal}
+          onClick={() => openPortal('manage')}
+          disabled={loadingPortal !== null}
           className="w-full border border-[#E2E8F0] hover:border-[#2563EB] hover:bg-[#EFF6FF] text-[#0F172A] font-medium py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {loadingPortal ? (
+          {loadingPortal === 'manage' ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
               Ouverture…
@@ -325,11 +329,11 @@ export default function BillingPageClient({
           </ul>
 
           <button
-            onClick={handleManageSubscription}
-            disabled={loadingPortal}
+            onClick={() => openPortal('upgrade')}
+            disabled={loadingPortal !== null}
             className="w-full bg-white text-[#1D4ED8] hover:bg-blue-50 font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-60"
           >
-            {loadingPortal ? (
+            {loadingPortal === 'upgrade' ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Ouverture…
