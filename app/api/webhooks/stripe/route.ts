@@ -80,13 +80,36 @@ export async function POST(request: NextRequest) {
           break
         }
 
-        // user_id est dans les métadonnées de la subscription
+        // Stratégie en 3 niveaux pour récupérer user_id :
+        // 1. client_reference_id (le plus fiable — défini explicitement dans la Checkout Session)
+        // 2. metadata.user_id sur la session
+        // 3. metadata.user_id sur la subscription
         const userId =
-          stripeSub.metadata?.user_id ??
-          (session.metadata?.user_id as string | undefined)
+          (session.client_reference_id ?? undefined) ||
+          (session.metadata?.user_id as string | undefined) ||
+          stripeSub.metadata?.user_id
 
         if (!userId) {
-          console.error('[webhook] user_id manquant dans les métadonnées')
+          console.error('[webhook] user_id manquant dans toutes les métadonnées — subscriptionId:', subscriptionId)
+          // Tentative de récupération via customer metadata (dernier recours)
+          const customer = await stripe.customers.retrieve(customerId)
+          const customerUserId = !('deleted' in customer) ? customer.metadata?.user_id : undefined
+          if (!customerUserId) {
+            console.error('[webhook] Impossible de récupérer user_id — abandon')
+            break
+          }
+          // Utilise le user_id du customer
+          await upsertSubscription({
+            userId: customerUserId,
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscriptionId,
+            stripePriceId: priceId,
+            plan: planInfo.plan,
+            billingPeriod: planInfo.period,
+            status: 'active',
+            currentPeriodEnd: getPeriodEnd(stripeSub),
+          })
+          console.log(`[webhook] Abonnement activé (via customer) pour user ${customerUserId} — plan ${planInfo.plan}`)
           break
         }
 

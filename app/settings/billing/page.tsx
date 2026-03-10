@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import BillingPageClient from '@/components/billing/BillingPageClient'
+import { stripe } from '@/lib/stripe/client'
+import { getPlanByPriceId } from '@/lib/stripe/plans'
+import { createAdminClient } from '@/lib/supabase/server'
 import type { Subscription } from '@/lib/stripe/subscription'
 
 export const metadata: Metadata = { title: 'Abonnement — Qonforme' }
@@ -22,7 +25,51 @@ export default async function BillingPage() {
       .single()
 
     if (sub) {
-      subscription = sub as Subscription
+      let enriched = sub as Subscription
+
+      // Si plan ou billing_period manquant → enrichir depuis Stripe
+      if ((!enriched.plan || !enriched.billing_period) && enriched.stripe_subscription_id) {
+        try {
+          const stripeSub = await stripe.subscriptions.retrieve(enriched.stripe_subscription_id)
+          const priceId = stripeSub.items.data[0]?.price?.id
+          if (priceId) {
+            const planInfo = getPlanByPriceId(priceId)
+            if (planInfo) {
+              // Mettre à jour la DB avec les vraies valeurs (auto-correction)
+              const admin = createAdminClient()
+              const item = stripeSub.items?.data?.[0] as unknown as { current_period_end?: number }
+              const periodEnd = item?.current_period_end
+                ? new Date(item.current_period_end * 1000).toISOString()
+                : null
+
+              await admin
+                .from('subscriptions')
+                .update({
+                  plan: planInfo.plan,
+                  billing_period: planInfo.period,
+                  stripe_price_id: priceId,
+                  status: 'active',
+                  current_period_end: periodEnd,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('user_id', user.id)
+
+              enriched = {
+                ...enriched,
+                plan: planInfo.plan,
+                billing_period: planInfo.period,
+                stripe_price_id: priceId,
+                status: 'active',
+                current_period_end: periodEnd,
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[BillingPage] Erreur enrichissement Stripe:', err)
+        }
+      }
+
+      subscription = enriched
     }
 
     // Compter les factures du mois courant

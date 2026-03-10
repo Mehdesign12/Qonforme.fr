@@ -72,6 +72,14 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
+      // client_reference_id = user_id pour fiabilité maximale dans le webhook
+      client_reference_id: user.id,
+      // Métadonnées dans la session ET dans subscription_data (double filet)
+      metadata: {
+        user_id: user.id,
+        plan: planId,
+        billing_period: billingPeriod,
+      },
       // Pas de trial : accès uniquement après paiement confirmé
       subscription_data: {
         metadata: {
