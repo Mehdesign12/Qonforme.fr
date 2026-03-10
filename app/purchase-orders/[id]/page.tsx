@@ -302,15 +302,15 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
       )}
 
       {/* ── Page principale ── */}
-      <div className="space-y-6 max-w-4xl">
+      <div className="space-y-4 sm:space-y-6 max-w-4xl">
 
         {/* ── Barre d'actions ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-3">
 
           {/* Gauche : retour + numéro + badge */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <Link href="/purchase-orders">
-              <Button variant="ghost" size="sm" className="gap-1.5 text-slate-500 hover:text-slate-700">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-slate-500 hover:text-slate-700 -ml-2">
                 <ArrowLeft className="w-4 h-4" /> Bons de commande
               </Button>
             </Link>
@@ -318,15 +318,15 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
               <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#EEF2FF" }}>
                 <ShoppingCart className="w-3.5 h-3.5" style={{ color: INDIGO }} />
               </div>
-              <h1 className="text-xl font-bold text-[#0F172A] font-mono">{po.po_number}</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-[#0F172A] font-mono">{po.po_number}</h1>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_BADGE[po.status]}`}>
                 {STATUS_LABELS[po.status]}
               </span>
             </div>
           </div>
 
-          {/* Droite : boutons d'action */}
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Droite : boutons d'action — scroll horizontal sur mobile */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
 
             {/* PDF */}
             <Button variant="outline" size="sm" className="gap-1.5" onClick={downloadPDF} disabled={pdfLoading}>
@@ -341,7 +341,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
 
             {/* Modifier — brouillon uniquement */}
             {canEdit && (
-              <Link href={`/purchase-orders/${params.id}/edit`}>
+              <Link href={`/purchase-orders/${params.id}/edit`} className="shrink-0">
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <Pencil className="w-4 h-4" /> Modifier
                 </Button>
@@ -352,11 +352,11 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
             {canDelete && (
               <Button
                 variant="outline" size="sm"
-                className="gap-1.5 border-[#FCA5A5] text-[#991B1B] hover:bg-[#FEE2E2]"
+                className="gap-1.5 shrink-0 border-[#FCA5A5] text-[#991B1B] hover:bg-[#FEE2E2]"
                 onClick={deletePO} disabled={deleteLoading}
               >
                 {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                Supprimer
+                <span className="hidden xs:inline">Supprimer</span>
               </Button>
             )}
 
@@ -364,7 +364,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
             {canSendEmail && (
               <Button
                 size="sm"
-                className="gap-1.5 text-white"
+                className="gap-1.5 shrink-0 text-white"
                 style={{ backgroundColor: INDIGO }}
                 onClick={() => setShowSendModal(true)}
                 disabled={sendLoading}
@@ -380,7 +380,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
                 key={action.status}
                 variant="outline"
                 size="sm"
-                className={`gap-1.5 ${action.className}`}
+                className={`gap-1.5 shrink-0 ${action.className}`}
                 onClick={() => changeStatus(action.status)}
                 disabled={statusLoading}
               >
@@ -418,9 +418,9 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
         {/* ── Corps du bon de commande ── */}
         <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
 
-          {/* En-tête : émetteur / destinataire / numérotation */}
-          <div className="p-6 sm:p-8 border-b border-[#E2E8F0]">
-            <div className="flex flex-wrap justify-between gap-6">
+          {/* En-tête : émetteur / destinataire / numérotation — grille mobile */}
+          <div className="p-4 sm:p-8 border-b border-[#E2E8F0]">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
 
               {/* Émetteur */}
               <div>
@@ -484,7 +484,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
               </div>
 
               {/* Méta-données */}
-              <div className="text-right">
+              <div className="sm:text-right">
                 <div className="mb-3">
                   <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">N° BdC</p>
                   <p className="text-sm font-bold font-mono" style={{ color: INDIGO }}>{po.po_number}</p>
@@ -511,8 +511,20 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
             </div>
           </div>
 
-          {/* Tableau des lignes */}
-          <div className="overflow-x-auto">
+          {/* Tableau des lignes — mobile : cards empilées */}
+          <div className="block sm:hidden divide-y divide-[#F1F5F9]">
+            {po.lines?.map((line, i) => (
+              <div key={i} className="px-4 py-3">
+                <p className="text-sm font-medium text-[#0F172A] mb-1">{line.description}</p>
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>{line.quantity} × {formatCurrency(line.unit_price_ht)} HT · TVA {line.vat_rate}%</span>
+                  <span className="font-mono font-semibold text-[#0F172A]">{formatCurrency(line.total_ht)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#EEF2FF" }}>

@@ -32,7 +32,7 @@ export async function RecentInvoices() {
 
   if (!invoices || invoices.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-12 shadow-sm text-center">
+      <div className="bg-white rounded-xl border border-[#E2E8F0] p-10 sm:p-12 shadow-sm text-center">
         <FileText className="w-12 h-12 text-slate-200 mx-auto mb-4" />
         <p className="text-sm font-medium text-slate-600 mb-1">Aucune facture pour l&apos;instant</p>
         <p className="text-xs text-slate-400 mb-4">Créez votre première facture pour commencer</p>
@@ -48,19 +48,48 @@ export async function RecentInvoices() {
 
   return (
     <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
-      <table className="w-full">
+      {/* ── Vue mobile : cards ── */}
+      <div className="sm:hidden divide-y divide-[#F1F5F9]">
+        {invoices.map((inv) => (
+          <Link
+            key={inv.id}
+            href={`/invoices/${inv.id}`}
+            className="flex items-center justify-between px-4 py-3.5 hover:bg-[#F8FAFC] transition-colors"
+          >
+            <div className="min-w-0">
+              <p className="font-mono text-sm text-[#2563EB] font-medium">{inv.invoice_number}</p>
+              <p className="text-xs text-slate-500 truncate mt-0.5">
+                {(inv.client as unknown as { name: string } | null)?.name || "—"}
+              </p>
+            </div>
+            <div className="text-right ml-3 shrink-0">
+              <p className="font-mono text-sm font-semibold text-[#0F172A]">{formatCurrency(inv.total_ttc)}</p>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${STATUS_STYLE[inv.status as InvoiceStatus]}`}>
+                {INVOICE_STATUS_LABELS[inv.status as InvoiceStatus]}
+              </span>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* ── Vue desktop : table ── */}
+      <table className="hidden sm:table w-full">
         <thead>
           <tr className="border-b border-[#E2E8F0]">
             <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° facture</th>
             <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Client</th>
-            <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden sm:table-cell">Date</th>
+            <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Date</th>
             <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Montant TTC</th>
             <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Statut</th>
           </tr>
         </thead>
         <tbody>
           {invoices.map((inv) => (
-            <tr key={inv.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0">
+            <tr
+              key={inv.id}
+              onClick={() => {}}
+              className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0"
+            >
               <td className="px-5 py-3.5">
                 <Link href={`/invoices/${inv.id}`} className="font-mono text-sm text-[#2563EB] hover:underline font-medium">
                   {inv.invoice_number}
@@ -69,7 +98,7 @@ export async function RecentInvoices() {
               <td className="px-5 py-3.5 text-sm text-[#0F172A]">
                 {(inv.client as unknown as { name: string } | null)?.name || "—"}
               </td>
-              <td className="px-5 py-3.5 text-sm text-slate-500 hidden sm:table-cell">
+              <td className="px-5 py-3.5 text-sm text-slate-500 hidden md:table-cell">
                 {formatDate(inv.issue_date)}
               </td>
               <td className="px-5 py-3.5 text-right font-mono text-sm font-semibold text-[#0F172A]">
@@ -84,6 +113,7 @@ export async function RecentInvoices() {
           ))}
         </tbody>
       </table>
+
       <div className="px-5 py-3 border-t border-[#E2E8F0]">
         <Link href="/invoices" className="text-sm text-[#2563EB] hover:underline font-medium">
           Voir toutes les factures →

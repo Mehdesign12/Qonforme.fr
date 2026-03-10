@@ -167,12 +167,12 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
         </div>
       </div>
     )}
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <button onClick={() => router.push("/credit-notes")}>
-            <Button variant="ghost" size="sm" className="gap-1.5 text-slate-500 hover:text-slate-700">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-slate-500 hover:text-slate-700 -ml-2">
               <ArrowLeft className="w-4 h-4" /> Avoirs
             </Button>
           </button>
@@ -180,26 +180,28 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
             <div className="w-7 h-7 rounded-md bg-[#FFF7ED] flex items-center justify-center">
               <RotateCcw className="w-3.5 h-3.5 text-[#C2410C]" />
             </div>
-            <h1 className="text-xl font-bold text-[#0F172A] font-mono">{creditNote.credit_note_number}</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-[#0F172A] font-mono">{creditNote.credit_note_number}</h1>
           </div>
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-[#FFF7ED] text-[#C2410C] border-[#FED7AA]">
             Avoir
           </span>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={downloadPDF} disabled={pdfLoading}>
+        {/* Boutons — scroll mobile */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+          <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={downloadPDF} disabled={pdfLoading}>
             {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            {pdfLoading ? "Génération…" : "Télécharger PDF"}
+            <span className="hidden xs:inline">{pdfLoading ? "Génération…" : "PDF"}</span>
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
-            <Printer className="w-4 h-4" /> Imprimer
+          <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => window.print()}>
+            <Printer className="w-4 h-4" />
+            <span className="hidden xs:inline">Imprimer</span>
           </Button>
           {/* Bouton Envoyer par email */}
           {creditNote.client?.email && (
             <Button
               size="sm"
-              className="gap-1.5 bg-[#C2410C] hover:bg-[#9A3412] text-white"
+              className="gap-1.5 shrink-0 bg-[#C2410C] hover:bg-[#9A3412] text-white"
               onClick={() => setShowSendModal(true)}
               disabled={sendLoading}
             >
@@ -236,8 +238,8 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
       {/* Corps de l'avoir */}
       <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
 
-        <div className="p-6 sm:p-8 border-b border-[#E2E8F0]">
-          <div className="flex flex-wrap justify-between gap-6">
+        <div className="p-4 sm:p-8 border-b border-[#E2E8F0]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div>
               <p className="text-xs font-medium text-slate-400 mb-1">DE</p>
               {company ? (
@@ -282,7 +284,7 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
                 </div>
               ) : <p className="text-sm text-slate-400">—</p>}
             </div>
-            <div className="text-right">
+            <div className="sm:text-right">
               <div className="mb-3">
                 <p className="text-xs font-medium text-slate-400">N° AVOIR</p>
                 <p className="text-sm font-bold font-mono text-[#C2410C]">{creditNote.credit_note_number}</p>
@@ -299,8 +301,20 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
           </div>
         </div>
 
-        {/* Tableau lignes */}
-        <div className="overflow-x-auto">
+        {/* Tableau lignes — mobile : cards empilées */}
+        <div className="block sm:hidden divide-y divide-[#F1F5F9]">
+          {creditNote.lines?.map((line, i) => (
+            <div key={i} className="px-4 py-3">
+              <p className="text-sm font-medium text-[#0F172A] mb-1">{line.description}</p>
+              <div className="flex items-center justify-between text-xs text-slate-500">
+                <span>{line.quantity} × {formatCurrency(line.unit_price_ht)} HT · TVA {line.vat_rate}%</span>
+                <span className="font-mono font-semibold text-[#C2410C]">-{formatCurrency(line.total_ht)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#E2E8F0] bg-[#FFF7ED]">

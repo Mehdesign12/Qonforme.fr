@@ -375,7 +375,7 @@ export default function ProductsPage() {
   return (
     <div className="space-y-5 animate-fade-in">
 
-      {/* Panel latéral */}
+      {/* Panel latéral — pleine largeur sur mobile */}
       {panel !== null && (
         <ProductPanel
           product={panel === "create" ? null : panel}
@@ -420,7 +420,7 @@ export default function ProductsPage() {
         </Button>
       </div>
 
-      {/* Tableau */}
+      {/* Tableau — avec cards mobile */}
       <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center py-16">
@@ -448,99 +448,148 @@ export default function ProductsPage() {
             )}
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Produit / Service</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden sm:table-cell">Référence</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Unité</th>
-                <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Prix HT</th>
-                <th className="text-center text-xs font-medium text-slate-400 px-5 py-3 hidden sm:table-cell">TVA</th>
-                <th className="text-right text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Prix TTC</th>
-                <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* ── Mobile : cards ── */}
+            <div className="sm:hidden divide-y divide-[#F1F5F9]">
               {displayed.map(product => (
-                <tr
+                <div
                   key={product.id}
-                  className={`border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0 ${
-                    !product.is_active ? "opacity-50" : ""
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-3.5 ${!product.is_active ? "opacity-50" : ""}`}
                 >
-                  {/* Nom + description */}
-                  <td className="px-5 py-4">
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] flex items-center justify-center shrink-0 mt-0.5">
-                        <Package className="w-4 h-4 text-[#2563EB]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[#0F172A]">{product.name}</p>
-                        {product.description && (
-                          <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{product.description}</p>
-                        )}
-                        {!product.is_active && (
-                          <span className="inline-flex items-center gap-1 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded mt-1 font-medium">
-                            <PowerOff className="w-2.5 h-2.5" /> Inactif
-                          </span>
-                        )}
-                      </div>
+                  <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] flex items-center justify-center shrink-0">
+                    <Package className="w-4 h-4 text-[#2563EB]" />
+                  </div>
+                  <div className="flex-1 min-w-0" onClick={() => setPanel(product)}>
+                    <p className="text-sm font-medium text-[#0F172A] truncate">{product.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="font-mono text-xs font-semibold text-[#0F172A]">{formatCurrency(product.unit_price_ht)} HT</span>
+                      <span className="text-xs text-slate-400">· TVA {product.vat_rate}%</span>
+                      {product.unit && <span className="text-xs text-slate-400">· {product.unit}</span>}
                     </div>
-                  </td>
-                  {/* Référence */}
-                  <td className="px-5 py-4 hidden sm:table-cell">
-                    <span className="font-mono text-xs text-slate-500 bg-[#F8FAFC] border border-[#E2E8F0] px-2 py-1 rounded">
-                      {product.reference || "—"}
-                    </span>
-                  </td>
-                  {/* Unité */}
-                  <td className="px-5 py-4 text-sm text-slate-500 hidden md:table-cell capitalize">
-                    {product.unit || "—"}
-                  </td>
-                  {/* Prix HT */}
-                  <td className="px-5 py-4 text-right font-mono text-sm font-medium text-[#0F172A]">
-                    {formatCurrency(product.unit_price_ht)}
-                  </td>
-                  {/* TVA */}
-                  <td className="px-5 py-4 text-center hidden sm:table-cell">
-                    <span className="text-xs font-mono bg-[#F8FAFC] border border-[#E2E8F0] px-2 py-1 rounded text-slate-600">
-                      {product.vat_rate}%
-                    </span>
-                  </td>
-                  {/* Prix TTC */}
-                  <td className="px-5 py-4 text-right font-mono text-sm text-slate-600 hidden md:table-cell">
-                    {formatCurrency(product.unit_price_ht * (1 + product.vat_rate / 100))}
-                  </td>
-                  {/* Actions */}
-                  <td className="px-5 py-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => setPanel(product)}
-                        title="Modifier"
-                      >
-                        <Pencil className="w-3.5 h-3.5 text-slate-400" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => handleToggleActive(product)}
-                        title={product.is_active ? "Désactiver" : "Activer"}
-                      >
-                        {product.is_active
-                          ? <PowerOff className="w-3.5 h-3.5 text-slate-400 hover:text-red-400" />
-                          : <Power    className="w-3.5 h-3.5 text-slate-400 hover:text-green-500" />
-                        }
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                    {!product.is_active && (
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded mt-1 font-medium">
+                        <PowerOff className="w-2.5 h-2.5" /> Inactif
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost" size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setPanel(product)}
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-slate-400" />
+                    </Button>
+                    <Button
+                      variant="ghost" size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => handleToggleActive(product)}
+                    >
+                      {product.is_active
+                        ? <PowerOff className="w-3.5 h-3.5 text-slate-400" />
+                        : <Power    className="w-3.5 h-3.5 text-slate-400" />
+                      }
+                    </Button>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {/* ── Desktop : table ── */}
+            <table className="hidden sm:table w-full">
+              <thead>
+                <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Produit / Service</th>
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden sm:table-cell">Référence</th>
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Unité</th>
+                  <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Prix HT</th>
+                  <th className="text-center text-xs font-medium text-slate-400 px-5 py-3 hidden sm:table-cell">TVA</th>
+                  <th className="text-right text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Prix TTC</th>
+                  <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayed.map(product => (
+                  <tr
+                    key={product.id}
+                    className={`border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0 ${
+                      !product.is_active ? "opacity-50" : ""
+                    }`}
+                  >
+                    {/* Nom + description */}
+                    <td className="px-5 py-4">
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] flex items-center justify-center shrink-0 mt-0.5">
+                          <Package className="w-4 h-4 text-[#2563EB]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-[#0F172A]">{product.name}</p>
+                          {product.description && (
+                            <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{product.description}</p>
+                          )}
+                          {!product.is_active && (
+                            <span className="inline-flex items-center gap-1 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded mt-1 font-medium">
+                              <PowerOff className="w-2.5 h-2.5" /> Inactif
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    {/* Référence */}
+                    <td className="px-5 py-4 hidden sm:table-cell">
+                      <span className="font-mono text-xs text-slate-500 bg-[#F8FAFC] border border-[#E2E8F0] px-2 py-1 rounded">
+                        {product.reference || "—"}
+                      </span>
+                    </td>
+                    {/* Unité */}
+                    <td className="px-5 py-4 text-sm text-slate-500 hidden md:table-cell capitalize">
+                      {product.unit || "—"}
+                    </td>
+                    {/* Prix HT */}
+                    <td className="px-5 py-4 text-right font-mono text-sm font-medium text-[#0F172A]">
+                      {formatCurrency(product.unit_price_ht)}
+                    </td>
+                    {/* TVA */}
+                    <td className="px-5 py-4 text-center hidden sm:table-cell">
+                      <span className="text-xs font-mono bg-[#F8FAFC] border border-[#E2E8F0] px-2 py-1 rounded text-slate-600">
+                        {product.vat_rate}%
+                      </span>
+                    </td>
+                    {/* Prix TTC */}
+                    <td className="px-5 py-4 text-right font-mono text-sm text-slate-600 hidden md:table-cell">
+                      {formatCurrency(product.unit_price_ht * (1 + product.vat_rate / 100))}
+                    </td>
+                    {/* Actions */}
+                    <td className="px-5 py-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => setPanel(product)}
+                          title="Modifier"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-slate-400" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleToggleActive(product)}
+                          title={product.is_active ? "Désactiver" : "Activer"}
+                        >
+                          {product.is_active
+                            ? <PowerOff className="w-3.5 h-3.5 text-slate-400 hover:text-red-400" />
+                            : <Power    className="w-3.5 h-3.5 text-slate-400 hover:text-green-500" />
+                          }
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </div>
 

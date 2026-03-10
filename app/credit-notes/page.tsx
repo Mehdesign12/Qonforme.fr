@@ -69,7 +69,32 @@ export default function CreditNotesPage() {
             </Link>
           </div>
         ) : (
-          <table className="w-full">
+          <>
+            {/* ── Mobile : cards ── */}
+            <div className="sm:hidden divide-y divide-[#F1F5F9]">
+              {creditNotes.map((cn) => (
+                <a
+                  key={cn.id}
+                  href={`/credit-notes/${cn.id}`}
+                  className="flex items-center justify-between px-4 py-3.5 hover:bg-[#F8FAFC] transition-colors"
+                >
+                  <div className="min-w-0">
+                    <span className="font-mono text-sm font-medium text-[#C2410C]">{cn.credit_note_number}</span>
+                    <p className="text-xs text-slate-400 mt-0.5 truncate">{cn.client?.name || "—"}</p>
+                    {cn.original_invoice && (
+                      <p className="text-xs font-mono text-slate-400 mt-0.5">sur {cn.original_invoice.invoice_number}</p>
+                    )}
+                  </div>
+                  <div className="text-right ml-3 shrink-0">
+                    <p className="font-mono text-sm font-semibold text-[#C2410C]">-{formatCurrency(cn.total_ttc)}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{formatDate(cn.issue_date)}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+
+            {/* ── Desktop : table ── */}
+            <table className="hidden sm:table w-full">
             <thead>
               <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
                 <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° avoir</th>
@@ -129,6 +154,7 @@ export default function CreditNotesPage() {
               ))}
             </tbody>
           </table>
+          </>
         )}
       </div>
     </div>

@@ -373,7 +373,7 @@ export function InvoiceSettingsForm() {
       <Separator />
 
       {/* ---- Actions ---- */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {isDirty && (
           <p className="text-xs text-[#D97706] flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-[#D97706] rounded-full inline-block" />
@@ -382,7 +382,7 @@ export function InvoiceSettingsForm() {
         )}
         <Button
           type="submit"
-          className="ml-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2"
+          className="sm:ml-auto w-full sm:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2"
           disabled={saving || !isDirty}
         >
           {saving && <Loader2 className="w-4 h-4 animate-spin" />}

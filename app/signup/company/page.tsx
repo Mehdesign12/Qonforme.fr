@@ -10,7 +10,7 @@ export default function SignupCompanyPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-6 sm:mb-8">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-[#2563EB] flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
@@ -32,7 +32,7 @@ export default function SignupCompanyPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm p-8">
+        <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm p-6 sm:p-8">
           <h1 className="text-2xl font-bold text-[#0F172A] mb-1">Parle-nous de ton activité</h1>
           <p className="text-slate-500 text-sm mb-6">Ces informations apparaîtront sur tes factures</p>
           <CompanyForm />

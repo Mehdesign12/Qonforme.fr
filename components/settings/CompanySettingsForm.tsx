@@ -261,7 +261,7 @@ export function CompanySettingsForm() {
           {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="siren">SIREN *</Label>
             <Input
@@ -316,9 +316,8 @@ export function CompanySettingsForm() {
           {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-3 gap-4">
           <div>
-            <Label htmlFor="zip_code">Code postal *</Label>
             <Input
               id="zip_code"
               placeholder="75001"
@@ -382,7 +381,7 @@ export function CompanySettingsForm() {
       {/* Numérotation */}
       <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4 shadow-sm">
         <h2 className="text-sm font-semibold text-[#0F172A]">Numérotation des factures</h2>
-        <div className="grid grid-cols-2 gap-4 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
           <div>
             <Label htmlFor="invoice_prefix">Préfixe</Label>
             <Input
@@ -424,7 +423,7 @@ export function CompanySettingsForm() {
       <Separator />
 
       {/* Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {isDirty && (
           <p className="text-xs text-[#D97706] flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-[#D97706] rounded-full inline-block" />
@@ -433,7 +432,7 @@ export function CompanySettingsForm() {
         )}
         <Button
           type="submit"
-          className="ml-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2"
+          className="sm:ml-auto w-full sm:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2"
           disabled={saving || !isDirty}
         >
           {saving && <Loader2 className="w-4 h-4 animate-spin" />}

@@ -214,9 +214,9 @@ export default function NewInvoiceForm() {
 
       {/* Lignes */}
       <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="font-semibold text-[#0F172A]">Prestations</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <ProductCombobox onSelect={insertFromProduct} />
             <Button type="button" variant="outline" size="sm" onClick={addLine} className="gap-1.5">
               <Plus className="w-3.5 h-3.5" /> Ajouter une ligne
@@ -356,18 +356,18 @@ export default function NewInvoiceForm() {
       </div>
 
       {/* Actions */}
-      <div className="flex flex-wrap items-center gap-3 pb-8">
-        <Button type="button" variant="outline" disabled={saving} onClick={() => submit("draft")} className="gap-1.5">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 pb-8">
+        <Button type="button" variant="outline" disabled={saving} onClick={() => submit("draft")} className="gap-1.5 w-full sm:w-auto">
           {saving && <Loader2 className="w-4 h-4 animate-spin" />}
           Sauvegarder en brouillon
         </Button>
-        <Button type="button" variant="outline" className="gap-1.5">
+        <Button type="button" variant="outline" className="gap-1.5 w-full sm:w-auto">
           <Eye className="w-4 h-4" />
           Aperçu PDF
         </Button>
         <Button
           type="button"
-          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-1.5 ml-auto"
+          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-1.5 w-full sm:w-auto sm:ml-auto"
           disabled={loading}
           onClick={() => submit("send")}
         >

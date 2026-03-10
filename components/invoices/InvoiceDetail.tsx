@@ -529,18 +529,18 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       <div className="space-y-6">
 
         {/* ---- Header ---- */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <Link href="/invoices">
-              <Button variant="ghost" size="sm" className="gap-1.5 text-slate-500 hover:text-slate-700">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-slate-500 hover:text-slate-700 -ml-2">
                 <ArrowLeft className="w-4 h-4" /> Factures
               </Button>
             </Link>
-            <h1 className="text-xl font-bold text-[#0F172A] font-mono">{invoice.invoice_number}</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-[#0F172A] font-mono">{invoice.invoice_number}</h1>
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_BADGE[invoice.status] ?? STATUS_BADGE.draft}`}>
               {STATUS_LABELS[invoice.status] ?? invoice.status}
             </span>
-            {/* Badge Factur-X — visible uniquement si facture non brouillon */}
+            {/* Badge Factur-X */}
             {invoice.status !== "draft" && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]" title="Facture électronique conforme EN 16931">
                 <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="#2563EB"/><path d="M3.5 6l1.8 1.8L8.5 4" stroke="#2563EB" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -549,21 +549,23 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             )}
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Boutons d'action — scroll horizontal sur mobile */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
             {/* PDF Factur-X */}
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={downloadPDF} disabled={pdfLoading}>
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={downloadPDF} disabled={pdfLoading}>
               {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              {pdfLoading ? "Génération…" : invoice.status !== "draft" ? "Télécharger Factur-X" : "Télécharger PDF"}
+              <span className="hidden xs:inline">{pdfLoading ? "Génération…" : invoice.status !== "draft" ? "Factur-X" : "PDF"}</span>
             </Button>
 
             {/* Imprimer */}
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
-              <Printer className="w-4 h-4" /> Imprimer
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => window.print()}>
+              <Printer className="w-4 h-4" />
+              <span className="hidden xs:inline">Imprimer</span>
             </Button>
 
             {/* Modifier brouillon */}
             {invoice.status === "draft" && (
-              <Link href={`/invoices/${invoice.id}/edit`}>
+              <Link href={`/invoices/${invoice.id}/edit`} className="shrink-0">
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <Pencil className="w-4 h-4" /> Modifier
                 </Button>
@@ -574,18 +576,18 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             {invoice.status === "draft" && (
               <Button
                 variant="outline" size="sm"
-                className="gap-1.5 border-[#FCA5A5] text-[#991B1B] hover:bg-[#FEE2E2]"
+                className="gap-1.5 shrink-0 border-[#FCA5A5] text-[#991B1B] hover:bg-[#FEE2E2]"
                 onClick={deleteInvoice} disabled={deleteLoading}
               >
                 {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                Supprimer
+                <span className="hidden xs:inline">Supprimer</span>
               </Button>
             )}
 
             {/* Archiver / Désarchiver */}
             <Button
               variant="outline" size="sm"
-              className={`gap-1.5 ${
+              className={`gap-1.5 shrink-0 ${
                 invoice.is_archived
                   ? "border-[#93C5FD] text-[#2563EB] hover:bg-[#EFF6FF]"
                   : "border-[#CBD5E1] text-slate-500 hover:bg-[#F1F5F9]"
@@ -599,17 +601,17 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                   ? <ArchiveX className="w-4 h-4" />
                   : <Archive className="w-4 h-4" />
               }
-              {invoice.is_archived ? "Désarchiver" : "Archiver"}
+              <span className="hidden xs:inline">{invoice.is_archived ? "Désarchiver" : "Archiver"}</span>
             </Button>
 
             {/* Émettre un avoir */}
             {canCredit && (
               <Button
                 variant="outline" size="sm"
-                className="gap-1.5 border-[#FED7AA] text-[#C2410C] hover:bg-[#FFF7ED]"
+                className="gap-1.5 shrink-0 border-[#FED7AA] text-[#C2410C] hover:bg-[#FFF7ED]"
                 onClick={() => setShowCreditModal(true)}
               >
-                <RotateCcw className="w-4 h-4" /> Émettre un avoir
+                <RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Émettre un avoir</span>
               </Button>
             )}
 
@@ -617,7 +619,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             {invoice.status === "draft" && invoice.client?.email && (
               <Button
                 size="sm"
-                className="gap-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+                className="gap-1.5 shrink-0 bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
                 onClick={() => setShowSendModal(true)}
                 disabled={sendLoading}
               >
@@ -626,13 +628,13 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
               </Button>
             )}
 
-            {/* Transitions de statut (manuelles — hors envoi email) */}
+            {/* Transitions de statut (manuelles) */}
             {actions.filter(a => a.status !== "sent" || invoice.status !== "draft").map(action => (
               <Button
                 key={action.status}
                 variant={action.variant}
                 size="sm"
-                className={`gap-1.5 ${action.variant === "default" ? "bg-[#2563EB] hover:bg-[#1D4ED8] text-white" : ""}`}
+                className={`gap-1.5 shrink-0 ${action.variant === "default" ? "bg-[#2563EB] hover:bg-[#1D4ED8] text-white" : ""}`}
                 onClick={() => changeStatus(action.status)}
                 disabled={statusLoading}
               >
@@ -696,10 +698,10 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         {/* ---- Corps facture ---- */}
         <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
 
-          <div className="p-6 sm:p-8 border-b border-[#E2E8F0]">
-            <div className="flex flex-wrap justify-between gap-6">
+          <div className="p-4 sm:p-8 border-b border-[#E2E8F0]">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <div>
-                <p className="text-xs font-medium text-slate-400 mb-1">DE</p>
+                <p className="text-xs font-medium text-slate-400 mb-1 uppercase tracking-wide">De</p>
                 {company ? (
                   <div>
                     <p className="text-sm font-bold text-[#0F172A]">{company.name}</p>
@@ -724,7 +726,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                 )}
               </div>
               <div>
-                <p className="text-xs font-medium text-slate-400 mb-1">POUR</p>
+                <p className="text-xs font-medium text-slate-400 mb-1 uppercase tracking-wide">Pour</p>
                 {invoice.client ? (
                   <div>
                     <Link href={`/clients/${invoice.client.id}`} className="text-sm font-bold text-[#2563EB] hover:underline">
@@ -745,17 +747,17 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                   </div>
                 ) : <p className="text-sm text-slate-400">—</p>}
               </div>
-              <div className="text-right">
+              <div className="sm:text-right">
                 <div className="mb-3">
-                  <p className="text-xs font-medium text-slate-400">N° FACTURE</p>
+                  <p className="text-xs font-medium text-slate-400 uppercase">N° Facture</p>
                   <p className="text-sm font-bold font-mono text-[#0F172A]">{invoice.invoice_number}</p>
                 </div>
                 <div className="mb-3">
-                  <p className="text-xs font-medium text-slate-400">DATE D&apos;ÉMISSION</p>
+                  <p className="text-xs font-medium text-slate-400 uppercase">Émission</p>
                   <p className="text-sm text-[#0F172A]">{formatDate(invoice.issue_date)}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-400">ÉCHÉANCE</p>
+                  <p className="text-xs font-medium text-slate-400 uppercase">Échéance</p>
                   <p className={`text-sm font-medium ${isOverdue || invoice.status === "overdue" ? "text-[#EF4444]" : "text-[#0F172A]"}`}>
                     {formatDate(invoice.due_date)}
                   </p>
@@ -764,8 +766,20 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             </div>
           </div>
 
-          {/* Tableau lignes */}
-          <div className="overflow-x-auto">
+          {/* Tableau lignes — mobile : cards empilées */}
+          <div className="block sm:hidden divide-y divide-[#F1F5F9]">
+            {invoice.lines?.map((line, i) => (
+              <div key={i} className="px-4 py-3">
+                <p className="text-sm font-medium text-[#0F172A] mb-1">{line.description}</p>
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>{line.quantity} × {formatCurrency(line.unit_price_ht)} HT · TVA {line.vat_rate}%</span>
+                  <span className="font-mono font-semibold text-[#0F172A]">{formatCurrency(line.total_ht)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
@@ -791,7 +805,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           </div>
 
           {/* Totaux */}
-          <div className="p-6 sm:p-8 border-t border-[#E2E8F0]">
+          <div className="p-4 sm:p-8 border-t border-[#E2E8F0]">
             <div className="flex justify-end">
               <div className="w-64 space-y-2 text-sm">
                 <div className="flex justify-between">

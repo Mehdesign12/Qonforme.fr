@@ -102,7 +102,6 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
 
   useEffect(() => {
     const supabase = createClient()
-    // Charger le devis et l'entreprise en parallèle
     Promise.all([
       fetch(`/api/quotes/${params.id}`).then(r => r.json()),
       supabase.from("companies").select("name,address,zip_code,city,siret,siren,vat_number").single(),
@@ -208,7 +207,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
     {showSendModal && (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-          <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0]">
+          <div className="flex items-center justify-between p-5 sm:p-6 border-b border-[#E2E8F0]">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-[#F0FDF4] flex items-center justify-center">
                 <Send className="w-4 h-4 text-[#0f9457]" />
@@ -222,7 +221,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
               <X className="w-4 h-4 text-slate-400" />
             </button>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-5 sm:p-6 space-y-4">
             <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-xl p-4">
               <p className="text-sm text-[#166534] font-medium mb-1">Destinataire</p>
               <p className="text-sm text-[#1E293B]">{quote?.client?.name}</p>
@@ -239,7 +238,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
               <p className="text-xs text-slate-500">Objet : <span className="font-medium text-slate-700">Devis {quote?.quote_number} — votre entreprise</span></p>
             </div>
           </div>
-          <div className="flex gap-3 p-6 pt-0">
+          <div className="flex gap-3 p-5 sm:p-6 pt-0">
             <Button variant="outline" className="flex-1" onClick={() => setShowSendModal(false)} disabled={sendLoading}>
               Annuler
             </Button>
@@ -249,86 +248,80 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
               disabled={sendLoading || !quote?.client?.email}
             >
               {sendLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {sendLoading ? "Envoi en cours…" : "Envoyer"}
+              {sendLoading ? "Envoi…" : "Envoyer"}
             </Button>
           </div>
         </div>
       </div>
     )}
-    <div className="space-y-6 max-w-4xl">
 
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <div className="space-y-4 sm:space-y-6 max-w-4xl">
+
+      {/* Header — retour + numéro + badge */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <Link href="/quotes">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-slate-500 hover:text-slate-700">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-slate-500 hover:text-slate-700 -ml-2">
               <ArrowLeft className="w-4 h-4" /> Devis
             </Button>
           </Link>
-          <h1 className="text-xl font-bold text-[#0F172A] font-mono">{quote.quote_number}</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-[#0F172A] font-mono">{quote.quote_number}</h1>
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_BADGE[quote.status]}`}>
             {STATUS_LABELS[quote.status]}
           </span>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* PDF */}
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={downloadPDF} disabled={pdfLoading}>
+        {/* Boutons d'action — scroll horizontal sur mobile */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+          <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={downloadPDF} disabled={pdfLoading}>
             {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            {pdfLoading ? "Génération…" : "Télécharger PDF"}
+            <span className="hidden xs:inline">{pdfLoading ? "Génération…" : "PDF"}</span>
           </Button>
 
-          {/* Imprimer */}
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
-            <Printer className="w-4 h-4" /> Imprimer
+          <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => window.print()}>
+            <Printer className="w-4 h-4" />
+            <span className="hidden xs:inline">Imprimer</span>
           </Button>
 
-          {/* Modifier brouillon */}
           {quote.status === "draft" && (
-            <Link href={`/quotes/${params.id}/edit`}>
+            <Link href={`/quotes/${params.id}/edit`} className="shrink-0">
               <Button variant="outline" size="sm" className="gap-1.5">
                 <Pencil className="w-4 h-4" /> Modifier
               </Button>
             </Link>
           )}
 
-          {/* Supprimer brouillon */}
           {quote.status === "draft" && (
             <Button variant="outline" size="sm"
-              className="gap-1.5 border-[#FCA5A5] text-[#991B1B] hover:bg-[#FEE2E2]"
+              className="gap-1.5 shrink-0 border-[#FCA5A5] text-[#991B1B] hover:bg-[#FEE2E2]"
               onClick={deleteQuote} disabled={deleteLoading}>
               {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              Supprimer
+              <span className="hidden xs:inline">Supprimer</span>
             </Button>
           )}
 
-          {/* Convertir en facture */}
           {canConvert && (
             <Button size="sm"
-              className="gap-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+              className="gap-1.5 shrink-0 bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
               onClick={convertToInvoice} disabled={convertLoading}>
               {convertLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              {convertLoading ? "Conversion…" : "Convertir en facture"}
+              <span>{convertLoading ? "Conversion…" : "Convertir en facture"}</span>
             </Button>
           )}
 
-          {/* Bouton Envoyer par email (brouillon uniquement) */}
           {quote.status === "draft" && quote.client?.email && (
-            <Button
-              size="sm"
-              className="gap-1.5 bg-[#0f9457] hover:bg-[#0a7a47] text-white"
+            <Button size="sm"
+              className="gap-1.5 shrink-0 bg-[#0f9457] hover:bg-[#0a7a47] text-white"
               onClick={() => setShowSendModal(true)}
-              disabled={sendLoading}
-            >
+              disabled={sendLoading}>
               <Send className="w-4 h-4" />
               Envoyer par email
             </Button>
           )}
 
-          {/* Transitions de statut (manuelles — hors envoi email) */}
           {actions.filter(a => a.status !== "sent" || quote.status !== "draft").map(action => (
             <Button key={action.status} variant={action.variant} size="sm"
-              className={`gap-1.5 ${action.className ?? ""}`}
+              className={`gap-1.5 shrink-0 ${action.className ?? ""}`}
               onClick={() => changeStatus(action.status)} disabled={statusLoading}>
               {statusLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <action.icon className="w-4 h-4" />}
               {action.label}
@@ -339,8 +332,8 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
 
       {/* Alerte expiré */}
       {isExpired && (
-        <div className="bg-[#FEF3C7] border border-[#FCD34D] rounded-xl p-4 flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-[#D97706] shrink-0" />
+        <div className="bg-[#FEF3C7] border border-[#FCD34D] rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-[#D97706] shrink-0 mt-0.5" />
           <p className="text-sm text-[#92400E]">
             Ce devis a <strong>expiré</strong> le {formatDate(quote.valid_until)}. Pensez à renouveler sa validité.
           </p>
@@ -359,7 +352,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
           </div>
           <Link href={`/invoices/${quote.converted_invoice_id}`} className="shrink-0">
             <Button size="sm" variant="outline" className="border-[#6EE7B7] text-[#065F46] hover:bg-[#D1FAE5] gap-1.5">
-              <FileText className="w-3.5 h-3.5" /> Voir la facture
+              <FileText className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Voir la facture</span>
             </Button>
           </Link>
         </div>
@@ -368,11 +361,12 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       {/* Corps devis */}
       <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
 
-        {/* En-tête */}
-        <div className="p-6 sm:p-8 border-b border-[#E2E8F0]">
-          <div className="flex flex-wrap justify-between gap-6">
+        {/* En-tête DE / POUR / Numéros — empilé sur mobile */}
+        <div className="p-4 sm:p-8 border-b border-[#E2E8F0]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            {/* DE */}
             <div>
-              <p className="text-xs font-medium text-slate-400 mb-1">DE</p>
+              <p className="text-xs font-medium text-slate-400 mb-1 uppercase tracking-wide">De</p>
               {company ? (
                 <div>
                   <p className="text-sm font-bold text-[#0F172A]">{company.name}</p>
@@ -396,8 +390,10 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
                 </div>
               )}
             </div>
+
+            {/* POUR */}
             <div>
-              <p className="text-xs font-medium text-slate-400 mb-1">POUR</p>
+              <p className="text-xs font-medium text-slate-400 mb-1 uppercase tracking-wide">Pour</p>
               {quote.client ? (
                 <div>
                   <Link href={`/clients/${quote.client.id}`} className="text-sm font-bold text-[#2563EB] hover:underline">
@@ -415,17 +411,19 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
                 </div>
               ) : <p className="text-sm text-slate-400">—</p>}
             </div>
-            <div className="text-right">
+
+            {/* Numéros */}
+            <div className="sm:text-right">
               <div className="mb-3">
-                <p className="text-xs font-medium text-slate-400">N° DEVIS</p>
+                <p className="text-xs font-medium text-slate-400 uppercase">N° Devis</p>
                 <p className="text-sm font-bold font-mono text-[#0f9457]">{quote.quote_number}</p>
               </div>
               <div className="mb-3">
-                <p className="text-xs font-medium text-slate-400">DATE D&apos;ÉMISSION</p>
+                <p className="text-xs font-medium text-slate-400 uppercase">Émission</p>
                 <p className="text-sm text-[#0F172A]">{formatDate(quote.issue_date)}</p>
               </div>
               <div>
-                <p className="text-xs font-medium text-slate-400">VALABLE JUSQU&apos;AU</p>
+                <p className="text-xs font-medium text-slate-400 uppercase">Valable jusqu&apos;au</p>
                 <p className={`text-sm font-medium ${isExpired ? "text-[#EF4444]" : "text-[#0F172A]"}`}>
                   {formatDate(quote.valid_until)}
                 </p>
@@ -434,8 +432,20 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
           </div>
         </div>
 
-        {/* Tableau lignes */}
-        <div className="overflow-x-auto">
+        {/* Tableau lignes — mobile : cards empilées */}
+        <div className="block sm:hidden divide-y divide-[#F1F5F9]">
+          {quote.lines?.map((line, i) => (
+            <div key={i} className="px-4 py-3">
+              <p className="text-sm font-medium text-[#0F172A] mb-1">{line.description}</p>
+              <div className="flex items-center justify-between text-xs text-slate-500">
+                <span>{line.quantity} × {formatCurrency(line.unit_price_ht)} HT · TVA {line.vat_rate}%</span>
+                <span className="font-mono font-semibold text-[#0F172A]">{formatCurrency(line.total_ht)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#E2E8F0] bg-[#F0FDF4]">
@@ -461,9 +471,9 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
         </div>
 
         {/* Totaux */}
-        <div className="p-6 sm:p-8 border-t border-[#E2E8F0]">
+        <div className="p-4 sm:p-8 border-t border-[#E2E8F0]">
           <div className="flex justify-end">
-            <div className="w-64 space-y-2 text-sm">
+            <div className="w-full sm:w-64 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">Sous-total HT</span>
                 <span className="font-mono text-[#0F172A]">{formatCurrency(quote.subtotal_ht)}</span>
@@ -483,9 +493,9 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
 
         {/* Notes */}
         {quote.notes && (
-          <div className="px-6 sm:px-8 pb-6 sm:pb-8">
+          <div className="px-4 sm:px-8 pb-4 sm:pb-8">
             <Separator className="mb-4" />
-            <p className="text-xs font-medium text-slate-400 mb-1.5">NOTES / CONDITIONS</p>
+            <p className="text-xs font-medium text-slate-400 mb-1.5 uppercase">Notes / Conditions</p>
             <p className="text-sm text-slate-600 whitespace-pre-line">{quote.notes}</p>
           </div>
         )}

@@ -17,15 +17,15 @@ export function PPFStatusBanner({ connected }: PPFStatusBannerProps) {
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3 bg-[#FEF3C7] border border-[#FCD34D] rounded-lg text-sm">
-      <div className="flex items-center gap-3">
-        <AlertCircle className="w-4 h-4 text-[#D97706] shrink-0" />
+    <div className="flex items-start sm:items-center justify-between gap-3 px-4 py-3 bg-[#FEF3C7] border border-[#FCD34D] rounded-lg text-sm">
+      <div className="flex items-start sm:items-center gap-3">
+        <AlertCircle className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5 sm:mt-0" />
         <span className="text-[#92400E]">
           <span className="font-medium">Transmission automatique non configurée.</span>{" "}
-          Configure la connexion pour envoyer tes factures légalement.
+          <span className="hidden sm:inline">Configure la connexion pour envoyer tes factures légalement.</span>
         </span>
       </div>
-      <a href="/settings/ppf" className="text-xs font-medium text-[#92400E] underline whitespace-nowrap hover:text-[#D97706]">
+      <a href="/settings/ppf" className="text-xs font-medium text-[#92400E] underline whitespace-nowrap hover:text-[#D97706] shrink-0">
         Configurer →
       </a>
     </div>

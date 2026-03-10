@@ -55,15 +55,15 @@ export default function PPFSettingsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 pt-2">
-          <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
+          <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white w-full sm:w-auto">
             Tester et sauvegarder
           </Button>
           <a
             href="https://developer.chorus-pro.gouv.fr"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-sm text-[#2563EB] hover:underline"
+            className="flex items-center justify-center sm:justify-start gap-1.5 text-sm text-[#2563EB] hover:underline"
           >
             Documentation Chorus Pro
             <ExternalLink className="w-3.5 h-3.5" />

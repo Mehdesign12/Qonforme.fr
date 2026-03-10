@@ -46,20 +46,16 @@ const FILTERS: { key: StatusFilter; label: string }[] = [
 ]
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices]       = useState<Invoice[]>([])
-  const [loading, setLoading]         = useState(true)
+  const [invoices, setInvoices]         = useState<Invoice[]>([])
+  const [loading, setLoading]           = useState(true)
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all")
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true)
     let url: string
-    if (activeFilter === "archived") {
-      url = "/api/invoices?archived=true"
-    } else if (activeFilter === "all") {
-      url = "/api/invoices"
-    } else {
-      url = `/api/invoices?status=${activeFilter}`
-    }
+    if      (activeFilter === "archived") url = "/api/invoices?archived=true"
+    else if (activeFilter === "all")      url = "/api/invoices"
+    else                                  url = `/api/invoices?status=${activeFilter}`
     const res  = await fetch(url)
     const json = await res.json()
     if (json.invoices) setInvoices(json.invoices)
@@ -71,16 +67,16 @@ export default function InvoicesPage() {
   const isArchiveView = activeFilter === "archived"
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
 
-      {/* Header */}
+      {/* Filtres + CTA */}
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {FILTERS.map((f) => (
             <button
               key={f.key}
               onClick={() => setActiveFilter(f.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors flex items-center gap-1 ${
                 activeFilter === f.key
                   ? f.key === "archived"
                     ? "bg-slate-600 text-white border-slate-600"
@@ -101,17 +97,14 @@ export default function InvoicesPage() {
         </Link>
       </div>
 
-      {/* Bandeau info archives */}
       {isArchiveView && (
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-3 flex items-center gap-2">
-          <Archive className="w-4 h-4 text-slate-400 shrink-0" />
-          <p className="text-xs text-slate-500">
-            Les factures archivées n&apos;apparaissent pas dans les autres filtres. Vous pouvez les désarchiver depuis leur page de détail.
-          </p>
+        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-3 flex items-start gap-2">
+          <Archive className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-slate-500">Les factures archivées n&apos;apparaissent pas dans les autres filtres.</p>
         </div>
       )}
 
-      {/* Table */}
+      {/* Contenu */}
       <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center py-16">
@@ -124,74 +117,87 @@ export default function InvoicesPage() {
               : <FileText className="w-12 h-12 text-slate-200 mx-auto mb-4" />
             }
             <p className="text-sm font-medium text-slate-600 mb-1">
-              {isArchiveView
-                ? "Aucune facture archivée"
-                : activeFilter === "all"
-                  ? "Aucune facture pour l'instant"
-                  : `Aucune facture "${INVOICE_STATUS_LABELS[activeFilter as InvoiceStatus]}"`
-              }
+              {isArchiveView ? "Aucune facture archivée"
+                : activeFilter === "all" ? "Aucune facture pour l'instant"
+                : `Aucune facture "${INVOICE_STATUS_LABELS[activeFilter as InvoiceStatus]}"`}
             </p>
             {activeFilter === "all" && (
               <>
                 <p className="text-xs text-slate-400 mb-4">Créez votre première facture en quelques clics</p>
                 <Link href="/invoices/new">
-                  <Button size="sm" className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
-                    Créer une facture
-                  </Button>
+                  <Button size="sm" className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">Créer une facture</Button>
                 </Link>
               </>
             )}
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° facture</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Client</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden sm:table-cell">Émission</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Échéance</th>
-                <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Montant TTC</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Statut</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* ── Mobile : cards ── */}
+            <div className="sm:hidden divide-y divide-[#F1F5F9]">
               {invoices.map((inv) => (
-                <tr
+                <Link
                   key={inv.id}
-                  onClick={() => window.location.href = `/invoices/${inv.id}`}
-                  className={`border-b border-[#F1F5F9] transition-colors last:border-0 cursor-pointer ${
-                    inv.is_archived ? "bg-[#F8FAFC] hover:bg-[#F1F5F9] opacity-75" : "hover:bg-[#F8FAFC]"
-                  }`}
+                  href={`/invoices/${inv.id}`}
+                  className={`flex items-center justify-between px-4 py-3.5 hover:bg-[#F8FAFC] transition-colors ${inv.is_archived ? "opacity-70" : ""}`}
                 >
-                  <td className="px-5 py-4">
+                  <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       {inv.is_archived && <Archive className="w-3 h-3 text-slate-300 shrink-0" />}
-                      <span className="font-mono text-sm text-[#2563EB] hover:underline font-medium">
-                        {inv.invoice_number}
-                      </span>
+                      <span className="font-mono text-sm text-[#2563EB] font-medium">{inv.invoice_number}</span>
                     </div>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-[#0F172A] font-medium">
-                    {inv.client?.name || "—"}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-slate-500 hidden sm:table-cell">
-                    {formatDate(inv.issue_date)}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-slate-500 hidden md:table-cell">
-                    {formatDate(inv.due_date)}
-                  </td>
-                  <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#0F172A]">
-                    {formatCurrency(inv.total_ttc)}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[inv.status]}`}>
+                    <p className="text-xs text-slate-400 mt-0.5 truncate">{inv.client?.name || "—"}</p>
+                  </div>
+                  <div className="text-right ml-3 shrink-0">
+                    <p className="font-mono text-sm font-semibold text-[#0F172A]">{formatCurrency(inv.total_ttc)}</p>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border mt-1 ${STATUS_STYLE[inv.status]}`}>
                       {INVOICE_STATUS_LABELS[inv.status]}
                     </span>
-                  </td>
-                </tr>
+                  </div>
+                </Link>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {/* ── Desktop : table ── */}
+            <table className="hidden sm:table w-full">
+              <thead>
+                <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° facture</th>
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Client</th>
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Émission</th>
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden lg:table-cell">Échéance</th>
+                  <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Montant TTC</th>
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.map((inv) => (
+                  <tr
+                    key={inv.id}
+                    onClick={() => window.location.href = `/invoices/${inv.id}`}
+                    className={`border-b border-[#F1F5F9] transition-colors last:border-0 cursor-pointer ${
+                      inv.is_archived ? "bg-[#F8FAFC] hover:bg-[#F1F5F9] opacity-75" : "hover:bg-[#F8FAFC]"
+                    }`}
+                  >
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-1.5">
+                        {inv.is_archived && <Archive className="w-3 h-3 text-slate-300 shrink-0" />}
+                        <span className="font-mono text-sm text-[#2563EB] font-medium">{inv.invoice_number}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-[#0F172A] font-medium">{inv.client?.name || "—"}</td>
+                    <td className="px-5 py-4 text-sm text-slate-500 hidden md:table-cell">{formatDate(inv.issue_date)}</td>
+                    <td className="px-5 py-4 text-sm text-slate-500 hidden lg:table-cell">{formatDate(inv.due_date)}</td>
+                    <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#0F172A]">{formatCurrency(inv.total_ttc)}</td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[inv.status]}`}>
+                        {INVOICE_STATUS_LABELS[inv.status]}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </div>
     </div>

@@ -122,14 +122,14 @@ export async function DashboardStats() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => (
-        <div key={card.title} className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm">
+        <div key={card.title} className="bg-white rounded-xl border border-[#E2E8F0] p-4 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm text-slate-500">{card.title}</p>
             <div className={`w-9 h-9 rounded-lg ${card.iconBg} flex items-center justify-center`}>
               <card.icon className={`w-4 h-4 ${card.iconColor}`} />
             </div>
           </div>
-          <p className="text-2xl font-bold text-[#0F172A] font-mono">{card.value}</p>
+          <p className="text-xl sm:text-2xl font-bold text-[#0F172A] font-mono truncate">{card.value}</p>
           <p className="text-xs text-slate-400 mt-1">{card.sub}</p>
         </div>
       ))}

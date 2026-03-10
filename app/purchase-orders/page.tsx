@@ -125,7 +125,34 @@ export default function PurchaseOrdersPage() {
             )}
           </div>
         ) : (
-          <table className="w-full">
+          <>
+            {/* ── Mobile : cards ── */}
+            <div className="sm:hidden divide-y divide-[#F1F5F9]">
+              {pos.map(po => (
+                <a
+                  key={po.id}
+                  href={`/purchase-orders/${po.id}`}
+                  className="flex items-center justify-between px-4 py-3.5 hover:bg-[#F8FAFC] transition-colors"
+                >
+                  <div className="min-w-0">
+                    <span className="font-mono text-sm font-medium" style={{ color: INDIGO }}>{po.po_number}</span>
+                    <p className="text-xs text-slate-400 mt-0.5 truncate">{po.client?.name || "—"}</p>
+                    {po.reference && (
+                      <p className="text-xs font-mono text-slate-400 mt-0.5 truncate">{po.reference}</p>
+                    )}
+                  </div>
+                  <div className="text-right ml-3 shrink-0">
+                    <p className="font-mono text-sm font-semibold text-[#0F172A]">{formatCurrency(po.total_ttc)}</p>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border mt-1 ${STATUS_STYLE[po.status]}`}>
+                      {STATUS_LABELS[po.status]}
+                    </span>
+                  </div>
+                </a>
+              ))}
+            </div>
+
+            {/* ── Desktop : table ── */}
+            <table className="hidden sm:table w-full">
             <thead>
               <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
                 <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° BdC</th>
@@ -176,6 +203,7 @@ export default function PurchaseOrdersPage() {
               ))}
             </tbody>
           </table>
+          </>
         )}
       </div>
     </div>

@@ -143,7 +143,7 @@ export function NewClientForm() {
           {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="siren">SIREN</Label>
             <Input
@@ -170,7 +170,7 @@ export function NewClientForm() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="email">Email</Label>
             <Input
@@ -214,7 +214,7 @@ export function NewClientForm() {
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="zip_code">Code postal</Label>
             <Input
@@ -241,17 +241,18 @@ export function NewClientForm() {
         </div>
       </div>
 
-      <div className="flex gap-3 justify-end">
+      <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
         <Button
           type="button"
           variant="outline"
+          className="w-full sm:w-auto"
           onClick={() => router.push("/clients")}
         >
           Annuler
         </Button>
         <Button
           type="submit"
-          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2"
+          className="w-full sm:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2"
           disabled={loading}
         >
           {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

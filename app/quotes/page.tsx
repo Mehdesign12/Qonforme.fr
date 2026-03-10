@@ -48,8 +48,8 @@ interface Quote {
 }
 
 export default function QuotesPage() {
-  const [quotes, setQuotes]           = useState<Quote[]>([])
-  const [loading, setLoading]         = useState(true)
+  const [quotes, setQuotes]             = useState<Quote[]>([])
+  const [loading, setLoading]           = useState(true)
   const [activeFilter, setActiveFilter] = useState<Filter>("all")
 
   const fetchQuotes = useCallback(async () => {
@@ -64,11 +64,11 @@ export default function QuotesPage() {
   useEffect(() => { fetchQuotes() }, [fetchQuotes])
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
 
-      {/* Header */}
+      {/* Filtres + CTA */}
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {FILTERS.map((f) => (
             <button
               key={f.key}
@@ -91,7 +91,7 @@ export default function QuotesPage() {
         </Link>
       </div>
 
-      {/* Table */}
+      {/* Contenu */}
       <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center py-16">
@@ -107,70 +107,85 @@ export default function QuotesPage() {
               <>
                 <p className="text-xs text-slate-400 mb-4">Créez votre premier devis en quelques clics</p>
                 <Link href="/quotes/new">
-                  <Button size="sm" className="bg-[#0f9457] hover:bg-[#0a7a47] text-white">
-                    Créer un devis
-                  </Button>
+                  <Button size="sm" className="bg-[#0f9457] hover:bg-[#0a7a47] text-white">Créer un devis</Button>
                 </Link>
               </>
             )}
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° devis</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Client</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden sm:table-cell">Émission</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Validité</th>
-                <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Montant TTC</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Statut</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* ── Mobile : cards ── */}
+            <div className="sm:hidden divide-y divide-[#F1F5F9]">
               {quotes.map((q) => (
-                <tr
+                <Link
                   key={q.id}
-                  onClick={() => window.location.href = `/quotes/${q.id}`}
-                  className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0 cursor-pointer"
+                  href={`/quotes/${q.id}`}
+                  className="flex items-center justify-between px-4 py-3.5 hover:bg-[#F8FAFC] transition-colors"
                 >
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm text-[#0f9457] hover:underline font-medium">
-                        {q.quote_number}
-                      </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-sm text-[#0f9457] font-medium">{q.quote_number}</span>
                       {q.converted_invoice_id && (
-                        <span className="text-[10px] bg-[#D1FAE5] text-[#065F46] px-1.5 py-0.5 rounded font-medium">
-                          Converti
-                        </span>
+                        <span className="text-[10px] bg-[#D1FAE5] text-[#065F46] px-1.5 py-0.5 rounded font-medium">Converti</span>
                       )}
                     </div>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-[#0F172A] font-medium">
-                    {q.client?.name || "—"}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-slate-500 hidden sm:table-cell">
-                    {formatDate(q.issue_date)}
-                  </td>
-                  <td className="px-5 py-4 text-sm hidden md:table-cell">
-                    <span className={new Date(q.valid_until) < new Date() && q.status === "sent"
-                      ? "text-[#EF4444] font-medium"
-                      : "text-slate-500"
-                    }>
-                      {formatDate(q.valid_until)}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#0F172A]">
-                    {formatCurrency(q.total_ttc)}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[q.status]}`}>
+                    <p className="text-xs text-slate-400 mt-0.5 truncate">{q.client?.name || "—"}</p>
+                  </div>
+                  <div className="text-right ml-3 shrink-0">
+                    <p className="font-mono text-sm font-semibold text-[#0F172A]">{formatCurrency(q.total_ttc)}</p>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border mt-1 ${STATUS_STYLE[q.status]}`}>
                       {STATUS_LABELS[q.status]}
                     </span>
-                  </td>
-                </tr>
+                  </div>
+                </Link>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {/* ── Desktop : table ── */}
+            <table className="hidden sm:table w-full">
+              <thead>
+                <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° devis</th>
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Client</th>
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Émission</th>
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden lg:table-cell">Validité</th>
+                  <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Montant TTC</th>
+                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {quotes.map((q) => (
+                  <tr
+                    key={q.id}
+                    onClick={() => window.location.href = `/quotes/${q.id}`}
+                    className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0 cursor-pointer"
+                  >
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm text-[#0f9457] font-medium">{q.quote_number}</span>
+                        {q.converted_invoice_id && (
+                          <span className="text-[10px] bg-[#D1FAE5] text-[#065F46] px-1.5 py-0.5 rounded font-medium">Converti</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-[#0F172A] font-medium">{q.client?.name || "—"}</td>
+                    <td className="px-5 py-4 text-sm text-slate-500 hidden md:table-cell">{formatDate(q.issue_date)}</td>
+                    <td className="px-5 py-4 text-sm hidden lg:table-cell">
+                      <span className={new Date(q.valid_until) < new Date() && q.status === "sent" ? "text-[#EF4444] font-medium" : "text-slate-500"}>
+                        {formatDate(q.valid_until)}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#0F172A]">{formatCurrency(q.total_ttc)}</td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[q.status]}`}>
+                        {STATUS_LABELS[q.status]}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </div>
     </div>
