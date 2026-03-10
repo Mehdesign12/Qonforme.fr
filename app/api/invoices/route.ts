@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { canCreateInvoice } from "@/lib/stripe/subscription"
 
 // GET /api/invoices
 export async function GET(request: NextRequest) {
@@ -38,6 +39,32 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+
+  // ── Vérifier la limite du plan Starter ──────────────────────
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("plan, status")
+    .eq("user_id", user.id)
+    .single()
+
+  const check = await canCreateInvoice(user.id, sub as Parameters<typeof canCreateInvoice>[1])
+
+  if (!check.allowed) {
+    if (check.reason === "starter_limit_reached") {
+      return NextResponse.json(
+        {
+          error: "Limite atteinte",
+          message: `Vous avez atteint la limite de ${check.limit} factures ce mois-ci sur le plan Starter. Passez au plan Pro pour des factures illimitées.`,
+          code: "STARTER_LIMIT_REACHED",
+          invoicesThisMonth: check.invoicesThisMonth,
+          limit: check.limit,
+        },
+        { status: 402 }
+      )
+    }
+    return NextResponse.json({ error: "Abonnement inactif" }, { status: 402 })
+  }
+  // ────────────────────────────────────────────────────────────
 
   const body = await request.json()
 

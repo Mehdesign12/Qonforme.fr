@@ -29,18 +29,60 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Routes protégées (exclure /demo)
+  const pathname = request.nextUrl.pathname
+
+  // ──────────────────────────────────────────────────────────────
+  // Routes publiques — toujours accessibles, sans vérification
+  // ──────────────────────────────────────────────────────────────
+  const publicPaths = [
+    '/',
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/reset-password',
+    '/demo',
+    '/pricing',
+    '/api/webhooks/stripe', // webhook Stripe : ne doit jamais être bloqué
+  ]
+
+  const isPublic = publicPaths.some((path) =>
+    pathname === path || pathname.startsWith(path + '/')
+  )
+
+  if (isPublic) {
+    // Si l'utilisateur est connecté et va sur /login ou /signup (pas /signup/company)
+    // → le rediriger vers le dashboard ou la page de pricing
+    const authOnlyPaths = ['/login', '/signup']
+    const isAuthPage =
+      authOnlyPaths.some((p) => pathname.startsWith(p)) &&
+      !pathname.startsWith('/signup/company')
+
+    if (isAuthPage && user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+
+    return supabaseResponse
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Routes protégées : l'utilisateur doit être connecté
+  // ──────────────────────────────────────────────────────────────
   const protectedPaths = [
     '/dashboard',
     '/invoices',
     '/quotes',
     '/clients',
     '/settings',
+    '/products',
+    '/credit-notes',
+    '/purchase-orders',
   ]
 
   const isProtected = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  ) && !request.nextUrl.pathname.startsWith('/demo')
+    pathname.startsWith(path)
+  )
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone()
@@ -48,18 +90,36 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Rediriger vers /dashboard si déjà connecté et sur page auth
-  // Exclure /signup/company (étape 2 d'inscription), /forgot-password et /reset-password
-  // car ces pages doivent rester accessibles même connecté (ex: reset depuis lien email)
-  const authPaths = ['/login', '/signup']
-  const isAuthPage = authPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  ) && !request.nextUrl.pathname.startsWith('/signup/company')
+  // ──────────────────────────────────────────────────────────────
+  // Vérification de l'abonnement pour les routes protégées
+  // ──────────────────────────────────────────────────────────────
+  if (isProtected && user) {
+    // /settings/billing est toujours accessible (pour régulariser)
+    const billingExempt =
+      pathname.startsWith('/settings/billing') ||
+      pathname.startsWith('/api/stripe/')
 
-  if (isAuthPage && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
+    if (!billingExempt) {
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!sub) {
+        // Pas d'abonnement → page de sélection de plan
+        const url = request.nextUrl.clone()
+        url.pathname = '/pricing'
+        return NextResponse.redirect(url)
+      }
+
+      if (sub.status === 'canceled' || sub.status === 'past_due' || sub.status === 'incomplete') {
+        // Abonnement inactif → page de gestion d'abonnement
+        const url = request.nextUrl.clone()
+        url.pathname = '/settings/billing'
+        return NextResponse.redirect(url)
+      }
+    }
   }
 
   return supabaseResponse

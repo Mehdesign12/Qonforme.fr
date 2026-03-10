@@ -154,7 +154,20 @@ export default function NewInvoiceForm() {
       const json = await res.json()
 
       if (!res.ok) {
-        toast.error(json.error || "Erreur lors de la sauvegarde")
+        if (res.status === 402 && json.code === "STARTER_LIMIT_REACHED") {
+          toast.error(
+            `Limite Starter atteinte (${json.invoicesThisMonth}/${json.limit} ce mois). Passez au plan Pro pour des factures illimitées.`,
+            {
+              duration: 8000,
+              action: {
+                label: "Passer au Pro",
+                onClick: () => window.location.href = "/settings/billing",
+              },
+            }
+          )
+        } else {
+          toast.error(json.error || "Erreur lors de la sauvegarde")
+        }
         return
       }
 
