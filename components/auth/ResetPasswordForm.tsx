@@ -9,14 +9,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
 
-type Status = "idle" | "loading" | "success" | "invalid"
+type Status = "idle" | "loading" | "success" | "invalid" | "verifying"
 
 // Règles de mot de passe
 const RULES = [
-  { id: "length",  label: "8 caractères minimum",              test: (p: string) => p.length >= 8 },
-  { id: "upper",   label: "Une majuscule",                      test: (p: string) => /[A-Z]/.test(p) },
-  { id: "lower",   label: "Une minuscule",                      test: (p: string) => /[a-z]/.test(p) },
-  { id: "digit",   label: "Un chiffre",                         test: (p: string) => /\d/.test(p) },
+  { id: "length", label: "8 caractères minimum",  test: (p: string) => p.length >= 8 },
+  { id: "upper",  label: "Une majuscule",           test: (p: string) => /[A-Z]/.test(p) },
+  { id: "lower",  label: "Une minuscule",           test: (p: string) => /[a-z]/.test(p) },
+  { id: "digit",  label: "Un chiffre",              test: (p: string) => /\d/.test(p) },
 ]
 
 export default function ResetPasswordForm() {
@@ -24,42 +24,77 @@ export default function ResetPasswordForm() {
   const searchParams = useSearchParams()
   const supabase     = createClient()
 
-  const [password, setPassword]       = useState("")
-  const [confirm, setConfirm]         = useState("")
+  const [password, setPassword]         = useState("")
+  const [confirm, setConfirm]           = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [errors, setErrors]           = useState<{ password?: string; confirm?: string }>({})
-  const [status, setStatus]           = useState<Status>("idle")
+  const [showConfirm, setShowConfirm]   = useState(false)
+  const [errors, setErrors]             = useState<{ password?: string; confirm?: string }>({})
+  const [status, setStatus]             = useState<Status>("verifying")
 
-  // ── Échange du code PKCE au montage ─────────────────────────────────────
-  // Supabase envoie un lien de la forme :
-  //   https://qonforme.fr/reset-password?code=xxxxx
-  // On doit échanger ce code contre une session avant d'appeler updateUser()
+  // ── Vérification du lien au montage ─────────────────────────────────────
+  //
+  // Supabase génère deux types de liens selon la config du projet :
+  //
+  //  1. PKCE flow  → ?code=xxxx  (query param, lisible côté serveur)
+  //  2. Token flow → #access_token=xxx&type=recovery  (fragment hash, client only)
+  //
+  // On supporte les deux.
   useEffect(() => {
     const code = searchParams.get("code")
-    if (!code) {
-      // Pas de code = lien invalide ou expiré
-      setStatus("invalid")
+
+    // ── Cas 1 : PKCE flow (?code=) ──────────────────────────────────────
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) {
+          console.error("exchangeCodeForSession:", error.message)
+          setStatus("invalid")
+        } else {
+          setStatus("idle")
+        }
+      })
       return
     }
 
-    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      if (error) {
-        console.error("exchangeCodeForSession error:", error.message)
+    // ── Cas 2 : Token flow (#access_token) ──────────────────────────────
+    // Le SDK Supabase détecte automatiquement le fragment hash dans l'URL
+    // et émet un événement PASSWORD_RECOVERY quand le token est valide.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        // Token valide, session établie — on affiche le formulaire
+        setStatus("idle")
+        subscription.unsubscribe()
+      } else if (event === "SIGNED_IN") {
+        // Peut arriver juste avant PASSWORD_RECOVERY, on attend
+      }
+    })
+
+    // Timeout de sécurité : si aucun événement après 4s → lien invalide
+    const timeout = setTimeout(() => {
+      const currentStatus = status
+      if (currentStatus === "verifying") {
+        subscription.unsubscribe()
         setStatus("invalid")
       }
-      // Si succès : le statut reste "idle", le formulaire s'affiche
-    })
+    }, 4000)
+
+    return () => {
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── Validation ───────────────────────────────────────────────────────────
   const validate = (): boolean => {
     const errs: typeof errors = {}
-    if (!password)                          errs.password = "Le mot de passe est requis"
-    else if (RULES.some(r => !r.test(password))) errs.password = "Le mot de passe ne respecte pas les règles"
-    if (!confirm)                           errs.confirm  = "Confirme ton mot de passe"
-    else if (confirm !== password)          errs.confirm  = "Les mots de passe ne correspondent pas"
+    if (!password)
+      errs.password = "Le mot de passe est requis"
+    else if (RULES.some(r => !r.test(password)))
+      errs.password = "Le mot de passe ne respecte pas les règles"
+    if (!confirm)
+      errs.confirm = "Confirme ton mot de passe"
+    else if (confirm !== password)
+      errs.confirm = "Les mots de passe ne correspondent pas"
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -73,23 +108,32 @@ export default function ResetPasswordForm() {
     try {
       const { error } = await supabase.auth.updateUser({ password })
       if (error) {
-        console.error("updateUser error:", error.message)
-        if (error.message.includes("same password")) {
+        console.error("updateUser:", error.message)
+        if (error.message.toLowerCase().includes("same password")) {
           toast.error("Le nouveau mot de passe doit être différent de l'ancien.")
         } else {
-          toast.error("Une erreur est survenue. Le lien est peut-être expiré.")
+          toast.error("Une erreur est survenue. Demande un nouveau lien.")
         }
         setStatus("idle")
         return
       }
-
-      // Déconnexion propre après le reset (bonne pratique sécurité)
+      // Déconnexion propre après reset (bonne pratique sécurité)
       await supabase.auth.signOut()
       setStatus("success")
     } catch {
       toast.error("Erreur réseau. Vérifie ta connexion et réessaie.")
       setStatus("idle")
     }
+  }
+
+  // ── État : vérification en cours ─────────────────────────────────────────
+  if (status === "verifying") {
+    return (
+      <div className="flex flex-col items-center gap-4 py-6">
+        <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
+        <p className="text-sm text-slate-500">Vérification du lien…</p>
+      </div>
+    )
   }
 
   // ── État : lien invalide ou expiré ───────────────────────────────────────
@@ -104,7 +148,7 @@ export default function ResetPasswordForm() {
         <div>
           <h2 className="text-lg font-semibold text-[#0F172A]">Lien invalide ou expiré</h2>
           <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-            Ce lien de réinitialisation n&apos;est plus valide.<br/>
+            Ce lien de réinitialisation n&apos;est plus valide.<br />
             Les liens expirent après <strong>1 heure</strong>.
           </p>
         </div>
@@ -130,7 +174,7 @@ export default function ResetPasswordForm() {
         <div>
           <h2 className="text-lg font-semibold text-[#0F172A]">Mot de passe mis à jour !</h2>
           <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-            Ton mot de passe a été modifié avec succès.<br/>
+            Ton mot de passe a été modifié avec succès.<br />
             Tu peux maintenant te connecter avec ton nouveau mot de passe.
           </p>
         </div>
@@ -173,7 +217,7 @@ export default function ResetPasswordForm() {
             tabIndex={-1}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
             onClick={() => setShowPassword(v => !v)}
-            aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            aria-label={showPassword ? "Masquer" : "Afficher"}
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -181,8 +225,7 @@ export default function ResetPasswordForm() {
         {errors.password && (
           <p className="text-xs text-red-500 mt-1">{errors.password}</p>
         )}
-
-        {/* Règles de mot de passe */}
+        {/* Indicateurs règles */}
         {password.length > 0 && !allRulesPassed && (
           <ul className="mt-2 space-y-1">
             {RULES.map(rule => {

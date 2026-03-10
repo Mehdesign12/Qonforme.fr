@@ -7,19 +7,16 @@ import { Loader2, ArrowLeft, Mail, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { createClient } from "@/lib/supabase/client"
 
 export default function ForgotPasswordForm() {
-  const supabase = createClient()
-
-  const [email, setEmail]       = useState("")
-  const [error, setError]       = useState<string | null>(null)
-  const [loading, setLoading]   = useState(false)
+  const [email, setEmail]         = useState("")
+  const [error, setError]         = useState<string | null>(null)
+  const [loading, setLoading]     = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
   const validate = (): string | null => {
-    if (!email.trim())                                return "L'adresse email est requise"
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))  return "Adresse email invalide"
+    if (!email.trim())                               return "L'adresse email est requise"
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Adresse email invalide"
     return null
   }
 
@@ -32,18 +29,17 @@ export default function ForgotPasswordForm() {
     setLoading(true)
 
     try {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
-      const { error: supabaseError } = await supabase.auth.resetPasswordForEmail(
-        email.trim().toLowerCase(),
-        {
-          // Supabase ajoutera automatiquement ?code=xxx à cette URL (PKCE flow)
-          redirectTo: `${appUrl}/reset-password`,
-        }
-      )
+      // On appelle notre propre API qui génère le lien Supabase
+      // et envoie l'email brandé Qonforme via Resend.
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      })
 
-      if (supabaseError) {
-        // Ne pas exposer les erreurs internes — afficher un message générique
-        console.error("Reset password error:", supabaseError.message)
+      if (!res.ok) {
+        // Erreur réseau ou serveur — message générique
+        console.error("reset-password API status:", res.status)
         toast.error("Une erreur est survenue. Réessaie dans quelques instants.")
         return
       }
@@ -70,7 +66,8 @@ export default function ForgotPasswordForm() {
         <div>
           <h2 className="text-lg font-semibold text-[#0F172A]">Vérifie ta boîte mail</h2>
           <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-            Si un compte existe pour <span className="font-medium text-[#0F172A]">{email}</span>,
+            Si un compte existe pour{" "}
+            <span className="font-medium text-[#0F172A]">{email}</span>,
             tu recevras un email avec un lien de réinitialisation dans quelques minutes.
           </p>
           <p className="text-xs text-slate-400 mt-3">
@@ -88,7 +85,7 @@ export default function ForgotPasswordForm() {
             Utiliser une autre adresse
           </Button>
           <Link href="/login" className="block">
-            <Button variant="ghost" className="w-full gap-2 text-slate-500">
+            <Button type="button" variant="ghost" className="w-full gap-2 text-slate-500">
               <ArrowLeft className="w-4 h-4" />
               Retour à la connexion
             </Button>

@@ -28,6 +28,21 @@ export async function createClient() {
   )
 }
 
+// Client Admin avec service_role (accès complet, côté serveur uniquement)
+// ATTENTION : ne jamais exposer ce client côté client/navigateur
+export function createAdminClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  )
+}
+
 // Client avec Bearer token (pour les appels API juste après signUp,
 // avant que les cookies de session soient synchronisés)
 export function createClientWithToken(accessToken: string) {
