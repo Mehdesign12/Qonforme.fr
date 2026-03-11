@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import {
   CheckCircle2,
   AlertCircle,
@@ -182,7 +183,15 @@ export default function BillingPageClient({
       )}
 
       {/* ── Carte plan actuel ─────────────────────────────────────────────── */}
-      <div className={`bg-white rounded-xl border-2 p-6 ${isPro ? 'border-[#2563EB]' : 'border-[#E2E8F0]'}`}>
+      <div className={`relative overflow-hidden bg-white rounded-xl border-2 p-6 ${isPro ? 'border-[#2563EB]' : 'border-[#E2E8F0]'}`}>
+        {/* Q filigrane en fond de la card plan actif */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-8 -bottom-8 select-none"
+          style={{ opacity: 0.06, zIndex: 0 }}
+        >
+          <Image src={PICTO_Q} alt="" width={180} height={180} className="w-[160px]" unoptimized />
+        </div>
 
         {/* En-tête plan */}
         <div className="flex items-start justify-between gap-4 mb-5">

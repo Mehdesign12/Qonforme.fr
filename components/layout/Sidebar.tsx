@@ -1,6 +1,7 @@
 'use client'
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard, Users, FileText, FileCheck2,
@@ -10,6 +11,8 @@ import {
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+
+const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -211,7 +214,15 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden md:flex w-60 flex-col border-r border-[#E2E8F0] bg-white shrink-0">
+    <aside className="hidden md:flex w-60 flex-col border-r border-[#E2E8F0] bg-white shrink-0 relative overflow-hidden">
+      {/* Q filigrane en bas de la sidebar */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-8 -left-6 select-none"
+        style={{ opacity: 0.06, zIndex: 0 }}
+      >
+        <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[140px]" unoptimized />
+      </div>
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 py-5 border-b border-[#E2E8F0]">
         <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center shrink-0">

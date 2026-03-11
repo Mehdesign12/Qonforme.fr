@@ -1,6 +1,9 @@
 import { TrendingUp, TrendingDown, FileText, Clock, AlertTriangle } from "lucide-react"
+import Image from "next/image"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { createClient } from "@/lib/supabase/server"
+
+const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
 
 async function getStats() {
   const supabase = await createClient()
@@ -120,7 +123,16 @@ export async function DashboardStats() {
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="relative overflow-hidden">
+      {/* Q filigrane centré dans la zone KPI */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none"
+        style={{ opacity: 0.035, zIndex: 0 }}
+      >
+        <Image src={PICTO_Q} alt="" width={240} height={240} className="w-[200px]" unoptimized />
+      </div>
+      <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => (
         <div key={card.title} className="bg-white rounded-xl border border-[#E2E8F0] p-4 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
@@ -133,6 +145,7 @@ export async function DashboardStats() {
           <p className="text-xs text-slate-400 mt-1">{card.sub}</p>
         </div>
       ))}
+      </div>
     </div>
   )
 }
