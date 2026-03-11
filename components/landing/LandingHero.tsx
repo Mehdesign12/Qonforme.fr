@@ -9,7 +9,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
-import { AuroraBackground } from "@/components/ui/aurora-background";
 import { LightRays } from "@/components/ui/light-rays";
 
 const LOGO_URL =
@@ -289,23 +288,47 @@ function Hero() {
 export function LandingHero() {
   return (
     <>
-      {/* Header sticky en dehors du overflow-hidden de l'aurora */}
+      {/* Header sticky — hors du overflow-hidden pour que position:sticky fonctionne */}
       <Header />
 
-      {/* Zone aurora + LightRays + Hero */}
-      <AuroraBackground className="bg-white -mt-[60px]" showRadialGradient={true}>
+      {/*
+        Wrapper hero : relative + overflow-hidden requis par LightRays.
+        Le fond aurora est appliqué via les couches CSS directement ici.
+        -mt-[60px] + padding-top compensent le header sticky.
+      */}
+      <div
+        className="relative w-full overflow-hidden -mt-[60px]"
+        style={{
+          background:
+            "linear-gradient(135deg, #EFF6FF 0%, #EEF2FF 20%, #F5F3FF 38%, #E0F2FE 55%, #EFF6FF 72%, #F0FDF4 88%, #EEF2FF 100%)",
+        }}
+      >
+        {/* Lueurs radiales statiques en fond */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 50% at 20% -10%, rgba(37,99,235,0.10) 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 80% 5%, rgba(124,58,237,0.08) 0%, transparent 55%)",
+          }}
+        />
+
+        {/* LightRays animés — z-0, inset-0 */}
         <LightRays
-          rayCount={9}
-          rayColor="#93c5fd"
-          rayOpacity={0.22}
-          rayWidth={12}
-          duration={5}
+          count={8}
+          color="rgba(147, 197, 253, 0.30)"
+          blur={38}
+          speed={12}
+          length="100%"
           className="z-0"
         />
-        {/* Espace pour compenser le header sticky */}
-        <div className="h-[60px]" />
-        <Hero />
-      </AuroraBackground>
+
+        {/* Contenu hero au-dessus des rayons */}
+        <div className="relative z-10">
+          <div className="h-[60px]" />
+          <Hero />
+        </div>
+      </div>
     </>
   );
 }
