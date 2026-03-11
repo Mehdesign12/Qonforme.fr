@@ -4,9 +4,19 @@ import { useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { Loader2, ArrowLeft, Mail, CheckCircle2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+
+/* ─── classes communes ──────────────────────────────────────────────────── */
+const inputBase =
+  "w-full h-11 rounded-[10px] border border-[#E2E8F0] bg-white px-3.5 text-sm text-[#0F172A] placeholder:text-slate-400 outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 disabled:opacity-50"
+const inputError =
+  "border-red-400 focus:border-red-400 focus:ring-red-400/10"
+const labelCls  = "block text-[13px] font-semibold text-[#0F172A] mb-1.5"
+const btnPrimary =
+  "w-full h-11 rounded-[10px] bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+const btnSecondary =
+  "w-full h-11 rounded-[10px] border border-[#E2E8F0] bg-white hover:bg-[#F8FAFC] active:scale-[0.98] text-[#0F172A] text-sm font-medium transition-all flex items-center justify-center gap-2"
+const btnGhost =
+  "w-full h-11 rounded-[10px] text-slate-500 hover:text-[#0F172A] text-sm font-medium transition-all flex items-center justify-center gap-2 hover:bg-[#F8FAFC]"
 
 export default function ForgotPasswordForm() {
   const [email, setEmail]         = useState("")
@@ -22,30 +32,20 @@ export default function ForgotPasswordForm() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     const err = validate()
     if (err) { setError(err); return }
     setError(null)
     setLoading(true)
-
     try {
-      // On appelle notre propre API qui génère le lien Supabase
-      // et envoie l'email brandé Qonforme via Resend.
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       })
-
       if (!res.ok) {
-        // Erreur réseau ou serveur — message générique
-        console.error("reset-password API status:", res.status)
         toast.error("Une erreur est survenue. Réessaie dans quelques instants.")
         return
       }
-
-      // Toujours afficher la confirmation, même si l'email n'existe pas
-      // (sécurité : éviter l'énumération d'emails)
       setSubmitted(true)
     } catch {
       toast.error("Erreur réseau. Vérifie ta connexion et réessaie.")
@@ -54,91 +54,81 @@ export default function ForgotPasswordForm() {
     }
   }
 
-  // ── État : email envoyé ──────────────────────────────────────────────────
+  /* ── État : email envoyé ────────────────────────────────────────────────── */
   if (submitted) {
     return (
-      <div className="text-center space-y-4">
+      <div className="text-center space-y-5">
         <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-full bg-[#D1FAE5] flex items-center justify-center">
+          <div className="w-16 h-16 rounded-2xl bg-[#D1FAE5] flex items-center justify-center">
             <CheckCircle2 className="w-8 h-8 text-[#10B981]" />
           </div>
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-[#0F172A]">Vérifie ta boîte mail</h2>
+          <h2 className="text-lg font-bold text-[#0F172A]">Vérifie ta boîte mail</h2>
           <p className="text-sm text-slate-500 mt-2 leading-relaxed">
             Si un compte existe pour{" "}
-            <span className="font-medium text-[#0F172A]">{email}</span>,
-            tu recevras un email avec un lien de réinitialisation dans quelques minutes.
+            <span className="font-semibold text-[#0F172A]">{email}</span>,
+            tu recevras un lien de réinitialisation dans quelques minutes.
           </p>
-          <p className="text-xs text-slate-400 mt-3">
+          <p className="text-xs text-slate-400 mt-2">
             Pense à vérifier tes spams si tu ne le vois pas.
           </p>
         </div>
-        <div className="pt-2 space-y-2">
-          <Button
+        <div className="space-y-2.5 pt-1">
+          <button
             type="button"
-            variant="outline"
-            className="w-full gap-2"
+            className={btnSecondary}
             onClick={() => { setSubmitted(false); setEmail("") }}
           >
             <Mail className="w-4 h-4" />
             Utiliser une autre adresse
-          </Button>
-          <Link href="/login" className="block">
-            <Button type="button" variant="ghost" className="w-full gap-2 text-slate-500">
+          </button>
+          <Link href="/login">
+            <button type="button" className={btnGhost}>
               <ArrowLeft className="w-4 h-4" />
               Retour à la connexion
-            </Button>
+            </button>
           </Link>
         </div>
       </div>
     )
   }
 
-  // ── État : formulaire ────────────────────────────────────────────────────
+  /* ── Formulaire ─────────────────────────────────────────────────────────── */
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <div>
-        <Label htmlFor="email">Adresse email</Label>
-        <Input
+        <label htmlFor="email" className={labelCls}>Adresse email</label>
+        <input
           id="email"
           type="email"
           placeholder="jean@exemple.fr"
           autoComplete="email"
           autoFocus
-          className={`mt-1 ${error ? "border-red-400 focus-visible:ring-red-400" : ""}`}
+          className={`${inputBase} ${error ? inputError : ""}`}
           value={email}
-          onChange={e => {
-            setEmail(e.target.value)
-            if (error) setError(null)
-          }}
+          onChange={e => { setEmail(e.target.value); if (error) setError(null) }}
           disabled={loading}
         />
-        {error && (
-          <p className="text-xs text-red-500 mt-1">{error}</p>
-        )}
+        {error && <p className="text-xs text-red-500 mt-1.5">{error}</p>}
       </div>
 
-      <Button
-        type="submit"
-        className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
-        disabled={loading}
-      >
+      <button type="submit" className={btnPrimary} disabled={loading}>
         {loading ? (
           <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" />
             Envoi en cours…
           </>
         ) : (
           "Envoyer le lien de réinitialisation"
         )}
-      </Button>
+      </button>
 
-      <Link href="/login" className="block">
-        <Button type="button" variant="ghost" className="w-full gap-2 text-slate-500">
+      <Link href="/login">
+        <button type="button" className={`${btnGhost} mt-1`}>
           <ArrowLeft className="w-4 h-4" />
           Retour à la connexion
-        </Button>
+        </button>
       </Link>
     </form>
   )
