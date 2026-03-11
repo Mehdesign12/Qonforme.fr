@@ -20,6 +20,8 @@ import {
 import { PLANS } from '@/lib/stripe/plans'
 import type { Subscription } from '@/lib/stripe/subscription'
 
+const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
+
 interface BillingPageClientProps {
   subscription: Subscription | null
   invoicesThisMonth: number
