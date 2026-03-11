@@ -188,12 +188,12 @@ export default function PricingSelector() {
 
           {/* Trait lumineux en haut */}
           <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px]"
-            style={{ background: 'linear-gradient(90deg, transparent 5%, #2563EB 40%, #7C3AED 60%, transparent 95%)' }}
+            style={{ background: 'linear-gradient(90deg, transparent 5%, #2563EB 40%, #3B82F6 60%, transparent 95%)' }}
           />
 
           {/* Badge recommandé — intégré dans la card, pas absolu */}
           <div className="mb-4">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-white bg-gradient-to-r from-[#2563EB] to-[#7C3AED] px-3 py-1 rounded-full">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-white bg-[#2563EB] px-3 py-1 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />
               Recommandé
             </span>

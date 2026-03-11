@@ -2,54 +2,114 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   EmbeddedCheckout,
   EmbeddedCheckoutProvider,
 } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
-import { Check, Zap, Crown, ArrowLeft, Shield, RefreshCw } from 'lucide-react'
+import { Check, ArrowLeft, Shield, RefreshCw } from 'lucide-react'
 import { PLANS, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+
+const LOGO_LONG_BLANC = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20blanc.webp'
+const LOGO_LONG_BLEU  = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp'
+const PICTO_Q         = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp'
 
 // Singleton Stripe — initialisé une seule fois
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''
 )
 
+// ── Stripe Appearance — charte Qonforme ───────────────────────────────────
+const stripeAppearance = {
+  theme: 'stripe' as const,
+  variables: {
+    colorPrimary:        '#2563EB',
+    colorBackground:     '#ffffff',
+    colorText:           '#0F172A',
+    colorTextSecondary:  '#475569',
+    colorDanger:         '#EF4444',
+    fontFamily:          '"DM Sans", system-ui, sans-serif',
+    fontSizeBase:        '14px',
+    borderRadius:        '10px',
+    spacingUnit:         '4px',
+  },
+  rules: {
+    '.Label': {
+      fontWeight:    '600',
+      color:         '#0F172A',
+      fontSize:      '13px',
+      marginBottom:  '6px',
+    },
+    '.Input': {
+      border:        '1.5px solid #E2E8F0',
+      boxShadow:     'none',
+      paddingTop:    '10px',
+      paddingBottom: '10px',
+      color:         '#0F172A',
+    },
+    '.Input:focus': {
+      border:     '1.5px solid #2563EB',
+      boxShadow:  '0 0 0 3px rgba(37,99,235,0.10)',
+      outline:    'none',
+    },
+    '.Input--invalid': {
+      border:    '1.5px solid #EF4444',
+      boxShadow: '0 0 0 3px rgba(239,68,68,0.10)',
+    },
+    '.Tab': {
+      border:       '1.5px solid #E2E8F0',
+      boxShadow:    'none',
+      borderRadius: '10px',
+    },
+    '.Tab:hover': {
+      border:      '1.5px solid #BFDBFE',
+      color:       '#2563EB',
+    },
+    '.Tab--selected': {
+      border:      '1.5px solid #2563EB',
+      boxShadow:   '0 0 0 3px rgba(37,99,235,0.10)',
+      color:       '#2563EB',
+    },
+    '.CheckboxInput': {
+      border: '1.5px solid #E2E8F0',
+    },
+    '.CheckboxInput--checked': {
+      backgroundColor: '#2563EB',
+      border:          '1.5px solid #2563EB',
+    },
+  },
+}
+
+// ── Stripe fonts — charge DM Sans pour l'iframe Stripe ───────────────────
+const stripeFonts = [
+  { cssSrc: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap' },
+]
+
 interface CheckoutPageClientProps {
-  planId: PlanId
+  planId:        PlanId
   billingPeriod: BillingPeriod
 }
 
-export default function CheckoutPageClient({
-  planId,
-  billingPeriod,
-}: CheckoutPageClientProps) {
+export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPageClientProps) {
   const router = useRouter()
-  const plan = PLANS[planId]
-  const isPro = planId === 'pro'
+  const plan   = PLANS[planId]
 
-  const price =
-    billingPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyMonthlyEquivalent
-  const billingLabel =
-    billingPeriod === 'monthly'
-      ? `${plan.monthlyPrice} €/mois HT`
-      : `${plan.yearlyPrice} €/an HT · soit ${plan.yearlyMonthlyEquivalent} €/mois`
+  const price = billingPeriod === 'monthly'
+    ? plan.monthlyPrice
+    : plan.yearlyMonthlyEquivalent
+
+  const fmt = (n: number) => n % 1 === 0 ? `${n}` : n.toFixed(2)
 
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [isComplete, setIsComplete] = useState(false)
-  // Ref pour éviter double-redirect en StrictMode
   const redirected = useRef(false)
 
-  // Mémoïsé une seule fois — Stripe refuse les changements de onComplete après mount
-  const handleComplete = useCallback(() => {
-    setIsComplete(true)
-  }, []) // dépendances vides = stable pour toute la durée de vie du composant
+  const handleComplete = useCallback(() => { setIsComplete(true) }, [])
 
-  // Redirige vers le dashboard dès que Stripe confirme le paiement
   useEffect(() => {
     if (isComplete && !redirected.current) {
       redirected.current = true
-      // Petit délai pour que Stripe finisse d'afficher sa confirmation avant nav
       setTimeout(() => router.replace('/dashboard?welcome=1'), 800)
     }
   }, [isComplete, router])
@@ -57,10 +117,10 @@ export default function CheckoutPageClient({
   const fetchClientSecret = useCallback(async () => {
     setFetchError(null)
     try {
-      const res = await fetch('/api/stripe/checkout', {
-        method: 'POST',
+      const res  = await fetch('/api/stripe/checkout', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId, billingPeriod }),
+        body:    JSON.stringify({ planId, billingPeriod }),
       })
       const data = await res.json()
       if (!res.ok || !data.clientSecret) {
@@ -75,136 +135,140 @@ export default function CheckoutPageClient({
   }, [planId, billingPeriod])
 
   return (
-    /*
-     * Plein écran fixe — hauteur = 100dvh (dynamic viewport height, gère
-     * les barres mobiles). Pas de scroll global : les deux colonnes sont
-     * autonomes.
-     */
-    <div className="h-[100dvh] flex flex-col lg:flex-row overflow-hidden bg-white">
+    <div className="h-[100dvh] flex flex-col lg:flex-row overflow-hidden">
 
-      {/* ═══════════════════════════════════════════════════════════════
-          COLONNE GAUCHE — Récapitulatif plan
-          Desktop : 40 % de largeur, fixe, fond bleu foncé
-          Mobile  : bande compacte en haut (hauteur auto)
-      ══════════════════════════════════════════════════════════════════ */}
-      <div className={`
-        lg:w-[42%] lg:h-full lg:overflow-y-auto
-        flex flex-col
-        ${isPro
-          ? 'bg-gradient-to-br from-[#1E3A8A] via-[#1D4ED8] to-[#2563EB]'
-          : 'bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#334155]'
-        }
-        text-white
-        px-6 pt-5 pb-4
-        lg:px-10 lg:pt-10 lg:pb-8
-      `}>
+      {/* ══════════════════════════════════════════════════════════════
+          COLONNE GAUCHE — Récap plan, fond navy #0F172A uniforme
+      ══════════════════════════════════════════════════════════════ */}
+      <div className="relative lg:w-[42%] lg:h-full lg:overflow-y-auto flex flex-col bg-[#0F172A] text-white px-6 pt-6 pb-4 lg:px-10 lg:pt-10 lg:pb-8 overflow-hidden">
 
-        {/* Bouton retour */}
-        <button
-          onClick={() => router.push('/pricing')}
-          className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors mb-6 lg:mb-8 self-start"
+        {/* Filigrane Q — bas-gauche */}
+        <div
+          aria-hidden
+          className="pointer-events-none select-none absolute -bottom-10 -left-10 z-0"
+          style={{ opacity: 0.06 }}
         >
-          <ArrowLeft className="w-4 h-4" />
-          Changer de plan
-        </button>
+          <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[220px] lg:w-[280px]" unoptimized />
+        </div>
 
-        {/* Logo + plan */}
-        <div className="flex items-center gap-3 mb-4 lg:mb-6">
-          <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-            isPro
-              ? 'bg-white/15 ring-1 ring-white/20'
-              : 'bg-white/10 ring-1 ring-white/15'
-          }`}>
-            {isPro
-              ? <Crown className="w-5 h-5 text-yellow-300" />
-              : <Zap className="w-5 h-5 text-blue-300" />
-            }
+        {/* Tache lumineuse bleue en haut */}
+        <div
+          aria-hidden
+          className="pointer-events-none select-none absolute -top-20 -right-20 z-0 w-[320px] h-[320px] rounded-full"
+          style={{ background: 'radial-gradient(circle at center, rgba(37,99,235,0.18) 0%, transparent 70%)' }}
+        />
+
+        {/* Contenu au-dessus du filigrane */}
+        <div className="relative z-10 flex flex-col h-full">
+
+          {/* Bouton retour */}
+          <button
+            onClick={() => router.push('/pricing')}
+            className="flex items-center gap-1.5 text-sm text-white/50 hover:text-white transition-colors mb-7 self-start"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Changer de plan
+          </button>
+
+          {/* Logo Qonforme */}
+          <div className="mb-7">
+            <Image
+              src={LOGO_LONG_BLANC}
+              alt="Qonforme"
+              width={140}
+              height={34}
+              className="h-8 w-auto"
+              unoptimized
+              onError={(e) => {
+                // fallback : logo bleu avec filter invert si la version blanche n'existe pas
+                const img = e.currentTarget as HTMLImageElement
+                img.src = LOGO_LONG_BLEU
+                img.style.filter = 'brightness(0) invert(1)'
+              }}
+            />
           </div>
-          <div>
-            <p className="text-xs text-white/50 uppercase tracking-widest font-semibold">
-              Qonforme
-            </p>
-            <h1 className="text-xl lg:text-2xl font-bold leading-tight">
-              Plan {plan.name}
+
+          {/* Nom du plan */}
+          <div className="mb-5">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#60A5FA] block mb-1">
+              {plan.name}
+            </span>
+            <h1 className="text-2xl lg:text-3xl font-bold leading-tight text-white">
+              {plan.description}
             </h1>
           </div>
-        </div>
 
-        {/* Prix */}
-        <div className="mb-4 lg:mb-6">
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-4xl lg:text-5xl font-extrabold">
-              {price % 1 === 0 ? price : price.toFixed(2)}€
-            </span>
-            <span className="text-white/50 text-sm">/mois HT</span>
-          </div>
-          {billingPeriod === 'yearly' && (
-            <p className="text-sm text-white/60 mt-1">
-              Facturé {plan.yearlyPrice} €/an · 2 mois offerts
-            </p>
-          )}
-          <p className="text-xs text-white/40 mt-1">{billingLabel}</p>
-        </div>
-
-        {/* Features — masquées sur mobile pour gagner de la place */}
-        <ul className="hidden lg:flex flex-col gap-2.5 flex-1">
-          {plan.features.map((f) => (
-            <li key={f} className="flex items-start gap-2.5 text-sm text-white/85">
-              <span className="mt-0.5 w-4 h-4 rounded-full bg-white/15 flex items-center justify-center shrink-0">
-                <Check className="w-2.5 h-2.5 text-white" />
+          {/* Prix */}
+          <div className="mb-6">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-5xl lg:text-6xl font-extrabold font-mono leading-none tracking-tight">
+                {fmt(price)}€
               </span>
-              {f}
-            </li>
-          ))}
-        </ul>
+              <span className="text-white/40 text-sm">/mois HT</span>
+            </div>
+            {billingPeriod === 'yearly' && (
+              <p className="text-sm text-white/50 mt-1.5">
+                Facturé {plan.yearlyPrice} €/an · 2 mois offerts
+              </p>
+            )}
+          </div>
 
-        {/* Features compactes sur mobile (3 premières seulement) */}
-        <ul className="lg:hidden flex flex-col gap-1.5 mb-1">
-          {plan.features.slice(0, 3).map((f) => (
-            <li key={f} className="flex items-center gap-2 text-xs text-white/75">
-              <Check className="w-3 h-3 text-white/60 shrink-0" />
-              {f}
-            </li>
-          ))}
-          {plan.features.length > 3 && (
-            <li className="text-xs text-white/45 pl-5">
-              + {plan.features.length - 3} autres avantages
-            </li>
-          )}
-        </ul>
+          {/* Séparateur */}
+          <div className="h-px bg-white/10 mb-5" />
 
-        {/* Badge sécurité — toujours visible */}
-        <div className="flex items-center gap-2 mt-4 lg:mt-6 pt-4 lg:pt-6 border-t border-white/10">
-          <Shield className="w-4 h-4 text-white/40 shrink-0" />
-          <p className="text-xs text-white/40">
-            Paiement sécurisé par Stripe · Résiliation à tout moment
-          </p>
+          {/* Features desktop (toutes) */}
+          <ul className="hidden lg:flex flex-col gap-3 flex-1">
+            {plan.features.map((f) => (
+              <li key={f} className="flex items-start gap-3 text-sm text-white/75">
+                <span className="mt-[2px] w-[18px] h-[18px] rounded-full bg-[#2563EB]/30 flex items-center justify-center shrink-0">
+                  <Check className="w-2.5 h-2.5 text-[#60A5FA]" />
+                </span>
+                {f}
+              </li>
+            ))}
+          </ul>
+
+          {/* Features mobile (3 premières) */}
+          <ul className="lg:hidden flex flex-col gap-2 mb-2">
+            {plan.features.slice(0, 3).map((f) => (
+              <li key={f} className="flex items-center gap-2.5 text-sm text-white/70">
+                <Check className="w-3.5 h-3.5 text-[#60A5FA] shrink-0" />
+                {f}
+              </li>
+            ))}
+            {plan.features.length > 3 && (
+              <li className="text-xs text-white/35 pl-6">
+                + {plan.features.length - 3} autres avantages
+              </li>
+            )}
+          </ul>
+
+          {/* Badge sécurité */}
+          <div className="flex items-center gap-2 mt-5 pt-5 border-t border-white/10">
+            <Shield className="w-3.5 h-3.5 text-white/30 shrink-0" />
+            <p className="text-xs text-white/30">
+              Paiement sécurisé par Stripe · Résiliation à tout moment
+            </p>
+          </div>
+
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          COLONNE DROITE — Formulaire Stripe
-          Desktop : 58 % de largeur, fixe, fond blanc
-          Mobile  : prend tout le reste de la hauteur
-      ══════════════════════════════════════════════════════════════════ */}
-      <div className="flex-1 lg:h-full overflow-y-auto bg-[#F8FAFC] lg:bg-white">
+      {/* ══════════════════════════════════════════════════════════════
+          COLONNE DROITE — Formulaire Stripe brandé
+      ══════════════════════════════════════════════════════════════ */}
+      <div className="flex-1 lg:h-full overflow-y-auto bg-[#F8FAFC]">
+        <div className="min-h-full flex flex-col justify-start lg:justify-center px-4 py-6 lg:px-10 lg:py-8">
 
-        {/* Centrage vertical sur desktop */}
-        <div className="min-h-full flex flex-col justify-start lg:justify-center px-4 py-4 lg:px-10 lg:py-8">
-
-          {/* Erreur de chargement */}
           {fetchError ? (
+            /* Erreur */
             <div className="max-w-md mx-auto w-full text-center py-10">
               <div className="w-12 h-12 rounded-full bg-[#FEE2E2] flex items-center justify-center mx-auto mb-4">
                 <RefreshCw className="w-5 h-5 text-[#EF4444]" />
               </div>
               <p className="text-sm text-[#EF4444] mb-4 font-medium">{fetchError}</p>
               <button
-                onClick={() => {
-                  setFetchError(null)
-                  // Force re-mount du provider en changeant la key n'est pas nécessaire
-                  // — fetchClientSecret sera rappelé automatiquement
-                }}
+                onClick={() => setFetchError(null)}
                 className="text-sm text-[#2563EB] underline font-medium"
               >
                 Réessayer
@@ -216,8 +280,9 @@ export default function CheckoutPageClient({
                 Retour au choix du plan
               </button>
             </div>
+
           ) : isComplete ? (
-            /* Écran de confirmation pendant la redirection */
+            /* Confirmation */
             <div className="max-w-md mx-auto w-full text-center py-10">
               <div className="w-14 h-14 rounded-full bg-[#D1FAE5] flex items-center justify-center mx-auto mb-4">
                 <Check className="w-7 h-7 text-[#10B981]" />
@@ -228,20 +293,24 @@ export default function CheckoutPageClient({
                 <div className="w-5 h-5 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
               </div>
             </div>
+
           ) : (
-            /* Formulaire Stripe Embedded */
-            <div className="w-full max-w-md mx-auto lg:max-w-none">
+            /* Formulaire Stripe Embedded — brandé via Appearance API */
+            <div className="w-full max-w-lg mx-auto">
               <EmbeddedCheckoutProvider
                 stripe={stripePromise}
                 options={{
                   fetchClientSecret,
-                  onComplete: handleComplete, // stable grâce à useCallback([], [])
-                }}
+                  onComplete:  handleComplete,
+                  appearance:  stripeAppearance,
+                  fonts:       stripeFonts,
+                } as Parameters<typeof EmbeddedCheckoutProvider>[0]['options']}
               >
                 <EmbeddedCheckout />
               </EmbeddedCheckoutProvider>
             </div>
           )}
+
         </div>
       </div>
     </div>
