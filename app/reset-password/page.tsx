@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 export default function ResetPasswordPage() {
   return (
     <AuthLayout>
-      <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm p-6 sm:p-8">
+      <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-[0_8px_32px_rgba(37,99,235,0.10)] p-6 sm:p-8">
         <div className="mb-6">
           {/* Icône */}
           <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] flex items-center justify-center mb-4">
