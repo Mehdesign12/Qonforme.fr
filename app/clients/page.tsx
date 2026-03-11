@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic"
 
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
-import { Plus, Search, Building2, Loader2, Archive, Pencil, ChevronRight } from "lucide-react"
+import { Plus, Search, Building2, Loader2, Archive, Pencil } from "lucide-react"
 import { toast } from "sonner"
 
 interface Client {

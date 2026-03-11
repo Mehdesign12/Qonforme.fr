@@ -4,8 +4,6 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Plus, Trash2, Loader2, Eye, Send, ChevronRight } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { calculateLineTotals, calculateInvoiceTotals, formatCurrency, VAT_RATES } from "@/lib/utils/invoice"
 import { ProductCombobox, type ProductSuggestion } from "@/components/products/ProductCombobox"
 
