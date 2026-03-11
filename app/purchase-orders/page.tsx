@@ -80,36 +80,22 @@ export default function PurchaseOrdersPage() {
   return (
     <div className="space-y-4 max-w-[1200px] mx-auto">
 
-      <div className="flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 w-full sm:w-auto" style={{ scrollbarWidth: 'none' }}>
-          {FILTERS.map(f => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${
-                activeFilter === f.key
-                  ? "text-white border-transparent shadow-sm"
-                  : "bg-white/80 text-slate-600 border-[#E2E8F0] hover:border-[#818CF8] hover:text-[#4F46E5]"
-              }`}
-              style={activeFilter === f.key ? { backgroundColor: INDIGO, borderColor: INDIGO } : {}}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        <Link href="/purchase-orders/new" className="shrink-0 w-full sm:w-auto">
+      {/* ── Filtres scrollables (CTA supprimé — déjà dans le Header) ── */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+        {FILTERS.map(f => (
           <button
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-white rounded-xl transition-colors shadow-sm"
-            style={{ backgroundColor: INDIGO }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = INDIGO_HOVER)}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = INDIGO)}
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${
+              activeFilter === f.key
+                ? "text-white border-transparent shadow-sm"
+                : "bg-white/80 text-slate-600 border-[#E2E8F0] hover:border-[#818CF8] hover:text-[#4F46E5]"
+            }`}
+            style={activeFilter === f.key ? { backgroundColor: INDIGO, borderColor: INDIGO } : {}}
           >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Nouveau bon de commande</span>
-            <span className="sm:hidden">Nouveau BdC</span>
+            {f.label}
           </button>
-        </Link>
+        ))}
       </div>
 
       <div className="rounded-2xl border border-white/60 overflow-hidden" style={cardStyle}>
@@ -134,6 +120,8 @@ export default function PurchaseOrdersPage() {
                   <button
                     className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-xl transition-colors"
                     style={{ backgroundColor: INDIGO }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = INDIGO_HOVER)}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = INDIGO)}
                   >
                     <Plus className="w-4 h-4" />
                     Créer un bon de commande

@@ -56,26 +56,18 @@ export default function ClientsPage() {
   return (
     <div className="space-y-4 max-w-[1200px] mx-auto">
 
-      {/* Barre recherche + CTA */}
-      <div className="flex items-center gap-3">
-        <div
-          className="relative flex-1 flex items-center rounded-xl border border-white/60 overflow-hidden"
-          style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
-        >
-          <Search className="absolute left-3 w-4 h-4 text-slate-400 pointer-events-none" />
-          <input
-            placeholder="Rechercher un client…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2.5 text-sm bg-transparent outline-none text-[#0F172A] placeholder:text-slate-400"
-          />
-        </div>
-        <Link href="/clients/new" className="shrink-0">
-          <button className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl transition-colors shadow-sm">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Nouveau client</span>
-          </button>
-        </Link>
+      {/* ── Barre de recherche (CTA supprimé — déjà dans le Header) ── */}
+      <div
+        className="relative flex items-center rounded-xl border border-white/60 overflow-hidden"
+        style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+      >
+        <Search className="absolute left-3 w-4 h-4 text-slate-400 pointer-events-none" />
+        <input
+          placeholder="Rechercher un client…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-3 py-2.5 text-sm bg-transparent outline-none text-[#0F172A] placeholder:text-slate-400"
+        />
       </div>
 
       {/* Contenu */}

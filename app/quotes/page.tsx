@@ -57,7 +57,6 @@ const cardStyle: React.CSSProperties = {
 }
 
 const ACCENT = "#059669"
-const ACCENT_HOVER = "#047857"
 
 export default function QuotesPage() {
   const [quotes, setQuotes]             = useState<Quote[]>([])
@@ -78,35 +77,22 @@ export default function QuotesPage() {
   return (
     <div className="space-y-4 max-w-[1200px] mx-auto">
 
-      <div className="flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 w-full sm:w-auto" style={{ scrollbarWidth: 'none' }}>
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setActiveFilter(f.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${
-                activeFilter === f.key
-                  ? "text-white border-transparent shadow-sm"
-                  : "bg-white/80 text-slate-600 border-[#E2E8F0] hover:border-[#059669] hover:text-[#059669]"
-              }`}
-              style={activeFilter === f.key ? { backgroundColor: ACCENT, borderColor: ACCENT } : {}}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        <Link href="/quotes/new" className="shrink-0 w-full sm:w-auto">
+      {/* ── Filtres scrollables (CTA supprimé — déjà dans le Header) ── */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+        {FILTERS.map((f) => (
           <button
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-white rounded-xl transition-colors shadow-sm"
-            style={{ backgroundColor: ACCENT }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = ACCENT_HOVER)}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = ACCENT)}
+            key={f.key}
+            onClick={() => setActiveFilter(f.key)}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${
+              activeFilter === f.key
+                ? "text-white border-transparent shadow-sm"
+                : "bg-white/80 text-slate-600 border-[#E2E8F0] hover:border-[#059669] hover:text-[#059669]"
+            }`}
+            style={activeFilter === f.key ? { backgroundColor: ACCENT, borderColor: ACCENT } : {}}
           >
-            <Plus className="w-4 h-4" />
-            Nouveau devis
+            {f.label}
           </button>
-        </Link>
+        ))}
       </div>
 
       <div className="rounded-2xl border border-white/60 overflow-hidden" style={cardStyle}>

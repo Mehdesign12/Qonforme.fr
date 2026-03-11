@@ -83,35 +83,24 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-4 max-w-[1200px] mx-auto">
 
-      {/* ── Barre top : filtres + CTA ── */}
-      <div className="flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row">
-        {/* Filtres scrollables */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 w-full sm:w-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setActiveFilter(f.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap flex items-center gap-1 ${
-                activeFilter === f.key
-                  ? f.key === "archived"
-                    ? "bg-slate-600 text-white border-slate-600 shadow-sm"
-                    : "bg-[#2563EB] text-white border-[#2563EB] shadow-sm"
-                  : "bg-white/80 text-slate-600 border-[#E2E8F0] hover:border-[#2563EB] hover:text-[#2563EB]"
-              }`}
-            >
-              {f.key === "archived" && <Archive className="w-3 h-3" />}
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <Link href="/invoices/new" className="shrink-0 w-full sm:w-auto">
-          <button className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] rounded-xl transition-colors shadow-sm">
-            <Plus className="w-4 h-4" />
-            Nouvelle facture
+      {/* ── Filtres scrollables (CTA supprimé — déjà dans le Header) ── */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setActiveFilter(f.key)}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap flex items-center gap-1 ${
+              activeFilter === f.key
+                ? f.key === "archived"
+                  ? "bg-slate-600 text-white border-slate-600 shadow-sm"
+                  : "bg-[#2563EB] text-white border-[#2563EB] shadow-sm"
+                : "bg-white/80 text-slate-600 border-[#E2E8F0] hover:border-[#2563EB] hover:text-[#2563EB]"
+            }`}
+          >
+            {f.key === "archived" && <Archive className="w-3 h-3" />}
+            {f.label}
           </button>
-        </Link>
+        ))}
       </div>
 
       {isArchiveView && (

@@ -108,9 +108,9 @@ export function Header() {
           {/* CTA contextuel — texte complet sur sm+, icône seule sur xs */}
           {cta && (
             <Link href={cta.href}>
-              <button className="inline-flex items-center gap-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] text-white text-[13px] font-bold px-3 sm:px-3.5 py-2 transition-colors shadow-sm">
+              <button className="inline-flex items-center gap-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] text-white text-[13px] font-bold px-3 py-2 transition-colors shadow-sm whitespace-nowrap">
                 <Plus className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden xs:inline sm:inline">{cta.label}</span>
+                <span>{cta.label}</span>
               </button>
             </Link>
           )}
