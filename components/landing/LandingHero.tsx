@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { Menu, ArrowRight, Shield, Zap, Play, CheckCircle2 } from "lucide-react";
+import { Menu, ArrowRight, Shield, Zap, Play, Lock } from "lucide-react";
 import { motion } from "motion/react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,19 @@ import { Separator } from "@/components/ui/separator";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { LightRays } from "@/components/ui/light-rays";
 
+/* 1.3 — Logo officiel sans fond blanc */
 const LOGO_URL =
-  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20simple%20bleu%20avec%20fond.webp";
+  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp";
+
+/* 1.4 — Picto Q filigrane */
+const PICTO_Q_URL =
+  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp";
 
 /* ─────────────────────────────────────────────────────────
    HEADER
    - Au départ : totalement transparent
    - Au scroll > 40px : pilule blanche avec ombre + backdrop blur
+   - CTA secondaire "Voir la démo" ajouté (3.1)
 ───────────────────────────────────────────────────────── */
 function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -57,7 +63,7 @@ function Header() {
         className="flex w-full max-w-5xl items-center justify-between border py-2.5"
         style={{ WebkitBackdropFilter: scrolled ? "blur(18px)" : "blur(0px)" }}
       >
-        {/* Logo — bien à gauche */}
+        {/* Logo — sans fond, bien à gauche */}
         <Link href="/" className="flex shrink-0 items-center pl-3">
           <Image
             src={LOGO_URL}
@@ -82,17 +88,19 @@ function Header() {
           ))}
         </div>
 
-        {/* Actions desktop — bien à droite */}
+        {/* Actions desktop — bien à droite (3.1 : CTA secondaire + principal) */}
         <div className="hidden shrink-0 items-center gap-2.5 pr-3 md:flex">
-          <Link href="/login">
+          {/* CTA secondaire navbar */}
+          <Link href="/demo">
             <Button
               variant="ghost"
               className="h-8 px-3.5 text-sm font-medium text-slate-600 hover:text-[#0F172A]"
             >
-              Se connecter
+              Voir la démo
             </Button>
           </Link>
           <Separator orientation="vertical" className="h-4 opacity-40" />
+          {/* 1.1 + 2.1 — CTA principal navbar */}
           <Link href="/signup">
             <ShimmerButton
               background="rgba(37,99,235,1)"
@@ -101,7 +109,7 @@ function Header() {
               borderRadius="9999px"
               className="h-8 px-4 text-sm font-semibold"
             >
-              Essai gratuit
+              Commencer →
             </ShimmerButton>
           </Link>
         </div>
@@ -139,12 +147,9 @@ function Header() {
                 </Link>
               ))}
               <Separator className="my-1" />
-              <Link href="/login" onClick={() => setMobileOpen(false)}>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start h-9 text-sm text-slate-600"
-                >
-                  Se connecter
+              <Link href="/demo" onClick={() => setMobileOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start h-9 text-sm text-slate-600">
+                  Voir la démo
                 </Button>
               </Link>
               <Link href="/signup" onClick={() => setMobileOpen(false)}>
@@ -155,7 +160,7 @@ function Header() {
                   borderRadius="9999px"
                   className="w-full h-9 text-sm justify-center"
                 >
-                  Essai gratuit
+                  Commencer →
                 </ShimmerButton>
               </Link>
             </nav>
@@ -171,10 +176,6 @@ function Header() {
 ───────────────────────────────────────────────────────── */
 function Hero() {
   return (
-    /*
-     * pt-[88px] : compense le header fixed (≈64px) + respiration (24px)
-     * pb-24     : espace avant la section suivante
-     */
     <section className="mx-auto max-w-6xl px-5 pb-28 pt-[108px]">
       <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_1.1fr] lg:gap-14">
 
@@ -201,48 +202,46 @@ function Hero() {
             </span>
           </motion.div>
 
-          {/* Titre */}
+          {/* 2.2 — Accroche principale (option recommandée) */}
           <motion.h1
             className="text-[2.3rem] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#0F172A] sm:text-[2.75rem] lg:text-[3rem]"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.12, duration: 0.55 }}
           >
-            En 3&nbsp;clics,{" "}
+            La facturation électronique{" "}
             <span
               className="text-[#2563EB]"
               style={{ fontFamily: "var(--font-bricolage)" }}
             >
-              ta&nbsp;facture
-              <br className="hidden sm:block" />
-              est&nbsp;envoyée.
+              devient obligatoire.
             </span>
             <br />
-            <span className="text-[#0F172A]">On s&apos;occupe du reste.</span>
+            <span className="text-[#0F172A]">Sois prêt avant tout le monde.</span>
           </motion.h1>
 
-          {/* Sous-titre */}
+          {/* 2.3 — Sous-titre */}
           <motion.p
-            className="max-w-[420px] text-[15px] leading-[1.7] text-slate-500"
+            className="max-w-[440px] text-[15px] leading-[1.7] text-slate-500"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            Facturation électronique pour{" "}
+            La loi impose la facturation électronique à toutes les entreprises dès 2026.{" "}
             <strong className="font-semibold text-[#0F172A]">
-              artisans, auto-entrepreneurs et TPE
-            </strong>
-            . Transmission légale automatique, archivage 10&nbsp;ans,{" "}
-            <strong className="font-semibold text-[#0F172A]">zéro jargon.</strong>
+              Qonforme gère la conformité, la transmission et l&apos;archivage à ta place
+            </strong>{" "}
+            — pour que tu restes concentré sur ton métier.
           </motion.p>
 
-          {/* CTAs */}
+          {/* 3.1 — Double CTA hero */}
           <motion.div
             className="flex flex-wrap items-center gap-3 pt-1"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.27, duration: 0.5 }}
           >
+            {/* CTA principal */}
             <Link href="/signup">
               <ShimmerButton
                 background="rgba(37,99,235,1)"
@@ -251,16 +250,17 @@ function Hero() {
                 borderRadius="10px"
                 className="h-11 px-5 text-[15px] font-semibold gap-2"
               >
-                Commencer gratuitement
+                Commencer maintenant
                 <ArrowRight className="h-4 w-4" />
               </ShimmerButton>
             </Link>
+            {/* CTA secondaire hero (3.1) */}
             <Link href="/demo">
               <button className="group inline-flex h-11 items-center gap-2 rounded-[10px] border border-[#D1D5DB] bg-white/80 px-4 text-sm font-medium text-[#0F172A] backdrop-blur-sm transition-all hover:border-[#2563EB]/40 hover:shadow-sm">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F1F5F9] transition-colors group-hover:bg-[#EFF6FF]">
                   <Play className="h-2.5 w-2.5 fill-[#2563EB] text-[#2563EB]" />
                 </span>
-                Voir la démo
+                Essayer la démo
               </button>
             </Link>
           </motion.div>
@@ -295,26 +295,26 @@ function Hero() {
               </div>
             </div>
 
-            {/* Micro-badges */}
+            {/* 2.4 — Badges de réassurance mis à jour */}
             <div className="flex flex-wrap gap-2">
               {[
                 {
                   icon: <Zap className="h-3 w-3" />,
-                  label: "7 jours gratuits",
+                  label: "Accès immédiat",
                   color: "text-[#2563EB]",
                   bg: "bg-[#EFF6FF]",
                   border: "border-[#BFDBFE]/60",
                 },
                 {
                   icon: <Shield className="h-3 w-3" />,
-                  label: "Conforme PPF 2026",
+                  label: "Conforme réglementation 2026",
                   color: "text-[#059669]",
                   bg: "bg-[#ECFDF5]",
                   border: "border-[#A7F3D0]/60",
                 },
                 {
-                  icon: <CheckCircle2 className="h-3 w-3" />,
-                  label: "Sans engagement",
+                  icon: <Lock className="h-3 w-3" />,
+                  label: "Résiliable à tout moment",
                   color: "text-slate-500",
                   bg: "bg-white/70",
                   border: "border-slate-200/70",
@@ -384,30 +384,9 @@ function Hero() {
                   <span className="text-[11px] font-medium text-[#2563EB]">Voir tout →</span>
                 </div>
                 {[
-                  {
-                    num: "FAC-2026-007",
-                    client: "Garage Martin",
-                    amount: "1 200 €",
-                    status: "Payée",
-                    sc: "#059669",
-                    sb: "#D1FAE5",
-                  },
-                  {
-                    num: "FAC-2026-006",
-                    client: "Atelier Dubois",
-                    amount: "890 €",
-                    status: "Envoyée",
-                    sc: "#1E40AF",
-                    sb: "#DBEAFE",
-                  },
-                  {
-                    num: "FAC-2026-005",
-                    client: "Plomberie Moreau",
-                    amount: "460 €",
-                    status: "En retard",
-                    sc: "#991B1B",
-                    sb: "#FEE2E2",
-                  },
+                  { num: "FAC-2026-007", client: "Garage Martin", amount: "1 200 €", status: "Payée", sc: "#059669", sb: "#D1FAE5" },
+                  { num: "FAC-2026-006", client: "Atelier Dubois", amount: "890 €", status: "Envoyée", sc: "#1E40AF", sb: "#DBEAFE" },
+                  { num: "FAC-2026-005", client: "Plomberie Moreau", amount: "460 €", status: "En retard", sc: "#991B1B", sb: "#FEE2E2" },
                 ].map((row) => (
                   <div
                     key={row.num}
@@ -441,36 +420,12 @@ function Hero() {
 
 /* ─────────────────────────────────────────────────────────
    EXPORT PRINCIPAL
-
-   Structure :
-   ┌─────────────────────────────────────┐
-   │  <Header /> (fixed, z-100)          │
-   ├─────────────────────────────────────┤
-   │  Hero wrapper (position: relative)  │
-   │  ┌───────────────────────────────┐  │
-   │  │  Background gradient (abs)    │  │
-   │  │  Lueurs radiales (abs)        │  │
-   │  │  LightRays (abs inset-0)      │  │  ← PAS d'overflow-hidden ici !
-   │  │  Contenu hero (z-10)          │  │
-   │  │  Fade blanc bas (abs)         │  │
-   │  └───────────────────────────────┘  │
-   └─────────────────────────────────────┘
-
-   IMPORTANT : pas d'overflow-hidden sur le wrapper principal
-   (les LightRays ont top:-12% et seraient clippés sinon).
-   Le clip est géré uniquement par le conteneur interne LightRays.
 ───────────────────────────────────────────────────────── */
 export function LandingHero() {
   return (
     <>
-      {/* Header transparent → pilule au scroll */}
       <Header />
 
-      {/*
-        Le wrapper hero part du top de la page (pas de margin top).
-        Le header fixed flotte par-dessus — 0 gap possible.
-        PAS d'overflow-hidden ici : LightRays s'étendent librement.
-      */}
       <div
         className="relative w-full"
         style={{
@@ -489,14 +444,7 @@ export function LandingHero() {
           }}
         />
 
-        {/*
-          LightRays — config optimisée pour être visible sur fond pastel :
-          - color plus saturée (bleu/indigo 55% opacité)
-          - blur réduit (28px) pour plus de netteté des rayons
-          - speed = 12s (mouvement visible mais fluide)
-          - length = "120vh" (couvre tout le hero même sur grands écrans)
-          - count = 8 rayons
-        */}
+        {/* LightRays */}
         <LightRays
           count={8}
           color="rgba(99, 155, 235, 0.55)"
@@ -506,12 +454,28 @@ export function LandingHero() {
           className="z-0"
         />
 
-        {/* Contenu hero au-dessus des rayons */}
+        {/* 1.4 — Picto Q filigrane côté droit, derrière mockup */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute right-[-60px] top-[50px] z-[1] hidden lg:block"
+          style={{ opacity: 0.06 }}
+        >
+          <Image
+            src={PICTO_Q_URL}
+            alt=""
+            width={480}
+            height={480}
+            className="w-[420px] select-none"
+            unoptimized
+          />
+        </div>
+
+        {/* Contenu hero au-dessus */}
         <div className="relative z-10">
           <Hero />
         </div>
 
-        {/* Fade blanc en bas — transition douce vers la section suivante */}
+        {/* Fade blanc en bas */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-40"

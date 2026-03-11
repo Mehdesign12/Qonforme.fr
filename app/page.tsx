@@ -1,13 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
-import { CheckCircle2, Zap, Shield, ArrowRight, FileText, Send, Archive, Bell } from "lucide-react";
+import { CheckCircle2, Zap, Shield, ArrowRight, FileText, Send, Archive, Bell, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { LandingHero } from "@/components/landing/LandingHero";
 
+/* 1.3 — Logo officiel sans fond blanc */
 const LOGO_URL =
-  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20simple%20bleu%20avec%20fond.webp";
+  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp";
 
 /* ─── Section logos / marques ──────────────────────────── */
 function TrustedBySection() {
@@ -140,7 +141,7 @@ function FeatureSection({
                 borderRadius="10px"
                 className="h-10 px-5 text-sm font-semibold gap-2"
               >
-                Essayer gratuitement <ArrowRight className="h-3.5 w-3.5" />
+                Commencer maintenant <ArrowRight className="h-3.5 w-3.5" />
               </ShimmerButton>
             </Link>
           </div>
@@ -252,9 +253,9 @@ export default function HomePage() {
       {/* Feature 1 — texte gauche, mockup droite */}
       <FeatureSection
         tag="Création rapide"
-        title="Une facture en"
-        titleHighlight="3 clics chrono."
-        description="Sélectionne ton client, ajoute tes prestations et envoie. Qonforme génère automatiquement le PDF Factur-X, le fichier XML et transmet au PPF. Tu ne touches à rien."
+        title="Une facture envoyée en"
+        titleHighlight="moins de 3 minutes."
+        description="Sélectionne ton client, renseigne ta prestation, envoie. Qonforme s'occupe du reste : génération Factur-X, transmission au PPF, archivage légal. Tu ne touches à rien."
         features={[
           {
             icon: <FileText className="h-4 w-4" />,
@@ -279,9 +280,9 @@ export default function HomePage() {
       {/* Feature 2 — mockup gauche, texte droite */}
       <FeatureSection
         tag="Conformité & suivi"
-        title="Zéro démarche,"
-        titleHighlight="100 % conforme."
-        description="Qonforme gère la chaîne complète : génération, transmission, archivage légal 10 ans. Tu reçois une notification à chaque étape clé et sais toujours où en est ta facture."
+        title="Toujours en règle,"
+        titleHighlight="sans y penser."
+        description="Qonforme gère la chaîne complète pour toi : génération, transmission, accusé de réception, archivage 10 ans. Tu sais à tout moment où en est chaque facture — sans avoir à te connecter à Chorus Pro."
         features={[
           {
             icon: <Shield className="h-4 w-4" />,
@@ -309,10 +310,10 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto px-5">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] mb-3" style={{ fontFamily: 'var(--font-bricolage)' }}>
-              Tarifs simples, sans surprise
+              Un prix fixe. Aucune surprise.
             </h2>
-            <p className="text-slate-500">
-              Option annuelle — 2 mois offerts (−16 %)
+            <p className="text-slate-500 max-w-md mx-auto">
+              Tout ce qu&apos;il faut pour être conforme et bien gérer ta facturation. Pas de frais cachés, pas de limite de fonctionnalités essentielles.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
@@ -331,7 +332,7 @@ export default function HomePage() {
                 ))}
               </ul>
               <Link href="/signup">
-                <Button className="w-full rounded-xl" variant="outline">Commencer l&apos;essai gratuit</Button>
+                <Button className="w-full rounded-xl" variant="outline">Choisir ce plan →</Button>
               </Link>
             </div>
             {/* Pro */}
@@ -350,10 +351,48 @@ export default function HomePage() {
                 ))}
               </ul>
               <Link href="/signup">
-                <Button className="w-full rounded-xl bg-white text-[#0F172A] hover:bg-slate-100">Commencer l&apos;essai gratuit</Button>
+                <Button className="w-full rounded-xl bg-white text-[#0F172A] hover:bg-slate-100">Choisir ce plan →</Button>
               </Link>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── CTA finale (2.8) ─────────────────────────────── */}
+      <section className="bg-[#0F172A] py-20 sm:py-24">
+        <div className="mx-auto max-w-2xl px-5 text-center">
+          <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-white mb-4 sm:text-4xl" style={{ fontFamily: 'var(--font-bricolage)' }}>
+            2026 arrive plus vite<br />qu&apos;on ne le pense.
+          </h2>
+          <p className="text-slate-400 mb-8 text-[15px] leading-relaxed">
+            Des centaines d&apos;artisans et d&apos;indépendants ont déjà sécurisé leur conformité.<br />
+            Rejoins-les avant que ça devienne urgent.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href="/signup">
+              <ShimmerButton
+                background="rgba(37,99,235,1)"
+                shimmerColor="#ffffff"
+                shimmerDuration="2.5s"
+                borderRadius="10px"
+                className="h-12 px-7 text-[15px] font-semibold gap-2"
+              >
+                Commencer maintenant <ArrowRight className="h-4 w-4" />
+              </ShimmerButton>
+            </Link>
+            {/* CTA secondaire CTA finale (3.1) */}
+            <Link href="/demo">
+              <button className="group inline-flex h-12 items-center gap-2 rounded-[10px] border border-white/20 bg-white/5 px-5 text-sm font-medium text-white/80 backdrop-blur-sm transition-all hover:border-white/30 hover:bg-white/10">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 transition-colors group-hover:bg-white/20">
+                  <Play className="h-2.5 w-2.5 fill-white text-white" />
+                </span>
+                Essayer d&apos;abord la démo →
+              </button>
+            </Link>
+          </div>
+          <p className="mt-5 text-[12px] text-slate-500">
+            Opérationnel en 5 minutes · Sans engagement · Résiliable à tout moment
+          </p>
         </div>
       </section>
 
