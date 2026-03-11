@@ -18,22 +18,24 @@ const BADGES = [
 ]
 
 /* ─── Check icon ─────────────────────────────────────────────────────────── */
+// dark = carte Pro (fond navy) · dim = feature partagée (estompée sur Pro)
+// Par défaut (Starter) : check vert · Pro exclusif : check bleu · Pro dim : check gris
 function CheckItem({ label, dim = false, dark = false }: { label: string; dim?: boolean; dark?: boolean }) {
   return (
     <li className={`flex items-start gap-3 text-sm leading-snug ${
       dark
         ? dim ? 'text-slate-500' : 'text-slate-200'
-        : dim ? 'text-slate-400' : 'text-slate-700'
+        : dim ? 'text-slate-400' : 'text-[#0F172A]'
     }`}>
       <span className={`mt-[3px] shrink-0 w-[18px] h-[18px] rounded-full flex items-center justify-center ${
         dark
           ? dim ? 'bg-white/8' : 'bg-[#2563EB]/25'
-          : 'bg-[#EFF6FF]'
+          : 'bg-[#D1FAE5]'
       }`}>
         <Check className={`w-2.5 h-2.5 ${
           dark
             ? dim ? 'text-slate-600' : 'text-[#60A5FA]'
-            : 'text-[#2563EB]'
+            : 'text-[#059669]'
         }`} />
       </span>
       {label}

@@ -93,15 +93,16 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
   // Starter → fond blanc/bleu très clair, textes sombres (comme la card Starter)
   const leftBg      = isPro ? 'bg-[#0F172A]'   : 'bg-white'
   const textMain    = isPro ? 'text-white'      : 'text-[#0F172A]'
-  const textMuted   = isPro ? 'text-white/50'   : 'text-slate-400'
-  const textSub     = isPro ? 'text-white/40'   : 'text-slate-400'
-  const textFeature = isPro ? 'text-white/75'   : 'text-slate-600'
+  const textMuted   = isPro ? 'text-white/50'   : 'text-slate-500'
+  const textSub     = isPro ? 'text-white/40'   : 'text-slate-500'
+  const textFeature = isPro ? 'text-white/75'   : 'text-[#0F172A]'
   const planLabel   = isPro ? 'text-[#60A5FA]'  : 'text-[#2563EB]'
-  const checkBg     = isPro ? 'bg-[#2563EB]/30' : 'bg-[#EFF6FF]'
-  const checkIcon   = isPro ? 'text-[#60A5FA]'  : 'text-[#2563EB]'
+  // Starter → checks verts (succès/validation) · Pro → checks bleus (branding)
+  const checkBg     = isPro ? 'bg-[#2563EB]/30' : 'bg-[#D1FAE5]'
+  const checkIcon   = isPro ? 'text-[#60A5FA]'  : 'text-[#059669]'
   const divider     = isPro ? 'bg-white/10'     : 'bg-[#E2E8F0]'
-  const shieldText  = isPro ? 'text-white/30'   : 'text-slate-300'
-  const backBtn     = isPro ? 'text-white/50 hover:text-white' : 'text-slate-400 hover:text-[#0F172A]'
+  const shieldText  = isPro ? 'text-white/30'   : 'text-slate-400'
+  const backBtn     = isPro ? 'text-white/50 hover:text-white' : 'text-slate-500 hover:text-[#2563EB]'
   const borderLeft  = isPro ? '' : 'border-r border-[#E2E8F0]'
 
   return (
