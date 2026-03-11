@@ -18,38 +18,60 @@ const STEPS = [
 
 export default function PricingPage() {
   return (
-    <div className="relative min-h-screen flex flex-col overflow-hidden">
+    /*
+     * min-h = 100dvh pour couvrir exactement le viewport mobile (barre Safari incluse).
+     * overflow-x-hidden évite tout scroll horizontal accidentel.
+     */
+    <div className="relative min-h-[100dvh] flex flex-col overflow-x-hidden">
 
-      {/* ── Fond dégradé (identique AuthLayout) ──────────────────────── */}
-      <div aria-hidden className="pointer-events-none select-none absolute inset-0 z-0"
+      {/* ── Fond dégradé (identique AuthLayout) ──────────────────────────── */}
+      <div aria-hidden className="pointer-events-none select-none fixed inset-0 z-0"
         style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 30%, #EEF2FF 60%, #F0F9FF 85%, #F8FAFC 100%)' }}
       />
-      <div aria-hidden className="pointer-events-none select-none absolute -top-32 -left-32 z-0 w-[480px] h-[480px] rounded-full"
+      <div aria-hidden className="pointer-events-none select-none fixed -top-32 -left-32 z-0 w-[480px] h-[480px] rounded-full"
         style={{ background: 'radial-gradient(circle at center, rgba(37,99,235,0.13) 0%, rgba(37,99,235,0.04) 55%, transparent 75%)' }}
       />
-      <div aria-hidden className="pointer-events-none select-none absolute -bottom-24 -right-24 z-0 w-[420px] h-[420px] rounded-full"
+      <div aria-hidden className="pointer-events-none select-none fixed -bottom-24 -right-24 z-0 w-[420px] h-[420px] rounded-full"
         style={{ background: 'radial-gradient(circle at center, rgba(99,102,241,0.10) 0%, rgba(37,99,235,0.04) 50%, transparent 72%)' }}
       />
-      <div aria-hidden className="pointer-events-none select-none absolute inset-0 z-0"
+      {/* Grille de points — masquée sur mobile pour alléger le rendu */}
+      <div aria-hidden className="pointer-events-none select-none fixed inset-0 z-0 hidden sm:block"
         style={{
           backgroundImage: 'radial-gradient(circle, rgba(37,99,235,0.08) 1px, transparent 1px)',
           backgroundSize: '32px 32px',
           maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)',
         }}
       />
-      <div aria-hidden className="pointer-events-none select-none absolute inset-0 z-0 flex items-center justify-center" style={{ opacity: 0.045 }}>
-        <Image src={PICTO_Q} alt="" width={900} height={900} className="w-[700px] sm:w-[800px] lg:w-[900px]" unoptimized priority />
+      {/* Filigrane Q — plus petit sur mobile */}
+      <div aria-hidden className="pointer-events-none select-none fixed inset-0 z-0 flex items-center justify-center" style={{ opacity: 0.045 }}>
+        <Image
+          src={PICTO_Q}
+          alt=""
+          width={900}
+          height={900}
+          className="w-[340px] sm:w-[560px] lg:w-[900px]"
+          unoptimized
+          priority
+        />
       </div>
 
-      {/* ── Header : logo + StepIndicator centré ─────────────────────── */}
-      <div className="relative z-10 flex flex-col items-center pt-8 pb-6 px-4">
-        <Link href="/" aria-label="Retour à l'accueil" className="mb-7">
+      {/* ── Header : logo + StepIndicator ────────────────────────────────── */}
+      {/*
+       * pt-[env(safe-area-inset-top)] assure que le logo ne passe pas
+       * sous la Dynamic Island / notch sur iPhone en mode Safari plein écran.
+       */}
+      <div
+        className="relative z-10 flex flex-col items-center px-4"
+        style={{ paddingTop: 'max(20px, env(safe-area-inset-top, 20px))' }}
+      >
+        <Link href="/" aria-label="Retour à l'accueil" className="mb-5 lg:mb-7">
           <Image
             src={LOGO_LONG_BLEU}
             alt="Qonforme"
             width={180}
             height={44}
-            className="h-10 w-auto drop-shadow-sm"
+            /* Plus petit sur mobile pour laisser de l'espace */
+            className="h-8 lg:h-10 w-auto drop-shadow-sm"
             priority
             unoptimized
           />
@@ -57,8 +79,12 @@ export default function PricingPage() {
         <StepIndicator steps={STEPS} current={2} />
       </div>
 
-      {/* ── Contenu wide (pas de max-w contrainte) ────────────────────── */}
-      <div className="relative z-10 flex-1 w-full max-w-[1080px] mx-auto px-4 sm:px-6 pb-12">
+      {/* ── Contenu ───────────────────────────────────────────────────────── */}
+      {/*
+       * Sur mobile : px-4 serré, pb avec safe-area pour ne pas masquer le CTA sticky.
+       * Sur desktop : max-w-[1080px] centré, padding généreux.
+       */}
+      <div className="relative z-10 flex-1 w-full max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-6 pb-4 lg:pb-12">
         <PricingSelector />
       </div>
     </div>
