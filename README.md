@@ -257,31 +257,151 @@
 - Vocabulaire PPF/PDP/Factur-X **jamais visible** dans l'interface utilisateur
 - Chaque action principale doit être accessible en **moins de 3 clics**
 
-### Charte graphique
-| Élément | Valeur |
-|---------|--------|
-| Police corps | DM Sans |
-| Police montants | DM Mono |
-| Couleur principale | `#2563EB` (bleu) |
-| Couleur foncée | `#0F172A` |
-| Fond | `#F8FAFC` |
-| Bordures | `#E2E8F0` |
-| Succès | `#10B981` |
-| Erreur | `#EF4444` |
-| Avertissement | `#D97706` |
+---
+
+### 🎨 Système de design Qonforme — Référence complète
+
+> Ce système de design est issu de la landing page et **doit être appliqué uniformément à toute l'interface app** (dashboard, listes, formulaires, settings, pages auth).
+
+#### Palette de couleurs
+| Rôle | Couleur | Usage |
+|------|---------|-------|
+| Primaire | `#2563EB` | CTA principaux, liens actifs, accents, icônes clés |
+| Primaire hover | `#1D4ED8` | Survol des boutons bleus |
+| Fond page | `#F8FAFC` | Arrière-plan général de l'app |
+| Fond card | `#FFFFFF` | Cards, modales, panels |
+| Texte titre | `#0F172A` | H1, H2, labels forts |
+| Texte corps | `#475569` | Paragraphes, descriptions |
+| Texte discret | `#94A3B8` | Métadonnées, timestamps, hints |
+| Bordure | `#E2E8F0` | Séparateurs, outlines de cards |
+| Fond pill/badge | `#EFF6FF` | Background des pills de label et états actifs nav |
+| Bordure pill | `#BFDBFE` | Bordure des pills de label |
+| Succès fond | `#D1FAE5` | Badges payé, accepté |
+| Succès texte | `#065F46` | |
+| Succès icône | `#10B981` | Icônes de validation |
+| Erreur fond | `#FEE2E2` | Badges rejeté, en retard |
+| Erreur texte | `#991B1B` | |
+| Attente fond | `#FEF3C7` | Badges en attente, brouillon |
+| Attente texte | `#92400E` | |
+| Navy foncé | `#0F172A` | Bannières sombres, footer |
+
+#### Typographie
+| Usage | Police | Poids | Taille |
+|-------|--------|-------|--------|
+| Titres de section (H2) | **Bricolage Grotesque** (`var(--font-bricolage)`) | 800 (extrabold) | 30–36 px |
+| Titres de page app (H1) | DM Sans | 600 (semibold) | 18–20 px |
+| Corps, labels | DM Sans | 400–500 | 13–15 px |
+| Montants, codes | DM Mono | 600–700 | selon contexte |
+
+> ⚠️ La police **Bricolage Grotesque** est réservée aux titres de section landing. Dans l'app, utiliser **DM Sans** pour tous les titres.
+
+#### Composant — Pill de label de section
+Utilisé au-dessus de chaque titre de section pour identifier la thématique.
+```tsx
+<span className="inline-flex items-center gap-1.5 rounded-full border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-1 text-[13px] font-medium text-[#2563EB]">
+  <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
+  LABEL
+</span>
+```
+
+#### Composant — Bouton primaire (ShimmerButton)
+Utilisé pour les CTA principaux (créer, envoyer, valider).
+```tsx
+<ShimmerButton
+  background="rgba(37,99,235,1)"
+  shimmerColor="#ffffff"
+  shimmerDuration="2.5s"
+  borderRadius="10px"
+  className="h-10 px-5 text-sm font-semibold gap-2"
+>
+  Action <ArrowRight className="h-3.5 w-3.5" />
+</ShimmerButton>
+```
+> Dans l'app, le bouton primaire peut aussi être `<button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-[10px] px-5 py-2.5 text-sm font-semibold">` si ShimmerButton est trop lourd.
+
+#### Composant — Card standard
+```tsx
+<div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm">
+  {/* contenu */}
+</div>
+```
+
+#### Composant — Card KPI (dashboard)
+```tsx
+<div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm">
+  <p className="text-[12px] font-medium uppercase tracking-wide text-slate-400">Label</p>
+  <p className="mt-1 font-mono text-2xl font-extrabold text-[#0F172A]">0 €</p>
+  <p className="mt-1 text-[12px] text-slate-400">Sous-information</p>
+</div>
+```
+
+#### Composant — Lien de navigation actif (sidebar)
+```tsx
+className="bg-[#EFF6FF] text-[#2563EB]"   // actif
+className="text-slate-600 hover:bg-slate-50 hover:text-[#0F172A]"  // inactif
+```
+
+#### Composant — Input / Champ de formulaire
+```tsx
+className="w-full rounded-[10px] border border-[#E2E8F0] bg-white px-3.5 py-3 text-sm text-[#0F172A]
+           placeholder-slate-400 outline-none transition-all
+           focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.1)]"
+```
+
+#### Filigrane Q (branding)
+Le picto Q (`PICTO_Q`) s'utilise en filigrane sur certaines zones selon ce tableau :
+
+| Zone | Taille | Opacité | Position |
+|------|--------|---------|----------|
+| Dashboard (grid KPI) | 200 px | 3,5 % | centré dans la grille |
+| Sidebar | 140 px | 6 % | bas-gauche, débordant |
+| Card billing (plan actif) | 160 px | 6 % | bas-droite de la card |
+| Login / Signup | 380 px | 8 % | droite, desktop only |
+| Sections landing | 420–500 px | 4–8 % | centré ou coin |
+| Footer | 600 px | 3 % | centré |
+
+```tsx
+// Pattern standard
+<div aria-hidden className="pointer-events-none absolute [position] select-none z-0" style={{ opacity: 0.06 }}>
+  <Image src={PICTO_Q} alt="" width={160} height={160} unoptimized />
+</div>
+```
+> Règles absolues : `pointer-events: none`, `z-index` en dessous du contenu, jamais dans les PDFs générés.
+
+#### URLs des assets
+```
+LOGO_LONG_BLEU = https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp
+PICTO_Q        = https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp
+```
+
+#### Shadows
+| Usage | Valeur |
+|-------|--------|
+| Card standard | `shadow-sm` (Tailwind) |
+| Card élevée | `shadow-[0_4px_24px_rgba(0,0,0,0.07)]` |
+| Card Pro (glow bleu) | `box-shadow: 0 0 40px rgba(37,99,235,0.15)` |
+| Bouton bleu | `shadow-[0_4px_14px_rgba(37,99,235,0.35)]` |
+| Focus input | `0 0 0 3px rgba(37,99,235,0.1)` |
+
+#### Transitions & animations
+- Toutes les transitions : `transition-all duration-150` (ou `duration-200` pour les modales)
+- Accordéon FAQ : `duration-220ms ease [0.4,0,0.2,1]`
+- Fade-in page : `animate-fade-in` (défini dans `tailwind.config.ts`)
+
+---
 
 ### Statuts factures (badges)
-| Statut | Label FR | Fond | Texte |
-|--------|----------|------|-------|
-| `draft` | Brouillon | `#F1F5F9` | `#475569` |
-| `sent` | Envoyée | `#DBEAFE` | `#1E40AF` |
-| `pending` | En attente | `#FEF3C7` | `#92400E` |
-| `overdue` | En retard | `#FEE2E2` | `#991B1B` |
-| `paid` | Payée | `#D1FAE5` | `#065F46` |
-| `rejected` | Rejetée | `#FEE2E2` | `#991B1B` |
-| `accepted` | Acceptée | `#D1FAE5` | `#065F46` |
-| `credited` | Avoir émis | `#F3E8FF` | `#6B21A8` |
-| `archived` | Archivée | `#F1F5F9` | `#94A3B8` |
+| Statut | Label FR | Fond | Texte | Bordure |
+|--------|----------|------|-------|---------|
+| `draft` | Brouillon | `#F1F5F9` | `#475569` | `#CBD5E1` |
+| `sent` | Envoyée | `#DBEAFE` | `#1E40AF` | `#93C5FD` |
+| `pending` | En attente | `#FEF3C7` | `#92400E` | `#FCD34D` |
+| `overdue` | En retard | `#FEE2E2` | `#991B1B` | `#FCA5A5` |
+| `paid` | Payée | `#D1FAE5` | `#065F46` | `#6EE7B7` |
+| `rejected` | Rejetée | `#FEE2E2` | `#991B1B` | `#FCA5A5` |
+| `accepted` | Acceptée | `#D1FAE5` | `#065F46` | `#6EE7B7` |
+| `credited` | Avoir émis | `#F3E8FF` | `#6B21A8` | `#C4B5FD` |
+| `archived` | Archivée | `#F1F5F9` | `#94A3B8` | `#CBD5E1` |
 
 ---
 
