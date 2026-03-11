@@ -8,43 +8,44 @@ import {
   EmbeddedCheckoutProvider,
 } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
-import { Check, ArrowLeft, Shield, RefreshCw } from 'lucide-react'
+import { Check, ArrowLeft, Shield, RefreshCw, ChevronDown, ChevronUp, Lock, Zap } from 'lucide-react'
 import { PLANS, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 
+/* ─── Assets ─────────────────────────────────────────────────────────────── */
 const LOGO_LONG_BLANC = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20blanc.webp'
 const LOGO_LONG_BLEU  = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp'
 const PICTO_Q         = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp'
 
-// Singleton Stripe — initialisé une seule fois
-// Si la clé est absente (dev sans .env.local), stripePromise vaudra null
-// et l'EmbeddedCheckoutProvider affichera une erreur gérée ci-dessous.
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''
+/* ─── Stripe singleton ───────────────────────────────────────────────────── */
+const stripeKey     = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null
 
-// NOTE : appearance / fonts ne sont PAS des options valides pour
-// EmbeddedCheckoutProvider — uniquement pour Elements classiques.
-// L'Embedded Checkout gère son propre design via le Dashboard Stripe.
-
+/* ─── Props ──────────────────────────────────────────────────────────────── */
 interface CheckoutPageClientProps {
   planId:        PlanId
   billingPeriod: BillingPeriod
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   COMPONENT
+══════════════════════════════════════════════════════════════════════════ */
 export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPageClientProps) {
-  const router  = useRouter()
-  const plan    = PLANS[planId]
-  const isPro   = planId === 'pro'
+  const router = useRouter()
+  const plan   = PLANS[planId]
+  const isPro  = planId === 'pro'
 
   const price = billingPeriod === 'monthly'
     ? plan.monthlyPrice
     : plan.yearlyMonthlyEquivalent
-
   const fmt = (n: number) => n % 1 === 0 ? `${n}` : n.toFixed(2)
 
-  const [fetchError, setFetchError] = useState<string | null>(null)
-  const [isComplete, setIsComplete] = useState(false)
-  const redirected                   = useRef(false)
+  /* ── State ────────────────────────────────────────────────────────────── */
+  const [fetchError,    setFetchError]    = useState<string | null>(null)
+  const [isComplete,    setIsComplete]    = useState(false)
+  const [summaryOpen,   setSummaryOpen]   = useState(false)
+  const redirected = useRef(false)
 
+  /* ── Handlers ─────────────────────────────────────────────────────────── */
   const handleComplete = useCallback(() => { setIsComplete(true) }, [])
 
   useEffect(() => {
@@ -74,67 +75,250 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
     }
   }, [planId, billingPeriod])
 
-  // ── Thème de la colonne gauche selon le plan ────────────────────────────
-  // Pro   → fond navy #0F172A, textes blancs (comme la card Pro)
-  // Starter → fond blanc/bleu très clair, textes sombres (comme la card Starter)
-  const leftBg      = isPro ? 'bg-[#0F172A]'   : 'bg-white'
-  const textMain    = isPro ? 'text-white'      : 'text-[#0F172A]'
-  const textMuted   = isPro ? 'text-white/50'   : 'text-slate-500'
-  const textSub     = isPro ? 'text-white/40'   : 'text-slate-500'
-  const textFeature = isPro ? 'text-white/75'   : 'text-[#0F172A]'
-  const planLabel   = isPro ? 'text-[#60A5FA]'  : 'text-[#2563EB]'
-  // Starter → checks verts (succès/validation) · Pro → checks bleus (branding)
-  const checkBg     = isPro ? 'bg-[#2563EB]/30' : 'bg-[#D1FAE5]'
-  const checkIcon   = isPro ? 'text-[#60A5FA]'  : 'text-[#059669]'
-  const divider     = isPro ? 'bg-white/10'     : 'bg-[#E2E8F0]'
-  const shieldText  = isPro ? 'text-white/30'   : 'text-slate-400'
-  const backBtn     = isPro ? 'text-white/50 hover:text-white' : 'text-slate-500 hover:text-[#2563EB]'
-  const borderLeft  = isPro ? '' : 'border-r border-[#E2E8F0]'
+  /* ─────────────────────────────────────────────────────────────────────────
+     THÈME PAR PLAN
+     Pro   → navy #0F172A · Starter → blanc/bleu clair
+  ───────────────────────────────────────────────────────────────────────── */
+  const leftBg        = isPro ? 'bg-[#0F172A]'  : 'bg-white'
+  const textMain      = isPro ? 'text-white'     : 'text-[#0F172A]'
+  const textMuted     = isPro ? 'text-white/50'  : 'text-slate-500'
+  const textSub       = isPro ? 'text-white/40'  : 'text-slate-500'
+  const textFeature   = isPro ? 'text-white/80'  : 'text-[#1E293B]'
+  const planLabel     = isPro ? 'text-[#60A5FA]' : 'text-[#2563EB]'
+  const checkBg       = 'bg-[#D1FAE5]'
+  const checkIcon     = 'text-[#059669]'
+  const divider       = isPro ? 'bg-white/10'    : 'bg-[#E2E8F0]'
+  const shieldColor   = isPro ? 'text-white/30'  : 'text-slate-400'
+  const backBtn       = isPro
+    ? 'text-white/60 hover:text-white'
+    : 'text-slate-500 hover:text-[#2563EB]'
+  const desktopBorderRight = isPro ? '' : 'lg:border-r lg:border-[#E2E8F0]'
 
+  /* ─────────────────────────────────────────────────────────────────────────
+     THÈME MOBILE HEADER
+  ───────────────────────────────────────────────────────────────────────── */
+  const mobileHeaderBg     = isPro ? '#0F172A' : '#ffffff'
+  const mobileAccordionBg  = isPro ? 'rgba(255,255,255,0.04)' : '#F8FAFC'
+  const mobileBadgeBg      = isPro ? '#2563EB'  : '#EFF6FF'
+  const mobileBadgeText    = isPro ? '#ffffff'  : '#2563EB'
+
+  /* ══════════════════════════════════════════════════════════════════════
+     RENDER
+     • Mobile  (<lg) : header compact sticky + accordéon + Stripe plein écran
+     • Desktop (≥lg) : colonne gauche 42% + colonne droite Stripe 58%
+  ══════════════════════════════════════════════════════════════════════ */
   return (
+    /* 100dvh = dynamic viewport height — gère correctement la barre Safari */
     <div className="h-[100dvh] flex flex-col lg:flex-row overflow-hidden">
 
-      {/* ══════════════════════════════════════════════════════════════
-          COLONNE GAUCHE — Récap plan
-          Pro     → navy #0F172A avec watermark bleu
-          Starter → blanc avec accent bleu léger
-      ══════════════════════════════════════════════════════════════ */}
-      <div className={`relative lg:w-[42%] lg:h-full lg:overflow-y-auto flex flex-col ${leftBg} ${textMain} px-6 pt-6 pb-4 lg:px-10 lg:pt-10 lg:pb-8 overflow-hidden ${borderLeft}`}>
+      {/* ╔══════════════════════════════════════════════════════════════════╗
+          ║  MOBILE ONLY — Header sticky compact                           ║
+          ╚══════════════════════════════════════════════════════════════════╝ */}
+      <div
+        className="lg:hidden flex-shrink-0"
+        style={{ backgroundColor: mobileHeaderBg }}
+      >
+        {/* Déco Pro : tache lumineuse bleue */}
+        {isPro && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute top-0 right-0 w-[200px] h-[200px] rounded-full z-0"
+            style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%)' }}
+          />
+        )}
+        {/* Déco Starter : dégradé bleu très léger */}
+        {!isPro && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-[160px] z-0"
+            style={{ background: 'linear-gradient(180deg, #EFF6FF 0%, #ffffff 100%)' }}
+          />
+        )}
 
-        {/* ── Décos : uniquement pour Pro ── */}
+        <div className="relative z-10">
+          {/* ── Ligne 1 : retour + logo ─────────────────────────────────── */}
+          <div
+            className="flex items-center justify-between px-5 pb-3"
+            style={{ paddingTop: 'max(14px, env(safe-area-inset-top, 14px))' }}
+          >
+            <button
+              onClick={() => router.push('/pricing')}
+              className={`flex items-center gap-1.5 text-sm font-medium ${backBtn} transition-colors`}
+              aria-label="Retour au choix du plan"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Plans</span>
+            </button>
+
+            {/* Logo centré */}
+            <div className="absolute left-1/2 -translate-x-1/2">
+              {isPro ? (
+                <Image
+                  src={LOGO_LONG_BLANC}
+                  alt="Qonforme"
+                  width={110}
+                  height={26}
+                  className="h-[26px] w-auto"
+                  unoptimized
+                  onError={(e) => {
+                    const img = e.currentTarget as HTMLImageElement
+                    img.src = LOGO_LONG_BLEU
+                    img.style.filter = 'brightness(0) invert(1)'
+                  }}
+                />
+              ) : (
+                <Image
+                  src={LOGO_LONG_BLEU}
+                  alt="Qonforme"
+                  width={110}
+                  height={26}
+                  className="h-[26px] w-auto"
+                  unoptimized
+                  priority
+                />
+              )}
+            </div>
+
+            {/* Espace droit pour symétrie */}
+            <div className="w-[60px]" aria-hidden />
+          </div>
+
+          {/* ── Ligne 2 : résumé compact + toggle accordéon ─────────────── */}
+          <button
+            onClick={() => setSummaryOpen(v => !v)}
+            className="w-full flex items-center justify-between px-5 py-3.5 transition-colors active:opacity-80"
+            style={{
+              backgroundColor: summaryOpen ? mobileAccordionBg : 'transparent',
+              borderTop: isPro ? '1px solid rgba(255,255,255,0.08)' : '1px solid #F1F5F9',
+            }}
+            aria-expanded={summaryOpen}
+            aria-label="Voir le résumé du plan"
+          >
+            {/* Gauche : badge plan + prix + période */}
+            <div className="flex items-center gap-2.5">
+              <span
+                className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
+                style={{ backgroundColor: mobileBadgeBg, color: mobileBadgeText }}
+              >
+                {isPro && <Zap className="w-2.5 h-2.5" fill="currentColor" />}
+                {isPro ? 'Pro' : 'Starter'}
+              </span>
+              <div className="flex items-baseline gap-1">
+                <span className={`font-extrabold text-[24px] leading-none tabular-nums ${textMain}`}>
+                  {fmt(price)}€
+                </span>
+                <span className={`text-[11px] leading-none ${textSub}`}>/mois HT</span>
+              </div>
+              {billingPeriod === 'yearly' && (
+                <span className="text-[10px] font-semibold text-[#059669] bg-[#D1FAE5] px-1.5 py-0.5 rounded-full leading-none">
+                  −16%
+                </span>
+              )}
+            </div>
+
+            {/* Droite : chevron animé */}
+            <span
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+                isPro ? 'bg-white/10' : 'bg-slate-100'
+              }`}
+            >
+              {summaryOpen
+                ? <ChevronUp  className={`w-3.5 h-3.5 ${isPro ? 'text-white/60' : 'text-slate-500'}`} />
+                : <ChevronDown className={`w-3.5 h-3.5 ${isPro ? 'text-white/60' : 'text-slate-500'}`} />
+              }
+            </span>
+          </button>
+
+          {/* ── Accordéon : détail plan ──────────────────────────────────── */}
+          <div
+            className="overflow-hidden transition-all duration-200"
+            style={{
+              maxHeight: summaryOpen ? '600px' : '0px',
+              borderBottom: summaryOpen
+                ? isPro ? '1px solid rgba(255,255,255,0.08)' : '1px solid #F1F5F9'
+                : 'none',
+              backgroundColor: mobileAccordionBg,
+            }}
+          >
+            <div className="px-5 pt-3 pb-5">
+              {/* Description plan */}
+              <p className={`text-[13px] font-semibold mb-1 ${planLabel}`}>
+                {plan.name}
+              </p>
+              <p className={`text-[13px] ${textMuted} mb-3`}>
+                {plan.description}
+              </p>
+              {billingPeriod === 'yearly' && (
+                <p className={`text-[12px] ${textMuted} mb-3 flex items-center gap-1`}>
+                  <span className="text-[#059669] font-medium">2 mois offerts</span>
+                  <span>· Facturé {plan.yearlyPrice} €/an</span>
+                </p>
+              )}
+
+              {/* Features (4 premières + compteur) */}
+              <ul className="flex flex-col gap-2.5 mb-4">
+                {plan.features.slice(0, 5).map(f => (
+                  <li key={f} className={`flex items-center gap-2.5 text-[13px] ${textFeature}`}>
+                    <span className={`shrink-0 w-[18px] h-[18px] rounded-full ${checkBg} flex items-center justify-center`}>
+                      <Check className={`w-2.5 h-2.5 ${checkIcon}`} strokeWidth={2.5} />
+                    </span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+                {plan.features.length > 5 && (
+                  <li className={`text-[12px] ${textMuted} pl-[30px]`}>
+                    + {plan.features.length - 5} autres fonctionnalités incluses
+                  </li>
+                )}
+              </ul>
+
+              {/* Badge sécurité */}
+              <div
+                className="flex items-center gap-2 pt-3"
+                style={{ borderTop: isPro ? '1px solid rgba(255,255,255,0.08)' : '1px solid #F1F5F9' }}
+              >
+                <Lock className={`w-3 h-3 shrink-0 ${shieldColor}`} />
+                <p className={`text-[11px] ${shieldColor}`}>
+                  Paiement sécurisé par Stripe · Résiliation à tout moment
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ╔══════════════════════════════════════════════════════════════════╗
+          ║  DESKTOP ONLY — Colonne gauche 42%                             ║
+          ╚══════════════════════════════════════════════════════════════════╝ */}
+      <div className={`hidden lg:flex relative lg:w-[42%] lg:h-full lg:overflow-y-auto flex-col ${leftBg} ${textMain} lg:px-10 lg:pt-10 lg:pb-8 overflow-hidden ${desktopBorderRight}`}>
+
+        {/* Décos Pro */}
         {isPro && (
           <>
-            {/* Filigrane Q — bas-gauche */}
             <div
               aria-hidden
               className="pointer-events-none select-none absolute -bottom-10 -left-10 z-0"
               style={{ opacity: 0.06 }}
             >
-              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[220px] lg:w-[280px]" unoptimized />
+              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" unoptimized />
             </div>
-
-            {/* Tache lumineuse bleue — haut-droite */}
             <div
               aria-hidden
               className="pointer-events-none select-none absolute -top-20 -right-20 z-0 w-[320px] h-[320px] rounded-full"
-              style={{ background: 'radial-gradient(circle at center, rgba(37,99,235,0.18) 0%, transparent 70%)' }}
+              style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%)' }}
             />
           </>
         )}
-
-        {/* ── Décos : uniquement pour Starter ── */}
+        {/* Décos Starter */}
         {!isPro && (
           <>
-            {/* Filigrane Q bleu très léger — bas-gauche */}
             <div
               aria-hidden
               className="pointer-events-none select-none absolute -bottom-10 -left-10 z-0"
               style={{ opacity: 0.04 }}
             >
-              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[220px] lg:w-[280px]" unoptimized />
+              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" unoptimized />
             </div>
-
-            {/* Fond dégradé léger bleu → blanc */}
             <div
               aria-hidden
               className="pointer-events-none select-none absolute inset-0 z-0"
@@ -143,10 +327,8 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
           </>
         )}
 
-        {/* Contenu au-dessus des décos */}
         <div className="relative z-10 flex flex-col h-full">
-
-          {/* Bouton retour */}
+          {/* Retour */}
           <button
             onClick={() => router.push('/pricing')}
             className={`flex items-center gap-1.5 text-sm ${backBtn} transition-colors mb-7 self-start`}
@@ -155,10 +337,9 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
             Changer de plan
           </button>
 
-          {/* Logo Qonforme */}
+          {/* Logo */}
           <div className="mb-7">
             {isPro ? (
-              /* Version blanche sur fond navy */
               <Image
                 src={LOGO_LONG_BLANC}
                 alt="Qonforme"
@@ -173,7 +354,6 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
                 }}
               />
             ) : (
-              /* Version bleue sur fond blanc */
               <Image
                 src={LOGO_LONG_BLEU}
                 alt="Qonforme"
@@ -186,7 +366,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
             )}
           </div>
 
-          {/* Nom du plan */}
+          {/* Plan name */}
           <div className="mb-5">
             <span className={`text-[11px] font-bold uppercase tracking-[0.12em] ${planLabel} block mb-1`}>
               {plan.name}
@@ -214,102 +394,110 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
           {/* Séparateur */}
           <div className={`h-px ${divider} mb-5`} />
 
-          {/* Features desktop */}
-          <ul className="hidden lg:flex flex-col gap-3 flex-1">
-            {plan.features.map((f) => (
+          {/* Features */}
+          <ul className="flex flex-col gap-3 flex-1">
+            {plan.features.map(f => (
               <li key={f} className={`flex items-start gap-3 text-sm ${textFeature}`}>
                 <span className={`mt-[2px] w-[18px] h-[18px] rounded-full ${checkBg} flex items-center justify-center shrink-0`}>
-                  <Check className={`w-2.5 h-2.5 ${checkIcon}`} />
+                  <Check className={`w-2.5 h-2.5 ${checkIcon}`} strokeWidth={2.5} />
                 </span>
                 {f}
               </li>
             ))}
           </ul>
 
-          {/* Features mobile (3 premières) */}
-          <ul className="lg:hidden flex flex-col gap-2 mb-2">
-            {plan.features.slice(0, 3).map((f) => (
-              <li key={f} className={`flex items-center gap-2.5 text-sm ${textFeature}`}>
-                <Check className={`w-3.5 h-3.5 ${checkIcon} shrink-0`} />
-                {f}
-              </li>
-            ))}
-            {plan.features.length > 3 && (
-              <li className={`text-xs ${textMuted} pl-6`}>
-                + {plan.features.length - 3} autres avantages
-              </li>
-            )}
-          </ul>
-
           {/* Badge sécurité */}
           <div className={`flex items-center gap-2 mt-5 pt-5 border-t ${divider}`}>
-            <Shield className={`w-3.5 h-3.5 ${shieldText} shrink-0`} />
-            <p className={`text-xs ${shieldText}`}>
+            <Shield className={`w-3.5 h-3.5 ${shieldColor} shrink-0`} />
+            <p className={`text-xs ${shieldColor}`}>
               Paiement sécurisé par Stripe · Résiliation à tout moment
             </p>
           </div>
-
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════
-          COLONNE DROITE — Formulaire Stripe brandé
-      ══════════════════════════════════════════════════════════════ */}
-      <div className="flex-1 lg:h-full overflow-y-auto bg-[#F8FAFC]">
+      {/* ╔══════════════════════════════════════════════════════════════════╗
+          ║  STRIPE — plein écran mobile / colonne droite desktop           ║
+          ║  Note : safe-area-inset-bottom évite que le bouton Stripe       ║
+          ║  se cache derrière la barre iPhone home.                        ║
+          ╚══════════════════════════════════════════════════════════════════╝ */}
+      <div
+        className="flex-1 overflow-y-auto bg-white min-h-0"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
         <div className="min-h-full flex flex-col justify-start lg:justify-center px-4 py-6 lg:px-10 lg:py-8">
 
-          {/* Clé Stripe absente (dev sans .env.local) */}
+          {/* ── Pas de clé Stripe (dev local) ───────────────────────────── */}
           {!stripeKey ? (
-            <div className="max-w-md mx-auto w-full text-center py-10">
-              <div className="w-12 h-12 rounded-full bg-[#EFF6FF] flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-5 h-5 text-[#2563EB]" />
+            <div className="max-w-md mx-auto w-full text-center py-12">
+              <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] flex items-center justify-center mx-auto mb-5">
+                <Shield className="w-6 h-6 text-[#2563EB]" />
               </div>
-              <h3 className="text-[#0F172A] font-semibold mb-2">Paiement Stripe</h3>
-              <p className="text-sm text-slate-500 mb-1">
-                Le formulaire de paiement s&apos;affiche ici en production.
+              <h3 className="text-[#0F172A] font-semibold text-base mb-2">
+                Formulaire de paiement
+              </h3>
+              <p className="text-sm text-slate-500 mb-2">
+                Le formulaire Stripe s&apos;affiche ici en production.
               </p>
-              <p className="text-xs text-slate-400">
-                Ajoute <code className="bg-slate-100 px-1 rounded">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code> dans ton <code className="bg-slate-100 px-1 rounded">.env.local</code> pour le tester en développement.
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Ajoute{' '}
+                <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+                  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+                </code>{' '}
+                dans{' '}
+                <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+                  .env.local
+                </code>{' '}
+                pour tester en local.
               </p>
             </div>
 
           ) : fetchError ? (
-            /* Erreur API */
-            <div className="max-w-md mx-auto w-full text-center py-10">
-              <div className="w-12 h-12 rounded-full bg-[#FEE2E2] flex items-center justify-center mx-auto mb-4">
-                <RefreshCw className="w-5 h-5 text-[#EF4444]" />
+            /* ── Erreur API ─────────────────────────────────────────────── */
+            <div className="max-w-md mx-auto w-full text-center py-12">
+              <div className="w-14 h-14 rounded-2xl bg-[#FEE2E2] flex items-center justify-center mx-auto mb-5">
+                <RefreshCw className="w-6 h-6 text-[#EF4444]" />
               </div>
-              <p className="text-sm text-[#EF4444] mb-4 font-medium">{fetchError}</p>
+              <p className="text-base font-semibold text-[#EF4444] mb-2">
+                Une erreur est survenue
+              </p>
+              <p className="text-sm text-slate-500 mb-6">{fetchError}</p>
               <button
                 onClick={() => setFetchError(null)}
-                className="text-sm text-[#2563EB] underline font-medium"
+                className="inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-[#1D4ED8] transition-colors mb-3 w-full max-w-[240px]"
               >
+                <RefreshCw className="w-4 h-4" />
                 Réessayer
               </button>
+              <br />
               <button
                 onClick={() => router.push('/pricing')}
-                className="block mx-auto mt-2 text-sm text-slate-400 underline"
+                className="text-sm text-slate-400 hover:text-slate-600 underline transition-colors"
               >
                 Retour au choix du plan
               </button>
             </div>
 
           ) : isComplete ? (
-            /* Confirmation paiement */
-            <div className="max-w-md mx-auto w-full text-center py-10">
-              <div className="w-14 h-14 rounded-full bg-[#D1FAE5] flex items-center justify-center mx-auto mb-4">
-                <Check className="w-7 h-7 text-[#10B981]" />
+            /* ── Confirmation paiement ──────────────────────────────────── */
+            <div className="max-w-md mx-auto w-full text-center py-12">
+              <div className="w-16 h-16 rounded-2xl bg-[#D1FAE5] flex items-center justify-center mx-auto mb-5">
+                <Check className="w-8 h-8 text-[#059669]" strokeWidth={2.5} />
               </div>
-              <h2 className="text-lg font-bold text-[#0F172A] mb-2">Paiement confirmé !</h2>
-              <p className="text-sm text-slate-500">Redirection vers votre espace…</p>
-              <div className="mt-4 flex justify-center">
-                <div className="w-5 h-5 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+              <h2 className="text-xl font-bold text-[#0F172A] mb-2">
+                Paiement confirmé !
+              </h2>
+              <p className="text-sm text-slate-500 mb-6">
+                Redirection vers votre espace en cours…
+              </p>
+              <div className="flex justify-center">
+                <div className="w-5 h-5 border-[2.5px] border-[#2563EB] border-t-transparent rounded-full animate-spin" />
               </div>
             </div>
 
           ) : (
-            /* Formulaire Stripe Embedded — monté immédiatement, Stripe gère son skeleton */
-            <div className="w-full max-w-lg mx-auto">
+            /* ── Formulaire Stripe Embedded ─────────────────────────────── */
+            <div className="w-full">
               <EmbeddedCheckoutProvider
                 stripe={stripePromise}
                 options={{ fetchClientSecret, onComplete: handleComplete }}
@@ -321,6 +509,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
 
         </div>
       </div>
+
     </div>
   )
 }
