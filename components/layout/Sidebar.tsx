@@ -5,30 +5,33 @@ import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard, Users, FileText, FileCheck2,
-  Settings, Zap, LogOut, Minus,
+  Settings, LogOut, Minus,
   Plus, Archive, RotateCcw, Package, ShoppingCart, X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 
-const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
+const LOGO_URL =
+  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
+const PICTO_Q =
+  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
 /* ------------------------------------------------------------------ */
 
 interface SubItem {
-  href:   string
-  label:  string
-  icon?:  React.ElementType
+  href:  string
+  label: string
+  icon?: React.ElementType
 }
 
 interface NavItem {
-  href:   string
-  label:  string
-  icon:   React.ElementType
-  sub?:   SubItem[]
+  href:  string
+  label: string
+  icon:  React.ElementType
+  sub?:  SubItem[]
 }
 
 /* ------------------------------------------------------------------ */
@@ -55,15 +58,13 @@ const NAV: NavItem[] = [
     label: "Factures",
     icon: FileText,
     sub: [
-      { href: "/credit-notes",            label: "Avoirs",   icon: RotateCcw },
-      { href: "/invoices?archived=true",  label: "Archives", icon: Archive  },
+      { href: "/invoices/new",           label: "Nouvelle facture", icon: Plus     },
+      { href: "/credit-notes",           label: "Avoirs",           icon: RotateCcw },
+      { href: "/invoices?archived=true", label: "Archives",         icon: Archive  },
     ],
   },
   { href: "/products", label: "Catalogue produits", icon: Package },
 ]
-
-const TREE_INDENT = "ml-[20px]"
-const BRANCH_W   = "w-[16px]"
 
 /* ------------------------------------------------------------------ */
 /* NavGroup                                                             */
@@ -95,26 +96,27 @@ function NavGroup({
         href={item.href}
         onClick={onNavigate}
         className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
           isActive
             ? "bg-[#EFF6FF] text-[#2563EB]"
-            : "text-slate-600 hover:bg-slate-50 hover:text-[#0F172A]"
+            : "text-slate-500 hover:bg-[#F8FAFC] hover:text-[#0F172A]"
         )}
       >
-        <item.icon className="w-4 h-4 shrink-0" />
+        <item.icon className={cn("w-4 h-4 shrink-0", isActive ? "text-[#2563EB]" : "text-slate-400")} />
         <span className="flex-1 truncate">{item.label}</span>
         {hasChildren && (
           <Minus className={cn(
-            "w-3.5 h-3.5 shrink-0",
-            isActive ? "text-[#2563EB]" : "text-slate-400"
+            "w-3 h-3 shrink-0 transition-colors",
+            isActive ? "text-[#BFDBFE]" : "text-slate-300"
           )} />
         )}
       </Link>
 
-      {hasChildren && (
-        <div className={cn("relative mt-0.5 mb-1", TREE_INDENT)}>
-          <span className="absolute left-0 top-0 bottom-0 w-px bg-[#BFDBFE]" />
-          <div className="space-y-0.5">
+      {hasChildren && isActive && (
+        <div className="relative mt-0.5 mb-1 ml-[22px]">
+          {/* ligne verticale bleue */}
+          <span className="absolute left-0 top-1 bottom-1 w-px bg-[#BFDBFE]" />
+          <div className="space-y-0.5 pl-4">
             {item.sub!.map((s) => {
               const sHrefBase = s.href.split("?")[0]
               const sHasQuery = s.href.includes("?")
@@ -123,22 +125,22 @@ function NavGroup({
                 (pathname.startsWith(sHrefBase) && sHrefBase !== item.href)
               )
               return (
-                <div key={s.href} className="relative flex items-center">
-                  <span className={cn("shrink-0 h-px bg-[#BFDBFE]", BRANCH_W)} />
-                  <Link
-                    href={s.href}
-                    onClick={onNavigate}
-                    className={cn(
-                      "flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
-                      sActive
-                        ? "bg-[#EFF6FF] text-[#2563EB]"
-                        : "text-slate-500 hover:bg-slate-50 hover:text-[#0F172A]"
-                    )}
-                  >
-                    {s.icon && <s.icon className="w-4 h-4 shrink-0" />}
-                    {s.label}
-                  </Link>
-                </div>
+                <Link
+                  key={s.href}
+                  href={s.href}
+                  onClick={onNavigate}
+                  className={cn(
+                    "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
+                    sActive
+                      ? "bg-[#EFF6FF] text-[#2563EB]"
+                      : "text-slate-400 hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+                  )}
+                >
+                  {s.icon && (
+                    <s.icon className={cn("w-3.5 h-3.5 shrink-0", sActive ? "text-[#2563EB]" : "text-slate-300")} />
+                  )}
+                  {s.label}
+                </Link>
               )
             })}
           </div>
@@ -163,33 +165,36 @@ function SidebarContent({
 }) {
   return (
     <>
-      {/* Navigation */}
-      <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
+      {/* Navigation principale */}
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {NAV.map((item) => (
           <NavGroup key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />
         ))}
       </nav>
 
-      {/* Bas */}
-      <div className="px-2 py-4 border-t border-[#E2E8F0] space-y-0.5">
+      {/* Bas — settings + logout */}
+      <div className="px-3 py-4 border-t border-[#F1F5F9] space-y-0.5">
         <Link
           href="/settings"
           onClick={onNavigate}
           className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
             pathname.startsWith("/settings")
               ? "bg-[#EFF6FF] text-[#2563EB]"
-              : "text-slate-600 hover:bg-slate-50 hover:text-[#0F172A]"
+              : "text-slate-500 hover:bg-[#F8FAFC] hover:text-[#0F172A]"
           )}
         >
-          <Settings className="w-4 h-4 shrink-0" />
+          <Settings className={cn(
+            "w-4 h-4 shrink-0",
+            pathname.startsWith("/settings") ? "text-[#2563EB]" : "text-slate-400"
+          )} />
           Paramètres
         </Link>
         <button
           onClick={onLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition-all duration-150 w-full"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all duration-150 w-full group"
         >
-          <LogOut className="w-4 h-4 shrink-0" />
+          <LogOut className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-red-400 transition-colors" />
           Se déconnecter
         </button>
       </div>
@@ -215,21 +220,30 @@ export function Sidebar() {
 
   return (
     <aside className="hidden md:flex w-60 flex-col border-r border-[#E2E8F0] bg-white shrink-0 relative overflow-hidden">
-      {/* Q filigrane en bas de la sidebar */}
+      {/* Q filigrane bas-gauche */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-8 -left-6 select-none"
-        style={{ opacity: 0.06, zIndex: 0 }}
+        className="pointer-events-none absolute -bottom-6 -left-4 select-none z-0"
+        style={{ opacity: 0.06 }}
       >
-        <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[140px]" unoptimized />
+        <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" unoptimized />
       </div>
+
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 py-5 border-b border-[#E2E8F0]">
-        <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center shrink-0">
-          <Zap className="w-4 h-4 text-white" />
-        </div>
-        <span className="text-lg font-bold text-[#0F172A]">Qonforme</span>
+      <div className="flex items-center px-5 py-[18px] border-b border-[#F1F5F9] shrink-0">
+        <Link href="/dashboard" className="flex items-center">
+          <Image
+            src={LOGO_URL}
+            alt="Qonforme"
+            width={130}
+            height={30}
+            className="h-7 w-auto object-contain"
+            unoptimized
+            priority
+          />
+        </Link>
       </div>
+
       <SidebarContent pathname={pathname} onLogout={handleLogout} />
     </aside>
   )
@@ -263,7 +277,7 @@ export function MobileSidebar({
       {/* Overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300 md:hidden",
+          "fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 md:hidden",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}
@@ -273,28 +287,43 @@ export function MobileSidebar({
       {/* Drawer */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-72 flex flex-col bg-white border-r border-[#E2E8F0] shadow-2xl transition-transform duration-300 ease-in-out md:hidden",
+          "fixed inset-y-0 left-0 z-50 w-72 flex flex-col bg-white border-r border-[#E2E8F0] shadow-[4px_0_24px_rgba(15,23,42,0.08)] transition-transform duration-300 ease-in-out md:hidden overflow-hidden",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
+        {/* Q filigrane bas-gauche dans le drawer */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-6 -left-4 select-none z-0"
+          style={{ opacity: 0.06 }}
+        >
+          <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" unoptimized />
+        </div>
+
         {/* Header drawer : logo + fermer */}
-        <div className="flex items-center justify-between px-4 py-5 border-b border-[#E2E8F0]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center shrink-0">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-lg font-bold text-[#0F172A]">Qonforme</span>
-          </div>
+        <div className="relative z-10 flex items-center justify-between px-5 py-[18px] border-b border-[#F1F5F9] shrink-0">
+          <Link href="/dashboard" onClick={onClose} className="flex items-center">
+            <Image
+              src={LOGO_URL}
+              alt="Qonforme"
+              width={130}
+              height={30}
+              className="h-7 w-auto object-contain"
+              unoptimized
+            />
+          </Link>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-[#F1F5F9] transition-colors"
+            className="p-1.5 rounded-lg hover:bg-[#F1F5F9] transition-colors text-slate-400 hover:text-slate-600"
             aria-label="Fermer le menu"
           >
-            <X className="w-5 h-5 text-slate-400" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <SidebarContent pathname={pathname} onNavigate={onClose} onLogout={handleLogout} />
+        <div className="relative z-10 flex flex-col flex-1 min-h-0">
+          <SidebarContent pathname={pathname} onNavigate={onClose} onLogout={handleLogout} />
+        </div>
       </aside>
     </>
   )
