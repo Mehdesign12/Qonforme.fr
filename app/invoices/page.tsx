@@ -6,33 +6,41 @@ import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { formatCurrency, formatDate, INVOICE_STATUS_LABELS } from "@/lib/utils/invoice"
 import { InvoiceStatus } from "@/types"
-import { Plus, Loader2, FileText, Archive } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Plus, Loader2, FileText, Archive, ChevronRight } from "lucide-react"
 
-const STATUS_STYLE: Record<InvoiceStatus, string> = {
-  draft:     "bg-[#F1F5F9] text-[#475569] border-[#CBD5E1]",
-  sent:      "bg-[#DBEAFE] text-[#1E40AF] border-[#93C5FD]",
-  pending:   "bg-[#FEF3C7] text-[#92400E] border-[#FCD34D]",
-  received:  "bg-[#EDE9FE] text-[#5B21B6] border-[#C4B5FD]",
-  accepted:  "bg-[#D1FAE5] text-[#065F46] border-[#6EE7B7]",
-  rejected:  "bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]",
-  paid:      "bg-[#D1FAE5] text-[#065F46] border-[#6EE7B7]",
-  overdue:   "bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]",
-  cancelled: "bg-[#F1F5F9] text-[#64748B] border-[#CBD5E1]",
-  credited:  "bg-[#FFF7ED] text-[#C2410C] border-[#FED7AA]",
+/* ── Status styles ── */
+const STATUS_STYLE: Record<InvoiceStatus, { bg: string; text: string; dot: string }> = {
+  draft:     { bg: "#F1F5F9", text: "#475569", dot: "#94A3B8" },
+  sent:      { bg: "#DBEAFE", text: "#1E40AF", dot: "#3B82F6" },
+  pending:   { bg: "#FEF3C7", text: "#92400E", dot: "#D97706" },
+  received:  { bg: "#EDE9FE", text: "#5B21B6", dot: "#8B5CF6" },
+  accepted:  { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
+  rejected:  { bg: "#FEE2E2", text: "#991B1B", dot: "#EF4444" },
+  paid:      { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
+  overdue:   { bg: "#FEE2E2", text: "#991B1B", dot: "#EF4444" },
+  cancelled: { bg: "#F1F5F9", text: "#64748B", dot: "#94A3B8" },
+  credited:  { bg: "#FFF7ED", text: "#C2410C", dot: "#F97316" },
+}
+
+function StatusBadge({ status }: { status: InvoiceStatus }) {
+  const s = STATUS_STYLE[status] || STATUS_STYLE.draft
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold"
+      style={{ backgroundColor: s.bg, color: s.text }}
+    >
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: s.dot }} />
+      {INVOICE_STATUS_LABELS[status]}
+    </span>
+  )
 }
 
 type StatusFilter = "all" | InvoiceStatus | "archived"
 
 interface Invoice {
-  id: string
-  invoice_number: string
-  status: InvoiceStatus
-  is_archived: boolean
-  issue_date: string
-  due_date: string
-  total_ttc: number
-  client: { name: string } | null
+  id: string; invoice_number: string; status: InvoiceStatus
+  is_archived: boolean; issue_date: string; due_date: string
+  total_ttc: number; client: { name: string } | null
 }
 
 const FILTERS: { key: StatusFilter; label: string }[] = [
@@ -45,6 +53,13 @@ const FILTERS: { key: StatusFilter; label: string }[] = [
   { key: "archived", label: "Archivées" },
 ]
 
+const cardStyle: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.85)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  boxShadow: '0 2px 16px rgba(37,99,235,0.06)',
+}
+
 export default function InvoicesPage() {
   const [invoices, setInvoices]         = useState<Invoice[]>([])
   const [loading, setLoading]           = useState(true)
@@ -52,10 +67,9 @@ export default function InvoicesPage() {
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true)
-    let url: string
+    let url = "/api/invoices"
     if      (activeFilter === "archived") url = "/api/invoices?archived=true"
-    else if (activeFilter === "all")      url = "/api/invoices"
-    else                                  url = `/api/invoices?status=${activeFilter}`
+    else if (activeFilter !== "all")      url = `/api/invoices?status=${activeFilter}`
     const res  = await fetch(url)
     const json = await res.json()
     if (json.invoices) setInvoices(json.invoices)
@@ -67,21 +81,22 @@ export default function InvoicesPage() {
   const isArchiveView = activeFilter === "archived"
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4 max-w-[1200px] mx-auto">
 
-      {/* Filtres + CTA */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 flex-wrap">
+      {/* ── Barre top : filtres + CTA ── */}
+      <div className="flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row">
+        {/* Filtres scrollables */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 w-full sm:w-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
           {FILTERS.map((f) => (
             <button
               key={f.key}
               onClick={() => setActiveFilter(f.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors flex items-center gap-1 ${
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap flex items-center gap-1 ${
                 activeFilter === f.key
                   ? f.key === "archived"
-                    ? "bg-slate-600 text-white border-slate-600"
-                    : "bg-[#2563EB] text-white border-[#2563EB]"
-                  : "bg-white text-slate-600 border-[#E2E8F0] hover:border-[#2563EB] hover:text-[#2563EB]"
+                    ? "bg-slate-600 text-white border-slate-600 shadow-sm"
+                    : "bg-[#2563EB] text-white border-[#2563EB] shadow-sm"
+                  : "bg-white/80 text-slate-600 border-[#E2E8F0] hover:border-[#2563EB] hover:text-[#2563EB]"
               }`}
             >
               {f.key === "archived" && <Archive className="w-3 h-3" />}
@@ -89,43 +104,53 @@ export default function InvoicesPage() {
             </button>
           ))}
         </div>
-        <Link href="/invoices/new">
-          <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2 shrink-0">
+
+        {/* CTA */}
+        <Link href="/invoices/new" className="shrink-0 w-full sm:w-auto">
+          <button className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] rounded-xl transition-colors shadow-sm">
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Nouvelle facture</span>
-          </Button>
+            Nouvelle facture
+          </button>
         </Link>
       </div>
 
       {isArchiveView && (
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-3 flex items-start gap-2">
-          <Archive className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+        <div
+          className="flex items-center gap-2.5 rounded-2xl px-4 py-3 border border-white/60"
+          style={{ background: 'rgba(248,250,252,0.9)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+        >
+          <Archive className="w-4 h-4 text-slate-400 shrink-0" />
           <p className="text-xs text-slate-500">Les factures archivées n&apos;apparaissent pas dans les autres filtres.</p>
         </div>
       )}
 
-      {/* Contenu */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
+      {/* ── Contenu ── */}
+      <div className="rounded-2xl border border-white/60 overflow-hidden" style={cardStyle}>
         {loading ? (
-          <div className="flex items-center justify-center py-16">
+          <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
           </div>
         ) : invoices.length === 0 ? (
-          <div className="py-16 text-center">
-            {isArchiveView
-              ? <Archive className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-              : <FileText className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-            }
-            <p className="text-sm font-medium text-slate-600 mb-1">
+          <div className="py-20 text-center px-6">
+            <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] flex items-center justify-center mx-auto mb-4">
+              {isArchiveView
+                ? <Archive className="w-6 h-6 text-[#2563EB]" />
+                : <FileText className="w-6 h-6 text-[#2563EB]" />
+              }
+            </div>
+            <p className="text-[15px] font-bold text-[#0F172A] mb-1">
               {isArchiveView ? "Aucune facture archivée"
                 : activeFilter === "all" ? "Aucune facture pour l'instant"
                 : `Aucune facture "${INVOICE_STATUS_LABELS[activeFilter as InvoiceStatus]}"`}
             </p>
-            {activeFilter === "all" && (
+            {activeFilter === "all" && !isArchiveView && (
               <>
-                <p className="text-xs text-slate-400 mb-4">Créez votre première facture en quelques clics</p>
+                <p className="text-sm text-slate-400 mb-5">Créez votre première facture en quelques clics</p>
                 <Link href="/invoices/new">
-                  <Button size="sm" className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">Créer une facture</Button>
+                  <button className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl transition-colors">
+                    <Plus className="w-4 h-4" />
+                    Créer une facture
+                  </button>
                 </Link>
               </>
             )}
@@ -133,25 +158,25 @@ export default function InvoicesPage() {
         ) : (
           <>
             {/* ── Mobile : cards ── */}
-            <div className="sm:hidden divide-y divide-[#F1F5F9]">
+            <div className="sm:hidden divide-y divide-[#F8FAFC]">
               {invoices.map((inv) => (
                 <Link
                   key={inv.id}
                   href={`/invoices/${inv.id}`}
-                  className={`flex items-center justify-between px-4 py-3.5 hover:bg-[#F8FAFC] transition-colors ${inv.is_archived ? "opacity-70" : ""}`}
+                  className={`flex items-center justify-between px-4 py-4 hover:bg-[#F8FAFC] active:bg-[#EFF6FF] transition-colors ${inv.is_archived ? "opacity-60" : ""}`}
                 >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
                       {inv.is_archived && <Archive className="w-3 h-3 text-slate-300 shrink-0" />}
-                      <span className="font-mono text-sm text-[#2563EB] font-medium">{inv.invoice_number}</span>
+                      <span className="font-mono text-[13px] font-bold text-[#2563EB]">{inv.invoice_number}</span>
+                      <StatusBadge status={inv.status} />
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5 truncate">{inv.client?.name || "—"}</p>
+                    <p className="text-[12px] text-slate-500 truncate">{inv.client?.name || "—"}</p>
+                    <p className="text-[11px] text-slate-300 mt-0.5">{formatDate(inv.issue_date)}</p>
                   </div>
-                  <div className="text-right ml-3 shrink-0">
-                    <p className="font-mono text-sm font-semibold text-[#0F172A]">{formatCurrency(inv.total_ttc)}</p>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border mt-1 ${STATUS_STYLE[inv.status]}`}>
-                      {INVOICE_STATUS_LABELS[inv.status]}
-                    </span>
+                  <div className="flex items-center gap-2 ml-3 shrink-0">
+                    <p className="font-mono text-[14px] font-bold text-[#0F172A]">{formatCurrency(inv.total_ttc)}</p>
+                    <ChevronRight className="w-4 h-4 text-slate-300" />
                   </div>
                 </Link>
               ))}
@@ -160,13 +185,19 @@ export default function InvoicesPage() {
             {/* ── Desktop : table ── */}
             <table className="hidden sm:table w-full">
               <thead>
-                <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° facture</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Client</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Émission</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden lg:table-cell">Échéance</th>
-                  <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Montant TTC</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Statut</th>
+                <tr className="border-b border-[#F8FAFC] bg-[#FAFBFC]/60">
+                  {["N° facture", "Client", "Émission", "Échéance", "Montant TTC", "Statut"].map((h, i) => (
+                    <th
+                      key={h}
+                      className={`text-left text-[10px] font-bold uppercase tracking-wider text-slate-300 px-5 py-3.5 ${
+                        i === 2 ? "hidden md:table-cell" :
+                        i === 3 ? "hidden lg:table-cell" :
+                        i === 4 ? "text-right" : ""
+                      }`}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -174,25 +205,19 @@ export default function InvoicesPage() {
                   <tr
                     key={inv.id}
                     onClick={() => window.location.href = `/invoices/${inv.id}`}
-                    className={`border-b border-[#F1F5F9] transition-colors last:border-0 cursor-pointer ${
-                      inv.is_archived ? "bg-[#F8FAFC] hover:bg-[#F1F5F9] opacity-75" : "hover:bg-[#F8FAFC]"
-                    }`}
+                    className={`border-b border-[#F8FAFC] hover:bg-[#F8FAFC]/70 transition-colors last:border-0 cursor-pointer ${inv.is_archived ? "opacity-60" : ""}`}
                   >
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1.5">
                         {inv.is_archived && <Archive className="w-3 h-3 text-slate-300 shrink-0" />}
-                        <span className="font-mono text-sm text-[#2563EB] font-medium">{inv.invoice_number}</span>
+                        <span className="font-mono text-[13px] font-bold text-[#2563EB]">{inv.invoice_number}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-sm text-[#0F172A] font-medium">{inv.client?.name || "—"}</td>
-                    <td className="px-5 py-4 text-sm text-slate-500 hidden md:table-cell">{formatDate(inv.issue_date)}</td>
-                    <td className="px-5 py-4 text-sm text-slate-500 hidden lg:table-cell">{formatDate(inv.due_date)}</td>
-                    <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#0F172A]">{formatCurrency(inv.total_ttc)}</td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[inv.status]}`}>
-                        {INVOICE_STATUS_LABELS[inv.status]}
-                      </span>
-                    </td>
+                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#0F172A]">{inv.client?.name || "—"}</td>
+                    <td className="px-5 py-3.5 text-[12px] text-slate-400 hidden md:table-cell">{formatDate(inv.issue_date)}</td>
+                    <td className="px-5 py-3.5 text-[12px] text-slate-400 hidden lg:table-cell">{formatDate(inv.due_date)}</td>
+                    <td className="px-5 py-3.5 text-right font-mono text-[13px] font-bold text-[#0F172A]">{formatCurrency(inv.total_ttc)}</td>
+                    <td className="px-5 py-3.5"><StatusBadge status={inv.status} /></td>
                   </tr>
                 ))}
               </tbody>

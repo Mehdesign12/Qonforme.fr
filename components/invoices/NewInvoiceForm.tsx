@@ -3,55 +3,55 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Plus, Trash2, Loader2, Eye, Send } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Plus, Trash2, Loader2, Eye, Send, ChevronRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
 import { calculateLineTotals, calculateInvoiceTotals, formatCurrency, VAT_RATES } from "@/lib/utils/invoice"
 import { ProductCombobox, type ProductSuggestion } from "@/components/products/ProductCombobox"
 
 type VatRate = 0 | 5.5 | 10 | 20
-
 type Line = {
   id: string
   description: string
-  quantity: string   // string pour l'input, converti en number au calcul
+  quantity: string
   unit_price_ht: string
   vat_rate: VatRate
 }
-
 type FormState = {
-  client_id: string
+  client_id:  string
   issue_date: string
-  due_date: string
-  notes: string
-  lines: Line[]
+  due_date:   string
+  notes:      string
+  lines:      Line[]
 }
-
 interface Client { id: string; name: string }
 
-const today = new Date().toISOString().split("T")[0]
+const today    = new Date().toISOString().split("T")[0]
 const in30days = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
-
 function newLine(): Line {
   return { id: crypto.randomUUID(), description: "", quantity: "1", unit_price_ht: "", vat_rate: 20 }
 }
 
+/* ── Styles partagés ── */
+const cardStyle: React.CSSProperties = {
+  background:           'rgba(255,255,255,0.85)',
+  backdropFilter:       'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  boxShadow:            '0 2px 16px rgba(37,99,235,0.06)',
+}
+const inputCls = "mt-1 w-full px-3 py-2.5 text-sm border border-[#E2E8F0] rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-shadow"
+const labelCls = "text-[12px] font-semibold text-slate-500 uppercase tracking-wide"
+
 export default function NewInvoiceForm() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [clients, setClients] = useState<Client[]>([])
+  const [loading,        setLoading]        = useState(false)
+  const [saving,         setSaving]         = useState(false)
+  const [clients,        setClients]        = useState<Client[]>([])
   const [clientsLoading, setClientsLoading] = useState(true)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [errors,         setErrors]         = useState<Record<string, string>>({})
 
   const [form, setForm] = useState<FormState>({
-    client_id: "",
-    issue_date: today,
-    due_date: in30days,
-    notes: "",
-    lines: [newLine()],
+    client_id: "", issue_date: today, due_date: in30days, notes: "", lines: [newLine()],
   })
 
   useEffect(() => {
@@ -61,7 +61,6 @@ export default function NewInvoiceForm() {
       .finally(() => setClientsLoading(false))
   }, [])
 
-  // --- Helpers mise à jour ---
   const setField = (key: keyof Omit<FormState, "lines">) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setForm(prev => ({ ...prev, [key]: e.target.value }))
@@ -72,14 +71,15 @@ export default function NewInvoiceForm() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       setForm(prev => ({
         ...prev,
-        lines: prev.lines.map(l => l.id === id ? { ...l, [key]: key === "vat_rate" ? Number(e.target.value) as VatRate : e.target.value } : l)
+        lines: prev.lines.map(l => l.id === id
+          ? { ...l, [key]: key === "vat_rate" ? Number(e.target.value) as VatRate : e.target.value }
+          : l)
       }))
     }
 
   const addLine = () => setForm(prev => ({ ...prev, lines: [...prev.lines, newLine()] }))
   const removeLine = (id: string) => setForm(prev => ({ ...prev, lines: prev.lines.filter(l => l.id !== id) }))
 
-  // Insérer un produit du catalogue comme nouvelle ligne
   const insertFromProduct = (product: ProductSuggestion) => {
     const newL: Line = {
       id:            crypto.randomUUID(),
@@ -91,9 +91,8 @@ export default function NewInvoiceForm() {
     setForm(prev => ({ ...prev, lines: [...prev.lines, newL] }))
   }
 
-  // --- Calculs en temps réel ---
   const computedLines = form.lines.map(line => {
-    const qty = parseFloat(line.quantity) || 0
+    const qty   = parseFloat(line.quantity) || 0
     const price = parseFloat(line.unit_price_ht) || 0
     return calculateLineTotals(qty, price, line.vat_rate)
   })
@@ -102,143 +101,152 @@ export default function NewInvoiceForm() {
     computedLines.map(l => ({ total_ht: l.totalHT, total_vat: l.totalVAT, total_ttc: l.totalTTC }))
   )
 
-  // --- Validation ---
   function validate(): boolean {
     const errs: Record<string, string> = {}
-    if (!form.client_id) errs.client_id = "Client requis"
+    if (!form.client_id)  errs.client_id  = "Client requis"
     if (!form.issue_date) errs.issue_date = "Date d'émission requise"
-    if (!form.due_date) errs.due_date = "Date d'échéance requise"
+    if (!form.due_date)   errs.due_date   = "Date d'échéance requise"
     form.lines.forEach((line, i) => {
-      if (!line.description.trim()) errs[`line_${i}_desc`] = "Description requise"
-      if (!line.quantity || parseFloat(line.quantity) <= 0) errs[`line_${i}_qty`] = "Quantité invalide"
+      if (!line.description.trim()) errs[`line_${i}_desc`]  = "Description requise"
+      if (!line.quantity || parseFloat(line.quantity) <= 0)  errs[`line_${i}_qty`]   = "Quantité invalide"
       if (line.unit_price_ht === "" || parseFloat(line.unit_price_ht) < 0) errs[`line_${i}_price`] = "Prix invalide"
     })
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
 
-  // --- Soumission ---
   const submit = async (action: "draft" | "send") => {
-    if (!validate()) {
-      toast.error("Corrigez les erreurs avant de continuer")
-      return
-    }
-    if (action === "send") setLoading(true)
-    else setSaving(true)
-
+    if (!validate()) { toast.error("Corrigez les erreurs avant de continuer"); return }
+    if (action === "send") setLoading(true); else setSaving(true)
     try {
       const enrichedLines = form.lines.map((line, i) => ({
-        description: line.description.trim(),
-        quantity: parseFloat(line.quantity) || 0,
+        description:   line.description.trim(),
+        quantity:      parseFloat(line.quantity) || 0,
         unit_price_ht: parseFloat(line.unit_price_ht) || 0,
-        vat_rate: line.vat_rate,
-        total_ht: computedLines[i].totalHT,
-        total_vat: computedLines[i].totalVAT,
-        total_ttc: computedLines[i].totalTTC,
+        vat_rate:      line.vat_rate,
+        total_ht:      computedLines[i].totalHT,
+        total_vat:     computedLines[i].totalVAT,
+        total_ttc:     computedLines[i].totalTTC,
       }))
-
       const payload = {
-        client_id: form.client_id,
+        client_id:  form.client_id,
         issue_date: form.issue_date,
-        due_date: form.due_date,
-        notes: form.notes || null,
-        lines: enrichedLines,
-        status: action === "draft" ? "draft" : "sent",
+        due_date:   form.due_date,
+        notes:      form.notes || null,
+        lines:      enrichedLines,
+        status:     action === "draft" ? "draft" : "sent",
       }
-
-      const res = await fetch("/api/invoices", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const res  = await fetch("/api/invoices", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       })
       const json = await res.json()
-
       if (!res.ok) {
         if (res.status === 402 && json.code === "STARTER_LIMIT_REACHED") {
-          toast.error(
-            `Limite Starter atteinte (${json.invoicesThisMonth}/${json.limit} ce mois). Passez au plan Pro pour des factures illimitées.`,
-            {
-              duration: 8000,
-              action: {
-                label: "Passer au Pro",
-                onClick: () => window.location.href = "/settings/billing",
-              },
-            }
-          )
+          toast.error(`Limite Starter atteinte (${json.invoicesThisMonth}/${json.limit} ce mois). Passez au plan Pro.`, {
+            duration: 8000,
+            action: { label: "Passer au Pro", onClick: () => window.location.href = "/settings/billing" },
+          })
         } else {
           toast.error(json.error || "Erreur lors de la sauvegarde")
         }
         return
       }
-
       toast.success(action === "send" ? "Facture créée !" : "Brouillon sauvegardé !")
       router.push("/invoices")
       router.refresh()
     } catch {
       toast.error("Erreur réseau")
     } finally {
-      setLoading(false)
-      setSaving(false)
+      setLoading(false); setSaving(false)
     }
   }
 
   return (
-    <div className="space-y-6">
-      {/* Client + dates */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm space-y-4">
-        <h2 className="font-semibold text-[#0F172A]">Informations de facturation</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-1">
-            <Label>Client *</Label>
+    <div className="space-y-4 max-w-[860px] mx-auto pb-8">
+
+      {/* ── Infos de facturation ── */}
+      <div className="rounded-2xl border border-white/60 p-5 space-y-4" style={cardStyle}>
+        <h2 className="text-[15px] font-bold text-[#0F172A] flex items-center gap-2">
+          <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] text-xs font-bold">1</span>
+          Informations de facturation
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Client */}
+          <div className="sm:col-span-1">
+            <label className={labelCls}>Client *</label>
             {clientsLoading ? (
-              <div className="mt-1 w-full h-10 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] flex items-center px-3">
+              <div className="mt-1 w-full h-11 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] flex items-center px-3">
                 <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
               </div>
             ) : clients.length === 0 ? (
-              <div className="mt-1 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg bg-[#FEF3C7] text-[#92400E]">
-                Aucun client — <a href="/clients/new" className="underline">Créer un client d&apos;abord</a>
+              <div className="mt-1 w-full px-3 py-2.5 text-sm border border-[#FCD34D] rounded-xl bg-[#FFFBEB] text-[#92400E]">
+                Aucun client —{" "}
+                <a href="/clients/new" className="underline font-semibold text-[#D97706]">
+                  Créer un client d&apos;abord
+                </a>
               </div>
             ) : (
               <select
                 value={form.client_id}
                 onChange={setField("client_id")}
-                className="mt-1 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                className={`${inputCls} ${errors.client_id ? "border-red-400 ring-1 ring-red-400" : ""}`}
               >
                 <option value="">Sélectionner un client…</option>
-                {clients.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             )}
             {errors.client_id && <p className="text-xs text-red-500 mt-1">{errors.client_id}</p>}
           </div>
+
+          {/* Date émission */}
           <div>
-            <Label>Date d&apos;émission *</Label>
-            <Input type="date" className="mt-1 font-mono" value={form.issue_date} onChange={setField("issue_date")} />
+            <label className={labelCls}>Date d&apos;émission *</label>
+            <input
+              type="date"
+              className={`${inputCls} font-mono ${errors.issue_date ? "border-red-400" : ""}`}
+              value={form.issue_date}
+              onChange={setField("issue_date")}
+            />
             {errors.issue_date && <p className="text-xs text-red-500 mt-1">{errors.issue_date}</p>}
           </div>
+
+          {/* Date échéance */}
           <div>
-            <Label>Date d&apos;échéance *</Label>
-            <Input type="date" className="mt-1 font-mono" value={form.due_date} onChange={setField("due_date")} />
+            <label className={labelCls}>Date d&apos;échéance *</label>
+            <input
+              type="date"
+              className={`${inputCls} font-mono ${errors.due_date ? "border-red-400" : ""}`}
+              value={form.due_date}
+              onChange={setField("due_date")}
+            />
             {errors.due_date && <p className="text-xs text-red-500 mt-1">{errors.due_date}</p>}
           </div>
         </div>
       </div>
 
-      {/* Lignes */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="font-semibold text-[#0F172A]">Prestations</h2>
-          <div className="flex items-center gap-2 flex-wrap">
+      {/* ── Prestations ── */}
+      <div className="rounded-2xl border border-white/60 p-5 space-y-4" style={cardStyle}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-[15px] font-bold text-[#0F172A] flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] text-xs font-bold">2</span>
+            Prestations
+          </h2>
+          <div className="flex items-center gap-2">
             <ProductCombobox onSelect={insertFromProduct} />
-            <Button type="button" variant="outline" size="sm" onClick={addLine} className="gap-1.5">
-              <Plus className="w-3.5 h-3.5" /> Ajouter une ligne
-            </Button>
+            <button
+              type="button"
+              onClick={addLine}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Ajouter une ligne
+            </button>
           </div>
         </div>
 
-        {/* Header */}
-        <div className="hidden sm:grid grid-cols-12 gap-2 text-xs font-medium text-slate-400 pb-1 border-b border-[#E2E8F0]">
+        {/* En-têtes desktop */}
+        <div className="hidden sm:grid grid-cols-12 gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 pb-1 border-b border-[#F1F5F9]">
           <div className="col-span-5">Description</div>
           <div className="col-span-2 text-right">Qté</div>
           <div className="col-span-2 text-right">Prix HT (€)</div>
@@ -246,148 +254,171 @@ export default function NewInvoiceForm() {
           <div className="col-span-1" />
         </div>
 
-        {form.lines.map((line, index) => {
-          const calc = computedLines[index]
-          const hasValues = (parseFloat(line.quantity) > 0) && (parseFloat(line.unit_price_ht) > 0)
-          return (
-            <div key={line.id}>
-              <div className="grid grid-cols-12 gap-2 items-start">
-                {/* Description */}
-                <div className="col-span-12 sm:col-span-5">
-                  <Input
-                    placeholder="Description de la prestation"
-                    className="text-sm"
-                    value={line.description}
-                    onChange={setLine(line.id, "description")}
-                  />
-                  {errors[`line_${index}_desc`] && (
-                    <p className="text-xs text-red-500 mt-0.5">{errors[`line_${index}_desc`]}</p>
-                  )}
-                </div>
-                {/* Quantité */}
-                <div className="col-span-4 sm:col-span-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="1"
-                    className="text-sm text-right font-mono"
-                    value={line.quantity}
-                    onChange={setLine(line.id, "quantity")}
-                  />
-                  {errors[`line_${index}_qty`] && (
-                    <p className="text-xs text-red-500 mt-0.5">{errors[`line_${index}_qty`]}</p>
-                  )}
-                </div>
-                {/* Prix HT */}
-                <div className="col-span-4 sm:col-span-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                    className="text-sm text-right font-mono"
-                    value={line.unit_price_ht}
-                    onChange={setLine(line.id, "unit_price_ht")}
-                  />
-                  {errors[`line_${index}_price`] && (
-                    <p className="text-xs text-red-500 mt-0.5">{errors[`line_${index}_price`]}</p>
-                  )}
-                </div>
-                {/* TVA */}
-                <div className="col-span-3 sm:col-span-2">
-                  <select
-                    value={line.vat_rate}
-                    onChange={setLine(line.id, "vat_rate")}
-                    className="w-full px-2 py-2 text-sm border border-[#E2E8F0] rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB] font-mono"
-                  >
-                    {VAT_RATES.map(rate => (
-                      <option key={rate} value={rate}>{rate}%</option>
-                    ))}
-                  </select>
-                </div>
-                {/* Supprimer */}
-                <div className="col-span-1 flex items-center justify-center">
-                  {form.lines.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeLine(line.id)}
-                      className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
+        <div className="space-y-3">
+          {form.lines.map((line, index) => {
+            const calc      = computedLines[index]
+            const hasValues = (parseFloat(line.quantity) > 0) && (parseFloat(line.unit_price_ht) > 0)
+            return (
+              <div
+                key={line.id}
+                className="rounded-xl border border-[#F1F5F9] p-3 sm:p-0 sm:border-0 sm:rounded-none bg-[#FAFBFC]/60 sm:bg-transparent"
+              >
+                <div className="grid grid-cols-12 gap-2 items-start">
+                  {/* Description */}
+                  <div className="col-span-12 sm:col-span-5">
+                    <input
+                      placeholder="Description de la prestation"
+                      className={`${inputCls} ${errors[`line_${index}_desc`] ? "border-red-400" : ""}`}
+                      value={line.description}
+                      onChange={setLine(line.id, "description")}
+                    />
+                    {errors[`line_${index}_desc`] && (
+                      <p className="text-xs text-red-500 mt-0.5">{errors[`line_${index}_desc`]}</p>
+                    )}
+                  </div>
 
-              {/* Sous-total ligne */}
-              {hasValues && (
-                <div className="col-span-12 flex justify-end text-xs text-slate-400 mt-1 pr-8">
-                  HT : <span className="font-mono font-medium text-[#0F172A] mx-1">{formatCurrency(calc.totalHT)}</span>
-                  {" · "}
-                  TVA : <span className="font-mono mx-1">{formatCurrency(calc.totalVAT)}</span>
-                  {" · "}
-                  TTC : <span className="font-mono font-semibold text-[#0F172A] ml-1">{formatCurrency(calc.totalTTC)}</span>
+                  {/* Qté */}
+                  <div className="col-span-4 sm:col-span-2">
+                    <label className="text-[10px] text-slate-400 sm:hidden block mb-0.5">Qté</label>
+                    <input
+                      type="number" min="0" step="0.01" placeholder="1"
+                      className={`${inputCls} text-right font-mono ${errors[`line_${index}_qty`] ? "border-red-400" : ""}`}
+                      value={line.quantity}
+                      onChange={setLine(line.id, "quantity")}
+                    />
+                  </div>
+
+                  {/* Prix HT */}
+                  <div className="col-span-4 sm:col-span-2">
+                    <label className="text-[10px] text-slate-400 sm:hidden block mb-0.5">Prix HT</label>
+                    <input
+                      type="number" min="0" step="0.01" placeholder="0.00"
+                      className={`${inputCls} text-right font-mono ${errors[`line_${index}_price`] ? "border-red-400" : ""}`}
+                      value={line.unit_price_ht}
+                      onChange={setLine(line.id, "unit_price_ht")}
+                    />
+                  </div>
+
+                  {/* TVA */}
+                  <div className="col-span-3 sm:col-span-2">
+                    <label className="text-[10px] text-slate-400 sm:hidden block mb-0.5">TVA</label>
+                    <select
+                      value={line.vat_rate}
+                      onChange={setLine(line.id, "vat_rate")}
+                      className={`${inputCls} font-mono`}
+                    >
+                      {VAT_RATES.map(rate => (
+                        <option key={rate} value={rate}>{rate}%</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Supprimer */}
+                  <div className="col-span-1 flex items-center justify-center pt-1">
+                    {form.lines.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeLine(line.id)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          )
-        })}
+
+                {/* Sous-total ligne */}
+                {hasValues && (
+                  <div className="flex justify-end text-xs text-slate-400 mt-2 gap-2 flex-wrap">
+                    <span>HT : <span className="font-mono font-semibold text-[#0F172A]">{formatCurrency(calc.totalHT)}</span></span>
+                    <span className="text-slate-200">·</span>
+                    <span>TVA : <span className="font-mono">{formatCurrency(calc.totalVAT)}</span></span>
+                    <span className="text-slate-200">·</span>
+                    <span className="font-semibold text-[#0F172A]">TTC : <span className="font-mono">{formatCurrency(calc.totalTTC)}</span></span>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
-      {/* Notes + Récapitulatif */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
-          <Label>Notes / conditions de paiement</Label>
+      {/* ── Notes + Récap ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Notes */}
+        <div className="rounded-2xl border border-white/60 p-5" style={cardStyle}>
+          <h2 className="text-[15px] font-bold text-[#0F172A] mb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] text-xs font-bold">3</span>
+            Notes
+          </h2>
           <textarea
             placeholder="Paiement par virement bancaire sous 30 jours. Pénalités de retard : 3 fois le taux légal."
             rows={4}
             value={form.notes}
             onChange={setField("notes")}
-            className="mt-2 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-600"
+            className="w-full px-3 py-2.5 text-sm border border-[#E2E8F0] rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-600 bg-white/80 transition-shadow"
           />
         </div>
 
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
-          <h3 className="font-semibold text-[#0F172A] mb-4">Récapitulatif</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
+        {/* Récap */}
+        <div className="rounded-2xl border border-white/60 p-5" style={cardStyle}>
+          <h2 className="text-[15px] font-bold text-[#0F172A] mb-4 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] text-xs font-bold">4</span>
+            Récapitulatif
+          </h2>
+          <div className="space-y-2.5">
+            <div className="flex justify-between text-sm">
               <span className="text-slate-500">Sous-total HT</span>
-              <span className="font-mono font-medium text-[#0F172A]">{formatCurrency(totals.subtotal_ht)}</span>
+              <span className="font-mono font-semibold text-[#0F172A]">{formatCurrency(totals.subtotal_ht)}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between text-sm">
               <span className="text-slate-500">TVA</span>
               <span className="font-mono text-slate-600">{formatCurrency(totals.total_vat)}</span>
             </div>
-            <Separator className="my-2" />
+            <div className="h-px bg-[#E2E8F0] my-1" />
             <div className="flex justify-between">
-              <span className="font-semibold text-[#0F172A]">Total TTC</span>
-              <span className="font-mono text-xl font-bold text-[#2563EB]">{formatCurrency(totals.total_ttc)}</span>
+              <span className="font-bold text-[#0F172A]">Total TTC</span>
+              <span className="font-mono text-2xl font-extrabold text-[#2563EB]">{formatCurrency(totals.total_ttc)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 pb-8">
-        <Button type="button" variant="outline" disabled={saving} onClick={() => submit("draft")} className="gap-1.5 w-full sm:w-auto">
-          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+      {/* ── Actions ── */}
+      <div
+        className="rounded-2xl border border-white/60 p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
+        style={cardStyle}
+      >
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => submit("draft")}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] hover:border-slate-300 transition-colors disabled:opacity-50 w-full sm:w-auto"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           Sauvegarder en brouillon
-        </Button>
-        <Button type="button" variant="outline" className="gap-1.5 w-full sm:w-auto">
+        </button>
+
+        <button
+          type="button"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] hover:border-slate-300 transition-colors w-full sm:w-auto"
+        >
           <Eye className="w-4 h-4" />
           Aperçu PDF
-        </Button>
-        <Button
+        </button>
+
+        <button
           type="button"
-          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-1.5 w-full sm:w-auto sm:ml-auto"
           disabled={loading}
           onClick={() => submit("send")}
+          className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] rounded-xl transition-colors disabled:opacity-50 w-full sm:w-auto sm:ml-auto shadow-sm"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           Envoyer la facture
-        </Button>
+          {!loading && <ChevronRight className="w-3.5 h-3.5 ml-0.5" />}
+        </button>
       </div>
+
     </div>
   )
 }

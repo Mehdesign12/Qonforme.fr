@@ -219,7 +219,14 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden md:flex w-60 flex-col border-r border-[#E2E8F0] bg-white shrink-0 relative overflow-hidden">
+    <aside
+      className="hidden md:flex w-60 flex-col border-r border-[#E2E8F0] shrink-0 relative overflow-hidden"
+      style={{
+        background: 'rgba(255,255,255,0.92)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+      }}
+    >
       {/* Q filigrane bas-gauche */}
       <div
         aria-hidden

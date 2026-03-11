@@ -77,7 +77,14 @@ export function Header() {
 
   return (
     <>
-      <header className="h-14 md:h-[60px] border-b border-[#E2E8F0] bg-white px-4 md:px-6 flex items-center justify-between shrink-0 gap-3">
+      <header
+        className="h-14 md:h-[60px] border-b border-[#E2E8F0] px-4 md:px-6 flex items-center justify-between shrink-0 gap-3"
+        style={{
+          background: 'rgba(255,255,255,0.90)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
+      >
 
         {/* Gauche : hamburger (mobile) + titre */}
         <div className="flex items-center gap-3 min-w-0">
@@ -101,13 +108,9 @@ export function Header() {
           {/* CTA contextuel — texte complet sur sm+, icône seule sur xs */}
           {cta && (
             <Link href={cta.href}>
-              <button className="hidden sm:inline-flex items-center gap-1.5 rounded-[8px] bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] text-white text-[13px] font-semibold px-3.5 py-2 transition-colors">
-                <Plus className="w-3.5 h-3.5" />
-                {cta.label}
-              </button>
-              {/* Version icône seule sur très petit écran */}
-              <button className="sm:hidden inline-flex items-center justify-center w-8 h-8 rounded-[8px] bg-[#2563EB] hover:bg-[#1D4ED8] text-white transition-colors">
-                <Plus className="w-4 h-4" />
+              <button className="inline-flex items-center gap-1.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] text-white text-[13px] font-bold px-3 sm:px-3.5 py-2 transition-colors shadow-sm">
+                <Plus className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden xs:inline sm:inline">{cta.label}</span>
               </button>
             </Link>
           )}

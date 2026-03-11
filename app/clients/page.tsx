@@ -4,29 +4,38 @@ export const dynamic = "force-dynamic"
 
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
-import { Plus, Search, Building2, Loader2, Archive, Pencil } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Plus, Search, Building2, Loader2, Archive, Pencil, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 
 interface Client {
-  id: string
-  name: string
-  siren: string | null
-  email: string | null
-  city: string | null
-  is_archived: boolean
-  created_at: string
+  id: string; name: string; siren: string | null
+  email: string | null; city: string | null
+  is_archived: boolean; created_at: string
+}
+
+const AVATAR_COLORS = [
+  ['#EFF6FF', '#2563EB'], ['#F5F3FF', '#7C3AED'], ['#ECFEFF', '#0891B2'],
+  ['#ECFDF5', '#059669'], ['#FFF7ED', '#EA580C'],
+]
+function initials(name: string) {
+  return name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('') || '?'
+}
+
+const cardStyle: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.85)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  boxShadow: '0 2px 16px rgba(37,99,235,0.06)',
 }
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState("")
+  const [search,  setSearch]  = useState("")
 
   const fetchClients = useCallback(async () => {
     setLoading(true)
-    const res = await fetch(`/api/clients?search=${encodeURIComponent(search)}`)
+    const res  = await fetch(`/api/clients?search=${encodeURIComponent(search)}`)
     const json = await res.json()
     if (json.clients) setClients(json.clients)
     setLoading(false)
@@ -40,127 +49,148 @@ export default function ClientsPage() {
   const archiveClient = async (id: string, name: string) => {
     if (!confirm(`Archiver "${name}" ?`)) return
     const res = await fetch(`/api/clients/${id}`, { method: "DELETE" })
-    if (res.ok) {
-      toast.success("Client archivé")
-      fetchClients()
-    } else {
-      toast.error("Erreur lors de l'archivage")
-    }
+    if (res.ok) { toast.success("Client archivé"); fetchClients() }
+    else         toast.error("Erreur lors de l'archivage")
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4 max-w-[1200px] mx-auto">
 
-      {/* Barre de recherche + CTA */}
+      {/* Barre recherche + CTA */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
+        <div
+          className="relative flex-1 flex items-center rounded-xl border border-white/60 overflow-hidden"
+          style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+        >
+          <Search className="absolute left-3 w-4 h-4 text-slate-400 pointer-events-none" />
+          <input
             placeholder="Rechercher un client…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="w-full pl-9 pr-3 py-2.5 text-sm bg-transparent outline-none text-[#0F172A] placeholder:text-slate-400"
           />
         </div>
-        <Link href="/clients/new">
-          <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2 shrink-0">
+        <Link href="/clients/new" className="shrink-0">
+          <button className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl transition-colors shadow-sm">
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nouveau client</span>
-          </Button>
+          </button>
         </Link>
       </div>
 
       {/* Contenu */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
+      <div className="rounded-2xl border border-white/60 overflow-hidden" style={cardStyle}>
         {loading ? (
-          <div className="flex items-center justify-center py-16">
+          <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
           </div>
         ) : clients.length === 0 ? (
-          <div className="py-16 text-center">
-            <Building2 className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-            <p className="text-sm font-medium text-slate-600 mb-1">
+          <div className="py-20 text-center px-6">
+            <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] flex items-center justify-center mx-auto mb-4">
+              <Building2 className="w-6 h-6 text-[#2563EB]" />
+            </div>
+            <p className="text-[15px] font-bold text-[#0F172A] mb-1">
               {search ? "Aucun client trouvé" : "Aucun client pour l'instant"}
             </p>
-            <p className="text-xs text-slate-400 mb-4">
+            <p className="text-sm text-slate-400 mb-5">
               {search ? "Essayez une autre recherche" : "Ajoutez votre premier client pour commencer"}
             </p>
             {!search && (
               <Link href="/clients/new">
-                <Button size="sm" className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
+                <button className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl transition-colors">
+                  <Plus className="w-4 h-4" />
                   Ajouter un client
-                </Button>
+                </button>
               </Link>
             )}
           </div>
         ) : (
           <>
-            {/* ── Vue mobile : cards ── */}
-            <div className="sm:hidden divide-y divide-[#F1F5F9]">
-              {clients.map((client) => (
-                <div key={client.id} className="flex items-center justify-between px-4 py-3.5">
-                  <Link href={`/clients/${client.id}`} className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-[#2563EB] truncate">{client.name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5 truncate">
-                      {[client.city, client.email].filter(Boolean).join(" · ") || "Aucune info"}
-                    </p>
-                  </Link>
-                  <div className="flex items-center gap-1 ml-3 shrink-0">
-                    <Link href={`/clients/${client.id}/edit`}>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <Pencil className="w-3.5 h-3.5 text-slate-400" />
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="ghost" size="sm" className="h-8 w-8 p-0"
-                      onClick={() => archiveClient(client.id, client.name)}
+            {/* Mobile */}
+            <div className="sm:hidden divide-y divide-[#F8FAFC]">
+              {clients.map((client, i) => {
+                const [bgC, textC] = AVATAR_COLORS[i % AVATAR_COLORS.length]
+                return (
+                  <div key={client.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#F8FAFC] transition-colors">
+                    {/* Avatar */}
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center text-[12px] font-bold shrink-0"
+                      style={{ background: bgC, color: textC }}
                     >
-                      <Archive className="w-3.5 h-3.5 text-slate-400" />
-                    </Button>
+                      {initials(client.name)}
+                    </div>
+                    <Link href={`/clients/${client.id}`} className="flex-1 min-w-0">
+                      <p className="text-[13px] font-bold text-[#2563EB] truncate">{client.name}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                        {[client.city, client.email].filter(Boolean).join(" · ") || "Aucune info"}
+                      </p>
+                    </Link>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Link href={`/clients/${client.id}/edit`}>
+                        <button className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-[#2563EB] hover:bg-[#EFF6FF] transition-colors">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      </Link>
+                      <button
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        onClick={() => archiveClient(client.id, client.name)}
+                      >
+                        <Archive className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
-            {/* ── Vue desktop : table ── */}
+            {/* Desktop */}
             <table className="hidden sm:table w-full">
               <thead>
-                <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Nom</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">SIREN</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Email</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Ville</th>
-                  <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Actions</th>
+                <tr className="border-b border-[#F8FAFC] bg-[#FAFBFC]/60">
+                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-slate-300 px-5 py-3.5">Client</th>
+                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-slate-300 px-5 py-3.5">SIREN</th>
+                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-slate-300 px-5 py-3.5 hidden md:table-cell">Email</th>
+                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-slate-300 px-5 py-3.5 hidden md:table-cell">Ville</th>
+                  <th className="text-right text-[10px] font-bold uppercase tracking-wider text-slate-300 px-5 py-3.5">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {clients.map((client) => (
-                  <tr key={client.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0">
-                    <td className="px-5 py-4">
-                      <Link href={`/clients/${client.id}`} className="text-sm font-medium text-[#2563EB] hover:underline">
-                        {client.name}
-                      </Link>
-                    </td>
-                    <td className="px-5 py-4 font-mono text-sm text-slate-500">{client.siren || "—"}</td>
-                    <td className="px-5 py-4 text-sm text-slate-500 hidden md:table-cell">{client.email || "—"}</td>
-                    <td className="px-5 py-4 text-sm text-slate-500 hidden md:table-cell">{client.city || "—"}</td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link href={`/clients/${client.id}/edit`}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <Pencil className="w-3.5 h-3.5 text-slate-400" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost" size="sm" className="h-8 w-8 p-0"
-                          onClick={() => archiveClient(client.id, client.name)}
-                        >
-                          <Archive className="w-3.5 h-3.5 text-slate-400" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {clients.map((client, i) => {
+                  const [bgC, textC] = AVATAR_COLORS[i % AVATAR_COLORS.length]
+                  return (
+                    <tr key={client.id} className="border-b border-[#F8FAFC] hover:bg-[#F8FAFC]/70 transition-colors last:border-0 group">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold shrink-0"
+                            style={{ background: bgC, color: textC }}>
+                            {initials(client.name)}
+                          </div>
+                          <Link href={`/clients/${client.id}`} className="text-[13px] font-bold text-[#2563EB] hover:underline">
+                            {client.name}
+                          </Link>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 font-mono text-[12px] text-slate-400">{client.siren || "—"}</td>
+                      <td className="px-5 py-3.5 text-[12px] text-slate-400 hidden md:table-cell">{client.email || "—"}</td>
+                      <td className="px-5 py-3.5 text-[12px] text-slate-400 hidden md:table-cell">{client.city || "—"}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center justify-end gap-1">
+                          <Link href={`/clients/${client.id}/edit`}>
+                            <button className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-[#2563EB] hover:bg-[#EFF6FF] transition-colors">
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          </Link>
+                          <button
+                            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            onClick={() => archiveClient(client.id, client.name)}
+                          >
+                            <Archive className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </>
