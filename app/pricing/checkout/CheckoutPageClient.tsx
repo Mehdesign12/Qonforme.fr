@@ -21,71 +21,9 @@ const PICTO_Q         = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/obj
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null
 
-// ── Stripe Appearance — charte Qonforme ───────────────────────────────────
-const stripeAppearance = {
-  theme: 'stripe' as const,
-  variables: {
-    colorPrimary:        '#2563EB',
-    colorBackground:     '#ffffff',
-    colorText:           '#0F172A',
-    colorTextSecondary:  '#475569',
-    colorDanger:         '#EF4444',
-    fontFamily:          '"DM Sans", system-ui, sans-serif',
-    fontSizeBase:        '14px',
-    borderRadius:        '10px',
-    spacingUnit:         '4px',
-  },
-  rules: {
-    '.Label': {
-      fontWeight:    '600',
-      color:         '#0F172A',
-      fontSize:      '13px',
-      marginBottom:  '6px',
-    },
-    '.Input': {
-      border:        '1.5px solid #E2E8F0',
-      boxShadow:     'none',
-      paddingTop:    '10px',
-      paddingBottom: '10px',
-      color:         '#0F172A',
-    },
-    '.Input:focus': {
-      border:     '1.5px solid #2563EB',
-      boxShadow:  '0 0 0 3px rgba(37,99,235,0.10)',
-      outline:    'none',
-    },
-    '.Input--invalid': {
-      border:    '1.5px solid #EF4444',
-      boxShadow: '0 0 0 3px rgba(239,68,68,0.10)',
-    },
-    '.Tab': {
-      border:       '1.5px solid #E2E8F0',
-      boxShadow:    'none',
-      borderRadius: '10px',
-    },
-    '.Tab:hover': {
-      border:      '1.5px solid #BFDBFE',
-      color:       '#2563EB',
-    },
-    '.Tab--selected': {
-      border:      '1.5px solid #2563EB',
-      boxShadow:   '0 0 0 3px rgba(37,99,235,0.10)',
-      color:       '#2563EB',
-    },
-    '.CheckboxInput': {
-      border: '1.5px solid #E2E8F0',
-    },
-    '.CheckboxInput--checked': {
-      backgroundColor: '#2563EB',
-      border:          '1.5px solid #2563EB',
-    },
-  },
-}
-
-// ── Stripe fonts — charge DM Sans pour l'iframe Stripe ───────────────────
-const stripeFonts = [
-  { cssSrc: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap' },
-]
+// NOTE : appearance / fonts ne sont PAS des options valides pour
+// EmbeddedCheckoutProvider — uniquement pour Elements classiques.
+// L'Embedded Checkout gère son propre design via le Dashboard Stripe.
 
 interface CheckoutPageClientProps {
   planId:        PlanId
@@ -383,7 +321,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
             </div>
 
           ) : (
-            /* Formulaire Stripe Embedded — brandé via Appearance API */
+            /* Formulaire Stripe Embedded */
             <div className="w-full max-w-lg mx-auto">
 
               {/* Spinner visible pendant le chargement initial de l'iframe Stripe */}
@@ -399,12 +337,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               <div className={stripeReady ? 'block' : 'invisible h-0 overflow-hidden'}>
                 <EmbeddedCheckoutProvider
                   stripe={stripePromise}
-                  options={{
-                    fetchClientSecret,
-                    onComplete: handleComplete,
-                    appearance: stripeAppearance,
-                    fonts:      stripeFonts,
-                  } as Parameters<typeof EmbeddedCheckoutProvider>[0]['options']}
+                  options={{ fetchClientSecret, onComplete: handleComplete }}
                 >
                   <EmbeddedCheckout />
                 </EmbeddedCheckoutProvider>
