@@ -220,7 +220,7 @@ export default function PricingSelector() {
       <div className="lg:hidden flex flex-col min-h-[calc(100dvh-140px)]">
 
         {/* ── Titre + sous-titre ────────────────────────────────────────── */}
-        <div className="px-1 mb-5">
+        <div className="text-center mb-5">
           <h1 className="text-[22px] font-bold text-[#0F172A] leading-tight tracking-tight mb-1">
             Choisis ton plan
           </h1>
@@ -230,7 +230,7 @@ export default function PricingSelector() {
         </div>
 
         {/* ── Toggle Mensuel / Annuel ───────────────────────────────────── */}
-        <div className="flex items-center gap-3 mb-4 px-1">
+        <div className="flex items-center justify-center gap-3 mb-4">
           <div className="inline-flex items-center gap-0.5 bg-white/70 backdrop-blur-sm border border-[#E2E8F0] rounded-full p-1">
             {(['monthly', 'yearly'] as BillingPeriod[]).map((p) => (
               <button
