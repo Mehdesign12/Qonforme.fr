@@ -57,8 +57,8 @@ function Header() {
         className="flex w-full max-w-5xl items-center justify-between border py-2.5"
         style={{ WebkitBackdropFilter: scrolled ? "blur(18px)" : "blur(0px)" }}
       >
-        {/* Logo — légèrement à gauche */}
-        <Link href="/" className="flex shrink-0 items-center pl-1">
+        {/* Logo — bien à gauche */}
+        <Link href="/" className="flex shrink-0 items-center pl-3">
           <Image
             src={LOGO_URL}
             alt="Qonforme"
@@ -82,8 +82,8 @@ function Header() {
           ))}
         </div>
 
-        {/* Actions desktop — légèrement à droite */}
-        <div className="hidden shrink-0 items-center gap-2.5 pr-1 md:flex">
+        {/* Actions desktop — bien à droite */}
+        <div className="hidden shrink-0 items-center gap-2.5 pr-3 md:flex">
           <Link href="/login">
             <Button
               variant="ghost"
@@ -175,7 +175,7 @@ function Hero() {
      * pt-[88px] : compense le header fixed (≈64px) + respiration (24px)
      * pb-24     : espace avant la section suivante
      */
-    <section className="mx-auto max-w-6xl px-5 pb-28 pt-[88px]">
+    <section className="mx-auto max-w-6xl px-5 pb-28 pt-[108px]">
       <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_1.1fr] lg:gap-14">
 
         {/* ── Colonne gauche — texte ── */}
