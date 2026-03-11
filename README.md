@@ -356,7 +356,8 @@ Le picto Q (`PICTO_Q`) s'utilise en filigrane sur certaines zones selon ce table
 | Dashboard (grid KPI) | 200 px | 3,5 % | centré dans la grille |
 | Sidebar | 140 px | 6 % | bas-gauche, débordant |
 | Card billing (plan actif) | 160 px | 6 % | bas-droite de la card |
-| Login / Signup | 380 px | 8 % | droite, desktop only |
+| Auth / Pricing (fond centré) | 520–700 px | 5,5 % | centré dans le fond, responsive |
+| Auth / Pricing (coin desktop) | 280 px | 7 % | bas-droite, `hidden lg:block` |
 | Sections landing | 420–500 px | 4–8 % | centré ou coin |
 | Footer | 600 px | 3 % | centré |
 
@@ -382,6 +383,50 @@ PICTO_Q        = https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/publ
 | Card Pro (glow bleu) | `box-shadow: 0 0 40px rgba(37,99,235,0.15)` |
 | Bouton bleu | `shadow-[0_4px_14px_rgba(37,99,235,0.35)]` |
 | Focus input | `0 0 0 3px rgba(37,99,235,0.1)` |
+
+#### Composant — Fond dégradé Auth (pages login, signup, reset, pricing)
+Utilisé sur toutes les pages hors-app (auth + pricing). Composant centralisé dans `components/auth/AuthLayout.tsx`.
+
+Le fond se compose de **5 couches superposées** (toutes `pointer-events-none`, `z-0`) :
+
+```tsx
+{/* Couche 1 — Dégradé linéaire de base */}
+<div aria-hidden className="pointer-events-none select-none absolute inset-0 z-0" style={{
+  background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 30%, #EEF2FF 60%, #F0F9FF 85%, #F8FAFC 100%)"
+}} />
+
+{/* Couche 2 — Glow radial haut-gauche (bleu primaire) */}
+<div aria-hidden className="pointer-events-none select-none absolute -top-32 -left-32 z-0 w-[480px] h-[480px] rounded-full" style={{
+  background: "radial-gradient(circle at center, rgba(37,99,235,0.13) 0%, rgba(37,99,235,0.04) 55%, transparent 75%)"
+}} />
+
+{/* Couche 3 — Glow radial bas-droite (indigo) */}
+<div aria-hidden className="pointer-events-none select-none absolute -bottom-24 -right-24 z-0 w-[420px] h-[420px] rounded-full" style={{
+  background: "radial-gradient(circle at center, rgba(99,102,241,0.10) 0%, rgba(37,99,235,0.04) 50%, transparent 72%)"
+}} />
+
+{/* Couche 4 — Grille de points décorative (masque radial) */}
+<div aria-hidden className="pointer-events-none select-none absolute inset-0 z-0" style={{
+  backgroundImage: "radial-gradient(circle, rgba(37,99,235,0.08) 1px, transparent 1px)",
+  backgroundSize: "32px 32px",
+  maskImage: "radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)"
+}} />
+
+{/* Couche 5 — Picto Q centré en grand filigrane */}
+<div aria-hidden className="pointer-events-none select-none absolute inset-0 z-0 flex items-center justify-center" style={{ opacity: 0.055 }}>
+  <Image src={PICTO_Q} alt="" width={700} height={700} className="w-[520px] sm:w-[620px] lg:w-[700px]" unoptimized priority />
+</div>
+```
+
+> **Règles** : fond uniquement sur les pages **hors-app** (auth + pricing). Ne jamais utiliser dans le dashboard ou les pages internes. Toujours 100% statique, aucune animation.
+
+#### Composant — Card glassmorphism (sur fond dégradé auth)
+À utiliser à la place de la card standard sur toutes les pages auth/pricing :
+```tsx
+<div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-[0_8px_32px_rgba(37,99,235,0.10)] p-6 sm:p-8">
+  {/* contenu */}
+</div>
+```
 
 #### Transitions & animations
 - Toutes les transitions : `transition-all duration-150` (ou `duration-200` pour les modales)

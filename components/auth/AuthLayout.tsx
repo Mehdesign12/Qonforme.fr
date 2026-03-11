@@ -8,13 +8,15 @@ const PICTO_Q        = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/obje
 interface AuthLayoutProps {
   children: React.ReactNode
   /** largeur de la carte centrale (défaut max-w-md = 448 px) */
-  maxWidth?: "sm" | "md" | "lg"
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl"
 }
 
 const widthMap = {
-  sm: "max-w-sm",
-  md: "max-w-md",
-  lg: "max-w-lg",
+  sm:  "max-w-sm",
+  md:  "max-w-md",
+  lg:  "max-w-lg",
+  xl:  "max-w-xl",
+  "2xl": "max-w-2xl",
 }
 
 export default function AuthLayout({ children, maxWidth = "md" }: AuthLayoutProps) {

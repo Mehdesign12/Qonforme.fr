@@ -14,17 +14,11 @@ const STEPS = [
 
 export default function PricingPage() {
   return (
-    <AuthLayout maxWidth="lg">
+    <AuthLayout maxWidth="2xl">
+      {/* StepIndicator conservé en haut, centré */}
       <StepIndicator steps={STEPS} current={2} />
 
-      {/* Titre */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-[#0F172A] mb-2">Choisis ton plan</h1>
-        <p className="text-slate-500 text-base">
-          Accès immédiat dès le paiement confirmé · Résiliation à tout moment
-        </p>
-      </div>
-
+      {/* PricingSelector gère son propre layout 2 colonnes */}
       <PricingSelector />
     </AuthLayout>
   )
