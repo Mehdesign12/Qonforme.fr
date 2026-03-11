@@ -2,6 +2,8 @@ import { Suspense } from 'react'
 import { DashboardStats } from '@/components/dashboard/DashboardStats'
 import { RecentInvoices } from '@/components/dashboard/RecentInvoices'
 import { PPFStatusBanner } from '@/components/dashboard/PPFStatusBanner'
+import { QuickActions } from '@/components/dashboard/QuickActions'
+import { RevenueChartServer } from '@/components/dashboard/RevenueChartServer'
 import { Skeleton } from '@/components/ui/skeleton'
 import DashboardClient from '@/components/dashboard/DashboardClient'
 import { createClient } from '@/lib/supabase/server'
@@ -21,7 +23,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   let showWelcome = false
 
   if (isWelcomeRedirect) {
-    // Vérifier si l'onboarding n'a pas encore été vu
     try {
       const supabase = await createClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -33,7 +34,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           .eq('user_id', user.id)
           .single()
 
-        // Afficher uniquement si jamais vu
         showWelcome = !company?.onboarding_seen_at
       }
     } catch {
@@ -43,42 +43,80 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   return (
     <DashboardClient showWelcome={showWelcome}>
-      <div className="space-y-6 animate-fade-in">
-        {/* Bannière statut PPF */}
+      <div className="space-y-5 max-w-[1200px] mx-auto">
+
+        {/* ── Bannière PPF ── */}
         <PPFStatusBanner connected={false} />
 
-        {/* KPIs */}
+        {/* ── KPIs ── */}
         <Suspense fallback={<StatsLoading />}>
           <DashboardStats />
         </Suspense>
 
-        {/* Dernières factures */}
-        <div>
-          <h2 className="text-base font-semibold text-[#0F172A] mb-3">Dernières factures</h2>
-          <Suspense fallback={<TableLoading />}>
-            <RecentInvoices />
-          </Suspense>
+        {/* ── Chart + Actions rapides ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5">
+
+          {/* Chart CA 6 mois — 2/3 */}
+          <div className="lg:col-span-2">
+            <Suspense fallback={<ChartLoading />}>
+              <RevenueChartServer />
+            </Suspense>
+          </div>
+
+          {/* Actions rapides — 1/3 */}
+          <div className="lg:col-span-1">
+            <QuickActionsCard />
+          </div>
         </div>
+
+        {/* ── Dernières factures ── */}
+        <Suspense fallback={<TableLoading />}>
+          <RecentInvoices />
+        </Suspense>
+
       </div>
     </DashboardClient>
   )
 }
 
+/* ─── Sous-composant QuickActions dans une carte ── */
+function QuickActionsCard() {
+  return (
+    <div
+      className="rounded-2xl border border-white/60 p-4 sm:p-5 h-full"
+      style={{
+        background:          'rgba(255,255,255,0.80)',
+        backdropFilter:      'blur(12px)',
+        WebkitBackdropFilter:'blur(12px)',
+        boxShadow:           '0 2px 16px rgba(37,99,235,0.06)',
+      }}
+    >
+      <QuickActions />
+    </div>
+  )
+}
+
+/* ─── Skeletons ── */
 function StatsLoading() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} className="h-28 rounded-xl" />
+        <Skeleton key={i} className="h-32 rounded-2xl bg-white/60" />
       ))}
     </div>
   )
 }
 
+function ChartLoading() {
+  return <Skeleton className="h-[228px] rounded-2xl bg-white/60" />
+}
+
 function TableLoading() {
   return (
-    <div className="space-y-2">
+    <div className="rounded-2xl overflow-hidden">
+      <Skeleton className="h-12 rounded-t-2xl rounded-b-none bg-white/60" />
       {Array.from({ length: 5 }).map((_, i) => (
-        <Skeleton key={i} className="h-14 rounded-lg" />
+        <Skeleton key={i} className="h-[58px] rounded-none bg-white/40 border-t border-white/60" />
       ))}
     </div>
   )
