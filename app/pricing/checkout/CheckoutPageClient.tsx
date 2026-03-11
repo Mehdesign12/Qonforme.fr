@@ -8,7 +8,7 @@ import {
   EmbeddedCheckoutProvider,
 } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
-import { Check, ArrowLeft, Shield, RefreshCw, Loader2 } from 'lucide-react'
+import { Check, ArrowLeft, Shield, RefreshCw } from 'lucide-react'
 import { PLANS, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 
 const LOGO_LONG_BLANC = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20blanc.webp'
@@ -41,12 +41,9 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
 
   const fmt = (n: number) => n % 1 === 0 ? `${n}` : n.toFixed(2)
 
-  const [fetchError, setFetchError]     = useState<string | null>(null)
-  const [isComplete, setIsComplete]     = useState(false)
-  // stripeReady : masque le spinner après un court délai pour laisser l'iframe monter
-  const [stripeReady, setStripeReady]   = useState(false)
-  const stripeReadyTimer                 = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const redirected                       = useRef(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [isComplete, setIsComplete] = useState(false)
+  const redirected                   = useRef(false)
 
   const handleComplete = useCallback(() => { setIsComplete(true) }, [])
 
@@ -56,17 +53,6 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
       setTimeout(() => router.replace('/dashboard?welcome=1'), 800)
     }
   }, [isComplete, router])
-
-  // Révèle l'iframe Stripe après 600 ms (laisse le temps au JS Stripe de monter)
-  useEffect(() => {
-    if (!fetchError && !isComplete && stripeKey) {
-      stripeReadyTimer.current = setTimeout(() => setStripeReady(true), 600)
-    }
-    return () => {
-      if (stripeReadyTimer.current) clearTimeout(stripeReadyTimer.current)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const fetchClientSecret = useCallback(async () => {
     setFetchError(null)
@@ -322,28 +308,14 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
             </div>
 
           ) : (
-            /* Formulaire Stripe Embedded */
+            /* Formulaire Stripe Embedded — monté immédiatement, Stripe gère son skeleton */
             <div className="w-full max-w-lg mx-auto">
-
-              {/* Spinner visible pendant le chargement initial de l'iframe Stripe */}
-              {!stripeReady && (
-                <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <Loader2 className="w-7 h-7 text-[#2563EB] animate-spin" />
-                  <p className="text-sm text-slate-400">Chargement du formulaire…</p>
-                </div>
-              )}
-
-              {/* Le provider est toujours monté (pour que fetchClientSecret s'exécute),
-                  on le masque juste visuellement tant que stripeReady est false */}
-              <div className={stripeReady ? 'block' : 'invisible h-0 overflow-hidden'}>
-                <EmbeddedCheckoutProvider
-                  stripe={stripePromise}
-                  options={{ fetchClientSecret, onComplete: handleComplete }}
-                >
-                  <EmbeddedCheckout />
-                </EmbeddedCheckoutProvider>
-              </div>
-
+              <EmbeddedCheckoutProvider
+                stripe={stripePromise}
+                options={{ fetchClientSecret, onComplete: handleComplete }}
+              >
+                <EmbeddedCheckout />
+              </EmbeddedCheckoutProvider>
             </div>
           )}
 
