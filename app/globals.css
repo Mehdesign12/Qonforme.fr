@@ -36,6 +36,70 @@
     --radius: 0.5rem;
     --success: #10B981;
     --warning: #D97706;
+
+    /* Glassmorphism — pilules header */
+    --glass-bg: rgba(255, 255, 255, 0.82);
+    --glass-border-color: rgba(255, 255, 255, 0.72);
+    --glass-shadow: 0 2px 10px rgba(37, 99, 235, 0.07), 0 1px 2px rgba(0, 0, 0, 0.03);
+
+    /* Dashboard layout */
+    --dashboard-bg: linear-gradient(250deg, #EFF6FF 0%, #DBEAFE 20%, #F0F9FF 45%, #F8FAFC 70%, #ffffff 100%);
+    --dashboard-blob1: radial-gradient(circle at 80% 10%, rgba(37,99,235,0.06) 0%, transparent 60%);
+    --dashboard-blob2: radial-gradient(circle at 20% 90%, rgba(99,102,241,0.05) 0%, transparent 60%);
+
+    /* Sidebar */
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #E2E8F0;
+    --sidebar-inner-border: #F1F5F9;
+
+    /* Cards génériques */
+    --card-glass-bg: #ffffff;
+    --card-glass-shadow: 0 2px 16px rgba(37,99,235,0.06);
+    --card-glass-border: rgba(255,255,255,0.60);
+  }
+
+  .dark {
+    --background: #0B1628;
+    --foreground: #E2E8F0;
+    --card: #0F1E35;
+    --card-foreground: #E2E8F0;
+    --popover: #0F1E35;
+    --popover-foreground: #E2E8F0;
+    --primary: #3B82F6;
+    --primary-foreground: #FFFFFF;
+    --secondary: #162032;
+    --secondary-foreground: #E2E8F0;
+    --muted: #162032;
+    --muted-foreground: #94A3B8;
+    --accent: #162032;
+    --accent-foreground: #E2E8F0;
+    --destructive: #EF4444;
+    --destructive-foreground: #FFFFFF;
+    --border: #1E3A5F;
+    --input: #1E3A5F;
+    --ring: #3B82F6;
+    --success: #10B981;
+    --warning: #D97706;
+
+    /* Glassmorphism — pilules header */
+    --glass-bg: rgba(15, 30, 53, 0.88);
+    --glass-border-color: rgba(30, 58, 95, 0.70);
+    --glass-shadow: 0 2px 10px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
+
+    /* Dashboard layout */
+    --dashboard-bg: linear-gradient(250deg, #0B1628 0%, #0D1B35 25%, #091525 50%, #0A1628 75%, #0B1628 100%);
+    --dashboard-blob1: radial-gradient(circle at 80% 10%, rgba(37,99,235,0.12) 0%, transparent 60%);
+    --dashboard-blob2: radial-gradient(circle at 20% 90%, rgba(99,102,241,0.10) 0%, transparent 60%);
+
+    /* Sidebar */
+    --sidebar-bg: #0F1E35;
+    --sidebar-border: #1E3A5F;
+    --sidebar-inner-border: #162032;
+
+    /* Cards génériques */
+    --card-glass-bg: #0F1E35;
+    --card-glass-shadow: 0 2px 16px rgba(0,0,0,0.20);
+    --card-glass-border: rgba(30,58,95,0.50);
   }
 }
 

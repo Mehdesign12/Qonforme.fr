@@ -3,6 +3,8 @@ import { DM_Sans, DM_Mono, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
 import { ReduxProvider } from "@/components/shared/ReduxProvider";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "next-themes";
+import { AutoDarkMode } from "@/components/layout/AutoDarkMode";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -96,12 +98,15 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${dmSans.variable} ${dmMono.variable} ${bricolageGrotesque.variable} font-sans antialiased bg-[#F8FAFC] text-[#0F172A]`}
+        className={`${dmSans.variable} ${dmMono.variable} ${bricolageGrotesque.variable} font-sans antialiased bg-background text-foreground`}
       >
-        <ReduxProvider>
-          {children}
-          <Toaster richColors position="top-right" />
-        </ReduxProvider>
+        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange={false}>
+          <AutoDarkMode />
+          <ReduxProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </ReduxProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

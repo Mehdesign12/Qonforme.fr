@@ -84,10 +84,10 @@ export async function RecentInvoices() {
   if (!invoices || invoices.length === 0) {
     return (
       <div
-        className="rounded-2xl border border-white/60 overflow-hidden"
+        className="rounded-2xl border border-white/60 dark:border-[#1E3A5F]/50 overflow-hidden"
         style={{
-          background: '#ffffff',
-          boxShadow:  '0 2px 16px rgba(37,99,235,0.06)',
+          background: 'var(--card-glass-bg)',
+          boxShadow:  'var(--card-glass-shadow)',
         }}
       >
         <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
@@ -97,7 +97,7 @@ export async function RecentInvoices() {
           >
             <FileText className="w-6 h-6 text-[#2563EB]" />
           </div>
-          <p className="text-[15px] font-bold text-[#0F172A] mb-1">
+          <p className="text-[15px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-1">
             Aucune facture pour l&apos;instant
           </p>
           <p className="text-[13px] text-slate-400 mb-5 max-w-xs">
@@ -116,19 +116,19 @@ export async function RecentInvoices() {
 
   return (
     <div
-      className="rounded-2xl border border-white/60 overflow-hidden"
+      className="rounded-2xl border border-white/60 dark:border-[#1E3A5F]/50 overflow-hidden"
       style={{
-        background: '#ffffff',
-        boxShadow:  '0 2px 16px rgba(37,99,235,0.06)',
+        background: 'var(--card-glass-bg)',
+        boxShadow:  'var(--card-glass-shadow)',
       }}
     >
       {/* ── En-tête ── */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#F1F5F9]">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#F1F5F9] dark:border-[#162032]">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
-            <FileText className="w-3.5 h-3.5 text-[#2563EB]" />
+          <div className="w-6 h-6 rounded-lg bg-[#EFF6FF] dark:bg-[#1E3A5F] flex items-center justify-center">
+            <FileText className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#60A5FA]" />
           </div>
-          <h3 className="text-[14px] font-bold text-[#0F172A]">Dernières factures</h3>
+          <h3 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">Dernières factures</h3>
         </div>
         <Link
           href="/invoices"
@@ -140,7 +140,7 @@ export async function RecentInvoices() {
       </div>
 
       {/* ── Vue mobile : cards ── */}
-      <div className="sm:hidden divide-y divide-[#F8FAFC]">
+      <div className="sm:hidden divide-y divide-[#F8FAFC] dark:divide-[#162032]">
         {invoices.map((inv, i) => {
           const client = (inv.client as unknown as { name: string } | null)
           const st     = (inv.status as InvoiceStatus)
@@ -149,7 +149,7 @@ export async function RecentInvoices() {
             <Link
               key={inv.id}
               href={`/invoices/${inv.id}`}
-              className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#F8FAFC] active:bg-[#EFF6FF] transition-colors"
+              className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] active:bg-[#EFF6FF] dark:active:bg-[#1E3A5F] transition-colors"
             >
               <ClientAvatar name={client?.name || '?'} index={i} />
               <div className="flex-1 min-w-0">
@@ -168,7 +168,7 @@ export async function RecentInvoices() {
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="font-mono text-[13px] font-bold text-[#0F172A]">
+                <p className="font-mono text-[13px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">
                   {formatCurrency(inv.total_ttc)}
                 </p>
                 <p className="text-[10px] text-slate-300 mt-0.5">{formatDate(inv.issue_date)}</p>
@@ -181,7 +181,7 @@ export async function RecentInvoices() {
       {/* ── Vue desktop : table ── */}
       <table className="hidden sm:table w-full">
         <thead>
-          <tr className="border-b border-[#F8FAFC] bg-[#FAFBFC]/60">
+          <tr className="border-b border-[#F8FAFC] dark:border-[#162032] bg-[#FAFBFC]/60 dark:bg-[#162032]/40">
             <th className="text-left text-[10px] font-bold uppercase tracking-[0.08em] text-slate-300 px-5 py-3">
               N° facture
             </th>
@@ -206,7 +206,7 @@ export async function RecentInvoices() {
             return (
               <tr
                 key={inv.id}
-                className="border-b border-[#F8FAFC] hover:bg-[#F8FAFC]/60 transition-colors last:border-0 group"
+                className="border-b border-[#F8FAFC] dark:border-[#162032] hover:bg-[#F8FAFC]/60 dark:hover:bg-[#162032]/60 transition-colors last:border-0 group"
               >
                 <td className="px-5 py-3.5">
                   <Link
@@ -219,7 +219,7 @@ export async function RecentInvoices() {
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-2.5">
                     <ClientAvatar name={client?.name || '?'} index={i} />
-                    <span className="text-[13px] font-medium text-[#0F172A] truncate">
+                    <span className="text-[13px] font-medium text-[#0F172A] dark:text-[#E2E8F0] truncate">
                       {client?.name || <span className="text-slate-300 italic text-[12px]">—</span>}
                     </span>
                   </div>
@@ -230,7 +230,7 @@ export async function RecentInvoices() {
                     {formatDate(inv.issue_date)}
                   </div>
                 </td>
-                <td className="px-5 py-3.5 text-right font-mono text-[13px] font-bold text-[#0F172A]">
+                <td className="px-5 py-3.5 text-right font-mono text-[13px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">
                   {formatCurrency(inv.total_ttc)}
                 </td>
                 <td className="px-5 py-3.5">
@@ -243,7 +243,7 @@ export async function RecentInvoices() {
       </table>
 
       {/* Footer */}
-      <div className="px-5 py-3 border-t border-[#F8FAFC] flex items-center justify-between bg-[#FAFBFC]/40">
+      <div className="px-5 py-3 border-t border-[#F8FAFC] dark:border-[#162032] flex items-center justify-between bg-[#FAFBFC]/40 dark:bg-[#162032]/30">
         <Link
           href="/invoices"
           className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] transition-colors"
