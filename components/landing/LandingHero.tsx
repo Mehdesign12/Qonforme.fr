@@ -181,14 +181,14 @@ function Hero() {
 
         {/* ── Colonne gauche — texte ── */}
         <motion.div
-          className="flex flex-col gap-4"
+          className="flex flex-col items-center gap-4 text-center md:items-start md:text-left"
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
           {/* Badge conformité */}
           <motion.div
-            className="w-fit"
+            className="mx-auto w-fit md:mx-0"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08, duration: 0.4 }}
@@ -222,7 +222,7 @@ function Hero() {
 
           {/* 2.3 — Sous-titre */}
           <motion.p
-            className="max-w-[440px] text-[15px] leading-[1.7] text-slate-500"
+            className="mx-auto max-w-[440px] text-[15px] leading-[1.7] text-slate-500 md:mx-0"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
@@ -236,7 +236,7 @@ function Hero() {
 
           {/* 3.1 — Double CTA hero */}
           <motion.div
-            className="flex flex-wrap items-center gap-3 pt-1"
+            className="flex flex-wrap items-center justify-center gap-3 pt-1 md:justify-start"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.27, duration: 0.5 }}
@@ -267,7 +267,7 @@ function Hero() {
 
           {/* Social proof */}
           <motion.div
-            className="flex flex-col gap-2.5 pt-1"
+            className="flex flex-col items-center gap-2.5 pt-1 md:items-start"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.34, duration: 0.5 }}
@@ -296,7 +296,7 @@ function Hero() {
             </div>
 
             {/* 2.4 — Badges de réassurance mis à jour */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-center gap-2 md:justify-start">
               {[
                 {
                   icon: <Zap className="h-3 w-3" />,
@@ -430,31 +430,58 @@ export function LandingHero() {
         className="relative w-full"
         style={{
           background:
-            "linear-gradient(160deg, #EFF6FF 0%, #EEF2FF 20%, #F5F3FF 38%, #E0F2FE 55%, #EFF6FF 75%, #F8FAFC 100%)",
+            "linear-gradient(125deg, #EFF6FF 0%, #EEF2FF 20%, #F5F3FF 35%, #E0F2FE 50%, #EFF6FF 65%, #F0FDF4 80%, #EEF2FF 100%)",
         }}
       >
-        {/* Lueurs radiales douces */}
+        {/* Desktop only — dégradé riche + effets lumineux */}
+        <div className="pointer-events-none absolute inset-0 hidden md:block">
+          {/* Overlay dégradé desktop */}
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(160deg, #EFF6FF 0%, #EEF2FF 20%, #F5F3FF 38%, #E0F2FE 55%, #EFF6FF 75%, #F8FAFC 100%)",
+            }}
+          />
+          {/* Lueurs radiales douces */}
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 65% 45% at 15% -5%, rgba(37,99,235,0.09) 0%, transparent 55%), " +
+                "radial-gradient(ellipse 45% 35% at 85% 0%, rgba(124,58,237,0.07) 0%, transparent 50%)",
+            }}
+          />
+          {/* LightRays */}
+          <LightRays
+            count={8}
+            color="rgba(99, 155, 235, 0.55)"
+            blur={28}
+            speed={12}
+            length="120vh"
+            className="z-0"
+          />
+        </div>
+
+        {/* Picto Q filigrane — mobile : centré */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 65% 45% at 15% -5%, rgba(37,99,235,0.09) 0%, transparent 55%), " +
-              "radial-gradient(ellipse 45% 35% at 85% 0%, rgba(124,58,237,0.07) 0%, transparent 50%)",
-          }}
-        />
+          className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center md:hidden"
+          style={{ opacity: 0.07 }}
+        >
+          <Image
+            src={PICTO_Q_URL}
+            alt=""
+            width={300}
+            height={300}
+            className="w-[280px] select-none"
+            unoptimized
+          />
+        </div>
 
-        {/* LightRays */}
-        <LightRays
-          count={8}
-          color="rgba(99, 155, 235, 0.55)"
-          blur={28}
-          speed={12}
-          length="120vh"
-          className="z-0"
-        />
-
-        {/* 1.4 — Picto Q filigrane côté droit, derrière mockup */}
+        {/* Picto Q filigrane — desktop : côté droit, derrière mockup */}
         <div
           aria-hidden
           className="pointer-events-none absolute right-[-60px] top-[50px] z-[1] hidden lg:block"
