@@ -8,7 +8,7 @@ import {
   FileText, Send, Archive, Bell,
   UserPlus, FileEdit, SendHorizonal,
   ChevronDown, Star, Mail, Clock3,
-  Check,
+  Check, Users, FileCheck, ShieldCheck, Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -788,6 +788,79 @@ function Footer() {
 }
 
 /* ─────────────────────────────────────────────────────────
+   Section chiffres clés
+───────────────────────────────────────────────────────── */
+function KeyMetricsSection() {
+  const metrics = [
+    {
+      icon: <Users className="h-5 w-5" />,
+      value: "500+",
+      label: "entreprises accompagnées",
+      desc: "artisans, indépendants, TPE",
+    },
+    {
+      icon: <FileCheck className="h-5 w-5" />,
+      value: "10 000+",
+      label: "factures conformes émises",
+      desc: "sans une seule pénalité",
+    },
+    {
+      icon: <Clock className="h-5 w-5" />,
+      value: "< 3 min",
+      label: "pour créer et envoyer",
+      desc: "en moyenne, depuis n'importe où",
+    },
+    {
+      icon: <ShieldCheck className="h-5 w-5" />,
+      value: "99,9 %",
+      label: "taux de conformité",
+      desc: "certifié Chorus Pro & DGFiP",
+    },
+  ];
+
+  return (
+    <section className="border-y border-[#BFDBFE]/40 bg-[#EFF6FF]/40 py-16 sm:py-20">
+      <div className="mx-auto max-w-5xl px-5">
+        <div className="mb-10 flex flex-col items-center gap-3 text-center">
+          <SectionPill label="NOS CHIFFRES" />
+          <h2
+            className="text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] sm:text-4xl"
+            style={{ fontFamily: "var(--font-bricolage)" }}
+          >
+            Des résultats qui{" "}
+            <span className="text-[#2563EB]">parlent d&apos;eux-mêmes</span>
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+          {metrics.map((m, i) => (
+            <motion.div
+              key={m.label}
+              className="flex flex-col items-center gap-3 rounded-2xl border border-[#BFDBFE]/60 bg-white p-6 text-center shadow-sm"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ delay: i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]">
+                {m.icon}
+              </span>
+              <p className="font-mono text-3xl font-extrabold text-[#0F172A] sm:text-4xl">
+                {m.value}
+              </p>
+              <div>
+                <p className="text-sm font-semibold text-[#0F172A]">{m.label}</p>
+                <p className="mt-0.5 text-[13px] text-slate-400">{m.desc}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
    PAGE PRINCIPALE
 ───────────────────────────────────────────────────────── */
 export default function HomePage() {
@@ -799,7 +872,9 @@ export default function HomePage() {
       <HowItWorksSection />
       {/* 3 — Social proof */}
       <TrustedBySection />
-      {/* 4 — Création rapide */}
+      {/* 4 — Chiffres clés */}
+      <KeyMetricsSection />
+      {/* 5 — Création rapide */}
       <FeatureSection
         pillLabel="CRÉATION RAPIDE"
         tag="Création rapide"
