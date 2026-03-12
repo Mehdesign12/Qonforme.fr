@@ -3,10 +3,12 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 import {
   LayoutDashboard, Users, FileText, FileCheck2,
   Settings, LogOut, Minus,
   Plus, Archive, RotateCcw, Package, ShoppingCart, X,
+  PanelLeftClose, PanelLeftOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -16,6 +18,10 @@ const LOGO_URL =
   "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
 const PICTO_Q =
   "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
+const LOGO_Q_ICON =
+  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
+
+const STORAGE_KEY = "qonforme_sidebar_collapsed"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -35,7 +41,7 @@ interface NavItem {
 }
 
 /* ------------------------------------------------------------------ */
-/* Structure navigation                                                 */
+/* Navigation                                                           */
 /* ------------------------------------------------------------------ */
 
 const NAV: NavItem[] = [
@@ -58,9 +64,9 @@ const NAV: NavItem[] = [
     label: "Factures",
     icon: FileText,
     sub: [
-      { href: "/invoices/new",           label: "Nouvelle facture", icon: Plus     },
+      { href: "/invoices/new",           label: "Nouvelle facture", icon: Plus      },
       { href: "/credit-notes",           label: "Avoirs",           icon: RotateCcw },
-      { href: "/invoices?archived=true", label: "Archives",         icon: Archive  },
+      { href: "/invoices?archived=true", label: "Archives",         icon: Archive   },
     ],
   },
   { href: "/products", label: "Catalogue produits", icon: Package },
@@ -73,10 +79,12 @@ const NAV: NavItem[] = [
 function NavGroup({
   item,
   pathname,
+  collapsed,
   onNavigate,
 }: {
   item:        NavItem
   pathname:    string
+  collapsed:   boolean
   onNavigate?: () => void
 }) {
   const isParentActive =
@@ -95,26 +103,32 @@ function NavGroup({
       <Link
         href={item.href}
         onClick={onNavigate}
+        title={collapsed ? item.label : undefined}
         className={cn(
           "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+          collapsed ? "justify-center px-2" : "",
           isActive
             ? "bg-[#EFF6FF] text-[#2563EB]"
             : "text-slate-500 hover:bg-[#F8FAFC] hover:text-[#0F172A]"
         )}
       >
         <item.icon className={cn("w-4 h-4 shrink-0", isActive ? "text-[#2563EB]" : "text-slate-400")} />
-        <span className="flex-1 truncate">{item.label}</span>
-        {hasChildren && (
-          <Minus className={cn(
-            "w-3 h-3 shrink-0 transition-colors",
-            isActive ? "text-[#BFDBFE]" : "text-slate-300"
-          )} />
+        {!collapsed && (
+          <>
+            <span className="flex-1 truncate">{item.label}</span>
+            {hasChildren && (
+              <Minus className={cn(
+                "w-3 h-3 shrink-0 transition-colors",
+                isActive ? "text-[#BFDBFE]" : "text-slate-300"
+              )} />
+            )}
+          </>
         )}
       </Link>
 
-      {hasChildren && isActive && (
+      {/* Sous-items — uniquement si expanded */}
+      {!collapsed && hasChildren && isActive && (
         <div className="relative mt-0.5 mb-1 ml-[22px]">
-          {/* ligne verticale bleue */}
           <span className="absolute left-0 top-1 bottom-1 w-px bg-[#BFDBFE]" />
           <div className="space-y-0.5 pl-4">
             {item.sub!.map((s) => {
@@ -151,34 +165,44 @@ function NavGroup({
 }
 
 /* ------------------------------------------------------------------ */
-/* Contenu interne de la sidebar (partagé desktop + mobile)            */
+/* SidebarContent                                                       */
 /* ------------------------------------------------------------------ */
 
 function SidebarContent({
   pathname,
+  collapsed,
   onNavigate,
   onLogout,
 }: {
   pathname:    string
+  collapsed:   boolean
   onNavigate?: () => void
   onLogout:    () => void
 }) {
   return (
     <>
-      {/* Navigation principale */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
         {NAV.map((item) => (
-          <NavGroup key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />
+          <NavGroup
+            key={item.href}
+            item={item}
+            pathname={pathname}
+            collapsed={collapsed}
+            onNavigate={onNavigate}
+          />
         ))}
       </nav>
 
-      {/* Bas — settings + logout */}
-      <div className="px-3 py-4 border-t border-[#F1F5F9] space-y-0.5">
+      <div className={cn(
+        "px-2 py-4 border-t border-[#F1F5F9] space-y-0.5",
+      )}>
         <Link
           href="/settings"
           onClick={onNavigate}
+          title={collapsed ? "Paramètres" : undefined}
           className={cn(
             "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+            collapsed ? "justify-center px-2" : "",
             pathname.startsWith("/settings")
               ? "bg-[#EFF6FF] text-[#2563EB]"
               : "text-slate-500 hover:bg-[#F8FAFC] hover:text-[#0F172A]"
@@ -188,14 +212,19 @@ function SidebarContent({
             "w-4 h-4 shrink-0",
             pathname.startsWith("/settings") ? "text-[#2563EB]" : "text-slate-400"
           )} />
-          Paramètres
+          {!collapsed && <span>Paramètres</span>}
         </Link>
+
         <button
           onClick={onLogout}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all duration-150 w-full group"
+          title={collapsed ? "Se déconnecter" : undefined}
+          className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all duration-150 w-full group",
+            collapsed ? "justify-center px-2" : ""
+          )}
         >
           <LogOut className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-red-400 transition-colors" />
-          Se déconnecter
+          {!collapsed && <span>Se déconnecter</span>}
         </button>
       </div>
     </>
@@ -203,13 +232,31 @@ function SidebarContent({
 }
 
 /* ------------------------------------------------------------------ */
-/* Sidebar — version desktop (fixe à gauche)                           */
+/* Sidebar — desktop                                                    */
 /* ------------------------------------------------------------------ */
 
 export function Sidebar() {
   const pathname = usePathname()
   const router   = useRouter()
   const supabase = createClient()
+
+  // Hydration-safe : démarrer ouvert, lire localStorage après mount
+  const [collapsed, setCollapsed] = useState(false)
+  const [mounted,   setMounted]   = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored === "true") setCollapsed(true)
+    } catch { /* ignore */ }
+  }, [])
+
+  const toggle = () => {
+    const next = !collapsed
+    setCollapsed(next)
+    try { localStorage.setItem(STORAGE_KEY, String(next)) } catch { /* ignore */ }
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -218,12 +265,18 @@ export function Sidebar() {
     router.refresh()
   }
 
+  // Largeur : 240px ouvert, 64px fermé — transition CSS
+  const sidebarWidth = (mounted && collapsed) ? "w-16" : "w-60"
+
   return (
     <aside
-      className="hidden md:flex w-60 flex-col border-r border-[#E2E8F0] shrink-0 relative overflow-hidden"
+      className={cn(
+        "hidden md:flex flex-col border-r border-[#E2E8F0] shrink-0 relative overflow-hidden transition-all duration-300 ease-in-out",
+        sidebarWidth
+      )}
       style={{
-        background: 'rgba(255,255,255,0.92)',
-        backdropFilter: 'blur(12px)',
+        background:           'rgba(255,255,255,0.92)',
+        backdropFilter:       'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
       }}
     >
@@ -236,28 +289,73 @@ export function Sidebar() {
         <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" unoptimized />
       </div>
 
-      {/* Logo */}
-      <div className="flex items-center px-5 py-[18px] border-b border-[#F1F5F9] shrink-0">
-        <Link href="/dashboard" className="flex items-center">
-          <Image
-            src={LOGO_URL}
-            alt="Qonforme"
-            width={130}
-            height={30}
-            className="h-7 w-auto object-contain"
-            unoptimized
-            priority
-          />
+      {/* Header sidebar : logo + toggle */}
+      <div className={cn(
+        "relative z-10 flex items-center border-b border-[#F1F5F9] shrink-0",
+        (mounted && collapsed) ? "justify-center px-2 py-[18px]" : "justify-between px-4 py-[18px]"
+      )}>
+        {/* Logo — long si ouvert, picto si fermé */}
+        <Link href="/dashboard" className="flex items-center min-w-0">
+          {(mounted && collapsed) ? (
+            <Image
+              src={LOGO_Q_ICON}
+              alt="Q"
+              width={28}
+              height={28}
+              className="w-7 h-7 object-contain"
+              unoptimized
+            />
+          ) : (
+            <Image
+              src={LOGO_URL}
+              alt="Qonforme"
+              width={120}
+              height={28}
+              className="h-7 w-auto object-contain"
+              unoptimized
+              priority
+            />
+          )}
         </Link>
+
+        {/* Bouton toggle — visible seulement si ouvert (collapsed = juste icône dans header) */}
+        {!(mounted && collapsed) && (
+          <button
+            onClick={toggle}
+            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-[#F1F5F9] transition-all shrink-0 ml-2"
+            title="Réduire la sidebar"
+            aria-label="Réduire la sidebar"
+          >
+            <PanelLeftClose className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
-      <SidebarContent pathname={pathname} onLogout={handleLogout} />
+      {/* Bouton expand — visible uniquement quand sidebar fermée */}
+      {(mounted && collapsed) && (
+        <button
+          onClick={toggle}
+          className="mx-auto mt-3 flex items-center justify-center w-8 h-8 rounded-lg text-slate-300 hover:text-[#2563EB] hover:bg-[#EFF6FF] transition-all shrink-0"
+          title="Ouvrir la sidebar"
+          aria-label="Ouvrir la sidebar"
+        >
+          <PanelLeftOpen className="w-4 h-4" />
+        </button>
+      )}
+
+      <div className="relative z-10 flex flex-col flex-1 min-h-0">
+        <SidebarContent
+          pathname={pathname}
+          collapsed={mounted && collapsed}
+          onLogout={handleLogout}
+        />
+      </div>
     </aside>
   )
 }
 
 /* ------------------------------------------------------------------ */
-/* MobileSidebar — drawer depuis la gauche                             */
+/* MobileSidebar — drawer                                              */
 /* ------------------------------------------------------------------ */
 
 export function MobileSidebar({
@@ -298,7 +396,7 @@ export function MobileSidebar({
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Q filigrane bas-gauche dans le drawer */}
+        {/* Q filigrane */}
         <div
           aria-hidden
           className="pointer-events-none absolute -bottom-6 -left-4 select-none z-0"
@@ -307,7 +405,7 @@ export function MobileSidebar({
           <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" unoptimized />
         </div>
 
-        {/* Header drawer : logo + fermer */}
+        {/* Header drawer */}
         <div className="relative z-10 flex items-center justify-between px-5 py-[18px] border-b border-[#F1F5F9] shrink-0">
           <Link href="/dashboard" onClick={onClose} className="flex items-center">
             <Image
@@ -329,7 +427,12 @@ export function MobileSidebar({
         </div>
 
         <div className="relative z-10 flex flex-col flex-1 min-h-0">
-          <SidebarContent pathname={pathname} onNavigate={onClose} onLogout={handleLogout} />
+          <SidebarContent
+            pathname={pathname}
+            collapsed={false}
+            onNavigate={onClose}
+            onLogout={handleLogout}
+          />
         </div>
       </aside>
     </>

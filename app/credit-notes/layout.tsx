@@ -7,7 +7,7 @@ export default function CreditNotesLayout({ children }: { children: React.ReactN
       className="flex overflow-hidden"
       style={{
         height: "100dvh",
-        background: "linear-gradient(160deg, #EFF6FF 0%, #DBEAFE 18%, #F0F9FF 40%, #F8FAFC 65%, #ffffff 100%)",
+        background: "linear-gradient(250deg, #EFF6FF 0%, #DBEAFE 20%, #F0F9FF 45%, #F8FAFC 70%, #ffffff 100%)",
       }}
     >
       <Sidebar />

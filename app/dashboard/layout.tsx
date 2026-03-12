@@ -10,7 +10,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div
       className="flex h-[100dvh] overflow-hidden"
       style={{
-        background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 18%, #F0F9FF 40%, #F8FAFC 70%, #ffffff 100%)',
+        background: 'linear-gradient(250deg, #EFF6FF 0%, #DBEAFE 20%, #F0F9FF 45%, #F8FAFC 70%, #ffffff 100%)',
       }}
     >
       {/* Tache lumineuse décorative haut-droite */}

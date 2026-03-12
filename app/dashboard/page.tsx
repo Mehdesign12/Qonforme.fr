@@ -129,12 +129,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 function QuickActionsCard() {
   return (
     <div
-      className="rounded-2xl border border-white/60 p-4 sm:p-5 h-full"
+      className="rounded-2xl border border-white/60 p-4 h-full"
       style={{
         background:           'rgba(255,255,255,0.80)',
         backdropFilter:       'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         boxShadow:            '0 2px 16px rgba(37,99,235,0.06)',
+        minHeight:            '260px',
       }}
     >
       <QuickActions />
