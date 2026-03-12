@@ -48,7 +48,7 @@ export function QuickActions() {
   return (
     <div className="h-full flex flex-col">
       {/* En-tête */}
-      <h2 className="text-[14px] font-bold text-[#0F172A] mb-4">Actions rapides</h2>
+      <h2 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-4">Actions rapides</h2>
 
       {/* Grille 2×2 — cards carrées */}
       <div className="grid grid-cols-2 gap-3 flex-1">
@@ -73,7 +73,7 @@ export function QuickActions() {
 
               {/* Textes */}
               <div>
-                <p className="text-[12px] font-bold text-[#0F172A] leading-tight">{a.label}</p>
+                <p className="text-[12px] font-bold text-[#0F172A] dark:text-[#E2E8F0] leading-tight">{a.label}</p>
                 <p className="text-[11px] mt-0.5" style={{ color: a.color, opacity: 0.75 }}>{a.sub}</p>
               </div>
 

@@ -149,8 +149,8 @@ function KpiCard({ icon, iconBg, label, sub, value, badge, sparkline, alert }: K
         relative overflow-hidden rounded-2xl border p-4 sm:p-5
         hover:-translate-y-0.5
         ${alert
-          ? 'bg-white border-[#FECACA] shadow-[0_2px_12px_rgba(239,68,68,0.08)]'
-          : 'bg-white/95 border-slate-100 shadow-[0_2px_12px_rgba(37,99,235,0.06)]'
+          ? 'bg-white dark:bg-[#1a1218] border-[#FECACA] dark:border-[#7f1d1d]/50 shadow-[0_2px_12px_rgba(239,68,68,0.08)]'
+          : 'bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F] shadow-[0_2px_12px_rgba(37,99,235,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.20)]'
         }
       `}
       style={{ contain: 'layout style', transition: 'transform 0.15s ease, box-shadow 0.15s ease' }}
@@ -177,15 +177,15 @@ function KpiCard({ icon, iconBg, label, sub, value, badge, sparkline, alert }: K
         </div>
 
         <p className={`font-mono text-xl sm:text-2xl font-extrabold leading-none truncate mb-2 ${
-          alert ? 'text-[#EF4444]' : 'text-[#0F172A]'
+          alert ? 'text-[#EF4444]' : 'text-[#0F172A] dark:text-[#E2E8F0]'
         }`}>
           {value}
         </p>
 
         <div className="flex items-end justify-between gap-2">
           <div>
-            <p className="text-[12px] font-semibold text-slate-500">{label}</p>
-            <p className="text-[11px] text-slate-300 mt-0.5">{sub}</p>
+            <p className="text-[12px] font-semibold text-slate-500 dark:text-slate-400">{label}</p>
+            <p className="text-[11px] text-slate-300 dark:text-slate-600 mt-0.5">{sub}</p>
           </div>
           {sparkline && (
             <div className="shrink-0 opacity-80">

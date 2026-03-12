@@ -5,6 +5,7 @@ import { Bell, Plus, Menu, FileText, FileCheck2, ShoppingCart } from "lucide-rea
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { MobileSidebar } from "@/components/layout/Sidebar"
+import { ThemeToggle } from "@/components/layout/ThemeToggle"
 
 /* ------------------------------------------------------------------ */
 /* Titres de pages                                                      */
@@ -82,9 +83,9 @@ function getInitials(firstName: string, lastName: string): string {
 /* blur réduit à 8px (was 14px) : même rendu, 40% moins cher GPU       */
 /* ------------------------------------------------------------------ */
 
-const PILL_BG     = "rgba(255,255,255,0.82)"
-const PILL_BORDER = "1px solid rgba(255,255,255,0.72)"
-const PILL_SHADOW = "0 2px 10px rgba(37,99,235,0.07), 0 1px 2px rgba(0,0,0,0.03)"
+const PILL_BG     = "var(--glass-bg)"
+const PILL_BORDER = "1px solid var(--glass-border-color)"
+const PILL_SHADOW = "var(--glass-shadow)"
 const PILL_BLUR   = "blur(8px)"
 
 /*
@@ -154,7 +155,7 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
               ...PILL_GPU,
             }}
           >
-            <h1 className="text-[13px] md:text-[14px] font-semibold text-[#0F172A] truncate max-w-[160px] sm:max-w-xs">
+            <h1 className="text-[13px] md:text-[14px] font-semibold text-[#0F172A] dark:text-[#E2E8F0] truncate max-w-[160px] sm:max-w-xs">
               {title}
             </h1>
           </div>
@@ -183,7 +184,7 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
             </Link>
           )}
 
-          {/* Pilule [cloche + avatar] — UNE seule couche composite */}
+          {/* Pilule [toggle + cloche + avatar] — UNE seule couche composite */}
           <div
             className="flex items-center gap-0.5 rounded-full px-1.5 py-1"
             style={{
@@ -195,6 +196,12 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
               ...PILL_GPU,
             }}
           >
+            {/* Toggle dark mode */}
+            <ThemeToggle />
+
+            {/* Séparateur */}
+            <div className="w-px h-4 bg-slate-200/80 dark:bg-slate-700/80 mx-0.5" />
+
             {/* Cloche */}
             <button
               className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 touch-manipulation"
@@ -207,7 +214,7 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
             </button>
 
             {/* Séparateur */}
-            <div className="w-px h-4 bg-slate-200/80 mx-0.5" />
+            <div className="w-px h-4 bg-slate-200/80 dark:bg-slate-700/80 mx-0.5" />
 
             {/* Avatar initiales */}
             <div

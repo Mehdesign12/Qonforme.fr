@@ -84,10 +84,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             {emoji}
           </span>
           <div>
-            <h2 className="text-[22px] sm:text-[26px] font-extrabold text-[#0F172A] leading-tight tracking-tight">
+            <h2 className="text-[22px] sm:text-[26px] font-extrabold text-[#0F172A] dark:text-[#E2E8F0] leading-tight tracking-tight">
               {greeting}
             </h2>
-            <p className="text-[13px] text-slate-400 mt-0.5">{sub}</p>
+            <p className="text-[13px] text-slate-400 dark:text-slate-500 mt-0.5">{sub}</p>
           </div>
         </div>
 
@@ -129,10 +129,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 function QuickActionsCard() {
   return (
     <div
-      className="rounded-2xl border border-white/60 p-4 h-full"
+      className="rounded-2xl border border-white/60 dark:border-[#1E3A5F]/50 p-4 h-full"
       style={{
-        background: '#ffffff',
-        boxShadow:  '0 2px 16px rgba(37,99,235,0.06)',
+        background: 'var(--card-glass-bg)',
+        boxShadow:  'var(--card-glass-shadow)',
         minHeight:            '260px',
       }}
     >
