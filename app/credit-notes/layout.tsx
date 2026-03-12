@@ -1,5 +1,5 @@
 import { Sidebar } from "@/components/layout/Sidebar"
-import { Header } from "@/components/layout/Header"
+import { HeaderServer } from "@/components/layout/HeaderServer"
 
 export default function CreditNotesLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,7 +12,7 @@ export default function CreditNotesLayout({ children }: { children: React.ReactN
     >
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <Header />
+        <HeaderServer />
         <main
           className="flex-1 overflow-y-auto p-4 md:p-6"
           style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
