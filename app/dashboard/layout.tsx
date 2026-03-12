@@ -29,10 +29,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar />
 
       <div className="relative z-10 flex flex-col flex-1 min-w-0">
-        <HeaderServer />
+        {/*
+         * Solution D – isolation: isolate crée un stacking-context dédié pour
+         * le header. Le backdrop-filter des pilules ne « voit » plus les pixels
+         * de <main> en train de scroller → plus de recomposition à chaque frame.
+         * contain: layout style empêche toute propagation de recalcul vers l'extérieur.
+         */}
+        <div
+          style={{
+            isolation:   'isolate',
+            contain:     'layout style',
+            /* Promote header layer on GPU upfront — élimine le premier-frame lag */
+            transform:   'translateZ(0)',
+            willChange:  'transform',
+          }}
+        >
+          <HeaderServer />
+        </div>
         <main
           className="flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-6"
-          style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))' }}
+          style={{
+            paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
+            /*
+             * Solution D – <main> sur sa propre couche GPU.
+             * Le scroll de <main> n'invalide plus le layer du header.
+             * overscroll-behavior: none coupe le bounce iOS qui force un repaint.
+             */
+            willChange:       'transform',
+            transform:        'translateZ(0)',
+            WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
+            overscrollBehavior: 'none',
+          } as React.CSSProperties}
         >
           {children}
         </main>

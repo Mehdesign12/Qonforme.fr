@@ -87,6 +87,16 @@ const PILL_BORDER = "1px solid rgba(255,255,255,0.72)"
 const PILL_SHADOW = "0 2px 10px rgba(37,99,235,0.07), 0 1px 2px rgba(0,0,0,0.03)"
 const PILL_BLUR   = "blur(8px)"
 
+/*
+ * Solution D — chaque pilule est promue sur sa propre couche GPU.
+ * Le blur est pré-rasterisé une fois ; le scroll de <main> (couche séparée)
+ * ne déclenche plus de recomposition du header.
+ */
+const PILL_GPU: React.CSSProperties = {
+  transform:  "translateZ(0)",
+  willChange: "transform",
+}
+
 /* ------------------------------------------------------------------ */
 /* Props                                                                */
 /* ------------------------------------------------------------------ */
@@ -124,8 +134,7 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
               WebkitBackdropFilter: PILL_BLUR,
               border:               PILL_BORDER,
               boxShadow:            PILL_SHADOW,
-              /* GPU compositing hint — évite le repaint au tap */
-              willChange:           "opacity",
+              ...PILL_GPU,
             }}
             onClick={() => setDrawerOpen(true)}
             aria-label="Ouvrir le menu"
@@ -142,6 +151,7 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
               WebkitBackdropFilter: PILL_BLUR,
               border:               PILL_BORDER,
               boxShadow:            PILL_SHADOW,
+              ...PILL_GPU,
             }}
           >
             <h1 className="text-[13px] md:text-[14px] font-semibold text-[#0F172A] truncate max-w-[160px] sm:max-w-xs">
@@ -182,6 +192,7 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
               WebkitBackdropFilter: PILL_BLUR,
               border:               PILL_BORDER,
               boxShadow:            PILL_SHADOW,
+              ...PILL_GPU,
             }}
           >
             {/* Cloche */}
