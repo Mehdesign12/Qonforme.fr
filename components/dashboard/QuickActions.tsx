@@ -55,17 +55,17 @@ export function QuickActions() {
         {ACTIONS.map((a) => (
           <Link key={a.href} href={a.href} className="block">
             <div
-              className="group relative overflow-hidden rounded-2xl border border-white/80 p-4 cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:scale-95 aspect-square flex flex-col justify-between"
+              className="group relative overflow-hidden rounded-2xl border border-white/80 p-4 cursor-pointer hover:-translate-y-0.5 active:scale-95 aspect-square flex flex-col justify-between touch-manipulation"
               style={{
-                background:           a.bg,
-                backdropFilter:       "blur(8px)",
-                WebkitBackdropFilter: "blur(8px)",
-                boxShadow:            `0 2px 10px ${a.shadow}`,
+                background:  a.bg,
+                boxShadow:   `0 2px 10px ${a.shadow}`,
+                transition:  'transform 0.15s ease, box-shadow 0.15s ease',
+                contain:     'layout style',
               }}
             >
               {/* Icône */}
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-110"
+                className="w-9 h-9 rounded-xl flex items-center justify-center"
                 style={{ background: a.iconBg }}
               >
                 <a.icon className="w-4 h-4 text-white" />

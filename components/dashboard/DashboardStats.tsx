@@ -2,6 +2,9 @@ import { TrendingUp, TrendingDown, FileText, Clock, AlertTriangle, ArrowUpRight,
 import { formatCurrency } from "@/lib/utils/invoice"
 import { createClient } from "@/lib/supabase/server"
 
+/* ── Cache 60s — les stats ne changent pas à chaque requête ─────────────── */
+export const revalidate = 60
+
 /* ─────────────────────────────────────────────────────────────────────────
    Micro sparkline SVG inline — aucune dépendance, rendu serveur
 ───────────────────────────────────────────────────────────────────────── */
@@ -144,16 +147,13 @@ function KpiCard({ icon, iconBg, label, sub, value, badge, sparkline, alert }: K
     <div
       className={`
         relative overflow-hidden rounded-2xl border p-4 sm:p-5
-        transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5
+        hover:-translate-y-0.5
         ${alert
           ? 'bg-white border-[#FECACA] shadow-[0_2px_12px_rgba(239,68,68,0.08)]'
-          : 'bg-white/80 border-white/60 shadow-[0_2px_12px_rgba(37,99,235,0.06)]'
+          : 'bg-white/95 border-slate-100 shadow-[0_2px_12px_rgba(37,99,235,0.06)]'
         }
       `}
-      style={{
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-      }}
+      style={{ contain: 'layout style', transition: 'transform 0.15s ease, box-shadow 0.15s ease' }}
     >
       {/* Déco arrière-plan légère */}
       <div

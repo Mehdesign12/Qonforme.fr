@@ -1,8 +1,8 @@
 'use client'
 
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Cell, BarChart, Bar,
 } from 'recharts'
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -31,9 +31,8 @@ function CustomTooltip({ active, payload, label }: {
     <div
       className="rounded-xl border border-white/60 px-3 py-2 text-xs shadow-lg"
       style={{
-        background:          'rgba(255,255,255,0.95)',
-        backdropFilter:      'blur(12px)',
-        WebkitBackdropFilter:'blur(12px)',
+        background: 'rgba(255,255,255,0.98)',
+        boxShadow:  '0 4px 16px rgba(15,23,42,0.10)',
       }}
     >
       <p className="font-semibold text-[#0F172A] mb-0.5">{label}</p>
@@ -52,10 +51,8 @@ export function RevenueChart({ data, currentMonth }: RevenueChartProps) {
     <div
       className="rounded-2xl border border-white/60 p-4 sm:p-5 overflow-hidden"
       style={{
-        background:          'rgba(255,255,255,0.80)',
-        backdropFilter:      'blur(12px)',
-        WebkitBackdropFilter:'blur(12px)',
-        boxShadow:           '0 2px 16px rgba(37,99,235,0.07)',
+        background: '#ffffff',
+        boxShadow:  '0 2px 16px rgba(37,99,235,0.07)',
       }}
     >
       {/* Header */}

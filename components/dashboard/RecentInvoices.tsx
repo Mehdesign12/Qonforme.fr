@@ -4,6 +4,9 @@ import { InvoiceStatus } from "@/types"
 import { createClient } from "@/lib/supabase/server"
 import { FileText, Plus, ArrowRight, Calendar } from "lucide-react"
 
+/* ── Cache 30s — données récentes mais pas temps-réel ──────────────────── */
+export const revalidate = 30
+
 /* ─────────────────────────────────────────────────────────────────────────
    Status styles
 ───────────────────────────────────────────────────────────────────────── */
@@ -83,10 +86,8 @@ export async function RecentInvoices() {
       <div
         className="rounded-2xl border border-white/60 overflow-hidden"
         style={{
-          background:          'rgba(255,255,255,0.80)',
-          backdropFilter:      'blur(12px)',
-          WebkitBackdropFilter:'blur(12px)',
-          boxShadow:           '0 2px 16px rgba(37,99,235,0.06)',
+          background: '#ffffff',
+          boxShadow:  '0 2px 16px rgba(37,99,235,0.06)',
         }}
       >
         <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
@@ -117,10 +118,8 @@ export async function RecentInvoices() {
     <div
       className="rounded-2xl border border-white/60 overflow-hidden"
       style={{
-        background:          'rgba(255,255,255,0.80)',
-        backdropFilter:      'blur(12px)',
-        WebkitBackdropFilter:'blur(12px)',
-        boxShadow:           '0 2px 16px rgba(37,99,235,0.06)',
+        background: '#ffffff',
+        boxShadow:  '0 2px 16px rgba(37,99,235,0.06)',
       }}
     >
       {/* ── En-tête ── */}

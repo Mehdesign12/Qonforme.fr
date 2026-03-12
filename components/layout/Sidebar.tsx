@@ -105,7 +105,7 @@ function NavGroup({
         onClick={onNavigate}
         title={collapsed ? item.label : undefined}
         className={cn(
-          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100",
           collapsed ? "justify-center px-2" : "",
           isActive
             ? "bg-[#EFF6FF] text-[#2563EB]"
@@ -144,7 +144,7 @@ function NavGroup({
                   href={s.href}
                   onClick={onNavigate}
                   className={cn(
-                    "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150",
+                    "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors duration-100",
                     sActive
                       ? "bg-[#EFF6FF] text-[#2563EB]"
                       : "text-slate-400 hover:bg-[#F8FAFC] hover:text-[#0F172A]"
@@ -201,7 +201,7 @@ function SidebarContent({
           onClick={onNavigate}
           title={collapsed ? "Paramètres" : undefined}
           className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100",
             collapsed ? "justify-center px-2" : "",
             pathname.startsWith("/settings")
               ? "bg-[#EFF6FF] text-[#2563EB]"
@@ -219,7 +219,7 @@ function SidebarContent({
           onClick={onLogout}
           title={collapsed ? "Se déconnecter" : undefined}
           className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all duration-150 w-full group",
+            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-500 transition-colors duration-100 w-full group",
             collapsed ? "justify-center px-2" : ""
           )}
         >
@@ -271,13 +271,12 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "hidden md:flex flex-col border-r border-[#E2E8F0] shrink-0 relative overflow-hidden transition-all duration-300 ease-in-out",
+        "hidden md:flex flex-col border-r border-[#E2E8F0] shrink-0 relative overflow-hidden transition-[width] duration-250 ease-in-out",
         sidebarWidth
       )}
       style={{
-        background:           'rgba(255,255,255,0.92)',
-        backdropFilter:       'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        background: '#ffffff',
+        willChange: 'width',
       }}
     >
       {/* Q filigrane bas-gauche */}
@@ -303,7 +302,6 @@ export function Sidebar() {
               width={28}
               height={28}
               className="w-7 h-7 object-contain"
-              unoptimized
             />
           ) : (
             <Image
@@ -312,7 +310,6 @@ export function Sidebar() {
               width={120}
               height={28}
               className="h-7 w-auto object-contain"
-              unoptimized
               priority
             />
           )}
@@ -382,7 +379,7 @@ export function MobileSidebar({
       {/* Overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 md:hidden",
+          "fixed inset-0 z-40 bg-black/30 transition-opacity duration-250 md:hidden",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}
@@ -392,9 +389,10 @@ export function MobileSidebar({
       {/* Drawer */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-72 flex flex-col bg-white border-r border-[#E2E8F0] shadow-[4px_0_24px_rgba(15,23,42,0.08)] transition-transform duration-300 ease-in-out md:hidden overflow-hidden",
+          "fixed inset-y-0 left-0 z-50 w-72 flex flex-col bg-white border-r border-[#E2E8F0] shadow-[4px_0_24px_rgba(15,23,42,0.08)] transition-[transform] duration-250 ease-out md:hidden overflow-hidden",
           open ? "translate-x-0" : "-translate-x-full"
         )}
+        style={{ willChange: "transform" }}
       >
         {/* Q filigrane */}
         <div
@@ -414,7 +412,6 @@ export function MobileSidebar({
               width={130}
               height={30}
               className="h-7 w-auto object-contain"
-              unoptimized
             />
           </Link>
           <button

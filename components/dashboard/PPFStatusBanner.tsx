@@ -13,14 +13,12 @@ export function PPFStatusBanner({ connected }: PPFStatusBannerProps) {
       <div
         className="relative overflow-hidden flex items-center gap-3 rounded-2xl px-4 py-3 border"
         style={{
-          background:          'linear-gradient(135deg, rgba(209,250,229,0.9) 0%, rgba(167,243,208,0.7) 100%)',
-          borderColor:         'rgba(110,231,183,0.5)',
-          backdropFilter:      'blur(8px)',
-          WebkitBackdropFilter:'blur(8px)',
-          boxShadow:           '0 2px 12px rgba(16,185,129,0.08)',
+          background:  "linear-gradient(135deg, rgba(209,250,229,0.97) 0%, rgba(167,243,208,0.90) 100%)",
+          borderColor: "rgba(110,231,183,0.5)",
+          boxShadow:   "0 2px 12px rgba(16,185,129,0.08)",
         }}
       >
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/60 backdrop-blur-sm">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/70">
           <CheckCircle2 className="w-4 h-4 text-[#059669]" />
         </div>
         <div className="flex-1 min-w-0">
@@ -44,18 +42,16 @@ export function PPFStatusBanner({ connected }: PPFStatusBannerProps) {
     <div
       className="relative overflow-hidden flex items-start sm:items-center justify-between gap-3 rounded-2xl px-4 py-3 border"
       style={{
-        background:          'linear-gradient(135deg, rgba(255,251,235,0.95) 0%, rgba(254,243,199,0.80) 100%)',
-        borderColor:         'rgba(252,211,77,0.5)',
-        backdropFilter:      'blur(8px)',
-        WebkitBackdropFilter:'blur(8px)',
-        boxShadow:           '0 2px 12px rgba(217,119,6,0.07)',
+        background:  "linear-gradient(135deg, rgba(255,251,235,0.98) 0%, rgba(254,243,199,0.92) 100%)",
+        borderColor: "rgba(252,211,77,0.5)",
+        boxShadow:   "0 2px 12px rgba(217,119,6,0.07)",
       }}
     >
       {/* Déco */}
       <div
         aria-hidden
         className="pointer-events-none absolute -right-6 -top-6 w-24 h-24 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(252,211,77,0.25) 0%, transparent 70%)' }}
+        style={{ background: "radial-gradient(circle, rgba(252,211,77,0.25) 0%, transparent 70%)" }}
       />
 
       <div className="flex items-start sm:items-center gap-3 relative z-10">
@@ -74,7 +70,7 @@ export function PPFStatusBanner({ connected }: PPFStatusBannerProps) {
 
       <Link
         href="/settings/ppf"
-        className="relative z-10 shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] active:bg-[#92400E] text-white text-[12px] font-bold px-3.5 py-2 transition-colors whitespace-nowrap shadow-sm"
+        className="relative z-10 shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] active:bg-[#92400E] text-white text-[12px] font-bold px-3.5 py-2 transition-colors whitespace-nowrap shadow-sm touch-manipulation"
       >
         <Zap className="w-3 h-3" />
         Configurer
