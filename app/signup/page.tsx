@@ -18,9 +18,20 @@ export default function SignupPage() {
     <AuthLayout>
       <StepIndicator steps={STEPS} current={0} />
 
-      <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/70 shadow-[0_8px_32px_rgba(37,99,235,0.10)] p-6 sm:p-8">
-        <h1 className="text-2xl font-bold text-[#0F172A] mb-1">Crée ton compte</h1>
-        <p className="text-slate-500 text-sm mb-7">
+      {/* ── Carte principale — mobile-first, optimisée Safari/Chrome mobile ── */}
+      <div
+        className="rounded-2xl border border-white/70 p-5 sm:p-7 md:p-8"
+        style={{
+          background: "rgba(255,255,255,0.85)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          boxShadow: "0 8px 32px rgba(37,99,235,0.10), 0 1px 0 rgba(255,255,255,0.8) inset",
+        }}
+      >
+        <h1 className="text-xl sm:text-2xl font-bold text-[#0F172A] mb-1 leading-tight">
+          Crée ton compte
+        </h1>
+        <p className="text-slate-500 text-sm mb-6">
           Accès immédiat · Sans engagement
         </p>
 

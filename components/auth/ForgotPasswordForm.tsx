@@ -7,16 +7,16 @@ import { Loader2, ArrowLeft, Mail, CheckCircle2 } from "lucide-react"
 
 /* ─── classes communes ──────────────────────────────────────────────────── */
 const inputBase =
-  "w-full h-11 rounded-[10px] border border-[#E2E8F0] bg-white px-3.5 text-sm text-[#0F172A] placeholder:text-slate-400 outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 disabled:opacity-50"
+  "w-full h-12 rounded-xl border border-[#E2E8F0] bg-white/90 px-4 text-[15px] text-[#0F172A] placeholder:text-slate-400 outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 disabled:opacity-50 [-webkit-appearance:none]"
 const inputError =
   "border-red-400 focus:border-red-400 focus:ring-red-400/10"
 const labelCls  = "block text-[13px] font-semibold text-[#0F172A] mb-1.5"
 const btnPrimary =
-  "w-full h-11 rounded-[10px] bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+  "w-full h-12 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-[15px] font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_2px_12px_rgba(37,99,235,0.25)] touch-manipulation"
 const btnSecondary =
-  "w-full h-11 rounded-[10px] border border-[#E2E8F0] bg-white hover:bg-[#F8FAFC] active:scale-[0.98] text-[#0F172A] text-sm font-medium transition-all flex items-center justify-center gap-2"
+  "w-full h-12 rounded-xl border border-[#E2E8F0] bg-white hover:bg-[#F8FAFC] active:scale-[0.98] text-[#0F172A] text-[15px] font-medium transition-all flex items-center justify-center gap-2 touch-manipulation"
 const btnGhost =
-  "w-full h-11 rounded-[10px] text-slate-500 hover:text-[#0F172A] text-sm font-medium transition-all flex items-center justify-center gap-2 hover:bg-[#F8FAFC]"
+  "w-full h-12 rounded-xl text-slate-500 hover:text-[#0F172A] text-[15px] font-medium transition-all flex items-center justify-center gap-2 hover:bg-white/60 touch-manipulation"
 
 export default function ForgotPasswordForm() {
   const [email, setEmail]         = useState("")
@@ -58,13 +58,15 @@ export default function ForgotPasswordForm() {
   if (submitted) {
     return (
       <div className="text-center space-y-5">
+        {/* Icône succès */}
         <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#D1FAE5] flex items-center justify-center">
-            <CheckCircle2 className="w-8 h-8 text-[#10B981]" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#D1FAE5] flex items-center justify-center">
+            <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-[#10B981]" />
           </div>
         </div>
+
         <div>
-          <h2 className="text-lg font-bold text-[#0F172A]">Vérifie ta boîte mail</h2>
+          <h2 className="text-[17px] font-bold text-[#0F172A]">Vérifie ta boîte mail</h2>
           <p className="text-sm text-slate-500 mt-2 leading-relaxed">
             Si un compte existe pour{" "}
             <span className="font-semibold text-[#0F172A]">{email}</span>,
@@ -74,6 +76,7 @@ export default function ForgotPasswordForm() {
             Pense à vérifier tes spams si tu ne le vois pas.
           </p>
         </div>
+
         <div className="space-y-2.5 pt-1">
           <button
             type="button"
@@ -83,7 +86,7 @@ export default function ForgotPasswordForm() {
             <Mail className="w-4 h-4" />
             Utiliser une autre adresse
           </button>
-          <Link href="/login">
+          <Link href="/login" className="block">
             <button type="button" className={btnGhost}>
               <ArrowLeft className="w-4 h-4" />
               Retour à la connexion
@@ -105,6 +108,7 @@ export default function ForgotPasswordForm() {
           placeholder="jean@exemple.fr"
           autoComplete="email"
           autoFocus
+          inputMode="email"
           className={`${inputBase} ${error ? inputError : ""}`}
           value={email}
           onChange={e => { setEmail(e.target.value); if (error) setError(null) }}
@@ -124,7 +128,7 @@ export default function ForgotPasswordForm() {
         )}
       </button>
 
-      <Link href="/login">
+      <Link href="/login" className="block">
         <button type="button" className={`${btnGhost} mt-1`}>
           <ArrowLeft className="w-4 h-4" />
           Retour à la connexion

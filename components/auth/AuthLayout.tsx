@@ -21,7 +21,17 @@ const widthMap = {
 
 export default function AuthLayout({ children, maxWidth = "md" }: AuthLayoutProps) {
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center p-4 py-10 overflow-hidden">
+    /* ── Viewport complet avec support safe-area iOS/Android ───────────── */
+    <div
+      className="relative flex flex-col items-center justify-center overflow-x-hidden"
+      style={{
+        minHeight: "100dvh",           /* dvh = dynamic viewport height (iOS Safari) */
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+      }}
+    >
 
       {/* ── Fond dégradé bleu statique ─────────────────────────────────── */}
       <div
@@ -63,6 +73,8 @@ export default function AuthLayout({ children, maxWidth = "md" }: AuthLayoutProp
           backgroundSize: "32px 32px",
           maskImage:
             "radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)",
         }}
       />
 
@@ -77,7 +89,7 @@ export default function AuthLayout({ children, maxWidth = "md" }: AuthLayoutProp
           alt=""
           width={700}
           height={700}
-          className="w-[520px] sm:w-[620px] lg:w-[700px]"
+          className="w-[380px] sm:w-[520px] lg:w-[700px]"
           unoptimized
           priority
         />
@@ -99,18 +111,21 @@ export default function AuthLayout({ children, maxWidth = "md" }: AuthLayoutProp
         />
       </div>
 
-      {/* ── Contenu ─────────────────────────────────────────────────────── */}
-      <div className={`relative z-10 w-full ${widthMap[maxWidth]}`}>
+      {/* ── Contenu principal ────────────────────────────────────────────── */}
+      <div
+        className={`relative z-10 w-full ${widthMap[maxWidth]}`}
+        style={{ padding: "clamp(16px, 4vw, 40px) clamp(16px, 5vw, 32px)" }}
+      >
 
         {/* Logo */}
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-6 sm:mb-8">
           <Link href="/" className="block" aria-label="Retour à l'accueil">
             <Image
               src={LOGO_LONG_BLEU}
               alt="Qonforme"
               width={180}
               height={44}
-              className="h-10 w-auto drop-shadow-sm"
+              className="h-9 sm:h-10 w-auto drop-shadow-sm"
               priority
               unoptimized
             />

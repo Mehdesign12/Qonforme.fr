@@ -8,12 +8,12 @@ import { createClient } from "@/lib/supabase/client"
 
 /* ─── classes communes ──────────────────────────────────────────────────── */
 const inputBase =
-  "w-full h-11 rounded-[10px] border border-[#E2E8F0] bg-white px-3.5 text-sm text-[#0F172A] placeholder:text-slate-400 outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 disabled:opacity-50"
+  "w-full h-12 rounded-xl border border-[#E2E8F0] bg-white/90 px-4 text-[15px] text-[#0F172A] placeholder:text-slate-400 outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 disabled:opacity-50 [-webkit-appearance:none]"
 const inputError =
   "border-red-400 focus:border-red-400 focus:ring-red-400/10"
 const labelCls  = "block text-[13px] font-semibold text-[#0F172A] mb-1.5"
 const btnPrimary =
-  "w-full h-11 rounded-[10px] bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+  "w-full h-12 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-[15px] font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_2px_12px_rgba(37,99,235,0.25)] touch-manipulation"
 
 export default function LoginForm() {
   const router   = useRouter()
@@ -77,6 +77,7 @@ export default function LoginForm() {
           type="email"
           placeholder="jean@exemple.fr"
           autoComplete="email"
+          inputMode="email"
           className={`${inputBase} ${errors.email ? inputError : ""}`}
           value={email}
           onChange={e => { setEmail(e.target.value); if (errors.email) setErrors(p => ({ ...p, email: undefined })) }}
@@ -88,7 +89,9 @@ export default function LoginForm() {
       {/* Mot de passe */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label htmlFor="password" className={labelCls.replace("mb-1.5", "")}>Mot de passe</label>
+          <label htmlFor="password" className="text-[13px] font-semibold text-[#0F172A]">
+            Mot de passe
+          </label>
           <a
             href="/forgot-password"
             className="text-xs text-[#2563EB] hover:underline font-medium"
@@ -102,7 +105,8 @@ export default function LoginForm() {
             type={showPwd ? "text" : "password"}
             placeholder="••••••••"
             autoComplete="current-password"
-            className={`${inputBase} pr-11 ${errors.password ? inputError : ""}`}
+            inputMode="text"
+            className={`${inputBase} pr-12 ${errors.password ? inputError : ""}`}
             value={password}
             onChange={e => { setPassword(e.target.value); if (errors.password) setErrors(p => ({ ...p, password: undefined })) }}
             disabled={loading}
@@ -110,7 +114,7 @@ export default function LoginForm() {
           <button
             type="button"
             tabIndex={-1}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors touch-manipulation"
             onClick={() => setShowPwd(v => !v)}
             aria-label={showPwd ? "Masquer" : "Afficher"}
           >
