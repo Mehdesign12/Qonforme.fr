@@ -1,0 +1,22 @@
+name: Merge dev into main
+
+on:
+  workflow_dispatch:
+
+jobs:
+  merge-to-main:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Merge dev into main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git merge origin/dev --no-ff -m "Merge dev into main"
+          git push origin main
