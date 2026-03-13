@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
+import { useTheme } from "next-themes"
 import {
   LayoutDashboard, Users, FileText, FileCheck2,
   Settings, LogOut, Minus,
@@ -16,6 +17,8 @@ import { toast } from "sonner"
 
 const LOGO_URL =
   "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
+const LOGO_URL_DARK =
+  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20simple.png"
 const PICTO_Q =
   "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
 const LOGO_Q_ICON =
@@ -108,11 +111,11 @@ function NavGroup({
           "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100",
           collapsed ? "justify-center px-2" : "",
           isActive
-            ? "bg-[#EFF6FF] text-[#2563EB]"
-            : "text-slate-500 hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+            ? "bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#60A5FA]"
+            : "text-slate-500 dark:text-slate-400 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
         )}
       >
-        <item.icon className={cn("w-4 h-4 shrink-0", isActive ? "text-[#2563EB]" : "text-slate-400")} />
+        <item.icon className={cn("w-4 h-4 shrink-0", isActive ? "text-[#2563EB] dark:text-[#60A5FA]" : "text-slate-400 dark:text-slate-500")} />
         {!collapsed && (
           <>
             <span className="flex-1 truncate">{item.label}</span>
@@ -146,8 +149,8 @@ function NavGroup({
                   className={cn(
                     "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors duration-100",
                     sActive
-                      ? "bg-[#EFF6FF] text-[#2563EB]"
-                      : "text-slate-400 hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+                      ? "bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#60A5FA]"
+                      : "text-slate-400 dark:text-slate-500 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
                   )}
                 >
                   {s.icon && (
@@ -194,7 +197,7 @@ function SidebarContent({
       </nav>
 
       <div className={cn(
-        "px-2 py-4 border-t border-[#F1F5F9] space-y-0.5",
+        "px-2 py-4 border-t border-[#F1F5F9] dark:border-[#162032] space-y-0.5",
       )}>
         <Link
           href="/settings"
@@ -204,8 +207,8 @@ function SidebarContent({
             "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100",
             collapsed ? "justify-center px-2" : "",
             pathname.startsWith("/settings")
-              ? "bg-[#EFF6FF] text-[#2563EB]"
-              : "text-slate-500 hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+              ? "bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#60A5FA]"
+              : "text-slate-500 dark:text-slate-400 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
           )}
         >
           <Settings className={cn(
@@ -219,7 +222,7 @@ function SidebarContent({
           onClick={onLogout}
           title={collapsed ? "Se déconnecter" : undefined}
           className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-500 transition-colors duration-100 w-full group",
+            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-colors duration-100 w-full group",
             collapsed ? "justify-center px-2" : ""
           )}
         >
@@ -239,6 +242,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const router   = useRouter()
   const supabase = createClient()
+  const { resolvedTheme } = useTheme()
 
   // Hydration-safe : démarrer ouvert, lire localStorage après mount
   const [collapsed, setCollapsed] = useState(false)
@@ -271,11 +275,11 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "hidden md:flex flex-col border-r border-[#E2E8F0] shrink-0 relative overflow-hidden transition-[width] duration-250 ease-in-out",
+        "hidden md:flex flex-col border-r border-[#E2E8F0] dark:border-[#1E3A5F] shrink-0 relative overflow-hidden transition-[width] duration-250 ease-in-out",
         sidebarWidth
       )}
       style={{
-        background: '#ffffff',
+        background: 'var(--sidebar-bg)',
         willChange: 'width',
       }}
     >
@@ -290,7 +294,7 @@ export function Sidebar() {
 
       {/* Header sidebar : logo + toggle */}
       <div className={cn(
-        "relative z-10 flex items-center border-b border-[#F1F5F9] shrink-0",
+        "relative z-10 flex items-center border-b border-[#F1F5F9] dark:border-[#162032] shrink-0",
         (mounted && collapsed) ? "justify-center px-2 py-[18px]" : "justify-between px-4 py-[18px]"
       )}>
         {/* Logo — long si ouvert, picto si fermé */}
@@ -305,7 +309,7 @@ export function Sidebar() {
             />
           ) : (
             <Image
-              src={LOGO_URL}
+              src={mounted && resolvedTheme === 'dark' ? LOGO_URL_DARK : LOGO_URL}
               alt="Qonforme"
               width={120}
               height={28}
@@ -319,7 +323,7 @@ export function Sidebar() {
         {!(mounted && collapsed) && (
           <button
             onClick={toggle}
-            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-[#F1F5F9] transition-all shrink-0 ml-2"
+            className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-300 hover:text-slate-500 dark:hover:text-slate-300 hover:bg-[#F1F5F9] dark:hover:bg-[#162032] transition-all shrink-0 ml-2"
             title="Réduire la sidebar"
             aria-label="Réduire la sidebar"
           >
@@ -332,7 +336,7 @@ export function Sidebar() {
       {(mounted && collapsed) && (
         <button
           onClick={toggle}
-          className="mx-auto mt-3 flex items-center justify-center w-8 h-8 rounded-lg text-slate-300 hover:text-[#2563EB] hover:bg-[#EFF6FF] transition-all shrink-0"
+          className="mx-auto mt-3 flex items-center justify-center w-8 h-8 rounded-lg text-slate-300 hover:text-[#3B82F6] hover:bg-[#EFF6FF] dark:hover:bg-[#1E3A5F] transition-all shrink-0"
           title="Ouvrir la sidebar"
           aria-label="Ouvrir la sidebar"
         >
@@ -389,10 +393,10 @@ export function MobileSidebar({
       {/* Drawer */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-72 flex flex-col bg-white border-r border-[#E2E8F0] shadow-[4px_0_24px_rgba(15,23,42,0.08)] transition-[transform] duration-250 ease-out md:hidden overflow-hidden",
+          "fixed inset-y-0 left-0 z-50 w-72 flex flex-col border-r border-[#E2E8F0] dark:border-[#1E3A5F] shadow-[4px_0_24px_rgba(15,23,42,0.08)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.30)] transition-[transform] duration-250 ease-out md:hidden overflow-hidden",
           open ? "translate-x-0" : "-translate-x-full"
         )}
-        style={{ willChange: "transform" }}
+        style={{ willChange: "transform", background: 'var(--sidebar-bg)' }}
       >
         {/* Q filigrane */}
         <div
@@ -404,7 +408,7 @@ export function MobileSidebar({
         </div>
 
         {/* Header drawer */}
-        <div className="relative z-10 flex items-center justify-between px-5 py-[18px] border-b border-[#F1F5F9] shrink-0">
+        <div className="relative z-10 flex items-center justify-between px-5 py-[18px] border-b border-[#F1F5F9] dark:border-[#162032] shrink-0">
           <Link href="/dashboard" onClick={onClose} className="flex items-center">
             <Image
               src={LOGO_URL}
@@ -416,7 +420,7 @@ export function MobileSidebar({
           </Link>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-[#F1F5F9] transition-colors text-slate-400 hover:text-slate-600"
+            className="p-1.5 rounded-lg hover:bg-[#F1F5F9] dark:hover:bg-[#162032] transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
             aria-label="Fermer le menu"
           >
             <X className="w-4 h-4" />

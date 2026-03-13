@@ -162,14 +162,14 @@ export default function NewQuoteForm() {
     <div className="space-y-6">
 
       {/* Client + dates */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm space-y-4">
-        <h2 className="font-semibold text-[#0F172A]">Informations du devis</h2>
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm space-y-4">
+        <h2 className="font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Informations du devis</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           <div className="md:col-span-1">
             <Label>Client *</Label>
             {clientsLoading ? (
-              <div className="mt-1 w-full h-10 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] flex items-center px-3">
+              <div className="mt-1 w-full h-10 rounded-lg border border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032] flex items-center px-3">
                 <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
               </div>
             ) : clients.length === 0 ? (
@@ -180,7 +180,7 @@ export default function NewQuoteForm() {
               <select
                 value={form.client_id}
                 onChange={setField("client_id")}
-                className="mt-1 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#0f9457]"
+                className="mt-1 w-full px-3 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg bg-white dark:bg-[#162032] dark:text-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#0f9457]"
               >
                 <option value="">Sélectionner un client…</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -205,9 +205,9 @@ export default function NewQuoteForm() {
       </div>
 
       {/* Lignes */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="font-semibold text-[#0F172A]">Prestations / Produits</h2>
+          <h2 className="font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Prestations / Produits</h2>
           <div className="flex items-center gap-2 flex-wrap">
             <ProductCombobox onSelect={insertFromProduct} />
             <Button type="button" variant="outline" size="sm" onClick={addLine} className="gap-1.5">
@@ -216,7 +216,7 @@ export default function NewQuoteForm() {
           </div>
         </div>
 
-        <div className="hidden sm:grid grid-cols-12 gap-2 text-xs font-medium text-slate-400 pb-1 border-b border-[#E2E8F0]">
+        <div className="hidden sm:grid grid-cols-12 gap-2 text-xs font-medium text-slate-400 pb-1 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
           <div className="col-span-5">Description</div>
           <div className="col-span-2 text-right">Qté</div>
           <div className="col-span-2 text-right">Prix HT (€)</div>
@@ -253,7 +253,7 @@ export default function NewQuoteForm() {
                 </div>
                 <div className="col-span-3 sm:col-span-2">
                   <select value={line.vat_rate} onChange={setLine(line.id, "vat_rate")}
-                    className="w-full px-2 py-2 text-sm border border-[#E2E8F0] rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-[#0f9457] font-mono">
+                    className="w-full px-2 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-md bg-white dark:bg-[#162032] dark:text-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#0f9457] font-mono">
                     {VAT_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
                   </select>
                 </div>
@@ -268,7 +268,7 @@ export default function NewQuoteForm() {
               </div>
               {hasValues && (
                 <div className="flex justify-end text-xs text-slate-400 mt-1 pr-8">
-                  HT : <span className="font-mono font-medium text-[#0F172A] mx-1">{formatCurrency(calc.totalHT)}</span>
+                  HT : <span className="font-mono font-medium text-[#0F172A] dark:text-[#E2E8F0] mx-1">{formatCurrency(calc.totalHT)}</span>
                   {" · "}TVA : <span className="font-mono mx-1">{formatCurrency(calc.totalVAT)}</span>
                   {" · "}TTC : <span className="font-mono font-semibold text-[#0f9457] ml-1">{formatCurrency(calc.totalTTC)}</span>
                 </div>
@@ -280,23 +280,23 @@ export default function NewQuoteForm() {
 
       {/* Notes + Récap */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
+        <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm">
           <Label>Notes / conditions</Label>
           <textarea
             placeholder="Devis valable 30 jours. Acompte de 30% à la commande."
             rows={4}
             value={form.notes}
             onChange={setField("notes")}
-            className="mt-2 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#0f9457] text-slate-600"
+            className="mt-2 w-full px-3 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#0f9457] text-slate-600 dark:text-slate-300 bg-white dark:bg-[#162032]"
           />
         </div>
 
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
-          <h3 className="font-semibold text-[#0F172A] mb-4">Récapitulatif</h3>
+        <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm">
+          <h3 className="font-semibold text-[#0F172A] dark:text-[#E2E8F0] mb-4">Récapitulatif</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-slate-500">Sous-total HT</span>
-              <span className="font-mono font-medium text-[#0F172A]">{formatCurrency(totals.subtotal_ht)}</span>
+              <span className="font-mono font-medium text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(totals.subtotal_ht)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">TVA</span>
@@ -304,7 +304,7 @@ export default function NewQuoteForm() {
             </div>
             <Separator className="my-2" />
             <div className="flex justify-between">
-              <span className="font-semibold text-[#0F172A]">Total TTC</span>
+              <span className="font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Total TTC</span>
               <span className="font-mono text-xl font-bold text-[#0f9457]">{formatCurrency(totals.total_ttc)}</span>
             </div>
           </div>

@@ -95,7 +95,7 @@ export function NewClientForm() {
     <form onSubmit={onSubmit} className="space-y-6" noValidate>
 
       {/* Recherche SIREN — bientôt disponible */}
-      <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
+      <div className="bg-[#F8FAFC] dark:bg-[#162032] border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-xl p-4">
         <div className="flex items-center gap-2 mb-2">
           <Clock className="w-4 h-4 text-[#94A3B8]" />
           <p className="text-sm font-medium text-[#64748B]">
@@ -127,8 +127,8 @@ export function NewClientForm() {
       </div>
 
       {/* Informations générales */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-[#0F172A]">Informations générales</h3>
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-4 shadow-sm">
+        <h3 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Informations générales</h3>
 
         <div>
           <Label htmlFor="name">Raison sociale *</Label>
@@ -199,8 +199,8 @@ export function NewClientForm() {
       </div>
 
       {/* Adresse */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-[#0F172A]">Adresse</h3>
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-4 shadow-sm">
+        <h3 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Adresse</h3>
 
         <div>
           <Label htmlFor="address">Adresse</Label>
