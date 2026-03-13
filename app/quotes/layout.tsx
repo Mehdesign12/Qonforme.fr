@@ -7,7 +7,7 @@ export default function QuotesLayout({ children }: { children: React.ReactNode }
       className="flex overflow-hidden"
       style={{
         height: "100dvh",
-        background: "linear-gradient(250deg, #EFF6FF 0%, #DBEAFE 20%, #F0F9FF 45%, #F8FAFC 70%, #ffffff 100%)",
+        background: "var(--dashboard-bg)",
       }}
     >
       <Sidebar />
