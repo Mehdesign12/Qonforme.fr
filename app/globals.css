@@ -172,3 +172,29 @@ a,
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/*
+ * Pilules header — glassomorphisme adaptatif mobile/desktop.
+ *
+ * Sur mobile iOS Safari, backdrop-filter: blur() combiné avec will-change et
+ * les changements de thème entraîne une saturation GPU → crash → rechargement
+ * en boucle infinie. On désactive donc le blur uniquement sur mobile et on
+ * utilise un fond semi-opaque solide à la place.
+ */
+.header-pill-glass {
+  /* Mobile : fond solide, pas de backdrop-filter */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  will-change: auto !important;
+  transform: none !important;
+}
+
+@media (min-width: 768px) {
+  .header-pill-glass {
+    /* Desktop : glass complet */
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    will-change: transform !important;
+    transform: translateZ(0) !important;
+  }
+}
