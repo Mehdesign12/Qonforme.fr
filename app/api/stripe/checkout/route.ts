@@ -90,6 +90,8 @@ export async function POST(request: NextRequest) {
           .from('subscriptions')
           .update({
             stripe_customer_id: stripeCustomerId,
+            plan: planId,
+            billing_period: billingPeriod,
             updated_at: new Date().toISOString(),
           })
           .eq('user_id', user.id)
