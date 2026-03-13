@@ -43,7 +43,7 @@ export function AdminSidebar({ unreadSupport = 0 }: AdminSidebarProps) {
         </div>
         <div>
           <p className="text-sm font-bold text-foreground leading-tight">Qonforme</p>
-          <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-white bg-red-500 rounded px-1.5 py-0.5 leading-none">Admin</span>
+          <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-white bg-red-500 rounded px-1.5 py-0.5 leading-none">ADMIN</span>
         </div>
       </div>
 
@@ -81,7 +81,7 @@ export function AdminSidebar({ unreadSupport = 0 }: AdminSidebarProps) {
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0] transition-colors duration-100"
         >
           <ArrowLeft className="w-4 h-4 shrink-0 text-slate-400" />
-          <span>Retour à l'app</span>
+          <span>Retour à l&apos;app</span>
         </Link>
       </div>
     </aside>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createAdminClient } from "@/lib/supabase/server"
 
-async function requireAdmin(request: NextRequest) {
+async function requireAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -14,7 +14,7 @@ async function requireAdmin(request: NextRequest) {
 /** POST /api/admin/blog — Créer un article */
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAdmin(request)
+    const user = await requireAdmin()
     if (!user) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
 
     const body        = await request.json()
