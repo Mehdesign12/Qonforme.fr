@@ -113,10 +113,23 @@ export function BugReportModal({ collapsed }: { collapsed: boolean }) {
     e.preventDefault()
     if (!title.trim() || !description.trim()) return
     setSubmitting(true)
-    await new Promise((r) => setTimeout(r, 900))
-    setSubmitting(false)
-    setSuccess(true)
-    toast.success('Bug signalé — merci pour votre retour !')
+    try {
+      const res = await fetch('/api/support/bug-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description, page }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data?.error ?? 'Erreur lors de l\'envoi')
+      }
+      setSuccess(true)
+      toast.success('Bug signalé — merci pour votre retour !')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Impossible d\'envoyer le rapport.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -221,10 +234,23 @@ export function ContactModal({ collapsed }: { collapsed: boolean }) {
     e.preventDefault()
     if (!name.trim() || !email.trim() || !message.trim()) return
     setSubmitting(true)
-    await new Promise((r) => setTimeout(r, 900))
-    setSubmitting(false)
-    setSuccess(true)
-    toast.success('Message envoyé — nous vous répondrons sous 24 h !')
+    try {
+      const res = await fetch('/api/support/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, message }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data?.error ?? 'Erreur lors de l\'envoi')
+      }
+      setSuccess(true)
+      toast.success('Message envoyé — nous vous répondrons sous 24 h !')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Impossible d\'envoyer le message.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
