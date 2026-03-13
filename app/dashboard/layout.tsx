@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/layout/Sidebar"
+import { MobileBottomNav } from "@/components/layout/Sidebar"
 import { HeaderServer } from "@/components/layout/HeaderServer"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -28,39 +29,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <div className="relative z-10 flex flex-col flex-1 min-w-0">
         {/*
-         * Solution D – isolation: isolate crée un stacking-context dédié pour
-         * le header. Le backdrop-filter des pilules ne « voit » plus les pixels
-         * de <main> en train de scroller → plus de recomposition à chaque frame.
-         * contain: layout style empêche toute propagation de recalcul vers l'extérieur.
+         * isolation: isolate uniquement — crée un stacking-context dédié pour
+         * le header (les backdrop-filter des pilules ne recomposent pas à chaque
+         * frame de scroll), SANS contain ni transform qui piégeraient les
+         * éléments position:fixed du MobileBottomNav/MobileSidebar.
          */}
-        <div
-          style={{
-            isolation:   'isolate',
-            contain:     'layout style',
-            /* Promote header layer on GPU upfront — élimine le premier-frame lag */
-            transform:   'translateZ(0)',
-            willChange:  'transform',
-          }}
-        >
+        <div style={{ isolation: 'isolate' }}>
           <HeaderServer />
         </div>
+
         <main
           className="flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-6"
           style={{
             paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
-            /*
-             * Solution D – <main> sur sa propre couche GPU.
-             * Le scroll de <main> n'invalide plus le layer du header.
-             * overscroll-behavior: none coupe le bounce iOS qui force un repaint.
-             */
-            willChange:       'transform',
-            transform:        'translateZ(0)',
             WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
             overscrollBehavior: 'none',
           } as React.CSSProperties}
         >
           {children}
         </main>
+
+        {/* Barre de navigation mobile — uniquement sur mobile (md:hidden interne) */}
+        <MobileBottomNav />
       </div>
     </div>
   )

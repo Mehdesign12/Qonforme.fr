@@ -117,15 +117,16 @@ function Header() {
         {/* Hamburger mobile */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger
-            className="md:hidden inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-white/40"
+            className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-white/50 active:bg-white/70"
             render={
               <button aria-label="Menu">
-                <Menu className="h-4 w-4" />
+                <Menu className="h-5 w-5" />
               </button>
             }
           />
-          <SheetContent side="right" className="w-[260px]">
-            <div className="mb-6 mt-2">
+          <SheetContent side="right" className="w-[min(80vw,300px)] flex flex-col p-0">
+            {/* Header du menu — pr-12 laisse de la place au bouton X built-in de SheetContent */}
+            <div className="flex items-center px-5 py-4 pr-12 border-b border-slate-100">
               <Image
                 src={LOGO_URL}
                 alt="Qonforme"
@@ -135,35 +136,40 @@ function Header() {
                 unoptimized
               />
             </div>
-            <nav className="flex flex-col gap-3">
+
+            {/* Liens de navigation */}
+            <nav className="flex flex-col px-3 py-3 gap-0.5 flex-1">
               {navLinks.map((l) => (
                 <Link
                   key={l.label}
                   href={l.href}
                   onClick={() => setMobileOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-[#0F172A]"
+                  className="rounded-xl px-4 py-3 text-[15px] font-medium text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
                 >
                   {l.label}
                 </Link>
               ))}
-              <Separator className="my-1" />
-              <Link href="/demo" onClick={() => setMobileOpen(false)}>
-                <Button variant="ghost" className="w-full justify-start h-9 text-sm text-slate-600">
-                  Voir la démo
-                </Button>
+            </nav>
+
+            {/* CTAs */}
+            <div className="px-4 pb-6 pt-3 border-t border-slate-100 flex flex-col gap-2.5">
+              <Link href="/login" onClick={() => setMobileOpen(false)}>
+                <button className="w-full h-11 rounded-xl border border-[#E2E8F0] bg-white text-[14px] font-semibold text-[#0F172A] transition-all hover:border-[#2563EB]/40 hover:shadow-sm active:scale-[0.98]">
+                  Se connecter
+                </button>
               </Link>
               <Link href="/signup" onClick={() => setMobileOpen(false)}>
                 <ShimmerButton
                   background="rgba(37,99,235,1)"
                   shimmerColor="#ffffff"
                   shimmerDuration="2.5s"
-                  borderRadius="9999px"
-                  className="w-full h-9 text-sm justify-center"
+                  borderRadius="12px"
+                  className="w-full h-11 text-[14px] font-semibold justify-center"
                 >
                   Commencer →
                 </ShimmerButton>
               </Link>
-            </nav>
+            </div>
           </SheetContent>
         </Sheet>
       </motion.nav>
