@@ -141,6 +141,7 @@ export async function POST(request: NextRequest) {
         // Mapper le statut Stripe → statut Qonforme
         let status: 'active' | 'past_due' | 'canceled' | 'incomplete'
         switch (stripeSub.status) {
+          case 'trialing':
           case 'active':
             status = 'active'
             break

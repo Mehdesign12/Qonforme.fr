@@ -10,7 +10,6 @@ export interface UserProfile {
   last_name: string
   company: Company | null
   plan: SubscriptionPlan
-  trial_ends_at: string | null
   created_at: string
 }
 
@@ -123,7 +122,7 @@ export interface Quote {
 }
 
 // ---- Abonnement ----
-export type SubscriptionPlan = 'trial' | 'starter' | 'pro' | 'expired'
+export type SubscriptionPlan = 'starter' | 'pro'
 
 export interface Subscription {
   id: string
@@ -134,7 +133,7 @@ export interface Subscription {
   billing_period: 'monthly' | 'yearly'
   current_period_start?: string
   current_period_end?: string
-  status: 'active' | 'past_due' | 'canceled' | 'trialing'
+  status: 'active' | 'past_due' | 'canceled' | 'incomplete'
   invoices_this_month: number
   created_at: string
 }
