@@ -49,10 +49,39 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
   const handleComplete = useCallback(() => { setIsComplete(true) }, [])
 
   useEffect(() => {
-    if (isComplete && !redirected.current) {
-      redirected.current = true
-      setTimeout(() => router.replace('/dashboard?welcome=1'), 800)
+    if (!isComplete || redirected.current) return
+    redirected.current = true
+
+    // Le webhook Stripe est asynchrone — on poll le statut de l'abonnement
+    // toutes les 1,5s (max 12 tentatives ≈ 18s) avant de rediriger.
+    // Si timeout, on redirige quand même pour ne pas bloquer l'utilisateur.
+    let attempts = 0
+    const MAX = 12
+    const INTERVAL = 1500
+
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/subscription/status')
+        if (res.ok) {
+          const { status } = await res.json()
+          if (status === 'active') {
+            router.replace('/dashboard?welcome=1')
+            return
+          }
+        }
+      } catch {
+        // réseau instable — on continue de poller
+      }
+      attempts++
+      if (attempts < MAX) {
+        setTimeout(poll, INTERVAL)
+      } else {
+        // Timeout : le webhook a peut-être été retardé, on redirige quand même
+        router.replace('/dashboard?welcome=1')
+      }
     }
+
+    setTimeout(poll, INTERVAL)
   }, [isComplete, router])
 
   const fetchClientSecret = useCallback(async () => {

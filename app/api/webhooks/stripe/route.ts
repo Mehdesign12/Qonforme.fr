@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe/client'
-import { getPlanByPriceId } from '@/lib/stripe/plans'
+import { getPlanByPriceId, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import {
   upsertSubscription,
   updateSubscriptionStatus,
@@ -74,10 +74,24 @@ export async function POST(request: NextRequest) {
           break
         }
 
+        // Résoudre le plan : session.metadata.plan est notre source principale
+        // (défini explicitement lors de la création du checkout).
+        // getPlanByPriceId sert de vérification secondaire — peut être null si
+        // les variables STRIPE_PRICE_* ne correspondent pas au price_id Stripe.
+        const metaPlan = (session.metadata?.plan ?? stripeSub.metadata?.plan) as PlanId | undefined
+        const metaPeriod = (session.metadata?.billing_period ?? stripeSub.metadata?.billing_period) as BillingPeriod | undefined
+
         const planInfo = getPlanByPriceId(priceId)
-        if (!planInfo) {
-          console.error('[webhook] Plan inconnu pour price_id:', priceId)
+        const resolvedPlan: PlanId | undefined = planInfo?.plan ?? metaPlan
+        const resolvedPeriod: BillingPeriod = planInfo?.period ?? metaPeriod ?? 'monthly'
+
+        if (!resolvedPlan || !(['starter', 'pro'] as const).includes(resolvedPlan)) {
+          console.error('[webhook] Plan introuvable — price_id:', priceId, '— metadata.plan:', metaPlan)
           break
+        }
+
+        if (!planInfo) {
+          console.warn('[webhook] price_id non reconnu dans les env vars, fallback sur metadata.plan:', resolvedPlan, '— price_id:', priceId)
         }
 
         // Stratégie en 3 niveaux pour récupérer user_id :
@@ -104,12 +118,12 @@ export async function POST(request: NextRequest) {
             stripeCustomerId: customerId,
             stripeSubscriptionId: subscriptionId,
             stripePriceId: priceId,
-            plan: planInfo.plan,
-            billingPeriod: planInfo.period,
+            plan: resolvedPlan,
+            billingPeriod: resolvedPeriod,
             status: 'active',
             currentPeriodEnd: getPeriodEnd(stripeSub),
           })
-          console.log(`[webhook] Abonnement activé (via customer) pour user ${customerUserId} — plan ${planInfo.plan}`)
+          console.log(`[webhook] Abonnement activé (via customer) pour user ${customerUserId} — plan ${resolvedPlan}`)
           break
         }
 
@@ -118,13 +132,13 @@ export async function POST(request: NextRequest) {
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
           stripePriceId: priceId,
-          plan: planInfo.plan,
-          billingPeriod: planInfo.period,
+          plan: resolvedPlan,
+          billingPeriod: resolvedPeriod,
           status: 'active',
           currentPeriodEnd: getPeriodEnd(stripeSub),
         })
 
-        console.log(`[webhook] Abonnement activé pour user ${userId} — plan ${planInfo.plan}`)
+        console.log(`[webhook] Abonnement activé pour user ${userId} — plan ${resolvedPlan}`)
         break
       }
 
