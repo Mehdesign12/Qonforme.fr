@@ -32,12 +32,12 @@ function newLine(): Line {
 
 /* ── Styles partagés ── */
 const cardStyle: React.CSSProperties = {
-  background:           'rgba(255,255,255,0.85)',
+  background:           'var(--card-glass-bg)',
   backdropFilter:       'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
   boxShadow:            '0 2px 16px rgba(37,99,235,0.06)',
 }
-const inputCls = "mt-1 w-full px-3 py-2.5 text-sm border border-[#E2E8F0] rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-shadow"
+const inputCls = "mt-1 w-full px-3 py-2.5 text-sm border border-[#E2E8F0] rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-shadow dark:bg-[#162032] dark:border-[#1E3A5F] dark:text-[#E2E8F0]"
 const labelCls = "text-[12px] font-semibold text-slate-500 uppercase tracking-wide"
 
 export default function NewInvoiceForm() {
@@ -163,8 +163,8 @@ export default function NewInvoiceForm() {
     <div className="space-y-4 max-w-[860px] mx-auto pb-8">
 
       {/* ── Infos de facturation ── */}
-      <div className="rounded-2xl border border-white/60 p-5 space-y-4" style={cardStyle}>
-        <h2 className="text-[15px] font-bold text-[#0F172A] flex items-center gap-2">
+      <div className="rounded-2xl border border-white/60 p-5 space-y-4 dark:border-[#1E3A5F]" style={cardStyle}>
+        <h2 className="text-[15px] font-bold text-[#0F172A] dark:text-[#E2E8F0] flex items-center gap-2">
           <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] text-xs font-bold">1</span>
           Informations de facturation
         </h2>
@@ -174,7 +174,7 @@ export default function NewInvoiceForm() {
           <div className="sm:col-span-1">
             <label className={labelCls}>Client *</label>
             {clientsLoading ? (
-              <div className="mt-1 w-full h-11 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] flex items-center px-3">
+              <div className="mt-1 w-full h-11 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] flex items-center px-3 dark:border-[#1E3A5F] dark:bg-[#162032]">
                 <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
               </div>
             ) : clients.length === 0 ? (
@@ -224,9 +224,9 @@ export default function NewInvoiceForm() {
       </div>
 
       {/* ── Prestations ── */}
-      <div className="rounded-2xl border border-white/60 p-5 space-y-4" style={cardStyle}>
+      <div className="rounded-2xl border border-white/60 p-5 space-y-4 dark:border-[#1E3A5F]" style={cardStyle}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[15px] font-bold text-[#0F172A] flex items-center gap-2">
+          <h2 className="text-[15px] font-bold text-[#0F172A] dark:text-[#E2E8F0] flex items-center gap-2">
             <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] text-xs font-bold">2</span>
             Prestations
           </h2>
@@ -235,7 +235,7 @@ export default function NewInvoiceForm() {
             <button
               type="button"
               onClick={addLine}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors dark:bg-[#162032] dark:border-[#1E3A5F] dark:text-[#E2E8F0] dark:hover:bg-[#162032]/60"
             >
               <Plus className="w-3.5 h-3.5" />
               Ajouter une ligne
@@ -244,7 +244,7 @@ export default function NewInvoiceForm() {
         </div>
 
         {/* En-têtes desktop */}
-        <div className="hidden sm:grid grid-cols-12 gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 pb-1 border-b border-[#F1F5F9]">
+        <div className="hidden sm:grid grid-cols-12 gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 pb-1 border-b border-[#F1F5F9] dark:border-[#162032]">
           <div className="col-span-5">Description</div>
           <div className="col-span-2 text-right">Qté</div>
           <div className="col-span-2 text-right">Prix HT (€)</div>
@@ -259,7 +259,7 @@ export default function NewInvoiceForm() {
             return (
               <div
                 key={line.id}
-                className="rounded-xl border border-[#F1F5F9] p-3 sm:p-0 sm:border-0 sm:rounded-none bg-[#FAFBFC]/60 sm:bg-transparent"
+                className="rounded-xl border border-[#F1F5F9] p-3 sm:p-0 sm:border-0 sm:rounded-none bg-[#FAFBFC]/60 sm:bg-transparent dark:border-[#162032] dark:bg-[#162032]/40 sm:dark:bg-transparent"
               >
                 <div className="grid grid-cols-12 gap-2 items-start">
                   {/* Description */}
@@ -328,11 +328,11 @@ export default function NewInvoiceForm() {
                 {/* Sous-total ligne */}
                 {hasValues && (
                   <div className="flex justify-end text-xs text-slate-400 mt-2 gap-2 flex-wrap">
-                    <span>HT : <span className="font-mono font-semibold text-[#0F172A]">{formatCurrency(calc.totalHT)}</span></span>
+                    <span>HT : <span className="font-mono font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(calc.totalHT)}</span></span>
                     <span className="text-slate-200">·</span>
                     <span>TVA : <span className="font-mono">{formatCurrency(calc.totalVAT)}</span></span>
                     <span className="text-slate-200">·</span>
-                    <span className="font-semibold text-[#0F172A]">TTC : <span className="font-mono">{formatCurrency(calc.totalTTC)}</span></span>
+                    <span className="font-semibold text-[#0F172A] dark:text-[#E2E8F0]">TTC : <span className="font-mono">{formatCurrency(calc.totalTTC)}</span></span>
                   </div>
                 )}
               </div>
@@ -344,8 +344,8 @@ export default function NewInvoiceForm() {
       {/* ── Notes + Récap ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Notes */}
-        <div className="rounded-2xl border border-white/60 p-5" style={cardStyle}>
-          <h2 className="text-[15px] font-bold text-[#0F172A] mb-3 flex items-center gap-2">
+        <div className="rounded-2xl border border-white/60 p-5 dark:border-[#1E3A5F]" style={cardStyle}>
+          <h2 className="text-[15px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-3 flex items-center gap-2">
             <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] text-xs font-bold">3</span>
             Notes
           </h2>
@@ -354,28 +354,28 @@ export default function NewInvoiceForm() {
             rows={4}
             value={form.notes}
             onChange={setField("notes")}
-            className="w-full px-3 py-2.5 text-sm border border-[#E2E8F0] rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-600 bg-white/80 transition-shadow"
+            className="w-full px-3 py-2.5 text-sm border border-[#E2E8F0] rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-600 bg-white/80 transition-shadow dark:bg-[#162032] dark:border-[#1E3A5F] dark:text-[#E2E8F0]"
           />
         </div>
 
         {/* Récap */}
-        <div className="rounded-2xl border border-white/60 p-5" style={cardStyle}>
-          <h2 className="text-[15px] font-bold text-[#0F172A] mb-4 flex items-center gap-2">
+        <div className="rounded-2xl border border-white/60 p-5 dark:border-[#1E3A5F]" style={cardStyle}>
+          <h2 className="text-[15px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-4 flex items-center gap-2">
             <span className="w-6 h-6 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] text-xs font-bold">4</span>
             Récapitulatif
           </h2>
           <div className="space-y-2.5">
             <div className="flex justify-between text-sm">
               <span className="text-slate-500">Sous-total HT</span>
-              <span className="font-mono font-semibold text-[#0F172A]">{formatCurrency(totals.subtotal_ht)}</span>
+              <span className="font-mono font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(totals.subtotal_ht)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-500">TVA</span>
               <span className="font-mono text-slate-600">{formatCurrency(totals.total_vat)}</span>
             </div>
-            <div className="h-px bg-[#E2E8F0] my-1" />
+            <div className="h-px bg-[#E2E8F0] dark:bg-[#1E3A5F] my-1" />
             <div className="flex justify-between">
-              <span className="font-bold text-[#0F172A]">Total TTC</span>
+              <span className="font-bold text-[#0F172A] dark:text-[#E2E8F0]">Total TTC</span>
               <span className="font-mono text-2xl font-extrabold text-[#2563EB]">{formatCurrency(totals.total_ttc)}</span>
             </div>
           </div>
@@ -384,14 +384,14 @@ export default function NewInvoiceForm() {
 
       {/* ── Actions ── */}
       <div
-        className="rounded-2xl border border-white/60 p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
+        className="rounded-2xl border border-white/60 p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 dark:border-[#1E3A5F]"
         style={cardStyle}
       >
         <button
           type="button"
           disabled={saving}
           onClick={() => submit("draft")}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] hover:border-slate-300 transition-colors disabled:opacity-50 w-full sm:w-auto"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] hover:border-slate-300 transition-colors disabled:opacity-50 w-full sm:w-auto dark:bg-[#162032] dark:border-[#1E3A5F] dark:text-[#E2E8F0] dark:hover:bg-[#162032]/60"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           Sauvegarder en brouillon
@@ -399,7 +399,7 @@ export default function NewInvoiceForm() {
 
         <button
           type="button"
-          className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] hover:border-slate-300 transition-colors w-full sm:w-auto"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] hover:border-slate-300 transition-colors w-full sm:w-auto dark:bg-[#162032] dark:border-[#1E3A5F] dark:text-[#E2E8F0] dark:hover:bg-[#162032]/60"
         >
           <Eye className="w-4 h-4" />
           Aperçu PDF

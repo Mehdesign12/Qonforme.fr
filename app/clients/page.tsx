@@ -22,10 +22,10 @@ function initials(name: string) {
 }
 
 const cardStyle: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.85)',
+  background: 'var(--card-glass-bg)',
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
-  boxShadow: '0 2px 16px rgba(37,99,235,0.06)',
+  boxShadow: 'var(--card-glass-shadow)',
 }
 
 export default function ClientsPage() {
@@ -58,20 +58,20 @@ export default function ClientsPage() {
 
       {/* ── Barre de recherche (CTA supprimé — déjà dans le Header) ── */}
       <div
-        className="relative flex items-center rounded-xl border border-white/60 overflow-hidden"
-        style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+        className="relative flex items-center rounded-xl border border-white/60 dark:border-[#1E3A5F] overflow-hidden"
+        style={{ background: 'var(--card-glass-bg)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
       >
         <Search className="absolute left-3 w-4 h-4 text-slate-400 pointer-events-none" />
         <input
           placeholder="Rechercher un client…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-2.5 text-sm bg-transparent outline-none text-[#0F172A] placeholder:text-slate-400"
+          className="w-full pl-9 pr-3 py-2.5 text-sm bg-transparent outline-none text-[#0F172A] dark:text-[#E2E8F0] placeholder:text-slate-400"
         />
       </div>
 
       {/* Contenu */}
-      <div className="rounded-2xl border border-white/60 overflow-hidden" style={cardStyle}>
+      <div className="rounded-2xl border border-white/60 dark:border-[#1E3A5F] overflow-hidden" style={cardStyle}>
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
@@ -81,7 +81,7 @@ export default function ClientsPage() {
             <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] flex items-center justify-center mx-auto mb-4">
               <Building2 className="w-6 h-6 text-[#2563EB]" />
             </div>
-            <p className="text-[15px] font-bold text-[#0F172A] mb-1">
+            <p className="text-[15px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-1">
               {search ? "Aucun client trouvé" : "Aucun client pour l'instant"}
             </p>
             <p className="text-sm text-slate-400 mb-5">
@@ -99,11 +99,11 @@ export default function ClientsPage() {
         ) : (
           <>
             {/* Mobile */}
-            <div className="sm:hidden divide-y divide-[#F8FAFC]">
+            <div className="sm:hidden divide-y divide-[#F8FAFC] dark:divide-[#162032]">
               {clients.map((client, i) => {
                 const [bgC, textC] = AVATAR_COLORS[i % AVATAR_COLORS.length]
                 return (
-                  <div key={client.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#F8FAFC] transition-colors">
+                  <div key={client.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] transition-colors">
                     {/* Avatar */}
                     <div
                       className="w-9 h-9 rounded-xl flex items-center justify-center text-[12px] font-bold shrink-0"
@@ -138,7 +138,7 @@ export default function ClientsPage() {
             {/* Desktop */}
             <table className="hidden sm:table w-full">
               <thead>
-                <tr className="border-b border-[#F8FAFC] bg-[#FAFBFC]/60">
+                <tr className="border-b border-[#F8FAFC] dark:border-[#162032] bg-[#FAFBFC]/60 dark:bg-[#162032]/40">
                   <th className="text-left text-[10px] font-bold uppercase tracking-wider text-slate-300 px-5 py-3.5">Client</th>
                   <th className="text-left text-[10px] font-bold uppercase tracking-wider text-slate-300 px-5 py-3.5">SIREN</th>
                   <th className="text-left text-[10px] font-bold uppercase tracking-wider text-slate-300 px-5 py-3.5 hidden md:table-cell">Email</th>
@@ -150,7 +150,7 @@ export default function ClientsPage() {
                 {clients.map((client, i) => {
                   const [bgC, textC] = AVATAR_COLORS[i % AVATAR_COLORS.length]
                   return (
-                    <tr key={client.id} className="border-b border-[#F8FAFC] hover:bg-[#F8FAFC]/70 transition-colors last:border-0 group">
+                    <tr key={client.id} className="border-b border-[#F8FAFC] dark:border-[#162032] hover:bg-[#F8FAFC]/70 dark:hover:bg-[#162032]/60 transition-colors last:border-0 group">
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold shrink-0"

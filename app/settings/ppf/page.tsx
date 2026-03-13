@@ -30,27 +30,27 @@ export default function PPFSettingsPage() {
       </div>
 
       {/* Formulaire config */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm space-y-4">
-        <h2 className="font-semibold text-[#0F172A]">Identifiants de connexion</h2>
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm space-y-4">
+        <h2 className="font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Identifiants de connexion</h2>
         <p className="text-sm text-slate-500">
           Ces identifiants sont fournis lors de ton inscription au Portail Public de Facturation (Chorus Pro).
         </p>
 
         <div className="space-y-3">
           <div>
-            <label className="text-sm font-medium text-[#0F172A]">Client ID</label>
+            <label className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">Client ID</label>
             <input
               type="text"
               placeholder="Fourni par Chorus Pro"
-              className="mt-1 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg bg-slate-50 font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+              className="mt-1 w-full px-3 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg bg-slate-50 dark:bg-[#162032] dark:text-[#E2E8F0] font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-[#0F172A]">Client Secret</label>
+            <label className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">Client Secret</label>
             <input
               type="password"
               placeholder="••••••••••••••••"
-              className="mt-1 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg bg-slate-50 font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+              className="mt-1 w-full px-3 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg bg-slate-50 dark:bg-[#162032] dark:text-[#E2E8F0] font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
             />
           </div>
         </div>

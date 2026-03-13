@@ -214,7 +214,7 @@ export function CompanySettingsForm() {
     <form onSubmit={handleSubmit} className="space-y-6">
 
       {/* Recherche SIREN auto-fill */}
-      <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-4">
+      <div className="bg-[#EFF6FF] dark:bg-[#162032] border border-[#BFDBFE] dark:border-[#1E3A5F] rounded-xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <Building2 className="w-4 h-4 text-[#2563EB]" />
           <p className="text-sm font-medium text-[#1E40AF]">Pré-remplissage automatique par SIREN</p>
@@ -224,7 +224,7 @@ export function CompanySettingsForm() {
             placeholder="Ex: 123456789"
             value={sirenSearch}
             onChange={e => setSirenSearch(e.target.value.replace(/\D/g, "").slice(0, 9))}
-            className="font-mono bg-white max-w-48"
+            className="font-mono bg-white dark:bg-[#162032] dark:border-[#1E3A5F] dark:text-[#E2E8F0] max-w-48"
             maxLength={9}
           />
           <Button
@@ -246,8 +246,8 @@ export function CompanySettingsForm() {
       </div>
 
       {/* Identité juridique */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A]">Identité juridique</h2>
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Identité juridique</h2>
 
         <div>
           <Label htmlFor="name">Raison sociale *</Label>
@@ -301,8 +301,8 @@ export function CompanySettingsForm() {
       </div>
 
       {/* Adresse */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A]">Adresse du siège social</h2>
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Adresse du siège social</h2>
 
         <div>
           <Label htmlFor="address">Adresse *</Label>
@@ -342,8 +342,8 @@ export function CompanySettingsForm() {
       </div>
 
       {/* Email professionnel */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A]">Email professionnel</h2>
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Email professionnel</h2>
         <div>
           <Label htmlFor="email">Adresse email de l&apos;entreprise</Label>
           <Input
@@ -363,8 +363,8 @@ export function CompanySettingsForm() {
       </div>
 
       {/* Coordonnées bancaires */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A]">Coordonnées bancaires</h2>
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Coordonnées bancaires</h2>
         <div>
           <Label htmlFor="iban">IBAN</Label>
           <Input
@@ -379,8 +379,8 @@ export function CompanySettingsForm() {
       </div>
 
       {/* Numérotation */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A]">Numérotation des factures</h2>
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Numérotation des factures</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
           <div>
             <Label htmlFor="invoice_prefix">Préfixe</Label>
@@ -395,7 +395,7 @@ export function CompanySettingsForm() {
           </div>
           <div>
             <p className="text-xs text-slate-400 mb-1">Aperçu</p>
-            <div className="px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg font-mono text-sm text-slate-600">
+            <div className="px-3 py-2 bg-[#F8FAFC] dark:bg-[#162032] border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg font-mono text-sm text-slate-600 dark:text-[#E2E8F0]">
               {exampleNumber}
             </div>
           </div>
@@ -406,16 +406,16 @@ export function CompanySettingsForm() {
       </div>
 
       {/* Conditions de paiement */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 space-y-3 shadow-sm">
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-3 shadow-sm">
         <div>
-          <h2 className="text-sm font-semibold text-[#0F172A]">Conditions de paiement par défaut</h2>
+          <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Conditions de paiement par défaut</h2>
           <p className="text-xs text-slate-400 mt-0.5">Pré-remplies dans chaque nouvelle facture</p>
         </div>
         <textarea
           rows={3}
           value={fields.payment_terms}
           onChange={set("payment_terms")}
-          className="w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-600"
+          className="w-full px-3 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-600 dark:bg-[#162032] dark:text-[#E2E8F0]"
           placeholder="Paiement par virement bancaire sous 30 jours..."
         />
       </div>

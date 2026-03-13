@@ -54,10 +54,10 @@ const FILTERS: { key: StatusFilter; label: string }[] = [
 ]
 
 const cardStyle: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.85)',
+  background: 'var(--card-glass-bg)',
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
-  boxShadow: '0 2px 16px rgba(37,99,235,0.06)',
+  boxShadow: 'var(--card-glass-shadow)',
 }
 
 export default function InvoicesPage() {
@@ -94,7 +94,7 @@ export default function InvoicesPage() {
                 ? f.key === "archived"
                   ? "bg-slate-600 text-white border-slate-600 shadow-sm"
                   : "bg-[#2563EB] text-white border-[#2563EB] shadow-sm"
-                : "bg-white/80 text-slate-600 border-[#E2E8F0] hover:border-[#2563EB] hover:text-[#2563EB]"
+                : "bg-white/80 dark:bg-[#0F1E35]/80 text-slate-600 dark:text-slate-400 border-[#E2E8F0] dark:border-[#1E3A5F] hover:border-[#2563EB] hover:text-[#2563EB]"
             }`}
           >
             {f.key === "archived" && <Archive className="w-3 h-3" />}
@@ -114,7 +114,7 @@ export default function InvoicesPage() {
       )}
 
       {/* ── Contenu ── */}
-      <div className="rounded-2xl border border-white/60 overflow-hidden" style={cardStyle}>
+      <div className="rounded-2xl border border-white/60 dark:border-[#1E3A5F] overflow-hidden" style={cardStyle}>
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
@@ -127,7 +127,7 @@ export default function InvoicesPage() {
                 : <FileText className="w-6 h-6 text-[#2563EB]" />
               }
             </div>
-            <p className="text-[15px] font-bold text-[#0F172A] mb-1">
+            <p className="text-[15px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-1">
               {isArchiveView ? "Aucune facture archivée"
                 : activeFilter === "all" ? "Aucune facture pour l'instant"
                 : `Aucune facture "${INVOICE_STATUS_LABELS[activeFilter as InvoiceStatus]}"`}
@@ -147,12 +147,12 @@ export default function InvoicesPage() {
         ) : (
           <>
             {/* ── Mobile : cards ── */}
-            <div className="sm:hidden divide-y divide-[#F8FAFC]">
+            <div className="sm:hidden divide-y divide-[#F8FAFC] dark:divide-[#162032]">
               {invoices.map((inv) => (
                 <Link
                   key={inv.id}
                   href={`/invoices/${inv.id}`}
-                  className={`flex items-center justify-between px-4 py-4 hover:bg-[#F8FAFC] active:bg-[#EFF6FF] transition-colors ${inv.is_archived ? "opacity-60" : ""}`}
+                  className={`flex items-center justify-between px-4 py-4 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] active:bg-[#EFF6FF] dark:active:bg-[#1E3A5F] transition-colors ${inv.is_archived ? "opacity-60" : ""}`}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -164,7 +164,7 @@ export default function InvoicesPage() {
                     <p className="text-[11px] text-slate-300 mt-0.5">{formatDate(inv.issue_date)}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-3 shrink-0">
-                    <p className="font-mono text-[14px] font-bold text-[#0F172A]">{formatCurrency(inv.total_ttc)}</p>
+                    <p className="font-mono text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(inv.total_ttc)}</p>
                     <ChevronRight className="w-4 h-4 text-slate-300" />
                   </div>
                 </Link>
@@ -174,7 +174,7 @@ export default function InvoicesPage() {
             {/* ── Desktop : table ── */}
             <table className="hidden sm:table w-full">
               <thead>
-                <tr className="border-b border-[#F8FAFC] bg-[#FAFBFC]/60">
+                <tr className="border-b border-[#F8FAFC] dark:border-[#162032] bg-[#FAFBFC]/60 dark:bg-[#162032]/40">
                   {["N° facture", "Client", "Émission", "Échéance", "Montant TTC", "Statut"].map((h, i) => (
                     <th
                       key={h}
@@ -194,7 +194,7 @@ export default function InvoicesPage() {
                   <tr
                     key={inv.id}
                     onClick={() => window.location.href = `/invoices/${inv.id}`}
-                    className={`border-b border-[#F8FAFC] hover:bg-[#F8FAFC]/70 transition-colors last:border-0 cursor-pointer ${inv.is_archived ? "opacity-60" : ""}`}
+                    className={`border-b border-[#F8FAFC] dark:border-[#162032] hover:bg-[#F8FAFC]/70 dark:hover:bg-[#162032]/60 transition-colors last:border-0 cursor-pointer ${inv.is_archived ? "opacity-60" : ""}`}
                   >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1.5">
@@ -202,10 +202,10 @@ export default function InvoicesPage() {
                         <span className="font-mono text-[13px] font-bold text-[#2563EB]">{inv.invoice_number}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#0F172A]">{inv.client?.name || "—"}</td>
+                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#0F172A] dark:text-[#E2E8F0]">{inv.client?.name || "—"}</td>
                     <td className="px-5 py-3.5 text-[12px] text-slate-400 hidden md:table-cell">{formatDate(inv.issue_date)}</td>
                     <td className="px-5 py-3.5 text-[12px] text-slate-400 hidden lg:table-cell">{formatDate(inv.due_date)}</td>
-                    <td className="px-5 py-3.5 text-right font-mono text-[13px] font-bold text-[#0F172A]">{formatCurrency(inv.total_ttc)}</td>
+                    <td className="px-5 py-3.5 text-right font-mono text-[13px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(inv.total_ttc)}</td>
                     <td className="px-5 py-3.5"><StatusBadge status={inv.status} /></td>
                   </tr>
                 ))}

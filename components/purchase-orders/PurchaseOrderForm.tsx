@@ -241,8 +241,8 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
     <div className="space-y-6">
 
       {/* Informations générales */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm space-y-4">
-        <h2 className="font-semibold text-[#0F172A]">Informations du bon de commande</h2>
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm space-y-4">
+        <h2 className="font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Informations du bon de commande</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
           {/* Client */}
@@ -260,7 +260,7 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
               <select
                 value={form.client_id}
                 onChange={setField("client_id")}
-                className="mt-1 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg bg-white focus:outline-none focus:ring-2"
+                className="mt-1 w-full px-3 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg bg-white dark:bg-[#162032] dark:text-[#E2E8F0] focus:outline-none focus:ring-2"
                 style={{ ["--tw-ring-color" as string]: INDIGO }}
               >
                 <option value="">Sélectionner un client…</option>
@@ -300,9 +300,9 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
       </div>
 
       {/* Lignes */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="font-semibold text-[#0F172A]">Articles commandés</h2>
+          <h2 className="font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Articles commandés</h2>
           <div className="flex items-center gap-2 flex-wrap">
             <ProductCombobox onSelect={insertFromProduct} />
             <Button type="button" variant="outline" size="sm" onClick={addLine} className="gap-1.5">
@@ -312,7 +312,7 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
         </div>
 
         {/* En-tête colonnes */}
-        <div className="hidden sm:grid grid-cols-12 gap-2 text-xs font-medium text-slate-400 pb-1 border-b border-[#E2E8F0]">
+        <div className="hidden sm:grid grid-cols-12 gap-2 text-xs font-medium text-slate-400 pb-1 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
           <div className="col-span-5">Désignation</div>
           <div className="col-span-2 text-right">Qté</div>
           <div className="col-span-2 text-right">Prix HT (€)</div>
@@ -367,7 +367,7 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
                   <select
                     value={line.vat_rate}
                     onChange={setLine(line.id, "vat_rate")}
-                    className="w-full px-2 py-2 text-sm border border-[#E2E8F0] rounded-md bg-white focus:outline-none focus:ring-2 font-mono"
+                    className="w-full px-2 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-md bg-white dark:bg-[#162032] dark:text-[#E2E8F0] focus:outline-none focus:ring-2 font-mono"
                   >
                     {VAT_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
                   </select>
@@ -388,7 +388,7 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
               {/* Sous-total ligne */}
               {hasValues && (
                 <div className="flex justify-end text-xs text-slate-400 mt-1 pr-8">
-                  HT : <span className="font-mono font-medium text-[#0F172A] mx-1">{formatCurrency(calc.totalHT)}</span>
+                  HT : <span className="font-mono font-medium text-[#0F172A] dark:text-[#E2E8F0] mx-1">{formatCurrency(calc.totalHT)}</span>
                   {" · "}TVA : <span className="font-mono mx-1">{formatCurrency(calc.totalVAT)}</span>
                   {" · "}TTC : <span className="font-mono font-semibold ml-1" style={{ color: INDIGO }}>{formatCurrency(calc.totalTTC)}</span>
                 </div>
@@ -400,23 +400,23 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
 
       {/* Notes + Récapitulatif */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
+        <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm">
           <Label>Notes / conditions</Label>
           <textarea
             placeholder="Conditions de livraison, modalités de paiement, remarques particulières…"
             rows={4}
             value={form.notes}
             onChange={setField("notes")}
-            className="mt-2 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg resize-none focus:outline-none focus:ring-2 text-slate-600"
+            className="mt-2 w-full px-3 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg resize-none focus:outline-none focus:ring-2 text-slate-600 dark:text-slate-300 bg-white dark:bg-[#162032]"
           />
         </div>
 
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
+        <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm">
           <h3 className="font-semibold text-[#0F172A] mb-4">Récapitulatif</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-slate-500">Sous-total HT</span>
-              <span className="font-mono font-medium text-[#0F172A]">{formatCurrency(totals.subtotal_ht)}</span>
+              <span className="font-mono font-medium text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(totals.subtotal_ht)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">TVA</span>
@@ -424,7 +424,7 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
             </div>
             <Separator className="my-2" />
             <div className="flex justify-between">
-              <span className="font-semibold text-[#0F172A]">Total TTC</span>
+              <span className="font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Total TTC</span>
               <span className="font-mono text-xl font-bold" style={{ color: INDIGO }}>{formatCurrency(totals.total_ttc)}</span>
             </div>
           </div>

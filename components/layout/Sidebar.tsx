@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
+import { useTheme } from "next-themes"
 import {
   LayoutDashboard, Users, FileText, FileCheck2,
   Settings, LogOut, Minus,
@@ -16,6 +17,8 @@ import { toast } from "sonner"
 
 const LOGO_URL =
   "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
+const LOGO_URL_DARK =
+  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20simple.png"
 const PICTO_Q =
   "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
 const LOGO_Q_ICON =
@@ -239,6 +242,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const router   = useRouter()
   const supabase = createClient()
+  const { resolvedTheme } = useTheme()
 
   // Hydration-safe : démarrer ouvert, lire localStorage après mount
   const [collapsed, setCollapsed] = useState(false)
@@ -305,7 +309,7 @@ export function Sidebar() {
             />
           ) : (
             <Image
-              src={LOGO_URL}
+              src={mounted && resolvedTheme === 'dark' ? LOGO_URL_DARK : LOGO_URL}
               alt="Qonforme"
               width={120}
               height={28}

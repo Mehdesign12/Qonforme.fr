@@ -173,7 +173,7 @@ export default async function BillingPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-xl font-bold text-[#0F172A]">Abonnement</h1>
+        <h1 className="text-xl font-bold text-[#0F172A] dark:text-[#E2E8F0]">Abonnement</h1>
         <p className="text-sm text-slate-500 mt-1">
           Gérez votre plan, vos informations de paiement et votre facturation.
         </p>

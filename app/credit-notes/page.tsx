@@ -36,7 +36,7 @@ export default function CreditNotesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#0F172A]">Avoirs</h1>
+          <h1 className="text-xl font-bold text-[#0F172A] dark:text-[#E2E8F0]">Avoirs</h1>
           <p className="text-sm text-slate-400 mt-0.5">Avoirs émis sur vos factures</p>
         </div>
       </div>
@@ -52,7 +52,7 @@ export default function CreditNotesPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
+      <div className="rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] overflow-hidden shadow-sm" style={{ background: 'var(--card-glass-bg)' }}>
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
@@ -71,12 +71,12 @@ export default function CreditNotesPage() {
         ) : (
           <>
             {/* ── Mobile : cards ── */}
-            <div className="sm:hidden divide-y divide-[#F1F5F9]">
+            <div className="sm:hidden divide-y divide-[#F1F5F9] dark:divide-[#162032]">
               {creditNotes.map((cn) => (
                 <a
                   key={cn.id}
                   href={`/credit-notes/${cn.id}`}
-                  className="flex items-center justify-between px-4 py-3.5 hover:bg-[#F8FAFC] transition-colors"
+                  className="flex items-center justify-between px-4 py-3.5 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] transition-colors"
                 >
                   <div className="min-w-0">
                     <span className="font-mono text-sm font-medium text-[#C2410C]">{cn.credit_note_number}</span>
@@ -96,7 +96,7 @@ export default function CreditNotesPage() {
             {/* ── Desktop : table ── */}
             <table className="hidden sm:table w-full">
             <thead>
-              <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+              <tr className="border-b border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032]/40">
                 <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° avoir</th>
                 <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Facture originale</th>
                 <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden sm:table-cell">Client</th>
@@ -110,7 +110,7 @@ export default function CreditNotesPage() {
               {creditNotes.map((cn) => (
                 <tr
                   key={cn.id}
-                  className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0"
+                  className="border-b border-[#F1F5F9] dark:border-[#162032] hover:bg-[#F8FAFC] dark:hover:bg-[#162032]/60 transition-colors last:border-0"
                 >
                   <td className="px-5 py-4">
                     <Link
@@ -129,7 +129,7 @@ export default function CreditNotesPage() {
                       <span className="text-sm text-slate-400">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-4 text-sm text-[#0F172A] font-medium hidden sm:table-cell">
+                  <td className="px-5 py-4 text-sm text-[#0F172A] dark:text-[#E2E8F0] font-medium hidden sm:table-cell">
                     {cn.client?.name || "—"}
                   </td>
                   <td className="px-5 py-4 text-sm text-slate-500 hidden md:table-cell">

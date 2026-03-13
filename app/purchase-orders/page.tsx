@@ -53,10 +53,10 @@ interface PurchaseOrder {
 }
 
 const cardStyle: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.85)',
+  background: 'var(--card-glass-bg)',
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
-  boxShadow: '0 2px 16px rgba(79,70,229,0.06)',
+  boxShadow: 'var(--card-glass-shadow)',
 }
 
 export default function PurchaseOrdersPage() {
@@ -89,7 +89,7 @@ export default function PurchaseOrdersPage() {
             className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${
               activeFilter === f.key
                 ? "text-white border-transparent shadow-sm"
-                : "bg-white/80 text-slate-600 border-[#E2E8F0] hover:border-[#818CF8] hover:text-[#4F46E5]"
+                : "bg-white/80 dark:bg-[#0F1E35]/80 text-slate-600 dark:text-slate-400 border-[#E2E8F0] dark:border-[#1E3A5F] hover:border-[#818CF8] hover:text-[#4F46E5]"
             }`}
             style={activeFilter === f.key ? { backgroundColor: INDIGO, borderColor: INDIGO } : {}}
           >
@@ -98,7 +98,7 @@ export default function PurchaseOrdersPage() {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-white/60 overflow-hidden" style={cardStyle}>
+      <div className="rounded-2xl border border-white/60 dark:border-[#1E3A5F] overflow-hidden" style={cardStyle}>
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin" style={{ color: INDIGO }} />
@@ -108,7 +108,7 @@ export default function PurchaseOrdersPage() {
             <div className="w-14 h-14 rounded-2xl bg-[#EEF2FF] flex items-center justify-center mx-auto mb-4">
               <ShoppingCart className="w-6 h-6" style={{ color: INDIGO }} />
             </div>
-            <p className="text-[15px] font-bold text-[#0F172A] mb-1">
+            <p className="text-[15px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-1">
               {activeFilter === "all"
                 ? "Aucun bon de commande pour l'instant"
                 : `Aucun BdC "${STATUS_LABELS[activeFilter as POStatus]}"`}
@@ -133,10 +133,10 @@ export default function PurchaseOrdersPage() {
         ) : (
           <>
             {/* Mobile */}
-            <div className="sm:hidden divide-y divide-[#F8FAFC]">
+            <div className="sm:hidden divide-y divide-[#F8FAFC] dark:divide-[#162032]">
               {pos.map(po => (
                 <a key={po.id} href={`/purchase-orders/${po.id}`}
-                  className="flex items-center justify-between px-4 py-4 hover:bg-[#F8FAFC] active:bg-[#EEF2FF] transition-colors"
+                  className="flex items-center justify-between px-4 py-4 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] active:bg-[#EEF2FF] transition-colors"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -149,7 +149,7 @@ export default function PurchaseOrdersPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 ml-3 shrink-0">
-                    <p className="font-mono text-[14px] font-bold text-[#0F172A]">{formatCurrency(po.total_ttc)}</p>
+                    <p className="font-mono text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(po.total_ttc)}</p>
                     <ChevronRight className="w-4 h-4 text-slate-300" />
                   </div>
                 </a>
@@ -159,7 +159,7 @@ export default function PurchaseOrdersPage() {
             {/* Desktop */}
             <table className="hidden sm:table w-full">
               <thead>
-                <tr className="border-b border-[#F8FAFC] bg-[#FAFBFC]/60">
+                <tr className="border-b border-[#F8FAFC] dark:border-[#162032] bg-[#FAFBFC]/60 dark:bg-[#162032]/40">
                   {["N° BdC", "Client", "Émission", "Livraison", "Référence", "Montant TTC", "Statut"].map((h, i) => (
                     <th key={h} className={`text-left text-[10px] font-bold uppercase tracking-wider text-slate-300 px-5 py-3.5 ${
                       i === 2 ? "hidden sm:table-cell" :
@@ -174,12 +174,12 @@ export default function PurchaseOrdersPage() {
                 {pos.map(po => (
                   <tr key={po.id}
                     onClick={() => window.location.href = `/purchase-orders/${po.id}`}
-                    className="border-b border-[#F8FAFC] hover:bg-[#F8FAFC]/70 transition-colors last:border-0 cursor-pointer"
+                    className="border-b border-[#F8FAFC] dark:border-[#162032] hover:bg-[#F8FAFC]/70 dark:hover:bg-[#162032]/60 transition-colors last:border-0 cursor-pointer"
                   >
                     <td className="px-5 py-3.5">
                       <span className="font-mono text-[13px] font-bold" style={{ color: INDIGO }}>{po.po_number}</span>
                     </td>
-                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#0F172A]">{po.client?.name || "—"}</td>
+                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#0F172A] dark:text-[#E2E8F0]">{po.client?.name || "—"}</td>
                     <td className="px-5 py-3.5 text-[12px] text-slate-400 hidden sm:table-cell">{formatDate(po.issue_date)}</td>
                     <td className="px-5 py-3.5 text-[12px] text-slate-400 hidden md:table-cell">
                       {po.delivery_date ? formatDate(po.delivery_date) : "—"}
@@ -190,7 +190,7 @@ export default function PurchaseOrdersPage() {
                         : <span className="text-slate-300">—</span>
                       }
                     </td>
-                    <td className="px-5 py-3.5 text-right font-mono text-[13px] font-bold text-[#0F172A]">{formatCurrency(po.total_ttc)}</td>
+                    <td className="px-5 py-3.5 text-right font-mono text-[13px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(po.total_ttc)}</td>
                     <td className="px-5 py-3.5"><StatusBadge status={po.status} /></td>
                   </tr>
                 ))}
