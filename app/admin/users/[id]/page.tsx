@@ -5,13 +5,8 @@ import {
   ArrowLeft,
   Building2,
   Mail,
-  MapPin,
   CreditCard,
   FileText,
-  Users,
-  Package,
-  ShoppingCart,
-  CalendarDays,
   ExternalLink,
 } from 'lucide-react'
 

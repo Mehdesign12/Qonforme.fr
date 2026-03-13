@@ -56,15 +56,6 @@ function KpiCard({
   )
 }
 
-/* ── Section title ─────────────────────────────────────────────── */
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
-      {children}
-    </h2>
-  )
-}
-
 /* ── Status pill ────────────────────────────────────────────────── */
 function StatusPill({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
@@ -189,7 +180,7 @@ export default async function AdminOverviewPage() {
       <div className="flex items-center gap-3 pt-1">
         <div>
           <h1 className="text-[22px] sm:text-[26px] font-extrabold text-[#0F172A] dark:text-[#E2E8F0] leading-tight tracking-tight">
-            Vue d'ensemble
+            Vue d&apos;ensemble
           </h1>
           <p className="text-[13px] text-slate-400 dark:text-slate-500 mt-0.5">
             Données en temps réel de la plateforme Qonforme
