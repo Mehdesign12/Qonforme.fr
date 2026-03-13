@@ -1,4 +1,4 @@
-name: Auto-merge Claude branches into dev
+name: Auto-merge Claude branches
 
 on:
   push:
@@ -6,20 +6,20 @@ on:
       - 'claude/**'
 
 jobs:
-  merge-to-dev:
+  auto-merge:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: main
           fetch-depth: 0
 
-      - name: Merge into dev
+      - name: Merge into main
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin ${{ github.ref_name }}
-          git merge origin/${{ github.ref_name }} --no-ff --allow-unrelated-histories -X theirs -m "Auto-merge ${{ github.ref_name }}"
-          git push origin dev
+          git merge origin/${{ github.ref_name }} --no-ff -X theirs -m "Auto-merge ${{ github.ref_name }} into main"
+          git push origin main
