@@ -113,7 +113,7 @@ export function ClientDetail({ clientId }: Props) {
             <Building2 className="w-4 h-4 text-[#2563EB]" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-xl font-bold text-[#0F172A] truncate">{client.name}</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-[#0F172A] dark:text-[#E2E8F0] truncate">{client.name}</h1>
             {client.siren && <p className="text-xs text-slate-400 font-mono">SIREN {client.siren}</p>}
           </div>
         </div>
@@ -153,9 +153,9 @@ export function ClientDetail({ clientId }: Props) {
           { label: "Factures", value: String(client.invoices?.length || 0) },
           { label: "Pays", value: "🇫🇷 FR" },
         ].map(item => (
-          <div key={item.label} className="bg-white rounded-xl border border-[#E2E8F0] p-3 shadow-sm text-center">
+          <div key={item.label} className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-3 shadow-sm text-center">
             <p className="text-xs text-slate-400 mb-0.5">{item.label}</p>
-            <p className="text-sm font-bold text-[#0F172A] font-mono truncate">{item.value}</p>
+            <p className="text-sm font-bold text-[#0F172A] dark:text-[#E2E8F0] font-mono truncate">{item.value}</p>
           </div>
         ))}
       </div>
@@ -167,8 +167,8 @@ export function ClientDetail({ clientId }: Props) {
         <div className="md:col-span-2 space-y-5">
 
           {/* Informations */}
-          <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-[#0F172A] mb-4">Informations</h2>
+          <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0] mb-4">Informations</h2>
             {editing ? (
               <div className="space-y-3">
                 <div>
@@ -234,9 +234,9 @@ export function ClientDetail({ clientId }: Props) {
           </div>
 
           {/* Historique factures */}
-          <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-[#0F172A]">Factures ({client.invoices?.length || 0})</h2>
+          <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#E2E8F0] dark:border-[#1E3A5F] flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Factures ({client.invoices?.length || 0})</h2>
               <Link href={`/invoices/new?client=${clientId}`}>
                 <Button variant="ghost" size="sm" className="gap-1.5 text-[#2563EB] h-7">
                   <Plus className="w-3.5 h-3.5" />
@@ -249,15 +249,15 @@ export function ClientDetail({ clientId }: Props) {
             ) : (
               <>
                 {/* Mobile cards */}
-                <div className="sm:hidden divide-y divide-[#F1F5F9]">
+                <div className="sm:hidden divide-y divide-[#F1F5F9] dark:divide-[#162032]">
                   {client.invoices.map((inv) => (
-                    <Link key={inv.id} href={`/invoices/${inv.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-[#F8FAFC]">
+                    <Link key={inv.id} href={`/invoices/${inv.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-[#F8FAFC] dark:hover:bg-[#162032]">
                       <div>
                         <p className="font-mono text-sm text-[#2563EB] font-medium">{inv.invoice_number}</p>
                         <p className="text-xs text-slate-400 mt-0.5">{formatDate(inv.issue_date)}</p>
                       </div>
                       <div className="text-right ml-3">
-                        <p className="font-mono text-sm font-semibold text-[#0F172A]">{formatCurrency(inv.total_ttc)}</p>
+                        <p className="font-mono text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(inv.total_ttc)}</p>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${STATUS_STYLE[inv.status]}`}>
                           {INVOICE_STATUS_LABELS[inv.status]}
                         </span>
@@ -268,7 +268,7 @@ export function ClientDetail({ clientId }: Props) {
                 {/* Desktop table */}
                 <table className="hidden sm:table w-full">
                   <thead>
-                    <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                    <tr className="border-b border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032]">
                       <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° facture</th>
                       <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Date</th>
                       <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Montant TTC</th>
@@ -277,14 +277,14 @@ export function ClientDetail({ clientId }: Props) {
                   </thead>
                   <tbody>
                     {client.invoices.map((inv) => (
-                      <tr key={inv.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0">
+                      <tr key={inv.id} className="border-b border-[#F1F5F9] dark:border-[#162032] hover:bg-[#F8FAFC] dark:hover:bg-[#162032] transition-colors last:border-0">
                         <td className="px-5 py-3.5">
                           <Link href={`/invoices/${inv.id}`} className="font-mono text-sm text-[#2563EB] hover:underline font-medium">
                             {inv.invoice_number}
                           </Link>
                         </td>
                         <td className="px-5 py-3.5 text-sm text-slate-500">{formatDate(inv.issue_date)}</td>
-                        <td className="px-5 py-3.5 text-right font-mono text-sm font-semibold text-[#0F172A]">{formatCurrency(inv.total_ttc)}</td>
+                        <td className="px-5 py-3.5 text-right font-mono text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(inv.total_ttc)}</td>
                         <td className="px-5 py-3.5">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLE[inv.status]}`}>
                             {INVOICE_STATUS_LABELS[inv.status]}
@@ -301,23 +301,23 @@ export function ClientDetail({ clientId }: Props) {
 
         {/* KPIs desktop */}
         <div className="hidden md:flex flex-col gap-4">
-          <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm text-center">
+          <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 shadow-sm text-center">
             <p className="text-xs text-slate-400 mb-1">CA total</p>
-            <p className="text-2xl font-bold font-mono text-[#0F172A]">{formatCurrency(totalCA)}</p>
+            <p className="text-2xl font-bold font-mono text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(totalCA)}</p>
           </div>
-          <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm text-center">
+          <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 shadow-sm text-center">
             <p className="text-xs text-slate-400 mb-1">Factures</p>
-            <p className="text-2xl font-bold text-[#0F172A]">{client.invoices?.length || 0}</p>
+            <p className="text-2xl font-bold text-[#0F172A] dark:text-[#E2E8F0]">{client.invoices?.length || 0}</p>
           </div>
-          <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm text-center">
+          <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 shadow-sm text-center">
             <p className="text-xs text-slate-400 mb-1">Pays</p>
-            <p className="text-lg font-medium text-[#0F172A]">🇫🇷 France</p>
+            <p className="text-lg font-medium text-[#0F172A] dark:text-[#E2E8F0]">🇫🇷 France</p>
           </div>
         </div>
       </div>
 
       {/* Danger zone */}
-      <div className="bg-white rounded-xl border border-[#FEE2E2] p-5">
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#FEE2E2] p-5">
         <h3 className="text-sm font-semibold text-[#991B1B] mb-2">Zone de danger</h3>
         <p className="text-xs text-slate-500 mb-3">L&apos;archivage masque le client de la liste. Les factures associées sont conservées.</p>
         <Button

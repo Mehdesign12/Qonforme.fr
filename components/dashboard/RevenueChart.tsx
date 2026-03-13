@@ -31,11 +31,11 @@ function CustomTooltip({ active, payload, label }: {
     <div
       className="rounded-xl border border-white/60 px-3 py-2 text-xs shadow-lg"
       style={{
-        background: 'rgba(255,255,255,0.98)',
+        background: 'var(--card-glass-bg)',
         boxShadow:  '0 4px 16px rgba(15,23,42,0.10)',
       }}
     >
-      <p className="font-semibold text-[#0F172A] mb-0.5">{label}</p>
+      <p className="font-semibold text-[#0F172A] dark:text-[#E2E8F0] mb-0.5">{label}</p>
       <p className="text-[#2563EB] font-bold">
         {payload[0].value.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €
       </p>
@@ -49,16 +49,16 @@ function CustomTooltip({ active, payload, label }: {
 export function RevenueChart({ data, currentMonth }: RevenueChartProps) {
   return (
     <div
-      className="rounded-2xl border border-white/60 p-4 sm:p-5 overflow-hidden"
+      className="rounded-2xl border border-white/60 dark:border-[#1E3A5F] p-4 sm:p-5 overflow-hidden"
       style={{
-        background: '#ffffff',
-        boxShadow:  '0 2px 16px rgba(37,99,235,0.07)',
+        background: 'var(--card-glass-bg)',
+        boxShadow:  'var(--card-glass-shadow)',
       }}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-[14px] font-bold text-[#0F172A]">Chiffre d&apos;affaires</h3>
+          <h3 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">Chiffre d&apos;affaires</h3>
           <p className="text-[11px] text-slate-400 mt-0.5">6 derniers mois</p>
         </div>
         <div className="flex items-center gap-2">

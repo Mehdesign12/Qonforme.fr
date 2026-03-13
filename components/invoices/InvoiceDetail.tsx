@@ -178,16 +178,16 @@ function CreditNoteModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-[#0F1E35] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
 
         {/* Header modal */}
-        <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0]">
+        <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-[#FFF7ED] flex items-center justify-center">
               <RotateCcw className="w-4 h-4 text-[#C2410C]" />
             </div>
             <div>
-              <h2 className="font-bold text-[#0F172A] text-sm">Émettre un avoir</h2>
+              <h2 className="font-bold text-[#0F172A] dark:text-[#E2E8F0] text-sm">Émettre un avoir</h2>
               <p className="text-xs text-slate-400">sur la facture {invoice.invoice_number}</p>
             </div>
           </div>
@@ -209,7 +209,7 @@ function CreditNoteModal({
 
           {/* Motif */}
           <div>
-            <label className="text-sm font-medium text-[#0F172A] block mb-2">
+            <label className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0] block mb-2">
               Motif de l&apos;avoir <span className="text-red-500">*</span>
             </label>
             <div className="grid grid-cols-2 gap-2 mb-2">
@@ -221,7 +221,7 @@ function CreditNoteModal({
                   className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all text-left ${
                     reason === r
                       ? "bg-[#FFF7ED] border-[#FB923C] text-[#C2410C]"
-                      : "bg-white border-[#E2E8F0] text-slate-600 hover:border-[#FB923C]"
+                      : "bg-white dark:bg-[#162032] border-[#E2E8F0] dark:border-[#1E3A5F] text-slate-600 dark:text-[#E2E8F0] hover:border-[#FB923C]"
                   }`}
                 >
                   {r}
@@ -234,7 +234,7 @@ function CreditNoteModal({
                 placeholder="Précisez le motif..."
                 value={customReason}
                 onChange={e => setCustomReason(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FB923C]"
+                className="w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FB923C] dark:bg-[#162032] dark:border-[#1E3A5F] dark:text-[#E2E8F0]"
               />
             )}
             {reasonError && <p className="text-xs text-red-500 mt-1">{reasonError}</p>}
@@ -242,7 +242,7 @@ function CreditNoteModal({
 
           {/* Type d'avoir */}
           <div>
-            <label className="text-sm font-medium text-[#0F172A] block mb-2">Type d&apos;avoir</label>
+            <label className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0] block mb-2">Type d&apos;avoir</label>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { value: "total",   label: "Avoir total",   desc: "Annule toute la facture" },
@@ -255,10 +255,10 @@ function CreditNoteModal({
                   className={`p-3 rounded-xl border text-left transition-all ${
                     creditType === opt.value
                       ? "bg-[#FFF7ED] border-[#FB923C]"
-                      : "bg-white border-[#E2E8F0] hover:border-[#FB923C]"
+                      : "bg-white dark:bg-[#162032] border-[#E2E8F0] dark:border-[#1E3A5F] hover:border-[#FB923C]"
                   }`}
                 >
-                  <p className={`text-xs font-semibold ${creditType === opt.value ? "text-[#C2410C]" : "text-[#0F172A]"}`}>
+                  <p className={`text-xs font-semibold ${creditType === opt.value ? "text-[#C2410C]" : "text-[#0F172A] dark:text-[#E2E8F0]"}`}>
                     {opt.label}
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5">{opt.desc}</p>
@@ -269,13 +269,13 @@ function CreditNoteModal({
 
           {/* Sélection lignes (avoir partiel) */}
           {creditType === "partial" && (
-            <div className="border border-[#E2E8F0] rounded-xl overflow-hidden">
-              <div className="bg-[#F8FAFC] px-4 py-2.5 border-b border-[#E2E8F0]">
+            <div className="border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-xl overflow-hidden">
+              <div className="bg-[#F8FAFC] dark:bg-[#162032]/40 px-4 py-2.5 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
                 <p className="text-xs font-medium text-slate-500">Lignes à créditer</p>
               </div>
-              <div className="divide-y divide-[#F1F5F9]">
+              <div className="divide-y divide-[#F1F5F9] dark:divide-[#162032]">
                 {invoice.lines.map((line, i) => (
-                  <label key={i} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[#F8FAFC]">
+                  <label key={i} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[#F8FAFC] dark:hover:bg-[#162032]/60">
                     <input
                       type="checkbox"
                       checked={selectedLines[i]}
@@ -283,7 +283,7 @@ function CreditNoteModal({
                       className="w-4 h-4 rounded accent-[#C2410C]"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#0F172A] truncate">{line.description}</p>
+                      <p className="text-sm text-[#0F172A] dark:text-[#E2E8F0] truncate">{line.description}</p>
                       <p className="text-xs text-slate-400">{line.quantity} × {formatCurrency(line.unit_price_ht)} HT</p>
                     </div>
                     <p className="text-sm font-mono font-semibold text-[#C2410C] shrink-0">
@@ -296,7 +296,7 @@ function CreditNoteModal({
           )}
 
           {/* Récapitulatif montant */}
-          <div className="bg-[#F8FAFC] rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-[#F8FAFC] dark:bg-[#162032] rounded-xl p-4 flex items-center justify-between">
             <div>
               <p className="text-xs text-slate-400">Montant de l&apos;avoir</p>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -468,14 +468,14 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       {/* Modal envoi email */}
       {showSendModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0]">
+          <div className="bg-white dark:bg-[#0F1E35] rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
                   <Send className="w-4 h-4 text-[#2563EB]" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-[#0F172A] text-sm">Envoyer la facture</h2>
+                  <h2 className="font-bold text-[#0F172A] dark:text-[#E2E8F0] text-sm">Envoyer la facture</h2>
                   <p className="text-xs text-slate-400">{invoice?.invoice_number}</p>
                 </div>
               </div>
@@ -496,8 +496,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                 La facture <strong>{invoice?.invoice_number}</strong> sera envoyée avec le PDF Factur-X en pièce jointe.
                 Le statut passera automatiquement à <strong>Envoyée</strong>.
               </p>
-              <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3">
-                <p className="text-xs text-slate-500">Objet : <span className="font-medium text-slate-700">Facture {invoice?.invoice_number} — votre entreprise</span></p>
+              <div className="bg-[#F8FAFC] dark:bg-[#162032] border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-xl p-3">
+                <p className="text-xs text-slate-500 dark:text-[#E2E8F0]">Objet : <span className="font-medium text-slate-700 dark:text-[#E2E8F0]">Facture {invoice?.invoice_number} — votre entreprise</span></p>
               </div>
             </div>
             <div className="flex gap-3 p-6 pt-0">
@@ -696,15 +696,15 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         )}
 
         {/* ---- Corps facture ---- */}
-        <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] shadow-sm overflow-hidden">
 
-          <div className="p-4 sm:p-8 border-b border-[#E2E8F0]">
+          <div className="p-4 sm:p-8 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <div>
                 <p className="text-xs font-medium text-slate-400 mb-1 uppercase tracking-wide">De</p>
                 {company ? (
                   <div>
-                    <p className="text-sm font-bold text-[#0F172A]">{company.name}</p>
+                    <p className="text-sm font-bold text-[#0F172A] dark:text-[#E2E8F0]">{company.name}</p>
                     {company.address && <p className="text-xs text-slate-500 mt-0.5">{company.address}</p>}
                     {(company.zip_code || company.city) && (
                       <p className="text-xs text-slate-500">{[company.zip_code, company.city].filter(Boolean).join(" ")}</p>
@@ -720,7 +720,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                   </div>
                 ) : (
                   <div>
-                    <p className="text-sm font-bold text-[#0F172A]">Votre entreprise</p>
+                    <p className="text-sm font-bold text-[#0F172A] dark:text-[#E2E8F0]">Votre entreprise</p>
                     <p className="text-xs text-slate-500 mt-0.5">Complétez dans Paramètres → Entreprise</p>
                   </div>
                 )}
@@ -750,15 +750,15 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
               <div className="sm:text-right">
                 <div className="mb-3">
                   <p className="text-xs font-medium text-slate-400 uppercase">N° Facture</p>
-                  <p className="text-sm font-bold font-mono text-[#0F172A]">{invoice.invoice_number}</p>
+                  <p className="text-sm font-bold font-mono text-[#0F172A] dark:text-[#E2E8F0]">{invoice.invoice_number}</p>
                 </div>
                 <div className="mb-3">
                   <p className="text-xs font-medium text-slate-400 uppercase">Émission</p>
-                  <p className="text-sm text-[#0F172A]">{formatDate(invoice.issue_date)}</p>
+                  <p className="text-sm text-[#0F172A] dark:text-[#E2E8F0]">{formatDate(invoice.issue_date)}</p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-slate-400 uppercase">Échéance</p>
-                  <p className={`text-sm font-medium ${isOverdue || invoice.status === "overdue" ? "text-[#EF4444]" : "text-[#0F172A]"}`}>
+                  <p className={`text-sm font-medium ${isOverdue || invoice.status === "overdue" ? "text-[#EF4444]" : "text-[#0F172A] dark:text-[#E2E8F0]"}`}>
                     {formatDate(invoice.due_date)}
                   </p>
                 </div>
@@ -767,13 +767,13 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           </div>
 
           {/* Tableau lignes — mobile : cards empilées */}
-          <div className="block sm:hidden divide-y divide-[#F1F5F9]">
+          <div className="block sm:hidden divide-y divide-[#F1F5F9] dark:divide-[#162032]">
             {invoice.lines?.map((line, i) => (
               <div key={i} className="px-4 py-3">
-                <p className="text-sm font-medium text-[#0F172A] mb-1">{line.description}</p>
+                <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0] mb-1">{line.description}</p>
                 <div className="flex items-center justify-between text-xs text-slate-500">
                   <span>{line.quantity} × {formatCurrency(line.unit_price_ht)} HT · TVA {line.vat_rate}%</span>
-                  <span className="font-mono font-semibold text-[#0F172A]">{formatCurrency(line.total_ht)}</span>
+                  <span className="font-mono font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(line.total_ht)}</span>
                 </div>
               </div>
             ))}
@@ -782,7 +782,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                <tr className="border-b border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032]/40">
                   <th className="text-left text-xs font-medium text-slate-400 px-6 py-3">Désignation</th>
                   <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">Qté</th>
                   <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">Prix unitaire HT</th>
@@ -792,12 +792,12 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
               </thead>
               <tbody>
                 {invoice.lines?.map((line, i) => (
-                  <tr key={i} className="border-b border-[#F1F5F9] last:border-0">
-                    <td className="px-6 py-4 text-sm text-[#0F172A]">{line.description}</td>
+                  <tr key={i} className="border-b border-[#F1F5F9] dark:border-[#162032] last:border-0 dark:hover:bg-[#162032]/60">
+                    <td className="px-6 py-4 text-sm text-[#0F172A] dark:text-[#E2E8F0]">{line.description}</td>
                     <td className="px-4 py-4 text-right text-sm font-mono text-slate-600">{line.quantity}</td>
                     <td className="px-4 py-4 text-right text-sm font-mono text-slate-600">{formatCurrency(line.unit_price_ht)}</td>
                     <td className="px-4 py-4 text-right text-sm font-mono text-slate-600">{line.vat_rate}%</td>
-                    <td className="px-6 py-4 text-right text-sm font-mono font-semibold text-[#0F172A]">{formatCurrency(line.total_ht)}</td>
+                    <td className="px-6 py-4 text-right text-sm font-mono font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(line.total_ht)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -805,12 +805,12 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           </div>
 
           {/* Totaux */}
-          <div className="p-4 sm:p-8 border-t border-[#E2E8F0]">
+          <div className="p-4 sm:p-8 border-t border-[#E2E8F0] dark:border-[#1E3A5F]">
             <div className="flex justify-end">
               <div className="w-64 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Sous-total HT</span>
-                  <span className="font-mono text-[#0F172A]">{formatCurrency(invoice.subtotal_ht)}</span>
+                  <span className="font-mono text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(invoice.subtotal_ht)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">TVA</span>
@@ -818,7 +818,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                 </div>
                 <Separator />
                 <div className="flex justify-between pt-1">
-                  <span className="font-bold text-[#0F172A]">Total TTC</span>
+                  <span className="font-bold text-[#0F172A] dark:text-[#E2E8F0]">Total TTC</span>
                   <span className="font-mono text-lg font-bold text-[#2563EB]">{formatCurrency(invoice.total_ttc)}</span>
                 </div>
               </div>
@@ -844,7 +844,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             { label: "Statut",      value: STATUS_LABELS[invoice.status] ?? invoice.status,
               color: INVOICE_STATUS_STYLES[invoice.status as InvoiceStatus]?.text },
           ].map(item => (
-            <div key={item.label} className="bg-white rounded-xl border border-[#E2E8F0] p-4 shadow-sm">
+            <div key={item.label} className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-4 shadow-sm">
               <p className="text-xs text-slate-400 mb-1">{item.label}</p>
               <p className="text-sm font-semibold" style={item.color ? { color: item.color } : {}}>
                 {item.value}

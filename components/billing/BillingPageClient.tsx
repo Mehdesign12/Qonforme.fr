@@ -107,11 +107,11 @@ export default function BillingPageClient({
   // ── Pas d'abonnement du tout ─────────────────────────────────────────────
   if (!subscription) {
     return (
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-8 text-center max-w-md mx-auto">
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-8 text-center max-w-md mx-auto">
         <div className="w-14 h-14 rounded-full bg-[#EFF6FF] flex items-center justify-center mx-auto mb-4">
           <CreditCard className="w-7 h-7 text-[#2563EB]" />
         </div>
-        <h2 className="text-lg font-semibold text-[#0F172A] mb-2">Aucun abonnement actif</h2>
+        <h2 className="text-lg font-semibold text-[#0F172A] dark:text-[#E2E8F0] mb-2">Aucun abonnement actif</h2>
         <p className="text-sm text-slate-500 mb-6">
           Choisis un plan pour accéder à toutes les fonctionnalités de Qonforme.
         </p>
@@ -185,7 +185,7 @@ export default function BillingPageClient({
       )}
 
       {/* ── Carte plan actuel ─────────────────────────────────────────────── */}
-      <div className={`relative overflow-hidden bg-white rounded-xl border-2 p-6 ${isPro ? 'border-[#2563EB]' : 'border-[#E2E8F0]'}`}>
+      <div className={`relative overflow-hidden bg-white dark:bg-[#0F1E35] rounded-xl border-2 p-6 ${isPro ? 'border-[#2563EB]' : 'border-[#E2E8F0] dark:border-[#1E3A5F]'}`}>
         {/* Q filigrane en fond de la card plan actif */}
         <div
           aria-hidden
@@ -207,7 +207,7 @@ export default function BillingPageClient({
               }
             </div>
             <div>
-              <h2 className="text-base font-bold text-[#0F172A]">
+              <h2 className="text-base font-bold text-[#0F172A] dark:text-[#E2E8F0]">
                 Plan {plan?.name ?? subscription.plan}
               </h2>
               <p className="text-sm text-slate-500">
@@ -256,7 +256,7 @@ export default function BillingPageClient({
 
         {/* Compteur factures Starter */}
         {isStarter && invoiceLimit !== null && (
-          <div className="mb-5 p-4 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0]">
+          <div className="mb-5 p-4 bg-[#F8FAFC] dark:bg-[#162032] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F]">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-[#0F172A]">Factures ce mois-ci</p>
               <p className={`text-sm font-bold ${invoicePercent >= 80 ? 'text-[#D97706]' : 'text-[#0F172A]'}`}>
@@ -315,7 +315,7 @@ export default function BillingPageClient({
         <button
           onClick={() => openPortal('manage')}
           disabled={loadingPortal !== null}
-          className="w-full border border-[#E2E8F0] hover:border-[#2563EB] hover:bg-[#EFF6FF] text-[#0F172A] font-medium py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full border border-[#E2E8F0] dark:border-[#1E3A5F] hover:border-[#2563EB] hover:bg-[#EFF6FF] dark:hover:bg-[#1E3A5F] text-[#0F172A] dark:text-[#E2E8F0] font-medium py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loadingPortal === 'manage' ? (
             <>

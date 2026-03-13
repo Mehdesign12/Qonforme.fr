@@ -50,10 +50,10 @@ interface Quote {
 }
 
 const cardStyle: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.85)',
+  background: 'var(--card-glass-bg)',
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
-  boxShadow: '0 2px 16px rgba(15,148,87,0.06)',
+  boxShadow: 'var(--card-glass-shadow)',
 }
 
 const ACCENT = "#059669"
@@ -86,7 +86,7 @@ export default function QuotesPage() {
             className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${
               activeFilter === f.key
                 ? "text-white border-transparent shadow-sm"
-                : "bg-white/80 text-slate-600 border-[#E2E8F0] hover:border-[#059669] hover:text-[#059669]"
+                : "bg-white/80 dark:bg-[#0F1E35]/80 text-slate-600 dark:text-slate-400 border-[#E2E8F0] dark:border-[#1E3A5F] hover:border-[#059669] hover:text-[#059669]"
             }`}
             style={activeFilter === f.key ? { backgroundColor: ACCENT, borderColor: ACCENT } : {}}
           >
@@ -95,7 +95,7 @@ export default function QuotesPage() {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-white/60 overflow-hidden" style={cardStyle}>
+      <div className="rounded-2xl border border-white/60 dark:border-[#1E3A5F] overflow-hidden" style={cardStyle}>
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin" style={{ color: ACCENT }} />
@@ -105,7 +105,7 @@ export default function QuotesPage() {
             <div className="w-14 h-14 rounded-2xl bg-[#ECFDF5] flex items-center justify-center mx-auto mb-4">
               <FileCheck2 className="w-6 h-6" style={{ color: ACCENT }} />
             </div>
-            <p className="text-[15px] font-bold text-[#0F172A] mb-1">
+            <p className="text-[15px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-1">
               {activeFilter === "all" ? "Aucun devis pour l'instant" : `Aucun devis "${STATUS_LABELS[activeFilter as QuoteStatus]}"`}
             </p>
             {activeFilter === "all" && (
@@ -126,10 +126,10 @@ export default function QuotesPage() {
         ) : (
           <>
             {/* Mobile */}
-            <div className="sm:hidden divide-y divide-[#F8FAFC]">
+            <div className="sm:hidden divide-y divide-[#F8FAFC] dark:divide-[#162032]">
               {quotes.map((q) => (
                 <Link key={q.id} href={`/quotes/${q.id}`}
-                  className="flex items-center justify-between px-4 py-4 hover:bg-[#F8FAFC] active:bg-[#ECFDF5] transition-colors"
+                  className="flex items-center justify-between px-4 py-4 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] active:bg-[#ECFDF5] transition-colors"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -143,7 +143,7 @@ export default function QuotesPage() {
                     <p className="text-[11px] text-slate-300 mt-0.5">Validité : {formatDate(q.valid_until)}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-3 shrink-0">
-                    <p className="font-mono text-[14px] font-bold text-[#0F172A]">{formatCurrency(q.total_ttc)}</p>
+                    <p className="font-mono text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(q.total_ttc)}</p>
                     <ChevronRight className="w-4 h-4 text-slate-300" />
                   </div>
                 </Link>
@@ -153,7 +153,7 @@ export default function QuotesPage() {
             {/* Desktop */}
             <table className="hidden sm:table w-full">
               <thead>
-                <tr className="border-b border-[#F8FAFC] bg-[#FAFBFC]/60">
+                <tr className="border-b border-[#F8FAFC] dark:border-[#162032] bg-[#FAFBFC]/60 dark:bg-[#162032]/40">
                   {["N° devis", "Client", "Émission", "Validité", "Montant TTC", "Statut"].map((h, i) => (
                     <th key={h} className={`text-left text-[10px] font-bold uppercase tracking-wider text-slate-300 px-5 py-3.5 ${
                       i === 2 ? "hidden md:table-cell" : i === 3 ? "hidden lg:table-cell" : i === 4 ? "text-right" : ""
@@ -164,7 +164,7 @@ export default function QuotesPage() {
               <tbody>
                 {quotes.map((q) => (
                   <tr key={q.id} onClick={() => window.location.href = `/quotes/${q.id}`}
-                    className="border-b border-[#F8FAFC] hover:bg-[#F8FAFC]/70 transition-colors last:border-0 cursor-pointer"
+                    className="border-b border-[#F8FAFC] dark:border-[#162032] hover:bg-[#F8FAFC]/70 dark:hover:bg-[#162032]/60 transition-colors last:border-0 cursor-pointer"
                   >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
@@ -174,14 +174,14 @@ export default function QuotesPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#0F172A]">{q.client?.name || "—"}</td>
+                    <td className="px-5 py-3.5 text-[13px] font-medium text-[#0F172A] dark:text-[#E2E8F0]">{q.client?.name || "—"}</td>
                     <td className="px-5 py-3.5 text-[12px] text-slate-400 hidden md:table-cell">{formatDate(q.issue_date)}</td>
                     <td className="px-5 py-3.5 hidden lg:table-cell">
                       <span className={`text-[12px] ${new Date(q.valid_until) < new Date() && q.status === "sent" ? "text-[#EF4444] font-semibold" : "text-slate-400"}`}>
                         {formatDate(q.valid_until)}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-right font-mono text-[13px] font-bold text-[#0F172A]">{formatCurrency(q.total_ttc)}</td>
+                    <td className="px-5 py-3.5 text-right font-mono text-[13px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(q.total_ttc)}</td>
                     <td className="px-5 py-3.5"><StatusBadge status={q.status} /></td>
                   </tr>
                 ))}

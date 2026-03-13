@@ -165,16 +165,16 @@ export function InvoiceSettingsForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
       {/* ---- Logo ---- */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 shadow-sm space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-[#0F172A]">Logo de l&apos;entreprise</h2>
+          <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Logo de l&apos;entreprise</h2>
           <p className="text-xs text-slate-400 mt-0.5">Affiché en haut à gauche de chaque facture. PNG, JPG ou SVG, max 2 Mo.</p>
         </div>
 
         <div className="flex items-center gap-4">
           {/* Zone de prévisualisation */}
           <div
-            className="w-24 h-24 rounded-xl border-2 border-dashed border-[#E2E8F0] flex items-center justify-center bg-[#F8FAFC] overflow-hidden shrink-0 cursor-pointer hover:border-[#2563EB] transition-colors"
+            className="w-24 h-24 rounded-xl border-2 border-dashed border-[#E2E8F0] dark:border-[#1E3A5F] flex items-center justify-center bg-[#F8FAFC] dark:bg-[#162032] overflow-hidden shrink-0 cursor-pointer hover:border-[#2563EB] transition-colors"
             onClick={() => fileInputRef.current?.click()}
           >
             {logoUploading ? (
@@ -230,9 +230,9 @@ export function InvoiceSettingsForm() {
       </div>
 
       {/* ---- Couleur d'accentuation ---- */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 shadow-sm space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-[#0F172A]">Couleur des factures</h2>
+          <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Couleur des factures</h2>
           <p className="text-xs text-slate-400 mt-0.5">Utilisée pour l&apos;en-tête, les totaux et les accents dans le PDF.</p>
         </div>
 
@@ -246,7 +246,7 @@ export function InvoiceSettingsForm() {
               onClick={() => setValue("accent_color", c.value, { shouldDirty: true })}
               className={`w-8 h-8 rounded-lg border-2 transition-all ${
                 accentColor === c.value
-                  ? "border-[#0F172A] scale-110 shadow-md"
+                  ? "border-[#0F172A] dark:border-[#E2E8F0] scale-110 shadow-md"
                   : "border-transparent hover:border-[#94A3B8] hover:scale-105"
               }`}
               style={{ backgroundColor: c.value }}
@@ -257,7 +257,7 @@ export function InvoiceSettingsForm() {
         {/* Couleur personnalisée */}
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-lg border border-[#E2E8F0] overflow-hidden cursor-pointer"
+            className="w-10 h-10 rounded-lg border border-[#E2E8F0] dark:border-[#1E3A5F] overflow-hidden cursor-pointer"
             onClick={() => document.getElementById("color-picker")?.click()}
           >
             <input
@@ -282,9 +282,9 @@ export function InvoiceSettingsForm() {
       </div>
 
       {/* ---- Mentions légales ---- */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 shadow-sm space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-[#0F172A]">Mentions légales</h2>
+          <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Mentions légales</h2>
           <p className="text-xs text-slate-400 mt-0.5">
             Affichées en bas de chaque facture. Obligatoires selon votre statut juridique.
           </p>
@@ -299,7 +299,7 @@ export function InvoiceSettingsForm() {
                 key={t.label}
                 type="button"
                 onClick={() => setValue("legal_notice", t.text, { shouldDirty: true })}
-                className="px-3 py-1.5 rounded-full text-xs font-medium border border-[#E2E8F0] bg-[#F8FAFC] text-slate-600 hover:border-[#2563EB] hover:text-[#2563EB] transition-colors"
+                className="px-3 py-1.5 rounded-full text-xs font-medium border border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032] text-slate-600 dark:text-[#E2E8F0] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors"
               >
                 {t.label}
               </button>
@@ -311,11 +311,11 @@ export function InvoiceSettingsForm() {
           {...register("legal_notice")}
           rows={5}
           placeholder={`Ex : Dispensé d'immatriculation au RCS. TVA non applicable, art. 293 B du CGI.\n\nEn cas de retard de paiement, une pénalité de 3× le taux légal sera exigible.`}
-          className="w-full px-3 py-2.5 text-sm border border-[#E2E8F0] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-600 font-sans"
+          className="w-full px-3 py-2.5 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-600 dark:bg-[#162032] dark:text-[#E2E8F0] font-sans"
         />
 
         {/* Exemples des mentions obligatoires */}
-        <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg p-3 space-y-1.5">
+        <div className="bg-[#EFF6FF] dark:bg-[#162032] border border-[#BFDBFE] dark:border-[#1E3A5F] rounded-lg p-3 space-y-1.5">
           <div className="flex items-center gap-1.5">
             <Info className="w-4 h-4 text-[#2563EB] shrink-0" />
             <p className="text-xs font-medium text-[#1E40AF]">Mentions légales obligatoires (droit français)</p>
@@ -335,9 +335,9 @@ export function InvoiceSettingsForm() {
       </div>
 
       {/* ---- Aperçu facture (miniature) ---- */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A] mb-4">Aperçu de l&apos;en-tête</h2>
-        <div className="border border-[#E2E8F0] rounded-lg overflow-hidden">
+      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 shadow-sm">
+        <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0] mb-4">Aperçu de l&apos;en-tête</h2>
+        <div className="border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg overflow-hidden">
           {/* Bande couleur */}
           <div className="h-1.5" style={{ backgroundColor: accentColor }} />
           <div className="p-4 flex justify-between items-start">
@@ -350,7 +350,7 @@ export function InvoiceSettingsForm() {
                   <p className="text-xs text-slate-300">Votre logo</p>
                 </div>
               )}
-              <p className="text-sm font-bold text-[#0F172A]">Mon Entreprise</p>
+              <p className="text-sm font-bold text-[#0F172A] dark:text-[#E2E8F0]">Mon Entreprise</p>
               <p className="text-xs text-slate-400">123456789 • Paris</p>
             </div>
             <div className="text-right">
@@ -359,7 +359,7 @@ export function InvoiceSettingsForm() {
               <p className="text-xs text-slate-400 mt-1">01/06/2026</p>
             </div>
           </div>
-          <div className="px-4 pb-3 border-t border-[#F1F5F9] pt-2">
+          <div className="px-4 pb-3 border-t border-[#F1F5F9] dark:border-[#162032] pt-2">
             <div className="h-2" style={{ backgroundColor: accentColor, opacity: 0.15, borderRadius: 2 }} />
             <div className="mt-1.5 space-y-1">
               {[100, 80, 90].map((w, i) => (

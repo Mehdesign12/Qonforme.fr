@@ -155,15 +155,15 @@ function ProductPanel({
         onClick={onClose}
       />
       {/* Panel */}
-      <div className="w-full max-w-md bg-white flex flex-col shadow-2xl animate-slide-in-right">
+      <div className="w-full max-w-md bg-white dark:bg-[#0F1E35] flex flex-col shadow-2xl animate-slide-in-right">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[#E2E8F0]">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
               <Package className="w-4.5 h-4.5 text-[#2563EB]" />
             </div>
             <div>
-              <h2 className="font-semibold text-[#0F172A] text-sm">
+              <h2 className="font-semibold text-[#0F172A] dark:text-[#E2E8F0] text-sm">
                 {product ? "Modifier le produit" : "Nouveau produit / service"}
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -207,7 +207,7 @@ function ProductPanel({
               rows={3}
               value={form.description}
               onChange={setField("description")}
-              className="mt-1.5 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-700 placeholder:text-slate-400"
+              className="mt-1.5 w-full px-3 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-700 dark:text-[#E2E8F0] placeholder:text-slate-400 bg-white dark:bg-[#162032]"
             />
           </div>
 
@@ -250,7 +250,7 @@ function ProductPanel({
               <select
                 value={form.vat_rate}
                 onChange={setField("vat_rate")}
-                className="mt-1.5 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB] font-mono"
+                className="mt-1.5 w-full px-3 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg bg-white dark:bg-[#162032] dark:text-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#2563EB] font-mono"
               >
                 {VAT_RATES.map(r => (
                   <option key={r} value={r}>{r}%</option>
@@ -261,9 +261,9 @@ function ProductPanel({
 
           {/* Prix TTC calculé */}
           {unitPriceHT > 0 && (
-            <div className="flex items-center justify-between bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-4 py-3">
+            <div className="flex items-center justify-between bg-[#F8FAFC] dark:bg-[#162032] border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg px-4 py-3">
               <span className="text-xs text-slate-500">Prix TTC</span>
-              <span className="font-mono font-semibold text-[#0F172A]">
+              <span className="font-mono font-semibold text-[#0F172A] dark:text-[#E2E8F0]">
                 {formatCurrency(unitPriceTTC)}
               </span>
             </div>
@@ -289,7 +289,7 @@ function ProductPanel({
         </form>
 
         {/* Footer actions */}
-        <div className="px-6 py-4 border-t border-[#E2E8F0] flex gap-3">
+        <div className="px-6 py-4 border-t border-[#E2E8F0] dark:border-[#1E3A5F] flex gap-3">
           <Button
             type="button"
             variant="outline"
@@ -421,7 +421,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Tableau — avec cards mobile */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
+      <div className="rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] overflow-hidden shadow-sm" style={{ background: 'var(--card-glass-bg)' }}>
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
@@ -450,7 +450,7 @@ export default function ProductsPage() {
         ) : (
           <>
             {/* ── Mobile : cards ── */}
-            <div className="sm:hidden divide-y divide-[#F1F5F9]">
+            <div className="sm:hidden divide-y divide-[#F1F5F9] dark:divide-[#162032]">
               {displayed.map(product => (
                 <div
                   key={product.id}
@@ -460,9 +460,9 @@ export default function ProductsPage() {
                     <Package className="w-4 h-4 text-[#2563EB]" />
                   </div>
                   <div className="flex-1 min-w-0" onClick={() => setPanel(product)}>
-                    <p className="text-sm font-medium text-[#0F172A] truncate">{product.name}</p>
+                    <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0] truncate">{product.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="font-mono text-xs font-semibold text-[#0F172A]">{formatCurrency(product.unit_price_ht)} HT</span>
+                      <span className="font-mono text-xs font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(product.unit_price_ht)} HT</span>
                       <span className="text-xs text-slate-400">· TVA {product.vat_rate}%</span>
                       {product.unit && <span className="text-xs text-slate-400">· {product.unit}</span>}
                     </div>
@@ -498,7 +498,7 @@ export default function ProductsPage() {
             {/* ── Desktop : table ── */}
             <table className="hidden sm:table w-full">
               <thead>
-                <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                <tr className="border-b border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032]/40">
                   <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Produit / Service</th>
                   <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden sm:table-cell">Référence</th>
                   <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Unité</th>
@@ -512,7 +512,7 @@ export default function ProductsPage() {
                 {displayed.map(product => (
                   <tr
                     key={product.id}
-                    className={`border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0 ${
+                    className={`border-b border-[#F1F5F9] dark:border-[#162032] hover:bg-[#F8FAFC] dark:hover:bg-[#162032]/60 transition-colors last:border-0 ${
                       !product.is_active ? "opacity-50" : ""
                     }`}
                   >
@@ -523,7 +523,7 @@ export default function ProductsPage() {
                           <Package className="w-4 h-4 text-[#2563EB]" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-[#0F172A]">{product.name}</p>
+                          <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">{product.name}</p>
                           {product.description && (
                             <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{product.description}</p>
                           )}
@@ -546,7 +546,7 @@ export default function ProductsPage() {
                       {product.unit || "—"}
                     </td>
                     {/* Prix HT */}
-                    <td className="px-5 py-4 text-right font-mono text-sm font-medium text-[#0F172A]">
+                    <td className="px-5 py-4 text-right font-mono text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">
                       {formatCurrency(product.unit_price_ht)}
                     </td>
                     {/* TVA */}
