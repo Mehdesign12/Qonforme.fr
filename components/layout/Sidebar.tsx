@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useTheme } from "next-themes"
 import {
   LayoutDashboard, Users, FileText, FileCheck2,
@@ -241,7 +241,10 @@ function SidebarContent({
 export function Sidebar() {
   const pathname = usePathname()
   const router   = useRouter()
-  const supabase = createClient()
+  // useMemo : évite de recréer une instance Supabase à chaque re-render
+  // (createBrowserClient enregistre des listeners internes ; en créer plusieurs
+  // peut provoquer des conflits de token-refresh)
+  const supabase = useMemo(() => createClient(), [])
   const { resolvedTheme } = useTheme()
 
   // Hydration-safe : démarrer ouvert, lire localStorage après mount
@@ -368,7 +371,7 @@ export function MobileSidebar({
 }) {
   const pathname = usePathname()
   const router   = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const { resolvedTheme } = useTheme()
 
   // Verrouille le scroll de la page quand le drawer est ouvert
