@@ -169,7 +169,7 @@ export default function NewQuoteForm() {
           <div className="md:col-span-1">
             <Label>Client *</Label>
             {clientsLoading ? (
-              <div className="mt-1 w-full h-10 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] flex items-center px-3">
+              <div className="mt-1 w-full h-10 rounded-lg border border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032] flex items-center px-3">
                 <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
               </div>
             ) : clients.length === 0 ? (
@@ -292,7 +292,7 @@ export default function NewQuoteForm() {
         </div>
 
         <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm">
-          <h3 className="font-semibold text-[#0F172A] mb-4">Récapitulatif</h3>
+          <h3 className="font-semibold text-[#0F172A] dark:text-[#E2E8F0] mb-4">Récapitulatif</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-slate-500">Sous-total HT</span>
