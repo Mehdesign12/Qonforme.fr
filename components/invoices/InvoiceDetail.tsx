@@ -536,7 +536,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                 <ArrowLeft className="w-4 h-4" /> Factures
               </Button>
             </Link>
-            <h1 className="text-lg sm:text-xl font-bold text-[#0F172A] font-mono">{invoice.invoice_number}</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-[#0F172A] dark:text-[#E2E8F0] font-mono">{invoice.invoice_number}</h1>
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_BADGE[invoice.status] ?? STATUS_BADGE.draft}`}>
               {STATUS_LABELS[invoice.status] ?? invoice.status}
             </span>
