@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2, Eye, EyeOff } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -16,7 +15,6 @@ const btnPrimary =
   "w-full h-12 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-[15px] font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_2px_12px_rgba(37,99,235,0.25)] touch-manipulation"
 
 export default function LoginForm() {
-  const router   = useRouter()
   const supabase = createClient()
 
   const [email, setEmail]       = useState("")
@@ -57,8 +55,7 @@ export default function LoginForm() {
         return
       }
       toast.success("Connexion réussie !")
-      router.push("/dashboard")
-      router.refresh()
+      window.location.href = '/dashboard'
     } catch {
       toast.error("Erreur réseau. Réessaie.")
     } finally {
