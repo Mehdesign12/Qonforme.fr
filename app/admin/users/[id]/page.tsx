@@ -9,6 +9,7 @@ import {
   FileText,
   ExternalLink,
 } from 'lucide-react'
+import AdminChangePlanButton from './AdminChangePlanButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -211,6 +212,14 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
                 </a>
               ) : null
             } />
+            {(subscription.plan === 'starter' || subscription.plan === 'pro') && (
+              <AdminChangePlanButton
+                userId={id}
+                currentPlan={subscription.plan}
+                hasStripeSubscription={!!subscription.stripe_subscription_id && (subscription.status === 'active' || subscription.status === 'past_due')}
+                isDowngrade={subscription.plan === 'pro'}
+              />
+            )}
           </SectionCard>
         )}
 
