@@ -16,19 +16,11 @@ export function AutoDarkMode() {
       stored = localStorage.getItem('theme')
     } catch { /* ignore */ }
 
+    if (stored) return // choix manuel → pas de modification
+
     const hour = new Date().getHours()
-    console.log(`[AutoDarkMode] mount  stored=${stored ?? 'null'}  hour=${hour}`)
-
-    if (stored) {
-      console.log('[AutoDarkMode] choix manuel détecté → pas de modification')
-      return
-    }
-
     if (hour >= 18 || hour < 5) {
-      console.log('[AutoDarkMode] nuit détectée → setTheme(dark)')
       setTheme('dark')
-    } else {
-      console.log('[AutoDarkMode] journée → thème inchangé')
     }
     // Dépendance volontairement vide : cet effet ne doit s'exécuter qu'une seule
     // fois au montage. Lister `setTheme` provoquerait une boucle car next-themes

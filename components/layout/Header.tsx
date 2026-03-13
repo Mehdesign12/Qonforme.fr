@@ -84,17 +84,12 @@ function getInitials(firstName: string, lastName: string): string {
 const PILL_BG     = "var(--glass-bg)"
 const PILL_BORDER = "1px solid var(--glass-border-color)"
 const PILL_SHADOW = "var(--glass-shadow)"
-const PILL_BLUR   = "blur(8px)"
 
 /*
- * Solution D — chaque pilule est promue sur sa propre couche GPU.
- * Le blur est pré-rasterisé une fois ; le scroll de <main> (couche séparée)
- * ne déclenche plus de recomposition du header.
+ * backdrop-filter et GPU uniquement sur md+ (via .header-pill-glass dans globals.css).
+ * Sur mobile iOS Safari, backdrop-filter + will-change + changement de thème
+ * sature le GPU → crash → rechargement en boucle infinie.
  */
-const PILL_GPU: React.CSSProperties = {
-  transform:  "translateZ(0)",
-  willChange: "transform",
-}
 
 /* ------------------------------------------------------------------ */
 /* Props                                                                */
@@ -125,14 +120,11 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
 
           {/* Pilule titre */}
           <div
-            className="flex items-center rounded-full px-4 py-2 min-w-0"
+            className="header-pill-glass flex items-center rounded-full px-4 py-2 min-w-0"
             style={{
-              background:           PILL_BG,
-              backdropFilter:       PILL_BLUR,
-              WebkitBackdropFilter: PILL_BLUR,
-              border:               PILL_BORDER,
-              boxShadow:            PILL_SHADOW,
-              ...PILL_GPU,
+              background: PILL_BG,
+              border:     PILL_BORDER,
+              boxShadow:  PILL_SHADOW,
             }}
           >
             <h1 className="text-[13px] md:text-[14px] font-semibold text-[#0F172A] dark:text-[#E2E8F0] truncate max-w-[160px] sm:max-w-xs">
@@ -164,16 +156,13 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
             </Link>
           )}
 
-          {/* Pilule [toggle + cloche + avatar] — UNE seule couche composite */}
+          {/* Pilule [toggle + cloche + avatar] */}
           <div
-            className="flex items-center gap-0.5 rounded-full px-1.5 py-1"
+            className="header-pill-glass flex items-center gap-0.5 rounded-full px-1.5 py-1"
             style={{
-              background:           PILL_BG,
-              backdropFilter:       PILL_BLUR,
-              WebkitBackdropFilter: PILL_BLUR,
-              border:               PILL_BORDER,
-              boxShadow:            PILL_SHADOW,
-              ...PILL_GPU,
+              background: PILL_BG,
+              border:     PILL_BORDER,
+              boxShadow:  PILL_SHADOW,
             }}
           >
             {/* Toggle dark mode */}
