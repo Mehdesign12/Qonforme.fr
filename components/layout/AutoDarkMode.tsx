@@ -20,7 +20,11 @@ export function AutoDarkMode() {
     if (hour >= 18 || hour < 5) {
       setTheme('dark')
     }
-  }, [setTheme])
+    // Dépendance volontairement vide : cet effet ne doit s'exécuter qu'une seule
+    // fois au montage. Lister `setTheme` provoquerait une boucle car next-themes
+    // v0.4.x recrée la référence de setTheme à chaque changement de thème.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return null
 }

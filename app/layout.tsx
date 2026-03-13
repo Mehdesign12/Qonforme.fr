@@ -100,7 +100,12 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${dmMono.variable} ${bricolageGrotesque.variable} font-sans antialiased bg-background text-foreground`}
       >
-        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange={false}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange={false}
+        >
           <AutoDarkMode />
           <ReduxProvider>
             {children}

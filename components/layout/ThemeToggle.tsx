@@ -18,9 +18,9 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => {
-        const next = isDark ? 'light' : 'dark'
-        setTheme(next)
-        try { localStorage.setItem('theme', next) } catch { /* ignore */ }
+        // next-themes v0.4.x gère lui-même le localStorage — pas d'écriture
+        // manuelle pour éviter la double écriture qui peut déclencher router.refresh()
+        setTheme(isDark ? 'light' : 'dark')
       }}
       className="flex items-center justify-center w-8 h-8 rounded-full transition-colors"
       style={{ color: isDark ? '#94A3B8' : '#94A3B8' }}
