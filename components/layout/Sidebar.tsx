@@ -374,6 +374,11 @@ export function MobileSidebar({
   const supabase = useMemo(() => createClient(), [])
   const { resolvedTheme } = useTheme()
 
+  // Hydration-safe : attendre le montage avant d'utiliser resolvedTheme
+  // (évite un mismatch serveur/client qui peut boucler sur mobile)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
   // Verrouille le scroll de la page quand le drawer est ouvert
   useEffect(() => {
     if (open) {
@@ -429,7 +434,7 @@ export function MobileSidebar({
         >
           <Link href="/dashboard" onClick={onClose} className="flex items-center">
             <Image
-              src={resolvedTheme === 'dark' ? LOGO_URL_DARK : LOGO_URL}
+              src={mounted && resolvedTheme === 'dark' ? LOGO_URL_DARK : LOGO_URL}
               alt="Qonforme"
               width={130}
               height={30}
