@@ -2,6 +2,10 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const ts = Date.now()
+  console.log(`[MW] → ${pathname}  referer=${request.headers.get('referer') ?? '-'}  t=${ts}`)
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -60,9 +64,11 @@ export async function updateSession(request: NextRequest) {
     if (isAuthPage && user) {
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard'
+      console.log(`[MW] ↩ redirect public-auth → /dashboard  t=${ts}`)
       return NextResponse.redirect(url)
     }
 
+    console.log(`[MW] ✓ public pass-through  t=${ts}`)
     return supabaseResponse
   }
 
@@ -87,6 +93,7 @@ export async function updateSession(request: NextRequest) {
   if (isProtected && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    console.log(`[MW] ↩ redirect no-user → /login  t=${ts}`)
     return NextResponse.redirect(url)
   }
 
@@ -106,10 +113,13 @@ export async function updateSession(request: NextRequest) {
         .eq('user_id', user.id)
         .single()
 
+      console.log(`[MW] sub=${sub?.status ?? 'null'}  user=${user.id.slice(0, 8)}  t=${ts}`)
+
       if (!sub) {
         // Pas d'abonnement → page de sélection de plan
         const url = request.nextUrl.clone()
         url.pathname = '/pricing'
+        console.log(`[MW] ↩ redirect no-sub → /pricing  t=${ts}`)
         return NextResponse.redirect(url)
       }
 
@@ -117,10 +127,12 @@ export async function updateSession(request: NextRequest) {
         // Abonnement inactif → page de gestion d'abonnement
         const url = request.nextUrl.clone()
         url.pathname = '/settings/billing'
+        console.log(`[MW] ↩ redirect inactive-sub(${sub.status}) → /settings/billing  t=${ts}`)
         return NextResponse.redirect(url)
       }
     }
   }
 
+  console.log(`[MW] ✓ next()  t=${ts}`)
   return supabaseResponse
 }
