@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+import { BugReportModal, ContactModal } from "@/components/layout/SupportModals"
 
 const LOGO_URL =
   "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
@@ -217,6 +218,9 @@ function SidebarContent({
           )} />
           {!collapsed && <span>Paramètres</span>}
         </Link>
+
+        <BugReportModal collapsed={collapsed} />
+        <ContactModal collapsed={collapsed} />
 
         <button
           onClick={onLogout}
