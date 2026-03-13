@@ -3,9 +3,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { Menu, ArrowRight, Shield, Zap, Play, Lock } from "lucide-react";
+import { Menu, ArrowRight, Shield, Zap, Play, Lock, X } from "lucide-react";
 import { motion } from "motion/react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
@@ -124,51 +124,108 @@ function Header() {
               </button>
             }
           />
-          <SheetContent side="right" className="w-[min(80vw,300px)] flex flex-col p-0">
-            {/* Header du menu — pr-12 laisse de la place au bouton X built-in de SheetContent */}
-            <div className="flex items-center px-5 py-4 pr-12 border-b border-slate-100">
+
+          {/*
+           * Menu mobile plein écran — slide depuis la droite.
+           * Fond : même dégradé que le hero pour cohérence de marque.
+           * showCloseButton={false} : on gère notre propre bouton ×.
+           */}
+          <SheetContent
+            side="right"
+            showCloseButton={false}
+            className="w-full p-0 overflow-hidden border-none"
+            style={{
+              background:
+                "linear-gradient(145deg, #EFF6FF 0%, #EEF2FF 28%, #F5F3FF 52%, #E0F2FE 72%, #EFF6FF 100%)",
+            }}
+          >
+            {/* Q filigrane — branding en fond */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 flex items-center justify-center z-0"
+              style={{ opacity: 0.07 }}
+            >
               <Image
-                src={LOGO_URL}
-                alt="Qonforme"
-                width={110}
-                height={28}
-                className="h-7 w-auto"
+                src={PICTO_Q_URL}
+                alt=""
+                width={340}
+                height={340}
+                className="w-[300px] select-none"
                 unoptimized
               />
             </div>
 
-            {/* Liens de navigation */}
-            <nav className="flex flex-col px-3 py-3 gap-0.5 flex-1">
-              {navLinks.map((l) => (
-                <Link
-                  key={l.label}
-                  href={l.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="rounded-xl px-4 py-3 text-[15px] font-medium text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
-                >
-                  {l.label}
-                </Link>
-              ))}
-            </nav>
+            {/* Contenu au-dessus du filigrane */}
+            <div className="relative z-10 flex flex-col h-full">
 
-            {/* CTAs */}
-            <div className="px-4 pb-6 pt-3 border-t border-slate-100 flex flex-col gap-2.5">
-              <Link href="/login" onClick={() => setMobileOpen(false)}>
-                <button className="w-full h-11 rounded-xl border border-[#E2E8F0] bg-white text-[14px] font-semibold text-[#0F172A] transition-all hover:border-[#2563EB]/40 hover:shadow-sm active:scale-[0.98]">
-                  Se connecter
-                </button>
-              </Link>
-              <Link href="/signup" onClick={() => setMobileOpen(false)}>
-                <ShimmerButton
-                  background="rgba(37,99,235,1)"
-                  shimmerColor="#ffffff"
-                  shimmerDuration="2.5s"
-                  borderRadius="12px"
-                  className="w-full h-11 text-[14px] font-semibold justify-center"
-                >
-                  Commencer →
-                </ShimmerButton>
-              </Link>
+              {/* ── Header : logo + bouton fermer ── */}
+              <div
+                className="flex items-center justify-between px-6"
+                style={{ paddingTop: 'max(20px, env(safe-area-inset-top, 20px))', paddingBottom: '20px' }}
+              >
+                <Link href="/" onClick={() => setMobileOpen(false)}>
+                  <Image
+                    src={LOGO_URL}
+                    alt="Qonforme"
+                    width={124}
+                    height={30}
+                    className="h-8 w-auto"
+                    unoptimized
+                  />
+                </Link>
+                <SheetClose
+                  render={
+                    <button
+                      className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/70 backdrop-blur-sm border border-white/60 text-slate-500 shadow-sm active:scale-95 transition-all touch-manipulation"
+                      aria-label="Fermer le menu"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  }
+                />
+              </div>
+
+              {/* ── Liens de navigation ── */}
+              <nav className="flex flex-col px-4 pt-2 gap-1 flex-1">
+                {navLinks.map((l) => (
+                  <Link
+                    key={l.label}
+                    href={l.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="group flex items-center justify-between rounded-2xl px-5 py-[18px] bg-white/0 hover:bg-white/50 active:bg-white/70 transition-all touch-manipulation"
+                  >
+                    <span className="text-[18px] font-semibold text-[#0F172A]">{l.label}</span>
+                    <span className="text-slate-300 group-hover:text-[#2563EB] transition-colors text-[18px] leading-none">→</span>
+                  </Link>
+                ))}
+              </nav>
+
+              {/* ── CTAs ── */}
+              <div
+                className="px-5 flex flex-col gap-3"
+                style={{ paddingBottom: 'max(36px, env(safe-area-inset-bottom, 36px))', paddingTop: '20px' }}
+              >
+                <Link href="/login" onClick={() => setMobileOpen(false)} className="block">
+                  <button className="w-full h-[52px] rounded-2xl bg-white/80 backdrop-blur-sm border border-white/80 text-[15px] font-semibold text-[#0F172A] shadow-sm active:scale-[0.98] transition-all touch-manipulation">
+                    Se connecter
+                  </button>
+                </Link>
+                <Link href="/signup" onClick={() => setMobileOpen(false)} className="block">
+                  <ShimmerButton
+                    background="rgba(37,99,235,1)"
+                    shimmerColor="#ffffff"
+                    shimmerDuration="2.5s"
+                    borderRadius="16px"
+                    className="w-full h-[52px] text-[15px] font-semibold justify-center"
+                  >
+                    Commencer maintenant →
+                  </ShimmerButton>
+                </Link>
+                <p className="text-center text-[12px] text-slate-400 pt-0.5">
+                  ✓ Accès immédiat &nbsp;·&nbsp; ✓ Résiliable à tout moment
+                </p>
+              </div>
+
             </div>
           </SheetContent>
         </Sheet>
