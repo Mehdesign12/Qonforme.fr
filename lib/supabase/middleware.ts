@@ -67,6 +67,30 @@ export async function updateSession(request: NextRequest) {
   }
 
   // ──────────────────────────────────────────────────────────────
+  // Routes admin — réservées aux administrateurs de la plateforme
+  // ──────────────────────────────────────────────────────────────
+  if (pathname.startsWith('/admin')) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+
+    const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
+
+    if (!adminEmails.includes(user.email?.toLowerCase() ?? '')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+
+    return supabaseResponse
+  }
+
+  // ──────────────────────────────────────────────────────────────
   // Routes protégées : l'utilisateur doit être connecté
   // ──────────────────────────────────────────────────────────────
   const protectedPaths = [

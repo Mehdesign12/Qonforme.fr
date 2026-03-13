@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/resend"
+import { createAdminClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 
 /**
  * POST /api/support/bug-report
@@ -42,6 +44,26 @@ export async function POST(request: NextRequest) {
 </div>
 `
 
+    // ── Récupérer l'utilisateur connecté (optionnel) ─────────────────────
+    let userId: string | null = null
+    try {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      userId = user?.id ?? null
+    } catch { /* non bloquant */ }
+
+    // ── Persister en base pour l'espace admin ─────────────────────────────
+    const admin = createAdminClient()
+    await admin.from('support_messages').insert({
+      type:        'bug_report',
+      title,
+      description,
+      page:        page || null,
+      status:      'new',
+      user_id:     userId,
+    })
+
+    // ── Envoyer l'email de notification ───────────────────────────────────
     await sendEmail({
       to,
       subject: "Rapport d'un bug sur le site",
