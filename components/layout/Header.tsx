@@ -1,10 +1,8 @@
 'use client'
 
-import { useState } from "react"
-import { Bell, Plus, Menu, FileText, FileCheck2, ShoppingCart } from "lucide-react"
+import { Bell, Plus, FileText, FileCheck2, ShoppingCart } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { MobileSidebar } from "@/components/layout/Sidebar"
 import { ThemeToggle } from "@/components/layout/ThemeToggle"
 
 /* ------------------------------------------------------------------ */
@@ -116,32 +114,14 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
   const title     = getTitle(pathname)
   const cta       = PAGE_CTA[pathname]
   const initials  = getInitials(firstName, lastName)
-  const [drawerOpen, setDrawerOpen] = useState(false)
 
   return (
     <>
       {/* ── Header transparent — pilules flottent sur le gradient ── */}
       <header className="h-14 md:h-[60px] px-3 md:px-5 flex items-center justify-between shrink-0 gap-3 relative z-20">
 
-        {/* ── Gauche : hamburger (mobile) + pilule titre ── */}
+        {/* ── Gauche : pilule titre ── */}
         <div className="flex items-center gap-2 min-w-0">
-
-          {/* Hamburger mobile */}
-          <button
-            className="md:hidden flex items-center justify-center w-9 h-9 rounded-full shrink-0 touch-manipulation"
-            style={{
-              background:           PILL_BG,
-              backdropFilter:       PILL_BLUR,
-              WebkitBackdropFilter: PILL_BLUR,
-              border:               PILL_BORDER,
-              boxShadow:            PILL_SHADOW,
-              ...PILL_GPU,
-            }}
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Ouvrir le menu"
-          >
-            <Menu className="w-4 h-4 text-slate-500" />
-          </button>
 
           {/* Pilule titre */}
           <div
@@ -235,9 +215,6 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
           </div>
         </div>
       </header>
-
-      {/* Drawer mobile */}
-      <MobileSidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </>
   )
 }

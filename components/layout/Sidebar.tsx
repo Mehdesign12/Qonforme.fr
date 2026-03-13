@@ -7,7 +7,7 @@ import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
 import {
   LayoutDashboard, Users, FileText, FileCheck2,
-  Settings, LogOut, Minus,
+  Settings, LogOut, Minus, Menu,
   Plus, Archive, RotateCcw, Package, ShoppingCart, X,
   PanelLeftClose, PanelLeftOpen,
 } from "lucide-react"
@@ -369,6 +369,17 @@ export function MobileSidebar({
   const pathname = usePathname()
   const router   = useRouter()
   const supabase = createClient()
+  const { resolvedTheme } = useTheme()
+
+  // Verrouille le scroll de la page quand le drawer est ouvert
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [open])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -383,7 +394,7 @@ export function MobileSidebar({
       {/* Overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-black/30 transition-opacity duration-250 md:hidden",
+          "fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-250 md:hidden",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}
@@ -393,7 +404,8 @@ export function MobileSidebar({
       {/* Drawer */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-72 flex flex-col border-r border-[#E2E8F0] dark:border-[#1E3A5F] shadow-[4px_0_24px_rgba(15,23,42,0.08)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.30)] transition-[transform] duration-250 ease-out md:hidden overflow-hidden",
+          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#E2E8F0] dark:border-[#1E3A5F] shadow-[4px_0_32px_rgba(15,23,42,0.12)] dark:shadow-[4px_0_32px_rgba(0,0,0,0.40)] transition-[transform] duration-300 ease-out md:hidden overflow-hidden",
+          "w-[min(80vw,300px)]",
           open ? "translate-x-0" : "-translate-x-full"
         )}
         style={{ willChange: "transform", background: 'var(--sidebar-bg)' }}
@@ -408,10 +420,13 @@ export function MobileSidebar({
         </div>
 
         {/* Header drawer */}
-        <div className="relative z-10 flex items-center justify-between px-5 py-[18px] border-b border-[#F1F5F9] dark:border-[#162032] shrink-0">
+        <div
+          className="relative z-10 flex items-center justify-between px-5 border-b border-[#F1F5F9] dark:border-[#162032] shrink-0"
+          style={{ paddingTop: 'max(18px, env(safe-area-inset-top, 18px))', paddingBottom: '18px' }}
+        >
           <Link href="/dashboard" onClick={onClose} className="flex items-center">
             <Image
-              src={LOGO_URL}
+              src={resolvedTheme === 'dark' ? LOGO_URL_DARK : LOGO_URL}
               alt="Qonforme"
               width={130}
               height={30}
@@ -420,7 +435,7 @@ export function MobileSidebar({
           </Link>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-[#F1F5F9] dark:hover:bg-[#162032] transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+            className="p-2 rounded-xl hover:bg-[#F1F5F9] dark:hover:bg-[#162032] transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 touch-manipulation"
             aria-label="Fermer le menu"
           >
             <X className="w-4 h-4" />
@@ -436,6 +451,70 @@ export function MobileSidebar({
           />
         </div>
       </aside>
+    </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* MobileBottomNav — barre de navigation fixe en bas (mobile only)    */
+/* ------------------------------------------------------------------ */
+
+export function MobileBottomNav() {
+  const pathname = usePathname()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const primaryTabs = [
+    { href: "/dashboard",  label: "Accueil",  icon: LayoutDashboard },
+    { href: "/invoices",   label: "Factures", icon: FileText },
+    { href: "/quotes",     label: "Devis",    icon: FileCheck2 },
+    { href: "/clients",    label: "Clients",  icon: Users },
+  ]
+
+  return (
+    <>
+      <nav
+        className="md:hidden flex shrink-0 border-t border-[#E2E8F0] dark:border-[#1E3A5F]"
+        style={{
+          background:     'var(--sidebar-bg)',
+          paddingBottom:  'env(safe-area-inset-bottom, 0px)',
+        }}
+      >
+        {primaryTabs.map((tab) => {
+          const isActive =
+            pathname === tab.href ||
+            (tab.href !== "/dashboard" && pathname.startsWith(tab.href))
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={cn(
+                "flex flex-1 flex-col items-center justify-center py-2.5 gap-[3px] touch-manipulation relative",
+                isActive
+                  ? "text-[#2563EB] dark:text-[#60A5FA]"
+                  : "text-slate-400 dark:text-slate-500"
+              )}
+            >
+              {isActive && (
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2px] rounded-b-full bg-[#2563EB] dark:bg-[#60A5FA]" />
+              )}
+              <tab.icon className="w-[22px] h-[22px]" />
+              <span className="text-[10px] font-semibold tracking-tight">{tab.label}</span>
+            </Link>
+          )
+        })}
+
+        {/* Bouton « Menu » — ouvre le drawer complet */}
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="flex flex-1 flex-col items-center justify-center py-2.5 gap-[3px] touch-manipulation text-slate-400 dark:text-slate-500"
+          aria-label="Ouvrir le menu complet"
+        >
+          <Menu className="w-[22px] h-[22px]" />
+          <span className="text-[10px] font-semibold tracking-tight">Menu</span>
+        </button>
+      </nav>
+
+      <MobileSidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </>
   )
 }
