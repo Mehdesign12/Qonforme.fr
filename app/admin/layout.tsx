@@ -1,27 +1,13 @@
-import { redirect } from 'next/navigation'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 
 export const metadata = { title: 'Admin — Qonforme' }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  // ── Auth guard ────────────────────────────────────────────────────────
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
-
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean)
-
-  if (!adminEmails.includes(user.email?.toLowerCase() ?? '')) {
-    redirect('/dashboard')
-  }
+  // Le middleware vérifie déjà le cookie admin_session — pas de check ici
 
   // ── Badges sidebar ────────────────────────────────────────────────────
-  let unreadSupport   = 0
+  let unreadSupport    = 0
   let unresolvedErrors = 0
   try {
     const admin = createAdminClient()
