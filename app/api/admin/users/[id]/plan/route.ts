@@ -49,30 +49,52 @@ export async function PATCH(
     return NextResponse.json({ error: 'Le plan est déjà ' + newPlan }, { status: 400 })
   }
 
-  // ── Mise à jour Stripe (si abonnement actif) ────────────────────────────
+  const billingPeriod = (sub.billing_period ?? 'monthly') as 'monthly' | 'yearly'
+  const newPriceId = PLANS[newPlan as PlanId].stripePriceIds[billingPeriod]
+
+  // ── Résoudre la subscription Stripe ────────────────────────────────────
+  // Cas 1 : stripe_subscription_id présent en DB → utilisation directe
+  // Cas 2 : manquant mais stripe_customer_id présent → recherche via API Stripe
+  let resolvedSubId: string | null = sub.stripe_subscription_id ?? null
+
+  if (!resolvedSubId && sub.stripe_customer_id) {
+    try {
+      const list = await stripe.subscriptions.list({
+        customer: sub.stripe_customer_id,
+        status: 'active',
+        limit: 1,
+      })
+      if (list.data.length > 0) {
+        resolvedSubId = list.data[0].id
+        console.log(`[admin/plan] stripe_subscription_id trouvé via customer_id: ${resolvedSubId}`)
+      }
+    } catch (err) {
+      console.error('[admin/plan] Erreur recherche Stripe par customer_id:', err)
+    }
+  }
+
+  // ── Mise à jour Stripe ──────────────────────────────────────────────────
   const shouldUpdateStripe =
-    sub.stripe_subscription_id &&
-    (sub.status === 'active' || sub.status === 'past_due')
+    resolvedSubId &&
+    (sub.status === 'active' || sub.status === 'past_due' || sub.status === 'trialing' || sub.status === 'incomplete')
 
-  if (shouldUpdateStripe) {
-    const billingPeriod = sub.billing_period as 'monthly' | 'yearly'
-    const newPriceId = PLANS[newPlan as PlanId].stripePriceIds[billingPeriod]
-
+  if (shouldUpdateStripe && resolvedSubId) {
     if (!newPriceId) {
       console.warn(`[admin/plan] Price ID manquant pour ${newPlan}/${billingPeriod} — mise à jour DB seulement`)
     } else {
       try {
-        const stripeSub = await stripe.subscriptions.retrieve(sub.stripe_subscription_id as string)
+        const stripeSub = await stripe.subscriptions.retrieve(resolvedSubId)
         const itemId = stripeSub.items.data[0]?.id
 
         if (!itemId) {
           return NextResponse.json({ error: 'Stripe : item de subscription introuvable' }, { status: 500 })
         }
 
-        await stripe.subscriptions.update(sub.stripe_subscription_id as string, {
+        await stripe.subscriptions.update(resolvedSubId, {
           items: [{ id: itemId, price: newPriceId }],
           proration_behavior: 'none',
         })
+        console.log(`[admin/plan] Stripe subscription ${resolvedSubId} mis à jour → ${newPlan}`)
       } catch (err) {
         console.error('[admin/plan] Erreur Stripe:', err)
         return NextResponse.json({ error: 'Erreur lors de la mise à jour Stripe' }, { status: 500 })
@@ -81,12 +103,18 @@ export async function PATCH(
   }
 
   // ── Mise à jour DB ──────────────────────────────────────────────────────
+  const dbUpdate: Record<string, unknown> = {
+    plan: newPlan,
+    updated_at: new Date().toISOString(),
+  }
+  // Sauvegarder le stripe_subscription_id si on vient de le découvrir
+  if (resolvedSubId && !sub.stripe_subscription_id) {
+    dbUpdate.stripe_subscription_id = resolvedSubId
+  }
+
   const { error: updateError } = await admin
     .from('subscriptions')
-    .update({
-      plan: newPlan,
-      updated_at: new Date().toISOString(),
-    })
+    .update(dbUpdate)
     .eq('user_id', targetUserId)
 
   if (updateError) {
