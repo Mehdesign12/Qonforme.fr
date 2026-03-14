@@ -10,6 +10,7 @@ import {
   FileText,
   ArrowLeft,
   Shield,
+  AlertTriangle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -18,14 +19,16 @@ const NAV = [
   { href: '/admin/users',         icon: Users,           label: 'Utilisateurs' },
   { href: '/admin/subscriptions', icon: CreditCard,      label: 'Abonnements' },
   { href: '/admin/support',       icon: MessageSquare,   label: 'Support' },
+  { href: '/admin/errors',        icon: AlertTriangle,   label: 'Erreurs' },
   { href: '/admin/blog',          icon: FileText,        label: 'Blog' },
 ]
 
 interface AdminSidebarProps {
-  unreadSupport?: number
+  unreadSupport?:    number
+  unresolvedErrors?: number
 }
 
-export function AdminSidebar({ unreadSupport = 0 }: AdminSidebarProps) {
+export function AdminSidebar({ unreadSupport = 0, unresolvedErrors = 0 }: AdminSidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -67,6 +70,11 @@ export function AdminSidebar({ unreadSupport = 0 }: AdminSidebarProps) {
               {label === 'Support' && unreadSupport > 0 && (
                 <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
                   {unreadSupport > 99 ? '99+' : unreadSupport}
+                </span>
+              )}
+              {label === 'Erreurs' && unresolvedErrors > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                  {unresolvedErrors > 99 ? '99+' : unresolvedErrors}
                 </span>
               )}
             </Link>

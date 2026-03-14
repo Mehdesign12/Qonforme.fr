@@ -20,15 +20,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/dashboard')
   }
 
-  // ── Badge support non lus ─────────────────────────────────────────────
-  let unreadSupport = 0
+  // ── Badges sidebar ────────────────────────────────────────────────────
+  let unreadSupport   = 0
+  let unresolvedErrors = 0
   try {
     const admin = createAdminClient()
-    const { count } = await admin
-      .from('support_messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'new')
-    unreadSupport = count ?? 0
+    const [supportRes, errorsRes] = await Promise.all([
+      admin.from('support_messages').select('id', { count: 'exact', head: true }).eq('status', 'new'),
+      admin.from('error_logs').select('id', { count: 'exact', head: true }).is('resolved_at', null),
+    ])
+    unreadSupport    = supportRes.count ?? 0
+    unresolvedErrors = errorsRes.count  ?? 0
   } catch { /* non bloquant */ }
 
   return (
@@ -48,7 +50,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         style={{ background: 'var(--dashboard-blob2)' }}
       />
 
-      <AdminSidebar unreadSupport={unreadSupport} />
+      <AdminSidebar unreadSupport={unreadSupport} unresolvedErrors={unresolvedErrors} />
 
       <div className="relative z-10 flex flex-col flex-1 min-w-0 overflow-hidden">
         <main className="flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-6">
