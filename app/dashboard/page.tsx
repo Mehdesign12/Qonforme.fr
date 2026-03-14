@@ -12,10 +12,6 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = { title: 'Tableau de bord' }
 export const dynamic = 'force-dynamic'
 
-interface DashboardPageProps {
-  searchParams: Promise<{ welcome?: string }>
-}
-
 /* ── Emoji + sous-titre selon l'heure du jour (UTC+1 approx.) ── */
 function getGreeting(firstName: string): { emoji: string; greeting: string; sub: string } {
   const hour = new Date().getUTCHours() + 1 // UTC+1 approx.
@@ -40,10 +36,7 @@ function getGreeting(firstName: string): { emoji: string; greeting: string; sub:
   }
 }
 
-export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const params = await searchParams
-  const isWelcomeRedirect = params?.welcome === '1'
-
+export default async function DashboardPage() {
   let showWelcome = false
   let firstName   = ""
 
@@ -55,14 +48,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       // Récupérer le prénom depuis user_metadata
       firstName = (user.user_metadata?.first_name as string) || ""
 
-      if (isWelcomeRedirect) {
-        const { data: company } = await supabase
-          .from('companies')
-          .select('onboarding_seen_at')
-          .eq('user_id', user.id)
-          .single()
-        showWelcome = !company?.onboarding_seen_at
-      }
+      // Afficher le modal d'onboarding si l'utilisateur ne l'a pas encore vu,
+      // sans dépendre du paramètre ?welcome=1 (race condition avec le webhook Stripe)
+      const { data: company } = await supabase
+        .from('companies')
+        .select('onboarding_seen_at')
+        .eq('user_id', user.id)
+        .single()
+      showWelcome = !company?.onboarding_seen_at
     }
   } catch {
     // Non bloquant

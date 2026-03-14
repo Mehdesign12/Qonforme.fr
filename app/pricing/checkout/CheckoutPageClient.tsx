@@ -61,7 +61,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
     const FAST_MAX = 40
     const FAST_INTERVAL = 2000
 
-    const redirectToDashboard = () => router.replace('/dashboard?welcome=1')
+    const redirectToDashboard = () => router.replace('/dashboard')
 
     let slowTimer: ReturnType<typeof setInterval> | null = null
 
@@ -545,7 +545,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
                     Cela prend plus de temps que prévu. Vous pouvez accéder à votre espace dès maintenant.
                   </p>
                   <button
-                    onClick={() => router.replace('/dashboard?welcome=1')}
+                    onClick={() => router.replace('/dashboard')}
                     className="inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-[#1D4ED8] transition-colors"
                   >
                     Accéder à mon espace →

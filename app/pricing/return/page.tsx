@@ -18,8 +18,8 @@ export default async function PricingReturnPage({ searchParams }: ReturnPageProp
     const session = await stripe.checkout.sessions.retrieve(session_id)
 
     if (session.status === 'complete') {
-      // Paiement réussi → dashboard avec popup bienvenue
-      redirect('/dashboard?welcome=1')
+      // Paiement réussi → dashboard (le modal d'onboarding s'affiche si onboarding_seen_at est NULL)
+      redirect('/dashboard')
     } else if (session.status === 'open') {
       // Session encore ouverte → retour pricing
       redirect('/pricing')
