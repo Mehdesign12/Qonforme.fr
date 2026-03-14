@@ -46,8 +46,7 @@ export async function POST(request: NextRequest) {
       console.error("[signup] admin.createUser error:", {
         message: error.message,
         status:  error.status,
-        // @ts-expect-error — champ non typé mais présent sur certaines erreurs Supabase
-        code:    error.code,
+        code:    (error as { code?: string }).code,
       })
 
       // Compte déjà existant
