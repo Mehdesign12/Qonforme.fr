@@ -44,6 +44,7 @@ export default function NewInvoiceForm() {
   const router = useRouter()
   const [loading,        setLoading]        = useState(false)
   const [saving,         setSaving]         = useState(false)
+  const [previewing,     setPreviewing]     = useState(false)
   const [clients,        setClients]        = useState<Client[]>([])
   const [clientsLoading, setClientsLoading] = useState(true)
   const [errors,         setErrors]         = useState<Record<string, string>>({})
@@ -111,6 +112,51 @@ export default function NewInvoiceForm() {
     })
     setErrors(errs)
     return Object.keys(errs).length === 0
+  }
+
+  const previewPDF = async () => {
+    if (!validate()) { toast.error("Corrigez les erreurs avant de continuer"); return }
+    setPreviewing(true)
+    try {
+      const enrichedLines = form.lines.map((line, i) => ({
+        description:   line.description.trim(),
+        quantity:      parseFloat(line.quantity) || 0,
+        unit_price_ht: parseFloat(line.unit_price_ht) || 0,
+        vat_rate:      line.vat_rate,
+        total_ht:      computedLines[i].totalHT,
+        total_vat:     computedLines[i].totalVAT,
+        total_ttc:     computedLines[i].totalTTC,
+      }))
+      const res = await fetch("/api/invoices", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: form.client_id, issue_date: form.issue_date,
+          due_date: form.due_date, notes: form.notes || null,
+          lines: enrichedLines, status: "draft",
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        if (res.status === 402 && json.code === "STARTER_LIMIT_REACHED") {
+          toast.error(`Limite Starter atteinte (${json.invoicesThisMonth}/${json.limit} ce mois). Passez au plan Pro.`, {
+            duration: 8000,
+            action: { label: "Passer au Pro", onClick: () => window.location.href = "/settings/billing" },
+          })
+        } else {
+          toast.error(json.error || "Erreur lors de la sauvegarde")
+        }
+        return
+      }
+      const invoiceId = json.invoice?.id
+      window.open(`/api/invoices/${invoiceId}/pdf`, "_blank")
+      toast.success("Brouillon sauvegardé — aperçu PDF ouvert dans un nouvel onglet")
+      router.push(`/invoices/${invoiceId}`)
+      router.refresh()
+    } catch {
+      toast.error("Erreur réseau")
+    } finally {
+      setPreviewing(false)
+    }
   }
 
   const submit = async (action: "draft" | "send") => {
@@ -399,9 +445,11 @@ export default function NewInvoiceForm() {
 
         <button
           type="button"
-          className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] hover:border-slate-300 transition-colors w-full sm:w-auto dark:bg-[#162032] dark:border-[#1E3A5F] dark:text-[#E2E8F0] dark:hover:bg-[#162032]/60"
+          disabled={previewing}
+          onClick={previewPDF}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] hover:border-slate-300 transition-colors disabled:opacity-50 w-full sm:w-auto dark:bg-[#162032] dark:border-[#1E3A5F] dark:text-[#E2E8F0] dark:hover:bg-[#162032]/60"
         >
-          <Eye className="w-4 h-4" />
+          {previewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
           Aperçu PDF
         </button>
 
