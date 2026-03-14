@@ -42,22 +42,38 @@ export async function POST(request: NextRequest) {
     })
 
     if (error) {
+      // Log complet pour diagnostic (visible dans Vercel Functions logs)
+      console.error("[signup] admin.createUser error:", {
+        message: error.message,
+        status:  error.status,
+        // @ts-expect-error — champ non typé mais présent sur certaines erreurs Supabase
+        code:    error.code,
+      })
+
       // Compte déjà existant
       if (
         error.message.includes("already registered") ||
         error.message.includes("already exists") ||
-        error.message.includes("duplicate")
+        error.message.includes("duplicate") ||
+        error.message.includes("User already registered")
       ) {
+        return NextResponse.json({ error: "already_exists" }, { status: 409 })
+      }
+
+      // Erreur DB trigger → guide vers la migration SQL à appliquer
+      if (error.message.includes("Database error")) {
+        console.error(
+          "[signup] ACTION REQUISE : appliquer la migration " +
+          "supabase/migrations/20260314_fix_auth_user_trigger.sql " +
+          "dans le SQL Editor du dashboard Supabase."
+        )
         return NextResponse.json(
-          { error: "already_exists" },
-          { status: 409 }
+          { error: "Erreur de configuration base de données. Contactez le support." },
+          { status: 500 }
         )
       }
-      console.error("[signup] admin.createUser error:", error.message)
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
+
+      return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
     return NextResponse.json({ success: true, userId: data.user?.id })
