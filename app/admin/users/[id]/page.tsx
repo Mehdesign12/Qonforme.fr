@@ -10,6 +10,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import AdminChangePlanButton from './AdminChangePlanButton'
+import AdminSubscriptionActions from './AdminSubscriptionActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -220,6 +221,11 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
                 isDowngrade={subscription.plan === 'pro'}
               />
             )}
+            <AdminSubscriptionActions
+              userId={id}
+              currentStatus={subscription.status}
+              currentPeriodEnd={subscription.current_period_end}
+            />
           </SectionCard>
         )}
 

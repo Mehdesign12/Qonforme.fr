@@ -49,21 +49,22 @@ async function getUsers(search: string, planFilter: string, statusFilter: string
     .select('user_id, plan, status, billing_period, current_period_end')
     .in('user_id', userIds)
 
-  // Récupérer les emails via auth admin (batch)
+  // Récupérer les emails + dernière connexion via auth admin (batch)
   const { data: authUsersData } = await admin.auth.admin.listUsers({ perPage: 1000 })
   const authMap = new Map(
-    (authUsersData?.users ?? []).map(u => [u.id, u.email])
+    (authUsersData?.users ?? []).map(u => [u.id, { email: u.email ?? '', lastSignIn: u.last_sign_in_at ?? null }])
   )
 
   const subMap = new Map((subs ?? []).map(s => [s.user_id, s]))
 
   let rows = companies.map(c => {
     const sub  = subMap.get(c.user_id)
-    const email = authMap.get(c.user_id) ?? ''
+    const auth = authMap.get(c.user_id)
     return {
       user_id:  c.user_id,
       name:     c.name || '—',
-      email,
+      email:    auth?.email ?? '',
+      lastSignIn: auth?.lastSignIn ?? null,
       city:     c.city || '—',
       created_at: c.created_at,
       plan:     sub?.plan ?? 'none',
@@ -167,13 +168,14 @@ export default async function AdminUsersPage({
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Statut</th>
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Inscription</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Activité</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-[#1E3A5F]">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-400">
+                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-400">
                     <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
                     Aucun utilisateur trouvé
                   </td>
@@ -208,6 +210,22 @@ export default async function AdminUsersPage({
                   </td>
                   <td className="px-4 py-3 text-[12px] text-slate-400">
                     {new Date(u.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </td>
+                  <td className="px-4 py-3">
+                    {u.lastSignIn ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[12px] text-slate-400">
+                          {new Date(u.lastSignIn).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                        {(Date.now() - new Date(u.lastSignIn).getTime()) > 30 * 24 * 60 * 60 * 1000 && (
+                          <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 w-fit">
+                            Inactif
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[12px] text-slate-300 dark:text-slate-600">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link
