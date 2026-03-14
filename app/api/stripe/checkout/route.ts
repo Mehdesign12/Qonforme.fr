@@ -132,8 +132,10 @@ export async function POST(request: NextRequest) {
           billing_period: billingPeriod,
         },
       },
-      // return_url = fallback Stripe si onComplete client ne se déclenche pas
-      return_url: `${appUrl}/dashboard?welcome=1`,
+      // return_url = fallback Stripe si onComplete client ne se déclenche pas (ex: Safari mobile)
+      // On pointe vers /pricing (route publique) : si le webhook a déjà tiré,
+      // la page pricing redirige automatiquement vers /dashboard (abonnement actif).
+      return_url: `${appUrl}/pricing`,
       locale: 'fr' as const,
       allow_promotion_codes: false,
       // Produit digital : on ne collecte pas l'adresse
