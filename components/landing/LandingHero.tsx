@@ -294,7 +294,7 @@ function Hero() {
           >
             La loi impose la facturation électronique à toutes les entreprises dès 2026.{" "}
             <strong className="font-semibold text-[#0F172A]">
-              Qonforme gère la conformité, la transmission et l&apos;archivage à ta place
+              Qonforme génère ton Factur-X certifié EN 16931 et gère l&apos;archivage légal à ta place
             </strong>{" "}
             — pour que tu restes concentré sur ton métier.
           </motion.p>
