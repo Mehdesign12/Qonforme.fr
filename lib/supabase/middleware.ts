@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { ADMIN_COOKIE, verifyAdminSession } from '@/lib/admin-auth'
 
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -67,23 +68,20 @@ export async function updateSession(request: NextRequest) {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // Routes admin — réservées aux administrateurs de la plateforme
+  // Routes admin — cookie HMAC-SHA256 indépendant de Supabase
   // ──────────────────────────────────────────────────────────────
   if (pathname.startsWith('/admin')) {
-    if (!user) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      return NextResponse.redirect(url)
-    }
+    // La page de connexion admin est toujours accessible
+    if (pathname === '/admin/login') return supabaseResponse
 
-    const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-      .split(',')
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean)
+    // Vérifier le cookie signé
+    const token  = request.cookies.get(ADMIN_COOKIE)?.value
+    const secret = process.env.ADMIN_COOKIE_SECRET ?? ''
+    const valid  = token ? await verifyAdminSession(token, secret) : false
 
-    if (!adminEmails.includes(user.email?.toLowerCase() ?? '')) {
+    if (!valid) {
       const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
+      url.pathname = '/admin/login'
       return NextResponse.redirect(url)
     }
 

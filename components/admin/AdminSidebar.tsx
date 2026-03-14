@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   Shield,
   AlertTriangle,
+  LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -82,8 +83,8 @@ export function AdminSidebar({ unreadSupport = 0, unresolvedErrors = 0 }: AdminS
         })}
       </nav>
 
-      {/* Footer : retour à l'app */}
-      <div className="px-2 py-3 border-t" style={{ borderColor: 'var(--sidebar-inner-border)' }}>
+      {/* Footer : retour à l'app + déconnexion */}
+      <div className="px-2 py-3 border-t space-y-0.5" style={{ borderColor: 'var(--sidebar-inner-border)' }}>
         <Link
           href="/dashboard"
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0] transition-colors duration-100"
@@ -91,6 +92,16 @@ export function AdminSidebar({ unreadSupport = 0, unresolvedErrors = 0 }: AdminS
           <ArrowLeft className="w-4 h-4 shrink-0 text-slate-400" />
           <span>Retour à l&apos;app</span>
         </Link>
+        <button
+          onClick={async () => {
+            await fetch('/api/admin/auth/logout', { method: 'POST' })
+            window.location.href = '/admin/login'
+          }}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-100"
+        >
+          <LogOut className="w-4 h-4 shrink-0" />
+          <span>Se déconnecter</span>
+        </button>
       </div>
     </aside>
   )
