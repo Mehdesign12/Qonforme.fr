@@ -84,23 +84,26 @@ export async function upsertSubscription(params: {
 }): Promise<void> {
   const supabase = createAdminClient()
 
+  const upsertData: Record<string, unknown> = {
+    user_id: params.userId,
+    stripe_customer_id: params.stripeCustomerId,
+    stripe_subscription_id: params.stripeSubscriptionId,
+    stripe_price_id: params.stripePriceId,
+    plan: params.plan,
+    billing_period: params.billingPeriod,
+    status: params.status,
+    current_period_end: params.currentPeriodEnd?.toISOString() ?? null,
+    updated_at: new Date().toISOString(),
+  }
+  // canceled_at n'est inclus que quand il a une valeur réelle
+  // (évite PGRST204 si la colonne n'existe pas encore en DB)
+  if (params.canceledAt instanceof Date) {
+    upsertData.canceled_at = params.canceledAt.toISOString()
+  }
+
   const { error } = await supabase
     .from('subscriptions')
-    .upsert(
-      {
-        user_id: params.userId,
-        stripe_customer_id: params.stripeCustomerId,
-        stripe_subscription_id: params.stripeSubscriptionId,
-        stripe_price_id: params.stripePriceId,
-        plan: params.plan,
-        billing_period: params.billingPeriod,
-        status: params.status,
-        current_period_end: params.currentPeriodEnd?.toISOString() ?? null,
-        canceled_at: params.canceledAt?.toISOString() ?? null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id' }
-    )
+    .upsert(upsertData, { onConflict: 'user_id' })
 
   if (error) {
     console.error('[upsertSubscription] Erreur:', error)

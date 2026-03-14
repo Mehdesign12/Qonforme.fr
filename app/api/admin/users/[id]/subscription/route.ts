@@ -106,7 +106,6 @@ export async function PATCH(
     // Mettre à jour la DB
     const dbUpdate: Record<string, unknown> = {
       status: 'canceled',
-      canceled_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
     if (resolvedSubId && !sub.stripe_subscription_id) {
