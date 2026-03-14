@@ -11,6 +11,7 @@ import {
   XCircle,
   Clock,
 } from 'lucide-react'
+import MrrChart from '@/components/admin/MrrChart'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin — Vue d\'ensemble' }
@@ -79,6 +80,9 @@ async function getOverviewData() {
   const now   = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
+  const sixMonthsAgo = new Date()
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+
   const [
     usersRes,
     newUsersRes,
@@ -87,6 +91,7 @@ async function getOverviewData() {
     blogRes,
     recentUsersRes,
     recentSubsRes,
+    newSubsRes,
   ] = await Promise.all([
     // Total utilisateurs
     admin.auth.admin.listUsers({ perPage: 1 }),
@@ -127,6 +132,13 @@ async function getOverviewData() {
       .select('id, user_id, plan, billing_period, status, created_at')
       .order('created_at', { ascending: false })
       .limit(5),
+
+    // Nouveaux abonnés sur 6 mois (pour graphique MRR)
+    admin
+      .from('subscriptions')
+      .select('created_at')
+      .gte('created_at', sixMonthsAgo.toISOString())
+      .order('created_at', { ascending: true }),
   ])
 
   // Compter les abonnements par statut
@@ -136,6 +148,35 @@ async function getOverviewData() {
   const canceled = subs.filter(s => s.status === 'canceled').length
   const starter  = subs.filter(s => s.status === 'active' && s.plan === 'starter').length
   const pro      = subs.filter(s => s.status === 'active' && s.plan === 'pro').length
+
+  // Calcul MRR (prix en € hardcodés depuis lib/stripe/plans.ts)
+  const MRR_MAP: Record<string, Record<string, number>> = {
+    starter: { monthly: 9, yearly: 90 / 12 },
+    pro:     { monthly: 19, yearly: 190 / 12 },
+  }
+  const mrr = subs
+    .filter(s => s.status === 'active')
+    .reduce((sum, s) => {
+      const prices = MRR_MAP[s.plan ?? '']
+      if (!prices) return sum
+      return sum + (s.billing_period === 'yearly' ? prices.yearly : prices.monthly)
+    }, 0)
+  const arr = mrr * 12
+  const churnRate = (active + canceled) > 0 ? (canceled / (active + canceled)) * 100 : 0
+
+  // Grouper les nouveaux abonnés par mois (6 derniers mois)
+  const monthCounts: Record<string, number> = {}
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const key = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' })
+    monthCounts[key] = 0
+  }
+  for (const sub of newSubsRes.data ?? []) {
+    const d = new Date(sub.created_at)
+    const key = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' })
+    if (key in monthCounts) monthCounts[key]++
+  }
+  const chartData = Object.entries(monthCounts).map(([month, count]) => ({ month, count }))
 
   // Total users (Supabase Admin API renvoie le total dans la pagination)
   const totalUsers = (usersRes.data as { users: unknown[]; total?: number } | null)?.total
@@ -166,6 +207,10 @@ async function getOverviewData() {
     publishedPosts: blogRes.count ?? 0,
     recentCompanies: recentUsersRes.data ?? [],
     recentSubs: recentSubsWithEmail,
+    mrr,
+    arr,
+    churnRate,
+    chartData,
   }
 }
 
@@ -267,6 +312,18 @@ export default async function AdminOverviewPage() {
           <p className="font-mono text-3xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0] mt-2">{d.publishedPosts}</p>
           <p className="text-[11px] text-slate-400 mt-1">sur le blog Qonforme</p>
         </div>
+      </div>
+
+      {/* Section revenus MRR */}
+      <div>
+        <h2 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-3">Revenus</h2>
+        <MrrChart
+          mrr={d.mrr}
+          arr={d.arr}
+          activeCount={d.activeSubscriptions}
+          churnRate={d.churnRate}
+          data={d.chartData}
+        />
       </div>
 
       {/* Dernières inscriptions + derniers abonnements */}
