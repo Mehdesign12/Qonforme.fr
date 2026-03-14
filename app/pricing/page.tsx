@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 import PricingSelector from '@/components/billing/PricingSelector'
 import StepIndicator from '@/components/auth/StepIndicator'
 import Image from 'next/image'
@@ -16,7 +18,21 @@ const STEPS = [
   { label: 'Ton plan' },
 ]
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  // Rediriger les utilisateurs avec un abonnement actif vers le dashboard
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', user.id)
+      .single()
+    if (sub?.status === 'active') {
+      redirect('/dashboard')
+    }
+  }
+
   return (
     /*
      * min-h = 100dvh pour couvrir exactement le viewport mobile (barre Safari incluse).

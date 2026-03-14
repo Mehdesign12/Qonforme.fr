@@ -40,9 +40,10 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
   const fmt = (n: number) => n % 1 === 0 ? `${n}` : n.toFixed(2)
 
   /* ── State ────────────────────────────────────────────────────────────── */
-  const [fetchError,    setFetchError]    = useState<string | null>(null)
-  const [isComplete,    setIsComplete]    = useState(false)
-  const [summaryOpen,   setSummaryOpen]   = useState(false)
+  const [fetchError,      setFetchError]      = useState<string | null>(null)
+  const [isComplete,      setIsComplete]      = useState(false)
+  const [summaryOpen,     setSummaryOpen]     = useState(false)
+  const [isSlowActivation, setIsSlowActivation] = useState(false)
   const redirected = useRef(false)
 
   /* ── Handlers ─────────────────────────────────────────────────────────── */
@@ -52,12 +53,17 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
     if (!isComplete || redirected.current) return
     redirected.current = true
 
-    // Le webhook Stripe est asynchrone — on poll le statut de l'abonnement
-    // toutes les 1,5s (max 12 tentatives ≈ 18s) avant de rediriger.
-    // Si timeout, on redirige quand même pour ne pas bloquer l'utilisateur.
+    // Le webhook Stripe est asynchrone. On poll toutes les 2s (max 40 tentatives = 80s).
+    // On ne redirige QUE quand status === 'active' est confirmé.
+    // Si le polling rapide expire sans confirmation, on passe en mode lent (5s)
+    // et on affiche un bouton manuel — on ne redirige JAMAIS aveuglément.
     let attempts = 0
-    const MAX = 12
-    const INTERVAL = 1500
+    const FAST_MAX = 40
+    const FAST_INTERVAL = 2000
+
+    const redirectToDashboard = () => router.replace('/dashboard?welcome=1')
+
+    let slowTimer: ReturnType<typeof setInterval> | null = null
 
     const poll = async () => {
       try {
@@ -65,7 +71,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
         if (res.ok) {
           const { status } = await res.json()
           if (status === 'active') {
-            router.replace('/dashboard?welcome=1')
+            redirectToDashboard()
             return
           }
         }
@@ -73,15 +79,29 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
         // réseau instable — on continue de poller
       }
       attempts++
-      if (attempts < MAX) {
-        setTimeout(poll, INTERVAL)
+      if (attempts < FAST_MAX) {
+        setTimeout(poll, FAST_INTERVAL)
       } else {
-        // Timeout : le webhook a peut-être été retardé, on redirige quand même
-        router.replace('/dashboard?welcome=1')
+        // Polling rapide expiré (80s) : passer en mode lent, afficher bouton manuel
+        setIsSlowActivation(true)
+        slowTimer = setInterval(async () => {
+          try {
+            const res = await fetch('/api/subscription/status')
+            if (res.ok) {
+              const { status } = await res.json()
+              if (status === 'active') {
+                if (slowTimer) clearInterval(slowTimer)
+                redirectToDashboard()
+              }
+            }
+          } catch { /* réseau instable — on continue */ }
+        }, 5000)
+        // Arrêt automatique après 5 min pour ne pas polluer indéfiniment
+        setTimeout(() => { if (slowTimer) clearInterval(slowTimer) }, 300_000)
       }
     }
 
-    setTimeout(poll, INTERVAL)
+    setTimeout(poll, FAST_INTERVAL)
   }, [isComplete, router])
 
   const fetchClientSecret = useCallback(async () => {
@@ -516,12 +536,31 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               <h2 className="text-xl font-bold text-[#0F172A] mb-2">
                 Paiement confirmé !
               </h2>
-              <p className="text-sm text-slate-500 mb-6">
-                Redirection vers votre espace en cours…
-              </p>
-              <div className="flex justify-center">
-                <div className="w-5 h-5 border-[2.5px] border-[#2563EB] border-t-transparent rounded-full animate-spin" />
-              </div>
+              {isSlowActivation ? (
+                <>
+                  <p className="text-sm text-slate-500 mb-2">
+                    Votre accès est en cours d&apos;activation…
+                  </p>
+                  <p className="text-xs text-slate-400 mb-6">
+                    Cela prend plus de temps que prévu. Vous pouvez accéder à votre espace dès maintenant.
+                  </p>
+                  <button
+                    onClick={() => router.replace('/dashboard?welcome=1')}
+                    className="inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-[#1D4ED8] transition-colors"
+                  >
+                    Accéder à mon espace →
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-slate-500 mb-6">
+                    Activation de votre accès en cours…
+                  </p>
+                  <div className="flex justify-center">
+                    <div className="w-5 h-5 border-[2.5px] border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                </>
+              )}
             </div>
 
           ) : (
