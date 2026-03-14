@@ -1,4 +1,4 @@
-import { Sidebar } from "@/components/layout/Sidebar"
+import { Sidebar, MobileBottomNav } from "@/components/layout/Sidebar"
 import { HeaderServer } from "@/components/layout/HeaderServer"
 
 export default function CreditNotesLayout({ children }: { children: React.ReactNode }) {
@@ -38,6 +38,7 @@ export default function CreditNotesLayout({ children }: { children: React.ReactN
         >
           {children}
         </main>
+        <MobileBottomNav />
       </div>
     </div>
   )
