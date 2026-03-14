@@ -6,7 +6,7 @@ import Link from "next/link"
 import { toast } from "sonner"
 import {
   ArrowLeft, Loader2, Send, CheckCircle2, XCircle,
-  Printer, Pencil, Trash2, Download,
+  Printer, Pencil, Trash2, Download, FileCode,
   Clock, AlertTriangle, CreditCard, RotateCcw, X, FileX, Archive, ArchiveX
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -344,6 +344,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [statusLoading, setStatusLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [pdfLoading, setPdfLoading]     = useState(false)
+  const [fxLoading, setFxLoading]       = useState(false)
   const [showCreditModal, setShowCreditModal]   = useState(false)
   const [archiveLoading, setArchiveLoading]     = useState(false)
   const [showSendModal, setShowSendModal]       = useState(false)
@@ -392,6 +393,23 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       toast.success("PDF téléchargé !")
     } catch { toast.error("Erreur lors du téléchargement") }
     finally { setPdfLoading(false) }
+  }
+
+  const downloadFacturX = async () => {
+    if (!invoice) return
+    setFxLoading(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/facturx`)
+      if (!res.ok) { toast.error("Erreur lors de la génération du Factur-X"); return }
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement("a")
+      a.href = url; a.download = `${invoice.invoice_number}-facturx.xml`
+      document.body.appendChild(a); a.click()
+      document.body.removeChild(a); URL.revokeObjectURL(url)
+      toast.success("Factur-X téléchargé !")
+    } catch { toast.error("Erreur lors du téléchargement") }
+    finally { setFxLoading(false) }
   }
 
   const deleteInvoice = async () => {
@@ -551,11 +569,25 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
           {/* Boutons d'action — scroll horizontal sur mobile */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
-            {/* PDF Factur-X */}
+            {/* PDF */}
             <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={downloadPDF} disabled={pdfLoading}>
               {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              <span className="hidden xs:inline">{pdfLoading ? "Génération…" : invoice.status !== "draft" ? "Factur-X" : "PDF"}</span>
+              <span className="hidden xs:inline">{pdfLoading ? "Génération…" : "PDF"}</span>
             </Button>
+
+            {/* Télécharger Factur-X XML — disponible uniquement hors brouillon */}
+            {invoice.status !== "draft" && (
+              <Button
+                variant="outline" size="sm"
+                className="gap-1.5 shrink-0 border-[#BFDBFE] text-[#2563EB] hover:bg-[#EFF6FF]"
+                onClick={downloadFacturX}
+                disabled={fxLoading}
+                title="Télécharger le fichier XML Factur-X certifié EN 16931"
+              >
+                {fxLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCode className="w-4 h-4" />}
+                <span className="hidden xs:inline">{fxLoading ? "Génération…" : "Factur-X"}</span>
+              </Button>
+            )}
 
             {/* Imprimer */}
             <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => window.print()}>

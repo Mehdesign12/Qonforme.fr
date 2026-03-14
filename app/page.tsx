@@ -40,7 +40,7 @@ function HowItWorksSection() {
   const steps = [
     { n: "01", icon: <UserPlus className="h-6 w-6" />, title: "Crée ton compte", desc: "Renseigne les infos de ton entreprise. 5 minutes et c'est fait." },
     { n: "02", icon: <FileEdit className="h-6 w-6" />, title: "Crée ta facture", desc: "Sélectionne ton client et renseigne tes prestations. Simple et rapide." },
-    { n: "03", icon: <SendHorizonal className="h-6 w-6" />, title: "Envoie", desc: "Qonforme génère le Factur-X, transmet au PPF et archive automatiquement." },
+    { n: "03", icon: <SendHorizonal className="h-6 w-6" />, title: "Télécharge & transmets", desc: "Qonforme génère ton Factur-X certifié EN 16931. Télécharge-le en un clic, transmets-le en 30 secondes via ta Plateforme Agréée." },
   ];
 
   return (
@@ -56,7 +56,7 @@ function HowItWorksSection() {
             <span className="text-[#2563EB]">tu es conforme</span>
           </h2>
           <p className="mx-auto max-w-md text-[15px] text-slate-500">
-            Pas besoin de comprendre le PPF ni le Factur-X. On s&apos;en occupe.
+            Le Factur-X EN 16931, c&apos;est 47 champs obligatoires et zéro droit à l&apos;erreur. On le génère pour toi.
           </p>
         </div>
         <div className="relative grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-4">
@@ -222,9 +222,9 @@ function ComplianceMockup() {
       <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Suivi de transmission</p>
       <div className="flex flex-col gap-2.5">
         {[
-          { step: "01", label: "Facture générée", sub: "PDF Factur-X conforme", done: true, color: "#10B981" },
-          { step: "02", label: "Transmise au PPF", sub: "Portail Public de Facturation", done: true, color: "#10B981" },
-          { step: "03", label: "Reçue par le client", sub: "Accusé de réception signé", done: true, color: "#10B981" },
+          { step: "01", label: "Factur-X certifié généré", sub: "Format EN 16931 EXTENDED validé", done: true, color: "#10B981" },
+          { step: "02", label: "Prêt à transmettre", sub: "Téléchargement en 1 clic — guide inclus", done: true, color: "#10B981" },
+          { step: "03", label: "Reçue par le client", sub: "Via sa Plateforme Agréée", done: true, color: "#10B981" },
           { step: "04", label: "Paiement en attente", sub: "Échéance : 30 jours", done: false, color: "#D97706" },
         ].map((s) => (
           <div key={s.step} className={`flex items-start gap-3 rounded-xl border p-3 bg-white ${s.done ? "border-[#D1FAE5]" : "border-[#FEF3C7]"}`}>
@@ -249,20 +249,20 @@ function ComplianceMockup() {
 ───────────────────────────────────────────────────────── */
 function ComparisonSection() {
   const withoutItems = [
-    "Connexion manuelle à Chorus Pro à chaque facture",
-    "Génération du fichier Factur-X à la main",
-    "Risque d'erreur de format → facture rejetée",
-    "Archivage manuel sur 10 ans",
-    "Aucun suivi de statut en temps réel",
-    "Perte de temps sur chaque facture",
+    "Générer le XML Factur-X manuellement (très technique)",
+    "Valider la conformité EN 16931 vous-même",
+    "Risque d'erreur de format → facture rejetée et délai de paiement",
+    "Archivage manuel sur 10 ans (obligation légale)",
+    "Aucun suivi du statut de la facture",
+    "Des heures perdues sur chaque dossier",
   ];
   const withItems = [
-    "Transmission automatique au PPF en un clic",
-    "Factur-X généré et validé automatiquement",
-    "0 risque de rejet pour raison technique",
+    "Factur-X certifié EN 16931 généré automatiquement",
+    "0 risque de rejet pour raison de format",
+    "Guide de transmission PPF pas-à-pas inclus",
     "Archivage légal 10 ans inclus",
-    "Statut en temps réel à chaque étape",
-    "Une facture envoyée en moins de 3 minutes",
+    "Statut de la facture mis à jour en temps réel",
+    "Une facture conforme créée en moins de 3 minutes",
   ];
 
   return (
