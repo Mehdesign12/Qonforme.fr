@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Zap, UserPlus, FileText, Building2, Loader2 } from 'lucide-react'
+import Image from 'next/image'
+import { UserPlus, FileText, Building2, Loader2, ArrowRight } from 'lucide-react'
 
-interface WelcomeModalProps {
-  onClose: () => void
-}
+/* ── Assets ── */
+const LOGO_LONG = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp'
+const PICTO_Q   = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp'
 
+/* ── Actions ── */
 const ACTIONS = [
   {
     id: 'company',
@@ -15,8 +17,10 @@ const ACTIONS = [
     label: 'Compléter mon profil entreprise',
     description: 'Logo, SIREN, IBAN, coordonnées',
     href: '/settings/company',
-    color: 'bg-[#EFF6FF] text-[#2563EB]',
-    border: 'hover:border-[#2563EB]',
+    iconBg: 'bg-[#EFF6FF] dark:bg-[#1E3A5F]',
+    iconColor: 'text-[#2563EB]',
+    hoverBorder: 'hover:border-[#93C5FD] dark:hover:border-[#2563EB]',
+    hoverBg: 'hover:bg-[#F8FAFF] dark:hover:bg-[#0F2040]',
   },
   {
     id: 'client',
@@ -24,19 +28,30 @@ const ACTIONS = [
     label: 'Ajouter mon premier client',
     description: 'Nom, email, SIREN, adresse',
     href: '/clients/new',
-    color: 'bg-[#F0FDF4] text-[#16A34A]',
-    border: 'hover:border-[#16A34A]',
+    iconBg: 'bg-[#F0FDF4] dark:bg-[#052E16]',
+    iconColor: 'text-[#16A34A]',
+    hoverBorder: 'hover:border-[#86EFAC] dark:hover:border-[#16A34A]',
+    hoverBg: 'hover:bg-[#F7FFF8] dark:hover:bg-[#052E16]/60',
   },
   {
     id: 'invoice',
     icon: FileText,
     label: 'Créer ma première facture',
-    description: 'Prête à envoyer en 2 minutes',
+    description: 'Conforme EN 16931, prête en 2 min',
     href: '/invoices/new',
-    color: 'bg-[#FFF7ED] text-[#EA580C]',
-    border: 'hover:border-[#EA580C]',
+    iconBg: 'bg-[#FFF7ED] dark:bg-[#431407]',
+    iconColor: 'text-[#EA580C]',
+    hoverBorder: 'hover:border-[#FDBA74] dark:hover:border-[#EA580C]',
+    hoverBg: 'hover:bg-[#FFFAF7] dark:hover:bg-[#431407]/60',
   },
 ] as const
+
+/* ── Props ── */
+interface WelcomeModalProps {
+  onClose: () => void
+}
+
+/* ════════════════════════════════════════════════════════════════════ */
 
 export default function WelcomeModal({ onClose }: WelcomeModalProps) {
   const router = useRouter()
@@ -46,7 +61,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
     try {
       await fetch('/api/onboarding/seen', { method: 'POST' })
     } catch {
-      // Non bloquant — on continue même si l'API échoue
+      // Non bloquant
     }
   }
 
@@ -64,27 +79,77 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
   }
 
   return (
-    // Overlay — non cliquable pour fermer (spec)
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    /*
+     * Overlay :
+     * - bg-black/60 sans backdrop-blur sur mobile (règle CLAUDE.md — crash GPU iOS Safari)
+     * - md:backdrop-blur-sm uniquement sur desktop
+     * - overscroll-contain bloque le scroll du fond sur iOS Safari
+     */
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overscroll-contain"
+      style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+    >
       {/* Fond assombri */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 md:backdrop-blur-sm" />
 
-      {/* Modal */}
-      <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+      {/* Picto Q filigrane — décoratif, derrière la card */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 flex items-center justify-center select-none z-[1]"
+        style={{ opacity: 0.04 }}
+      >
+        <Image src={PICTO_Q} alt="" width={400} height={400} className="w-[320px]" unoptimized />
+      </div>
 
-        {/* Header */}
-        <div className="bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] px-6 pt-7 pb-6 text-white text-center">
-          <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mx-auto mb-3">
-            <Zap className="w-6 h-6 text-white" />
+      {/* ── Card principale ── */}
+      <div
+        className={[
+          'relative z-10 flex flex-col',
+          'w-[calc(100%-32px)] max-w-sm',
+          'rounded-3xl overflow-hidden',
+          'bg-white dark:bg-[#0F1E35]',
+          'border border-[#E2E8F0] dark:border-[#1E3A5F]',
+          'shadow-[0_24px_64px_-12px_rgba(15,23,42,0.22)]',
+        ].join(' ')}
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
+
+        {/* ── Header ── */}
+        <div className="flex flex-col items-center gap-3 px-6 pt-7 pb-6 bg-[#F8FAFC] dark:bg-[#162032] border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
+
+          {/* Logo long Qonforme */}
+          <Image
+            src={LOGO_LONG}
+            alt="Qonforme"
+            width={140}
+            height={34}
+            className="h-8 w-auto"
+            unoptimized
+            priority
+          />
+
+          {/* Titre */}
+          <div className="text-center">
+            <h2 className="text-[18px] font-bold text-[#0F172A] dark:text-[#E2E8F0] leading-tight">
+              Bienvenue sur Qonforme 👋
+            </h2>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1">
+              Par où voulez-vous commencer ?
+            </p>
           </div>
-          <h2 className="text-xl font-bold mb-1">Bienvenue sur Qonforme 👋</h2>
-          <p className="text-blue-100 text-sm">
-            Par où voulez-vous commencer ?
-          </p>
+
+          {/* Badge conformité */}
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#BFDBFE] bg-[#EFF6FF] dark:bg-[#1E3A5F] dark:border-[#2563EB]/30 px-3 py-1 text-[11px] font-medium text-[#2563EB]">
+            <span className="relative flex h-1.5 w-1.5 shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2563EB] opacity-60" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
+            </span>
+            Conforme réglementation 2026
+          </span>
         </div>
 
-        {/* Actions */}
-        <div className="p-5 space-y-3">
+        {/* ── Actions ── */}
+        <div className="flex flex-col gap-2.5 p-4">
           {ACTIONS.map((action) => {
             const Icon = action.icon
             const isLoading = loading === action.id
@@ -94,42 +159,66 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
                 key={action.id}
                 onClick={() => handleAction(action.href, action.id)}
                 disabled={loading !== null}
-                className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[#E2E8F0] ${action.border} bg-white transition-all text-left disabled:opacity-60 disabled:cursor-not-allowed group`}
+                touch-action="manipulation"
+                className={[
+                  'group w-full flex items-center gap-3.5 p-3.5 rounded-2xl text-left',
+                  'border border-[#E2E8F0] dark:border-[#1E3A5F]',
+                  'bg-white dark:bg-[#0F1E35]',
+                  action.hoverBorder,
+                  action.hoverBg,
+                  'transition-all duration-150',
+                  'active:scale-[0.98]',
+                  'disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
+                  'touch-manipulation',
+                  'shadow-sm hover:shadow-md',
+                ].join(' ')}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${action.color}`}>
+                {/* Icône */}
+                <div
+                  className={[
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                    action.iconBg,
+                    action.iconColor,
+                  ].join(' ')}
+                >
                   {isLoading
                     ? <Loader2 className="w-5 h-5 animate-spin" />
                     : <Icon className="w-5 h-5" />
                   }
                 </div>
+
+                {/* Texte */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#0F172A] leading-tight">
+                  <p className="text-[13px] font-semibold text-[#0F172A] dark:text-[#E2E8F0] leading-tight">
                     {action.label}
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
                     {action.description}
                   </p>
                 </div>
-                <svg
-                  className="w-4 h-4 text-slate-300 group-hover:text-slate-500 shrink-0 transition-colors"
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
+
+                {/* Chevron */}
+                <ArrowRight
+                  className={[
+                    'w-4 h-4 shrink-0 transition-colors',
+                    'text-slate-300 dark:text-slate-600',
+                    'group-hover:text-slate-500 dark:group-hover:text-slate-400',
+                  ].join(' ')}
+                />
               </button>
             )
           })}
         </div>
 
-        {/* Lien "Plus tard" */}
-        <div className="pb-5 text-center">
+        {/* ── Lien "Plus tard" ── */}
+        <div className="pb-5 pt-1 text-center">
           <button
             onClick={handleLater}
             disabled={loading !== null}
-            className="text-sm text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
+            className="text-[13px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors disabled:opacity-40 touch-manipulation"
           >
             {loading === 'later' ? (
-              <span className="flex items-center gap-1.5 justify-center">
+              <span className="inline-flex items-center gap-1.5">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 Fermeture…
               </span>
@@ -138,6 +227,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
             )}
           </button>
         </div>
+
       </div>
     </div>
   )
