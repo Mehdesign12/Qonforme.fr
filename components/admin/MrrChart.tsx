@@ -106,10 +106,9 @@ export default function MrrChart({ mrr, arr, activeCount, churnRate, data }: Pro
                   borderRadius: '12px',
                   fontSize: '12px',
                 }}
-                formatter={(value: number) => [value, 'Nouveaux abonnés']}
                 cursor={{ fill: 'rgba(37,99,235,0.06)' }}
               />
-              <Bar dataKey="count" fill="#2563EB" radius={[6, 6, 0, 0]} maxBarSize={48} />
+              <Bar dataKey="count" name="Nouveaux abonnés" fill="#2563EB" radius={[6, 6, 0, 0]} maxBarSize={48} />
             </BarChart>
           </ResponsiveContainer>
         )}
