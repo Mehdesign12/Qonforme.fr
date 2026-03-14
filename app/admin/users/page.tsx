@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Users, Search } from 'lucide-react'
+import AdminQuickPlanToggle from './AdminQuickPlanToggle'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin — Utilisateurs' }
@@ -192,11 +193,12 @@ export default async function AdminUsersPage({
                   </td>
                   <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{u.email}</td>
                   <td className="px-4 py-3">
-                    {u.plan !== 'none' ? (
-                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#3B82F6] capitalize">
-                        {u.plan}
-                        {u.billing_period && <span className="ml-1 opacity-60">· {u.billing_period === 'yearly' ? 'annuel' : 'mensuel'}</span>}
-                      </span>
+                    {u.plan === 'starter' || u.plan === 'pro' ? (
+                      <AdminQuickPlanToggle
+                        userId={u.user_id}
+                        currentPlan={u.plan}
+                        billingPeriod={u.billing_period}
+                      />
                     ) : (
                       <span className="text-slate-400 text-xs">—</span>
                     )}
