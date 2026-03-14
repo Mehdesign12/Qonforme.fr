@@ -145,10 +145,17 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
       }
 
-      if (sub.status === 'canceled' || sub.status === 'past_due' || sub.status === 'incomplete') {
-        // Abonnement inactif → page de gestion d'abonnement
+      if (sub.status === 'past_due') {
+        // Paiement raté → page de gestion d'abonnement pour corriger le moyen de paiement
         const url = request.nextUrl.clone()
         url.pathname = '/settings/billing'
+        return NextResponse.redirect(url)
+      }
+
+      if (sub.status === 'canceled' || sub.status === 'incomplete') {
+        // Abonnement annulé ou checkout incomplet → retour au choix de plan
+        const url = request.nextUrl.clone()
+        url.pathname = '/pricing'
         return NextResponse.redirect(url)
       }
     }

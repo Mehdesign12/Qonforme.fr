@@ -112,11 +112,11 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Créer la Checkout Session en mode embedded ──────────────────────────
-    const session = await stripe.checkout.sessions.create({
-      customer: stripeCustomerId,
-      ui_mode: 'embedded',
-      mode: 'subscription',
-      payment_method_types: ['card'],
+    // Les params sont extraits pour pouvoir réessayer en cas de customer ID périmé
+    const sessionConfig = {
+      ui_mode: 'embedded' as const,
+      mode: 'subscription' as const,
+      payment_method_types: ['card'] as ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       // Triple filet pour récupérer user_id dans le webhook
       client_reference_id: user.id,
@@ -133,13 +133,45 @@ export async function POST(request: NextRequest) {
         },
       },
       // return_url = fallback Stripe si onComplete client ne se déclenche pas
-      // Pointe directement vers le dashboard (le webhook aura déjà mis à jour la DB)
       return_url: `${appUrl}/dashboard?welcome=1`,
-      locale: 'fr',
+      locale: 'fr' as const,
       allow_promotion_codes: false,
       // Produit digital : on ne collecte pas l'adresse
-      billing_address_collection: 'auto',
-    })
+      billing_address_collection: 'auto' as const,
+    }
+
+    let session
+    try {
+      session = await stripe.checkout.sessions.create({
+        customer: stripeCustomerId,
+        ...sessionConfig,
+      })
+    } catch (stripeErr: unknown) {
+      // Si le customer ID est invalide (ex : ID test-mode en production, customer supprimé)
+      // → on crée un nouveau customer et on réessaie
+      const e = stripeErr as { code?: string; statusCode?: number }
+      if (e?.code === 'resource_missing' || e?.statusCode === 404) {
+        console.warn(`[checkout] Customer Stripe ${stripeCustomerId} invalide → création d'un nouveau customer`)
+        const newCustomer = await stripe.customers.create({
+          email: user.email ?? undefined,
+          metadata: { user_id: user.id, supabase_user_id: user.id },
+        })
+        stripeCustomerId = newCustomer.id
+        await admin
+          .from('subscriptions')
+          .update({
+            stripe_customer_id: stripeCustomerId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id)
+        session = await stripe.checkout.sessions.create({
+          customer: stripeCustomerId,
+          ...sessionConfig,
+        })
+      } else {
+        throw stripeErr
+      }
+    }
 
     // Retourner le client_secret (pas l'URL) pour l'Embedded Checkout
     return NextResponse.json({ clientSecret: session.client_secret })
