@@ -7,6 +7,7 @@ import {
   updateSubscriptionStatus,
   getSubscriptionByCustomerId,
 } from '@/lib/stripe/subscription'
+import { logError } from '@/lib/logError'
 
 // IMPORTANT : désactiver le bodyParser Next.js pour pouvoir valider la signature Stripe
 export const runtime = 'nodejs'
@@ -71,6 +72,11 @@ export async function POST(request: NextRequest) {
 
         if (!priceId) {
           console.error('[webhook] Pas de price_id sur la subscription:', subscriptionId)
+          await logError({
+            type: 'webhook_stripe',
+            message: 'Pas de price_id sur la subscription après checkout.session.completed',
+            context: { subscriptionId, customerId, eventId: event.id },
+          })
           break
         }
 
@@ -87,6 +93,11 @@ export async function POST(request: NextRequest) {
 
         if (!resolvedPlan || !(['starter', 'pro'] as const).includes(resolvedPlan)) {
           console.error('[webhook] Plan introuvable — price_id:', priceId, '— metadata.plan:', metaPlan)
+          await logError({
+            type: 'webhook_stripe',
+            message: 'Plan introuvable après checkout.session.completed',
+            context: { priceId, metaPlan, subscriptionId, eventId: event.id },
+          })
           break
         }
 
@@ -110,6 +121,11 @@ export async function POST(request: NextRequest) {
           const customerUserId = !('deleted' in customer) ? customer.metadata?.user_id : undefined
           if (!customerUserId) {
             console.error('[webhook] Impossible de récupérer user_id — abandon')
+            await logError({
+              type: 'webhook_stripe',
+              message: 'user_id introuvable dans toutes les métadonnées Stripe — abonnement non activé',
+              context: { subscriptionId, customerId, eventId: event.id },
+            })
             break
           }
           // Utilise le user_id du customer
@@ -234,6 +250,12 @@ export async function POST(request: NextRequest) {
         if (sub?.stripe_subscription_id) {
           await updateSubscriptionStatus(sub.stripe_subscription_id, 'past_due')
           console.log(`[webhook] Paiement échoué — customer ${customerId} → past_due`)
+          await logError({
+            type: 'payment_failed',
+            message: 'Paiement de renouvellement échoué — abonnement passé en past_due',
+            userId: sub.user_id,
+            context: { customerId, subscriptionId: sub.stripe_subscription_id, eventId: event.id },
+          })
         }
         break
       }
@@ -265,6 +287,12 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error(`[webhook] Erreur traitement ${event.type}:`, err)
+    await logError({
+      type: 'webhook_stripe',
+      message: `Exception non gérée lors du traitement de l'événement ${event.type}`,
+      context: { eventType: event.type, eventId: event.id },
+      error: err,
+    })
     // On retourne 200 pour éviter que Stripe réessaie indéfiniment sur une erreur applicative
     return NextResponse.json({ error: 'Erreur traitement', received: true }, { status: 200 })
   }
