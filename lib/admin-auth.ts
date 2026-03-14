@@ -23,7 +23,7 @@ export async function signAdminSession(secret: string): Promise<string> {
   const payload = String(Date.now())
   const key = await getKey(secret)
   const sigBuffer = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload))
-  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sigBuffer)))
+  const sigB64 = btoa(String.fromCharCode(...Array.from(new Uint8Array(sigBuffer))))
   return `${payload}.${sigB64}`
 }
 
