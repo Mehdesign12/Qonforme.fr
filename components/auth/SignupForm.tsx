@@ -64,34 +64,41 @@ export default function SignupForm() {
 
     setLoading(true)
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: fields.email.trim(),
-        password: fields.password,
-        options: {
-          data: {
-            first_name: fields.first_name.trim(),
-            last_name: fields.last_name.trim(),
-          },
-        },
+      // ── Étape 1 : création serveur (admin.createUser, email_confirm: true)
+      // Contourne le SMTP Supabase et évite le 500 auth/v1/signup
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email:      fields.email.trim(),
+          password:   fields.password,
+          first_name: fields.first_name.trim(),
+          last_name:  fields.last_name.trim(),
+        }),
       })
-      if (error) {
-        if (error.message.includes("already registered") || error.message.includes("User already registered")) {
+      const json = await res.json()
+
+      if (!res.ok) {
+        if (res.status === 409 || json.error === "already_exists") {
           toast.error("Cet email est déjà utilisé. Connectez-vous.", { duration: 6000 })
-        } else if (error.message.includes("Email rate limit") || error.message.includes("rate limit") || error.status === 429) {
-          toast.error("Trop de demandes. Réessayez dans quelques minutes.", { duration: 8000 })
-        } else if (error.message.includes("Signups not allowed")) {
-          toast.error("Les inscriptions sont temporairement désactivées.", { duration: 8000 })
         } else {
-          toast.error(`Erreur : ${error.message}`, { duration: 8000 })
+          toast.error(json.error ?? "Erreur lors de la création du compte.", { duration: 8000 })
         }
         setLoading(false)
         return
       }
-      if (data?.user?.identities?.length === 0) {
-        toast.error("Cet email est déjà utilisé. Connectez-vous.", { duration: 6000 })
-        setLoading(false)
+
+      // ── Étape 2 : connexion immédiate pour établir la session + cookies
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email:    fields.email.trim(),
+        password: fields.password,
+      })
+      if (signInError) {
+        toast.error("Compte créé mais connexion échouée. Connectez-vous manuellement.", { duration: 8000 })
+        router.push("/login")
         return
       }
+
       toast.success("Compte créé ! Complète ton profil entreprise.")
       router.push("/signup/company")
     } catch {
