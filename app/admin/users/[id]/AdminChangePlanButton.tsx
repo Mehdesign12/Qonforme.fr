@@ -22,6 +22,7 @@ export default function AdminChangePlanButton({
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState<string | null>(null)
   const [done,    setDone]    = useState(false)
+  const [confirmedNewPlan, setConfirmedNewPlan] = useState<'starter' | 'pro' | null>(null)
 
   const newPlan = currentPlan === 'starter' ? 'pro' : 'starter'
   const newPlanLabel    = newPlan    === 'pro' ? 'Pro'     : 'Starter'
@@ -41,6 +42,7 @@ export default function AdminChangePlanButton({
         setError(data.error ?? 'Erreur inconnue')
         return
       }
+      setConfirmedNewPlan(newPlan)
       setDone(true)
       setOpen(false)
       router.refresh()
@@ -55,7 +57,7 @@ export default function AdminChangePlanButton({
     return (
       <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#1E3A5F]">
         <p className="text-[12px] text-green-600 dark:text-green-400 font-medium">
-          ✓ Plan changé vers {newPlanLabel}
+          ✓ Plan changé vers {confirmedNewPlan === 'pro' ? 'Pro' : 'Starter'}
         </p>
       </div>
     )
