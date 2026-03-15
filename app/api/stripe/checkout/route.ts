@@ -133,9 +133,10 @@ export async function POST(request: NextRequest) {
         },
       },
       // return_url = fallback Stripe si onComplete client ne se déclenche pas (ex: Safari mobile)
-      // On pointe vers /pricing (route publique) : si le webhook a déjà tiré,
-      // la page pricing redirige automatiquement vers /dashboard (abonnement actif).
-      return_url: `${appUrl}/pricing`,
+      // {CHECKOUT_SESSION_ID} est remplacé automatiquement par Stripe avec l'ID réel de la session.
+      // /pricing/return lit cet ID, vérifie le statut, active l'abonnement en DB si nécessaire,
+      // puis redirige vers /dashboard — indépendamment du webhook.
+      return_url: `${appUrl}/pricing/return?session_id={CHECKOUT_SESSION_ID}`,
       locale: 'fr' as const,
       allow_promotion_codes: false,
       // Produit digital : on ne collecte pas l'adresse
