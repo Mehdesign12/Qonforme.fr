@@ -43,18 +43,18 @@ export async function RevenueChartServer() {
   if (!user) return null
 
   const now          = new Date()
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().split("T")[0]
+  const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().split("T")[0]
 
   const { data: invoices } = await supabase
     .from("invoices")
     .select("total_ttc, issue_date")
     .eq("user_id", user.id)
     .in("status", ["sent", "accepted", "paid"])
-    .gte("issue_date", sixMonthsAgo)
+    .gte("issue_date", twelveMonthsAgo)
 
-  // Construire les 6 mois
-  const chartData = Array.from({ length: 6 }, (_, i) => {
-    const d     = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+  // Construire les 12 mois
+  const chartData = Array.from({ length: 12 }, (_, i) => {
+    const d     = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
     const key   = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const value = (invoices || [])
       .filter(inv => inv.issue_date?.startsWith(key))
@@ -62,5 +62,5 @@ export async function RevenueChartServer() {
     return { month: MONTH_LABELS[d.getMonth()], value }
   })
 
-  return <RevenueChart data={chartData} currentMonth={5} />
+  return <RevenueChart data={chartData} currentMonth={11} />
 }

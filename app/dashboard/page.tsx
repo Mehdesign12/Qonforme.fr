@@ -4,6 +4,7 @@ import { RecentInvoices } from '@/components/dashboard/RecentInvoices'
 import { PPFStatusBanner } from '@/components/dashboard/PPFStatusBanner'
 import { QuickActions } from '@/components/dashboard/QuickActions'
 import { RevenueChartServer } from '@/components/dashboard/RevenueChartServer'
+import { TopClients } from '@/components/dashboard/TopClients'
 import { Skeleton } from '@/components/ui/skeleton'
 import DashboardClient from '@/components/dashboard/DashboardClient'
 import { createClient } from '@/lib/supabase/server'
@@ -92,10 +93,10 @@ export default async function DashboardPage() {
           <DashboardStats />
         </Suspense>
 
-        {/* ── Chart + Actions rapides ── */}
+        {/* ── Chart + Top clients + Actions rapides ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5">
 
-          {/* Chart CA 6 mois — 2/3 */}
+          {/* Chart CA 12 mois — 2/3 */}
           <div className="lg:col-span-2">
             <Suspense fallback={<ChartLoading />}>
               <RevenueChartServer />
@@ -107,6 +108,11 @@ export default async function DashboardPage() {
             <QuickActionsCard />
           </div>
         </div>
+
+        {/* ── Top clients ── */}
+        <Suspense fallback={<TopClientsLoading />}>
+          <TopClients />
+        </Suspense>
 
         {/* ── Dernières factures ── */}
         <Suspense fallback={<TableLoading />}>
@@ -137,8 +143,8 @@ function QuickActionsCard() {
 /* ─── Skeletons ── */
 function StatsLoading() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      {Array.from({ length: 4 }).map((_, i) => (
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      {Array.from({ length: 5 }).map((_, i) => (
         <Skeleton key={i} className="h-32 rounded-2xl bg-white/60" />
       ))}
     </div>
@@ -147,6 +153,10 @@ function StatsLoading() {
 
 function ChartLoading() {
   return <Skeleton className="h-[228px] rounded-2xl bg-white/60" />
+}
+
+function TopClientsLoading() {
+  return <Skeleton className="h-[200px] rounded-2xl bg-white/60" />
 }
 
 function TableLoading() {

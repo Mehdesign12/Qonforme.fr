@@ -59,7 +59,7 @@ export function RevenueChart({ data, currentMonth }: RevenueChartProps) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">Chiffre d&apos;affaires</h3>
-          <p className="text-[11px] text-slate-400 mt-0.5">6 derniers mois</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">12 derniers mois</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
@@ -69,7 +69,7 @@ export function RevenueChart({ data, currentMonth }: RevenueChartProps) {
 
       {/* Chart */}
       <ResponsiveContainer width="100%" height={160}>
-        <BarChart data={data} barSize={28} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+        <BarChart data={data} barSize={16} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%"   stopColor="#2563EB" stopOpacity={1}   />
