@@ -287,7 +287,6 @@ export function Sidebar() {
       )}
       style={{
         background: 'var(--sidebar-bg)',
-        willChange: 'width',
       }}
     >
       {/* Q filigrane bas-gauche */}
@@ -420,7 +419,7 @@ export function MobileSidebar({
           "w-[min(80vw,300px)]",
           open ? "translate-x-0" : "-translate-x-full"
         )}
-        style={{ willChange: "transform", background: 'var(--sidebar-bg)' }}
+        style={{ background: 'var(--sidebar-bg)' }}
       >
         {/* Q filigrane */}
         <div
