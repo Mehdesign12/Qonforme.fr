@@ -290,7 +290,7 @@ export function ProductCombobox({ onSelect, className = "" }: ProductComboboxPro
       {/* Overlay */}
       <div
         className="fixed inset-0 z-[9998] bg-black/40"
-        style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}
+        style={{  }}
         onClick={handleClose}
       />
       {/* Sheet */}

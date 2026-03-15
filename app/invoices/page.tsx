@@ -104,7 +104,7 @@ export default function InvoicesPage() {
       {isArchiveView && (
         <div
           className="flex items-center gap-2.5 rounded-2xl px-4 py-3 border border-white/60"
-          style={{ background: 'rgba(248,250,252,0.9)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+          style={{ background: 'rgba(248,250,252,0.97)' }}
         >
           <Archive className="w-4 h-4 text-slate-400 shrink-0" />
           <p className="text-xs text-slate-500">Les factures archivées n&apos;apparaissent pas dans les autres filtres.</p>
