@@ -223,7 +223,7 @@ export function generateFec({ invoices, creditNotes }: GenerateFecParams): strin
 
     // Lignes suivantes — Crédit 706 + 445xxx par groupe TVA
     const vatGroups = groupByVatRate(inv.lines)
-    for (const [rate, { totalHt, totalVat }] of vatGroups) {
+    Array.from(vatGroups.entries()).forEach(([rate, { totalHt, totalVat }]) => {
 
       // Crédit 706 — produit HT
       rows.push(buildFecRow({
@@ -245,7 +245,7 @@ export function generateFec({ invoices, creditNotes }: GenerateFecParams): strin
           debit: '0,00', credit: fmtMontant(totalVat),
         }))
       }
-    }
+    })
   }
 
   // ── Avoirs — Journal AV ────────────────────────────────────────────────────
@@ -277,7 +277,7 @@ export function generateFec({ invoices, creditNotes }: GenerateFecParams): strin
 
     // Lignes suivantes — Débit 706 + 445xxx (sens inversé)
     const vatGroups = groupByVatRate(cn.lines)
-    for (const [rate, { totalHt, totalVat }] of vatGroups) {
+    Array.from(vatGroups.entries()).forEach(([rate, { totalHt, totalVat }]) => {
 
       // Débit 706 — annulation produit HT
       rows.push(buildFecRow({
@@ -299,7 +299,7 @@ export function generateFec({ invoices, creditNotes }: GenerateFecParams): strin
           debit: fmtMontant(totalVat), credit: '0,00',
         }))
       }
-    }
+    })
   }
 
   // ── Assemblage final ──────────────────────────────────────────────────────
