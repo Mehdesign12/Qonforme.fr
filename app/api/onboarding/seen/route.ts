@@ -12,16 +12,24 @@ export async function POST() {
     }
 
     const admin = createAdminClient()
-    const { error } = await admin
+    const { data: updated, error } = await admin
       .from('companies')
       .update({
         onboarding_seen_at: new Date().toISOString(),
       })
       .eq('user_id', user.id)
+      .select('id')
 
     if (error) {
-      console.error('[onboarding/seen] Erreur:', error)
+      console.error('[onboarding/seen] Erreur update:', error)
       return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    }
+
+    if (!updated || updated.length === 0) {
+      // Aucune ligne affectée : la company n'existe pas encore (race condition
+      // webhook Stripe) ou user_id ne correspond à aucune ligne.
+      // Non bloquant pour l'UX — le localStorage client prend le relais.
+      console.warn('[onboarding/seen] 0 lignes mises à jour pour user_id:', user.id)
     }
 
     return NextResponse.json({ success: true })
