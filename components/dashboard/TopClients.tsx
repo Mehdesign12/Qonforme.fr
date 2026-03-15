@@ -22,7 +22,7 @@ export async function TopClients() {
   const byClient = new Map<string, { name: string; total: number; clientId: string }>()
   for (const inv of invoices) {
     const cid  = inv.client_id as string
-    const name = (inv.client as { id: string; name: string } | null)?.name ?? "Client inconnu"
+    const name = (inv.client as unknown as { id: string; name: string } | null)?.name ?? "Client inconnu"
     const existing = byClient.get(cid)
     if (existing) {
       existing.total += inv.total_ttc || 0
