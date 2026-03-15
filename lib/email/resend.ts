@@ -44,6 +44,14 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ id: string }>
   // Nom affiché dans le champ "De" : nom de l'entreprise ou "Qonforme" par défaut
   const senderName = opts.fromName?.trim() || "Qonforme"
 
+  if (!fromEmail && !isSandbox) {
+    console.warn(
+      '[sendEmail] RESEND_FROM_EMAIL non défini — fallback sur onboarding@resend.dev. ' +
+      "Les emails vers des adresses non vérifiées dans Resend échoueront silencieusement. " +
+      "Définir RESEND_FROM_EMAIL dans les variables d'environnement (domaine vérifié sur resend.com/domains)."
+    )
+  }
+
   const finalTo      = isSandbox ? testEmail! : opts.to
   const finalSubject = isSandbox ? `[TEST → ${opts.to}] ${opts.subject}` : opts.subject
   // En sandbox on vide le CC pour éviter d'envoyer des copies non souhaitées
