@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   CheckCircle2, XCircle, Zap, Shield, ArrowRight,
   FileText, Send, Archive, Bell,
@@ -10,7 +10,7 @@ import {
   ChevronDown, Star, Mail, Clock3,
   Check,
 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useInView } from "motion/react";
 
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { LandingHero } from "@/components/landing/LandingHero";
@@ -34,6 +34,37 @@ function SectionPill({ label }: { label: string }) {
 }
 
 /* ─────────────────────────────────────────────────────────
+   HELPER — Fade-in au scroll (opacity + translateY/X)
+   Anime uniquement des propriétés composited → 0 jank.
+   Pas de will-change ni backdrop-filter → safe iOS mobile.
+───────────────────────────────────────────────────────── */
+function FadeIn({
+  children,
+  delay = 0,
+  x = 0,
+  className,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  x?: number;
+  className?: string;
+}) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.15 });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20, x }}
+      animate={isInView ? { opacity: 1, y: 0, x: 0 } : {}}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
    SECTION C — Comment ça marche
 ───────────────────────────────────────────────────────── */
 function HowItWorksSection() {
@@ -49,7 +80,7 @@ function HowItWorksSection() {
         <Image src={PICTO_Q} alt="" width={500} height={500} className="w-[420px] sm:w-[500px]" unoptimized />
       </div>
       <div className="relative z-10 mx-auto max-w-5xl px-5">
-        <div className="mb-12 flex flex-col items-center text-center gap-3">
+        <FadeIn className="mb-12 flex flex-col items-center text-center gap-3">
           <SectionPill label="SIMPLICITÉ" />
           <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
             En 3 étapes,{" "}
@@ -58,27 +89,27 @@ function HowItWorksSection() {
           <p className="mx-auto max-w-md text-[15px] text-slate-500">
             Le Factur-X EN 16931, c&apos;est 47 champs obligatoires et zéro droit à l&apos;erreur. On le génère pour toi.
           </p>
-        </div>
+        </FadeIn>
         <div className="relative grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-4">
           <div aria-hidden className="pointer-events-none absolute left-[16.66%] right-[16.66%] top-[28px] hidden h-px bg-gradient-to-r from-[#BFDBFE] via-[#2563EB]/30 to-[#BFDBFE] sm:block" />
           {steps.map((s, i) => (
-            <div key={i} className="relative flex flex-col items-center text-center">
+            <FadeIn key={i} delay={i * 0.1} className="relative flex flex-col items-center text-center">
               <div className="relative mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-[0_4px_14px_rgba(37,99,235,0.35)]">
                 {s.icon}
                 <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#2563EB] ring-2 ring-[#EFF6FF]">{s.n}</span>
               </div>
               <h3 className="mb-2 text-[15px] font-bold text-[#0F172A]">{s.title}</h3>
               <p className="max-w-[200px] text-[13px] leading-relaxed text-slate-500">{s.desc}</p>
-            </div>
+            </FadeIn>
           ))}
         </div>
-        <div className="mt-12 flex justify-center">
+        <FadeIn delay={0.3} className="mt-12 flex justify-center">
           <Link href="/signup">
             <ShimmerButton background="rgba(37,99,235,1)" shimmerColor="#ffffff" shimmerDuration="2.5s" borderRadius="10px" className="h-11 px-6 text-[15px] font-semibold gap-2">
               Commencer maintenant <ArrowRight className="h-4 w-4" />
             </ShimmerButton>
           </Link>
-        </div>
+        </FadeIn>
       </div>
     </section>
   );
@@ -113,11 +144,11 @@ function TrustedBySection() {
           </div>
         </div>
         <div className="mt-10 grid grid-cols-3 gap-4 sm:gap-6">
-          {[{ value: "500+", label: "artisans actifs" }, { value: "10 000+", label: "factures transmises" }, { value: "99,9 %", label: "taux de conformité" }].map((s) => (
-            <div key={s.label} className="text-center">
+          {[{ value: "500+", label: "artisans actifs" }, { value: "10 000+", label: "factures transmises" }, { value: "99,9 %", label: "taux de conformité" }].map((s, i) => (
+            <FadeIn key={s.label} delay={i * 0.1} className="text-center">
               <p className="font-mono text-2xl font-extrabold text-[#0F172A] sm:text-3xl">{s.value}</p>
               <p className="mt-0.5 text-[13px] text-slate-400">{s.label}</p>
-            </div>
+            </FadeIn>
           ))}
         </div>
       </div>
@@ -145,7 +176,7 @@ function FeatureSection({ pillLabel, tag, title, titleHighlight, description, fe
     <section className={`${bg} py-20 sm:py-24`} id={tag === "Création rapide" ? "features" : undefined}>
       <div className="mx-auto max-w-6xl px-5">
         <div className={`grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-20 ${reverse ? "lg:grid-flow-dense" : ""}`}>
-          <div className={`flex flex-col gap-5 ${reverse ? "lg:col-start-2" : ""}`}>
+          <FadeIn x={reverse ? 20 : -20} className={`flex flex-col gap-5 ${reverse ? "lg:col-start-2" : ""}`}>
             <SectionPill label={pillLabel} />
             <h2 className="text-3xl font-extrabold leading-tight tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
               {title}{" "}
@@ -168,11 +199,11 @@ function FeatureSection({ pillLabel, tag, title, titleHighlight, description, fe
                 Commencer maintenant <ArrowRight className="h-3.5 w-3.5" />
               </ShimmerButton>
             </Link>
-          </div>
-          <div className={`relative ${reverse ? "lg:col-start-1 lg:row-start-1" : ""}`}>
+          </FadeIn>
+          <FadeIn delay={0.1} x={reverse ? -20 : 20} className={`relative ${reverse ? "lg:col-start-1 lg:row-start-1" : ""}`}>
             <div className="pointer-events-none absolute -inset-6 rounded-3xl bg-gradient-to-br from-[#DBEAFE]/40 via-[#EDE9FE]/20 to-transparent blur-2xl" />
             <div className="relative overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_20px_60px_-12px_rgba(15,23,42,0.12)]">{mockup}</div>
-          </div>
+          </FadeIn>
         </div>
       </div>
     </section>
@@ -273,25 +304,25 @@ function ComparisonSection() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-5xl px-5">
-        <div className="mb-12 flex flex-col items-center text-center gap-3">
+        <FadeIn className="mb-12 flex flex-col items-center text-center gap-3">
           <SectionPill label="COMPARAISON" />
           <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
             Pourquoi{" "}
             <span className="text-[#2563EB]">Qonforme</span>{" "}
             plutôt que de le faire soi-même ?
           </h2>
-        </div>
+        </FadeIn>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           {/* Sans Qonforme */}
-          <div
+          <FadeIn delay={0.1} x={-20}
             className="rounded-2xl p-8"
             style={{
               background: "#FEF2F2",
               border: "1px solid #FECACA",
               borderRadius: "16px",
               boxShadow: "0 4px 16px rgba(239,68,68,0.08)",
-            }}
+            } as React.CSSProperties}
           >
             <div className="mb-5 flex items-center gap-2">
               <XCircle className="h-4 w-4 text-[#EF4444] shrink-0" />
@@ -308,17 +339,17 @@ function ComparisonSection() {
                 </li>
               ))}
             </ul>
-          </div>
+          </FadeIn>
 
           {/* Avec Qonforme */}
-          <div
+          <FadeIn delay={0.2} x={20}
             className="rounded-2xl p-8"
             style={{
               background: "#F0FDF4",
               border: "1px solid #A7F3D0",
               borderRadius: "16px",
               boxShadow: "0 4px 16px rgba(16,185,129,0.08)",
-            }}
+            } as React.CSSProperties}
           >
             <div className="mb-5 flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-[#10B981] shrink-0" />
@@ -335,16 +366,16 @@ function ComparisonSection() {
                 </li>
               ))}
             </ul>
-          </div>
+          </FadeIn>
         </div>
 
-        <div className="mt-10 flex justify-center">
+        <FadeIn delay={0.3} className="mt-10 flex justify-center">
           <Link href="/signup">
             <ShimmerButton background="rgba(37,99,235,1)" shimmerColor="#ffffff" shimmerDuration="2.5s" borderRadius="10px" className="h-11 px-6 text-[15px] font-semibold gap-2">
               Commencer maintenant <ArrowRight className="h-4 w-4" />
             </ShimmerButton>
           </Link>
-        </div>
+        </FadeIn>
       </div>
     </section>
   );
@@ -371,17 +402,17 @@ function TestimonialsSection() {
         <Image src={PICTO_Q} alt="" width={140} height={140} className="w-[140px]" unoptimized />
       </div>
       <div className="relative z-10 mx-auto max-w-5xl px-5">
-        <div className="mb-12 flex flex-col items-center text-center gap-3">
+        <FadeIn className="mb-12 flex flex-col items-center text-center gap-3">
           <SectionPill label="ILS NOUS FONT CONFIANCE" />
           <h2 className="mb-1 text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
             Ils ont fait le{" "}
             <span className="text-[#2563EB]">choix Qonforme</span>
           </h2>
           <p className="text-[15px] text-slate-500">Des artisans et indépendants qui ont sécurisé leur conformité</p>
-        </div>
+        </FadeIn>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-          {testimonials.map((t) => (
-            <div key={t.name} className="flex flex-col gap-4 rounded-2xl bg-white p-6" style={{ border: "1px solid #BFDBFE", boxShadow: "0 2px 8px rgba(37,99,235,0.07)" }}>
+          {testimonials.map((t, i) => (
+            <FadeIn key={t.name} delay={i * 0.1} className="flex flex-col gap-4 rounded-2xl bg-white p-6" style={{ border: "1px solid #BFDBFE", boxShadow: "0 2px 8px rgba(37,99,235,0.07)" } as React.CSSProperties}>
               <div className="flex gap-0.5">{Array.from({ length: t.stars }).map((_, i) => <Star key={i} className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />)}</div>
               <p className="flex-1 text-[14px] leading-relaxed text-slate-600">&ldquo;{t.text}&rdquo;</p>
               <div className="flex items-center gap-3">
@@ -391,7 +422,7 @@ function TestimonialsSection() {
                   <p className="text-[12px] text-slate-400">{t.role} · {t.city}</p>
                 </div>
               </div>
-            </div>
+            </FadeIn>
           ))}
         </div>
       </div>
@@ -410,7 +441,7 @@ function PricingSection() {
   return (
     <section id="pricing" className="bg-white py-20 sm:py-24">
       <div className="max-w-5xl mx-auto px-5">
-        <div className="text-center mb-10 flex flex-col items-center gap-3">
+        <FadeIn className="text-center mb-10 flex flex-col items-center gap-3">
           <SectionPill label="TARIFS" />
           <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
             Un prix fixe.{" "}
@@ -436,11 +467,11 @@ function PricingSection() {
               <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${annual ? "bg-white/20 text-white" : "bg-[#D1FAE5] text-[#065F46]"}`}>-16%</span>
             </button>
           </div>
-        </div>
+        </FadeIn>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
           {/* Card Starter */}
-          <div className="bg-white rounded-2xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col">
+          <FadeIn delay={0.15} x={-10} className="bg-white rounded-2xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <span className="rounded-full bg-[#F1F5F9] px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[#64748B]">Starter</span>
             </div>
@@ -462,10 +493,10 @@ function PricingSection() {
               </button>
             </Link>
             <p className="mt-3 text-center text-[12px] text-slate-400">Idéal pour démarrer</p>
-          </div>
+          </FadeIn>
 
           {/* Card Pro */}
-          <div className="relative overflow-hidden rounded-2xl p-8 flex flex-col" style={{ background: "#0F172A", border: "1px solid rgba(37,99,235,0.3)", boxShadow: "0 0 40px rgba(37,99,235,0.15)" }}>
+          <FadeIn delay={0.25} x={10} className="relative overflow-hidden rounded-2xl p-8 flex flex-col" style={{ background: "#0F172A", border: "1px solid rgba(37,99,235,0.3)", boxShadow: "0 0 40px rgba(37,99,235,0.15)" } as React.CSSProperties}>
             {/* Q filigrane dans la card */}
             <div aria-hidden className="pointer-events-none absolute -bottom-6 -right-6 select-none" style={{ opacity: 0.06, zIndex: 0 }}>
               <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" unoptimized />
@@ -494,7 +525,7 @@ function PricingSection() {
               </Link>
               <p className="mt-3 text-center text-[12px] text-[#60A5FA]">Le plus choisi par nos utilisateurs</p>
             </div>
-          </div>
+          </FadeIn>
         </div>
       </div>
     </section>
@@ -510,7 +541,7 @@ function UrgencyBannerSection() {
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none" style={{ opacity: 0.07, zIndex: 0 }}>
         <Image src={PICTO_Q} alt="" width={500} height={500} className="w-[500px]" style={{ filter: "hue-rotate(0deg) saturate(0) brightness(2) sepia(1) hue-rotate(190deg)" }} unoptimized />
       </div>
-      <div className="relative z-10 mx-auto max-w-2xl px-5 text-center">
+      <FadeIn className="relative z-10 mx-auto max-w-2xl px-5 text-center">
         <p className="mb-4 text-[13px] font-semibold uppercase tracking-[0.25em] text-[#60A5FA]">Septembre 2026</p>
         <h2 className="mb-4 text-3xl font-extrabold tracking-[-0.025em] text-white sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
           La date limite approche.
@@ -524,7 +555,7 @@ function UrgencyBannerSection() {
           </Link>
           <p className="text-[12px] text-slate-500">Opérationnel en 5 minutes · Résiliable à tout moment</p>
         </div>
-      </div>
+      </FadeIn>
     </section>
   );
 }
@@ -595,7 +626,7 @@ function ContactSection() {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-[2fr_3fr] lg:gap-16 items-start">
 
           {/* Colonne gauche */}
-          <div className="flex flex-col gap-6">
+          <FadeIn x={-20} className="flex flex-col gap-6">
             <SectionPill label="CONTACT" />
             <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
               Une question ?{" "}
@@ -623,10 +654,10 @@ function ContactSection() {
                 </div>
               </div>
             </div>
-          </div>
+          </FadeIn>
 
           {/* Colonne droite — formulaire ou succès */}
-          <div className="rounded-2xl bg-white p-8" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.07)" }}>
+          <FadeIn delay={0.1} x={20} className="rounded-2xl bg-white p-8" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.07)" } as React.CSSProperties}>
             {sent ? (
               <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D1FAE5]">
@@ -681,7 +712,7 @@ function ContactSection() {
                 </button>
               </form>
             )}
-          </div>
+          </FadeIn>
         </div>
       </div>
     </section>
