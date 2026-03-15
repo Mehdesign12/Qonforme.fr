@@ -43,11 +43,13 @@ function FadeIn({
   delay = 0,
   x = 0,
   className,
+  style,
 }: {
   children: React.ReactNode;
   delay?: number;
   x?: number;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.15 });
@@ -58,6 +60,7 @@ function FadeIn({
       animate={isInView ? { opacity: 1, y: 0, x: 0 } : {}}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay }}
       className={className}
+      style={style}
     >
       {children}
     </motion.div>
@@ -322,7 +325,7 @@ function ComparisonSection() {
               border: "1px solid #FECACA",
               borderRadius: "16px",
               boxShadow: "0 4px 16px rgba(239,68,68,0.08)",
-            } as React.CSSProperties}
+            }}
           >
             <div className="mb-5 flex items-center gap-2">
               <XCircle className="h-4 w-4 text-[#EF4444] shrink-0" />
@@ -349,7 +352,7 @@ function ComparisonSection() {
               border: "1px solid #A7F3D0",
               borderRadius: "16px",
               boxShadow: "0 4px 16px rgba(16,185,129,0.08)",
-            } as React.CSSProperties}
+            }}
           >
             <div className="mb-5 flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-[#10B981] shrink-0" />
@@ -412,7 +415,7 @@ function TestimonialsSection() {
         </FadeIn>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
           {testimonials.map((t, i) => (
-            <FadeIn key={t.name} delay={i * 0.1} className="flex flex-col gap-4 rounded-2xl bg-white p-6" style={{ border: "1px solid #BFDBFE", boxShadow: "0 2px 8px rgba(37,99,235,0.07)" } as React.CSSProperties}>
+            <FadeIn key={t.name} delay={i * 0.1} className="flex flex-col gap-4 rounded-2xl bg-white p-6" style={{ border: "1px solid #BFDBFE", boxShadow: "0 2px 8px rgba(37,99,235,0.07)" }}>
               <div className="flex gap-0.5">{Array.from({ length: t.stars }).map((_, i) => <Star key={i} className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />)}</div>
               <p className="flex-1 text-[14px] leading-relaxed text-slate-600">&ldquo;{t.text}&rdquo;</p>
               <div className="flex items-center gap-3">
@@ -496,7 +499,7 @@ function PricingSection() {
           </FadeIn>
 
           {/* Card Pro */}
-          <FadeIn delay={0.25} x={10} className="relative overflow-hidden rounded-2xl p-8 flex flex-col" style={{ background: "#0F172A", border: "1px solid rgba(37,99,235,0.3)", boxShadow: "0 0 40px rgba(37,99,235,0.15)" } as React.CSSProperties}>
+          <FadeIn delay={0.25} x={10} className="relative overflow-hidden rounded-2xl p-8 flex flex-col" style={{ background: "#0F172A", border: "1px solid rgba(37,99,235,0.3)", boxShadow: "0 0 40px rgba(37,99,235,0.15)" }}>
             {/* Q filigrane dans la card */}
             <div aria-hidden className="pointer-events-none absolute -bottom-6 -right-6 select-none" style={{ opacity: 0.06, zIndex: 0 }}>
               <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" unoptimized />
@@ -657,7 +660,7 @@ function ContactSection() {
           </FadeIn>
 
           {/* Colonne droite — formulaire ou succès */}
-          <FadeIn delay={0.1} x={20} className="rounded-2xl bg-white p-8" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.07)" } as React.CSSProperties}>
+          <FadeIn delay={0.1} x={20} className="rounded-2xl bg-white p-8" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.07)" }}>
             {sent ? (
               <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D1FAE5]">
