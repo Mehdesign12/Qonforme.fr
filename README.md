@@ -96,7 +96,7 @@
 - [x] Guide de transmission PPF (page `/settings/ppf` — 4 étapes, Chorus Pro / IOPOLE / 137 PA)
 - [ ] Aperçu PDF inline (avant envoi)
 - [ ] Paiement en ligne (lien Stripe sur la facture)
-- [ ] Relances automatiques J+30/J+45 *(promis Plan Pro)*
+- [x] Relances automatiques J+30/J+45 (cron-job.org → `GET /api/cron/send-reminders`)
 
 ### ✅ Facturation — Devis
 - [x] Liste avec filtres par statut
@@ -177,7 +177,7 @@
 
 | # | Quoi | Détail | Impact |
 |---|------|--------|--------|
-| P2-1 | **Relances automatiques** | Cron J+30/J+45, email au client, log dans la facture | Promis Plan Pro |
+| P2-1 | **Relances automatiques** | Cron J+30/J+45, email au client, log dans la facture | ✅ Opérationnel (cron-job.org) |
 | P2-2 | **Dashboard CA étendu** | Graphique 12 mois, taux recouvrement, top clients | Promis Plan Pro |
 | P2-3 | **Export comptable** | CSV transactions + FEC (Format d'Échanges Comptables) | Besoin N°1 des TPE |
 | P2-4 | **Notifications email** | Facture vue / acceptée / retard — via webhook PPF | Promis dans settings |
@@ -537,6 +537,9 @@ INSEE_API_KEY=
 
 # App
 NEXT_PUBLIC_APP_URL=https://qonforme.fr
+
+# Cron (relances automatiques)
+CRON_SECRET=
 ```
 
 ---
@@ -565,6 +568,7 @@ NEXT_PUBLIC_APP_URL=https://qonforme.fr
 | 2026-03-15 | Fix abonnement annuel non reconnu : `return_url` avec placeholder `{CHECKOUT_SESSION_ID}` + activation côté serveur dans `/pricing/return` | `app/api/stripe/checkout/route.ts`, `app/pricing/return/page.tsx` |
 | 2026-03-15 | Fix détection `RESEND_FROM_EMAIL` manquant : `console.warn` si fallback `onboarding@resend.dev`, nettoyage `.env.example` | `lib/email/resend.ts`, `.env.example` |
 | 2026-03-15 | Export FEC (Fichier des Écritures Comptables) : générateur pur + API `GET /api/export/fec` + page `/settings/exports` | `lib/export/fec.ts`, `app/api/export/fec/route.ts`, `app/settings/exports/` |
+| 2026-03-15 | Relances automatiques J+30/J+45 opérationnelles : cron-job.org configuré sur `GET /api/cron/send-reminders`, auth Bearer `CRON_SECRET`, testé 200 OK | `app/api/cron/send-reminders/route.ts` |
 
 ---
 
