@@ -193,7 +193,7 @@
 | P3-3 | **Empty states avec CTA** | Illustration + bouton créer sur listes vides | Conversion |
 | P3-4 | **Aperçu PDF inline** | Modale prévisualisation avant envoi | Réassurance |
 | P3-5 | **Favicon + meta OG** | Image de marque, partage social | Branding |
-| P3-6 | **CGU / Mentions légales** | Pages `/cgu` et `/mentions-legales` | Légalement requis |
+| P3-6 | **CGU / Mentions légales** | Pages `/cgu` et `/mentions-legales` | ✅ Opérationnel |
 | P3-7 | **Page 404 custom** | Page not found avec retour accueil | UX |
 | P3-8 | **Connexion OAuth Google** | Via Supabase Auth | Friction signup |
 
@@ -571,6 +571,7 @@ CRON_SECRET=
 | 2026-03-15 | Relances automatiques J+30/J+45 opérationnelles : cron-job.org configuré sur `GET /api/cron/send-reminders`, auth Bearer `CRON_SECRET`, testé 200 OK | `app/api/cron/send-reminders/route.ts` |
 | 2026-03-15 | Dashboard CA étendu (P2-2) : graphique 12 mois, KPI taux de recouvrement, composant Top 5 clients par CA | `components/dashboard/RevenueChart*.tsx`, `DashboardStats.tsx`, `TopClients.tsx`, `app/dashboard/page.tsx` |
 | 2026-03-15 | P2-6 marqué opérationnel : historique docs client (factures/devis/avoirs) déjà implémenté dans ClientDetail | `components/clients/ClientDetail.tsx` |
+| 2026-03-15 | P3-6 CGU + Mentions légales : pages `/cgu` et `/mentions-legales` avec layout dédié (dégradé auth, filigrane Q, typo Bricolage), styles `.legal-content` dans globals.css | `app/cgu/page.tsx`, `app/mentions-legales/page.tsx`, `components/legal/LegalLayout.tsx`, `app/globals.css` |
 
 ---
 
