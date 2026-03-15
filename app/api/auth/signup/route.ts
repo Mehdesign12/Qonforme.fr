@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
+import { sendEmail } from "@/lib/email/resend"
+import { buildWelcomeEmail } from "@/lib/email/templates/welcome"
 
 /**
  * POST /api/auth/signup
@@ -74,6 +76,15 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
+
+    // Email de bienvenue — fire & forget (ne bloque pas la réponse)
+    const { subject, html } = buildWelcomeEmail({ firstName: first_name.trim() })
+    sendEmail({
+      to: email.trim().toLowerCase(),
+      subject,
+      html,
+      fromName: "Qonforme",
+    }).catch((err) => console.error("[signup] welcome email error:", err))
 
     return NextResponse.json({ success: true, userId: data.user?.id })
   } catch (err) {
