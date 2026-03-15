@@ -68,10 +68,9 @@ export default function MentionsLegalesPage() {
 
         {/* Carte principale */}
         <div
-          className="rounded-2xl p-6 sm:p-10"
+          className="rounded-2xl p-6 sm:p-10 md:backdrop-blur-lg"
           style={{
             background: 'rgba(255,255,255,0.88)',
-            backdropFilter: 'blur(16px)',
             boxShadow: '0 4px 32px rgba(37,99,235,0.08), 0 1px 4px rgba(0,0,0,0.04)',
             border: '1px solid rgba(226,232,240,0.8)',
           }}
