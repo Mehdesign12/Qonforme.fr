@@ -83,7 +83,7 @@ export default function PricingSelector() {
               Choisis ton plan
             </h1>
             <p className="text-[15px] text-slate-500 leading-relaxed">
-              Accès immédiat dès le paiement confirmé.<br />
+              Factur-X certifié EN 16931 inclus dans les deux plans.<br />
               Résiliation à tout moment, sans engagement.
             </p>
           </div>
@@ -225,7 +225,7 @@ export default function PricingSelector() {
             Choisis ton plan
           </h1>
           <p className="text-[14px] text-slate-500 leading-snug">
-            Accès immédiat · Résiliation à tout moment
+            Factur-X EN 16931 inclus · Résiliation à tout moment
           </p>
         </div>
 
