@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ChevronRight, Building2, FileText, Wifi, Bell, CreditCard } from "lucide-react"
+import { ChevronRight, Building2, FileText, Wifi, Bell, CreditCard, Download } from "lucide-react"
 
 export const metadata: Metadata = { title: "Paramètres" }
 export const dynamic = "force-dynamic"
@@ -10,6 +10,7 @@ const settingsLinks = [
   { href: "/settings/invoices", label: "Préférences factures", desc: "Numérotation, mentions personnalisées, logo", icon: FileText },
   { href: "/settings/ppf", label: "Connexion transmission", desc: "Configuration de la transmission automatique", icon: Wifi },
   { href: "/settings/notifications", label: "Notifications", desc: "Emails de confirmation, alertes de retard", icon: Bell },
+  { href: "/settings/exports", label: "Exports comptables", desc: "FEC (Fichier des Écritures Comptables) pour l'expert-comptable", icon: Download },
   { href: "/settings/billing", label: "Abonnement", desc: "Plan actuel, facturation, paiement", icon: CreditCard },
 ]
 
