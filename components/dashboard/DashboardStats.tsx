@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, FileText, Clock, AlertTriangle, ArrowUpRight, ArrowDownRight, Zap } from "lucide-react"
+import { TrendingUp, TrendingDown, FileText, Clock, AlertTriangle, ArrowUpRight, ArrowDownRight, Zap, CheckCircle2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { createClient } from "@/lib/supabase/server"
 
@@ -54,7 +54,7 @@ async function getStats() {
   const today            = now.toISOString().split("T")[0]
 
   // Données des 6 derniers mois pour sparkline CA
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().split("T")[0]
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().split("T")[0]
 
   const [
     { data: currMonth },
@@ -63,6 +63,7 @@ async function getStats() {
     { data: pending },
     { data: overdue },
     { data: sixMonths },
+    { data: paidInvoices },
   ] = await Promise.all([
     supabase
       .from("invoices")
@@ -105,11 +106,17 @@ async function getStats() {
       .eq("user_id", user.id)
       .in("status", ["sent", "accepted", "paid"])
       .gte("issue_date", sixMonthsAgo),
+
+    supabase
+      .from("invoices")
+      .select("total_ttc")
+      .eq("user_id", user.id)
+      .eq("status", "paid"),
   ])
 
   // Agréger par mois pour sparkline
-  const monthlyRevenue = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+  const monthlyRevenue = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const total = (sixMonths || [])
       .filter(inv => inv.issue_date?.startsWith(key))
@@ -117,12 +124,19 @@ async function getStats() {
     return total
   })
 
+  const paidAmount    = paidInvoices?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0
+  const pendingAmount = pending?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0
+  const overdueAmount = overdue?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0
+  const totalInvoiced = paidAmount + pendingAmount + overdueAmount
+  const recoveryRate  = totalInvoiced > 0 ? Math.round((paidAmount / totalInvoiced) * 100) : null
+
   return {
     revenue_current_month:   currMonth?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0,
     revenue_previous_month:  prevMonth?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0,
     invoices_sent_count:     sentCount || 0,
-    invoices_pending_amount: pending?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0,
-    invoices_overdue_amount: overdue?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0,
+    invoices_pending_amount: pendingAmount,
+    invoices_overdue_amount: overdueAmount,
+    recovery_rate:           recoveryRate,
     monthly_revenue:         monthlyRevenue,
   }
 }
@@ -210,7 +224,8 @@ export async function DashboardStats() {
     invoices_sent_count:     0,
     invoices_pending_amount: 0,
     invoices_overdue_amount: 0,
-    monthly_revenue:         [0, 0, 0, 0, 0, 0],
+    recovery_rate:           null as number | null,
+    monthly_revenue:         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   }
 
   const revenueDiff    = s.revenue_current_month - s.revenue_previous_month
@@ -222,7 +237,7 @@ export async function DashboardStats() {
   const hasOverdue = s.invoices_overdue_amount > 0
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
 
       {/* ── CA ce mois ── */}
       <KpiCard
@@ -297,6 +312,26 @@ export async function DashboardStats() {
         badge={hasOverdue ? (
           <span className="inline-flex items-center text-[11px] font-bold rounded-full px-2 py-0.5 bg-[#FEE2E2] text-[#991B1B]">
             Urgent
+          </span>
+        ) : undefined}
+      />
+
+      {/* ── Taux de recouvrement ── */}
+      <KpiCard
+        iconBg="linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)"
+        icon={<CheckCircle2 className="w-4 h-4 text-[#10B981]" />}
+        value={s.recovery_rate !== null ? `${s.recovery_rate} %` : "—"}
+        label="Recouvrement"
+        sub="payé / facturé total"
+        badge={s.recovery_rate !== null ? (
+          <span className={`inline-flex items-center text-[11px] font-bold rounded-full px-2 py-0.5 ${
+            s.recovery_rate >= 80
+              ? 'bg-[#D1FAE5] text-[#065F46]'
+              : s.recovery_rate >= 50
+              ? 'bg-[#FEF3C7] text-[#92400E]'
+              : 'bg-[#FEE2E2] text-[#991B1B]'
+          }`}>
+            {s.recovery_rate >= 80 ? 'Excellent' : s.recovery_rate >= 50 ? 'Moyen' : 'Faible'}
           </span>
         ) : undefined}
       />

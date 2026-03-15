@@ -81,7 +81,7 @@
 - [x] Création / édition client
 - [x] Lookup SIREN automatique via API INSEE Sirene
 - [x] Validation SIREN, email, champs obligatoires
-- [ ] Historique factures par client (affichage dans la fiche)
+- [x] Historique factures/devis/avoirs par client (onglets dans la fiche client)
 - [ ] Import clients CSV
 
 ### ✅ Facturation — Factures
@@ -136,9 +136,9 @@
 - [x] Montant en retard
 - [x] Tableau des 5 dernières factures
 - [x] Bannière statut connexion PPF
-- [ ] Graphique CA mensuel sur 12 mois *(promis Plan Pro)*
-- [ ] Taux de recouvrement
-- [ ] Top 5 clients par CA
+- [x] Graphique CA mensuel sur 12 mois
+- [x] Taux de recouvrement (KPI dashboard)
+- [x] Top 5 clients par CA (dashboard)
 
 ### ✅ Paramètres
 - [x] Infos entreprise (nom, SIREN, SIRET, TVA, adresse, email, IBAN, logo)
@@ -178,11 +178,11 @@
 | # | Quoi | Détail | Impact |
 |---|------|--------|--------|
 | P2-1 | **Relances automatiques** | Cron J+30/J+45, email au client, log dans la facture | ✅ Opérationnel (cron-job.org) |
-| P2-2 | **Dashboard CA étendu** | Graphique 12 mois, taux recouvrement, top clients | Promis Plan Pro |
+| P2-2 | **Dashboard CA étendu** | Graphique 12 mois, taux recouvrement, top clients | ✅ Opérationnel |
 | P2-3 | **Export comptable** | CSV transactions + FEC (Format d'Échanges Comptables) | Besoin N°1 des TPE |
 | P2-4 | **Notifications email** | Facture vue / acceptée / retard — via webhook PPF | Promis dans settings |
 | P2-5 | **Page de paiement publique** | Lien Stripe sur la facture, paiement en ligne client | Réduit délai paiement |
-| P2-6 | **Historique par client** | Liste factures / devis / BdC dans la fiche client | UX attendue |
+| P2-6 | **Historique par client** | Liste factures / devis / BdC dans la fiche client | ✅ Opérationnel |
 
 ### 🟡 Priorité 3 — Finition & polish
 
@@ -569,6 +569,8 @@ CRON_SECRET=
 | 2026-03-15 | Fix détection `RESEND_FROM_EMAIL` manquant : `console.warn` si fallback `onboarding@resend.dev`, nettoyage `.env.example` | `lib/email/resend.ts`, `.env.example` |
 | 2026-03-15 | Export FEC (Fichier des Écritures Comptables) : générateur pur + API `GET /api/export/fec` + page `/settings/exports` | `lib/export/fec.ts`, `app/api/export/fec/route.ts`, `app/settings/exports/` |
 | 2026-03-15 | Relances automatiques J+30/J+45 opérationnelles : cron-job.org configuré sur `GET /api/cron/send-reminders`, auth Bearer `CRON_SECRET`, testé 200 OK | `app/api/cron/send-reminders/route.ts` |
+| 2026-03-15 | Dashboard CA étendu (P2-2) : graphique 12 mois, KPI taux de recouvrement, composant Top 5 clients par CA | `components/dashboard/RevenueChart*.tsx`, `DashboardStats.tsx`, `TopClients.tsx`, `app/dashboard/page.tsx` |
+| 2026-03-15 | P2-6 marqué opérationnel : historique docs client (factures/devis/avoirs) déjà implémenté dans ClientDetail | `components/clients/ClientDetail.tsx` |
 
 ---
 
