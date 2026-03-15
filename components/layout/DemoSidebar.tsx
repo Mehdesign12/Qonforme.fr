@@ -11,15 +11,21 @@ import {
   Zap,
   ChevronRight,
   FlaskConical,
+  Package,
+  ShoppingCart,
+  ReceiptText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { href: "/demo", label: "Tableau de bord", icon: LayoutDashboard, exact: true },
-  { href: "/demo/invoices", label: "Factures", icon: FileText },
-  { href: "/demo/clients", label: "Clients", icon: Users },
-  { href: "/demo/quotes", label: "Devis", icon: FileCheck2 },
-  { href: "/demo/settings", label: "Paramètres", icon: Settings },
+  { href: "/demo",                  label: "Tableau de bord",  icon: LayoutDashboard, exact: true },
+  { href: "/demo/invoices",         label: "Factures",         icon: FileText },
+  { href: "/demo/quotes",           label: "Devis",            icon: FileCheck2 },
+  { href: "/demo/clients",          label: "Clients",          icon: Users },
+  { href: "/demo/products",         label: "Produits",         icon: Package },
+  { href: "/demo/purchase-orders",  label: "Bons de commande", icon: ShoppingCart },
+  { href: "/demo/credit-notes",     label: "Avoirs",           icon: ReceiptText },
+  { href: "/demo/settings",         label: "Paramètres",       icon: Settings },
 ]
 
 export function DemoSidebar() {
