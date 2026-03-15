@@ -165,11 +165,12 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
               boxShadow:  PILL_SHADOW,
             }}
           >
-            {/* Toggle dark mode */}
-            <ThemeToggle />
-
-            {/* Séparateur */}
-            <div className="w-px h-4 bg-slate-200/80 dark:bg-slate-700/80 mx-0.5" />
+            {/* Toggle dark mode — desktop uniquement (backdrop-filter crashe iOS Safari) */}
+            <span className="hidden md:contents">
+              <ThemeToggle />
+              {/* Séparateur */}
+              <div className="w-px h-4 bg-slate-200/80 dark:bg-slate-700/80 mx-0.5" />
+            </span>
 
             {/* Cloche */}
             <button
