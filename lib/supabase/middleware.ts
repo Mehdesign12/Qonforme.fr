@@ -64,6 +64,13 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
+    // Landing page : rediriger les utilisateurs connectés vers le dashboard
+    if (pathname === '/' && user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+
     return supabaseResponse
   }
 
