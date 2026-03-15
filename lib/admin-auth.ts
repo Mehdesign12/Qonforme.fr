@@ -26,14 +26,14 @@ function toHex(buf: ArrayBuffer): string {
     .join('')
 }
 
-/** Chaîne hex → Uint8Array */
-function fromHex(hex: string): Uint8Array {
-  if (hex.length % 2 !== 0) return new Uint8Array(0)
+/** Chaîne hex → ArrayBuffer */
+function fromHex(hex: string): ArrayBuffer {
+  if (hex.length % 2 !== 0) return new ArrayBuffer(0)
   const bytes = new Uint8Array(hex.length / 2)
   for (let i = 0; i < hex.length; i += 2) {
     bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16)
   }
-  return bytes
+  return bytes.buffer as ArrayBuffer
 }
 
 /**
@@ -63,11 +63,11 @@ export async function verifyAdminSession(token: string, secret: string): Promise
     if (isNaN(ts) || Date.now() - ts > TTL_MS) return false
 
     // Vérification HMAC
-    const key      = await getKey(secret)
-    const sigBytes = fromHex(sigHex)
-    if (sigBytes.length === 0) return false
+    const key       = await getKey(secret)
+    const sigBuffer = fromHex(sigHex)
+    if (sigBuffer.byteLength === 0) return false
 
-    return await crypto.subtle.verify('HMAC', key, sigBytes, new TextEncoder().encode(payload))
+    return await crypto.subtle.verify('HMAC', key, sigBuffer, new TextEncoder().encode(payload))
   } catch {
     return false
   }
