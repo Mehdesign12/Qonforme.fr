@@ -32,10 +32,8 @@ function newLine(): Line {
 
 /* ── Styles partagés ── */
 const cardStyle: React.CSSProperties = {
-  background:           'var(--card-glass-bg)',
-  backdropFilter:       'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
-  boxShadow:            '0 2px 16px rgba(37,99,235,0.06)',
+  background: 'var(--card-glass-bg)',
+  boxShadow:  '0 2px 16px rgba(37,99,235,0.06)',
 }
 const inputCls = "mt-1 w-full px-3 py-2.5 text-sm border border-[#E2E8F0] rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-shadow dark:bg-[#162032] dark:border-[#1E3A5F] dark:text-[#E2E8F0]"
 const labelCls = "text-[12px] font-semibold text-slate-500 uppercase tracking-wide"

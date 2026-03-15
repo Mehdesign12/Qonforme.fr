@@ -406,7 +406,7 @@ export function MobileSidebar({
       {/* Overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-250 md:hidden",
+          "fixed inset-0 z-40 bg-black/40 transition-opacity duration-250 md:hidden",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}

@@ -8,39 +8,71 @@ Il documente les décisions architecturales critiques et les bugs résolus à ne
 ## 🚨 RÈGLE ABSOLUE — Backdrop-filter sur mobile iOS Safari
 
 ### Le bug
-`backdrop-filter: blur()` combiné avec `will-change: transform` sur les éléments
-du header provoque un **crash GPU en boucle infinie sur iOS Safari** lors du
-changement de thème (dark/light).
+`backdrop-filter: blur()` combiné avec `will-change: transform` provoque un
+**crash GPU en boucle infinie sur iOS Safari** lors du changement de thème (dark/light).
+Le crash n'est pas limité au header : **n'importe quel élément avec `backdrop-filter`
+visible à l'écran au moment du changement de thème peut déclencher le crash**.
 
 Mécanisme :
-1. Le changement de thème force le GPU à re-capturer et re-flouter le fond derrière chaque pilule
+1. Le changement de thème force le GPU à re-capturer et re-flouter le fond derrière chaque élément
 2. Les couches GPU séparées (`will-change`) saturent la mémoire mobile
 3. Safari tue le process web → rechargement de la page
 4. Le script inline de `next-themes` réapplique `class="dark"` → même crash → boucle
 
-### La règle
-**NE JAMAIS appliquer `backdrop-filter: blur()` + `will-change: transform` sur mobile.**
+### La règle (mise à jour après deuxième occurrence du bug)
 
-Pattern correct (voir `globals.css` et `Header.tsx`) :
-```css
-.header-pill-glass {
-  /* Mobile : fond solide, PAS de backdrop-filter */
-  backdrop-filter: none !important;
-  will-change: auto !important;
-  transform: none !important;
+**NE JAMAIS utiliser `backdrop-filter: blur()` ou `will-change: transform` sur mobile,
+peu importe le composant (header, card, modal, overlay, barre de recherche, etc.).**
+
+#### Filet de sécurité CSS global (dans `globals.css`)
+Une règle `@media (max-width: 767px)` désactive tout `backdrop-filter` et tout
+`will-change: transform` sur mobile, quelle que soit la source. **Ne jamais supprimer
+cette règle.**
+
+#### Pattern pour chaque composant
+```tsx
+// ✅ Correct — modal overlay
+<div className="fixed inset-0 bg-black/50 md:backdrop-blur-sm" />
+
+// ✅ Correct — card avec fond solide (--card-glass-bg est opaque !)
+const cardStyle = {
+  background: 'var(--card-glass-bg)',   // solide → backdrop-filter inutile
+  boxShadow:  'var(--card-glass-shadow)',
+  // ❌ NE PAS AJOUTER : backdropFilter: 'blur(12px)' — inutile ET crashe iOS
 }
 
-@media (min-width: 768px) {
-  .header-pill-glass {
-    /* Desktop uniquement : glass complet */
-    backdrop-filter: blur(8px) !important;
-    will-change: transform !important;
-    transform: translateZ(0) !important;
-  }
-}
+// ✅ Correct — header pill
+// Utiliser la classe .header-pill-glass (CSS gère mobile/desktop)
+
+// ❌ Incorrect — backdrop-filter sans restriction mobile
+const cardStyle = { backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }
+<div className="backdrop-blur-sm" />  // sur un élément toujours visible
 ```
 
-Tout nouvel élément avec `backdrop-filter` doit utiliser ce pattern ou une media query équivalente.
+#### Pattern layout (wrappers autour du header)
+```tsx
+// ✅ Correct — isolation CSS sans GPU
+<div style={{ isolation: "isolate", contain: "layout style" }}>
+  <HeaderServer />
+</div>
+<main style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))", overscrollBehavior: "none" }}>
+
+// ❌ Incorrect — willChange crée des couches GPU qui amplifient le crash
+<div style={{ isolation: "isolate", willChange: "transform", transform: "translateZ(0)" }}>
+```
+
+### Récapitulatif des fichiers modifiés lors du second fix
+- `app/globals.css` — règle de sécurité `@media (max-width: 767px)` ajoutée
+- `app/invoices/page.tsx`, `app/quotes/page.tsx`, `app/clients/page.tsx`,
+  `app/purchase-orders/page.tsx`, `components/invoices/NewInvoiceForm.tsx` — `backdropFilter` retiré des `cardStyle`
+- `app/clients/page.tsx` — `backdropFilter` retiré de la barre de recherche
+- `app/invoices/layout.tsx`, `app/quotes/layout.tsx`, `app/clients/layout.tsx`,
+  `app/products/layout.tsx`, `app/settings/layout.tsx`, `app/purchase-orders/layout.tsx`,
+  `app/credit-notes/layout.tsx` — `willChange`/`transform: translateZ(0)` retirés des wrappers
+- `components/ui/dialog.tsx`, `components/ui/sheet.tsx`, `components/shared/SendEmailModal.tsx`,
+  `components/layout/Sidebar.tsx`, `components/invoices/InvoiceDetail.tsx`,
+  `app/quotes/[id]/page.tsx`, `app/purchase-orders/[id]/page.tsx`,
+  `app/credit-notes/[id]/page.tsx` — `backdrop-blur-*` rendu desktop-only (`md:backdrop-blur-*`)
 
 ---
 

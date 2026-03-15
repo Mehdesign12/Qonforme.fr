@@ -54,8 +54,6 @@ interface PurchaseOrder {
 
 const cardStyle: React.CSSProperties = {
   background: 'var(--card-glass-bg)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
   boxShadow: 'var(--card-glass-shadow)',
 }
 

@@ -198,3 +198,28 @@ a,
     transform: translateZ(0) !important;
   }
 }
+
+/*
+ * RÈGLE DE SÉCURITÉ ABSOLUE — iOS Safari mobile.
+ *
+ * Sur mobile (< 768px), backdrop-filter combiné avec will-change ou
+ * un changement de thème sature la mémoire GPU de Safari → crash → boucle
+ * de rechargement infinie. Cette règle désactive TOUT backdrop-filter
+ * sur mobile, quelle que soit la source (Tailwind, inline style, composant
+ * tiers). Seules exceptions : la règle .header-pill-glass ci-dessus (qui
+ * utilise déjà !important uniquement sur desktop) et les surcharges
+ * explicitement ajoutées dans ce fichier.
+ *
+ * ⚠️  NE PAS SUPPRIMER CETTE RÈGLE sans avoir lu CLAUDE.md.
+ */
+@media (max-width: 767px) {
+  *:not(.header-pill-glass) {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  /* Supprimer aussi will-change: transform sur mobile pour éviter les
+     couches GPU parasites qui amplifient le crash lors du changement de thème. */
+  * {
+    will-change: auto !important;
+  }
+}
