@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import {
   ArrowLeft, Loader2, Send, CheckCircle2, XCircle,
   Printer, Pencil, Trash2, Download, FileCode,
-  Clock, AlertTriangle, CreditCard, RotateCcw, X, FileX, Archive, ArchiveX
+  Clock, AlertTriangle, CreditCard, RotateCcw, X, FileX, Archive, ArchiveX, Bell
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -48,6 +48,8 @@ interface Invoice {
   pdf_url: string | null
   ppf_status: string | null
   created_at: string
+  reminder_1_sent_at: string | null
+  reminder_2_sent_at: string | null
   client: {
     id: string
     name: string
@@ -349,6 +351,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [archiveLoading, setArchiveLoading]     = useState(false)
   const [showSendModal, setShowSendModal]       = useState(false)
   const [sendLoading, setSendLoading]           = useState(false)
+  const [remindLoading, setRemindLoading]       = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -458,9 +461,21 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
   const handleCreditSuccess = (creditNoteId: string) => {
     setShowCreditModal(false)
-    // Mettre à jour le statut local
     if (invoice) setInvoice({ ...invoice, status: "credited" as InvoiceStatus })
     router.push(`/credit-notes/${creditNoteId}`)
+  }
+
+  const sendReminder = async () => {
+    if (!invoice) return
+    setRemindLoading(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/remind`, { method: "POST" })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi de la relance"); return }
+      setInvoice(json.invoice)
+      toast.success(`Relance ${json.reminderNumber} envoyée à ${json.sentTo}`)
+    } catch { toast.error("Erreur réseau") }
+    finally { setRemindLoading(false) }
   }
 
   /* Render states */
@@ -644,6 +659,22 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                 onClick={() => setShowCreditModal(true)}
               >
                 <RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Émettre un avoir</span>
+              </Button>
+            )}
+
+            {/* Relance manuelle — visible si facture impayée et client avec email */}
+            {["sent", "overdue"].includes(invoice.status) && invoice.client?.email && !invoice.reminder_2_sent_at && (
+              <Button
+                variant="outline" size="sm"
+                className="gap-1.5 shrink-0 border-[#FCA5A5] text-[#991B1B] hover:bg-[#FEE2E2]"
+                onClick={sendReminder}
+                disabled={remindLoading}
+                title={invoice.reminder_1_sent_at ? "Envoyer la 2ème relance" : "Envoyer la 1ère relance (J+30)"}
+              >
+                {remindLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                <span className="hidden sm:inline">
+                  {remindLoading ? "Envoi…" : invoice.reminder_1_sent_at ? "Relance 2" : "Relancer"}
+                </span>
               </Button>
             )}
 
@@ -884,6 +915,42 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             </div>
           ))}
         </div>
+
+        {/* Historique des relances */}
+        {(invoice.reminder_1_sent_at || invoice.reminder_2_sent_at) && (
+          <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-4 shadow-sm space-y-2">
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-3">Relances envoyées</p>
+            {invoice.reminder_1_sent_at && (
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-full bg-[#FEF3C7] border border-[#FCD34D] flex items-center justify-center shrink-0">
+                  <Bell className="w-3 h-3 text-[#D97706]" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">Relance 1 envoyée</p>
+                  <p className="text-xs text-slate-400">{formatDate(invoice.reminder_1_sent_at)}</p>
+                </div>
+              </div>
+            )}
+            {invoice.reminder_2_sent_at && (
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-full bg-[#FEE2E2] border border-[#FCA5A5] flex items-center justify-center shrink-0">
+                  <Bell className="w-3 h-3 text-[#DC2626]" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">Relance 2 envoyée</p>
+                  <p className="text-xs text-slate-400">{formatDate(invoice.reminder_2_sent_at)}</p>
+                </div>
+              </div>
+            )}
+            {!invoice.reminder_2_sent_at && (
+              <p className="text-xs text-slate-400 pt-1">
+                {invoice.reminder_1_sent_at
+                  ? "La 2ème relance peut être envoyée manuellement ou sera envoyée automatiquement à J+45."
+                  : "La 2ème relance sera envoyée automatiquement à J+45."}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Édition brouillon */}
         {invoice.status === "draft" && (
