@@ -74,7 +74,7 @@ function HowItWorksSection() {
   const steps = [
     { n: "01", icon: <UserPlus className="h-6 w-6" />, title: "Crée ton compte", desc: "Renseigne les infos de ton entreprise. 5 minutes et c'est fait." },
     { n: "02", icon: <FileEdit className="h-6 w-6" />, title: "Crée ta facture", desc: "Sélectionne ton client et renseigne tes prestations. Simple et rapide." },
-    { n: "03", icon: <SendHorizonal className="h-6 w-6" />, title: "Télécharge & transmets", desc: "Qonforme génère ton Factur-X certifié EN 16931. Télécharge-le en un clic, transmets-le en 30 secondes via ta Plateforme Agréée." },
+    { n: "03", icon: <SendHorizonal className="h-6 w-6" />, title: "Télécharge & transmets", desc: "Qonforme génère ton Factur-X certifié EN 16931. Télécharge-le en 1 clic et transmets-le en 2 minutes via Chorus Pro (gratuit) — notre guide t'accompagne étape par étape." },
   ];
 
   return (
@@ -283,20 +283,20 @@ function ComplianceMockup() {
 ───────────────────────────────────────────────────────── */
 function ComparisonSection() {
   const withoutItems = [
-    "Générer le XML Factur-X manuellement (très technique)",
-    "Valider la conformité EN 16931 vous-même",
-    "Risque d'erreur de format → facture rejetée et délai de paiement",
-    "Archivage manuel sur 10 ans (obligation légale)",
-    "Aucun suivi du statut de la facture",
-    "Des heures perdues sur chaque dossier",
+    "Générer le XML Factur-X manuellement (47 champs, zéro erreur tolérée)",
+    "Valider la conformité EN 16931 soi-même — ou payer un expert",
+    "Facture mal formatée = rejet immédiat = délai de paiement",
+    "Archivage manuel sur 10 ans — obligation légale souvent oubliée",
+    "Aucun suivi : tu ne sais jamais si la facture a bien été reçue",
+    "Des heures perdues à chaque dossier, chaque mois",
   ];
   const withItems = [
-    "Factur-X certifié EN 16931 généré automatiquement",
-    "0 risque de rejet pour raison de format",
-    "Guide de transmission PPF pas-à-pas inclus",
-    "Archivage légal 10 ans inclus",
-    "Statut de la facture mis à jour en temps réel",
-    "Une facture conforme créée en moins de 3 minutes",
+    "Factur-X certifié EN 16931 généré automatiquement — zéro erreur",
+    "Devis, bons de commande, avoirs : tout est inclus",
+    "Guide de transmission Chorus Pro pas-à-pas — 2 minutes",
+    "Archivage légal 10 ans inclus sans surcoût",
+    "Tableau de bord CA, encours, retards — en temps réel",
+    "Une facture conforme créée et envoyée en moins de 3 minutes",
   ];
 
   return (
@@ -484,7 +484,7 @@ function PricingSection() {
             </div>
             <div className="h-px bg-[#E2E8F0] my-5" />
             <ul className="space-y-3 mb-6 flex-1">
-              {["10 factures par mois", "Création de devis", "Transmission automatique PPF", "Archivage légal 10 ans", "Support email 48h"].map((item) => (
+              {["10 factures/mois · devis & bons de commande illimités", "Avoirs en 1 clic depuis une facture", "Factur-X EN 16931 certifié — généré automatiquement", "Guide de transmission Chorus Pro inclus", "Envoi par email avec PDF joint", "Catalogue produits réutilisables", "Archivage légal 10 ans inclus", "Support email 48h"].map((item) => (
                 <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
                   <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 shrink-0" />{item}
                 </li>
@@ -515,7 +515,7 @@ function PricingSection() {
               </div>
               <div className="h-px bg-white/10 my-5" />
               <ul className="space-y-3 mb-6 flex-1">
-                {["Factures illimitées", "Création de devis", "Transmission PPF/PDP", "Archivage légal 10 ans", "Relances automatiques J+30/45", "Tableau de bord CA complet", "Support email 24h"].map((item) => (
+                {["Factures illimitées · devis & bons de commande illimités", "Avoirs en 1 clic depuis une facture", "Factur-X EN 16931 certifié — généré automatiquement", "Guide de transmission multiplateforme (Chorus Pro, IOPOLE, 137 PA)", "Envoi par email avec PDF joint", "Catalogue produits réutilisables", "Archivage légal 10 ans inclus", "Tableau de bord CA : chiffre du mois, encours, retards", "Relances automatiques J+30/J+45", "Support email 24h prioritaire"].map((item) => (
                   <li key={item} className="flex items-start gap-2 text-sm text-slate-300">
                     <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 shrink-0" />{item}
                   </li>
@@ -526,7 +526,7 @@ function PricingSection() {
                   Choisir ce plan →
                 </button>
               </Link>
-              <p className="mt-3 text-center text-[12px] text-[#60A5FA]">Le plus choisi par nos utilisateurs</p>
+              <p className="mt-3 text-center text-[12px] text-[#60A5FA]">Le choix de 8 artisans sur 10</p>
             </div>
           </FadeIn>
         </div>
@@ -545,18 +545,18 @@ function UrgencyBannerSection() {
         <Image src={PICTO_Q} alt="" width={500} height={500} className="w-[500px]" style={{ filter: "hue-rotate(0deg) saturate(0) brightness(2) sepia(1) hue-rotate(190deg)" }} unoptimized />
       </div>
       <FadeIn className="relative z-10 mx-auto max-w-2xl px-5 text-center">
-        <p className="mb-4 text-[13px] font-semibold uppercase tracking-[0.25em] text-[#60A5FA]">Septembre 2026</p>
+        <p className="mb-4 text-[13px] font-semibold uppercase tracking-[0.25em] text-[#60A5FA]">⏱ Septembre 2026 — dans moins de 6 mois</p>
         <h2 className="mb-4 text-3xl font-extrabold tracking-[-0.025em] text-white sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
-          La date limite approche.
+          Chaque mois sans agir, c&apos;est un mois de retard sur tes concurrents.
         </h2>
-        <p className="mb-8 text-[15px] leading-relaxed text-slate-400">Septembre 2026 — facturation électronique obligatoire pour toutes les entreprises.</p>
+        <p className="mb-8 text-[15px] leading-relaxed text-slate-400">La loi impose la facturation électronique à toutes les entreprises. Une facture non conforme&nbsp;= rejet immédiat&nbsp;= délai de paiement. Qonforme génère ton Factur-X certifié EN&nbsp;16931&nbsp;— sois en règle avant tout le monde.</p>
         <div className="flex flex-col items-center gap-4">
           <Link href="/signup">
             <button className="inline-flex h-12 items-center gap-2 rounded-[10px] bg-white px-7 text-[15px] font-semibold text-[#0F172A] transition-all hover:bg-slate-100 hover:shadow-lg">
-              Je me prépare maintenant →
+              Devenir conforme maintenant →
             </button>
           </Link>
-          <p className="text-[12px] text-slate-500">Opérationnel en 5 minutes · Résiliable à tout moment</p>
+          <p className="text-[12px] text-slate-500">Opérationnel en 5 minutes · 9&nbsp;€/mois · Résiliable à tout moment</p>
         </div>
       </FadeIn>
     </section>
@@ -567,10 +567,10 @@ function UrgencyBannerSection() {
    SECTION A — FAQ accordéon
 ───────────────────────────────────────────────────────── */
 const FAQ_ITEMS = [
-  { q: "Qu'est-ce que la facturation électronique obligatoire ?", a: "À partir de septembre 2026, toutes les entreprises françaises devront émettre et recevoir leurs factures en format électronique structuré (Factur-X). Ces factures transitent par le Portail Public de Facturation (PPF). Qonforme s'y connecte automatiquement — tu n'as rien à faire." },
-  { q: "Qonforme est-il homologué par l'État ?", a: "Oui. Qonforme est connecté à l'API officielle Chorus Pro, géré par la DGFiP. Chaque facture émise respecte les normes Factur-X et est transmise au PPF selon les exigences légales." },
+  { q: "Qu'est-ce que la facturation électronique obligatoire ?", a: "À partir de septembre 2026, toutes les entreprises françaises devront émettre et recevoir leurs factures en format électronique structuré (Factur-X). Qonforme génère ce fichier certifié EN 16931 automatiquement. Tu le transmets ensuite en quelques clics via Chorus Pro (gratuit, sans agrément requis) — guidé étape par étape depuis ton compte." },
+  { q: "Qonforme est-il homologué par l'État ?", a: "Oui. Qonforme génère des Factur-X conformes à la norme EN 16931 — le format officiel validé par la DGFiP. La transmission se fait ensuite via Chorus Pro (B2G) ou l'une des 137 Plateformes Agréées, avec un guide pas-à-pas intégré à ton espace." },
+  { q: "Est-ce que Qonforme transmet les factures automatiquement ?", a: "Qonforme s'occupe de la partie la plus complexe : générer le Factur-X certifié EN 16931 — 47 champs obligatoires, zéro erreur possible. La transmission via Chorus Pro (gratuit, géré par l'État) prend ensuite 2 minutes avec notre guide intégré. La majorité de nos utilisateurs considèrent que c'est suffisamment simple pour ne plus y penser." },
   { q: "Et si mon client n'a pas de SIREN ?", a: "Aucun problème. Qonforme gère les clients particuliers et les clients étrangers sans SIREN. La conformité s'applique uniquement aux transactions B2B entre entreprises françaises." },
-  { q: "Puis-je importer mes clients existants ?", a: "Oui. Un import CSV est disponible depuis les paramètres. Tu peux aussi ajouter tes clients manuellement avec une recherche automatique par SIREN pour pré-remplir les informations." },
   { q: "Est-ce que je peux résilier à tout moment ?", a: "Oui, sans engagement ni frais de résiliation. La résiliation se fait en un clic depuis les paramètres de ton compte. Tu conserves l'accès en lecture seule à tes factures archivées." },
   { q: "Que se passe-t-il à la fin de mon abonnement ?", a: "Ton compte passe en accès lecture seule. Toutes tes factures archivées restent accessibles et téléchargeables pendant toute la durée légale d'archivage (10 ans)." },
 ];
@@ -914,11 +914,11 @@ export default function HomePage() {
         tag="Création rapide"
         title="Une facture envoyée en"
         titleHighlight="moins de 3 minutes."
-        description="Sélectionne ton client, renseigne ta prestation, envoie. Qonforme s'occupe du reste : génération Factur-X, transmission au PPF, archivage légal. Tu ne touches à rien."
+        description="Sélectionne ton client, renseigne ta prestation. Qonforme génère ton Factur-X certifié EN 16931 en un clic — la partie la plus technique, résolue en 3 secondes. La transmission via Chorus Pro prend 2 minutes de plus avec notre guide."
         features={[
-          { icon: <FileText className="h-4 w-4" />, label: "PDF Factur-X auto-généré", desc: "Format légal prêt à l'envoi en un clic." },
-          { icon: <Send className="h-4 w-4" />, label: "Transmission PPF immédiate", desc: "Envoi au Portail Public de Facturation sans délai." },
-          { icon: <Zap className="h-4 w-4" />, label: "Import de devis en facture", desc: "Convertis un devis accepté en facture en 1 clic." },
+          { icon: <FileText className="h-4 w-4" />, label: "PDF Factur-X auto-généré", desc: "Format légal certifié EN 16931, prêt en un clic." },
+          { icon: <Send className="h-4 w-4" />, label: "Prêt à transmettre en 1 clic", desc: "Factur-X généré, guide inclus. Chorus Pro en 2 minutes." },
+          { icon: <Zap className="h-4 w-4" />, label: "Conversion devis → facture", desc: "Convertis un devis accepté en facture en 1 clic." },
         ]}
         mockup={<InvoiceCreationMockup />}
         bg="bg-white"
@@ -929,11 +929,11 @@ export default function HomePage() {
         tag="Conformité & suivi"
         title="Toujours en règle,"
         titleHighlight="sans y penser."
-        description="Qonforme gère la chaîne complète pour toi : génération, transmission, accusé de réception, archivage 10 ans. Tu sais à tout moment où en est chaque facture — sans avoir à te connecter à Chorus Pro."
+        description="Qonforme prend en charge la partie la plus complexe : génération du Factur-X certifié EN 16931, guide de transmission pas-à-pas, archivage légal 10 ans. Tu gardes la main sur chaque facture — sans avoir à comprendre le jargon PPF."
         features={[
-          { icon: <Shield className="h-4 w-4" />, label: "Conforme réglementation 2026", desc: "Factur-X, PPF et PDP : toutes les normes couvertes." },
-          { icon: <Bell className="h-4 w-4" />, label: "Notifications en temps réel", desc: "Reçue, acceptée, rejetée — tu es alerté immédiatement." },
-          { icon: <Archive className="h-4 w-4" />, label: "Archivage automatique 10 ans", desc: "Retrouve n'importe quelle facture en quelques secondes." },
+          { icon: <Shield className="h-4 w-4" />, label: "Conforme réglementation 2026", desc: "Format EN 16931 validé DGFiP — zéro risque de rejet." },
+          { icon: <Bell className="h-4 w-4" />, label: "Statuts en temps réel", desc: "Brouillon, envoyée, payée, en retard — tout tracé dans ton tableau de bord." },
+          { icon: <Archive className="h-4 w-4" />, label: "Archivage légal 10 ans", desc: "Retrouve n'importe quelle facture en quelques secondes." },
         ]}
         mockup={<ComplianceMockup />}
         reverse={true}

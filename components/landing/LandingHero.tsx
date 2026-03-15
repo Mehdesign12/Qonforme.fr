@@ -292,11 +292,11 @@ function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            La loi impose la facturation électronique à toutes les entreprises dès 2026.{" "}
+            La loi impose la facturation électronique à toutes les entreprises dès septembre&nbsp;2026.{" "}
             <strong className="font-semibold text-[#0F172A]">
-              Qonforme génère ton Factur-X certifié EN 16931 et gère l&apos;archivage légal à ta place
+              Qonforme génère ton Factur-X certifié EN&nbsp;16931 — la partie la plus technique — et t&apos;accompagne pas à pas pour la transmission.
             </strong>{" "}
-            — pour que tu restes concentré sur ton métier.
+            Tu restes concentré sur ton métier.
           </motion.p>
 
           {/* 3.1 — Double CTA hero */}
