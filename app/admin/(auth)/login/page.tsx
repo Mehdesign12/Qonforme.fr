@@ -9,12 +9,10 @@ export default function AdminLoginPage() {
   return (
     <AuthLayout maxWidth="sm">
       <div
-        className="rounded-2xl border border-white/70 p-5 sm:p-7 md:p-8"
+        className="rounded-2xl border border-white/70 p-5 sm:p-7 md:p-8 md:backdrop-blur-lg"
         style={{
-          background:         'rgba(255,255,255,0.85)',
-          backdropFilter:     'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          boxShadow:          '0 8px 32px rgba(37,99,235,0.10), 0 1px 0 rgba(255,255,255,0.8) inset',
+          background: 'rgba(255,255,255,0.85)',
+          boxShadow:  '0 8px 32px rgba(37,99,235,0.10), 0 1px 0 rgba(255,255,255,0.8) inset',
         }}
       >
         {/* Badge ADMIN */}
