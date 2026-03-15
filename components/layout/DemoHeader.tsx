@@ -7,13 +7,16 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 const PAGE_TITLES: Record<string, string> = {
-  "/demo": "Tableau de bord",
-  "/demo/invoices": "Factures",
-  "/demo/invoices/new": "Nouvelle facture",
-  "/demo/quotes": "Devis",
-  "/demo/clients": "Clients",
-  "/demo/settings": "Paramètres",
-  "/demo/settings/ppf": "Connexion PPF",
+  "/demo":                  "Tableau de bord",
+  "/demo/invoices":         "Factures",
+  "/demo/invoices/new":     "Nouvelle facture",
+  "/demo/quotes":           "Devis",
+  "/demo/clients":          "Clients",
+  "/demo/products":         "Produits",
+  "/demo/purchase-orders":  "Bons de commande",
+  "/demo/credit-notes":     "Avoirs",
+  "/demo/settings":         "Paramètres",
+  "/demo/settings/ppf":     "Connexion PPF",
 }
 
 export function DemoHeader() {
@@ -43,6 +46,18 @@ export function DemoHeader() {
           <Button size="sm" className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-1.5">
             <Plus className="w-4 h-4" />
             Nouveau client
+          </Button>
+        )}
+        {pathname === "/demo/quotes" && (
+          <Button size="sm" className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white gap-1.5">
+            <Plus className="w-4 h-4" />
+            Nouveau devis
+          </Button>
+        )}
+        {pathname === "/demo/purchase-orders" && (
+          <Button size="sm" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white gap-1.5">
+            <Plus className="w-4 h-4" />
+            Nouveau bon de commande
           </Button>
         )}
 
