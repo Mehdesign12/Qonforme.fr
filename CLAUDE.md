@@ -171,3 +171,15 @@ Le middleware vérifie dans l'ordre :
 1. Route publique → passe
 2. Route protégée sans utilisateur → redirect `/login`
 3. Route protégée avec utilisateur → vérifie abonnement → redirect `/pricing` ou `/settings/billing`
+
+---
+
+## 📋 Suivi des modifications
+
+> **Instruction pour Claude Code** : À chaque session, ajouter une ligne dans ce tableau pour toute modification significative apportée au projet (nouvelle feature, correction bug, refacto, mise à jour copywriting, fix build, etc.). Même règle dans `README.md` section "Suivi des modifications".
+
+| Date | Modification | Fichiers principaux |
+|------|--------------|---------------------|
+| 2026-03-15 | Scroll-reveal landing (FadeIn `motion/react`, `once: true`, safe iOS) | `app/page.tsx`, `components/landing/` |
+| 2026-03-15 | Fix build TypeScript (prop `style` FadeIn, accolades fermantes) | `app/page.tsx` |
+| 2026-03-15 | Correction README + CLAUDE.md : suppression essai 7j, PPF = guide manuel, Stripe = implémenté | `README.md`, `CLAUDE.md` |

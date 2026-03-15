@@ -14,7 +14,7 @@
 | 1er septembre 2027 | Les TPE et artisans doivent également **émettre** leurs factures en format électronique |
 
 - Format obligatoire : **Factur-X** (PDF/A-3 hybride contenant un fichier XML normé CII ou UBL)
-- Qonforme **n'est pas une PDP** — elle transmet les factures au PPF (Chorus Pro) via API publique, sans agrément requis
+- Qonforme **n'est pas une PDP** — elle génère le Factur-X certifié EN 16931 et fournit un guide pas-à-pas pour la transmission manuelle via Chorus Pro (B2G) ou toute Plateforme Agréée, sans agrément requis
 
 ---
 
@@ -25,9 +25,9 @@
 | Frontend | Next.js 15 (App Router) |
 | Styles | Tailwind CSS + Base UI |
 | Backend / BDD | Supabase (PostgreSQL + Auth + Storage) |
-| Paiements | Stripe Billing *(non branché)* |
+| Paiements | Stripe Billing (checkout + webhooks opérationnels) |
 | Déploiement | Vercel |
-| Transmission PPF | API REST Chorus Pro *(UI prête, logique à brancher)* |
+| Transmission PPF | Guide pas-à-pas Chorus Pro / PA agréées (transmission manuelle par l'utilisateur) |
 | Format facture | Factur-X XML EN 16931 (générateur prêt) |
 | Email | Resend |
 | PDF | pdf-lib (génération server-side) |
@@ -36,24 +36,27 @@
 
 ## Plans tarifaires
 
-### Plan Starter — 9 €/mois HT
+### Plan Starter — 9 €/mois HT (90 €/an)
 - 10 factures par mois
-- Création de devis
-- Transmission automatique PPF
+- Devis illimités
+- Bons de commande & avoirs
+- Factur-X EN 16931 généré automatiquement
+- **Guide de transmission PPF inclus** (Chorus Pro, IOPOLE, 137 PA agréées)
 - Archivage légal 10 ans
 - Support email 48h
 
-### Plan Pro — 19 €/mois HT
+### Plan Pro — 19 €/mois HT (190 €/an)
 - Factures illimitées
-- Création de devis
-- Transmission automatique PPF/PDP
-- Archivage légal 10 ans
-- Relances automatiques (J+30, J+45) *(non implémenté)*
-- Tableau de bord CA complet *(partiel)*
+- Devis illimités
+- Bons de commande & avoirs
+- Factur-X EN 16931 généré automatiquement
+- **Guide de transmission + suivi simplifié**
+- Relances automatiques (J+30, J+45) *(à venir)*
+- Tableau de bord CA 12 mois *(à venir)*
 - Support email 24h
 
 ### Règles communes
-- Essai gratuit **7 jours** sans carte bancaire
+- Accès immédiat — résiliation à tout moment
 - Option annuelle : 2 mois offerts (–16,7 %)
 - Pas de plan gratuit permanent
 
@@ -69,7 +72,7 @@
 - [x] Layout responsive (sidebar + header + hamburger mobile)
 - [x] Page d'accueil marketing (hero, features, pricing, footer)
 - [x] Démo interactive `/demo` avec données fictives
-- [ ] **Mot de passe oublié / reset** ← *en cours*
+- [x] Mot de passe oublié / reset (email Resend, token Admin Supabase, lien 1h)
 - [ ] Connexion OAuth Google
 
 ### ✅ Gestion des clients
@@ -90,7 +93,7 @@
 - [x] Envoi email client (Resend, PDF en pièce jointe + copie émetteur)
 - [x] Archivage factures
 - [x] Statuts : brouillon → envoyée → payée / en retard / archivée
-- [ ] Transmission PPF/Chorus Pro *(UI prête, logique à brancher)*
+- [x] Guide de transmission PPF (page `/settings/ppf` — 4 étapes, Chorus Pro / IOPOLE / 137 PA)
 - [ ] Aperçu PDF inline (avant envoi)
 - [ ] Paiement en ligne (lien Stripe sur la facture)
 - [ ] Relances automatiques J+30/J+45 *(promis Plan Pro)*
@@ -140,14 +143,14 @@
 ### ✅ Paramètres
 - [x] Infos entreprise (nom, SIREN, SIRET, TVA, adresse, email, IBAN, logo)
 - [x] Préférences factures (couleur accent, logo, mention légale, préfixe numérotation)
-- [x] Page PPF/Chorus Pro *(UI credentials prête, logique à brancher)*
+- [x] Page PPF/Chorus Pro — guide 4 étapes complet (`/settings/ppf`)
 - [ ] Notifications *(placeholder)*
-- [ ] Billing / Abonnement *(placeholder)*
+- [x] Billing / Abonnement (Stripe checkout + webhooks + page `/settings/billing`)
 
 ### ✅ Technique
 - [x] Génération PDF factures, devis, BdC, avoirs (shared lib, logo, couleur, mentions)
 - [x] Envoi email Resend (templates HTML, PDF joint, copie émetteur)
-- [x] Générateur XML Factur-X EN 16931/EXTENDED *(prêt, non branché)*
+- [x] Générateur XML Factur-X EN 16931/EXTENDED (bouton téléchargement sur chaque facture)
 - [x] Numérotation automatique robuste (séquentielle, par utilisateur/année)
 - [x] Responsive mobile-first complet (toutes les pages)
 
@@ -155,15 +158,20 @@
 
 ## Roadmap — Ce qui reste à faire
 
-### 🔴 Priorité 1 — Conversion & rétention (critique business)
+### ✅ Priorité 1 — Conversion & rétention (fait)
+
+| # | Quoi | Statut |
+|---|------|--------|
+| P1-1 | **Stripe Billing** | ✅ Checkout + webhooks + limites Starter/Pro opérationnels |
+| P1-2 | **Mot de passe oublié** | ✅ Pages request + reset + email Resend |
+| P1-5 | **Factur-X + Guide PPF** | ✅ Génération Factur-X EN 16931 + guide 4 étapes `/settings/ppf` |
+
+### 🔴 Priorité 1 — Restant critique
 
 | # | Quoi | Détail | Impact |
 |---|------|--------|--------|
-| P1-1 | **Stripe Billing** | Checkout, webhooks, gestion des plans, page billing | Sans ça = 0 revenu |
-| P1-2 | **Mot de passe oublié** | Page request + page reset + email Resend | Bloquant UX ← *en cours* |
 | P1-3 | **Email de bienvenue** | Envoyé après signup, avec guide démarrage | Réduit churn J1 |
 | P1-4 | **Onboarding guidé** | 3 étapes : logo → 1er client → 1ère facture (progress bar) | 40-60% drop sans ça |
-| P1-5 | **PPF/Chorus Pro branché** | Connecter la lib XML + API Chorus Pro aux routes d'envoi | Cœur de la promesse |
 
 ### 🟠 Priorité 2 — Valeur perçue & différenciation
 
@@ -450,50 +458,50 @@ Le fond se compose de **5 couches superposées** (toutes `pointer-events-none`, 
 
 ---
 
-## Intégration PPF (Portail Public de Facturation)
+## Factur-X & Transmission PPF
 
-### Flux prévu
+### Flux actuel (guide manuel)
 ```
-1. Utilisateur clique "Envoyer la facture"
-2. Qonforme génère le fichier Factur-X (PDF + XML CII EN 16931)
-3. Transmission au PPF via API Chorus Pro (OAuth2 client credentials)
-4. PPF valide et notifie le client destinataire
-5. PPF renvoie un webhook avec le statut (acceptée / rejetée)
-6. Qonforme met à jour le statut dans l'interface
-7. Notification email envoyée à l'utilisateur
+1. Utilisateur ouvre une facture (statut non-brouillon)
+2. Clique "Télécharger Factur-X" → fichier XML EN 16931 EXTENDED généré
+3. Va sur /settings/ppf → guide 4 étapes affiché
+4. Dépose le fichier sur Chorus Pro (B2G) ou la PA agréée de son choix
+5. Met à jour le statut de la facture manuellement dans Qonforme
 ```
 
 ### État actuel
-- Générateur XML Factur-X : ✅ prêt (`lib/facturx/xml.ts`)
-- Générateur PDF : ✅ prêt (`lib/pdf/`)
-- API Chorus Pro : ❌ non branchée (credentials UI prête dans settings/ppf)
-- Webhooks retour statut : ❌ non implémentés
+- Générateur XML Factur-X : ✅ opérationnel (`lib/facturx/xml.ts`, route `/api/invoices/[id]/facturx`)
+- Générateur PDF : ✅ opérationnel (`lib/pdf/`)
+- Guide de transmission `/settings/ppf` : ✅ complet (Chorus Pro, PPF DGFiP, IOPOLE, 137 PA)
+- Transmission automatique via API : ❌ non implémentée (hors scope — pas d'agrément PDP requis)
 
 ---
 
 ## Gestion des abonnements (Stripe)
 
-### État actuel : ❌ Non implémenté
-- Page landing pricing : ✅ affichée
-- `lib/stripe/` : dossier créé, vide
-- Page `/settings/billing` : placeholder
+### État actuel : ✅ Implémenté
+- Page landing pricing : ✅ opérationnelle
+- `lib/stripe/plans.ts` : plans Starter + Pro configurés
+- Page `/settings/billing` : ✅ opérationnelle (gestion abonnement, annulation, upgrade)
+- Checkout Stripe : ✅ (`/api/stripe/checkout`)
+- Webhooks : ✅ 5 événements gérés
 
-### À implémenter
 ```
 Produits Stripe :
   "Qonforme Starter"  → 9€/mois ou 90€/an
   "Qonforme Pro"      → 19€/mois ou 190€/an
 
-Webhooks à gérer :
-  customer.subscription.created   → activer le plan
+Webhooks gérés :
+  checkout.session.completed      → activer l'abonnement
   customer.subscription.updated   → mettre à jour le plan
-  customer.subscription.deleted   → accès lecture seule
-  invoice.payment_failed          → notifier + bloquer après 3 échecs
+  customer.subscription.deleted   → accès restreint
+  invoice.payment_failed          → notifier l'utilisateur
+  invoice.paid                    → confirmer le paiement
 
 Limites :
   Starter : bloquer création si invoices_this_month >= 10
   Pro     : aucune limite
-  Trial   : 7 jours, sans CB, puis accès lecture seule
+  Pas d'essai gratuit — accès immédiat dès paiement
 ```
 
 ---
@@ -539,6 +547,19 @@ NEXT_PUBLIC_APP_URL=https://qonforme.fr
 - **Statut** : 🔧 En cours de développement
 - **Repo GitHub** : [Mehdesign12/Qonforme.fr](https://github.com/Mehdesign12/Qonforme.fr)
 - **Dernière mise à jour** : Mars 2026
+
+---
+
+## 📋 Suivi des modifications
+
+> Ce tableau est mis à jour à chaque session de développement.
+> Toute modification significative (nouvelle feature, correction de bug, refacto, mise à jour copywriting) doit y figurer.
+
+| Date | Modification | Fichiers principaux |
+|------|--------------|---------------------|
+| 2026-03-15 | Scroll-reveal landing (FadeIn `motion/react`, `once: true`, safe iOS) | `app/page.tsx`, `components/landing/` |
+| 2026-03-15 | Fix build TypeScript (prop `style` FadeIn, accolades fermantes) | `app/page.tsx` |
+| 2026-03-15 | Correction README + CLAUDE.md : suppression essai 7j, PPF = guide manuel, Stripe = implémenté | `README.md`, `CLAUDE.md` |
 
 ---
 
