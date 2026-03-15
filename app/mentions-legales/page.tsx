@@ -14,15 +14,11 @@ export default function MentionsLegalesPage() {
       lastUpdated="15 mars 2026"
     >
       <h2>1. Éditeur du site</h2>
-      <p>Le site <strong>qonforme.fr</strong> est édité par :</p>
-      <ul>
-        <li><strong>Dénomination sociale :</strong> Qonforme SAS</li>
-        <li><strong>Capital social :</strong> [à compléter]</li>
-        <li><strong>SIREN :</strong> [à compléter]</li>
-        <li><strong>Siège social :</strong> [adresse complète à compléter]</li>
-        <li><strong>Directeur de la publication :</strong> [nom du représentant légal]</li>
-        <li><strong>Contact :</strong> <a href="mailto:contact@qonforme.fr">contact@qonforme.fr</a></li>
-      </ul>
+      <p>
+        Le site <strong>qonforme.fr</strong> est édité par la société <strong>Qonforme SAS</strong>.
+        Pour toute demande, vous pouvez nous contacter à l&apos;adresse{" "}
+        <a href="mailto:contact@qonforme.fr">contact@qonforme.fr</a>.
+      </p>
 
       <h2>2. Hébergement</h2>
 
