@@ -36,6 +36,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
   }
 
+  const startedAt = Date.now()
+
   // ── Client admin (service role — accès à toutes les factures, bypass RLS) ──
   const admin = createAdminClient()
 
@@ -182,6 +184,17 @@ export async function GET(request: NextRequest) {
       console.error(`[cron] Erreur R2 ${invoice.invoice_number}:`, err)
     }
   }
+
+  const duration = Date.now() - startedAt
+  const hasErrors = results.reminder_1.errors.length > 0 || results.reminder_2.errors.length > 0
+
+  // ── Persist du log en base ────────────────────────────────────────────────
+  await admin.from("cron_logs").insert({
+    job_name:    "send-reminders",
+    status:      hasErrors ? "error" : "ok",
+    results,
+    duration_ms: duration,
+  })
 
   console.log("[cron/send-reminders] Terminé :", results)
   return NextResponse.json({ ok: true, results })
