@@ -1,26 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe/client'
 import { PLANS, type PlanId } from '@/lib/stripe/plans'
+import { isAdminAuthenticated } from '@/lib/admin-require'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   // ── Auth admin ──────────────────────────────────────────────────────────
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
-
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map(e => e.trim().toLowerCase())
-    .filter(Boolean)
-
-  if (!adminEmails.includes(user.email?.toLowerCase() ?? '')) {
+  if (!(await isAdminAuthenticated())) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   }
 
@@ -122,7 +111,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 })
   }
 
-  console.log(`[admin/plan] Plan changé pour ${targetUserId} : ${sub.plan} → ${newPlan} (par ${user.email})`)
+  console.log(`[admin/plan] Plan changé pour ${targetUserId} : ${sub.plan} → ${newPlan} (par admin)`)
 
   return NextResponse.json({ success: true, plan: newPlan })
 }

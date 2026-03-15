@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient, createAdminClient } from "@/lib/supabase/server"
-
-async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
-  if (!adminEmails.includes(user.email?.toLowerCase() ?? '')) return null
-  return user
-}
+import { createAdminClient } from "@/lib/supabase/server"
+import { isAdminAuthenticated } from "@/lib/admin-require"
 
 /** POST /api/admin/blog — Créer un article */
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAdmin()
-    if (!user) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+    }
 
     const body        = await request.json()
     const title       = (body?.title ?? '').trim()

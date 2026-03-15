@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient, createAdminClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
+import { isAdminAuthenticated } from "@/lib/admin-require"
 
 /** PATCH /api/admin/support/[id] — Met à jour le statut d'un message de support */
 export async function PATCH(
@@ -7,16 +8,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Auth guard — admin seulement
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-    const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-      .split(',')
-      .map(e => e.trim().toLowerCase())
-      .filter(Boolean)
-    if (!adminEmails.includes(user.email?.toLowerCase() ?? '')) {
+    if (!(await isAdminAuthenticated())) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
