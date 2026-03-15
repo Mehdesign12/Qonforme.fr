@@ -12,6 +12,7 @@ import {
   Shield,
   AlertTriangle,
   LogOut,
+  Activity,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -22,6 +23,7 @@ const NAV = [
   { href: '/admin/support',       icon: MessageSquare,   label: 'Support' },
   { href: '/admin/errors',        icon: AlertTriangle,   label: 'Erreurs' },
   { href: '/admin/blog',          icon: FileText,        label: 'Blog' },
+  { href: '/admin/health',        icon: Activity,        label: 'Santé système' },
 ]
 
 interface AdminSidebarProps {
