@@ -1,191 +1,121 @@
-import type { Metadata } from 'next'
-import Image from 'next/image'
-import Link from 'next/link'
+import { LegalLayout } from "@/components/legal/LegalLayout"
+import type { Metadata } from "next"
 
-export const metadata: Metadata = { title: 'Mentions légales — Qonforme' }
-
-const LOGO_LONG_BLEU = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp'
-const PICTO_Q        = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp'
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="mb-8">
-      <h2 className="text-base font-semibold text-[#0F172A] mb-3 pb-2 border-b border-[#E2E8F0]">
-        {title}
-      </h2>
-      <div className="text-sm text-[#475569] leading-relaxed space-y-2">
-        {children}
-      </div>
-    </section>
-  )
+export const metadata: Metadata = {
+  title: "Mentions légales",
+  description: "Mentions légales du site Qonforme — éditeur, hébergeur, propriété intellectuelle et données personnelles.",
 }
 
 export default function MentionsLegalesPage() {
   return (
-    <div className="relative min-h-[100dvh] flex flex-col overflow-x-hidden">
+    <LegalLayout
+      title="Mentions légales"
+      subtitle="Informations légales obligatoires conformément à la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN)."
+      lastUpdated="15 mars 2026"
+    >
+      <h2>1. Éditeur du site</h2>
+      <p>Le site <strong>qonforme.fr</strong> est édité par :</p>
+      <ul>
+        <li><strong>Dénomination sociale :</strong> Qonforme SAS</li>
+        <li><strong>Capital social :</strong> [à compléter]</li>
+        <li><strong>SIREN :</strong> [à compléter]</li>
+        <li><strong>Siège social :</strong> [adresse complète à compléter]</li>
+        <li><strong>Directeur de la publication :</strong> [nom du représentant légal]</li>
+        <li><strong>Contact :</strong> <a href="mailto:contact@qonforme.fr">contact@qonforme.fr</a></li>
+      </ul>
 
-      {/* Fond dégradé */}
-      <div aria-hidden className="pointer-events-none select-none fixed inset-0 z-0"
-        style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 30%, #EEF2FF 60%, #F0F9FF 85%, #F8FAFC 100%)' }}
-      />
-      <div aria-hidden className="pointer-events-none select-none fixed -top-32 -left-32 z-0 w-[480px] h-[480px] rounded-full"
-        style={{ background: 'radial-gradient(circle at center, rgba(37,99,235,0.13) 0%, rgba(37,99,235,0.04) 55%, transparent 75%)' }}
-      />
-      <div aria-hidden className="pointer-events-none select-none fixed -bottom-24 -right-24 z-0 w-[420px] h-[420px] rounded-full"
-        style={{ background: 'radial-gradient(circle at center, rgba(99,102,241,0.10) 0%, rgba(37,99,235,0.04) 50%, transparent 72%)' }}
-      />
-      <div aria-hidden className="pointer-events-none select-none fixed inset-0 z-0 hidden sm:block"
-        style={{
-          backgroundImage: 'radial-gradient(circle, rgba(37,99,235,0.08) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-          maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)',
-        }}
-      />
-      <div aria-hidden className="pointer-events-none select-none fixed inset-0 z-0 flex items-center justify-center" style={{ opacity: 0.045 }}>
-        <Image src={PICTO_Q} alt="" width={900} height={900} className="w-[340px] sm:w-[560px] lg:w-[900px]" unoptimized priority />
-      </div>
+      <h2>2. Hébergement</h2>
 
-      {/* Header */}
-      <div
-        className="relative z-10 flex flex-col items-center px-4"
-        style={{ paddingTop: 'max(28px, env(safe-area-inset-top, 28px))' }}
-      >
-        <Link href="/" aria-label="Retour à l'accueil" className="mb-8">
-          <Image
-            src={LOGO_LONG_BLEU}
-            alt="Qonforme"
-            width={180}
-            height={44}
-            className="h-8 lg:h-10 w-auto drop-shadow-sm"
-            priority
-            unoptimized
-          />
-        </Link>
-      </div>
+      <h3>Vercel Inc. — hébergement applicatif</h3>
+      <ul>
+        <li><strong>Adresse :</strong> 340 Pine Street, Suite 701, San Francisco, CA 94104, États-Unis</li>
+        <li><strong>Site web :</strong> <a href="https://vercel.com" target="_blank" rel="noopener noreferrer">vercel.com</a></li>
+      </ul>
 
-      {/* Contenu */}
-      <div className="relative z-10 flex-1 w-full max-w-[780px] mx-auto px-4 sm:px-6 pb-16">
+      <h3>Supabase Inc. — base de données</h3>
+      <ul>
+        <li><strong>Site web :</strong> <a href="https://supabase.com" target="_blank" rel="noopener noreferrer">supabase.com</a></li>
+        <li>Données stockées dans la région <strong>eu-west-3 (Paris, France)</strong></li>
+      </ul>
 
-        {/* Carte principale */}
-        <div
-          className="rounded-2xl p-6 sm:p-10 md:backdrop-blur-lg"
-          style={{
-            background: 'rgba(255,255,255,0.88)',
-            boxShadow: '0 4px 32px rgba(37,99,235,0.08), 0 1px 4px rgba(0,0,0,0.04)',
-            border: '1px solid rgba(226,232,240,0.8)',
-          }}
-        >
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#0F172A] mb-1">
-            Mentions légales
-          </h1>
-          <p className="text-sm text-[#94A3B8] mb-8">Dernière mise à jour : mars 2025</p>
+      <h2>3. Propriété intellectuelle</h2>
+      <p>
+        L&apos;ensemble des contenus présents sur le site qonforme.fr (textes, images, logos, icônes, code source, interface
+        graphique) est la propriété exclusive de Qonforme SAS ou de ses partenaires, et est protégé par les lois françaises
+        et internationales relatives à la propriété intellectuelle.
+      </p>
+      <p>
+        Toute reproduction, représentation, modification ou utilisation non autorisée de ces éléments est interdite et
+        constitue une contrefaçon sanctionnée par les articles L.335-2 et suivants du Code de la propriété intellectuelle.
+      </p>
 
-          <Section title="1. Éditeur du site">
-            <p><span className="font-medium text-[#0F172A]">Raison sociale :</span> Qonforme</p>
-            <p><span className="font-medium text-[#0F172A]">Forme juridique :</span> [À compléter — ex. SAS, SARL, auto-entrepreneur]</p>
-            <p><span className="font-medium text-[#0F172A]">Capital social :</span> [À compléter]</p>
-            <p><span className="font-medium text-[#0F172A]">SIRET :</span> [À compléter]</p>
-            <p><span className="font-medium text-[#0F172A]">Siège social :</span> [Adresse complète]</p>
-            <p><span className="font-medium text-[#0F172A]">Email :</span>{' '}
-              <a href="mailto:contact@qonforme.fr" className="text-[#2563EB] hover:underline">
-                contact@qonforme.fr
-              </a>
-            </p>
-          </Section>
+      <h2>4. Protection des données personnelles</h2>
+      <p>
+        Qonforme SAS est responsable du traitement des données personnelles collectées sur le site, conformément au
+        Règlement (UE) 2016/679 (RGPD) et à la loi n° 78-17 du 6 janvier 1978 modifiée.
+      </p>
 
-          <Section title="2. Directeur de la publication">
-            <p>[Nom et prénom du représentant légal]</p>
-          </Section>
+      <h3>Données collectées</h3>
+      <ul>
+        <li>Données d&apos;identification : nom, prénom, adresse e-mail</li>
+        <li>Données professionnelles : dénomination sociale, SIREN/SIRET, numéro de TVA, adresse</li>
+        <li>Données de paiement : traitées par Stripe (certifié PCI-DSS), non stockées chez Qonforme</li>
+        <li>Données d&apos;utilisation : logs de connexion, actions dans l&apos;application</li>
+      </ul>
 
-          <Section title="3. Hébergement">
-            <p><span className="font-medium text-[#0F172A]">Hébergeur :</span> Vercel Inc.</p>
-            <p><span className="font-medium text-[#0F172A]">Adresse :</span> 340 Pine Street, Suite 701, San Francisco, CA 94104, États-Unis</p>
-            <p><span className="font-medium text-[#0F172A]">Site :</span>{' '}
-              <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" className="text-[#2563EB] hover:underline">
-                vercel.com
-              </a>
-            </p>
-          </Section>
+      <h3>Finalités du traitement</h3>
+      <ul>
+        <li>Fourniture du service de facturation électronique</li>
+        <li>Gestion des abonnements</li>
+        <li>Envoi d&apos;e-mails transactionnels liés au service</li>
+        <li>Archivage légal des documents comptables (10 ans)</li>
+      </ul>
 
-          <Section title="4. Propriété intellectuelle">
-            <p>
-              L&apos;ensemble du contenu de ce site — textes, graphiques, logos, icônes, images et logiciels —
-              est la propriété exclusive de Qonforme ou de ses partenaires, et est protégé par les lois
-              françaises et internationales relatives à la propriété intellectuelle.
-            </p>
-            <p>
-              Toute reproduction, distribution, modification ou utilisation de ces éléments, sans autorisation
-              préalable écrite de Qonforme, est strictement interdite.
-            </p>
-          </Section>
+      <h3>Vos droits</h3>
+      <p>
+        Conformément au RGPD, vous disposez d&apos;un droit d&apos;accès, de rectification, d&apos;effacement, de portabilité,
+        d&apos;opposition et de limitation du traitement de vos données.
+        Ces droits s&apos;exercent à <a href="mailto:privacy@qonforme.fr">privacy@qonforme.fr</a>.
+        En cas de réclamation non résolue, vous pouvez saisir la <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">CNIL</a>.
+      </p>
 
-          <Section title="5. Protection des données personnelles">
-            <p>
-              Qonforme collecte et traite des données personnelles dans le cadre de la fourniture de ses services,
-              conformément au Règlement Général sur la Protection des Données (RGPD — UE 2016/679) et à la
-              loi Informatique et Libertés.
-            </p>
-            <p>
-              <span className="font-medium text-[#0F172A]">Responsable du traitement :</span> Qonforme —
-              contact@qonforme.fr
-            </p>
-            <p>
-              <span className="font-medium text-[#0F172A]">Données collectées :</span> adresse e-mail, informations
-              d&apos;entreprise (raison sociale, SIREN/SIRET), données de facturation.
-            </p>
-            <p>
-              <span className="font-medium text-[#0F172A]">Finalité :</span> création et gestion de compte,
-              émission et transmission de factures électroniques, archivage légal (10 ans), communication
-              relative au service.
-            </p>
-            <p>
-              <span className="font-medium text-[#0F172A]">Droits :</span> vous disposez d&apos;un droit d&apos;accès,
-              de rectification, d&apos;effacement et de portabilité de vos données. Pour exercer ces droits,
-              contactez-nous à{' '}
-              <a href="mailto:contact@qonforme.fr" className="text-[#2563EB] hover:underline">
-                contact@qonforme.fr
-              </a>.
-            </p>
-          </Section>
+      <h3>Sous-traitants</h3>
+      <ul>
+        <li><strong>Supabase</strong> — stockage des données (hébergé en France)</li>
+        <li><strong>Stripe</strong> — paiements (certifié PCI-DSS)</li>
+        <li><strong>Resend</strong> — e-mails transactionnels</li>
+        <li><strong>Vercel</strong> — hébergement applicatif</li>
+      </ul>
 
-          <Section title="6. Cookies">
-            <p>
-              Qonforme utilise des cookies strictement nécessaires au fonctionnement du service (session
-              d&apos;authentification). Aucun cookie publicitaire ou de tracking tiers n&apos;est déposé sans
-              votre consentement.
-            </p>
-          </Section>
+      <h2>5. Cookies</h2>
+      <p>
+        Qonforme utilise uniquement des cookies strictement nécessaires au fonctionnement du service
+        (session d&apos;authentification, préférences de thème). Aucun cookie publicitaire ou de traçage tiers n&apos;est déposé.
+      </p>
 
-          <Section title="7. Limitation de responsabilité">
-            <p>
-              Qonforme s&apos;efforce d&apos;assurer l&apos;exactitude et la mise à jour des informations diffusées sur ce
-              site. Toutefois, Qonforme ne peut garantir l&apos;exactitude, la complétude ou l&apos;actualité des
-              informations publiées.
-            </p>
-            <p>
-              Qonforme ne saurait être tenue responsable des dommages directs ou indirects résultant de
-              l&apos;utilisation de ce site ou de l&apos;impossibilité d&apos;y accéder.
-            </p>
-          </Section>
+      <h2>6. Liens hypertextes</h2>
+      <p>
+        Le site peut contenir des liens vers des sites tiers. Qonforme n&apos;exerce aucun contrôle sur ces sites et
+        décline toute responsabilité quant à leur contenu ou leur politique de confidentialité.
+      </p>
 
-          <Section title="8. Droit applicable">
-            <p>
-              Les présentes mentions légales sont soumises au droit français. En cas de litige, les tribunaux
-              français seront seuls compétents.
-            </p>
-          </Section>
+      <h2>7. Limitation de responsabilité</h2>
+      <p>
+        Qonforme s&apos;efforce d&apos;assurer l&apos;exactitude des informations publiées mais ne peut en garantir l&apos;exhaustivité.
+        Qonforme ne saurait être tenu responsable des dommages directs ou indirects résultant de l&apos;utilisation du site
+        ou de l&apos;impossibilité d&apos;y accéder.
+      </p>
 
-          {/* Retour */}
-          <div className="mt-8 pt-6 border-t border-[#E2E8F0]">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-sm font-medium text-[#2563EB] hover:text-[#1D4ED8] transition-colors"
-            >
-              ← Retour à l&apos;accueil
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
+      <h2>8. Droit applicable</h2>
+      <p>
+        Les présentes mentions légales sont soumises au droit français. En cas de litige, et à défaut de résolution
+        amiable, les tribunaux français seront seuls compétents.
+      </p>
+
+      <h2>9. Contact</h2>
+      <p>
+        Pour toute question : <a href="mailto:contact@qonforme.fr">contact@qonforme.fr</a>
+      </p>
+    </LegalLayout>
   )
 }

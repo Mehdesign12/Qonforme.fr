@@ -212,6 +212,58 @@ a,
  *
  * ⚠️  NE PAS SUPPRIMER CETTE RÈGLE sans avoir lu CLAUDE.md.
  */
+/* ── Typographie pages légales (CGU, mentions légales) ─────────────────── */
+.legal-content h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0F172A;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #E2E8F0;
+  letter-spacing: -0.01em;
+}
+.legal-content h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+.legal-content h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1E293B;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.legal-content p {
+  font-size: 0.875rem;
+  color: #475569;
+  line-height: 1.7;
+  margin-bottom: 0.75rem;
+}
+.legal-content ul {
+  margin: 0.5rem 0 0.75rem 1.25rem;
+  list-style-type: disc;
+}
+.legal-content li {
+  font-size: 0.875rem;
+  color: #475569;
+  line-height: 1.7;
+  margin-bottom: 0.25rem;
+}
+.legal-content a {
+  color: #2563EB;
+  text-decoration: none;
+  font-weight: 500;
+}
+.legal-content a:hover {
+  text-decoration: underline;
+}
+.legal-content strong {
+  color: #0F172A;
+  font-weight: 600;
+}
+
 @media (max-width: 767px) {
   *:not(.header-pill-glass) {
     backdrop-filter: none !important;
