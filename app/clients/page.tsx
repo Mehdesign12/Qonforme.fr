@@ -23,8 +23,6 @@ function initials(name: string) {
 
 const cardStyle: React.CSSProperties = {
   background: 'var(--card-glass-bg)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
   boxShadow: 'var(--card-glass-shadow)',
 }
 
@@ -59,7 +57,7 @@ export default function ClientsPage() {
       {/* ── Barre de recherche (CTA supprimé — déjà dans le Header) ── */}
       <div
         className="relative flex items-center rounded-xl border border-white/60 dark:border-[#1E3A5F] overflow-hidden"
-        style={{ background: 'var(--card-glass-bg)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+        style={{ background: 'var(--card-glass-bg)' }}
       >
         <Search className="absolute left-3 w-4 h-4 text-slate-400 pointer-events-none" />
         <input

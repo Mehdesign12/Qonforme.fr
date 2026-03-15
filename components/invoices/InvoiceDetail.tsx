@@ -177,7 +177,7 @@ function CreditNoteModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 md:backdrop-blur-sm">
       <div className="bg-white dark:bg-[#0F1E35] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
 
         {/* Header modal */}
@@ -485,7 +485,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     <>
       {/* Modal envoi email */}
       {showSendModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 md:backdrop-blur-sm">
           <div className="bg-white dark:bg-[#0F1E35] rounded-2xl shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
               <div className="flex items-center gap-3">
