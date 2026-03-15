@@ -1,20 +1,33 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient, createClientWithToken } from "@/lib/supabase/server"
+import { createClient, createAdminClient, createClientWithToken } from "@/lib/supabase/server"
+import type { SupabaseClient } from "@supabase/supabase-js"
 
-// Helper : résout le bon client selon qu'un Bearer token est présent ou non
-async function resolveClient(request: NextRequest) {
+// Helper : résout l'utilisateur ET le client DB adapté.
+// - Cookie (navigateur) : createClient() cookie-based → RLS via session cookie ✅
+// - Bearer token (API externe) : admin.auth.getUser(token) pour valider le JWT
+//   + createClientWithToken pour les requêtes DB avec le bon contexte RLS ✅
+//   (le global.headers.Authorization est utilisé par PostgREST, pas par auth.getUser())
+async function resolveAuth(request: NextRequest): Promise<{
+  user: { id: string } | null
+  supabase: SupabaseClient
+}> {
   const authHeader = request.headers.get("Authorization")
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7)
-    return createClientWithToken(token)
+    const admin = createAdminClient()
+    const { data: { user } } = await admin.auth.getUser(token)
+    // Pour les requêtes DB, createClientWithToken passe le JWT à PostgREST (RLS ok)
+    return { user, supabase: createClientWithToken(token) }
   }
-  return createClient()
+  // Cookie-based : chemin standard (navigateur après signInWithPassword)
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return { user, supabase }
 }
 
 // GET /api/company — récupère les infos de l'entreprise de l'utilisateur connecté
 export async function GET(request: NextRequest) {
-  const supabase = await resolveClient(request)
-  const { data: { user } } = await supabase.auth.getUser()
+  const { user, supabase } = await resolveAuth(request)
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
   const { data, error } = await supabase
@@ -32,8 +45,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/company — création (onboarding)
 export async function POST(request: NextRequest) {
-  const supabase = await resolveClient(request)
-  const { data: { user } } = await supabase.auth.getUser()
+  const { user, supabase } = await resolveAuth(request)
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
   const body = await request.json()
@@ -58,8 +70,7 @@ export async function POST(request: NextRequest) {
 
 // PATCH /api/company — mise à jour des infos entreprise
 export async function PATCH(request: NextRequest) {
-  const supabase = await resolveClient(request)
-  const { data: { user } } = await supabase.auth.getUser()
+  const { user, supabase } = await resolveAuth(request)
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
   const body = await request.json()

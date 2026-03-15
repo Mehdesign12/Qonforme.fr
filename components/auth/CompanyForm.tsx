@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2, Search } from "lucide-react"
 import { isValidSiren, sirenToVAT } from "@/lib/utils/invoice"
-import { createClient } from "@/lib/supabase/client"
 
 /* ─── classes communes ──────────────────────────────────────────────────── */
 const inputBase =
@@ -102,20 +101,11 @@ export default function CompanyForm() {
 
     setLoading(true)
     try {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      const accessToken = session?.access_token
-      if (!accessToken) {
-        toast.error("Session expirée. Veuillez vous reconnecter.", { duration: 6000 })
-        setLoading(false)
-        return
-      }
+      // Les cookies de session sont envoyés automatiquement par le browser
+      // après signInWithPassword — pas besoin de passer un Bearer token manuellement
       const res = await fetch("/api/company", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           siren:      fields.siren.trim(),
           name:       fields.name.trim(),
