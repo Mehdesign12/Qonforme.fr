@@ -56,7 +56,7 @@ async function pingStripe(): Promise<ServiceCheck> {
   try {
     const key = process.env.STRIPE_SECRET_KEY
     if (!key) return { status: "error", latencyMs: 0, error: "STRIPE_SECRET_KEY manquant" }
-    const stripe = new Stripe(key, { apiVersion: "2025-01-27.acacia" })
+    const stripe = new Stripe(key, { apiVersion: "2026-02-25.clover" })
     await stripe.balance.retrieve()
     return { status: "ok", latencyMs: Date.now() - t0 }
   } catch (e) {
