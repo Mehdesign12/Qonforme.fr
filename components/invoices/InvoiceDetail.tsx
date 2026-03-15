@@ -751,10 +751,10 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                     )}
                   </div>
                 ) : (
-                  <div>
-                    <p className="text-sm font-bold text-[#0F172A] dark:text-[#E2E8F0]">Votre entreprise</p>
-                    <p className="text-xs text-slate-500 mt-0.5">Complétez dans Paramètres → Entreprise</p>
-                  </div>
+                  <a href="/settings" className="block group">
+                    <p className="text-sm font-bold text-[#0F172A] dark:text-[#E2E8F0] group-hover:text-[#2563EB] transition-colors">Votre entreprise</p>
+                    <p className="text-xs text-[#2563EB] underline mt-0.5">Complétez dans Paramètres → Entreprise</p>
+                  </a>
                 )}
               </div>
               <div>
