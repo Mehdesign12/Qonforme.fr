@@ -5,7 +5,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Activity,
   Users,
   CreditCard,
   UserPlus,
