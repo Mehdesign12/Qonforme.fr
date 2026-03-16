@@ -4,7 +4,6 @@ import {
   Bell, Plus, FileText, FileCheck2, ShoppingCart,
   Building2, CreditCard, Sun, Moon, UserPlus,
 } from "lucide-react"
-import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useState, useEffect } from "react"
