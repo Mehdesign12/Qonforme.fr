@@ -1,7 +1,6 @@
 'use client'
 
 import { Bell, Plus, FileText, FileCheck2, ShoppingCart } from "lucide-react"
-import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 /* ------------------------------------------------------------------ */
