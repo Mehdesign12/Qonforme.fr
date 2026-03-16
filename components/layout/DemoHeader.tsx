@@ -1,7 +1,20 @@
 'use client'
 
-import { Bell, Plus, FileText, FileCheck2, ShoppingCart } from "lucide-react"
-import { usePathname } from "next/navigation"
+import {
+  Bell, Plus, FileText, FileCheck2, ShoppingCart,
+  Building2, CreditCard, Sun, Moon, UserPlus,
+} from "lucide-react"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
+import { useState, useEffect } from "react"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 
 /* ------------------------------------------------------------------ */
 /* Styles pilules — identiques au vrai Header                          */
@@ -52,16 +65,21 @@ const PAGE_CTA: Record<string, CtaConfig> = {
 
 export function DemoHeader() {
   const pathname = usePathname()
+  const router   = useRouter()
   const title    = PAGE_TITLES[pathname] ?? "Qonforme"
   const cta      = PAGE_CTA[pathname]
+
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  const isDark = mounted && theme === "dark"
 
   return (
     <header className="h-14 md:h-[60px] px-3 md:px-5 flex items-center justify-between shrink-0 gap-3 relative z-20">
 
       {/* ── Gauche : pilule titre + badge démo ── */}
       <div className="flex items-center gap-2 min-w-0">
-
-        {/* Pilule titre — identique au vrai header */}
         <div
           className="header-pill-glass flex items-center gap-2 rounded-full px-4 py-2 min-w-0"
           style={{
@@ -70,10 +88,9 @@ export function DemoHeader() {
             boxShadow:  PILL_SHADOW,
           }}
         >
-          <h1 className="text-[13px] md:text-[14px] font-semibold text-[#0F172A] truncate max-w-[140px] sm:max-w-xs">
+          <h1 className="text-[13px] md:text-[14px] font-semibold text-[#0F172A] dark:text-[#E2E8F0] truncate max-w-[140px] sm:max-w-xs">
             {title}
           </h1>
-          {/* Badge démo discret dans la pilule */}
           <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full whitespace-nowrap">
             ✦ Démo
           </span>
@@ -83,7 +100,7 @@ export function DemoHeader() {
       {/* ── Droite : CTA + pilule [cloche + avatar] ── */}
       <div className="flex items-center gap-2 shrink-0">
 
-        {/* CTA contextuel — gradient identique au vrai header */}
+        {/* CTA contextuel */}
         {cta && (
           <button
             className="inline-flex items-center gap-1.5 rounded-full text-white text-[13px] font-bold px-3.5 py-2 whitespace-nowrap touch-manipulation"
@@ -100,7 +117,7 @@ export function DemoHeader() {
           </button>
         )}
 
-        {/* Pilule droite [cloche + séparateur + avatar] — identique au vrai header */}
+        {/* Pilule droite [cloche + séparateur + avatar] */}
         <div
           className="header-pill-glass flex items-center gap-0.5 rounded-full px-1.5 py-1"
           style={{
@@ -123,21 +140,98 @@ export function DemoHeader() {
           {/* Séparateur */}
           <div className="w-px h-4 bg-slate-200/80 mx-0.5" />
 
-          {/* Avatar JD — gradient identique au vrai header */}
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none"
-            style={{
-              background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
-              color:      "#2563EB",
-              border:     "1.5px solid rgba(37,99,235,0.20)",
-              transition: "transform 0.15s ease",
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.05)" }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "" }}
-            title="Jean Dupont"
-          >
-            JD
-          </div>
+          {/* Avatar JD — menu profil démo */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+              style={{
+                background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
+                color:      "#2563EB",
+                border:     "1.5px solid rgba(37,99,235,0.20)",
+                transition: "transform 0.15s ease",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.05)" }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "" }}
+              title="Jean Dupont"
+            >
+              JD
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              align="end"
+              sideOffset={8}
+              style={{ minWidth: "220px" }}
+            >
+              {/* ── En-tête identité (démo) ── */}
+              <div className="px-3 py-2.5 flex items-center gap-2.5">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0"
+                  style={{
+                    background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
+                    color:      "#2563EB",
+                    border:     "1.5px solid rgba(37,99,235,0.20)",
+                  }}
+                >
+                  JD
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold text-foreground truncate leading-tight">
+                    Jean Dupont
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
+                    jean@dupont.fr
+                  </p>
+                  <div className="mt-1">
+                    <span
+                      className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                      style={{
+                        background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)",
+                        color: "#2563EB",
+                        border: "1px solid rgba(37,99,235,0.20)",
+                      }}
+                    >
+                      Pro ✦
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <DropdownMenuSeparator />
+
+              {/* ── Raccourcis settings démo ── */}
+              <DropdownMenuItem onClick={() => router.push("/demo/settings")}>
+                <Building2 className="w-4 h-4 shrink-0" />
+                Mon entreprise
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/demo/settings")}>
+                <FileText className="w-4 h-4 shrink-0" />
+                Préférences factures
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/demo/settings")}>
+                <CreditCard className="w-4 h-4 shrink-0" />
+                Mon abonnement
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              {/* ── Thème ── */}
+              <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
+                {isDark
+                  ? <Sun  className="w-4 h-4 shrink-0" />
+                  : <Moon className="w-4 h-4 shrink-0" />
+                }
+                {isDark ? "Mode clair" : "Mode sombre"}
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              {/* ── CTA inscription ── */}
+              <DropdownMenuItem onClick={() => router.push("/signup")}>
+                <UserPlus className="w-4 h-4 shrink-0" />
+                Créer mon compte
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

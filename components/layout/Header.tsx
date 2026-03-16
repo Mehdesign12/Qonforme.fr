@@ -1,9 +1,24 @@
 'use client'
 
-import { Bell, Plus, FileText, FileCheck2, ShoppingCart } from "lucide-react"
+import {
+  Bell, Plus, FileText, FileCheck2, ShoppingCart,
+  Building2, CreditCard, Sun, Moon, LogOut,
+} from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
+import { useState, useEffect, useMemo } from "react"
 import { ThemeToggle } from "@/components/layout/ThemeToggle"
+import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import type { PlanId } from "@/lib/stripe/plans"
 
 /* ------------------------------------------------------------------ */
 /* Titres de pages                                                      */
@@ -78,18 +93,37 @@ function getInitials(firstName: string, lastName: string): string {
 
 /* ------------------------------------------------------------------ */
 /* Styles pilules — UNE seule couche de blur pour tout le header        */
-/* blur réduit à 8px (was 14px) : même rendu, 40% moins cher GPU       */
 /* ------------------------------------------------------------------ */
 
 const PILL_BG     = "var(--glass-bg)"
 const PILL_BORDER = "1px solid var(--glass-border-color)"
 const PILL_SHADOW = "var(--glass-shadow)"
 
-/*
- * backdrop-filter et GPU uniquement sur md+ (via .header-pill-glass dans globals.css).
- * Sur mobile iOS Safari, backdrop-filter + will-change + changement de thème
- * sature le GPU → crash → rechargement en boucle infinie.
- */
+/* ------------------------------------------------------------------ */
+/* Badge plan                                                           */
+/* ------------------------------------------------------------------ */
+
+function PlanBadge({ plan }: { plan: PlanId }) {
+  if (plan === "pro") {
+    return (
+      <span
+        className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+        style={{
+          background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)",
+          color: "#2563EB",
+          border: "1px solid rgba(37,99,235,0.20)",
+        }}
+      >
+        Pro ✦
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600">
+      Starter
+    </span>
+  )
+}
 
 /* ------------------------------------------------------------------ */
 /* Props                                                                */
@@ -98,17 +132,36 @@ const PILL_SHADOW = "var(--glass-shadow)"
 interface HeaderProps {
   firstName?: string
   lastName?:  string
+  email?:     string
+  plan?:      PlanId | null
 }
 
 /* ------------------------------------------------------------------ */
 /* Composant                                                            */
 /* ------------------------------------------------------------------ */
 
-export function Header({ firstName = "", lastName = "" }: HeaderProps) {
-  const pathname  = usePathname()
-  const title     = getTitle(pathname)
-  const cta       = PAGE_CTA[pathname]
-  const initials  = getInitials(firstName, lastName)
+export function Header({ firstName = "", lastName = "", email = "", plan = null }: HeaderProps) {
+  const pathname = usePathname()
+  const router   = useRouter()
+  const title    = getTitle(pathname)
+  const cta      = PAGE_CTA[pathname]
+  const initials = getInitials(firstName, lastName)
+  const supabase = useMemo(() => createClient(), [])
+
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  const isDark = mounted && theme === "dark"
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    toast.success("À bientôt !")
+    router.push("/login")
+    router.refresh()
+  }
+
+  const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Mon compte"
 
   return (
     <>
@@ -117,8 +170,6 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
 
         {/* ── Gauche : pilule titre ── */}
         <div className="flex items-center gap-2 min-w-0">
-
-          {/* Pilule titre */}
           <div
             className="header-pill-glass flex items-center rounded-full px-4 py-2 min-w-0"
             style={{
@@ -144,7 +195,6 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
                 style={{
                   background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
                   boxShadow:  "0 2px 10px rgba(37,99,235,0.30)",
-                  /* Pas de transition-all — only transform au tap */
                   transition: "transform 0.1s ease, box-shadow 0.1s ease",
                 }}
                 onTouchStart={e => { e.currentTarget.style.transform = "scale(0.97)" }}
@@ -186,22 +236,93 @@ export function Header({ firstName = "", lastName = "" }: HeaderProps) {
             {/* Séparateur */}
             <div className="w-px h-4 bg-slate-200/80 dark:bg-slate-700/80 mx-0.5" />
 
-            {/* Avatar initiales */}
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none"
-              style={{
-                background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
-                color:      "#2563EB",
-                border:     "1.5px solid rgba(37,99,235,0.20)",
-                /* scale hover géré en CSS pur — pas de JS re-render */
-                transition: "transform 0.15s ease",
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.05)" }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "" }}
-              title={`${firstName} ${lastName}`.trim() || "Profil"}
-            >
-              {initials}
-            </div>
+            {/* Avatar — ouvre le menu profil */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                style={{
+                  background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
+                  color:      "#2563EB",
+                  border:     "1.5px solid rgba(37,99,235,0.20)",
+                  transition: "transform 0.15s ease",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1.05)" }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "" }}
+                title={fullName}
+              >
+                {initials}
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent
+                align="end"
+                sideOffset={8}
+                style={{ minWidth: "220px" }}
+              >
+                {/* ── En-tête identité ── */}
+                <div className="px-3 py-2.5 flex items-center gap-2.5">
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0"
+                    style={{
+                      background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
+                      color:      "#2563EB",
+                      border:     "1.5px solid rgba(37,99,235,0.20)",
+                    }}
+                  >
+                    {initials}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-foreground truncate leading-tight">
+                      {fullName}
+                    </p>
+                    {email && (
+                      <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
+                        {email}
+                      </p>
+                    )}
+                    {plan && (
+                      <div className="mt-1">
+                        <PlanBadge plan={plan} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <DropdownMenuSeparator />
+
+                {/* ── Raccourcis paramètres ── */}
+                <DropdownMenuItem onClick={() => router.push("/settings/company")}>
+                  <Building2 className="w-4 h-4 shrink-0" />
+                  Mon entreprise
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/settings/invoices")}>
+                  <FileText className="w-4 h-4 shrink-0" />
+                  Préférences factures
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/settings/billing")}>
+                  <CreditCard className="w-4 h-4 shrink-0" />
+                  Mon abonnement
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                {/* ── Thème — visible sur tous les appareils dans ce menu ── */}
+                <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
+                  {isDark
+                    ? <Sun  className="w-4 h-4 shrink-0" />
+                    : <Moon className="w-4 h-4 shrink-0" />
+                  }
+                  {isDark ? "Mode clair" : "Mode sombre"}
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                {/* ── Déconnexion ── */}
+                <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 shrink-0" />
+                  Se déconnecter
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
