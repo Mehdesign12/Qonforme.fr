@@ -42,12 +42,12 @@ interface NavItem {
 }
 
 /* ------------------------------------------------------------------ */
-/* Navigation (miroir de la sidebar réelle, adaptée /demo)             */
+/* Navigation                                                           */
 /* ------------------------------------------------------------------ */
 
 const DEMO_NAV: NavItem[] = [
-  { href: "/demo",               label: "Tableau de bord",   icon: LayoutDashboard, exact: true },
-  { href: "/demo/clients",       label: "Clients",           icon: Users },
+  { href: "/demo",               label: "Tableau de bord",    icon: LayoutDashboard, exact: true },
+  { href: "/demo/clients",       label: "Clients",            icon: Users },
   {
     href:  "/demo/quotes",
     label: "Devis",
@@ -65,16 +65,31 @@ const DEMO_NAV: NavItem[] = [
     label: "Factures",
     icon:  FileText,
     sub:   [
-      { href: "/demo/invoices/new",  label: "Nouvelle facture", icon: Plus      },
-      { href: "/demo/credit-notes",  label: "Avoirs",           icon: RotateCcw },
-      { href: "/demo/invoices",      label: "Archives",         icon: Archive   },
+      { href: "/demo/invoices/new", label: "Nouvelle facture", icon: Plus      },
+      { href: "/demo/credit-notes", label: "Avoirs",           icon: RotateCcw },
+      { href: "/demo/invoices",     label: "Archives",         icon: Archive   },
     ],
   },
-  { href: "/demo/products",      label: "Catalogue produits", icon: Package },
+  { href: "/demo/products", label: "Catalogue produits", icon: Package },
 ]
 
 /* ------------------------------------------------------------------ */
-/* NavGroup — parent + sous-items (identique à la vraie sidebar)       */
+/* Classes utilitaires partagées (dark-mode aware)                     */
+/* ------------------------------------------------------------------ */
+
+const NAV_ITEM_BASE = "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100"
+const NAV_ACTIVE    = "bg-[#EFF6FF] dark:bg-[#162032] text-[#2563EB] dark:text-[#60A5FA]"
+const NAV_INACTIVE  = "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
+
+const ICON_ACTIVE   = "text-[#2563EB] dark:text-[#60A5FA]"
+const ICON_INACTIVE = "text-slate-400 dark:text-slate-500"
+
+const SUB_ITEM_BASE = "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors duration-100"
+const SUB_ACTIVE    = "bg-[#EFF6FF] dark:bg-[#162032] text-[#2563EB] dark:text-[#60A5FA]"
+const SUB_INACTIVE  = "text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
+
+/* ------------------------------------------------------------------ */
+/* NavGroup — parent + sous-items                                       */
 /* ------------------------------------------------------------------ */
 
 function NavGroup({
@@ -82,8 +97,8 @@ function NavGroup({
   pathname,
   onNavigate,
 }: {
-  item:       NavItem
-  pathname:   string
+  item:        NavItem
+  pathname:    string
   onNavigate?: () => void
 }) {
   const isParentActive = item.exact
@@ -102,24 +117,22 @@ function NavGroup({
       <Link
         href={item.href}
         onClick={onNavigate}
-        className={cn(
-          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100",
-          isActive
-            ? "bg-[#EFF6FF] text-[#2563EB]"
-            : "text-slate-500 hover:bg-slate-50 hover:text-[#0F172A]"
-        )}
+        className={cn(NAV_ITEM_BASE, isActive ? NAV_ACTIVE : NAV_INACTIVE)}
       >
-        <item.icon className={cn("w-4 h-4 shrink-0", isActive ? "text-[#2563EB]" : "text-slate-400")} />
+        <item.icon className={cn("w-4 h-4 shrink-0", isActive ? ICON_ACTIVE : ICON_INACTIVE)} />
         <span className="flex-1 truncate">{item.label}</span>
         {hasChildren && (
-          <Minus className={cn("w-3 h-3 shrink-0 transition-colors", isActive ? "text-[#BFDBFE]" : "text-slate-300")} />
+          <Minus className={cn(
+            "w-3 h-3 shrink-0 transition-colors",
+            isActive ? "text-[#BFDBFE] dark:text-[#1E3A5F]" : "text-slate-300 dark:text-slate-600"
+          )} />
         )}
       </Link>
 
       {/* Sous-items */}
       {hasChildren && isActive && (
         <div className="relative mt-0.5 mb-1 ml-[22px]">
-          <span className="absolute left-0 top-1 bottom-1 w-px bg-[#BFDBFE]" />
+          <span className="absolute left-0 top-1 bottom-1 w-px bg-[#BFDBFE] dark:bg-[#1E3A5F]" />
           <div className="space-y-0.5 pl-4">
             {item.sub!.map((s) => {
               const sActive = pathname === s.href || pathname.startsWith(s.href.split("?")[0])
@@ -128,15 +141,13 @@ function NavGroup({
                   key={s.href + s.label}
                   href={s.href}
                   onClick={onNavigate}
-                  className={cn(
-                    "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors duration-100",
-                    sActive
-                      ? "bg-[#EFF6FF] text-[#2563EB]"
-                      : "text-slate-400 hover:bg-slate-50 hover:text-[#0F172A]"
-                  )}
+                  className={cn(SUB_ITEM_BASE, sActive ? SUB_ACTIVE : SUB_INACTIVE)}
                 >
                   {s.icon && (
-                    <s.icon className={cn("w-3.5 h-3.5 shrink-0", sActive ? "text-[#2563EB]" : "text-slate-300")} />
+                    <s.icon className={cn(
+                      "w-3.5 h-3.5 shrink-0",
+                      sActive ? "text-[#2563EB] dark:text-[#60A5FA]" : "text-slate-300 dark:text-slate-600"
+                    )} />
                   )}
                   {s.label}
                 </Link>
@@ -162,45 +173,53 @@ function SidebarContent({
 }) {
   return (
     <>
-      <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto scrollbar-none">
         {DEMO_NAV.map((item) => (
           <NavGroup key={item.href + item.label} item={item} pathname={pathname} onNavigate={onNavigate} />
         ))}
 
-        {/* Séparateur Paramètres */}
+        {/* Paramètres */}
         <div className="pt-2">
           <Link
             href="/demo/settings"
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100",
-              pathname.startsWith("/demo/settings")
-                ? "bg-[#EFF6FF] text-[#2563EB]"
-                : "text-slate-500 hover:bg-slate-50 hover:text-[#0F172A]"
+              NAV_ITEM_BASE,
+              pathname.startsWith("/demo/settings") ? NAV_ACTIVE : NAV_INACTIVE
             )}
           >
-            <Settings className={cn("w-4 h-4 shrink-0", pathname.startsWith("/demo/settings") ? "text-[#2563EB]" : "text-slate-400")} />
+            <Settings className={cn(
+              "w-4 h-4 shrink-0",
+              pathname.startsWith("/demo/settings") ? ICON_ACTIVE : ICON_INACTIVE
+            )} />
             <span className="flex-1 truncate">Paramètres</span>
             {pathname.startsWith("/demo/settings") && (
-              <ChevronRight className="w-3 h-3 text-[#2563EB]" />
+              <ChevronRight className="w-3 h-3 text-[#2563EB] dark:text-[#60A5FA]" />
             )}
           </Link>
         </div>
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-[#E2E8F0]">
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200">
-          <FlaskConical className="w-4 h-4 text-amber-600 shrink-0" />
+      <div className="px-4 py-4 border-t border-[var(--sidebar-border)] space-y-2">
+        {/* Badge démo */}
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40">
+          <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-500 shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-amber-700">Mode démo</p>
-            <p className="text-[10px] text-amber-600 truncate">Données fictives</p>
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">Mode démo</p>
+            <p className="text-[10px] text-amber-600 dark:text-amber-500 truncate">Données fictives</p>
           </div>
         </div>
+
+        {/* CTA inscription */}
         <Link
           href="/signup"
           onClick={onNavigate}
-          className="mt-2 flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg bg-[#2563EB] text-white text-xs font-semibold hover:bg-[#1D4ED8] transition-colors"
+          className="flex items-center justify-center gap-1.5 w-full px-3 py-2.5 rounded-lg text-white text-xs font-semibold transition-colors touch-manipulation"
+          style={{
+            background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
+            boxShadow:  "0 2px 8px rgba(37,99,235,0.25)",
+          }}
         >
           Créer mon compte →
         </Link>
@@ -217,14 +236,20 @@ export function DemoSidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="hidden md:flex w-64 flex-col border-r border-[#E2E8F0] bg-white shrink-0">
+    <aside
+      className="hidden md:flex w-64 flex-col shrink-0 border-r"
+      style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--sidebar-border)' }}
+    >
       {/* Logo + badge démo */}
-      <div className="flex items-center gap-2 px-5 py-5 border-b border-[#E2E8F0]">
-        <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center shrink-0">
+      <div
+        className="flex items-center gap-2.5 px-5 py-5 border-b"
+        style={{ borderColor: 'var(--sidebar-border)' }}
+      >
+        <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center shrink-0 shadow-sm">
           <Zap className="w-4 h-4 text-white" />
         </div>
-        <span className="text-lg font-bold text-[#0F172A]">Qonforme</span>
-        <span className="ml-auto text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full">
+        <span className="text-lg font-bold text-[var(--foreground)]">Qonforme</span>
+        <span className="ml-auto text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 px-1.5 py-0.5 rounded-full">
           DÉMO
         </span>
       </div>
@@ -262,7 +287,7 @@ export function DemoMobileSidebar({
       {/* Overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-black/40 transition-opacity duration-250 md:hidden",
+          "fixed inset-0 z-40 bg-black/50 transition-opacity duration-250 md:hidden",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}
@@ -272,28 +297,34 @@ export function DemoMobileSidebar({
       {/* Drawer */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#E2E8F0] bg-white shadow-[4px_0_32px_rgba(15,23,42,0.12)] transition-[transform] duration-300 ease-out md:hidden overflow-hidden",
+          "fixed inset-y-0 left-0 z-50 flex flex-col border-r shadow-[4px_0_32px_rgba(15,23,42,0.15)] transition-[transform] duration-300 ease-out md:hidden overflow-hidden",
           "w-[min(80vw,300px)]",
           open ? "translate-x-0" : "-translate-x-full"
         )}
+        style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--sidebar-border)' }}
       >
         {/* Header drawer */}
         <div
-          className="flex items-center justify-between px-5 border-b border-[#E2E8F0] shrink-0"
-          style={{ paddingTop: 'max(18px, env(safe-area-inset-top, 18px))', paddingBottom: '18px' }}
+          className="flex items-center justify-between px-5 border-b shrink-0"
+          style={{
+            borderColor:   'var(--sidebar-border)',
+            paddingTop:    'max(18px, env(safe-area-inset-top, 18px))',
+            paddingBottom: '18px',
+          }}
         >
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#2563EB] flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-[#2563EB] flex items-center justify-center shrink-0 shadow-sm">
               <Zap className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="text-base font-bold text-[#0F172A]">Qonforme</span>
-            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full">
+            <span className="text-base font-bold text-[var(--foreground)]">Qonforme</span>
+            <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 px-1.5 py-0.5 rounded-full">
               DÉMO
             </span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-[#F1F5F9] transition-colors text-slate-400 hover:text-slate-600 touch-manipulation"
+            className="p-2 rounded-xl transition-colors touch-manipulation"
+            style={{ color: 'var(--muted-foreground)' }}
             aria-label="Fermer le menu"
           >
             <X className="w-4 h-4" />
@@ -326,8 +357,12 @@ export function DemoMobileBottomNav() {
   return (
     <>
       <nav
-        className="md:hidden flex shrink-0 border-t border-[#E2E8F0] bg-white"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        className="md:hidden flex shrink-0 border-t"
+        style={{
+          background:    'var(--sidebar-bg)',
+          borderColor:   'var(--sidebar-border)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
       >
         {primaryTabs.map((tab) => {
           const isActive = tab.exact
@@ -339,11 +374,13 @@ export function DemoMobileBottomNav() {
               href={tab.href}
               className={cn(
                 "flex flex-1 flex-col items-center justify-center py-2.5 gap-[3px] touch-manipulation relative",
-                isActive ? "text-[#2563EB]" : "text-slate-400"
+                isActive
+                  ? "text-[#2563EB] dark:text-[#60A5FA]"
+                  : "text-slate-400 dark:text-slate-500"
               )}
             >
               {isActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2px] rounded-b-full bg-[#2563EB]" />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2px] rounded-b-full bg-[#2563EB] dark:bg-[#60A5FA]" />
               )}
               <tab.icon className="w-[22px] h-[22px]" />
               <span className="text-[10px] font-semibold tracking-tight">{tab.label}</span>
@@ -354,7 +391,7 @@ export function DemoMobileBottomNav() {
         {/* Bouton Menu — ouvre le drawer */}
         <button
           onClick={() => setDrawerOpen(true)}
-          className="flex flex-1 flex-col items-center justify-center py-2.5 gap-[3px] touch-manipulation text-slate-400"
+          className="flex flex-1 flex-col items-center justify-center py-2.5 gap-[3px] touch-manipulation text-slate-400 dark:text-slate-500"
           aria-label="Ouvrir le menu complet"
         >
           <Menu className="w-[22px] h-[22px]" />
