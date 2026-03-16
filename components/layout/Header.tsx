@@ -92,7 +92,7 @@ function getInitials(firstName: string, lastName: string): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* Styles pilules — UNE seule couche de blur pour tout le header        */
+/* Styles pilules desktop                                               */
 /* ------------------------------------------------------------------ */
 
 const PILL_BG     = "var(--glass-bg)"
@@ -163,82 +163,63 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
 
   const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Mon compte"
 
-  /* ── Menu dropdown profil (partagé mobile/desktop) ── */
-  const profileDropdown = (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 touch-manipulation"
-        style={{
-          background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
-          color:      "#2563EB",
-          border:     "1.5px solid rgba(37,99,235,0.20)",
-        }}
-        title={fullName}
-      >
-        {initials}
-      </DropdownMenuTrigger>
+  const avatarStyle: React.CSSProperties = {
+    background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
+    color:      "#2563EB",
+    border:     "1.5px solid rgba(37,99,235,0.20)",
+  }
 
-      <DropdownMenuContent align="end" sideOffset={8} style={{ minWidth: "220px" }}>
-        {/* ── En-tête identité ── */}
-        <div className="px-3 py-2.5 flex items-center gap-2.5">
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0"
-            style={{
-              background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
-              color:      "#2563EB",
-              border:     "1.5px solid rgba(37,99,235,0.20)",
-            }}
-          >
-            {initials}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-semibold text-foreground truncate leading-tight">{fullName}</p>
-            {email && (
-              <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">{email}</p>
-            )}
-            {plan && <div className="mt-1"><PlanBadge plan={plan} /></div>}
-          </div>
+  /* ── Dropdown profil partagé ── */
+  const dropdownContent = (
+    <DropdownMenuContent align="end" sideOffset={8} style={{ minWidth: "220px" }}>
+      <div className="px-3 py-2.5 flex items-center gap-2.5">
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0"
+          style={avatarStyle}
+        >
+          {initials}
         </div>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem onClick={() => router.push("/settings/company")}>
-          <Building2 className="w-4 h-4 shrink-0" />
-          Mon entreprise
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/settings/invoices")}>
-          <FileText className="w-4 h-4 shrink-0" />
-          Préférences factures
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/settings/billing")}>
-          <CreditCard className="w-4 h-4 shrink-0" />
-          Mon abonnement
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
-          {isDark ? <Sun className="w-4 h-4 shrink-0" /> : <Moon className="w-4 h-4 shrink-0" />}
-          {isDark ? "Mode clair" : "Mode sombre"}
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem variant="destructive" onClick={handleLogout}>
-          <LogOut className="w-4 h-4 shrink-0" />
-          Se déconnecter
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-semibold text-foreground truncate leading-tight">{fullName}</p>
+          {email && (
+            <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">{email}</p>
+          )}
+          {plan && <div className="mt-1"><PlanBadge plan={plan} /></div>}
+        </div>
+      </div>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={() => router.push("/settings/company")}>
+        <Building2 className="w-4 h-4 shrink-0" />
+        Mon entreprise
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => router.push("/settings/invoices")}>
+        <FileText className="w-4 h-4 shrink-0" />
+        Préférences factures
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => router.push("/settings/billing")}>
+        <CreditCard className="w-4 h-4 shrink-0" />
+        Mon abonnement
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
+        {isDark ? <Sun className="w-4 h-4 shrink-0" /> : <Moon className="w-4 h-4 shrink-0" />}
+        {isDark ? "Mode clair" : "Mode sombre"}
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+        <LogOut className="w-4 h-4 shrink-0" />
+        Se déconnecter
+      </DropdownMenuItem>
+    </DropdownMenuContent>
   )
 
   return (
     <>
       {/* ════════════════════════════════════════════════════════════════
-          MOBILE header (< md) — fond blanc solide, safe-area top
+          MOBILE header (< lg) — fond blanc solide, safe-area top
           ════════════════════════════════════════════════════════════════ */}
       <header
-        className="md:hidden flex items-center gap-2 px-3 shrink-0 border-b border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35] z-20"
+        className="lg:hidden flex items-center gap-2 px-3 shrink-0 border-b border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35] z-20"
         style={{
           paddingTop:    'max(12px, env(safe-area-inset-top, 12px))',
           paddingBottom: '10px',
@@ -254,7 +235,6 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
 
         {/* Actions droite */}
         <div className="flex items-center shrink-0">
-          {/* CTA contextuel */}
           {cta && (
             <Link href={cta.href}>
               <button
@@ -265,35 +245,38 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
               </button>
             </Link>
           )}
-
-          {/* Toggle thème */}
           <button
             onClick={() => setTheme(isDark ? "light" : "dark")}
             className="w-10 h-10 flex items-center justify-center rounded-xl touch-manipulation text-slate-400 dark:text-slate-500"
-            aria-label={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
+            aria-label={isDark ? "Mode clair" : "Mode sombre"}
           >
             {isDark ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
           </button>
-
-          {/* Bell */}
           <button
             className="w-10 h-10 flex items-center justify-center rounded-xl touch-manipulation text-slate-400 dark:text-slate-500"
             aria-label="Notifications"
           >
             <Bell className="w-[17px] h-[17px]" />
           </button>
-
-          {/* Avatar */}
-          <div className="w-10 h-10 flex items-center justify-center">
-            {profileDropdown}
+          <div className="flex items-center justify-center w-10 h-10">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500 touch-manipulation"
+                style={avatarStyle}
+                title={fullName}
+              >
+                {initials}
+              </DropdownMenuTrigger>
+              {dropdownContent}
+            </DropdownMenu>
           </div>
         </div>
       </header>
 
       {/* ════════════════════════════════════════════════════════════════
-          DESKTOP header (≥ md) — pilules flottent sur le gradient
+          DESKTOP header (≥ lg) — pilules flottent sur le gradient
           ════════════════════════════════════════════════════════════════ */}
-      <header className="hidden md:flex h-[60px] px-5 items-center justify-between shrink-0 gap-3 relative z-20">
+      <header className="hidden lg:flex h-[60px] px-5 items-center justify-between shrink-0 gap-3 relative z-20">
 
         {/* Gauche : pilule titre */}
         <div className="flex items-center gap-2 min-w-0">
@@ -337,7 +320,16 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
               <Bell className="w-[17px] h-[17px]" />
             </button>
             <div className="w-px h-4 bg-slate-200/80 dark:bg-slate-700/80 mx-0.5" />
-            {profileDropdown}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                style={avatarStyle}
+                title={fullName}
+              >
+                {initials}
+              </DropdownMenuTrigger>
+              {dropdownContent}
+            </DropdownMenu>
           </div>
         </div>
       </header>
