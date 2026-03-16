@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { UserPlus, FileText, Building2, Loader2, ArrowRight } from 'lucide-react'
@@ -57,24 +57,32 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
 
-  async function markSeen() {
-    try {
-      await fetch('/api/onboarding/seen', { method: 'POST' })
-    } catch {
-      // Non bloquant
+  // Marquer "vu" dès l'affichage — la DB est l'unique source de vérité.
+  // Retry une fois en cas d'erreur réseau passagère.
+  useEffect(() => {
+    async function markSeenOnMount() {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await fetch('/api/onboarding/seen', { method: 'POST' })
+          if (res.ok) return
+        } catch {
+          // réseau : on retente
+        }
+        await new Promise(r => setTimeout(r, 1500))
+      }
     }
-  }
+    markSeenOnMount()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleAction(href: string, id: string) {
     setLoading(id)
-    await markSeen()
     onClose()
     router.push(href)
   }
 
   async function handleLater() {
     setLoading('later')
-    await markSeen()
     onClose()
   }
 

@@ -26,10 +26,10 @@ export async function POST() {
     }
 
     if (!updated || updated.length === 0) {
-      // Aucune ligne affectée : la company n'existe pas encore (race condition
-      // webhook Stripe) ou user_id ne correspond à aucune ligne.
-      // Non bloquant pour l'UX — le localStorage client prend le relais.
+      // Aucune ligne affectée : la company n'existe pas encore.
+      // On retourne 404 pour que le client puisse retenter.
       console.warn('[onboarding/seen] 0 lignes mises à jour pour user_id:', user.id)
+      return NextResponse.json({ error: 'Société introuvable' }, { status: 404 })
     }
 
     return NextResponse.json({ success: true })
