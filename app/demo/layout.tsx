@@ -5,7 +5,7 @@ import { DemoMobileBottomNav } from "@/components/layout/DemoSidebar"
 export default function DemoLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="flex h-[100dvh] overflow-hidden"
+      className="flex h-[100dvh] overflow-hidden bg-[#EFF6FF] dark:bg-[#0B1628]"
       style={{ background: 'var(--dashboard-bg)' }}
     >
       {/* Blob décoratif haut-droite — identique au vrai dashboard */}

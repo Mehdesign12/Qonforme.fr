@@ -172,10 +172,8 @@ export function DemoHeader() {
           Fond solide calqué sur la sidebar, safe-area top, tap targets ≥ 44 px
           ════════════════════════════════════════════════════════════════ */}
       <header
-        className="md:hidden flex items-center gap-2 px-3 shrink-0 border-b"
+        className="md:hidden flex items-center gap-2 px-3 shrink-0 border-b border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35]"
         style={{
-          background:    'var(--sidebar-bg)',
-          borderColor:   'var(--sidebar-border)',
           paddingTop:    'max(12px, env(safe-area-inset-top, 12px))',
           paddingBottom: '10px',
           minHeight:     '54px',
@@ -184,8 +182,7 @@ export function DemoHeader() {
         {/* Titre + badge DÉMO */}
         <div className="flex-1 flex items-center gap-2 min-w-0 pl-1">
           <h1
-            className="text-[15px] font-semibold truncate"
-            style={{ color: 'var(--foreground)' }}
+            className="text-[15px] font-semibold truncate text-[#0F172A] dark:text-[#E2E8F0]"
           >
             {title}
           </h1>
@@ -217,8 +214,7 @@ export function DemoHeader() {
           {/* Thème */}
           <button
             onClick={() => setTheme(isDark ? "light" : "dark")}
-            className="w-10 h-10 flex items-center justify-center rounded-xl touch-manipulation"
-            style={{ color: 'var(--muted-foreground)' }}
+            className="w-10 h-10 flex items-center justify-center rounded-xl touch-manipulation text-slate-400 dark:text-slate-500"
             aria-label={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
           >
             {isDark

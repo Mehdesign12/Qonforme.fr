@@ -201,7 +201,7 @@ function SidebarContent({
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-[var(--sidebar-border)] space-y-2">
+      <div className="px-4 py-4 border-t border-slate-200 dark:border-[#1E3A5F] space-y-2">
         {/* Badge démo */}
         <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40">
           <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-500 shrink-0" />
@@ -237,18 +237,16 @@ export function DemoSidebar() {
 
   return (
     <aside
-      className="hidden md:flex w-64 flex-col shrink-0 border-r"
-      style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--sidebar-border)' }}
+      className="hidden md:flex w-64 flex-col shrink-0 border-r border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35]"
     >
       {/* Logo + badge démo */}
       <div
-        className="flex items-center gap-2.5 px-5 py-5 border-b"
-        style={{ borderColor: 'var(--sidebar-border)' }}
+        className="flex items-center gap-2.5 px-5 py-5 border-b border-slate-200 dark:border-[#1E3A5F]"
       >
         <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center shrink-0 shadow-sm">
           <Zap className="w-4 h-4 text-white" />
         </div>
-        <span className="text-lg font-bold text-[var(--foreground)]">Qonforme</span>
+        <span className="text-lg font-bold text-[#0F172A] dark:text-[#E2E8F0]">Qonforme</span>
         <span className="ml-auto text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 px-1.5 py-0.5 rounded-full">
           DÉMO
         </span>
@@ -297,17 +295,15 @@ export function DemoMobileSidebar({
       {/* Drawer */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col border-r shadow-[4px_0_32px_rgba(15,23,42,0.15)] transition-[transform] duration-300 ease-out md:hidden overflow-hidden",
+          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35] shadow-[4px_0_32px_rgba(15,23,42,0.15)] transition-[transform] duration-300 ease-out md:hidden overflow-hidden",
           "w-[min(80vw,300px)]",
           open ? "translate-x-0" : "-translate-x-full"
         )}
-        style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--sidebar-border)' }}
       >
         {/* Header drawer */}
         <div
-          className="flex items-center justify-between px-5 border-b shrink-0"
+          className="flex items-center justify-between px-5 border-b border-slate-200 dark:border-[#1E3A5F] shrink-0"
           style={{
-            borderColor:   'var(--sidebar-border)',
             paddingTop:    'max(18px, env(safe-area-inset-top, 18px))',
             paddingBottom: '18px',
           }}
@@ -316,15 +312,14 @@ export function DemoMobileSidebar({
             <div className="w-7 h-7 rounded-lg bg-[#2563EB] flex items-center justify-center shrink-0 shadow-sm">
               <Zap className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="text-base font-bold text-[var(--foreground)]">Qonforme</span>
+            <span className="text-base font-bold text-[#0F172A] dark:text-[#E2E8F0]">Qonforme</span>
             <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 px-1.5 py-0.5 rounded-full">
               DÉMO
             </span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl transition-colors touch-manipulation"
-            style={{ color: 'var(--muted-foreground)' }}
+            className="p-2 rounded-xl transition-colors touch-manipulation text-slate-400 dark:text-slate-500"
             aria-label="Fermer le menu"
           >
             <X className="w-4 h-4" />
@@ -357,12 +352,8 @@ export function DemoMobileBottomNav() {
   return (
     <>
       <nav
-        className="md:hidden flex shrink-0 border-t"
-        style={{
-          background:    'var(--sidebar-bg)',
-          borderColor:   'var(--sidebar-border)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        }}
+        className="md:hidden flex shrink-0 border-t border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35]"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         {primaryTabs.map((tab) => {
           const isActive = tab.exact
