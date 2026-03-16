@@ -45,12 +45,14 @@ interface KpiCardProps {
 function KpiCard({ icon, iconBg, label, sub, value, badge, sparkline, alert }: KpiCardProps) {
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border p-4 sm:p-5 hover:-translate-y-0.5 ${
-        alert
-          ? 'bg-white border-[#FECACA] shadow-[0_2px_12px_rgba(239,68,68,0.08)]'
-          : 'bg-white/95 border-slate-100 shadow-[0_2px_12px_rgba(37,99,235,0.06)]'
-      }`}
-      style={{ contain: 'layout style', transition: 'transform 0.15s ease, box-shadow 0.15s ease' }}
+      className="relative overflow-hidden rounded-2xl border p-4 sm:p-5 hover:-translate-y-0.5"
+      style={{
+        background:  alert ? '#ffffff' : 'var(--card-glass-bg)',
+        boxShadow:   alert ? '0 2px 12px rgba(239,68,68,0.08)' : 'var(--card-glass-shadow)',
+        borderColor: alert ? '#FECACA' : 'rgba(255,255,255,0.60)',
+        contain:     'layout style',
+        transition:  'transform 0.15s ease, box-shadow 0.15s ease',
+      }}
     >
       <div aria-hidden className="pointer-events-none absolute -right-4 -bottom-4 w-24 h-24 rounded-full"
         style={{ background: alert
