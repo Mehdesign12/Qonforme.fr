@@ -170,42 +170,97 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
   }
 
   /* ── Dropdown profil partagé ── */
+  const dropdownBg     = isDark ? "#0F1E35" : "#ffffff"
+  const dropdownBorder = isDark ? "#1E3A5F" : "#E8EEF8"
+  const dropdownShadow = isDark
+    ? "0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.25)"
+    : "0 8px 32px rgba(15,23,42,0.12), 0 2px 8px rgba(15,23,42,0.06)"
+
   const dropdownContent = (
-    <DropdownMenuContent align="end" sideOffset={8} style={{ minWidth: "220px" }}>
-      <div className="px-3 py-2.5 flex items-center gap-2.5">
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0"
-          style={avatarStyle}
-        >
-          {initials}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold text-foreground truncate leading-tight">{fullName}</p>
-          {email && (
-            <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">{email}</p>
-          )}
-          {plan && <div className="mt-1"><PlanBadge plan={plan} /></div>}
+    <DropdownMenuContent
+      align="end"
+      sideOffset={10}
+      style={{
+        minWidth: "260px",
+        background: dropdownBg,
+        border: `1px solid ${dropdownBorder}`,
+        boxShadow: dropdownShadow,
+        borderRadius: "14px",
+        padding: "6px",
+      }}
+    >
+      {/* En-tête profil */}
+      <div
+        style={{
+          background: isDark
+            ? "linear-gradient(135deg, #162032 0%, #1a2a45 100%)"
+            : "linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%)",
+          border: `1px solid ${isDark ? "#1E3A5F" : "#DBEAFE"}`,
+          borderRadius: "10px",
+          padding: "12px",
+          marginBottom: "4px",
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0"
+            style={{
+              background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
+              color: "#ffffff",
+              boxShadow: "0 2px 8px rgba(37,99,235,0.35)",
+            }}
+          >
+            {initials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p
+              className="text-[13px] font-bold truncate leading-tight"
+              style={{ color: isDark ? "#E2E8F0" : "#0F172A" }}
+            >
+              {fullName}
+            </p>
+            {email && (
+              <p
+                className="text-[11px] truncate leading-tight mt-0.5"
+                style={{ color: isDark ? "#94A3B8" : "#64748B" }}
+              >
+                {email}
+              </p>
+            )}
+            {plan && <div className="mt-1.5"><PlanBadge plan={plan} /></div>}
+          </div>
         </div>
       </div>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={() => router.push("/settings/company")}>
-        <Building2 className="w-4 h-4 shrink-0" />
-        Mon entreprise
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => router.push("/settings/invoices")}>
-        <FileText className="w-4 h-4 shrink-0" />
-        Préférences factures
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => router.push("/settings/billing")}>
-        <CreditCard className="w-4 h-4 shrink-0" />
-        Mon abonnement
-      </DropdownMenuItem>
-      <DropdownMenuSeparator />
+
+      {/* Section paramètres */}
+      <div style={{ padding: "2px 0" }}>
+        <DropdownMenuItem onClick={() => router.push("/settings/company")}>
+          <Building2 className="w-4 h-4 shrink-0" />
+          Mon entreprise
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push("/settings/invoices")}>
+          <FileText className="w-4 h-4 shrink-0" />
+          Préférences factures
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push("/settings/billing")}>
+          <CreditCard className="w-4 h-4 shrink-0" />
+          Mon abonnement
+        </DropdownMenuItem>
+      </div>
+
+      <DropdownMenuSeparator style={{ background: dropdownBorder, margin: "4px 0" }} />
+
+      {/* Thème */}
       <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
-        {isDark ? <Sun className="w-4 h-4 shrink-0" /> : <Moon className="w-4 h-4 shrink-0" />}
+        {isDark
+          ? <Sun className="w-4 h-4 shrink-0" />
+          : <Moon className="w-4 h-4 shrink-0" />}
         {isDark ? "Mode clair" : "Mode sombre"}
       </DropdownMenuItem>
-      <DropdownMenuSeparator />
+
+      <DropdownMenuSeparator style={{ background: dropdownBorder, margin: "4px 0" }} />
+
+      {/* Déconnexion */}
       <DropdownMenuItem variant="destructive" onClick={handleLogout}>
         <LogOut className="w-4 h-4 shrink-0" />
         Se déconnecter
