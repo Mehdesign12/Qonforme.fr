@@ -57,11 +57,9 @@ function Header() {
           boxShadow: scrolled
             ? "0 8px 32px -4px rgba(15,23,42,0.12), 0 2px 8px -2px rgba(15,23,42,0.06)"
             : "none",
-          backdropFilter: scrolled ? "blur(18px)" : "blur(0px)",
         }}
         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        className="flex w-full max-w-5xl items-center justify-between border py-2.5"
-        style={{ WebkitBackdropFilter: scrolled ? "blur(18px)" : "blur(0px)" }}
+        className={`flex w-full max-w-5xl items-center justify-between border py-2.5 ${scrolled ? "md:backdrop-blur-[18px]" : ""}`}
       >
         {/* Logo — sans fond, bien à gauche */}
         <Link href="/" className="flex shrink-0 items-center pl-3">

@@ -1,4 +1,11 @@
+import type { Metadata } from "next"
 import Link from "next/link"
+
+export const metadata: Metadata = {
+  title: "Démo interactive — Qonforme",
+  description: "Explorez la démo interactive de Qonforme : créez des factures, devis et bons de commande conformes à la réglementation 2026.",
+  alternates: { canonical: "/demo" },
+}
 import { FileText, FileCheck2, Users, ShoppingCart } from "lucide-react"
 import { PPFStatusBanner } from "@/components/dashboard/PPFStatusBanner"
 import { DemoDashboardStats } from "@/components/demo/DemoDashboardStats"

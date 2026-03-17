@@ -1,7 +1,10 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 
-export const metadata = { title: 'Admin — Qonforme' }
+export const metadata = {
+  title: 'Admin — Qonforme',
+  robots: { index: false, follow: false },
+}
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Le middleware vérifie déjà le cookie admin_session — pas de check ici

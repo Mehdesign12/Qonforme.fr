@@ -4,7 +4,11 @@ import SignupForm from "@/components/auth/SignupForm"
 import AuthLayout from "@/components/auth/AuthLayout"
 import StepIndicator from "@/components/auth/StepIndicator"
 
-export const metadata: Metadata = { title: "Créer un compte — Qonforme" }
+export const metadata: Metadata = {
+  title: "Créer un compte — Qonforme",
+  description: "Créez votre compte Qonforme en 5 minutes. Factures électroniques Factur-X conformes EN 16931, prêtes à transmettre via Chorus Pro.",
+  alternates: { canonical: "/signup" },
+}
 export const dynamic = "force-dynamic"
 
 const STEPS = [

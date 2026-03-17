@@ -6,7 +6,11 @@ import StepIndicator from '@/components/auth/StepIndicator'
 import Image from 'next/image'
 import Link from 'next/link'
 
-export const metadata: Metadata = { title: 'Choisir un plan — Qonforme' }
+export const metadata: Metadata = {
+  title: 'Choisir un plan — Qonforme',
+  description: 'Choisissez le plan Qonforme adapté à votre activité : Starter dès 9 €/mois ou Pro à 19 €/mois. Facturation électronique conforme.',
+  alternates: { canonical: '/pricing' },
+}
 export const dynamic = 'force-dynamic'
 
 const LOGO_LONG_BLEU = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp'
