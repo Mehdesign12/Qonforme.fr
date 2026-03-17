@@ -283,7 +283,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
             </div>
 
             {/* Actions modale */}
-            <div className="flex gap-3 p-6 pt-0">
+            <div className="flex gap-3 p-6 pt-0" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))' }}>
               <Button variant="outline" className="flex-1" onClick={() => setShowSendModal(false)} disabled={sendLoading}>
                 Annuler
               </Button>

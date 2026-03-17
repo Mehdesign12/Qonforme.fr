@@ -148,10 +148,10 @@ function ProductPanel({
   const unitPriceTTC = unitPriceHT * (1 + vatRate / 100)
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="fixed inset-0 z-[60] flex">
       {/* Overlay */}
       <div
-        className="flex-1 bg-black/30 backdrop-blur-sm"
+        className="flex-1 bg-black/30 md:backdrop-blur-sm"
         onClick={onClose}
       />
       {/* Panel */}
@@ -275,7 +275,7 @@ function ProductPanel({
             <select
               value={form.unit}
               onChange={setField("unit")}
-              className="mt-1.5 w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+              className="mt-1.5 w-full px-3 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg bg-white dark:bg-[#162032] dark:text-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
             >
               {UNIT_OPTIONS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -289,7 +289,10 @@ function ProductPanel({
         </form>
 
         {/* Footer actions */}
-        <div className="px-6 py-4 border-t border-[#E2E8F0] dark:border-[#1E3A5F] flex gap-3">
+        <div
+          className="px-6 py-4 border-t border-[#E2E8F0] dark:border-[#1E3A5F] flex gap-3 bg-white dark:bg-[#0F1E35]"
+          style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))' }}
+        >
           <Button
             type="button"
             variant="outline"

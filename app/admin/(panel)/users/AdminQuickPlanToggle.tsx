@@ -78,7 +78,7 @@ export default function AdminQuickPlanToggle({ userId, currentPlan, billingPerio
       {/* ── Modal de confirmation ──────────────────────────────────────── */}
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 md:backdrop-blur-sm px-4"
           onClick={(e) => { if (e.target === e.currentTarget && !loading) setOpen(false) }}
         >
           <div className="bg-white dark:bg-[#0F1E35] rounded-2xl border border-slate-200 dark:border-[#1E3A5F] shadow-2xl w-full max-w-xs p-5">
