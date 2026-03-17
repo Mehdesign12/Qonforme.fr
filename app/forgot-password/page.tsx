@@ -2,7 +2,11 @@ import type { Metadata } from "next"
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm"
 import AuthLayout from "@/components/auth/AuthLayout"
 
-export const metadata: Metadata = { title: "Mot de passe oublié — Qonforme" }
+export const metadata: Metadata = {
+  title: "Mot de passe oublié — Qonforme",
+  description: "Réinitialisez votre mot de passe Qonforme. Un lien de récupération sera envoyé à votre adresse email en quelques secondes.",
+  alternates: { canonical: "/forgot-password" },
+}
 export const dynamic = "force-dynamic"
 
 export default function ForgotPasswordPage() {

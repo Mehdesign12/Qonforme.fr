@@ -3,7 +3,11 @@ import Link from "next/link"
 import LoginForm from "@/components/auth/LoginForm"
 import AuthLayout from "@/components/auth/AuthLayout"
 
-export const metadata: Metadata = { title: "Connexion — Qonforme" }
+export const metadata: Metadata = {
+  title: "Connexion — Qonforme",
+  description: "Connectez-vous à votre espace Qonforme pour gérer vos factures électroniques, devis et bons de commande en toute conformité.",
+  alternates: { canonical: "/login" },
+}
 export const dynamic = "force-dynamic"
 
 export default function LoginPage() {

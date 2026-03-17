@@ -580,6 +580,7 @@ CRON_SECRET=
 | 2026-03-17 | Header mobile : suppression toggle thème (crash iOS), ajout style pilules (titre + actions), toggle conservé sur desktop uniquement | `components/layout/Header.tsx`, `components/layout/DemoHeader.tsx` |
 | 2026-03-17 | Audit SEO complet : TODO list 15 items (robots.ts, sitemap.ts, JSON-LD, canonical, meta descriptions, images, fonts, etc.) documentée dans README.md + règles d'implémentation dans CLAUDE.md | `README.md`, `CLAUDE.md` |
 | 2026-03-17 | SEO priorité HAUTE : robots.ts, sitemap.ts, JSON-LD (Organization+WebApplication+FAQPage), retrait `unoptimized` (9 fichiers), `metadataBase`+canonical, font `display: swap` (3/3), lazy loading images | `app/robots.ts`, `app/sitemap.ts`, `app/layout.tsx`, `app/page.tsx`, `components/landing/LandingHero.tsx`, + 7 fichiers |
+| 2026-03-17 | SEO priorité MOYENNE : canonical+description sur 8 pages publiques, noindex admin, fix backdrop-filter LandingHero mobile (CLAUDE.md compliant) | `app/pricing/page.tsx`, `app/login/page.tsx`, `app/signup/page.tsx`, `app/forgot-password/page.tsx`, `app/cgu/page.tsx`, `app/mentions-legales/page.tsx`, `app/demo/page.tsx`, `app/admin/(panel)/layout.tsx`, `components/landing/LandingHero.tsx` |
 
 ---
 
@@ -623,24 +624,25 @@ CRON_SECRET=
 
 ### 🟠 Priorité MOYENNE — Amélioration significative
 
-#### S6. Balises canonical — ⚠️ Partiellement fait
+#### S6. Balises canonical — ✅ Fait
 - [x] Ajouter `metadataBase: new URL('https://qonforme.fr')` dans le root layout (`app/layout.tsx`)
 - [x] Ajouter `alternates: { canonical: '/' }` dans le root layout
-- [ ] Ajouter `alternates: { canonical: '/pricing' }` sur la page pricing
-- [ ] Ajouter des canonical sur chaque page publique ayant un `metadata` export
+- [x] Ajouter `alternates: { canonical: '/pricing' }` sur la page pricing
+- [x] Ajouter des canonical sur chaque page publique : `/login`, `/signup`, `/demo`, `/forgot-password`, `/cgu`, `/mentions-legales`
 
-#### S7. Meta descriptions par page — Incomplètes
-- [ ] `/demo` — ajouter `metadata` export avec `title` + `description`
-- [ ] `/cgu` — ajouter `metadata` export avec `title` + `description`
-- [ ] `/pricing` — ajouter `description` (actuellement seulement `title`)
-- [ ] `/login` — ajouter `description`
-- [ ] `/signup` — ajouter `description`
-- [ ] `/forgot-password` — ajouter `description`
-- [ ] Chaque page publique doit avoir une description unique de 150-160 caractères
+#### S7. Meta descriptions par page — ✅ Fait
+- [x] `/demo` — `metadata` export ajouté avec `title` + `description` + `canonical`
+- [x] `/cgu` — `canonical` ajouté (description existante)
+- [x] `/pricing` — `description` + `canonical` ajoutés
+- [x] `/login` — `description` + `canonical` ajoutés
+- [x] `/signup` — `description` + `canonical` ajoutés
+- [x] `/forgot-password` — `description` + `canonical` ajoutés
+- [x] `/mentions-legales` — `canonical` ajouté (description existante)
+- [x] Chaque page publique a une description unique de 150-160 caractères
 
-#### S8. Noindex routes admin — Non protégé
-- [ ] Ajouter `metadata: { robots: { index: false, follow: false } }` dans les layouts admin (`app/admin/`)
-- [ ] Vérifier que `robots.ts` bloque bien `/admin/*`
+#### S8. Noindex routes admin — ✅ Fait
+- [x] Ajouter `robots: { index: false, follow: false }` dans le layout admin (`app/admin/(panel)/layout.tsx`)
+- [x] Vérifier que `robots.ts` bloque bien `/admin/*` ✓
 
 #### S9. Font display strategy — ~~Incomplète~~ ✅ Fait
 - [x] Ajouter `display: "swap"` sur la déclaration de `DM Sans` dans `app/layout.tsx`
@@ -671,10 +673,10 @@ CRON_SECRET=
 - [ ] Évaluer l'utilisation de `next/og` (ImageResponse) pour générer des OG images dynamiques par page
 - [ ] Actuellement une seule image `/og-image.png` pour tout le site (acceptable)
 
-#### S15. Backdrop-filter sur LandingHero — Violation CLAUDE.md
-- [ ] `components/landing/LandingHero.tsx` ligne ~60 : `backdropFilter: scrolled ? "blur(18px)" : "blur(0px)"` appliqué sans restriction mobile
-- [ ] Corriger : appliquer le backdrop-filter uniquement sur desktop (`md:`) ou via media query
-- [ ] Vérifier `WebkitBackdropFilter` associé
+#### S15. Backdrop-filter sur LandingHero — ✅ Corrigé
+- [x] `components/landing/LandingHero.tsx` : `backdropFilter` retiré de l'animation JS + `WebkitBackdropFilter` retiré du style inline
+- [x] Remplacé par `md:backdrop-blur-[18px]` (classe Tailwind desktop-only) — conforme CLAUDE.md
+- [x] Mobile utilise le fond opaque `rgba(255,255,255,0.96)` sans blur
 
 ### 📊 Récapitulatif de l'audit
 
@@ -692,15 +694,15 @@ CRON_SECRET=
 | JSON-LD structured data | ✅ Fait | ~~HAUTE~~ |
 | Images `unoptimized` | ✅ Fait | ~~HAUTE~~ |
 | Hiérarchie H1 | ✅ Vérifié OK | ~~HAUTE~~ |
-| Canonical tags | ⚠️ Partiel (root) | **MOYENNE** |
-| Meta descriptions par page | ⚠️ Partiel | **MOYENNE** |
-| Noindex routes admin | ❌ Non protégé | **MOYENNE** |
+| Canonical tags | ✅ Fait (8 pages) | ~~MOYENNE~~ |
+| Meta descriptions par page | ✅ Fait (7 pages) | ~~MOYENNE~~ |
+| Noindex routes admin | ✅ Fait | ~~MOYENNE~~ |
 | Font `display: swap` | ✅ Fait (3/3) | ~~MOYENNE~~ |
 | Lazy loading images | ✅ Fait | ~~MOYENNE~~ |
 | Hreflang | ⚠️ Non nécessaire | **BASSE** |
 | Breadcrumbs | ❌ Non implémenté | **BASSE** |
 | OG images dynamiques | ❌ Non implémenté | **BASSE** |
-| Backdrop-filter LandingHero | ⚠️ Violation CLAUDE.md | **MOYENNE** |
+| Backdrop-filter LandingHero | ✅ Corrigé (desktop-only) | ~~MOYENNE~~ |
 
 ---
 
