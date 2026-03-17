@@ -9,6 +9,7 @@ import { ArrowLeft, Calendar } from "lucide-react"
 export const revalidate = 60
 
 const LOGO_URL = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
+const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Picto%20Q.webp"
 
 async function getPost(slug: string) {
   const admin = createAdminClient()
@@ -70,11 +71,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         </Link>
 
         {/* Cover */}
-        {post.cover_url && (
-          <div className="rounded-2xl overflow-hidden mb-8 aspect-[2/1] bg-slate-100">
+        <div className="rounded-2xl overflow-hidden mb-8 aspect-[2/1] bg-slate-100">
+          {post.cover_url ? (
             <img src={post.cover_url} alt="" className="w-full h-full object-cover" />
-          </div>
-        )}
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-[#2563EB] via-[#1d4ed8] to-[#0F172A] flex items-center justify-center">
+              <Image src={PICTO_Q} alt="" width={120} height={120} className="w-24 h-24 opacity-30" sizes="120px" loading="lazy" />
+            </div>
+          )}
+        </div>
 
         {/* Title + date */}
         <header className="mb-8">

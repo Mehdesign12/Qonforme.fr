@@ -76,11 +76,15 @@ export default async function BlogPage() {
                 href={`/blog/${post.slug}`}
                 className="group rounded-2xl border border-slate-200 bg-white overflow-hidden hover:shadow-lg hover:border-[#2563EB]/30 transition-all"
               >
-                {post.cover_url && (
-                  <div className="aspect-[2/1] overflow-hidden bg-slate-100">
+                <div className="aspect-[2/1] overflow-hidden bg-slate-100">
+                  {post.cover_url ? (
                     <img src={post.cover_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  </div>
-                )}
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#2563EB] via-[#1d4ed8] to-[#0F172A] flex items-center justify-center">
+                      <Image src={PICTO_Q} alt="" width={80} height={80} className="w-16 h-16 opacity-30" sizes="80px" loading="lazy" />
+                    </div>
+                  )}
+                </div>
                 <div className="p-5">
                   {post.published_at && (
                     <p className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-2">

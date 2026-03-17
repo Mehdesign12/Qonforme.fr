@@ -75,7 +75,11 @@ export default function AdminBlogAiPage() {
         throw new Error(data.error || 'Erreur lors de la génération')
       }
 
-      toast.success(`Article généré : "${data.post.title}"`)
+      if (data.has_cover === false) {
+        toast.success(`Article généré : "${data.post.title}"`, { description: 'Image de couverture non générée — vérifiez les logs Gemini.' })
+      } else {
+        toast.success(`Article généré : "${data.post.title}"`)
+      }
       setCustomTopic('')
       setCustomKeywords('')
       fetchPosts()
