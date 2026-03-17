@@ -208,7 +208,6 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
                   width={110}
                   height={26}
                   className="h-[26px] w-auto"
-                  unoptimized
                   onError={(e) => {
                     const img = e.currentTarget as HTMLImageElement
                     img.src = LOGO_LONG_BLEU
@@ -222,7 +221,6 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
                   width={110}
                   height={26}
                   className="h-[26px] w-auto"
-                  unoptimized
                   priority
                 />
               )}
@@ -349,7 +347,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               className="pointer-events-none select-none absolute -bottom-10 -left-10 z-0"
               style={{ opacity: 0.06 }}
             >
-              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" unoptimized />
+              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" loading="lazy" />
             </div>
             <div
               aria-hidden
@@ -366,7 +364,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               className="pointer-events-none select-none absolute -bottom-10 -left-10 z-0"
               style={{ opacity: 0.04 }}
             >
-              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" unoptimized />
+              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" loading="lazy" />
             </div>
             <div
               aria-hidden
@@ -395,7 +393,6 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
                 width={140}
                 height={34}
                 className="h-8 w-auto"
-                unoptimized
                 onError={(e) => {
                   const img = e.currentTarget as HTMLImageElement
                   img.src = LOGO_LONG_BLEU
@@ -409,7 +406,6 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
                 width={140}
                 height={34}
                 className="h-8 w-auto"
-                unoptimized
                 priority
               />
             )}

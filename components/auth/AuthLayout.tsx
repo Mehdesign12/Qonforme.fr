@@ -90,7 +90,6 @@ export default function AuthLayout({ children, maxWidth = "md" }: AuthLayoutProp
           width={700}
           height={700}
           className="w-[380px] sm:w-[520px] lg:w-[700px]"
-          unoptimized
           priority
         />
       </div>
@@ -107,7 +106,7 @@ export default function AuthLayout({ children, maxWidth = "md" }: AuthLayoutProp
           width={320}
           height={320}
           className="w-[280px]"
-          unoptimized
+          loading="lazy"
         />
       </div>
 
@@ -127,7 +126,6 @@ export default function AuthLayout({ children, maxWidth = "md" }: AuthLayoutProp
               height={44}
               className="h-9 sm:h-10 w-auto drop-shadow-sm"
               priority
-              unoptimized
             />
           </Link>
         </div>

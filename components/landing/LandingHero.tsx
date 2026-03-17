@@ -71,7 +71,7 @@ function Header() {
             width={130}
             height={32}
             className="h-[30px] w-auto object-contain"
-            unoptimized
+            priority
           />
         </Link>
 
@@ -152,7 +152,7 @@ function Header() {
                 width={200}
                 height={200}
                 className="w-[180px] select-none"
-                unoptimized
+                loading="lazy"
               />
             </div>
 
@@ -171,7 +171,7 @@ function Header() {
                     width={124}
                     height={30}
                     className="h-8 w-auto"
-                    unoptimized
+                    priority
                   />
                 </Link>
                 <SheetClose
@@ -542,7 +542,7 @@ export function LandingHero() {
             width={300}
             height={300}
             className="w-[280px] select-none"
-            unoptimized
+            loading="lazy"
           />
         </div>
 
@@ -558,7 +558,7 @@ export function LandingHero() {
             width={480}
             height={480}
             className="w-[420px] select-none"
-            unoptimized
+            loading="lazy"
           />
         </div>
 

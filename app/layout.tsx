@@ -10,12 +10,14 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
 const dmMono = DM_Mono({
   variable: "--font-dm-mono",
   subsets: ["latin"],
   weight: ["300", "400", "500"],
+  display: "swap",
 });
 
 const bricolageGrotesque = Bricolage_Grotesque({
@@ -26,6 +28,7 @@ const bricolageGrotesque = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://qonforme.fr"),
   title: {
     default: "Qonforme — Facturation électronique simplifiée",
     template: "%s | Qonforme",
@@ -33,6 +36,9 @@ export const metadata: Metadata = {
   description:
     "Créez et transmettez vos factures électroniques en toute conformité avec la réglementation française. Simple, rapide, conforme.",
   keywords: ["facturation électronique", "facture", "artisan", "TPE", "Factur-X", "PPF"],
+  alternates: {
+    canonical: "/",
+  },
 
   /* ── Favicon & icônes ── */
   icons: {
@@ -93,6 +99,69 @@ export default function RootLayout({
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        {/* JSON-LD — Organization + WebApplication */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  name: "Qonforme",
+                  url: "https://qonforme.fr",
+                  logo: "https://qonforme.fr/og-image.png",
+                  description:
+                    "Facturation électronique simplifiée pour artisans et TPE, conforme à la réglementation française 2026.",
+                  contactPoint: {
+                    "@type": "ContactPoint",
+                    contactType: "Customer Service",
+                    email: "contact@qonforme.fr",
+                    availableLanguage: "French",
+                  },
+                  areaServed: "FR",
+                },
+                {
+                  "@type": "WebApplication",
+                  name: "Qonforme",
+                  url: "https://qonforme.fr",
+                  applicationCategory: "BusinessApplication",
+                  operatingSystem: "All",
+                  offers: [
+                    {
+                      "@type": "Offer",
+                      name: "Starter",
+                      price: "9",
+                      priceCurrency: "EUR",
+                      priceSpecification: {
+                        "@type": "UnitPriceSpecification",
+                        price: "9",
+                        priceCurrency: "EUR",
+                        unitText: "MONTH",
+                      },
+                      description:
+                        "10 factures/mois, devis illimités, Factur-X EN 16931, archivage 10 ans.",
+                    },
+                    {
+                      "@type": "Offer",
+                      name: "Pro",
+                      price: "19",
+                      priceCurrency: "EUR",
+                      priceSpecification: {
+                        "@type": "UnitPriceSpecification",
+                        price: "19",
+                        priceCurrency: "EUR",
+                        unitText: "MONTH",
+                      },
+                      description:
+                        "Factures illimitées, relances automatiques, tableau de bord CA, support prioritaire.",
+                    },
+                  ],
+                },
+              ],
+            }),
+          }}
         />
       </head>
       <body

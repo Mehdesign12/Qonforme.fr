@@ -47,7 +47,7 @@ export function LegalLayout({ children, title, subtitle, lastUpdated }: LegalLay
         className="pointer-events-none select-none absolute right-[-80px] bottom-[-80px] z-0 hidden lg:block"
         style={{ opacity: 0.055 }}
       >
-        <Image src={PICTO_Q} alt="" width={400} height={400} unoptimized />
+        <Image src={PICTO_Q} alt="" width={400} height={400} loading="lazy" />
       </div>
 
       {/* ── Barre header ── */}
@@ -61,7 +61,6 @@ export function LegalLayout({ children, title, subtitle, lastUpdated }: LegalLay
               height={37}
               className="h-8 w-auto"
               priority
-              unoptimized
             />
           </Link>
           <Link

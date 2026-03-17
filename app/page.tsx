@@ -80,7 +80,7 @@ function HowItWorksSection() {
   return (
     <section className="relative overflow-hidden bg-[#F8FAFC] py-20 sm:py-24">
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 select-none" style={{ opacity: 0.05 }}>
-        <Image src={PICTO_Q} alt="" width={500} height={500} className="w-[420px] sm:w-[500px]" unoptimized />
+        <Image src={PICTO_Q} alt="" width={500} height={500} className="w-[420px] sm:w-[500px]" loading="lazy" />
       </div>
       <div className="relative z-10 mx-auto max-w-5xl px-5">
         <FadeIn className="mb-12 flex flex-col items-center text-center gap-3">
@@ -303,7 +303,7 @@ function ComparisonSection() {
     <section className="relative overflow-hidden bg-[#F8FAFC] py-20 sm:py-24">
       {/* Q centré en fond */}
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 select-none" style={{ opacity: 0.04 }}>
-        <Image src={PICTO_Q} alt="" width={400} height={400} className="w-[400px]" unoptimized />
+        <Image src={PICTO_Q} alt="" width={400} height={400} className="w-[400px]" loading="lazy" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-5xl px-5">
@@ -396,13 +396,13 @@ function TestimonialsSection() {
   return (
     <section className="relative overflow-hidden py-20 sm:py-24" style={{ backgroundColor: "#EFF6FF" }}>
       <div aria-hidden className="pointer-events-none absolute select-none" style={{ top: "40%", left: "38%", transform: "translate(-50%, -50%)", opacity: 0.03, zIndex: 0 }}>
-        <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" unoptimized />
+        <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" loading="lazy" />
       </div>
       <div aria-hidden className="pointer-events-none absolute select-none" style={{ top: "-20px", right: "-20px", opacity: 0.08, zIndex: 0 }}>
-        <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" unoptimized />
+        <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" loading="lazy" />
       </div>
       <div aria-hidden className="pointer-events-none absolute select-none" style={{ bottom: "-30px", left: "-30px", opacity: 0.05, zIndex: 0 }}>
-        <Image src={PICTO_Q} alt="" width={140} height={140} className="w-[140px]" unoptimized />
+        <Image src={PICTO_Q} alt="" width={140} height={140} className="w-[140px]" loading="lazy" />
       </div>
       <div className="relative z-10 mx-auto max-w-5xl px-5">
         <FadeIn className="mb-12 flex flex-col items-center text-center gap-3">
@@ -502,7 +502,7 @@ function PricingSection() {
           <FadeIn delay={0.25} x={10} className="relative overflow-hidden rounded-2xl p-8 flex flex-col" style={{ background: "#0F172A", border: "1px solid rgba(37,99,235,0.3)", boxShadow: "0 0 40px rgba(37,99,235,0.15)" }}>
             {/* Q filigrane dans la card */}
             <div aria-hidden className="pointer-events-none absolute -bottom-6 -right-6 select-none" style={{ opacity: 0.06, zIndex: 0 }}>
-              <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" unoptimized />
+              <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" loading="lazy" />
             </div>
             <div className="relative z-10 flex flex-col flex-1">
               <div className="flex items-center justify-between mb-4">
@@ -542,7 +542,7 @@ function UrgencyBannerSection() {
   return (
     <section className="relative overflow-hidden bg-[#0F172A] py-20 sm:py-24">
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none" style={{ opacity: 0.07, zIndex: 0 }}>
-        <Image src={PICTO_Q} alt="" width={500} height={500} className="w-[500px]" style={{ filter: "hue-rotate(0deg) saturate(0) brightness(2) sepia(1) hue-rotate(190deg)" }} unoptimized />
+        <Image src={PICTO_Q} alt="" width={500} height={500} className="w-[500px]" style={{ filter: "hue-rotate(0deg) saturate(0) brightness(2) sepia(1) hue-rotate(190deg)" }} loading="lazy" />
       </div>
       <FadeIn className="relative z-10 mx-auto max-w-2xl px-5 text-center">
         <p className="mb-4 text-[13px] font-semibold uppercase tracking-[0.25em] text-[#60A5FA]">⏱ Septembre 2026 — dans moins de 6 mois</p>
@@ -730,7 +730,7 @@ function Footer() {
     <footer className="relative overflow-hidden" style={{ background: "#0F172A", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
       {/* Q géant centré en fond */}
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none" style={{ opacity: 0.03, zIndex: 0 }}>
-        <Image src={PICTO_Q} alt="" width={600} height={600} className="w-[600px]" unoptimized />
+        <Image src={PICTO_Q} alt="" width={600} height={600} className="w-[600px]" loading="lazy" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-6xl px-5 pt-16 pb-10">
@@ -739,7 +739,7 @@ function Footer() {
           {/* Col 1 — Marque */}
           <div className="lg:col-span-1">
             <Link href="/">
-              <Image src={LOGO_URL} alt="Qonforme" width={130} height={32} className="h-7 w-auto object-contain mb-4" unoptimized />
+              <Image src={LOGO_URL} alt="Qonforme" width={130} height={32} className="h-7 w-auto object-contain mb-4" loading="lazy" />
             </Link>
             <p className="text-[13px] leading-relaxed text-slate-400 mb-4">
               Facturation électronique conforme à la réglementation française 2026.
@@ -897,9 +897,30 @@ function KeyMetricsSection() {
 /* ─────────────────────────────────────────────────────────
    PAGE PRINCIPALE
 ───────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────
+   JSON-LD — FAQPage (données structurées pour Google)
+───────────────────────────────────────────────────────── */
+const FAQ_JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ_ITEMS.map((item) => ({
+    "@type": "Question",
+    name: item.q,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.a,
+    },
+  })),
+};
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
+      {/* JSON-LD FAQPage */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSONLD) }}
+      />
       {/* 1 — Hero */}
       <LandingHero />
       {/* 2 — Comment ça marche */}

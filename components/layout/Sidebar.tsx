@@ -295,7 +295,7 @@ export function Sidebar() {
         className="pointer-events-none absolute -bottom-6 -left-4 select-none z-0"
         style={{ opacity: 0.06 }}
       >
-        <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" unoptimized />
+        <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" loading="lazy" />
       </div>
 
       {/* Header sidebar : logo + toggle */}
@@ -427,7 +427,7 @@ export function MobileSidebar({
           className="pointer-events-none absolute -bottom-6 -left-4 select-none z-0"
           style={{ opacity: 0.06 }}
         >
-          <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" unoptimized />
+          <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" loading="lazy" />
         </div>
 
         {/* Header drawer */}
