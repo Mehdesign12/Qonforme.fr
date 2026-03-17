@@ -55,7 +55,7 @@ export default async function BlogPage() {
             Blog <span className="text-[#2563EB]">Qonforme</span>
           </h1>
           <p className="mt-3 text-[15px] text-slate-500 max-w-lg mx-auto">
-            Guides pratiques, d\u00e9cryptages r\u00e9glementaires et conseils pour ma\u00eetriser la facturation \u00e9lectronique.
+            Guides pratiques, décryptages réglementaires et conseils pour maîtriser la facturation électronique.
           </p>
         </div>
       </section>
@@ -65,8 +65,8 @@ export default async function BlogPage() {
         {posts.length === 0 ? (
           <div className="text-center py-16">
             <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-            <p className="text-lg font-semibold text-[#0F172A]">Bient\u00f4t disponible</p>
-            <p className="mt-1 text-sm text-slate-500">Nos premiers articles arrivent tr\u00e8s vite. Revenez bient\u00f4t !</p>
+            <p className="text-lg font-semibold text-[#0F172A]">Bientôt disponible</p>
+            <p className="mt-1 text-sm text-slate-500">Nos premiers articles arrivent très vite. Revenez bientôt !</p>
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2">
@@ -81,7 +81,7 @@ export default async function BlogPage() {
                     <img src={post.cover_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-[#2563EB] via-[#1d4ed8] to-[#0F172A] flex items-center justify-center">
-                      <Image src={PICTO_Q} alt="" width={80} height={80} className="w-16 h-16 opacity-30" sizes="80px" loading="lazy" />
+                      <img src={PICTO_Q} alt="" width={80} height={80} className="w-16 h-16 opacity-30" />
                     </div>
                   )}
                 </div>
@@ -110,11 +110,11 @@ export default async function BlogPage() {
 
       {/* Footer minimal */}
       <footer className="border-t border-slate-200 bg-white py-6 text-center text-[13px] text-slate-400">
-        <Link href="/" className="hover:text-[#2563EB] transition-colors">\u00a9 {new Date().getFullYear()} Qonforme</Link>
-        {" \u00b7 "}
-        <Link href="/mentions-legales" className="hover:text-[#2563EB] transition-colors">Mentions l\u00e9gales</Link>
-        {" \u00b7 "}
-        <Link href="/confidentialite" className="hover:text-[#2563EB] transition-colors">Confidentialit\u00e9</Link>
+        <Link href="/" className="hover:text-[#2563EB] transition-colors">{"©"} {new Date().getFullYear()} Qonforme</Link>
+        {" · "}
+        <Link href="/mentions-legales" className="hover:text-[#2563EB] transition-colors">Mentions légales</Link>
+        {" · "}
+        <Link href="/confidentialite" className="hover:text-[#2563EB] transition-colors">Confidentialité</Link>
       </footer>
     </div>
   )

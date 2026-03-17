@@ -152,7 +152,7 @@ Style requirements:
       body: JSON.stringify({
         instances: [{ prompt: imagePrompt }],
         parameters: {
-          numberOfImages: 1,
+          sampleCount: 1,
           aspectRatio: "16:9",
           safetyFilterLevel: "block_few",
         },
@@ -167,22 +167,33 @@ Style requirements:
   }
 
   const data = await response.json()
-  const base64Image = data.predictions?.[0]?.bytesBase64Encoded
+
+  // Imagen 4.0 returns: predictions[0].generatedImages[0].bytesBase64Encoded
+  // Imagen 3.x returned: predictions[0].bytesBase64Encoded
+  const prediction = data.predictions?.[0]
+  const base64Image =
+    prediction?.generatedImages?.[0]?.bytesBase64Encoded ??
+    prediction?.bytesBase64Encoded
+
   if (!base64Image) {
-    console.error("[gemini] No image data in response:", JSON.stringify(data).slice(0, 500))
+    console.error("[gemini] No image data in Imagen response:", JSON.stringify(data).slice(0, 800))
     return ""
   }
+
+  // Detect mime type from Imagen 4.0 response, fallback to PNG
+  const mimeType = prediction?.generatedImages?.[0]?.mimeType ?? "image/png"
+  const ext = mimeType === "image/jpeg" ? "jpg" : "png"
 
   // Upload to Supabase Storage
   const buffer = Buffer.from(base64Image, "base64")
   const slug = slugify(title)
-  const fileName = `${slug}-${Date.now()}.png`
+  const fileName = `${slug}-${Date.now()}.${ext}`
 
   const supabase = createAdminClient()
   const { error: uploadError } = await supabase.storage
     .from("blog-covers")
     .upload(fileName, buffer, {
-      contentType: "image/png",
+      contentType: mimeType,
       upsert: true,
     })
 
