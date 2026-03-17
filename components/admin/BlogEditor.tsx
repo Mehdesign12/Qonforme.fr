@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Eye, EyeOff, Trash2, Loader2, Bot, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
@@ -14,6 +14,8 @@ interface Post {
   content:      string
   cover_url?:   string | null
   is_published: boolean
+  ai_generated?: boolean
+  ai_keywords?:  string[] | null
 }
 
 interface BlogEditorProps {
@@ -42,6 +44,7 @@ export function BlogEditor({ mode, post }: BlogEditorProps) {
   const [published, setPublished] = useState(post?.is_published ?? false)
   const [saving,    setSaving]    = useState(false)
   const [deleting,  setDeleting]  = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
   const [slugEdited, setSlugEdited] = useState(mode === 'edit')
 
   const handleTitleChange = (val: string) => {
@@ -134,15 +137,64 @@ export function BlogEditor({ mode, post }: BlogEditorProps) {
         </div>
       </div>
 
-      {/* Statut visible */}
-      <div className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium ${
-        published
-          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-          : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-      }`}>
-        {published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-        {published ? 'Publié' : 'Brouillon'}
+      {/* Statut + AI badge */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium ${
+          published
+            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+        }`}>
+          {published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+          {published ? 'Publié' : 'Brouillon'}
+        </div>
+
+        {post?.ai_generated && (
+          <div className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+            <Bot className="w-4 h-4" />
+            Généré par IA
+          </div>
+        )}
+
+        {mode === 'edit' && post?.ai_generated && (
+          <button
+            onClick={async () => {
+              setRegenerating(true)
+              try {
+                const res = await fetch('/api/admin/blog/generate', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ topic: title, keywords: post.ai_keywords ?? [] }),
+                })
+                const data = await res.json()
+                if (!res.ok) throw new Error(data.error || 'Erreur')
+                toast.success(`Nouvel article généré : "${data.post.title}"`)
+                router.push(`/admin/blog/${data.post.id}`)
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Erreur de régénération')
+              } finally {
+                setRegenerating(false)
+              }
+            }}
+            disabled={regenerating}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-amber-600 border border-amber-200 hover:bg-amber-50 dark:border-amber-800 dark:hover:bg-amber-900/30 transition-colors disabled:opacity-50"
+          >
+            {regenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Régénérer
+          </button>
+        )}
       </div>
+
+      {/* AI Keywords */}
+      {post?.ai_keywords && post.ai_keywords.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">SEO</span>
+          {post.ai_keywords.map((kw, i) => (
+            <span key={i} className="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+              {kw}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Formulaire */}
       <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] p-5 space-y-4">
