@@ -11,7 +11,7 @@ import { createAdminClient } from "@/lib/supabase/server"
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta"
 const TEXT_MODEL = "gemini-2.5-flash"
-const IMAGE_MODEL = "imagen-3.0-generate-002"
+const IMAGE_MODEL = "imagen-4.0-generate-001"
 
 function getApiKey(): string {
   const key = process.env.GEMINI_API_KEY
@@ -129,7 +129,20 @@ export async function generateCoverImage(
 ): Promise<string> {
   const apiKey = getApiKey()
 
-  const imagePrompt = `Professional blog cover image for an article titled "${title}". ${excerpt}. Modern, clean design with blue tones (#2563EB), abstract geometric shapes suggesting digital invoicing and technology. No text on the image. Professional business style, suitable for a SaaS company blog. 1200x630 aspect ratio.`
+  const imagePrompt = `High-quality professional blog cover illustration for a French SaaS invoicing platform called "Qonforme".
+
+Article: "${title}" — ${excerpt}
+
+Style requirements:
+- Clean, modern flat illustration or isometric design
+- Primary color: royal blue (#2563EB) with white and light gray accents
+- Professional business atmosphere: digital documents, invoices, charts, or artisan tools
+- Subtle tech elements: clean UI mockups, data visualization, cloud icons
+- Soft gradients and rounded shapes, no harsh edges
+- Photorealistic lighting on flat/isometric elements for depth
+- No text, no letters, no watermarks on the image
+- 16:9 aspect ratio, suitable as a blog hero banner
+- Inspired by modern SaaS marketing visuals (Stripe, Linear, Notion style)`
 
   const response = await fetch(
     `${GEMINI_API_URL}/models/${IMAGE_MODEL}:predict?key=${apiKey}`,
@@ -139,7 +152,7 @@ export async function generateCoverImage(
       body: JSON.stringify({
         instances: [{ prompt: imagePrompt }],
         parameters: {
-          sampleCount: 1,
+          numberOfImages: 1,
           aspectRatio: "16:9",
           safetyFilterLevel: "block_few",
         },
@@ -150,14 +163,13 @@ export async function generateCoverImage(
   if (!response.ok) {
     const err = await response.text()
     console.error(`[gemini] Image generation failed (${response.status}): ${err}`)
-    // Return empty string if image generation fails — article can still be published without cover
     return ""
   }
 
   const data = await response.json()
   const base64Image = data.predictions?.[0]?.bytesBase64Encoded
   if (!base64Image) {
-    console.error("[gemini] No image data in response")
+    console.error("[gemini] No image data in response:", JSON.stringify(data).slice(0, 500))
     return ""
   }
 

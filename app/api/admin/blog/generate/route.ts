@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         is_published: autoPublish,
         published_at: autoPublish ? now : null,
         ai_generated: true,
-        ai_model: "gemini-2.0-flash",
+        ai_model: "gemini-2.5-flash + imagen-4.0",
         ai_prompt: `Sujet: ${topic} | Mots-clés: ${keywords.join(", ")}`,
         ai_keywords: post.keywords,
         auto_publish: autoPublish,
@@ -90,8 +90,8 @@ export async function POST(request: NextRequest) {
 
     if (insertError) throw insertError
 
-    console.log(`[admin/blog/generate] Article généré : "${inserted.title}"`)
-    return NextResponse.json({ ok: true, post: inserted })
+    console.log(`[admin/blog/generate] Article généré : "${inserted.title}" (cover: ${!!coverUrl})`)
+    return NextResponse.json({ ok: true, post: inserted, has_cover: !!coverUrl })
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err)
     console.error("[admin/blog/generate] Erreur :", err)

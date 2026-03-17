@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         is_published: autoPublish,
         published_at: autoPublish ? now : null,
         ai_generated: true,
-        ai_model: "gemini-2.0-flash",
+        ai_model: "gemini-2.5-flash + imagen-4.0",
         ai_prompt: `Sujet: ${topic.topic} | Mots-clés: ${topic.keywords.join(", ")}`,
         ai_keywords: post.keywords,
         auto_publish: autoPublish,
