@@ -205,6 +205,20 @@
 | SEO-2 | **Page `/confidentialite`** | ✅ Opérationnel | Politique RGPD complète (12 articles), sitemap, OG dynamique |
 | SEO-3 | **Blog public** | ✅ Opérationnel | Listing `/blog` + article `/blog/[slug]`, parser Markdown, CTA signup, OG dynamiques par article |
 | SEO-4 | **Blog automatisé IA** | 🔜 À venir | Cron job quotidien + Gemini (texte + images) → création automatique d'articles SEO-optimisés dans `blog_posts` |
+| SEO-5 | **Articles seed (rédaction manuelle)** | 🔜 À faire | 4 articles fondateurs à rédiger pour amorcer l'indexation Google |
+| SEO-6 | **Google Search Console** | 🔜 À faire | Soumettre le sitemap, vérifier l'indexation, suivre les impressions/clics |
+| SEO-7 | **Schema FAQ enrichi (blog)** | 🔜 À faire | JSON-LD `FAQPage` dans chaque article contenant une FAQ → rich snippets SERP |
+| SEO-8 | **Maillage interne** | 🔜 À faire | Liens croisés blog ↔ landing ↔ pricing ↔ démo pour distribuer le jus SEO |
+| SEO-9 | **Page `/glossaire`** | 🔜 À faire | Définitions : Factur-X, PDP, EN 16931, Chorus Pro, CII, UBL… — capte les recherches informationnelles |
+
+#### Articles seed — Sujets prévus
+
+> 4 articles à rédiger manuellement pour amorcer l'indexation avant la mise en place du blog automatisé.
+
+1. **"Facturation électronique 2026 : ce qui change pour les TPE et artisans"** — mot-clé principal : *facturation électronique 2026*
+2. **"Comment créer une facture Factur-X conforme EN 16931"** — mot-clé : *facture factur-x*
+3. **"Guide Chorus Pro : transmettre sa première facture en 5 minutes"** — mot-clé : *chorus pro facture*
+4. **"Factur-X vs PDF classique : pourquoi vous devez changer avant septembre 2026"** — mot-clé : *factur-x pdf*
 
 #### Blog automatisé — Architecture prévue
 
@@ -607,6 +621,8 @@ CRON_SECRET=
 | 2026-03-17 | Page `/confidentialite` : politique de confidentialité complète (RGPD, cookies, sous-traitants, droits, sécurité) + sitemap + OG dynamique | `app/confidentialite/page.tsx`, `app/sitemap.ts` |
 | 2026-03-17 | Blog public SEO : pages listing `/blog` + article `/blog/[slug]`, parser Markdown, lien nav + footer, sitemap, OG dynamiques par article, CTA signup en bas d'article | `app/blog/page.tsx`, `app/blog/[slug]/page.tsx`, `lib/markdown.ts`, `app/sitemap.ts`, `components/landing/LandingHero.tsx`, `app/page.tsx` |
 | 2026-03-17 | README nettoyé : retrait labels "à venir" obsolètes (Relances + Dashboard), lien LinkedIn corrigé vers `/company/qonforme` | `README.md`, `app/page.tsx` |
+| 2026-03-17 | Fix mobile : panel produit (portal, z-index, safe-area, dark mode select), admin modals backdrop-blur, safe-area-inset-bottom sur toutes les modales (6 fichiers) | `app/products/page.tsx`, `components/shared/SendEmailModal.tsx`, `components/invoices/InvoiceDetail.tsx`, + 6 fichiers |
+| 2026-03-17 | README SEO roadmap : ajout items SEO-5 à SEO-9 (articles seed, Search Console, FAQ schema, maillage interne, glossaire) | `README.md` |
 
 ---
 
