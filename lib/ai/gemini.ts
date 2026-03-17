@@ -2,16 +2,18 @@
  * Gemini AI integration for blog content and cover image generation.
  *
  * - generateBlogPost(): generates a full SEO-optimized blog article in French
- * - generateCoverImage(): generates a blog cover image via Gemini Imagen
+ * - generateCoverImage(): generates a blog cover image via Nano Banana 2
+ *   (Gemini 3.1 Flash Image) through the generateContent endpoint
  *
  * Requires GEMINI_API_KEY in environment variables.
  */
 
 import { createAdminClient } from "@/lib/supabase/server"
+import type { TopicCategory } from "@/lib/ai/seo-topics"
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta"
 const TEXT_MODEL = "gemini-2.5-flash"
-const IMAGE_MODEL = "imagen-4.0-generate-001"
+const IMAGE_MODEL = "gemini-3.1-flash-image-preview"
 
 function getApiKey(): string {
   const key = process.env.GEMINI_API_KEY
@@ -124,40 +126,64 @@ Contexte : Qonforme est un logiciel français de facturation électronique confo
   }
 }
 
-// ── Image generation ─────────────────────────────────────────────────────────
+// ── Image generation (Nano Banana 2 via generateContent) ─────────────────────
+
+/**
+ * Visual elements mapped to each topic category for diverse cover images.
+ */
+const CATEGORY_VISUALS: Record<TopicCategory, string> = {
+  "réglementation": "official government documents with stamps and seals, a gavel, legal scales of justice, official certificates with ribbons",
+  "tutoriel": "a step-by-step workflow with numbered stages, arrows connecting screens, hands typing on a laptop, a checklist being completed",
+  "guide": "an open guidebook with bookmarks, a magnifying glass over documents, organized folders and binders, a compass pointing the way",
+  "actualité": "a large wall calendar with dates circled, a clock showing urgency, newspaper headlines, a megaphone announcing news",
+  "comparatif": "side-by-side comparison charts, a balance scale weighing two options, bar graphs and pie charts, a podium with rankings",
+  "pratique": "artisan tools (wrench, hammer, paintbrush) next to a tablet showing an invoice, a workshop desk with organized paperwork",
+  "gestion": "a modern dashboard on a large screen showing graphs and KPIs, rising revenue charts, a CEO desk with analytics reports",
+  "comptabilité": "neat stacks of accounting ledgers, a calculator next to organized receipts, spreadsheet columns with green checkmarks",
+  "digital": "a cloud connected to multiple devices (phone, tablet, laptop), wireless signals, a futuristic smart office with holograms",
+  "cas-usage": "a confident artisan in work clothes standing proudly in a modern workshop, tools and a tablet coexisting on the workbench",
+}
 
 export async function generateCoverImage(
   title: string,
-  excerpt: string
+  excerpt: string,
+  category: TopicCategory = "guide"
 ): Promise<string> {
   const apiKey = getApiKey()
 
-  const imagePrompt = `High-quality professional blog cover illustration for a French SaaS invoicing platform called "Qonforme".
+  const visualElements = CATEGORY_VISUALS[category] || CATEGORY_VISUALS["guide"]
 
-Article: "${title}" — ${excerpt}
+  // Prompt designed to avoid ANY text generation by Imagen
+  // - No brand names, no article titles, no hex codes
+  // - Triple emphasis on no-text
+  // - Full-bleed edge-to-edge instruction
+  const imagePrompt = `A photorealistic high-quality blog cover image, 16:9 widescreen format.
 
-Style requirements:
-- Clean, modern flat illustration or isometric design
-- Primary color: royal blue (#2563EB) with white and light gray accents
-- Professional business atmosphere: digital documents, invoices, charts, or artisan tools
-- Subtle tech elements: clean UI mockups, data visualization, cloud icons
-- Soft gradients and rounded shapes, no harsh edges
-- Photorealistic lighting on flat/isometric elements for depth
-- No text, no letters, no watermarks on the image
-- 16:9 aspect ratio, suitable as a blog hero banner
-- Inspired by modern SaaS marketing visuals (Stripe, Linear, Notion style)`
+Scene: ${visualElements}
+
+Style: Ultra-realistic photograph with cinematic lighting, shallow depth of field, warm natural tones mixed with cool blue accents. The scene feels professional, modern, and aspirational. Think editorial photography for a premium business magazine.
+
+Composition: The subject fills the entire frame edge-to-edge with no empty space, no margins, no borders. Full-bleed composition that extends beyond the canvas edges.
+
+CRITICAL RULES — you MUST follow these strictly:
+- ABSOLUTELY NO TEXT anywhere in the image
+- NO words, NO letters, NO numbers, NO labels, NO watermarks, NO logos
+- NO writing on any surface, document, screen, or sign
+- Any documents or screens shown must have abstract blurred content, never readable text
+- The image must work as a visual-only banner with zero textual elements`
 
   const response = await fetch(
-    `${GEMINI_API_URL}/models/${IMAGE_MODEL}:predict?key=${apiKey}`,
+    `${GEMINI_API_URL}/models/${IMAGE_MODEL}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        instances: [{ prompt: imagePrompt }],
-        parameters: {
-          sampleCount: 1,
-          aspectRatio: "16:9",
-          safetyFilterLevel: "block_few",
+        contents: [{ parts: [{ text: imagePrompt }] }],
+        generationConfig: {
+          responseModalities: ["TEXT", "IMAGE"],
+          imageConfig: {
+            aspectRatio: "16:9",
+          },
         },
       }),
     }
@@ -165,26 +191,32 @@ Style requirements:
 
   if (!response.ok) {
     const err = await response.text()
-    console.error(`[gemini] Image generation failed (${response.status}): ${err}`)
+    console.error(`[gemini] Nano Banana 2 image generation failed (${response.status}): ${err}`)
     return ""
   }
 
   const data = await response.json()
 
-  // Imagen 4.0 returns: predictions[0].generatedImages[0].bytesBase64Encoded
-  // Imagen 3.x returned: predictions[0].bytesBase64Encoded
-  const prediction = data.predictions?.[0]
-  const base64Image =
-    prediction?.generatedImages?.[0]?.bytesBase64Encoded ??
-    prediction?.bytesBase64Encoded
-
-  if (!base64Image) {
-    console.error("[gemini] No image data in Imagen response:", JSON.stringify(data).slice(0, 800))
+  // Nano Banana 2 returns parts array: iterate to find inline_data (image)
+  const parts = data.candidates?.[0]?.content?.parts
+  if (!parts || !Array.isArray(parts)) {
+    console.error("[gemini] No parts in Nano Banana 2 response:", JSON.stringify(data).slice(0, 800))
     return ""
   }
 
-  // Detect mime type from Imagen 4.0 response, fallback to PNG
-  const mimeType = prediction?.generatedImages?.[0]?.mimeType ?? "image/png"
+  const imagePart = parts.find(
+    (p: { inlineData?: { mimeType: string; data: string } }) => p.inlineData?.data
+  )
+
+  if (!imagePart?.inlineData) {
+    console.error("[gemini] No image data in Nano Banana 2 response parts:", JSON.stringify(parts.map((p: Record<string, unknown>) => Object.keys(p))).slice(0, 500))
+    return ""
+  }
+
+  const { data: base64Image, mimeType } = imagePart.inlineData as {
+    data: string
+    mimeType: string
+  }
   const ext = mimeType === "image/jpeg" ? "jpg" : "png"
 
   // Upload to Supabase Storage
