@@ -174,6 +174,37 @@ Le middleware vérifie dans l'ordre :
 
 ---
 
+## 🔍 Audit SEO — Règles d'implémentation
+
+> Audit complet documenté dans `README.md` section "Audit SEO — TODO list complète".
+> Les règles ci-dessous sont à respecter lors de l'implémentation des correctifs SEO.
+
+### Fichiers à créer
+- `app/robots.ts` — Next.js metadata API, bloquer `/admin/*`, `/dashboard/*`, `/api/*` et toutes routes protégées
+- `app/sitemap.ts` — Next.js metadata API, routes publiques uniquement
+
+### Règles JSON-LD
+- Placer le `<script type="application/ld+json">` dans le `<head>` via les metadata exports Next.js ou via un composant dans le layout
+- Schemas requis : `Organization`, `FAQPage` (landing), `Product`/`Offer` (pricing), `WebApplication`
+- Ne jamais dupliquer les schemas entre pages
+
+### Règles images
+- **NE JAMAIS utiliser `unoptimized={true}`** sur les images Supabase CDN (le remote pattern est déjà configuré)
+- Images above-the-fold : `priority={true}`, pas de `loading="lazy"`
+- Images below-the-fold : `loading="lazy"`, pas de `priority`
+- Toujours ajouter `sizes` sur les images responsives
+
+### Règles metadata par page
+- Chaque page publique doit exporter un objet `metadata` avec au minimum `title` et `description`
+- Les descriptions doivent faire 150-160 caractères, être uniques, et contenir les mots-clés cibles
+- Ajouter `alternates: { canonical: '/path' }` sur chaque page publique
+- `metadataBase` doit être défini **une seule fois** dans le root layout
+
+### Fonts
+- Toutes les déclarations Google Fonts dans `layout.tsx` doivent avoir `display: "swap"`
+
+---
+
 ## 📋 Suivi des modifications
 
 > **Instruction pour Claude Code** : À chaque session, ajouter une ligne dans ce tableau pour toute modification significative apportée au projet (nouvelle feature, correction bug, refacto, mise à jour copywriting, fix build, etc.). Même règle dans `README.md` section "Suivi des modifications".
@@ -193,3 +224,4 @@ Le middleware vérifie dans l'ordre :
 | 2026-03-15 | Refonte complète de la démo : composants démo (stats, graphique, top clients, factures récentes), pages manquantes (devis, produits, bons de commande, avoirs), sidebar complète, liens internes corrigés | `app/demo/`, `components/demo/`, `components/layout/DemoSidebar.tsx`, `components/layout/DemoHeader.tsx` |
 | 2026-03-17 | Fix onboarding persistant : fallback localStorage + retries backoff exponentiel + redirect si company inexistante | `components/dashboard/DashboardClient.tsx`, `components/onboarding/WelcomeModal.tsx`, `app/dashboard/page.tsx` |
 | 2026-03-17 | Header mobile : suppression toggle thème (crash iOS), ajout style pilules (titre + actions), toggle conservé sur desktop uniquement | `components/layout/Header.tsx`, `components/layout/DemoHeader.tsx` |
+| 2026-03-17 | Audit SEO complet : TODO list 15 items (robots.ts, sitemap.ts, JSON-LD, canonical, meta descriptions, images, fonts, etc.) documentée dans README.md + règles d'implémentation dans CLAUDE.md | `README.md`, `CLAUDE.md` |

@@ -578,6 +578,128 @@ CRON_SECRET=
 | 2026-03-15 | Refonte complète de la démo : composants démo (stats, graphique, top clients, factures récentes), pages manquantes (devis, produits, bons de commande, avoirs), sidebar complète, liens internes corrigés | `app/demo/`, `components/demo/`, `components/layout/DemoSidebar.tsx`, `components/layout/DemoHeader.tsx` |
 | 2026-03-17 | Fix onboarding persistant : fallback localStorage + retries backoff exponentiel + redirect si company inexistante | `components/dashboard/DashboardClient.tsx`, `components/onboarding/WelcomeModal.tsx`, `app/dashboard/page.tsx` |
 | 2026-03-17 | Header mobile : suppression toggle thème (crash iOS), ajout style pilules (titre + actions), toggle conservé sur desktop uniquement | `components/layout/Header.tsx`, `components/layout/DemoHeader.tsx` |
+| 2026-03-17 | Audit SEO complet : TODO list 15 items (robots.ts, sitemap.ts, JSON-LD, canonical, meta descriptions, images, fonts, etc.) documentée dans README.md + règles d'implémentation dans CLAUDE.md | `README.md`, `CLAUDE.md` |
+
+---
+
+---
+
+## 🔍 Audit SEO — TODO list complète (Mars 2026)
+
+> Audit réalisé le 17 mars 2026. Chaque item doit être coché une fois implémenté.
+
+### 🔴 Priorité HAUTE — Impact SEO critique
+
+#### S1. Fichier `robots.ts` — Manquant
+- [ ] Créer `app/robots.ts` (export Next.js metadata API)
+- [ ] Autoriser `/`, `/pricing`, `/login`, `/signup`, `/demo`, `/mentions-legales`, `/cgu`, `/forgot-password`
+- [ ] Bloquer `/admin`, `/dashboard`, `/invoices`, `/quotes`, `/clients`, `/products`, `/settings`, `/purchase-orders`, `/credit-notes`, `/api`
+- [ ] Référencer le sitemap : `https://qonforme.fr/sitemap.xml`
+
+#### S2. Fichier `sitemap.ts` — Manquant
+- [ ] Créer `app/sitemap.ts` (export Next.js metadata API)
+- [ ] Inclure toutes les routes publiques : `/`, `/pricing`, `/login`, `/signup`, `/demo`, `/mentions-legales`, `/cgu`, `/forgot-password`, `/reset-password`
+- [ ] Définir `changeFrequency` et `priority` par route
+- [ ] Exclure toutes les routes protégées et API
+
+#### S3. Données structurées JSON-LD — Absentes
+- [ ] Ajouter schema `Organization` dans le root layout (`app/layout.tsx`) : nom, URL, logo, description, contact
+- [ ] Ajouter schema `FAQPage` sur la landing page (`app/page.tsx`) pour la section FAQ (questions/réponses existantes)
+- [ ] Ajouter schema `Product` / `Offer` sur la section pricing de la landing (plans Starter + Pro avec prix)
+- [ ] Ajouter schema `WebApplication` (type SaaS, catégorie BusinessApplication)
+
+#### S4. Optimisation des images — `unoptimized={true}` partout
+- [ ] Retirer `unoptimized={true}` sur toutes les images servies depuis Supabase CDN (remote pattern déjà configuré dans `next.config.mjs`)
+- [ ] Ajouter `priority={true}` sur les images above-the-fold (hero logo, première section)
+- [ ] Ajouter `loading="lazy"` sur les images below-the-fold
+- [ ] Ajouter l'attribut `sizes` sur les images responsives (ex : `sizes="(max-width: 768px) 100vw, 50vw"`)
+- [ ] **Fichiers concernés** : `app/page.tsx`, `components/landing/LandingHero.tsx`, `components/auth/AuthLayout.tsx`, toutes les pages avec `<Image unoptimized />`
+
+#### S5. Hiérarchie H1 landing page — Vérification
+- [ ] Confirmer que `LandingHero.tsx` contient bien le `<h1>` unique de la page
+- [ ] Vérifier que `app/page.tsx` ne contient aucun `<h1>` en double
+- [ ] S'assurer que la hiérarchie est H1 → H2 → H3 sans saut de niveau
+
+### 🟠 Priorité MOYENNE — Amélioration significative
+
+#### S6. Balises canonical — Absentes
+- [ ] Ajouter `metadataBase: new URL('https://qonforme.fr')` dans le root layout (`app/layout.tsx`)
+- [ ] Ajouter `alternates: { canonical: '/' }` dans le root layout
+- [ ] Ajouter `alternates: { canonical: '/pricing' }` sur la page pricing
+- [ ] Ajouter des canonical sur chaque page publique ayant un `metadata` export
+
+#### S7. Meta descriptions par page — Incomplètes
+- [ ] `/demo` — ajouter `metadata` export avec `title` + `description`
+- [ ] `/cgu` — ajouter `metadata` export avec `title` + `description`
+- [ ] `/pricing` — ajouter `description` (actuellement seulement `title`)
+- [ ] `/login` — ajouter `description`
+- [ ] `/signup` — ajouter `description`
+- [ ] `/forgot-password` — ajouter `description`
+- [ ] Chaque page publique doit avoir une description unique de 150-160 caractères
+
+#### S8. Noindex routes admin — Non protégé
+- [ ] Ajouter `metadata: { robots: { index: false, follow: false } }` dans les layouts admin (`app/admin/`)
+- [ ] Vérifier que `robots.ts` bloque bien `/admin/*`
+
+#### S9. Font display strategy — Incomplète
+- [ ] Ajouter `display: "swap"` sur la déclaration de `DM Sans` dans `app/layout.tsx`
+- [ ] Ajouter `display: "swap"` sur la déclaration de `DM Mono` dans `app/layout.tsx`
+- [ ] (Bricolage Grotesque a déjà `display: "swap"` ✓)
+
+#### S10. Lazy loading images — Non implémenté
+- [ ] Passer en revue toutes les `<Image>` below-the-fold et ajouter `loading="lazy"`
+- [ ] Les images above-the-fold doivent avoir `priority={true}` au lieu de lazy loading
+- [ ] **Fichiers** : `app/page.tsx`, `components/landing/LandingHero.tsx`
+
+### 🟡 Priorité BASSE — Finition & bonnes pratiques
+
+#### S11. Hreflang — Non nécessaire mais recommandé
+- [ ] Ajouter `<link rel="alternate" hreflang="fr" href="https://qonforme.fr/" />` dans le root layout
+- [ ] Ajouter `<link rel="alternate" hreflang="x-default" href="https://qonforme.fr/" />` (site monolingue FR)
+
+#### S12. Liens internes footer — Vérification
+- [ ] Vérifier que le footer contient des liens vers `/mentions-legales`, `/cgu`
+- [ ] Ajouter un lien vers une future politique de confidentialité si absente
+- [ ] Vérifier les ancres internes (`#features`, `#pricing`) sur la landing
+
+#### S13. Breadcrumbs — Non implémenté
+- [ ] Évaluer si un breadcrumb est pertinent sur les pages imbriquées (settings/*, etc.)
+- [ ] Si implémenté, ajouter le schema `BreadcrumbList` JSON-LD correspondant
+
+#### S14. Images OG dynamiques — Amélioration future
+- [ ] Évaluer l'utilisation de `next/og` (ImageResponse) pour générer des OG images dynamiques par page
+- [ ] Actuellement une seule image `/og-image.png` pour tout le site (acceptable)
+
+#### S15. Backdrop-filter sur LandingHero — Violation CLAUDE.md
+- [ ] `components/landing/LandingHero.tsx` ligne ~60 : `backdropFilter: scrolled ? "blur(18px)" : "blur(0px)"` appliqué sans restriction mobile
+- [ ] Corriger : appliquer le backdrop-filter uniquement sur desktop (`md:`) ou via media query
+- [ ] Vérifier `WebkitBackdropFilter` associé
+
+### 📊 Récapitulatif de l'audit
+
+| Aspect | Statut | Priorité |
+|--------|--------|----------|
+| Root metadata (title, OG, Twitter) | ✅ Bon | — |
+| Title template `%s \| Qonforme` | ✅ Implémenté | — |
+| Open Graph complet | ✅ Complet | — |
+| Twitter Cards | ✅ Implémenté | — |
+| Favicon / Icons / PWA | ✅ Complet | — |
+| Viewport / Mobile | ✅ OK | — |
+| Keywords root | ✅ Bon ciblage | — |
+| `robots.ts` | ❌ Manquant | **HAUTE** |
+| `sitemap.ts` | ❌ Manquant | **HAUTE** |
+| JSON-LD structured data | ❌ Absent | **HAUTE** |
+| Images `unoptimized` | ❌ Partout | **HAUTE** |
+| Hiérarchie H1 | ⚠️ À vérifier | **HAUTE** |
+| Canonical tags | ❌ Absents | **MOYENNE** |
+| Meta descriptions par page | ⚠️ Partiel | **MOYENNE** |
+| Noindex routes admin | ❌ Non protégé | **MOYENNE** |
+| Font `display: swap` | ⚠️ 1/3 fonts | **MOYENNE** |
+| Lazy loading images | ❌ Non utilisé | **MOYENNE** |
+| Hreflang | ⚠️ Non nécessaire | **BASSE** |
+| Breadcrumbs | ❌ Non implémenté | **BASSE** |
+| OG images dynamiques | ❌ Non implémenté | **BASSE** |
+| Backdrop-filter LandingHero | ⚠️ Violation CLAUDE.md | **MOYENNE** |
 
 ---
 
