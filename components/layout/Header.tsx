@@ -92,12 +92,19 @@ function getInitials(firstName: string, lastName: string): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* Styles pilules desktop                                               */
+/* Styles pilules                                                       */
 /* ------------------------------------------------------------------ */
 
 const PILL_BG     = "var(--glass-bg)"
 const PILL_BORDER = "1px solid var(--glass-border-color)"
 const PILL_SHADOW = "var(--glass-shadow)"
+
+/* Mobile : fond solide (pas de backdrop-filter — CLAUDE.md) */
+const MOBILE_PILL: React.CSSProperties = {
+  background: "var(--glass-bg)",
+  border:     "1px solid var(--glass-border-color)",
+  boxShadow:  "0 1px 3px rgba(15,23,42,0.04)",
+}
 
 /* ------------------------------------------------------------------ */
 /* Badge plan                                                           */
@@ -169,151 +176,158 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
     border:     "1.5px solid rgba(37,99,235,0.20)",
   }
 
-  /* ── Dropdown profil partagé ── */
+  /* ── Dropdown profil — avec ou sans toggle thème ── */
   const dropdownBg     = isDark ? "#0F1E35" : "#ffffff"
   const dropdownBorder = isDark ? "#1E3A5F" : "#E8EEF8"
   const dropdownShadow = isDark
     ? "0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.25)"
     : "0 8px 32px rgba(15,23,42,0.12), 0 2px 8px rgba(15,23,42,0.06)"
 
-  const dropdownContent = (
-    <DropdownMenuContent
-      align="end"
-      sideOffset={10}
-      style={{
-        minWidth: "260px",
-        background: dropdownBg,
-        border: `1px solid ${dropdownBorder}`,
-        boxShadow: dropdownShadow,
-        borderRadius: "14px",
-        padding: "6px",
-      }}
-    >
-      {/* En-tête profil */}
-      <div
+  function renderDropdown(withThemeToggle: boolean) {
+    return (
+      <DropdownMenuContent
+        align="end"
+        sideOffset={10}
         style={{
-          background: isDark
-            ? "linear-gradient(135deg, #162032 0%, #1a2a45 100%)"
-            : "linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%)",
-          border: `1px solid ${isDark ? "#1E3A5F" : "#DBEAFE"}`,
-          borderRadius: "10px",
-          padding: "12px",
-          marginBottom: "4px",
+          minWidth: "260px",
+          background: dropdownBg,
+          border: `1px solid ${dropdownBorder}`,
+          boxShadow: dropdownShadow,
+          borderRadius: "14px",
+          padding: "6px",
         }}
       >
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0"
-            style={{
-              background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
-              color: "#ffffff",
-              boxShadow: "0 2px 8px rgba(37,99,235,0.35)",
-            }}
-          >
-            {initials}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p
-              className="text-[13px] font-bold truncate leading-tight"
-              style={{ color: isDark ? "#E2E8F0" : "#0F172A" }}
+        {/* En-tête profil */}
+        <div
+          style={{
+            background: isDark
+              ? "linear-gradient(135deg, #162032 0%, #1a2a45 100%)"
+              : "linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%)",
+            border: `1px solid ${isDark ? "#1E3A5F" : "#DBEAFE"}`,
+            borderRadius: "10px",
+            padding: "12px",
+            marginBottom: "4px",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0"
+              style={{
+                background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
+                color: "#ffffff",
+                boxShadow: "0 2px 8px rgba(37,99,235,0.35)",
+              }}
             >
-              {fullName}
-            </p>
-            {email && (
+              {initials}
+            </div>
+            <div className="min-w-0 flex-1">
               <p
-                className="text-[11px] truncate leading-tight mt-0.5"
-                style={{ color: isDark ? "#94A3B8" : "#64748B" }}
+                className="text-[13px] font-bold truncate leading-tight"
+                style={{ color: isDark ? "#E2E8F0" : "#0F172A" }}
               >
-                {email}
+                {fullName}
               </p>
-            )}
-            {plan && <div className="mt-1.5"><PlanBadge plan={plan} /></div>}
+              {email && (
+                <p
+                  className="text-[11px] truncate leading-tight mt-0.5"
+                  style={{ color: isDark ? "#94A3B8" : "#64748B" }}
+                >
+                  {email}
+                </p>
+              )}
+              {plan && <div className="mt-1.5"><PlanBadge plan={plan} /></div>}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Section paramètres */}
-      <div style={{ padding: "2px 0" }}>
-        <DropdownMenuItem onClick={() => router.push("/settings/company")}>
-          <Building2 className="w-4 h-4 shrink-0" />
-          Mon entreprise
+        {/* Section paramètres */}
+        <div style={{ padding: "2px 0" }}>
+          <DropdownMenuItem onClick={() => router.push("/settings/company")}>
+            <Building2 className="w-4 h-4 shrink-0" />
+            Mon entreprise
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/settings/invoices")}>
+            <FileText className="w-4 h-4 shrink-0" />
+            Préférences factures
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/settings/billing")}>
+            <CreditCard className="w-4 h-4 shrink-0" />
+            Mon abonnement
+          </DropdownMenuItem>
+        </div>
+
+        {withThemeToggle && (
+          <>
+            <DropdownMenuSeparator style={{ background: dropdownBorder, margin: "4px 0" }} />
+            <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
+              {isDark
+                ? <Sun className="w-4 h-4 shrink-0" />
+                : <Moon className="w-4 h-4 shrink-0" />}
+              {isDark ? "Mode clair" : "Mode sombre"}
+            </DropdownMenuItem>
+          </>
+        )}
+
+        <DropdownMenuSeparator style={{ background: dropdownBorder, margin: "4px 0" }} />
+
+        {/* Déconnexion */}
+        <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+          <LogOut className="w-4 h-4 shrink-0" />
+          Se déconnecter
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/settings/invoices")}>
-          <FileText className="w-4 h-4 shrink-0" />
-          Préférences factures
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/settings/billing")}>
-          <CreditCard className="w-4 h-4 shrink-0" />
-          Mon abonnement
-        </DropdownMenuItem>
-      </div>
-
-      <DropdownMenuSeparator style={{ background: dropdownBorder, margin: "4px 0" }} />
-
-      {/* Thème */}
-      <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
-        {isDark
-          ? <Sun className="w-4 h-4 shrink-0" />
-          : <Moon className="w-4 h-4 shrink-0" />}
-        {isDark ? "Mode clair" : "Mode sombre"}
-      </DropdownMenuItem>
-
-      <DropdownMenuSeparator style={{ background: dropdownBorder, margin: "4px 0" }} />
-
-      {/* Déconnexion */}
-      <DropdownMenuItem variant="destructive" onClick={handleLogout}>
-        <LogOut className="w-4 h-4 shrink-0" />
-        Se déconnecter
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  )
+      </DropdownMenuContent>
+    )
+  }
 
   return (
     <>
       {/* ════════════════════════════════════════════════════════════════
-          MOBILE header (< lg) — fond blanc solide, safe-area top
+          MOBILE header (< lg) — pilules solides, pas de backdrop-filter,
+          pas de toggle thème (crash GPU iOS Safari — cf. CLAUDE.md)
           ════════════════════════════════════════════════════════════════ */}
       <header
-        className="lg:hidden flex items-center gap-2 px-3 shrink-0 border-b border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35] z-20"
+        className="lg:hidden flex items-center justify-between gap-2 px-3 shrink-0 bg-white dark:bg-[#0F1E35] z-20"
         style={{
           paddingTop:    'max(12px, env(safe-area-inset-top, 12px))',
           paddingBottom: '10px',
           minHeight:     '54px',
         }}
       >
-        {/* Titre */}
-        <div className="flex-1 min-w-0 pl-1">
-          <h1 className="text-[15px] font-semibold truncate text-[#0F172A] dark:text-[#E2E8F0]">
-            {title}
-          </h1>
+        {/* Gauche : pilule titre */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div
+            className="flex items-center rounded-full px-3.5 py-1.5 min-w-0"
+            style={MOBILE_PILL}
+          >
+            <h1 className="text-[15px] font-semibold truncate text-[#0F172A] dark:text-[#E2E8F0]">
+              {title}
+            </h1>
+          </div>
         </div>
 
-        {/* Actions droite */}
-        <div className="flex items-center shrink-0">
+        {/* Droite : CTA + pilule [cloche + avatar] */}
+        <div className="flex items-center gap-1.5 shrink-0">
           {cta && (
             <Link href={cta.href}>
               <button
-                className="w-10 h-10 flex items-center justify-center rounded-xl touch-manipulation text-[#2563EB]"
+                className="w-9 h-9 flex items-center justify-center rounded-full touch-manipulation text-[#2563EB]"
+                style={MOBILE_PILL}
                 aria-label={cta.label}
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-[18px] h-[18px]" />
               </button>
             </Link>
           )}
-          <button
-            onClick={() => setTheme(isDark ? "light" : "dark")}
-            className="w-10 h-10 flex items-center justify-center rounded-xl touch-manipulation text-slate-400 dark:text-slate-500"
-            aria-label={isDark ? "Mode clair" : "Mode sombre"}
+          <div
+            className="flex items-center gap-0.5 rounded-full px-1 py-0.5"
+            style={MOBILE_PILL}
           >
-            {isDark ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
-          </button>
-          <button
-            className="w-10 h-10 flex items-center justify-center rounded-xl touch-manipulation text-slate-400 dark:text-slate-500"
-            aria-label="Notifications"
-          >
-            <Bell className="w-[17px] h-[17px]" />
-          </button>
-          <div className="flex items-center justify-center w-10 h-10">
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-full touch-manipulation text-slate-400 dark:text-slate-500"
+              aria-label="Notifications"
+            >
+              <Bell className="w-[17px] h-[17px]" />
+            </button>
             <DropdownMenu>
               <DropdownMenuTrigger
                 className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500 touch-manipulation"
@@ -322,7 +336,7 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
               >
                 {initials}
               </DropdownMenuTrigger>
-              {dropdownContent}
+              {renderDropdown(false)}
             </DropdownMenu>
           </div>
         </div>
@@ -383,7 +397,7 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
               >
                 {initials}
               </DropdownMenuTrigger>
-              {dropdownContent}
+              {renderDropdown(true)}
             </DropdownMenu>
           </div>
         </div>

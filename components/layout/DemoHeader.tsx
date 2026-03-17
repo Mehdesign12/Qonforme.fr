@@ -23,6 +23,13 @@ const PILL_BG     = "var(--glass-bg)"
 const PILL_BORDER = "1px solid var(--glass-border-color)"
 const PILL_SHADOW = "var(--glass-shadow)"
 
+/* Mobile : fond solide (pas de backdrop-filter — CLAUDE.md) */
+const MOBILE_PILL: React.CSSProperties = {
+  background: "var(--glass-bg)",
+  border:     "1px solid var(--glass-border-color)",
+  boxShadow:  "0 1px 3px rgba(15,23,42,0.04)",
+}
+
 /* ------------------------------------------------------------------ */
 /* Titres de pages                                                      */
 /* ------------------------------------------------------------------ */
@@ -66,10 +73,12 @@ function ProfileDropdownContent({
   isDark,
   setTheme,
   router,
+  withThemeToggle,
 }: {
   isDark:   boolean
   setTheme: (t: string) => void
   router:   ReturnType<typeof useRouter>
+  withThemeToggle: boolean
 }) {
   return (
     <DropdownMenuContent align="end" sideOffset={8} style={{ minWidth: "220px" }}>
@@ -122,15 +131,18 @@ function ProfileDropdownContent({
         Mon abonnement
       </DropdownMenuItem>
 
-      <DropdownMenuSeparator />
-
-      <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
-        {isDark
-          ? <Sun  className="w-4 h-4 shrink-0" />
-          : <Moon className="w-4 h-4 shrink-0" />
-        }
-        {isDark ? "Mode clair" : "Mode sombre"}
-      </DropdownMenuItem>
+      {withThemeToggle && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
+            {isDark
+              ? <Sun  className="w-4 h-4 shrink-0" />
+              : <Moon className="w-4 h-4 shrink-0" />
+            }
+            {isDark ? "Mode clair" : "Mode sombre"}
+          </DropdownMenuItem>
+        </>
+      )}
 
       <DropdownMenuSeparator />
 
@@ -168,76 +180,65 @@ export function DemoHeader() {
   return (
     <>
       {/* ════════════════════════════════════════════════════════════════
-          MOBILE header (< md)
-          Fond solide calqué sur la sidebar, safe-area top, tap targets ≥ 44 px
+          MOBILE header (< md) — pilules solides, pas de toggle thème
+          (crash GPU iOS Safari — cf. CLAUDE.md)
           ════════════════════════════════════════════════════════════════ */}
       <header
-        className="md:hidden flex items-center gap-2 px-3 shrink-0 border-b border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35]"
+        className="md:hidden flex items-center justify-between gap-2 px-3 shrink-0 bg-white dark:bg-[#0F1E35]"
         style={{
           paddingTop:    'max(12px, env(safe-area-inset-top, 12px))',
           paddingBottom: '10px',
           minHeight:     '54px',
         }}
       >
-        {/* Titre + badge DÉMO */}
-        <div className="flex-1 flex items-center gap-2 min-w-0 pl-1">
-          <h1
-            className="text-[15px] font-semibold truncate text-[#0F172A] dark:text-[#E2E8F0]"
+        {/* Gauche : pilule titre + badge DÉMO */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div
+            className="flex items-center gap-2 rounded-full px-3.5 py-1.5 min-w-0"
+            style={MOBILE_PILL}
           >
-            {title}
-          </h1>
-          <span
-            className="shrink-0 inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-amber-300 dark:border-amber-700/60"
-            style={{
-              color:      '#92400e',
-              background: isDark ? 'rgba(120,53,15,0.20)' : '#fffbeb',
-            }}
-          >
-            DÉMO
-          </span>
+            <h1 className="text-[15px] font-semibold truncate text-[#0F172A] dark:text-[#E2E8F0]">
+              {title}
+            </h1>
+            <span
+              className="shrink-0 inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-amber-300 dark:border-amber-700/60"
+              style={{
+                color:      '#92400e',
+                background: isDark ? 'rgba(120,53,15,0.20)' : '#fffbeb',
+              }}
+            >
+              DÉMO
+            </span>
+          </div>
         </div>
 
-        {/* Actions droite */}
-        <div className="flex items-center shrink-0">
-          {/* CTA contextuel — icône seule sur mobile */}
+        {/* Droite : CTA + pilule [avatar] */}
+        <div className="flex items-center gap-1.5 shrink-0">
           {cta && (
             <button
               onClick={() => router.push(cta.href)}
-              className="w-10 h-10 flex items-center justify-center rounded-xl touch-manipulation"
-              style={{ color: '#2563EB' }}
+              className="w-9 h-9 flex items-center justify-center rounded-full touch-manipulation text-[#2563EB]"
+              style={MOBILE_PILL}
               aria-label={cta.label}
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-[18px] h-[18px]" />
             </button>
           )}
-
-          {/* Thème */}
-          <button
-            onClick={() => setTheme(isDark ? "light" : "dark")}
-            className="w-10 h-10 flex items-center justify-center rounded-xl touch-manipulation text-slate-400 dark:text-slate-500"
-            aria-label={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
+          <div
+            className="flex items-center gap-0.5 rounded-full px-1 py-0.5"
+            style={MOBILE_PILL}
           >
-            {isDark
-              ? <Sun  className="w-[18px] h-[18px]" />
-              : <Moon className="w-[18px] h-[18px]" />
-            }
-          </button>
-
-          {/* Avatar + menu profil */}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className="w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] touch-manipulation"
-              title="Jean Dupont"
-            >
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold"
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] touch-manipulation"
                 style={avatarTriggerStyle}
+                title="Jean Dupont"
               >
                 JD
-              </div>
-            </DropdownMenuTrigger>
-            <ProfileDropdownContent isDark={isDark} setTheme={setTheme} router={router} />
-          </DropdownMenu>
+              </DropdownMenuTrigger>
+              <ProfileDropdownContent isDark={isDark} setTheme={setTheme} router={router} withThemeToggle={false} />
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
@@ -329,7 +330,7 @@ export function DemoHeader() {
               >
                 JD
               </DropdownMenuTrigger>
-              <ProfileDropdownContent isDark={isDark} setTheme={setTheme} router={router} />
+              <ProfileDropdownContent isDark={isDark} setTheme={setTheme} router={router} withThemeToggle={true} />
             </DropdownMenu>
           </div>
         </div>
