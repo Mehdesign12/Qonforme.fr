@@ -151,7 +151,7 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
               <p className="text-xs text-slate-500">Objet : <span className="font-medium text-slate-700">Avoir {creditNote?.credit_note_number} — votre entreprise</span></p>
             </div>
           </div>
-          <div className="flex gap-3 p-6 pt-0">
+          <div className="flex gap-3 p-6 pt-0" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))' }}>
             <Button variant="outline" className="flex-1" onClick={() => setShowSendModal(false)} disabled={sendLoading}>
               Annuler
             </Button>

@@ -315,7 +315,7 @@ function CreditNoteModal({
         </div>
 
         {/* Footer modal */}
-        <div className="flex items-center justify-end gap-3 px-6 pb-6">
+        <div className="flex items-center justify-end gap-3 px-6 pb-6" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))' }}>
           <Button variant="outline" onClick={onClose} disabled={loading} size="sm">
             Annuler
           </Button>
@@ -533,7 +533,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                 <p className="text-xs text-slate-500 dark:text-[#E2E8F0]">Objet : <span className="font-medium text-slate-700 dark:text-[#E2E8F0]">Facture {invoice?.invoice_number} — votre entreprise</span></p>
               </div>
             </div>
-            <div className="flex gap-3 p-6 pt-0">
+            <div className="flex gap-3 p-6 pt-0" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))' }}>
               <Button variant="outline" className="flex-1" onClick={() => setShowSendModal(false)} disabled={sendLoading}>
                 Annuler
               </Button>

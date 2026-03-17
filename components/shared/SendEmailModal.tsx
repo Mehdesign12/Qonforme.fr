@@ -142,7 +142,10 @@ export default function SendEmailModal({
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50">
+            <div
+              className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50"
+              style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))' }}
+            >
               <Button
                 variant="outline"
                 size="sm"
