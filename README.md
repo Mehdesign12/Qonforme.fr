@@ -192,10 +192,30 @@
 | P3-2 | **Modals de confirmation** | Remplacer `window.confirm()` par modal custom | Polish UX |
 | P3-3 | **Empty states avec CTA** | Illustration + bouton créer sur listes vides | Conversion |
 | P3-4 | **Aperçu PDF inline** | Modale prévisualisation avant envoi | Réassurance |
-| P3-5 | **Favicon + meta OG** | Image de marque, partage social | Branding |
+| P3-5 | **Favicon + meta OG** | ✅ OG dynamiques (ImageResponse edge) + favicon complet | Branding |
 | P3-6 | **CGU / Mentions légales** | Pages `/cgu` et `/mentions-legales` | ✅ Opérationnel |
 | P3-7 | **Page 404 custom** | Page not found avec retour accueil | UX |
 | P3-8 | **Connexion OAuth Google** | Via Supabase Auth | Friction signup |
+
+### 🔵 SEO & Contenu — Blog automatisé
+
+| # | Quoi | Statut | Détail |
+|---|------|--------|--------|
+| SEO-1 | **Audit technique SEO (15 items)** | ✅ 15/15 terminé | robots.ts, sitemap.ts, JSON-LD, canonical, meta, images `sizes`, fonts swap, hreflang, OG dynamiques |
+| SEO-2 | **Page `/confidentialite`** | ✅ Opérationnel | Politique RGPD complète (12 articles), sitemap, OG dynamique |
+| SEO-3 | **Blog public** | ✅ Opérationnel | Listing `/blog` + article `/blog/[slug]`, parser Markdown, CTA signup, OG dynamiques par article |
+| SEO-4 | **Blog automatisé IA** | 🔜 À venir | Cron job quotidien + Gemini (texte + images) → création automatique d'articles SEO-optimisés dans `blog_posts` |
+
+#### Blog automatisé — Architecture prévue
+
+Le blog sera alimenté automatiquement par un cron job quotidien :
+
+- **Cron** : endpoint API appelé 1x/jour (via cron-job.org)
+- **Génération texte** : Google Gemini — rédaction d'articles SEO-optimisés (facturation, conformité, Factur-X, Chorus Pro, réglementation 2026, conseils TPE/artisans)
+- **Génération images** : Google Gemini — image de couverture par article
+- **Publication** : insertion directe dans la table `blog_posts` (slug, titre, excerpt, contenu Markdown, cover_url, `is_published: true`)
+- **SEO** : chaque article obtient automatiquement ses metadata (title, description, canonical, OG dynamique via `/api/og`)
+- **Objectif** : 1 article/jour, indexation continue, longue traîne SEO sur les mots-clés facturation électronique / conformité / artisans
 
 ### 🟢 Priorité 4 — Croissance (V2)
 
@@ -582,6 +602,11 @@ CRON_SECRET=
 | 2026-03-17 | SEO priorité HAUTE : robots.ts, sitemap.ts, JSON-LD (Organization+WebApplication+FAQPage), retrait `unoptimized` (9 fichiers), `metadataBase`+canonical, font `display: swap` (3/3), lazy loading images | `app/robots.ts`, `app/sitemap.ts`, `app/layout.tsx`, `app/page.tsx`, `components/landing/LandingHero.tsx`, + 7 fichiers |
 | 2026-03-17 | SEO priorité MOYENNE : canonical+description sur 8 pages publiques, noindex admin, fix backdrop-filter LandingHero mobile (CLAUDE.md compliant) | `app/pricing/page.tsx`, `app/login/page.tsx`, `app/signup/page.tsx`, `app/demo/page.tsx`, `app/admin/(panel)/layout.tsx`, `components/landing/LandingHero.tsx`, + 4 fichiers |
 | 2026-03-17 | SEO priorité BASSE : hreflang fr+x-default, vérification liens footer, évaluation breadcrumbs (non pertinent) et OG dynamiques (reporté) | `app/layout.tsx` |
+| 2026-03-17 | SEO images : attribut `sizes` ajouté sur 33 images (10 fichiers) — audit SEO item S4 complété | `app/page.tsx`, `components/landing/LandingHero.tsx`, + 8 fichiers |
+| 2026-03-17 | SEO OG dynamiques : route `app/api/og/route.tsx` (edge, ImageResponse), images OG personnalisées par page publique | `app/api/og/route.tsx`, `app/layout.tsx`, `app/pricing/page.tsx`, `app/demo/page.tsx`, `app/login/page.tsx`, `app/signup/page.tsx` |
+| 2026-03-17 | Page `/confidentialite` : politique de confidentialité complète (RGPD, cookies, sous-traitants, droits, sécurité) + sitemap + OG dynamique | `app/confidentialite/page.tsx`, `app/sitemap.ts` |
+| 2026-03-17 | Blog public SEO : pages listing `/blog` + article `/blog/[slug]`, parser Markdown, lien nav + footer, sitemap, OG dynamiques par article, CTA signup en bas d'article | `app/blog/page.tsx`, `app/blog/[slug]/page.tsx`, `lib/markdown.ts`, `app/sitemap.ts`, `components/landing/LandingHero.tsx`, `app/page.tsx` |
+| 2026-03-17 | README nettoyé : retrait labels "à venir" obsolètes (Relances + Dashboard), lien LinkedIn corrigé vers `/company/qonforme` | `README.md`, `app/page.tsx` |
 
 ---
 
