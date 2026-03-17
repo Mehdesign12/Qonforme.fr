@@ -112,9 +112,12 @@ Contexte : Qonforme est un logiciel français de facturation électronique confo
     keywords: string[]
   }
 
+  // Append short timestamp suffix to guarantee slug uniqueness across regenerations
+  const ts = Date.now().toString(36).slice(-5)
+
   return {
     title: parsed.title,
-    slug: slugify(parsed.title),
+    slug: `${slugify(parsed.title)}-${ts}`,
     excerpt: parsed.excerpt,
     content: parsed.content,
     keywords: parsed.keywords || keywords,
