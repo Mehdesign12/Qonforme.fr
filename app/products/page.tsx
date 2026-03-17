@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { createPortal } from "react-dom"
 import { Plus, Search, Package, Loader2, Pencil, PowerOff, Power, X, Check, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -378,13 +379,14 @@ export default function ProductsPage() {
   return (
     <div className="space-y-5 animate-fade-in">
 
-      {/* Panel latéral — pleine largeur sur mobile */}
-      {panel !== null && (
+      {/* Panel latéral — portal pour échapper au stacking context du layout */}
+      {panel !== null && createPortal(
         <ProductPanel
           product={panel === "create" ? null : panel}
           onClose={() => setPanel(null)}
           onSaved={handleSaved}
-        />
+        />,
+        document.body
       )}
 
       {/* En-tête */}
