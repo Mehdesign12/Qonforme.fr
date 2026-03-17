@@ -100,6 +100,9 @@ export default function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
+        {/* Hreflang — site monolingue FR */}
+        <link rel="alternate" hrefLang="fr" href="https://qonforme.fr/" />
+        <link rel="alternate" hrefLang="x-default" href="https://qonforme.fr/" />
         {/* JSON-LD — Organization + WebApplication */}
         <script
           type="application/ld+json"

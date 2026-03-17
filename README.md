@@ -580,7 +580,8 @@ CRON_SECRET=
 | 2026-03-17 | Header mobile : suppression toggle thème (crash iOS), ajout style pilules (titre + actions), toggle conservé sur desktop uniquement | `components/layout/Header.tsx`, `components/layout/DemoHeader.tsx` |
 | 2026-03-17 | Audit SEO complet : TODO list 15 items (robots.ts, sitemap.ts, JSON-LD, canonical, meta descriptions, images, fonts, etc.) documentée dans README.md + règles d'implémentation dans CLAUDE.md | `README.md`, `CLAUDE.md` |
 | 2026-03-17 | SEO priorité HAUTE : robots.ts, sitemap.ts, JSON-LD (Organization+WebApplication+FAQPage), retrait `unoptimized` (9 fichiers), `metadataBase`+canonical, font `display: swap` (3/3), lazy loading images | `app/robots.ts`, `app/sitemap.ts`, `app/layout.tsx`, `app/page.tsx`, `components/landing/LandingHero.tsx`, + 7 fichiers |
-| 2026-03-17 | SEO priorité MOYENNE : canonical+description sur 8 pages publiques, noindex admin, fix backdrop-filter LandingHero mobile (CLAUDE.md compliant) | `app/pricing/page.tsx`, `app/login/page.tsx`, `app/signup/page.tsx`, `app/forgot-password/page.tsx`, `app/cgu/page.tsx`, `app/mentions-legales/page.tsx`, `app/demo/page.tsx`, `app/admin/(panel)/layout.tsx`, `components/landing/LandingHero.tsx` |
+| 2026-03-17 | SEO priorité MOYENNE : canonical+description sur 8 pages publiques, noindex admin, fix backdrop-filter LandingHero mobile (CLAUDE.md compliant) | `app/pricing/page.tsx`, `app/login/page.tsx`, `app/signup/page.tsx`, `app/demo/page.tsx`, `app/admin/(panel)/layout.tsx`, `components/landing/LandingHero.tsx`, + 4 fichiers |
+| 2026-03-17 | SEO priorité BASSE : hreflang fr+x-default, vérification liens footer, évaluation breadcrumbs (non pertinent) et OG dynamiques (reporté) | `app/layout.tsx` |
 
 ---
 
@@ -656,22 +657,22 @@ CRON_SECRET=
 
 ### 🟡 Priorité BASSE — Finition & bonnes pratiques
 
-#### S11. Hreflang — Non nécessaire mais recommandé
-- [ ] Ajouter `<link rel="alternate" hreflang="fr" href="https://qonforme.fr/" />` dans le root layout
-- [ ] Ajouter `<link rel="alternate" hreflang="x-default" href="https://qonforme.fr/" />` (site monolingue FR)
+#### S11. Hreflang — ✅ Fait
+- [x] Ajouter `<link rel="alternate" hreflang="fr" href="https://qonforme.fr/" />` dans le root layout
+- [x] Ajouter `<link rel="alternate" hreflang="x-default" href="https://qonforme.fr/" />` (site monolingue FR)
 
-#### S12. Liens internes footer — Vérification
-- [ ] Vérifier que le footer contient des liens vers `/mentions-legales`, `/cgu`
-- [ ] Ajouter un lien vers une future politique de confidentialité si absente
-- [ ] Vérifier les ancres internes (`#features`, `#pricing`) sur la landing
+#### S12. Liens internes footer — ✅ Vérifié OK
+- [x] Vérifier que le footer contient des liens vers `/mentions-legales`, `/cgu` — ✓ présents col 3 + barre copyright
+- [x] Lien vers `/confidentialite` présent dans le footer (page à créer ultérieurement — hors scope SEO)
+- [x] Vérifier les ancres internes (`#features`, `#pricing`) sur la landing — ✓ les deux `id` existent
 
-#### S13. Breadcrumbs — Non implémenté
-- [ ] Évaluer si un breadcrumb est pertinent sur les pages imbriquées (settings/*, etc.)
-- [ ] Si implémenté, ajouter le schema `BreadcrumbList` JSON-LD correspondant
+#### S13. Breadcrumbs — ⏭️ Non pertinent
+- [x] Évalué : les pages imbriquées (`settings/*`, `invoices/[id]`, etc.) sont toutes protégées et bloquées par `robots.ts` — aucun bénéfice SEO
+- [x] Structure publique plate (pas de hiérarchie indexable) — breadcrumbs non nécessaires
 
-#### S14. Images OG dynamiques — Amélioration future
-- [ ] Évaluer l'utilisation de `next/og` (ImageResponse) pour générer des OG images dynamiques par page
-- [ ] Actuellement une seule image `/og-image.png` pour tout le site (acceptable)
+#### S14. Images OG dynamiques — ⏭️ Reporté (acceptable en l'état)
+- [x] Évalué : `/og-image.png` statique suffisante pour un site avec ~8 pages publiques
+- [ ] `next/og` (ImageResponse) à implémenter si le nombre de pages publiques augmente
 
 #### S15. Backdrop-filter sur LandingHero — ✅ Corrigé
 - [x] `components/landing/LandingHero.tsx` : `backdropFilter` retiré de l'animation JS + `WebkitBackdropFilter` retiré du style inline
@@ -699,9 +700,9 @@ CRON_SECRET=
 | Noindex routes admin | ✅ Fait | ~~MOYENNE~~ |
 | Font `display: swap` | ✅ Fait (3/3) | ~~MOYENNE~~ |
 | Lazy loading images | ✅ Fait | ~~MOYENNE~~ |
-| Hreflang | ⚠️ Non nécessaire | **BASSE** |
-| Breadcrumbs | ❌ Non implémenté | **BASSE** |
-| OG images dynamiques | ❌ Non implémenté | **BASSE** |
+| Hreflang | ✅ Fait (fr + x-default) | ~~BASSE~~ |
+| Breadcrumbs | ⏭️ Non pertinent (routes protégées) | ~~BASSE~~ |
+| OG images dynamiques | ⏭️ Reporté (acceptable) | ~~BASSE~~ |
 | Backdrop-filter LandingHero | ✅ Corrigé (desktop-only) | ~~MOYENNE~~ |
 
 ---
