@@ -51,8 +51,8 @@
 - Bons de commande & avoirs
 - Factur-X EN 16931 généré automatiquement
 - **Guide de transmission + suivi simplifié**
-- Relances automatiques (J+30, J+45) *(à venir)*
-- Tableau de bord CA 12 mois *(à venir)*
+- Relances automatiques (J+30, J+45)
+- Tableau de bord CA 12 mois
 - Support email 24h
 
 ### Règles communes
@@ -615,7 +615,7 @@ CRON_SECRET=
 - [x] Retirer `unoptimized={true}` sur toutes les images servies depuis Supabase CDN (9 fichiers, 0 restant)
 - [x] Ajouter `priority={true}` sur les images above-the-fold (hero logo, première section)
 - [x] Ajouter `loading="lazy"` sur les images below-the-fold (filigranes, footer)
-- [ ] Ajouter l'attribut `sizes` sur les images responsives — *reporté (images décoratives fixes, impact faible)*
+- [x] Ajouter l'attribut `sizes` sur les images responsives (33 images, 10 fichiers)
 - [x] **Fichiers modifiés** : `app/page.tsx`, `components/landing/LandingHero.tsx`, `components/auth/AuthLayout.tsx`, `components/onboarding/WelcomeModal.tsx`, `components/legal/LegalLayout.tsx`, `components/layout/Sidebar.tsx`, `components/billing/BillingPageClient.tsx`, `app/pricing/page.tsx`, `app/pricing/checkout/CheckoutPageClient.tsx`
 
 #### S5. Hiérarchie H1 landing page — ✅ Vérifié OK
@@ -670,9 +670,10 @@ CRON_SECRET=
 - [x] Évalué : les pages imbriquées (`settings/*`, `invoices/[id]`, etc.) sont toutes protégées et bloquées par `robots.ts` — aucun bénéfice SEO
 - [x] Structure publique plate (pas de hiérarchie indexable) — breadcrumbs non nécessaires
 
-#### S14. Images OG dynamiques — ⏭️ Reporté (acceptable en l'état)
+#### S14. Images OG dynamiques — ✅ Implémenté
 - [x] Évalué : `/og-image.png` statique suffisante pour un site avec ~8 pages publiques
-- [ ] `next/og` (ImageResponse) à implémenter si le nombre de pages publiques augmente
+- [x] `next/og` (ImageResponse) implémenté via `app/api/og/route.tsx` — images OG dynamiques par page (title + subtitle en query params)
+- [x] Pages mises à jour : root layout, `/pricing`, `/demo`, `/login`, `/signup`
 
 #### S15. Backdrop-filter sur LandingHero — ✅ Corrigé
 - [x] `components/landing/LandingHero.tsx` : `backdropFilter` retiré de l'animation JS + `WebkitBackdropFilter` retiré du style inline

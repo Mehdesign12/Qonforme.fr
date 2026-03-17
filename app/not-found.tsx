@@ -72,6 +72,7 @@ export default function NotFound() {
               width={160}
               height={40}
               className="h-9 w-auto"
+              sizes="160px"
               priority
             />
           ) : (

@@ -38,6 +38,7 @@ function Header() {
   const navLinks = [
     { label: "Fonctionnalités", href: "#features" },
     { label: "Tarifs", href: "#pricing" },
+    { label: "Blog", href: "/blog" },
     { label: "Démo", href: "/demo" },
   ];
 
@@ -69,6 +70,7 @@ function Header() {
             width={130}
             height={32}
             className="h-[30px] w-auto object-contain"
+            sizes="130px"
             priority
           />
         </Link>
@@ -150,6 +152,7 @@ function Header() {
                 width={200}
                 height={200}
                 className="w-[180px] select-none"
+                sizes="180px"
                 loading="lazy"
               />
             </div>
@@ -169,6 +172,7 @@ function Header() {
                     width={124}
                     height={30}
                     className="h-8 w-auto"
+                    sizes="124px"
                     priority
                   />
                 </Link>
@@ -540,6 +544,7 @@ export function LandingHero() {
             width={300}
             height={300}
             className="w-[280px] select-none"
+            sizes="280px"
             loading="lazy"
           />
         </div>
@@ -556,6 +561,7 @@ export function LandingHero() {
             width={480}
             height={480}
             className="w-[420px] select-none"
+            sizes="420px"
             loading="lazy"
           />
         </div>
