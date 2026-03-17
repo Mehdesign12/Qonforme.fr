@@ -22,7 +22,7 @@
 
 | Couche | Technologie |
 |--------|-------------|
-| Frontend | Next.js 15 (App Router) |
+| Frontend | Next.js 14.2.x (App Router) |
 | Styles | Tailwind CSS + Base UI |
 | Backend / BDD | Supabase (PostgreSQL + Auth + Storage) |
 | Paiements | Stripe Billing (checkout + webhooks opérationnels) |
@@ -170,7 +170,7 @@
 
 | # | Quoi | Détail | Impact |
 |---|------|--------|--------|
-| P1-3 | **Email de bienvenue** | Envoyé après signup, avec guide démarrage | Réduit churn J1 |
+| P1-3 | **Email de bienvenue** | ✅ Envoyé après signup, template HTML complet | Réduit churn J1 |
 | P1-4 | **Onboarding guidé** | 3 étapes : logo → 1er client → 1ère facture (progress bar) | 40-60% drop sans ça |
 
 ### 🟠 Priorité 2 — Valeur perçue & différenciation
@@ -179,7 +179,7 @@
 |---|------|--------|--------|
 | P2-1 | **Relances automatiques** | Cron J+30/J+45, email au client, log dans la facture | ✅ Opérationnel (cron-job.org) |
 | P2-2 | **Dashboard CA étendu** | Graphique 12 mois, taux recouvrement, top clients | ✅ Opérationnel |
-| P2-3 | **Export comptable** | CSV transactions + FEC (Format d'Échanges Comptables) | Besoin N°1 des TPE |
+| P2-3 | **Export comptable** | ✅ FEC opérationnel (`/settings/exports` + API `/api/export/fec`) | Besoin N°1 des TPE |
 | P2-4 | **Notifications email** | Facture vue / acceptée / retard — via webhook PPF | Promis dans settings |
 | P2-5 | **Page de paiement publique** | Lien Stripe sur la facture, paiement en ligne client | Réduit délai paiement |
 | P2-6 | **Historique par client** | Liste factures / devis / BdC dans la fiche client | ✅ Opérationnel |
