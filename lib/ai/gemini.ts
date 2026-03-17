@@ -10,7 +10,7 @@
 import { createAdminClient } from "@/lib/supabase/server"
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta"
-const TEXT_MODEL = "gemini-2.0-flash"
+const TEXT_MODEL = "gemini-2.5-flash"
 const IMAGE_MODEL = "imagen-3.0-generate-002"
 
 function getApiKey(): string {
