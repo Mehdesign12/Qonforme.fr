@@ -192,7 +192,7 @@ export default function BillingPageClient({
           className="pointer-events-none absolute -right-8 -bottom-8 select-none"
           style={{ opacity: 0.06, zIndex: 0 }}
         >
-          <Image src={PICTO_Q} alt="" width={180} height={180} className="w-[160px]" loading="lazy" />
+          <Image src={PICTO_Q} alt="" width={180} height={180} className="w-[160px]" sizes="160px" loading="lazy" />
         </div>
 
         {/* En-tête plan */}

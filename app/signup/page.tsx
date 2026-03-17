@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: "Créer un compte — Qonforme",
   description: "Créez votre compte Qonforme en 5 minutes. Factures électroniques Factur-X conformes EN 16931, prêtes à transmettre via Chorus Pro.",
   alternates: { canonical: "/signup" },
+  openGraph: {
+    images: [{ url: "/api/og?title=Cr%C3%A9ez%20votre%20compte%20en%205%20minutes&subtitle=Factures%20Factur-X%20conformes%20EN%2016931%20%E2%80%94%20pr%C3%AAtes%20%C3%A0%20transmettre", width: 1200, height: 630 }],
+  },
 }
 export const dynamic = "force-dynamic"
 

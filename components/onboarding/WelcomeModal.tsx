@@ -118,7 +118,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
         className="pointer-events-none absolute inset-0 flex items-center justify-center select-none z-[1]"
         style={{ opacity: 0.04 }}
       >
-        <Image src={PICTO_Q} alt="" width={400} height={400} className="w-[320px]" loading="lazy" />
+        <Image src={PICTO_Q} alt="" width={400} height={400} className="w-[320px]" sizes="320px" loading="lazy" />
       </div>
 
       {/* ── Card principale ── */}
@@ -144,6 +144,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
             width={140}
             height={34}
             className="h-8 w-auto"
+            sizes="140px"
             priority
           />
 

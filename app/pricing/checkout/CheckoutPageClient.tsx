@@ -347,7 +347,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               className="pointer-events-none select-none absolute -bottom-10 -left-10 z-0"
               style={{ opacity: 0.06 }}
             >
-              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" loading="lazy" />
+              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" sizes="280px" loading="lazy" />
             </div>
             <div
               aria-hidden
@@ -364,7 +364,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               className="pointer-events-none select-none absolute -bottom-10 -left-10 z-0"
               style={{ opacity: 0.04 }}
             >
-              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" loading="lazy" />
+              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" sizes="280px" loading="lazy" />
             </div>
             <div
               aria-hidden

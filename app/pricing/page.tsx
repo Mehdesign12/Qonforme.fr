@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: 'Choisir un plan — Qonforme',
   description: 'Choisissez le plan Qonforme adapté à votre activité : Starter dès 9 €/mois ou Pro à 19 €/mois. Facturation électronique conforme.',
   alternates: { canonical: '/pricing' },
+  openGraph: {
+    images: [{ url: '/api/og?title=Starter%20d%C3%A8s%209%20%E2%82%AC%2Fmois%20%E2%80%94%20Pro%20%C3%A0%2019%20%E2%82%AC%2Fmois&subtitle=Facturation%20%C3%A9lectronique%20conforme%20pour%20artisans%20et%20TPE', width: 1200, height: 630 }],
+  },
 }
 export const dynamic = 'force-dynamic'
 
@@ -70,6 +73,7 @@ export default async function PricingPage() {
           width={900}
           height={900}
           className="w-[340px] sm:w-[560px] lg:w-[900px]"
+          sizes="(min-width: 1024px) 900px, (min-width: 640px) 560px, 340px"
           priority
         />
       </div>
@@ -91,6 +95,7 @@ export default async function PricingPage() {
             height={44}
             /* Plus petit sur mobile pour laisser de l'espace */
             className="h-8 lg:h-10 w-auto drop-shadow-sm"
+            sizes="180px"
             priority
           />
         </Link>

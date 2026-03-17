@@ -59,7 +59,7 @@ export const metadata: Metadata = {
     type:        "website",
     images: [
       {
-        url:    "/og-image.png",
+        url:    "/api/og?title=Facturation%20%C3%A9lectronique%20simplifi%C3%A9e&subtitle=Conforme%20Factur-X%20EN%2016931%20%E2%80%94%20Pour%20artisans%20et%20TPE",
         width:  1200,
         height: 630,
         alt:    "Qonforme — Facturation électronique",
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
     card:        "summary_large_image",
     title:       "Qonforme — Facturation électronique simplifiée",
     description: "Facturation électronique conforme pour artisans et TPE",
-    images:      ["/og-image.png"],
+    images:      ["/api/og?title=Facturation%20%C3%A9lectronique%20simplifi%C3%A9e&subtitle=Conforme%20Factur-X%20EN%2016931%20%E2%80%94%20Pour%20artisans%20et%20TPE"],
   },
 
   /* ── PWA / mobile ── */

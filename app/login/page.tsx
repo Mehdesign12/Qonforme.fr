@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: "Connexion — Qonforme",
   description: "Connectez-vous à votre espace Qonforme pour gérer vos factures électroniques, devis et bons de commande en toute conformité.",
   alternates: { canonical: "/login" },
+  openGraph: {
+    images: [{ url: "/api/og?title=Connexion&subtitle=Acc%C3%A9dez%20%C3%A0%20votre%20espace%20facturation%20%C3%A9lectronique", width: 1200, height: 630 }],
+  },
 }
 export const dynamic = "force-dynamic"
 

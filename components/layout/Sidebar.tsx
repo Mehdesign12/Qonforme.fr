@@ -295,7 +295,7 @@ export function Sidebar() {
         className="pointer-events-none absolute -bottom-6 -left-4 select-none z-0"
         style={{ opacity: 0.06 }}
       >
-        <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" loading="lazy" />
+        <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" sizes="160px" loading="lazy" />
       </div>
 
       {/* Header sidebar : logo + toggle */}
@@ -312,6 +312,7 @@ export function Sidebar() {
               width={28}
               height={28}
               className="w-7 h-7 object-contain"
+              sizes="28px"
             />
           ) : (
             <Image
@@ -320,6 +321,7 @@ export function Sidebar() {
               width={120}
               height={28}
               className="h-7 w-auto object-contain"
+              sizes="120px"
               priority
             />
           )}
@@ -427,7 +429,7 @@ export function MobileSidebar({
           className="pointer-events-none absolute -bottom-6 -left-4 select-none z-0"
           style={{ opacity: 0.06 }}
         >
-          <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" loading="lazy" />
+          <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" sizes="160px" loading="lazy" />
         </div>
 
         {/* Header drawer */}
@@ -442,6 +444,7 @@ export function MobileSidebar({
               width={130}
               height={30}
               className="h-7 w-auto object-contain"
+              sizes="130px"
             />
           </Link>
           <button

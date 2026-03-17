@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "Démo interactive — Qonforme",
   description: "Explorez la démo interactive de Qonforme : créez des factures, devis et bons de commande conformes à la réglementation 2026.",
   alternates: { canonical: "/demo" },
+  openGraph: {
+    images: [{ url: "/api/og?title=D%C3%A9mo%20interactive&subtitle=Cr%C3%A9ez%20factures%2C%20devis%20et%20bons%20de%20commande%20conformes%20%E2%80%94%20sans%20inscription", width: 1200, height: 630 }],
+  },
 }
 import { FileText, FileCheck2, Users, ShoppingCart } from "lucide-react"
 import { PPFStatusBanner } from "@/components/dashboard/PPFStatusBanner"
