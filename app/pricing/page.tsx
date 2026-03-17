@@ -66,7 +66,6 @@ export default async function PricingPage() {
           width={900}
           height={900}
           className="w-[340px] sm:w-[560px] lg:w-[900px]"
-          unoptimized
           priority
         />
       </div>
@@ -89,7 +88,6 @@ export default async function PricingPage() {
             /* Plus petit sur mobile pour laisser de l'espace */
             className="h-8 lg:h-10 w-auto drop-shadow-sm"
             priority
-            unoptimized
           />
         </Link>
         <StepIndicator steps={STEPS} current={2} />

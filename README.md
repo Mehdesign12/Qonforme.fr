@@ -579,6 +579,7 @@ CRON_SECRET=
 | 2026-03-17 | Fix onboarding persistant : fallback localStorage + retries backoff exponentiel + redirect si company inexistante | `components/dashboard/DashboardClient.tsx`, `components/onboarding/WelcomeModal.tsx`, `app/dashboard/page.tsx` |
 | 2026-03-17 | Header mobile : suppression toggle thème (crash iOS), ajout style pilules (titre + actions), toggle conservé sur desktop uniquement | `components/layout/Header.tsx`, `components/layout/DemoHeader.tsx` |
 | 2026-03-17 | Audit SEO complet : TODO list 15 items (robots.ts, sitemap.ts, JSON-LD, canonical, meta descriptions, images, fonts, etc.) documentée dans README.md + règles d'implémentation dans CLAUDE.md | `README.md`, `CLAUDE.md` |
+| 2026-03-17 | SEO priorité HAUTE : robots.ts, sitemap.ts, JSON-LD (Organization+WebApplication+FAQPage), retrait `unoptimized` (9 fichiers), `metadataBase`+canonical, font `display: swap` (3/3), lazy loading images | `app/robots.ts`, `app/sitemap.ts`, `app/layout.tsx`, `app/page.tsx`, `components/landing/LandingHero.tsx`, + 7 fichiers |
 
 ---
 
@@ -590,41 +591,41 @@ CRON_SECRET=
 
 ### 🔴 Priorité HAUTE — Impact SEO critique
 
-#### S1. Fichier `robots.ts` — Manquant
-- [ ] Créer `app/robots.ts` (export Next.js metadata API)
-- [ ] Autoriser `/`, `/pricing`, `/login`, `/signup`, `/demo`, `/mentions-legales`, `/cgu`, `/forgot-password`
-- [ ] Bloquer `/admin`, `/dashboard`, `/invoices`, `/quotes`, `/clients`, `/products`, `/settings`, `/purchase-orders`, `/credit-notes`, `/api`
-- [ ] Référencer le sitemap : `https://qonforme.fr/sitemap.xml`
+#### S1. Fichier `robots.ts` — ~~Manquant~~ ✅ Fait
+- [x] Créer `app/robots.ts` (export Next.js metadata API)
+- [x] Autoriser `/`, `/pricing`, `/login`, `/signup`, `/demo`, `/mentions-legales`, `/cgu`, `/forgot-password`
+- [x] Bloquer `/admin`, `/dashboard`, `/invoices`, `/quotes`, `/clients`, `/products`, `/settings`, `/purchase-orders`, `/credit-notes`, `/api`
+- [x] Référencer le sitemap : `https://qonforme.fr/sitemap.xml`
 
-#### S2. Fichier `sitemap.ts` — Manquant
-- [ ] Créer `app/sitemap.ts` (export Next.js metadata API)
-- [ ] Inclure toutes les routes publiques : `/`, `/pricing`, `/login`, `/signup`, `/demo`, `/mentions-legales`, `/cgu`, `/forgot-password`, `/reset-password`
-- [ ] Définir `changeFrequency` et `priority` par route
-- [ ] Exclure toutes les routes protégées et API
+#### S2. Fichier `sitemap.ts` — ~~Manquant~~ ✅ Fait
+- [x] Créer `app/sitemap.ts` (export Next.js metadata API)
+- [x] Inclure toutes les routes publiques : `/`, `/pricing`, `/login`, `/signup`, `/demo`, `/mentions-legales`, `/cgu`, `/forgot-password`, `/reset-password`
+- [x] Définir `changeFrequency` et `priority` par route
+- [x] Exclure toutes les routes protégées et API
 
-#### S3. Données structurées JSON-LD — Absentes
-- [ ] Ajouter schema `Organization` dans le root layout (`app/layout.tsx`) : nom, URL, logo, description, contact
-- [ ] Ajouter schema `FAQPage` sur la landing page (`app/page.tsx`) pour la section FAQ (questions/réponses existantes)
-- [ ] Ajouter schema `Product` / `Offer` sur la section pricing de la landing (plans Starter + Pro avec prix)
-- [ ] Ajouter schema `WebApplication` (type SaaS, catégorie BusinessApplication)
+#### S3. Données structurées JSON-LD — ~~Absentes~~ ✅ Fait
+- [x] Ajouter schema `Organization` dans le root layout (`app/layout.tsx`) : nom, URL, logo, description, contact
+- [x] Ajouter schema `FAQPage` sur la landing page (`app/page.tsx`) pour la section FAQ (questions/réponses existantes)
+- [x] Ajouter schema `Product` / `Offer` sur la section pricing de la landing (plans Starter + Pro avec prix)
+- [x] Ajouter schema `WebApplication` (type SaaS, catégorie BusinessApplication)
 
-#### S4. Optimisation des images — `unoptimized={true}` partout
-- [ ] Retirer `unoptimized={true}` sur toutes les images servies depuis Supabase CDN (remote pattern déjà configuré dans `next.config.mjs`)
-- [ ] Ajouter `priority={true}` sur les images above-the-fold (hero logo, première section)
-- [ ] Ajouter `loading="lazy"` sur les images below-the-fold
-- [ ] Ajouter l'attribut `sizes` sur les images responsives (ex : `sizes="(max-width: 768px) 100vw, 50vw"`)
-- [ ] **Fichiers concernés** : `app/page.tsx`, `components/landing/LandingHero.tsx`, `components/auth/AuthLayout.tsx`, toutes les pages avec `<Image unoptimized />`
+#### S4. Optimisation des images — ~~`unoptimized={true}` partout~~ ✅ Fait
+- [x] Retirer `unoptimized={true}` sur toutes les images servies depuis Supabase CDN (9 fichiers, 0 restant)
+- [x] Ajouter `priority={true}` sur les images above-the-fold (hero logo, première section)
+- [x] Ajouter `loading="lazy"` sur les images below-the-fold (filigranes, footer)
+- [ ] Ajouter l'attribut `sizes` sur les images responsives — *reporté (images décoratives fixes, impact faible)*
+- [x] **Fichiers modifiés** : `app/page.tsx`, `components/landing/LandingHero.tsx`, `components/auth/AuthLayout.tsx`, `components/onboarding/WelcomeModal.tsx`, `components/legal/LegalLayout.tsx`, `components/layout/Sidebar.tsx`, `components/billing/BillingPageClient.tsx`, `app/pricing/page.tsx`, `app/pricing/checkout/CheckoutPageClient.tsx`
 
-#### S5. Hiérarchie H1 landing page — Vérification
-- [ ] Confirmer que `LandingHero.tsx` contient bien le `<h1>` unique de la page
-- [ ] Vérifier que `app/page.tsx` ne contient aucun `<h1>` en double
-- [ ] S'assurer que la hiérarchie est H1 → H2 → H3 sans saut de niveau
+#### S5. Hiérarchie H1 landing page — ✅ Vérifié OK
+- [x] Confirmer que `LandingHero.tsx` contient bien le `<h1>` unique de la page
+- [x] Vérifier que `app/page.tsx` ne contient aucun `<h1>` en double
+- [x] S'assurer que la hiérarchie est H1 → H2 → H3 sans saut de niveau
 
 ### 🟠 Priorité MOYENNE — Amélioration significative
 
-#### S6. Balises canonical — Absentes
-- [ ] Ajouter `metadataBase: new URL('https://qonforme.fr')` dans le root layout (`app/layout.tsx`)
-- [ ] Ajouter `alternates: { canonical: '/' }` dans le root layout
+#### S6. Balises canonical — ⚠️ Partiellement fait
+- [x] Ajouter `metadataBase: new URL('https://qonforme.fr')` dans le root layout (`app/layout.tsx`)
+- [x] Ajouter `alternates: { canonical: '/' }` dans le root layout
 - [ ] Ajouter `alternates: { canonical: '/pricing' }` sur la page pricing
 - [ ] Ajouter des canonical sur chaque page publique ayant un `metadata` export
 
@@ -641,15 +642,15 @@ CRON_SECRET=
 - [ ] Ajouter `metadata: { robots: { index: false, follow: false } }` dans les layouts admin (`app/admin/`)
 - [ ] Vérifier que `robots.ts` bloque bien `/admin/*`
 
-#### S9. Font display strategy — Incomplète
-- [ ] Ajouter `display: "swap"` sur la déclaration de `DM Sans` dans `app/layout.tsx`
-- [ ] Ajouter `display: "swap"` sur la déclaration de `DM Mono` dans `app/layout.tsx`
-- [ ] (Bricolage Grotesque a déjà `display: "swap"` ✓)
+#### S9. Font display strategy — ~~Incomplète~~ ✅ Fait
+- [x] Ajouter `display: "swap"` sur la déclaration de `DM Sans` dans `app/layout.tsx`
+- [x] Ajouter `display: "swap"` sur la déclaration de `DM Mono` dans `app/layout.tsx`
+- [x] (Bricolage Grotesque a déjà `display: "swap"` ✓)
 
-#### S10. Lazy loading images — Non implémenté
-- [ ] Passer en revue toutes les `<Image>` below-the-fold et ajouter `loading="lazy"`
-- [ ] Les images above-the-fold doivent avoir `priority={true}` au lieu de lazy loading
-- [ ] **Fichiers** : `app/page.tsx`, `components/landing/LandingHero.tsx`
+#### S10. Lazy loading images — ~~Non implémenté~~ ✅ Fait (inclus dans S4)
+- [x] Passer en revue toutes les `<Image>` below-the-fold et ajouter `loading="lazy"`
+- [x] Les images above-the-fold doivent avoir `priority={true}` au lieu de lazy loading
+- [x] **Fichiers** : `app/page.tsx`, `components/landing/LandingHero.tsx` + 7 autres fichiers
 
 ### 🟡 Priorité BASSE — Finition & bonnes pratiques
 
@@ -686,16 +687,16 @@ CRON_SECRET=
 | Favicon / Icons / PWA | ✅ Complet | — |
 | Viewport / Mobile | ✅ OK | — |
 | Keywords root | ✅ Bon ciblage | — |
-| `robots.ts` | ❌ Manquant | **HAUTE** |
-| `sitemap.ts` | ❌ Manquant | **HAUTE** |
-| JSON-LD structured data | ❌ Absent | **HAUTE** |
-| Images `unoptimized` | ❌ Partout | **HAUTE** |
-| Hiérarchie H1 | ⚠️ À vérifier | **HAUTE** |
-| Canonical tags | ❌ Absents | **MOYENNE** |
+| `robots.ts` | ✅ Fait | ~~HAUTE~~ |
+| `sitemap.ts` | ✅ Fait | ~~HAUTE~~ |
+| JSON-LD structured data | ✅ Fait | ~~HAUTE~~ |
+| Images `unoptimized` | ✅ Fait | ~~HAUTE~~ |
+| Hiérarchie H1 | ✅ Vérifié OK | ~~HAUTE~~ |
+| Canonical tags | ⚠️ Partiel (root) | **MOYENNE** |
 | Meta descriptions par page | ⚠️ Partiel | **MOYENNE** |
 | Noindex routes admin | ❌ Non protégé | **MOYENNE** |
-| Font `display: swap` | ⚠️ 1/3 fonts | **MOYENNE** |
-| Lazy loading images | ❌ Non utilisé | **MOYENNE** |
+| Font `display: swap` | ✅ Fait (3/3) | ~~MOYENNE~~ |
+| Lazy loading images | ✅ Fait | ~~MOYENNE~~ |
 | Hreflang | ⚠️ Non nécessaire | **BASSE** |
 | Breadcrumbs | ❌ Non implémenté | **BASSE** |
 | OG images dynamiques | ❌ Non implémenté | **BASSE** |
