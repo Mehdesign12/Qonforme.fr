@@ -184,7 +184,7 @@ export function DemoHeader() {
           (crash GPU iOS Safari — cf. CLAUDE.md)
           ════════════════════════════════════════════════════════════════ */}
       <header
-        className="md:hidden flex items-center justify-between gap-2 px-3 shrink-0 bg-white dark:bg-[#0F1E35]"
+        className="md:hidden flex items-center justify-between gap-2 px-3 shrink-0"
         style={{
           paddingTop:    'max(12px, env(safe-area-inset-top, 12px))',
           paddingBottom: '10px',

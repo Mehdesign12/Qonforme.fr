@@ -286,7 +286,7 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
           pas de toggle thème (crash GPU iOS Safari — cf. CLAUDE.md)
           ════════════════════════════════════════════════════════════════ */}
       <header
-        className="lg:hidden flex items-center justify-between gap-2 px-3 shrink-0 bg-white dark:bg-[#0F1E35] z-20"
+        className="lg:hidden flex items-center justify-between gap-2 px-3 shrink-0 z-20"
         style={{
           paddingTop:    'max(12px, env(safe-area-inset-top, 12px))',
           paddingBottom: '10px',
