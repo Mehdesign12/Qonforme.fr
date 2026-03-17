@@ -1,7 +1,22 @@
 import type { MetadataRoute } from "next";
+import { createAdminClient } from "@/lib/supabase/server";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://qonforme.fr";
+
+  // Fetch published blog posts for dynamic entries
+  const admin = createAdminClient();
+  const { data: posts } = await admin
+    .from("blog_posts")
+    .select("slug, updated_at")
+    .eq("is_published", true);
+
+  const blogPostEntries: MetadataRoute.Sitemap = (posts ?? []).map((post) => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.updated_at),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
 
   return [
     {
@@ -64,5 +79,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "yearly",
       priority: 0.2,
     },
+    ...blogPostEntries,
   ];
 }

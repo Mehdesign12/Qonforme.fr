@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   LogOut,
   Activity,
+  Bot,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -22,7 +23,8 @@ const NAV = [
   { href: '/admin/subscriptions', icon: CreditCard,      label: 'Abonnements' },
   { href: '/admin/support',       icon: MessageSquare,   label: 'Support' },
   { href: '/admin/errors',        icon: AlertTriangle,   label: 'Erreurs' },
-  { href: '/admin/blog',          icon: FileText,        label: 'Blog' },
+  { href: '/admin/blog',          icon: FileText,        label: 'Blog', exact: true },
+  { href: '/admin/blog/ai',      icon: Bot,             label: 'Blog IA' },
   { href: '/admin/health',        icon: Activity,        label: 'Santé système' },
 ]
 
