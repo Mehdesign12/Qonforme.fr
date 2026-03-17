@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { isAdminAuthenticated } from "@/lib/admin-require"
 import { createAdminClient } from "@/lib/supabase/server"
 import { generateBlogPost, generateCoverImage } from "@/lib/ai/gemini"
-import { getNextTopic, getTopicSlug } from "@/lib/ai/seo-topics"
+import { getNextTopic } from "@/lib/ai/seo-topics"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
