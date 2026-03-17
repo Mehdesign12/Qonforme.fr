@@ -6,10 +6,10 @@
  *
  * Flow:
  * 1. Authenticate via CRON_SECRET
- * 2. Get existing slugs to avoid duplicates
+ * 2. Get existing ai_prompts to avoid duplicate topics
  * 3. Select next SEO topic
  * 4. Generate blog post via Gemini
- * 5. Generate cover image via Gemini Imagen
+ * 5. Generate cover image via Nano Banana 2
  * 6. Insert into blog_posts with AI metadata
  * 7. Log result in cron_logs
  */
@@ -39,15 +39,17 @@ export async function GET(request: NextRequest) {
   const admin = createAdminClient()
 
   try {
-    // ── Get existing slugs ──────────────────────────────────────────────────
+    // ── Get existing prompts to match against topics ─────────────────────────
     const { data: existingPosts } = await admin
       .from("blog_posts")
-      .select("slug")
+      .select("ai_prompt")
 
-    const existingSlugs = (existingPosts ?? []).map((p) => p.slug)
+    const existingPrompts = (existingPosts ?? [])
+      .map((p) => p.ai_prompt)
+      .filter(Boolean) as string[]
 
     // ── Select next topic ───────────────────────────────────────────────────
-    const topic = getNextTopic(existingSlugs)
+    const topic = getNextTopic(existingPrompts)
     if (!topic) {
       const duration = Date.now() - startedAt
       await admin.from("cron_logs").insert({
@@ -63,7 +65,7 @@ export async function GET(request: NextRequest) {
     const post = await generateBlogPost(topic.topic, topic.keywords)
 
     // ── Generate cover image ────────────────────────────────────────────────
-    const coverUrl = await generateCoverImage(post.title, post.excerpt)
+    const coverUrl = await generateCoverImage(post.title, post.excerpt, topic.category)
 
     // ── Determine publish state ─────────────────────────────────────────────
     const autoPublish = process.env.BLOG_AUTO_PUBLISH === "true"
@@ -81,7 +83,7 @@ export async function GET(request: NextRequest) {
         is_published: autoPublish,
         published_at: autoPublish ? now : null,
         ai_generated: true,
-        ai_model: "gemini-2.5-flash + imagen-4.0",
+        ai_model: "gemini-2.5-flash + nano-banana-2",
         ai_prompt: `Sujet: ${topic.topic} | Mots-clés: ${topic.keywords.join(", ")}`,
         ai_keywords: post.keywords,
         auto_publish: autoPublish,

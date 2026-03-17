@@ -15,6 +15,7 @@ import { isAdminAuthenticated } from "@/lib/admin-require"
 import { createAdminClient } from "@/lib/supabase/server"
 import { generateBlogPost, generateCoverImage } from "@/lib/ai/gemini"
 import { getNextTopic } from "@/lib/ai/seo-topics"
+import type { TopicCategory } from "@/lib/ai/seo-topics"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -35,19 +36,23 @@ export async function POST(request: NextRequest) {
 
     let topic: string
     let keywords: string[]
+    let category: TopicCategory = "guide"
 
     if (customTopic) {
       // Custom topic from admin
       topic = customTopic
       keywords = customKeywords ?? []
     } else {
-      // Auto-select next SEO topic
+      // Auto-select next SEO topic — match against ai_prompt to avoid re-using topics
       const { data: existingPosts } = await admin
         .from("blog_posts")
-        .select("slug")
+        .select("ai_prompt")
 
-      const existingSlugs = (existingPosts ?? []).map((p) => p.slug)
-      const nextTopic = getNextTopic(existingSlugs)
+      const existingPrompts = (existingPosts ?? [])
+        .map((p) => p.ai_prompt)
+        .filter(Boolean) as string[]
+
+      const nextTopic = getNextTopic(existingPrompts)
 
       if (!nextTopic) {
         return NextResponse.json(
@@ -58,13 +63,14 @@ export async function POST(request: NextRequest) {
 
       topic = nextTopic.topic
       keywords = nextTopic.keywords
+      category = nextTopic.category
     }
 
     // ── Generate blog post ──────────────────────────────────────────────────
     const post = await generateBlogPost(topic, keywords)
 
     // ── Generate cover image ────────────────────────────────────────────────
-    const coverUrl = await generateCoverImage(post.title, post.excerpt)
+    const coverUrl = await generateCoverImage(post.title, post.excerpt, category)
 
     // ── Insert ──────────────────────────────────────────────────────────────
     const now = new Date().toISOString()
@@ -80,7 +86,7 @@ export async function POST(request: NextRequest) {
         is_published: autoPublish,
         published_at: autoPublish ? now : null,
         ai_generated: true,
-        ai_model: "gemini-2.5-flash + imagen-4.0",
+        ai_model: "gemini-2.5-flash + nano-banana-2",
         ai_prompt: `Sujet: ${topic} | Mots-clés: ${keywords.join(", ")}`,
         ai_keywords: post.keywords,
         auto_publish: autoPublish,
