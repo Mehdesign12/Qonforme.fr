@@ -57,21 +57,33 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
 
-  // Marquer "vu" dès l'affichage — la DB est l'unique source de vérité.
-  // Retry une fois en cas d'erreur réseau passagère.
+  // Marquer "vu" dès l'affichage.
+  // 1. localStorage immédiat (filet de sécurité si l'API échoue)
+  // 2. DB via POST /api/onboarding/seen (source de vérité durable)
+  // Retry avec backoff exponentiel (4 tentatives : 1s, 2s, 4s, 8s).
   useEffect(() => {
-    async function markSeenOnMount() {
-      for (let attempt = 0; attempt < 2; attempt++) {
+    // Écriture localStorage immédiate — empêche le modal de réapparaître
+    // même si tous les appels API échouent
+    try {
+      localStorage.setItem('qonforme_onboarding_seen', '1')
+    } catch {
+      // navigation privée, etc.
+    }
+
+    async function markSeenInDB() {
+      for (let attempt = 0; attempt < 4; attempt++) {
         try {
           const res = await fetch('/api/onboarding/seen', { method: 'POST' })
           if (res.ok) return
+          // 404 = company pas encore créée, on retente
+          if (res.status !== 404) return // autre erreur (401, 500) : inutile de retenter
         } catch {
-          // réseau : on retente
+          // erreur réseau : on retente
         }
-        await new Promise(r => setTimeout(r, 1500))
+        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)))
       }
     }
-    markSeenOnMount()
+    markSeenInDB()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

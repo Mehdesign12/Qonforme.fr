@@ -8,6 +8,7 @@ import { TopClients } from '@/components/dashboard/TopClients'
 import { Skeleton } from '@/components/ui/skeleton'
 import DashboardClient from '@/components/dashboard/DashboardClient'
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Tableau de bord' }
@@ -49,13 +50,19 @@ export default async function DashboardPage() {
       // Récupérer le prénom depuis user_metadata
       firstName = (user.user_metadata?.first_name as string) || ""
 
-      // Afficher le modal d'onboarding si l'utilisateur ne l'a pas encore vu,
-      // sans dépendre du paramètre ?welcome=1 (race condition avec le webhook Stripe)
-      const { data: company } = await supabase
+      // Vérifier que la société existe — si non, renvoyer vers la création
+      const { data: company, error: companyError } = await supabase
         .from('companies')
         .select('onboarding_seen_at')
         .eq('user_id', user.id)
         .single()
+
+      if (!company && (!companyError || companyError.code === 'PGRST116')) {
+        // PGRST116 = no rows found → société jamais créée
+        redirect('/signup/company')
+      }
+
+      // Afficher le modal d'onboarding si l'utilisateur ne l'a pas encore vu
       showWelcome = !company?.onboarding_seen_at
     }
   } catch {
