@@ -57,7 +57,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             <Image src={LOGO_URL} alt="Qonforme" width={130} height={32} className="h-7 w-auto" sizes="130px" priority />
           </Link>
           <Link href="/blog" className="text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors">
-            \u2190 Tous les articles
+            {"←"} Tous les articles
           </Link>
         </div>
       </header>
@@ -76,7 +76,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             <img src={post.cover_url} alt="" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-[#2563EB] via-[#1d4ed8] to-[#0F172A] flex items-center justify-center">
-              <Image src={PICTO_Q} alt="" width={120} height={120} className="w-24 h-24 opacity-30" sizes="120px" loading="lazy" />
+              <img src={PICTO_Q} alt="" width={120} height={120} className="w-24 h-24 opacity-30" />
             </div>
           )}
         </div>
@@ -105,8 +105,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
         {/* CTA */}
         <div className="mt-12 rounded-2xl bg-[#0F172A] p-8 text-center">
-          <h2 className="text-xl font-bold text-white mb-2">Pr\u00eat \u00e0 passer \u00e0 la facturation conforme ?</h2>
-          <p className="text-sm text-slate-400 mb-5">Cr\u00e9ez votre premi\u00e8re facture Factur-X en 5 minutes.</p>
+          <h2 className="text-xl font-bold text-white mb-2">Prêt à passer à la facturation conforme ?</h2>
+          <p className="text-sm text-slate-400 mb-5">Créez votre première facture Factur-X en 5 minutes.</p>
           <Link
             href="/signup"
             className="inline-flex h-10 px-6 items-center rounded-lg bg-[#2563EB] text-white font-medium text-sm hover:bg-[#1d4ed8] transition-colors"
@@ -118,11 +118,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
       {/* Footer minimal */}
       <footer className="border-t border-slate-200 bg-white py-6 text-center text-[13px] text-slate-400">
-        <Link href="/" className="hover:text-[#2563EB] transition-colors">\u00a9 {new Date().getFullYear()} Qonforme</Link>
-        {" \u00b7 "}
-        <Link href="/mentions-legales" className="hover:text-[#2563EB] transition-colors">Mentions l\u00e9gales</Link>
-        {" \u00b7 "}
-        <Link href="/confidentialite" className="hover:text-[#2563EB] transition-colors">Confidentialit\u00e9</Link>
+        <Link href="/" className="hover:text-[#2563EB] transition-colors">{"©"} {new Date().getFullYear()} Qonforme</Link>
+        {" · "}
+        <Link href="/mentions-legales" className="hover:text-[#2563EB] transition-colors">Mentions légales</Link>
+        {" · "}
+        <Link href="/confidentialite" className="hover:text-[#2563EB] transition-colors">Confidentialité</Link>
       </footer>
     </div>
   )
