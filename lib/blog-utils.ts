@@ -68,6 +68,53 @@ export const CATEGORY_CONFIG: Record<TopicCategory, CategoryConfig> = {
 
 export const ALL_CATEGORIES = Object.keys(CATEGORY_CONFIG) as TopicCategory[]
 
+// ── FAQ extraction for JSON-LD ──────────────────────────────────────────────
+
+export interface FaqItem {
+  question: string
+  answer: string
+}
+
+/**
+ * Extracts FAQ pairs from markdown content.
+ * A FAQ item is any H2/H3 heading ending with "?" followed by paragraph text.
+ */
+export function extractFaqItems(content: string): FaqItem[] {
+  const items: FaqItem[] = []
+  const lines = content.split("\n")
+
+  for (let i = 0; i < lines.length; i++) {
+    const headingMatch = lines[i].match(/^#{2,3}\s+(.+\?)\s*$/)
+    if (!headingMatch) continue
+
+    const question = headingMatch[1].trim()
+
+    // Collect answer lines until next heading, code block, or end
+    const answerLines: string[] = []
+    for (let j = i + 1; j < lines.length; j++) {
+      const line = lines[j]
+      if (/^#{1,3}\s/.test(line)) break
+      if (line.startsWith("```")) break
+      const trimmed = line.trim()
+      if (trimmed) answerLines.push(trimmed)
+    }
+
+    const answer = answerLines
+      .join(" ")
+      .replace(/\*\*(.+?)\*\*/g, "$1")
+      .replace(/\*(.+?)\*/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .slice(0, 500)
+
+    if (answer.length > 20) {
+      items.push({ question, answer })
+    }
+  }
+
+  return items.slice(0, 10)
+}
+
 /**
  * Extracts H2 headings from markdown content for table of contents.
  */
