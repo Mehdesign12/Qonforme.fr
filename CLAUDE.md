@@ -237,3 +237,4 @@ Le middleware vérifie dans l'ordre :
 | 2026-03-18 | SEO-7 JSON-LD FAQPage : extraction auto des H2/H3 en `?` → schema FAQ + Article sur chaque page blog | `lib/blog-utils.ts`, `app/blog/[slug]/page.tsx` |
 | 2026-03-18 | SEO-6 Google Search Console : meta verification via `NEXT_PUBLIC_GSC_VERIFICATION` env var | `app/layout.tsx`, `.env.example` |
 | 2026-03-18 | SEO-6 Indexation Google : sitemap soumis dans GSC, demande d'indexation manuelle sur pages prioritaires (/, /pricing, /blog, /signup) | — (action manuelle GSC) |
+| 2026-03-18 | SEO-8 Maillage interne : liens croisés blog ↔ landing ↔ pricing ↔ démo (headers nav, CTA cards, section "Aller plus loin", CTA articles blog) | `app/page.tsx`, `app/blog/page.tsx`, `app/blog/[slug]/page.tsx`, `components/billing/PricingSelector.tsx`, `app/demo/page.tsx` |
