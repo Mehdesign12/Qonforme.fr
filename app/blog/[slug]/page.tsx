@@ -8,6 +8,7 @@ import {
   getReadingTime,
   getCategoryFromPrompt,
   extractHeadings,
+  extractFaqItems,
 } from "@/lib/blog-utils"
 import { Calendar, Clock, ChevronLeft, ChevronRight, ArrowRight, Sparkles } from "lucide-react"
 import CategoryBadge from "@/components/blog/CategoryBadge"
@@ -108,13 +109,56 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const headings = extractHeadings(post.content)
   const keywords = (post.ai_keywords as string[] | null) ?? []
 
+  const faqItems = extractFaqItems(post.content)
+
   const [similar, adjacent] = await Promise.all([
     getSimilarPosts(post.slug, post.ai_prompt),
     getAdjacentPosts(post.published_at ?? new Date().toISOString()),
   ])
 
+  // JSON-LD: Article + FAQPage (if questions found)
+  const jsonLd: Record<string, unknown>[] = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: post.title,
+      description: post.excerpt || undefined,
+      datePublished: post.published_at || undefined,
+      author: { "@type": "Organization", name: "Qonforme" },
+      publisher: {
+        "@type": "Organization",
+        name: "Qonforme",
+        url: "https://qonforme.fr",
+      },
+      mainEntityOfPage: `https://qonforme.fr/blog/${post.slug}`,
+      keywords: keywords.length > 0 ? keywords.join(", ") : undefined,
+    },
+  ]
+
+  if (faqItems.length > 0) {
+    jsonLd.push({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqItems.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: faq.answer,
+        },
+      })),
+    })
+  }
+
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
+      {jsonLd.map((schema, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
       <ReadingProgressBar />
 
       {/* Header */}

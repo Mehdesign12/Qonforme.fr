@@ -75,6 +75,11 @@ export const metadata: Metadata = {
     images:      ["/api/og?title=Facturation%20%C3%A9lectronique%20simplifi%C3%A9e&subtitle=Conforme%20Factur-X%20EN%2016931%20%E2%80%94%20Pour%20artisans%20et%20TPE"],
   },
 
+  /* ── Google Search Console ── */
+  ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } }
+    : {}),
+
   /* ── PWA / mobile ── */
   manifest: "/manifest.json",
   appleWebApp: {
