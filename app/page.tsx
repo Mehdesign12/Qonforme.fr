@@ -16,8 +16,6 @@ import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { LandingHero } from "@/components/landing/LandingHero";
 import Footer from "@/components/layout/Footer";
 
-const LOGO_URL =
-  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp";
 
 const PICTO_Q =
   "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp";
