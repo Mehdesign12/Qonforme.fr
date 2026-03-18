@@ -204,10 +204,10 @@
 | SEO-1 | **Audit technique SEO (15 items)** | ✅ 15/15 terminé | robots.ts, sitemap.ts, JSON-LD, canonical, meta, images `sizes`, fonts swap, hreflang, OG dynamiques |
 | SEO-2 | **Page `/confidentialite`** | ✅ Opérationnel | Politique RGPD complète (12 articles), sitemap, OG dynamique |
 | SEO-3 | **Blog public** | ✅ Opérationnel | Listing `/blog` + article `/blog/[slug]`, parser Markdown, CTA signup, OG dynamiques par article |
-| SEO-4 | **Blog automatisé IA** | 🔜 À venir | Cron job quotidien + Gemini (texte + images) → création automatique d'articles SEO-optimisés dans `blog_posts` |
+| SEO-4 | **Blog automatisé IA** | ✅ Opérationnel | Cron job quotidien + Gemini (texte + images), 32 sujets SEO rotation, admin `/admin/blog/ai`, BlogEditor (badge IA+keywords+régénérer) |
 | SEO-5 | **Articles seed (rédaction manuelle)** | 🔜 À faire | 4 articles fondateurs à rédiger pour amorcer l'indexation Google |
-| SEO-6 | **Google Search Console** | 🔜 À faire | Soumettre le sitemap, vérifier l'indexation, suivre les impressions/clics |
-| SEO-7 | **Schema FAQ enrichi (blog)** | 🔜 À faire | JSON-LD `FAQPage` dans chaque article contenant une FAQ → rich snippets SERP |
+| SEO-6 | **Google Search Console** | ✅ Fait | Sitemap `sitemap.xml` soumis, meta vérification via `NEXT_PUBLIC_GSC_VERIFICATION`, indexation demandée sur pages prioritaires |
+| SEO-7 | **Schema FAQ enrichi (blog)** | ✅ Fait | JSON-LD `FAQPage` auto-extrait des H2/H3 en `?` + schema `Article` sur chaque page blog |
 | SEO-8 | **Maillage interne** | 🔜 À faire | Liens croisés blog ↔ landing ↔ pricing ↔ démo pour distribuer le jus SEO |
 | SEO-9 | **Page `/glossaire`** | 🔜 À faire | Définitions : Factur-X, PDP, EN 16931, Chorus Pro, CII, UBL… — capte les recherches informationnelles |
 
@@ -624,6 +624,9 @@ CRON_SECRET=
 | 2026-03-17 | Fix mobile : panel produit (portal, z-index, safe-area, dark mode select), admin modals backdrop-blur, safe-area-inset-bottom sur toutes les modales (6 fichiers) | `app/products/page.tsx`, `components/shared/SendEmailModal.tsx`, `components/invoices/InvoiceDetail.tsx`, + 6 fichiers |
 | 2026-03-17 | README SEO roadmap : ajout items SEO-5 à SEO-9 (articles seed, Search Console, FAQ schema, maillage interne, glossaire) | `README.md` |
 | 2026-03-17 | Blog IA automatisé Gemini : migration AI columns, lib Gemini (texte+image), 32 sujets SEO rotation, cron + admin API, page admin Blog IA, BlogEditor (badge IA+keywords+régénérer), sidebar, sitemap dynamique | `lib/ai/gemini.ts`, `lib/ai/seo-topics.ts`, `app/api/cron/generate-blog/route.ts`, `app/api/admin/blog/generate/route.ts`, `app/admin/(panel)/blog/ai/page.tsx`, `components/admin/BlogEditor.tsx`, `components/admin/AdminSidebar.tsx`, `app/sitemap.ts` |
+| 2026-03-18 | Fix logo footer cassé + boutons partage blog réduits + `<img>` → `<Image>` blog | `components/layout/Footer.tsx`, `app/pricing/checkout/CheckoutPageClient.tsx`, `components/blog/ShareButtons.tsx`, `app/blog/[slug]/page.tsx`, `components/blog/ArticleCard.tsx`, `components/blog/HeroArticle.tsx`, `components/blog/CategoryFilter.tsx` |
+| 2026-03-18 | SEO-7 JSON-LD FAQPage : extraction auto des H2/H3 en `?` → schema FAQ + Article sur chaque page blog | `lib/blog-utils.ts`, `app/blog/[slug]/page.tsx` |
+| 2026-03-18 | SEO-6 Google Search Console : meta verification via `NEXT_PUBLIC_GSC_VERIFICATION` env var + soumission sitemap + demande d'indexation pages prioritaires | `app/layout.tsx`, `.env.example` |
 
 ---
 
@@ -745,7 +748,7 @@ CRON_SECRET=
 | Lazy loading images | ✅ Fait | ~~MOYENNE~~ |
 | Hreflang | ✅ Fait (fr + x-default) | ~~BASSE~~ |
 | Breadcrumbs | ⏭️ Non pertinent (routes protégées) | ~~BASSE~~ |
-| OG images dynamiques | ⏭️ Reporté (acceptable) | ~~BASSE~~ |
+| OG images dynamiques | ✅ Implémenté (ImageResponse edge) | ~~BASSE~~ |
 | Backdrop-filter LandingHero | ✅ Corrigé (desktop-only) | ~~MOYENNE~~ |
 
 ---
