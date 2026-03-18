@@ -6,7 +6,6 @@ import { FileText } from "lucide-react"
 import { getReadingTime, getCategoryFromPrompt } from "@/lib/blog-utils"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
 import HeroArticle from "@/components/blog/HeroArticle"
-import ArticleCard from "@/components/blog/ArticleCard"
 import CategoryFilter from "@/components/blog/CategoryFilter"
 
 export const metadata: Metadata = {
@@ -102,15 +101,7 @@ export default async function BlogPage() {
 
             {/* Category filter + grid */}
             {gridPosts.length > 0 && (
-              <CategoryFilter posts={gridPosts}>
-                {(filtered) => (
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {filtered.map((post, i) => (
-                      <ArticleCard key={post.slug} post={post} index={i} />
-                    ))}
-                  </div>
-                )}
-              </CategoryFilter>
+              <CategoryFilter posts={gridPosts} />
             )}
           </>
         )}
