@@ -197,8 +197,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       {/* Main layout: share | article | TOC */}
       <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-6 pb-8 lg:pb-16">
         <div className="lg:grid lg:grid-cols-[44px_1fr_220px] lg:gap-8 xl:grid-cols-[44px_1fr_240px] xl:gap-10">
-          {/* Left sidebar — share buttons (desktop) */}
-          <div className="hidden lg:block pt-8">
+          {/* Left sidebar — share buttons (desktop aside + mobile fixed bar) */}
+          <div className="lg:pt-8">
             <ShareButtons title={post.title} slug={post.slug} />
           </div>
 
@@ -361,9 +361,6 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
         </div>
       </div>
-
-      {/* Mobile share bar (rendered by ShareButtons component) */}
-      <ShareButtons title={post.title} slug={post.slug} />
 
       {/* Footer */}
       <div className="lg:mb-0 mb-14">
