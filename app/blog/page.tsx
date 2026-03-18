@@ -5,8 +5,8 @@ import { createAdminClient } from "@/lib/supabase/server"
 import { FileText } from "lucide-react"
 import { getReadingTime, getCategoryFromPrompt } from "@/lib/blog-utils"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
-import HeroArticle from "@/components/blog/HeroArticle"
 import CategoryFilter from "@/components/blog/CategoryFilter"
+import Footer from "@/components/layout/Footer"
 
 export const metadata: Metadata = {
   title: "Blog — Qonforme",
@@ -54,11 +54,8 @@ export default async function BlogPage() {
     readingTime: getReadingTime(p.content),
   }))
 
-  const heroPost = posts[0] ?? null
-  const gridPosts = posts.slice(1)
-
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
       {/* Header */}
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-5xl flex items-center justify-between h-14 px-4 sm:px-6">
@@ -87,7 +84,7 @@ export default async function BlogPage() {
       </section>
 
       {/* Articles */}
-      <section className="mx-auto max-w-5xl px-4 sm:px-6 pb-20">
+      <section className="mx-auto max-w-5xl px-4 sm:px-6 pb-20 flex-1">
         {posts.length === 0 ? (
           <div className="text-center py-16">
             <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300" />
@@ -95,26 +92,12 @@ export default async function BlogPage() {
             <p className="mt-1 text-sm text-slate-500">Nos premiers articles arrivent très vite. Revenez bientôt !</p>
           </div>
         ) : (
-          <>
-            {/* Featured hero article */}
-            {heroPost && <HeroArticle post={heroPost} />}
-
-            {/* Category filter + grid */}
-            {gridPosts.length > 0 && (
-              <CategoryFilter posts={gridPosts} />
-            )}
-          </>
+          <CategoryFilter posts={posts} />
         )}
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-[13px] text-slate-400">
-        <Link href="/" className="hover:text-[#2563EB] transition-colors">{"©"} {new Date().getFullYear()} Qonforme</Link>
-        {" · "}
-        <Link href="/mentions-legales" className="hover:text-[#2563EB] transition-colors">Mentions légales</Link>
-        {" · "}
-        <Link href="/confidentialite" className="hover:text-[#2563EB] transition-colors">Confidentialité</Link>
-      </footer>
+      <Footer />
     </div>
   )
 }
