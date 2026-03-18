@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Calendar, Clock, ArrowRight } from "lucide-react"
 import CategoryBadge from "./CategoryBadge"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
@@ -33,14 +34,16 @@ export default function ArticleCard({ post, index }: Props) {
       {/* Cover */}
       <div className="relative aspect-[2/1] overflow-hidden bg-slate-100">
         {post.cover_url ? (
-          <img
+          <Image
             src={post.cover_url}
             alt=""
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#2563EB] via-[#1d4ed8] to-[#0F172A] flex items-center justify-center">
-            <img src={PICTO_Q} alt="" width={80} height={80} className="w-16 h-16 opacity-30" />
+            <Image src={PICTO_Q} alt="" width={80} height={80} className="w-16 h-16 opacity-30" sizes="64px" />
           </div>
         )}
         {/* Category badge on image */}

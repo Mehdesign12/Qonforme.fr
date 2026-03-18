@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Calendar, Clock, ArrowRight } from "lucide-react"
 import CategoryBadge from "./CategoryBadge"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
@@ -28,16 +29,19 @@ export default function HeroArticle({ post }: Props) {
       className="group relative block rounded-2xl overflow-hidden bg-[#0F172A] mb-10"
     >
       {/* Cover image */}
-      <div className="aspect-[16/7] sm:aspect-[16/6] overflow-hidden">
+      <div className="relative aspect-[16/7] sm:aspect-[16/6] overflow-hidden">
         {post.cover_url ? (
-          <img
+          <Image
             src={post.cover_url}
             alt=""
-            className="w-full h-full object-cover opacity-70 group-hover:opacity-80 group-hover:scale-105 transition-all duration-500"
+            fill
+            className="object-cover opacity-70 group-hover:opacity-80 group-hover:scale-105 transition-all duration-500"
+            sizes="100vw"
+            priority
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#2563EB] via-[#1d4ed8] to-[#0F172A] flex items-center justify-center">
-            <img src={PICTO_Q} alt="" width={120} height={120} className="w-24 h-24 opacity-20" />
+            <Image src={PICTO_Q} alt="" width={120} height={120} className="w-24 h-24 opacity-20" sizes="96px" />
           </div>
         )}
       </div>
