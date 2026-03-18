@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Check, Loader2, ShieldCheck, Clock, Award } from 'lucide-react'
 import { PLANS, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 
@@ -136,6 +137,12 @@ export default function PricingSelector() {
             </a>{' '}
             — réponse sous 24h.
           </p>
+
+          <div className="flex items-center gap-3 text-[13px]">
+            <Link href="/demo" className="text-[#2563EB] hover:underline font-medium">Tester la démo</Link>
+            <span className="text-slate-300">·</span>
+            <Link href="/blog" className="text-[#2563EB] hover:underline font-medium">Lire le blog</Link>
+          </div>
         </div>
 
         {/* Droite — 2 cards */}
@@ -397,6 +404,11 @@ export default function PricingSelector() {
               Contacte-nous
             </a>
           </p>
+          <div className="flex items-center justify-center gap-3 text-[12px] mt-1">
+            <Link href="/demo" className="text-[#2563EB] font-medium">Démo</Link>
+            <span className="text-slate-300">·</span>
+            <Link href="/blog" className="text-[#2563EB] font-medium">Blog</Link>
+          </div>
         </div>
       </div>
     </>

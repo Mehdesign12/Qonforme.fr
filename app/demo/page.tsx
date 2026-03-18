@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     images: [{ url: "/api/og?title=D%C3%A9mo%20interactive&subtitle=Cr%C3%A9ez%20factures%2C%20devis%20et%20bons%20de%20commande%20conformes%20%E2%80%94%20sans%20inscription", width: 1200, height: 630 }],
   },
 }
-import { FileText, FileCheck2, Users, ShoppingCart } from "lucide-react"
+import { FileText, FileCheck2, Users, ShoppingCart, ArrowRight, BookOpen } from "lucide-react"
 import { PPFStatusBanner } from "@/components/dashboard/PPFStatusBanner"
 import { DemoDashboardStats } from "@/components/demo/DemoDashboardStats"
 import { DemoRecentInvoices } from "@/components/demo/DemoRecentInvoices"
@@ -128,6 +128,28 @@ export default function DemoDashboardPage() {
           <DemoRecentInvoices />
         </div>
 
+      </div>
+
+      {/* CTA — maillage interne vers pricing et blog */}
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Link href="/pricing" className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-[#2563EB]/30 hover:shadow-md transition-all">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF]">
+            <ArrowRight className="h-4 w-4 text-[#2563EB]" />
+          </div>
+          <div>
+            <p className="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Prêt à démarrer ?</p>
+            <p className="text-[12px] text-slate-400">Voir les tarifs — à partir de 9 €/mois</p>
+          </div>
+        </Link>
+        <Link href="/blog" className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-[#2563EB]/30 hover:shadow-md transition-all">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF]">
+            <BookOpen className="h-4 w-4 text-[#2563EB]" />
+          </div>
+          <div>
+            <p className="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Guides et conseils</p>
+            <p className="text-[12px] text-slate-400">Tout savoir sur la facturation électronique 2026</p>
+          </div>
+        </Link>
       </div>
     </div>
   )

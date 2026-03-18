@@ -167,9 +167,17 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           <Link href="/" aria-label="Retour à l'accueil">
             <Image src={LOGO_URL} alt="Qonforme" width={130} height={32} className="h-7 w-auto" sizes="130px" priority />
           </Link>
-          <Link href="/blog" className="text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors">
-            ← Tous les articles
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/pricing" className="hidden sm:inline text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors">
+              Tarifs
+            </Link>
+            <Link href="/demo" className="hidden sm:inline text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors">
+              Démo
+            </Link>
+            <Link href="/blog" className="text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors">
+              ← Tous les articles
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -274,12 +282,20 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 <p className="mt-2 text-sm sm:text-base text-slate-400 max-w-lg">
                   Créez votre première facture Factur-X en quelques clics. Conforme à la réforme 2026, conçu pour les artisans.
                 </p>
-                <Link
-                  href="/signup"
-                  className="mt-5 inline-flex h-11 px-6 items-center gap-2 rounded-xl bg-[#2563EB] text-white font-semibold text-sm hover:bg-[#1d4ed8] transition-colors"
-                >
-                  Commencer gratuitement <ArrowRight className="w-4 h-4" />
-                </Link>
+                <div className="mt-5 flex flex-wrap items-center gap-4">
+                  <Link
+                    href="/signup"
+                    className="inline-flex h-11 px-6 items-center gap-2 rounded-xl bg-[#2563EB] text-white font-semibold text-sm hover:bg-[#1d4ed8] transition-colors"
+                  >
+                    Commencer gratuitement <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link href="/pricing" className="text-[13px] font-medium text-slate-400 hover:text-white transition-colors underline underline-offset-2">
+                    Voir les tarifs
+                  </Link>
+                  <Link href="/demo" className="text-[13px] font-medium text-slate-400 hover:text-white transition-colors underline underline-offset-2">
+                    Tester la démo
+                  </Link>
+                </div>
               </div>
             </div>
 

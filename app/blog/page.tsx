@@ -62,9 +62,17 @@ export default async function BlogPage() {
           <Link href="/" aria-label="Retour à l'accueil">
             <Image src={LOGO_URL} alt="Qonforme" width={130} height={32} className="h-7 w-auto" sizes="130px" priority />
           </Link>
-          <Link href="/signup" className="h-8 px-4 rounded-lg bg-[#2563EB] text-white text-sm font-medium flex items-center hover:bg-[#1d4ed8] transition-colors">
-            Essayer Qonforme
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/demo" className="hidden sm:inline text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors">
+              Démo
+            </Link>
+            <Link href="/pricing" className="hidden sm:inline text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors">
+              Tarifs
+            </Link>
+            <Link href="/signup" className="h-8 px-4 rounded-lg bg-[#2563EB] text-white text-sm font-medium flex items-center hover:bg-[#1d4ed8] transition-colors">
+              Essayer Qonforme
+            </Link>
+          </div>
         </div>
       </header>
 

@@ -556,6 +556,11 @@ function UrgencyBannerSection() {
             </button>
           </Link>
           <p className="text-[12px] text-slate-500">Opérationnel en 5 minutes · 9&nbsp;€/mois · Résiliable à tout moment</p>
+          <div className="mt-4 flex items-center gap-4 text-[13px]">
+            <Link href="/pricing" className="text-slate-400 hover:text-white transition-colors underline underline-offset-2">Voir les tarifs</Link>
+            <span className="text-slate-600">·</span>
+            <Link href="/demo" className="text-slate-400 hover:text-white transition-colors underline underline-offset-2">Tester la démo</Link>
+          </div>
         </div>
       </FadeIn>
     </section>
@@ -872,6 +877,29 @@ export default function HomePage() {
       <UrgencyBannerSection />
       {/* 10 — FAQ */}
       <FAQSection />
+      {/* 10b — Ressources (maillage interne) */}
+      <section className="bg-white py-14 sm:py-16 border-t border-slate-100">
+        <div className="mx-auto max-w-3xl px-5">
+          <p className="text-center text-[13px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-6">Aller plus loin</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Link href="/blog" className="group flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-[#F8FAFC] p-5 text-center hover:border-[#2563EB]/30 hover:shadow-md transition-all">
+              <FileText className="h-5 w-5 text-[#2563EB]" />
+              <span className="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Blog &amp; guides</span>
+              <span className="text-[12px] text-slate-400">Tout comprendre sur la facturation électronique 2026</span>
+            </Link>
+            <Link href="/demo" className="group flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-[#F8FAFC] p-5 text-center hover:border-[#2563EB]/30 hover:shadow-md transition-all">
+              <Zap className="h-5 w-5 text-[#2563EB]" />
+              <span className="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Démo interactive</span>
+              <span className="text-[12px] text-slate-400">Explorez l&apos;interface sans créer de compte</span>
+            </Link>
+            <Link href="/pricing" className="group flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-[#F8FAFC] p-5 text-center hover:border-[#2563EB]/30 hover:shadow-md transition-all">
+              <Shield className="h-5 w-5 text-[#2563EB]" />
+              <span className="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Tarifs</span>
+              <span className="text-[12px] text-slate-400">À partir de 9&nbsp;€/mois · sans engagement</span>
+            </Link>
+          </div>
+        </div>
+      </section>
       {/* 11 — Contact */}
       <ContactSection />
       {/* 12 — Footer navy */}
