@@ -236,3 +236,4 @@ Le middleware vérifie dans l'ordre :
 | 2026-03-18 | Fix logo footer cassé + boutons partage blog réduits + `<img>` → `<Image>` blog | `components/layout/Footer.tsx`, `app/pricing/checkout/CheckoutPageClient.tsx`, `components/blog/ShareButtons.tsx`, `app/blog/[slug]/page.tsx`, `components/blog/ArticleCard.tsx`, `components/blog/HeroArticle.tsx`, `components/blog/CategoryFilter.tsx` |
 | 2026-03-18 | SEO-7 JSON-LD FAQPage : extraction auto des H2/H3 en `?` → schema FAQ + Article sur chaque page blog | `lib/blog-utils.ts`, `app/blog/[slug]/page.tsx` |
 | 2026-03-18 | SEO-6 Google Search Console : meta verification via `NEXT_PUBLIC_GSC_VERIFICATION` env var | `app/layout.tsx`, `.env.example` |
+| 2026-03-18 | SEO-6 Indexation Google : sitemap soumis dans GSC, demande d'indexation manuelle sur pages prioritaires (/, /pricing, /blog, /signup) | — (action manuelle GSC) |
