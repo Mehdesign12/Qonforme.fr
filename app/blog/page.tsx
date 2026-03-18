@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import Image from "next/image"
 import { createAdminClient } from "@/lib/supabase/server"
 import { FileText } from "lucide-react"
 import { getReadingTime, getCategoryFromPrompt } from "@/lib/blog-utils"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
 import CategoryFilter from "@/components/blog/CategoryFilter"
+import BlogHeader from "@/components/blog/BlogHeader"
 import Footer from "@/components/layout/Footer"
 
 export const metadata: Metadata = {
@@ -30,7 +30,6 @@ async function getPosts() {
 }
 
 const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Picto%20Q.webp"
-const LOGO_URL = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
 
 interface EnrichedPost {
   slug: string
@@ -56,28 +55,10 @@ export default async function BlogPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-5xl flex items-center justify-between h-14 px-4 sm:px-6">
-          <Link href="/" aria-label="Retour à l'accueil">
-            <Image src={LOGO_URL} alt="Qonforme" width={130} height={32} className="h-7 w-auto" sizes="130px" priority />
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/demo" className="hidden sm:inline text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors">
-              Démo
-            </Link>
-            <Link href="/pricing" className="hidden sm:inline text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors">
-              Tarifs
-            </Link>
-            <Link href="/signup" className="h-8 px-4 rounded-lg bg-[#2563EB] text-white text-sm font-medium flex items-center hover:bg-[#1d4ed8] transition-colors">
-              Essayer Qonforme
-            </Link>
-          </div>
-        </div>
-      </header>
+      <BlogHeader />
 
-      {/* Hero section */}
-      <section className="relative overflow-hidden py-12 sm:py-16">
+      {/* Hero section — pt-24 compense le header fixed */}
+      <section className="relative overflow-hidden pt-24 pb-12 sm:pt-28 sm:pb-16">
         <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none" style={{ opacity: 0.03 }}>
           <Image src={PICTO_Q} alt="" width={500} height={500} className="w-[500px]" sizes="500px" loading="lazy" />
         </div>

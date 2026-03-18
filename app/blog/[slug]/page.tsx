@@ -12,6 +12,7 @@ import {
 } from "@/lib/blog-utils"
 import { Calendar, Clock, ChevronLeft, ChevronRight, ArrowRight, Sparkles } from "lucide-react"
 import CategoryBadge from "@/components/blog/CategoryBadge"
+import BlogHeader from "@/components/blog/BlogHeader"
 import ReadingProgressBar from "@/components/blog/ReadingProgressBar"
 import TableOfContents from "@/components/blog/TableOfContents"
 import ShareButtons from "@/components/blog/ShareButtons"
@@ -19,7 +20,6 @@ import Footer from "@/components/layout/Footer"
 
 export const revalidate = 60
 
-const LOGO_URL = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
 const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Picto%20Q.webp"
 
 async function getPost(slug: string) {
@@ -160,29 +160,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         />
       ))}
       <ReadingProgressBar />
+      <BlogHeader showBackLink />
 
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white relative z-40">
-        <div className="mx-auto max-w-5xl flex items-center justify-between h-14 px-4 sm:px-6">
-          <Link href="/" aria-label="Retour à l'accueil">
-            <Image src={LOGO_URL} alt="Qonforme" width={130} height={32} className="h-7 w-auto" sizes="130px" priority />
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/pricing" className="hidden sm:inline text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors">
-              Tarifs
-            </Link>
-            <Link href="/demo" className="hidden sm:inline text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors">
-              Démo
-            </Link>
-            <Link href="/blog" className="text-sm font-medium text-slate-500 hover:text-[#2563EB] transition-colors">
-              ← Tous les articles
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero cover — full width, edge-to-edge */}
-      <div className="relative w-full overflow-hidden bg-[#0F172A]">
+      {/* Hero cover — full width, edge-to-edge, pt-16 compense header fixed */}
+      <div className="relative w-full overflow-hidden bg-[#0F172A] pt-16">
         <div className="relative aspect-[16/7] sm:aspect-[16/5] lg:aspect-[16/4]">
           {post.cover_url ? (
             <Image
