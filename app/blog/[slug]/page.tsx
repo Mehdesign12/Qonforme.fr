@@ -14,6 +14,7 @@ import CategoryBadge from "@/components/blog/CategoryBadge"
 import ReadingProgressBar from "@/components/blog/ReadingProgressBar"
 import TableOfContents from "@/components/blog/TableOfContents"
 import ShareButtons from "@/components/blog/ShareButtons"
+import Footer from "@/components/layout/Footer"
 
 export const revalidate = 60
 
@@ -322,13 +323,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <ShareButtons title={post.title} slug={post.slug} />
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-[13px] text-slate-400 lg:mb-0 mb-14">
-        <Link href="/" className="hover:text-[#2563EB] transition-colors">{"©"} {new Date().getFullYear()} Qonforme</Link>
-        {" · "}
-        <Link href="/mentions-legales" className="hover:text-[#2563EB] transition-colors">Mentions légales</Link>
-        {" · "}
-        <Link href="/confidentialite" className="hover:text-[#2563EB] transition-colors">Confidentialité</Link>
-      </footer>
+      <div className="lg:mb-0 mb-14">
+        <Footer />
+      </div>
     </div>
   )
 }
