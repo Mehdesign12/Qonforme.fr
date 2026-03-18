@@ -131,16 +131,18 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
       {/* Hero cover — full width, edge-to-edge */}
       <div className="relative w-full overflow-hidden bg-[#0F172A]">
-        <div className="aspect-[16/7] sm:aspect-[16/5] lg:aspect-[16/4]">
+        <div className="relative aspect-[16/7] sm:aspect-[16/5] lg:aspect-[16/4]">
           {post.cover_url ? (
-            <img
+            <Image
               src={post.cover_url}
               alt=""
-              className="w-full h-full object-cover opacity-60 md:blog-parallax"
+              fill
+              className="object-cover opacity-60 md:blog-parallax"
+              sizes="100vw"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-[#2563EB] via-[#1d4ed8] to-[#0F172A] flex items-center justify-center">
-              <img src={PICTO_Q} alt="" width={160} height={160} className="w-32 h-32 opacity-15" />
+              <Image src={PICTO_Q} alt="" width={160} height={160} className="w-32 h-32 opacity-15" sizes="128px" />
             </div>
           )}
         </div>
@@ -161,7 +163,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
       {/* Main layout: share | article | TOC */}
       <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-6 pb-8 lg:pb-16">
-        <div className="lg:grid lg:grid-cols-[60px_1fr_220px] lg:gap-8 xl:grid-cols-[60px_1fr_240px] xl:gap-10">
+        <div className="lg:grid lg:grid-cols-[44px_1fr_220px] lg:gap-8 xl:grid-cols-[44px_1fr_240px] xl:gap-10">
           {/* Left sidebar — share buttons (desktop) */}
           <div className="hidden lg:block pt-8">
             <ShareButtons title={post.title} slug={post.slug} />
@@ -285,12 +287,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                       href={`/blog/${s.slug}`}
                       className="group rounded-xl border border-slate-200 bg-white overflow-hidden hover:shadow-lg hover:border-[#2563EB]/20 transition-all"
                     >
-                      <div className="aspect-[2/1] overflow-hidden bg-slate-100">
+                      <div className="relative aspect-[2/1] overflow-hidden bg-slate-100">
                         {s.cover_url ? (
-                          <img src={s.cover_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <Image src={s.cover_url} alt="" fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="(max-width: 640px) 100vw, 33vw" />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-[#2563EB] to-[#0F172A] flex items-center justify-center">
-                            <img src={PICTO_Q} alt="" width={48} height={48} className="w-10 h-10 opacity-30" />
+                            <Image src={PICTO_Q} alt="" width={48} height={48} className="w-10 h-10 opacity-30" sizes="40px" />
                           </div>
                         )}
                       </div>

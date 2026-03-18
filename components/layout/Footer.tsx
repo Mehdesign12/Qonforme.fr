@@ -2,7 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { CheckCircle2 } from "lucide-react"
 
-const LOGO_URL = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20blanc.webp"
+const LOGO_URL = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20simple.png"
 const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Picto%20Q.webp"
 
 export default function Footer() {

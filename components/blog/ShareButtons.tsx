@@ -27,7 +27,7 @@ function XIcon({ className }: { className?: string }) {
 
 /**
  * Share buttons: LinkedIn, X/Twitter, copy link.
- * Desktop: vertical sidebar sticky. Mobile: horizontal bar fixed bottom.
+ * Desktop: compact vertical sidebar sticky. Mobile: horizontal bar fixed bottom.
  */
 export default function ShareButtons({ title, slug }: Props) {
   const [copied, setCopied] = useState(false)
@@ -62,22 +62,22 @@ export default function ShareButtons({ title, slug }: Props) {
     {
       label: "LinkedIn",
       href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
-      icon: <LinkedInIcon className="w-4 h-4" />,
+      icon: <LinkedInIcon className="w-3.5 h-3.5" />,
       hoverClass: "hover:bg-[#0077B5] hover:text-white hover:border-[#0077B5]",
     },
     {
       label: "X",
       href: `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`,
-      icon: <XIcon className="w-4 h-4" />,
+      icon: <XIcon className="w-3.5 h-3.5" />,
       hoverClass: "hover:bg-[#0F172A] hover:text-white hover:border-[#0F172A]",
     },
   ]
 
   return (
     <>
-      {/* Desktop — vertical sidebar sticky */}
-      <aside className="hidden lg:flex flex-col items-center gap-2 sticky top-24">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+      {/* Desktop — compact vertical sidebar sticky */}
+      <aside className="hidden lg:flex flex-col items-center gap-1.5 sticky top-24">
+        <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">
           Partager
         </p>
         {buttons.map((btn) => (
@@ -87,7 +87,7 @@ export default function ShareButtons({ title, slug }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Partager sur ${btn.label}`}
-            className={`w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all duration-200 ${btn.hoverClass}`}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all duration-200 ${btn.hoverClass}`}
           >
             {btn.icon}
           </a>
@@ -95,19 +95,19 @@ export default function ShareButtons({ title, slug }: Props) {
         <button
           onClick={copyLink}
           aria-label="Copier le lien"
-          className={`w-10 h-10 flex items-center justify-center rounded-xl border transition-all duration-200 ${
+          className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-all duration-200 ${
             copied
               ? "bg-emerald-50 border-emerald-200 text-emerald-600"
               : "border-slate-200 bg-white text-slate-500 hover:bg-[#2563EB] hover:text-white hover:border-[#2563EB]"
           }`}
         >
-          {copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+          {copied ? <Check className="w-3.5 h-3.5" /> : <Link2 className="w-3.5 h-3.5" />}
         </button>
       </aside>
 
       {/* Mobile — fixed bottom bar */}
       <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden border-t border-slate-200 bg-white/95 safe-area-bottom">
-        <div className="flex items-center justify-center gap-3 h-14 px-4">
+        <div className="flex items-center justify-center gap-3 h-12 px-4">
           <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mr-1">Partager</span>
           {buttons.map((btn) => (
             <a
@@ -116,7 +116,7 @@ export default function ShareButtons({ title, slug }: Props) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Partager sur ${btn.label}`}
-              className={`w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all duration-200 ${btn.hoverClass}`}
+              className={`w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all duration-200 ${btn.hoverClass}`}
             >
               {btn.icon}
             </a>
@@ -124,13 +124,13 @@ export default function ShareButtons({ title, slug }: Props) {
           <button
             onClick={copyLink}
             aria-label="Copier le lien"
-            className={`w-10 h-10 flex items-center justify-center rounded-xl border transition-all duration-200 ${
+            className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-all duration-200 ${
               copied
                 ? "bg-emerald-50 border-emerald-200 text-emerald-600"
                 : "border-slate-200 bg-white text-slate-500 hover:bg-[#2563EB] hover:text-white hover:border-[#2563EB]"
             }`}
           >
-            {copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Link2 className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>
