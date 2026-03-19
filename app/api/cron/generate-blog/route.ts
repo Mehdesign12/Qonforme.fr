@@ -67,8 +67,16 @@ export async function GET(request: NextRequest) {
     // ── Generate cover image ────────────────────────────────────────────────
     const coverUrl = await generateCoverImage(post.title, post.excerpt, topic.category)
 
-    // ── Determine publish state ─────────────────────────────────────────────
-    const autoPublish = process.env.BLOG_AUTO_PUBLISH === "true"
+    // ── Determine publish state (DB setting > env var fallback) ──────────────
+    let autoPublish = process.env.BLOG_AUTO_PUBLISH === "true"
+    const { data: setting } = await admin
+      .from("app_settings")
+      .select("value")
+      .eq("key", "blog_auto_publish")
+      .single()
+    if (setting) {
+      autoPublish = setting.value === "true"
+    }
     const now = new Date().toISOString()
 
     // ── Insert into blog_posts ──────────────────────────────────────────────

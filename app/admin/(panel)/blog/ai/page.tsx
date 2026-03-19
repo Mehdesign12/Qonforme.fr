@@ -13,6 +13,7 @@ import {
   FileText,
   Sparkles,
   ExternalLink,
+  Settings2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -37,6 +38,40 @@ export default function AdminBlogAiPage() {
   const [customTopic, setCustomTopic] = useState('')
   const [customKeywords, setCustomKeywords] = useState('')
   const [autoPublish, setAutoPublish] = useState(false)
+  const [globalAutoPublish, setGlobalAutoPublish] = useState(false)
+  const [savingGlobal, setSavingGlobal] = useState(false)
+
+  // Load global auto_publish setting from DB
+  useEffect(() => {
+    fetch('/api/admin/settings?key=blog_auto_publish')
+      .then(res => res.json())
+      .then(data => {
+        const val = data.value === 'true'
+        setGlobalAutoPublish(val)
+        setAutoPublish(val) // sync the per-generation checkbox
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleToggleGlobalAutoPublish = async () => {
+    const newValue = !globalAutoPublish
+    setSavingGlobal(true)
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'blog_auto_publish', value: String(newValue) }),
+      })
+      if (!res.ok) throw new Error()
+      setGlobalAutoPublish(newValue)
+      setAutoPublish(newValue)
+      toast.success(newValue ? 'Auto-publication activée (cron inclus)' : 'Auto-publication désactivée — les articles seront en brouillon')
+    } catch {
+      toast.error('Erreur lors de la sauvegarde')
+    } finally {
+      setSavingGlobal(false)
+    }
+  }
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -197,6 +232,34 @@ export default function AdminBlogAiPage() {
           ) : (
             <p className="text-sm text-slate-400">Aucun article</p>
           )}
+        </div>
+      </div>
+
+      {/* Global auto-publish toggle */}
+      <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Settings2 className="w-5 h-5 text-[#2563EB]" />
+            <div>
+              <p className="text-sm font-bold text-foreground">Publication automatique</p>
+              <p className="text-[12px] text-slate-400 mt-0.5">
+                S&apos;applique au cron quotidien et comme valeur par défaut pour la génération manuelle
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleToggleGlobalAutoPublish}
+            disabled={savingGlobal}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+              globalAutoPublish ? 'bg-[#2563EB]' : 'bg-slate-200 dark:bg-slate-700'
+            } ${savingGlobal ? 'opacity-50' : ''}`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                globalAutoPublish ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
         </div>
       </div>
 
