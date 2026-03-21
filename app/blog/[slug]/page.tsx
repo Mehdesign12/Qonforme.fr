@@ -162,8 +162,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <ReadingProgressBar />
       <BlogHeader showBackLink />
 
-      {/* Hero cover — full width, edge-to-edge, pt-16 compense header fixed */}
-      <div className="relative w-full overflow-hidden bg-[#0F172A] pt-16">
+      {/* Hero cover — full width, edge-to-edge, image extends behind the fixed header */}
+      <div className="relative w-full overflow-hidden bg-[#0F172A]">
+        {/* pt-16 is absorbed by the image (not the wrapper) so the cover sits behind the header */}
         <div className="relative aspect-[16/7] sm:aspect-[16/5] lg:aspect-[16/4]">
           {post.cover_url ? (
             <Image
@@ -172,6 +173,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
               fill
               className="object-cover opacity-60 md:blog-parallax"
               sizes="100vw"
+              priority
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-[#2563EB] via-[#1d4ed8] to-[#0F172A] flex items-center justify-center">
