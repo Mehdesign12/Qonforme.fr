@@ -42,10 +42,22 @@ export async function GET(request: NextRequest) {
     // ── Get existing prompts to match against topics ─────────────────────────
     const { data: existingPosts } = await admin
       .from("blog_posts")
-      .select("ai_prompt")
+      .select("ai_prompt, title")
 
     const existingPrompts = (existingPosts ?? [])
       .map((p) => p.ai_prompt)
+      .filter(Boolean) as string[]
+
+    // Grab the last 5 published titles so Gemini can differentiate its angle
+    const { data: recentPosts } = await admin
+      .from("blog_posts")
+      .select("title")
+      .eq("is_published", true)
+      .order("published_at", { ascending: false })
+      .limit(5)
+
+    const recentTitles = (recentPosts ?? [])
+      .map((p) => p.title)
       .filter(Boolean) as string[]
 
     // ── Select next topic ───────────────────────────────────────────────────
@@ -62,7 +74,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Generate blog post ──────────────────────────────────────────────────
-    const post = await generateBlogPost(topic.topic, topic.keywords)
+    const post = await generateBlogPost(topic.topic, topic.keywords, recentTitles)
 
     // ── Generate cover image ────────────────────────────────────────────────
     const coverUrl = await generateCoverImage(post.title, post.excerpt, topic.category)
