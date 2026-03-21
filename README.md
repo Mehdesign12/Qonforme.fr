@@ -629,6 +629,7 @@ CRON_SECRET=
 | 2026-03-18 | SEO-6 Google Search Console : meta verification via `NEXT_PUBLIC_GSC_VERIFICATION` env var + soumission sitemap + demande d'indexation pages prioritaires | `app/layout.tsx`, `.env.example` |
 | 2026-03-18 | SEO-8 Maillage interne : liens croisés blog ↔ landing ↔ pricing ↔ démo (headers nav, CTA cards, section "Aller plus loin" landing, CTA blog articles) | `app/page.tsx`, `app/blog/page.tsx`, `app/blog/[slug]/page.tsx`, `components/billing/PricingSelector.tsx`, `app/demo/page.tsx` |
 | 2026-03-19 | Admin toggle auto-publish blog : table `app_settings`, API `/api/admin/settings`, toggle UI dans `/admin/blog/ai`, cron lit depuis DB (fallback env var) | `supabase/migrations/20260319_create_app_settings.sql`, `app/api/admin/settings/route.ts`, `app/admin/(panel)/blog/ai/page.tsx`, `app/api/cron/generate-blog/route.ts` |
+| 2026-03-21 | Audit technique complet : revue architecture, sécurité, performance, testing, mobile, SEO, UX — score 77/100, top 10 priorités | `AUDIT-TECHNIQUE-2026-03-21.md` |
 
 ---
 
