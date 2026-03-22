@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Check, Loader2, ShieldCheck, Clock, Award } from 'lucide-react'
+import { Check, Loader2, ShieldCheck, Clock, Award, ArrowLeft, Play } from 'lucide-react'
 import { PLANS, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 
 /* ─── Data ───────────────────────────────────────────────────────────────── */
@@ -79,6 +79,17 @@ export default function PricingSelector() {
 
         {/* Gauche */}
         <div className="flex flex-col gap-7">
+          {/* Bouton retour */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-[13px] font-medium text-slate-500 hover:text-[#0F172A] transition-colors w-fit group"
+          >
+            <span className="w-7 h-7 rounded-lg bg-white/80 border border-[#E2E8F0] flex items-center justify-center shadow-sm group-hover:bg-white group-hover:border-[#CBD5E1] transition-all">
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </span>
+            Retour à l&apos;accueil
+          </Link>
+
           <div>
             <h1 className="text-[28px] font-bold text-[#0F172A] leading-tight tracking-tight mb-2">
               Choisis ton plan
@@ -132,16 +143,26 @@ export default function PricingSelector() {
 
           <p className="text-[13px] text-slate-400">
             Une question ?{' '}
-            <a href="mailto:support@qonforme.fr" className="text-[#2563EB] hover:underline font-medium">
+            <Link href="/#contact" className="text-[#2563EB] hover:underline font-medium">
               Contacte-nous
-            </a>{' '}
+            </Link>{' '}
             — réponse sous 24h.
           </p>
 
-          <div className="flex items-center gap-3 text-[13px]">
-            <Link href="/demo" className="text-[#2563EB] hover:underline font-medium">Tester la démo</Link>
-            <span className="text-slate-300">·</span>
-            <Link href="/blog" className="text-[#2563EB] hover:underline font-medium">Lire le blog</Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/demo"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] text-[13px] font-semibold hover:bg-[#DBEAFE] hover:border-[#BFDBFE] transition-all"
+            >
+              <Play className="w-3 h-3 fill-[#2563EB]" />
+              Tester la démo
+            </Link>
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/60 border border-[#E2E8F0] text-slate-600 text-[13px] font-medium hover:bg-white hover:border-[#CBD5E1] transition-all"
+            >
+              Lire le blog
+            </Link>
           </div>
         </div>
 
@@ -225,6 +246,17 @@ export default function PricingSelector() {
           • Footer sticky : bouton CTA + badges réassurance compacts
       ════════════════════════════════════════════════════════════════════ */}
       <div className="lg:hidden flex flex-col min-h-[calc(100dvh-140px)]">
+
+        {/* ── Bouton retour mobile ──────────────────────────────────────── */}
+        <div className="mb-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-500 active:text-[#0F172A] transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Retour
+          </Link>
+        </div>
 
         {/* ── Titre + sous-titre ────────────────────────────────────────── */}
         <div className="text-center mb-5">
@@ -400,14 +432,24 @@ export default function PricingSelector() {
           {/* Lien support */}
           <p className="text-center text-[12px] text-slate-400 mt-2">
             Une question ?{' '}
-            <a href="mailto:support@qonforme.fr" className="text-[#2563EB] font-medium">
+            <Link href="/#contact" className="text-[#2563EB] font-medium">
               Contacte-nous
-            </a>
+            </Link>
           </p>
-          <div className="flex items-center justify-center gap-3 text-[12px] mt-1">
-            <Link href="/demo" className="text-[#2563EB] font-medium">Démo</Link>
-            <span className="text-slate-300">·</span>
-            <Link href="/blog" className="text-[#2563EB] font-medium">Blog</Link>
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <Link
+              href="/demo"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] text-[12px] font-semibold active:bg-[#DBEAFE] transition-all"
+            >
+              <Play className="w-2.5 h-2.5 fill-[#2563EB]" />
+              Démo
+            </Link>
+            <Link
+              href="/blog"
+              className="inline-flex items-center px-3.5 py-1.5 rounded-lg bg-white/60 border border-[#E2E8F0] text-slate-600 text-[12px] font-medium active:bg-white transition-all"
+            >
+              Blog
+            </Link>
           </div>
         </div>
       </div>

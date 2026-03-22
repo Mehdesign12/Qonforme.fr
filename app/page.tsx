@@ -628,7 +628,7 @@ function ContactSection() {
   const labelCls = "mb-1.5 block text-[13px] font-semibold text-[#0F172A]";
 
   return (
-    <section className="bg-[#F8FAFC] py-20 sm:py-24">
+    <section id="contact" className="bg-[#F8FAFC] py-20 sm:py-24">
       <div className="mx-auto max-w-5xl px-5">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-[2fr_3fr] lg:gap-16 items-start">
 
