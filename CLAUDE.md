@@ -130,6 +130,50 @@ if (!sub) { /* redirect to /pricing */ }
 
 ---
 
+## 🚨 RÈGLE — Mode démo : toujours synchronisé avec le tableau de bord réel
+
+### Le principe
+Le mode démo (`/demo/*`) doit être un **miroir exact** du tableau de bord réel en termes
+d'UI, de layout et de fonctionnalités. Seules les données sont fictives (mock data).
+
+### La règle
+**Toute modification apportée au dashboard réel doit être répliquée dans la démo.**
+
+Cela inclut :
+- **Sidebar** (`Sidebar.tsx` → `DemoSidebar.tsx`) : nouvelles entrées de navigation,
+  changement de logo, ajout/suppression de liens, styles
+- **Header** (`Header.tsx` → `DemoHeader.tsx`) : nouveau CTA contextuel, changement
+  de breakpoint, nouveau bouton dans la pilule, modification du dropdown
+- **Pages** (`app/dashboard/` → `app/demo/`, composants dans `components/` → `components/demo/`) :
+  nouveau widget, nouvelle section, modification de layout
+- **Bottom nav mobile** (`MobileBottomNav` → `DemoMobileBottomNav`) : nouvel onglet,
+  changement d'icône
+
+### Correspondance des fichiers
+
+| Réel | Démo |
+|------|------|
+| `components/layout/Sidebar.tsx` | `components/layout/DemoSidebar.tsx` |
+| `components/layout/Header.tsx` | `components/layout/DemoHeader.tsx` |
+| `app/dashboard/page.tsx` | `app/demo/page.tsx` |
+| `app/dashboard/layout.tsx` | `app/demo/layout.tsx` |
+| `app/{section}/page.tsx` | `app/demo/{section}/page.tsx` |
+| `components/{section}/*.tsx` | `components/demo/*.tsx` |
+
+### Ce qui reste spécifique à la démo
+- Données fictives (mock data hardcodé, pas de Supabase)
+- Badge "DÉMO" dans le header et la sidebar
+- CTA "Créer mon compte →" dans le footer sidebar (au lieu de "Se déconnecter")
+- Pas de vraie authentification ni logout
+- Routes préfixées `/demo/`
+
+### Checklist avant de considérer une tâche comme terminée
+- [ ] La modification a été faite dans le composant réel
+- [ ] La même modification a été répliquée dans le composant démo correspondant
+- [ ] Les deux versions sont visuellement identiques (même styles, mêmes breakpoints)
+
+---
+
 ## Configuration ThemeProvider
 
 ```tsx
