@@ -1,15 +1,16 @@
 'use client'
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
+import { useTheme } from "next-themes"
 import {
   LayoutDashboard,
   FileText,
   FileCheck2,
   Users,
   Settings,
-  Zap,
   ChevronRight,
   FlaskConical,
   Package,
@@ -20,8 +21,25 @@ import {
   Minus,
   Menu,
   X,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+/* ------------------------------------------------------------------ */
+/* Logos                                                                 */
+/* ------------------------------------------------------------------ */
+
+const LOGO_URL =
+  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
+const LOGO_URL_DARK =
+  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20simple.png"
+const PICTO_Q =
+  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
+const LOGO_Q_ICON =
+  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
+
+const STORAGE_KEY = "qonforme_demo_sidebar_collapsed"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -37,7 +55,6 @@ interface NavItem {
   href:    string
   label:   string
   icon:    React.ElementType
-  exact?:  boolean
   sub?:    SubItem[]
 }
 
@@ -46,7 +63,7 @@ interface NavItem {
 /* ------------------------------------------------------------------ */
 
 const DEMO_NAV: NavItem[] = [
-  { href: "/demo",               label: "Tableau de bord",    icon: LayoutDashboard, exact: true },
+  { href: "/demo",               label: "Tableau de bord",    icon: LayoutDashboard },
   { href: "/demo/clients",       label: "Clients",            icon: Users },
   {
     href:  "/demo/quotes",
@@ -74,36 +91,23 @@ const DEMO_NAV: NavItem[] = [
 ]
 
 /* ------------------------------------------------------------------ */
-/* Classes utilitaires partagées (dark-mode aware)                     */
-/* ------------------------------------------------------------------ */
-
-const NAV_ITEM_BASE = "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100"
-const NAV_ACTIVE    = "bg-[#EFF6FF] dark:bg-[#162032] text-[#2563EB] dark:text-[#60A5FA]"
-const NAV_INACTIVE  = "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
-
-const ICON_ACTIVE   = "text-[#2563EB] dark:text-[#60A5FA]"
-const ICON_INACTIVE = "text-slate-400 dark:text-slate-500"
-
-const SUB_ITEM_BASE = "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors duration-100"
-const SUB_ACTIVE    = "bg-[#EFF6FF] dark:bg-[#162032] text-[#2563EB] dark:text-[#60A5FA]"
-const SUB_INACTIVE  = "text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
-
-/* ------------------------------------------------------------------ */
-/* NavGroup — parent + sous-items                                       */
+/* NavGroup                                                             */
 /* ------------------------------------------------------------------ */
 
 function NavGroup({
   item,
   pathname,
+  collapsed,
   onNavigate,
 }: {
   item:        NavItem
   pathname:    string
+  collapsed:   boolean
   onNavigate?: () => void
 }) {
-  const isParentActive = item.exact
-    ? pathname === item.href
-    : pathname === item.href || pathname.startsWith(item.href)
+  const isParentActive =
+    pathname === item.href ||
+    (item.href !== "/demo" && pathname.startsWith(item.href))
 
   const isSubActive = item.sub?.some(
     (s) => pathname === s.href || pathname.startsWith(s.href.split("?")[0])
@@ -117,31 +121,52 @@ function NavGroup({
       <Link
         href={item.href}
         onClick={onNavigate}
-        className={cn(NAV_ITEM_BASE, isActive ? NAV_ACTIVE : NAV_INACTIVE)}
+        title={collapsed ? item.label : undefined}
+        className={cn(
+          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100",
+          collapsed ? "justify-center px-2" : "",
+          isActive
+            ? "bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#60A5FA]"
+            : "text-slate-500 dark:text-slate-400 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
+        )}
       >
-        <item.icon className={cn("w-4 h-4 shrink-0", isActive ? ICON_ACTIVE : ICON_INACTIVE)} />
-        <span className="flex-1 truncate">{item.label}</span>
-        {hasChildren && (
-          <Minus className={cn(
-            "w-3 h-3 shrink-0 transition-colors",
-            isActive ? "text-[#BFDBFE] dark:text-[#1E3A5F]" : "text-slate-300 dark:text-slate-600"
-          )} />
+        <item.icon className={cn("w-4 h-4 shrink-0", isActive ? "text-[#2563EB] dark:text-[#60A5FA]" : "text-slate-400 dark:text-slate-500")} />
+        {!collapsed && (
+          <>
+            <span className="flex-1 truncate">{item.label}</span>
+            {hasChildren && (
+              <Minus className={cn(
+                "w-3 h-3 shrink-0 transition-colors",
+                isActive ? "text-[#BFDBFE] dark:text-[#1E3A5F]" : "text-slate-300 dark:text-slate-600"
+              )} />
+            )}
+          </>
         )}
       </Link>
 
-      {/* Sous-items */}
-      {hasChildren && isActive && (
+      {/* Sous-items — uniquement si expanded */}
+      {!collapsed && hasChildren && isActive && (
         <div className="relative mt-0.5 mb-1 ml-[22px]">
           <span className="absolute left-0 top-1 bottom-1 w-px bg-[#BFDBFE] dark:bg-[#1E3A5F]" />
           <div className="space-y-0.5 pl-4">
             {item.sub!.map((s) => {
-              const sActive = pathname === s.href || pathname.startsWith(s.href.split("?")[0])
+              const sHrefBase = s.href.split("?")[0]
+              const sHasQuery = s.href.includes("?")
+              const sActive   = !sHasQuery && (
+                pathname === s.href ||
+                (pathname.startsWith(sHrefBase) && sHrefBase !== item.href)
+              )
               return (
                 <Link
                   key={s.href + s.label}
                   href={s.href}
                   onClick={onNavigate}
-                  className={cn(SUB_ITEM_BASE, sActive ? SUB_ACTIVE : SUB_INACTIVE)}
+                  className={cn(
+                    "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors duration-100",
+                    sActive
+                      ? "bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#60A5FA]"
+                      : "text-slate-400 dark:text-slate-500 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
+                  )}
                 >
                   {s.icon && (
                     <s.icon className={cn(
@@ -166,16 +191,18 @@ function NavGroup({
 
 function SidebarContent({
   pathname,
+  collapsed,
   onNavigate,
 }: {
   pathname:    string
+  collapsed:   boolean
   onNavigate?: () => void
 }) {
   return (
     <>
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto scrollbar-none">
         {DEMO_NAV.map((item) => (
-          <NavGroup key={item.href + item.label} item={item} pathname={pathname} onNavigate={onNavigate} />
+          <NavGroup key={item.href + item.label} item={item} pathname={pathname} collapsed={collapsed} onNavigate={onNavigate} />
         ))}
 
         {/* Paramètres */}
@@ -183,45 +210,63 @@ function SidebarContent({
           <Link
             href="/demo/settings"
             onClick={onNavigate}
+            title={collapsed ? "Paramètres" : undefined}
             className={cn(
-              NAV_ITEM_BASE,
-              pathname.startsWith("/demo/settings") ? NAV_ACTIVE : NAV_INACTIVE
+              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100",
+              collapsed ? "justify-center px-2" : "",
+              pathname.startsWith("/demo/settings")
+                ? "bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#60A5FA]"
+                : "text-slate-500 dark:text-slate-400 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
             )}
           >
             <Settings className={cn(
               "w-4 h-4 shrink-0",
-              pathname.startsWith("/demo/settings") ? ICON_ACTIVE : ICON_INACTIVE
+              pathname.startsWith("/demo/settings") ? "text-[#2563EB] dark:text-[#60A5FA]" : "text-slate-400 dark:text-slate-500"
             )} />
-            <span className="flex-1 truncate">Paramètres</span>
-            {pathname.startsWith("/demo/settings") && (
-              <ChevronRight className="w-3 h-3 text-[#2563EB] dark:text-[#60A5FA]" />
+            {!collapsed && <span>Paramètres</span>}
+            {!collapsed && pathname.startsWith("/demo/settings") && (
+              <ChevronRight className="w-3 h-3 text-[#2563EB] dark:text-[#60A5FA] ml-auto" />
             )}
           </Link>
         </div>
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-slate-200 dark:border-[#1E3A5F] space-y-2">
+      <div className={cn(
+        "px-2 py-4 border-t border-[#F1F5F9] dark:border-[#162032] space-y-2",
+        collapsed ? "px-2" : "px-4"
+      )}>
         {/* Badge démo */}
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40">
-          <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-500 shrink-0" />
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">Mode démo</p>
-            <p className="text-[10px] text-amber-600 dark:text-amber-500 truncate">Données fictives</p>
+        {!collapsed && (
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40">
+            <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-500 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">Mode démo</p>
+              <p className="text-[10px] text-amber-600 dark:text-amber-500 truncate">Données fictives</p>
+            </div>
           </div>
-        </div>
+        )}
+        {collapsed && (
+          <div className="flex items-center justify-center" title="Mode démo">
+            <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+          </div>
+        )}
 
         {/* CTA inscription */}
         <Link
           href="/signup"
           onClick={onNavigate}
-          className="flex items-center justify-center gap-1.5 w-full px-3 py-2.5 rounded-lg text-white text-xs font-semibold transition-colors touch-manipulation"
+          title={collapsed ? "Créer mon compte" : undefined}
+          className={cn(
+            "flex items-center justify-center gap-1.5 w-full rounded-lg text-white text-xs font-semibold transition-colors touch-manipulation",
+            collapsed ? "px-2 py-2.5" : "px-3 py-2.5"
+          )}
           style={{
             background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
             boxShadow:  "0 2px 8px rgba(37,99,235,0.25)",
           }}
         >
-          Créer mon compte →
+          {collapsed ? <Plus className="w-4 h-4" /> : "Créer mon compte →"}
         </Link>
       </div>
     </>
@@ -229,30 +274,115 @@ function SidebarContent({
 }
 
 /* ------------------------------------------------------------------ */
-/* DemoSidebar — desktop uniquement (hidden md:flex)                   */
+/* DemoSidebar — desktop (hidden md:flex)                              */
 /* ------------------------------------------------------------------ */
 
 export function DemoSidebar() {
   const pathname = usePathname()
+  const { resolvedTheme } = useTheme()
+
+  // Hydration-safe
+  const [collapsed, setCollapsed] = useState(false)
+  const [mounted,   setMounted]   = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored === "true") setCollapsed(true)
+    } catch { /* ignore */ }
+  }, [])
+
+  const toggle = () => {
+    const next = !collapsed
+    setCollapsed(next)
+    try { localStorage.setItem(STORAGE_KEY, String(next)) } catch { /* ignore */ }
+  }
+
+  const sidebarWidth = (mounted && collapsed) ? "w-16" : "w-60"
 
   return (
     <aside
-      className="hidden md:flex w-64 flex-col shrink-0 border-r border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35]"
+      className={cn(
+        "hidden md:flex flex-col border-r border-[#E2E8F0] dark:border-[#1E3A5F] shrink-0 relative overflow-hidden transition-[width] duration-250 ease-in-out",
+        sidebarWidth
+      )}
+      style={{ background: 'var(--sidebar-bg)' }}
     >
-      {/* Logo + badge démo */}
+      {/* Q filigrane bas-gauche */}
       <div
-        className="flex items-center gap-2.5 px-5 py-5 border-b border-slate-200 dark:border-[#1E3A5F]"
+        aria-hidden
+        className="pointer-events-none absolute -bottom-6 -left-4 select-none z-0"
+        style={{ opacity: 0.06 }}
       >
-        <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center shrink-0 shadow-sm">
-          <Zap className="w-4 h-4 text-white" />
-        </div>
-        <span className="text-lg font-bold text-[#0F172A] dark:text-[#E2E8F0]">Qonforme</span>
-        <span className="ml-auto text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 px-1.5 py-0.5 rounded-full">
-          DÉMO
-        </span>
+        <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" sizes="160px" loading="lazy" />
       </div>
 
-      <SidebarContent pathname={pathname} />
+      {/* Header sidebar : logo + badge DÉMO + toggle */}
+      <div className={cn(
+        "relative z-10 flex items-center border-b border-[#F1F5F9] dark:border-[#162032] shrink-0",
+        (mounted && collapsed) ? "justify-center px-2 py-[18px]" : "justify-between px-4 py-[18px]"
+      )}>
+        {/* Logo — long si ouvert, picto si fermé */}
+        <Link href="/demo" className="flex items-center min-w-0">
+          {(mounted && collapsed) ? (
+            <Image
+              src={LOGO_Q_ICON}
+              alt="Q"
+              width={28}
+              height={28}
+              className="w-7 h-7 object-contain"
+              sizes="28px"
+            />
+          ) : (
+            <Image
+              src={mounted && resolvedTheme === 'dark' ? LOGO_URL_DARK : LOGO_URL}
+              alt="Qonforme"
+              width={120}
+              height={28}
+              className="h-7 w-auto object-contain"
+              sizes="120px"
+              priority
+            />
+          )}
+        </Link>
+
+        {/* Badge DÉMO + toggle — visible seulement si ouvert */}
+        {!(mounted && collapsed) && (
+          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+            <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 px-1.5 py-0.5 rounded-full">
+              DÉMO
+            </span>
+            <button
+              onClick={toggle}
+              className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-300 hover:text-slate-500 dark:hover:text-slate-300 hover:bg-[#F1F5F9] dark:hover:bg-[#162032] transition-all shrink-0"
+              title="Réduire la sidebar"
+              aria-label="Réduire la sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Bouton expand — visible uniquement quand sidebar fermée */}
+      {(mounted && collapsed) && (
+        <button
+          onClick={toggle}
+          className="mx-auto mt-3 flex items-center justify-center w-8 h-8 rounded-lg text-slate-300 hover:text-[#3B82F6] hover:bg-[#EFF6FF] dark:hover:bg-[#1E3A5F] transition-all shrink-0"
+          title="Ouvrir la sidebar"
+          aria-label="Ouvrir la sidebar"
+        >
+          <PanelLeftOpen className="w-4 h-4" />
+        </button>
+      )}
+
+      <div className="relative z-10 flex flex-col flex-1 min-h-0">
+        <SidebarContent
+          pathname={pathname}
+          collapsed={mounted && collapsed}
+        />
+      </div>
     </aside>
   )
 }
@@ -269,6 +399,9 @@ export function DemoMobileSidebar({
   onClose: () => void
 }) {
   const pathname = usePathname()
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   // Verrouille le scroll quand le drawer est ouvert
   useEffect(() => {
@@ -285,7 +418,7 @@ export function DemoMobileSidebar({
       {/* Overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-black/50 transition-opacity duration-250 md:hidden",
+          "fixed inset-0 z-40 bg-black/40 transition-opacity duration-250 md:hidden",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}
@@ -295,39 +428,55 @@ export function DemoMobileSidebar({
       {/* Drawer */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35] shadow-[4px_0_32px_rgba(15,23,42,0.15)] transition-[transform] duration-300 ease-out md:hidden overflow-hidden",
+          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[#E2E8F0] dark:border-[#1E3A5F] shadow-[4px_0_32px_rgba(15,23,42,0.12)] dark:shadow-[4px_0_32px_rgba(0,0,0,0.40)] transition-[transform] duration-300 ease-out md:hidden overflow-hidden",
           "w-[min(80vw,300px)]",
           open ? "translate-x-0" : "-translate-x-full"
         )}
+        style={{ background: 'var(--sidebar-bg)' }}
       >
+        {/* Q filigrane */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-6 -left-4 select-none z-0"
+          style={{ opacity: 0.06 }}
+        >
+          <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" sizes="160px" loading="lazy" />
+        </div>
+
         {/* Header drawer */}
         <div
-          className="flex items-center justify-between px-5 border-b border-slate-200 dark:border-[#1E3A5F] shrink-0"
+          className="relative z-10 flex items-center justify-between px-5 border-b border-[#F1F5F9] dark:border-[#162032] shrink-0"
           style={{
             paddingTop:    'max(18px, env(safe-area-inset-top, 18px))',
             paddingBottom: '18px',
           }}
         >
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#2563EB] flex items-center justify-center shrink-0 shadow-sm">
-              <Zap className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="text-base font-bold text-[#0F172A] dark:text-[#E2E8F0]">Qonforme</span>
+            <Link href="/demo" onClick={onClose} className="flex items-center">
+              <Image
+                src={mounted && resolvedTheme === 'dark' ? LOGO_URL_DARK : LOGO_URL}
+                alt="Qonforme"
+                width={130}
+                height={30}
+                className="h-7 w-auto object-contain"
+                sizes="130px"
+              />
+            </Link>
             <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 px-1.5 py-0.5 rounded-full">
               DÉMO
             </span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl transition-colors touch-manipulation text-slate-400 dark:text-slate-500"
+            className="p-2 rounded-xl hover:bg-[#F1F5F9] dark:hover:bg-[#162032] transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 touch-manipulation"
             aria-label="Fermer le menu"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="flex flex-col flex-1 min-h-0">
-          <SidebarContent pathname={pathname} onNavigate={onClose} />
+        <div className="relative z-10 flex flex-col flex-1 min-h-0">
+          <SidebarContent pathname={pathname} collapsed={false} onNavigate={onClose} />
         </div>
       </aside>
     </>
@@ -343,7 +492,7 @@ export function DemoMobileBottomNav() {
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   const primaryTabs = [
-    { href: "/demo",          label: "Accueil",  icon: LayoutDashboard, exact: true },
+    { href: "/demo",          label: "Accueil",  icon: LayoutDashboard },
     { href: "/demo/invoices", label: "Factures", icon: FileText },
     { href: "/demo/quotes",   label: "Devis",    icon: FileCheck2 },
     { href: "/demo/clients",  label: "Clients",  icon: Users },
@@ -352,13 +501,16 @@ export function DemoMobileBottomNav() {
   return (
     <>
       <nav
-        className="md:hidden flex shrink-0 border-t border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35]"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        className="md:hidden flex shrink-0 border-t border-[#E2E8F0] dark:border-[#1E3A5F]"
+        style={{
+          background:    'var(--sidebar-bg)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
       >
         {primaryTabs.map((tab) => {
-          const isActive = tab.exact
-            ? pathname === tab.href
-            : pathname === tab.href || pathname.startsWith(tab.href)
+          const isActive =
+            pathname === tab.href ||
+            (tab.href !== "/demo" && pathname.startsWith(tab.href))
           return (
             <Link
               key={tab.href}
