@@ -378,3 +378,185 @@ CRITICAL RULES — you MUST follow these strictly:
 
   return publicUrl.publicUrl
 }
+
+// ── Brand Studio — image analysis & branded generation ───────────────────────
+
+export interface ImageAnalysis {
+  description: string
+  style: string
+  colors: string[]
+  composition: string
+  mood: string
+  elements: string[]
+}
+
+/**
+ * Analyze an inspiration image using Gemini Vision.
+ * Returns a structured description of the image's visual properties.
+ */
+export async function analyzeInspirationImage(
+  base64Image: string,
+  mimeType: string
+): Promise<ImageAnalysis> {
+  const apiKey = getApiKey()
+
+  const prompt = `Analyse cette image en détail pour pouvoir la recréer dans un style différent.
+
+Retourne un JSON avec exactement ces champs :
+{
+  "description": "Description complète de la scène, des sujets et de l'action (2-3 phrases en anglais)",
+  "style": "Le style graphique/photographique (ex: flat illustration, 3D render, editorial photography, minimalist vector, etc.)",
+  "colors": ["couleur dominante 1", "couleur 2", "couleur 3", "couleur 4"],
+  "composition": "Description de la composition (cadrage, perspective, placement des éléments)",
+  "mood": "L'ambiance générale (ex: professional, playful, serious, warm, tech-forward)",
+  "elements": ["élément visuel clé 1", "élément 2", "élément 3", "..."]
+}
+
+Réponds UNIQUEMENT avec le JSON, sans texte avant ou après.`
+
+  const response = await fetch(
+    `${GEMINI_API_URL}/models/${TEXT_MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { inlineData: { mimeType, data: base64Image } },
+              { text: prompt },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 2048,
+          responseMimeType: "application/json",
+        },
+      }),
+    }
+  )
+
+  if (!response.ok) {
+    const err = await response.text()
+    throw new Error(`Gemini vision error (${response.status}): ${err}`)
+  }
+
+  const data = await response.json()
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+  if (!text) throw new Error("Empty response from Gemini vision")
+
+  return JSON.parse(text) as ImageAnalysis
+}
+
+/**
+ * Brand guidelines for Qonforme used in image generation.
+ */
+const BRAND_GUIDELINES = `Brand: Qonforme — French invoicing software for artisans & small businesses.
+Primary color: #2563EB (vibrant blue). Secondary: #0F172A (dark navy). Accents: #3B82F6, #EFF6FF.
+Mood: Professional yet approachable. Modern, clean, trustworthy.
+Target audience: French artisans, craftsmen, small business owners.
+Visual identity: Clean lines, blue gradients, warm human touches, French business aesthetic.`
+
+/**
+ * Generate a branded image inspired by the analysis of a source image.
+ * Uses Nano Banana 2 (Gemini 3.1 Flash Image Preview).
+ * Returns the public URL of the uploaded image.
+ */
+export async function generateBrandedImage(
+  analysis: ImageAnalysis,
+  customInstructions: string = "",
+  aspectRatio: "1:1" | "16:9" | "9:16" | "4:3" | "3:4" = "16:9"
+): Promise<{ url: string; base64: string; mimeType: string }> {
+  const apiKey = getApiKey()
+
+  const imagePrompt = `Generate a high-quality image with these specifications:
+
+SCENE DESCRIPTION: ${analysis.description}
+
+COMPOSITION: ${analysis.composition}
+
+VISUAL STYLE: ${analysis.style}
+
+MOOD & ATMOSPHERE: ${analysis.mood}
+
+KEY ELEMENTS TO INCLUDE: ${analysis.elements.join(", ")}
+
+COLOR PALETTE: Use the brand colors (vibrant blue #2563EB, dark navy #0F172A, light blue #EFF6FF) as the dominant palette, while incorporating the mood of these inspiration colors: ${analysis.colors.join(", ")}
+
+BRAND CONTEXT: ${BRAND_GUIDELINES}
+
+${customInstructions ? `ADDITIONAL INSTRUCTIONS: ${customInstructions}` : ""}
+
+CRITICAL RULES — you MUST follow these strictly:
+- ABSOLUTELY NO TEXT anywhere in the image
+- NO words, NO letters, NO numbers, NO labels, NO watermarks, NO logos
+- NO writing on any surface, document, screen, or sign
+- Any documents or screens shown must have abstract blurred content, never readable text
+- The image must work as a visual-only banner with zero textual elements
+- Full-bleed composition that fills the entire frame edge-to-edge`
+
+  const response = await fetch(
+    `${GEMINI_API_URL}/models/${IMAGE_MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: imagePrompt }] }],
+        generationConfig: {
+          responseModalities: ["TEXT", "IMAGE"],
+          imageConfig: { aspectRatio },
+        },
+      }),
+    }
+  )
+
+  if (!response.ok) {
+    const err = await response.text()
+    throw new Error(`Nano Banana 2 image generation failed (${response.status}): ${err}`)
+  }
+
+  const data = await response.json()
+  const parts = data.candidates?.[0]?.content?.parts
+  if (!parts || !Array.isArray(parts)) {
+    throw new Error("No parts in Nano Banana 2 response")
+  }
+
+  const imagePart = parts.find(
+    (p: { inlineData?: { mimeType: string; data: string } }) => p.inlineData?.data
+  )
+
+  if (!imagePart?.inlineData) {
+    throw new Error("No image data in Nano Banana 2 response")
+  }
+
+  const { data: base64Image, mimeType: imgMimeType } = imagePart.inlineData as {
+    data: string
+    mimeType: string
+  }
+  const ext = imgMimeType === "image/jpeg" ? "jpg" : "png"
+
+  // Upload to Supabase Storage in brand-studio bucket
+  const buffer = Buffer.from(base64Image, "base64")
+  const fileName = `brand-${Date.now()}.${ext}`
+
+  const supabase = createAdminClient()
+  const { error: uploadError } = await supabase.storage
+    .from("brand-studio")
+    .upload(fileName, buffer, {
+      contentType: imgMimeType,
+      upsert: true,
+    })
+
+  if (uploadError) {
+    console.error("[gemini] Brand studio upload failed:", uploadError)
+    // Still return the base64 so the user can download it
+    return { url: "", base64: base64Image, mimeType: imgMimeType }
+  }
+
+  const { data: publicUrl } = supabase.storage
+    .from("brand-studio")
+    .getPublicUrl(fileName)
+
+  return { url: publicUrl.publicUrl, base64: base64Image, mimeType: imgMimeType }
+}
