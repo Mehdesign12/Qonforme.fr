@@ -23,6 +23,7 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
+  Home,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -251,6 +252,20 @@ function SidebarContent({
             <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-500" />
           </div>
         )}
+
+        {/* Retour à l'accueil */}
+        <Link
+          href="/"
+          onClick={onNavigate}
+          title={collapsed ? "Retour à l'accueil" : undefined}
+          className={cn(
+            "flex items-center gap-2 w-full rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0] transition-colors touch-manipulation",
+            collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
+          )}
+        >
+          <Home className="w-4 h-4 shrink-0" />
+          {!collapsed && "Retour à l'accueil"}
+        </Link>
 
         {/* CTA inscription */}
         <Link

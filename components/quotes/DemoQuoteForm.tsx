@@ -19,15 +19,15 @@ const lineSchema = z.object({
   vat_rate: z.number().refine((v) => [0, 5.5, 10, 20].includes(v)),
 })
 
-const invoiceSchema = z.object({
+const quoteSchema = z.object({
   client_id: z.string().min(1, "Client requis"),
   issue_date: z.string().min(1),
-  due_date: z.string().min(1),
+  valid_until: z.string().min(1),
   lines: z.array(lineSchema).min(1),
   notes: z.string().optional(),
 })
 
-type FormData = z.infer<typeof invoiceSchema>
+type FormData = z.infer<typeof quoteSchema>
 
 const MOCK_CLIENTS = [
   { id: "1", name: "Renovbat SARL" },
@@ -39,18 +39,18 @@ const MOCK_CLIENTS = [
 const today = new Date().toISOString().split("T")[0]
 const in30days = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
 
-export default function DemoInvoiceForm() {
+export default function DemoQuoteForm() {
   const { register, watch, control } = useForm<FormData>({
-    resolver: zodResolver(invoiceSchema),
+    resolver: zodResolver(quoteSchema),
     defaultValues: {
       client_id: "1",
       issue_date: today,
-      due_date: in30days,
+      valid_until: in30days,
       lines: [
-        { description: "Travaux de rénovation intérieure", quantity: 1, unit_price_ht: 1500, vat_rate: 20 },
-        { description: "Fournitures et matériaux", quantity: 3, unit_price_ht: 250, vat_rate: 20 },
+        { description: "Audit énergétique complet", quantity: 1, unit_price_ht: 750, vat_rate: 20 },
+        { description: "Intervention technique", quantity: 16, unit_price_ht: 85, vat_rate: 20 },
       ],
-      notes: "Paiement par virement bancaire sous 30 jours.\nPénalités de retard : 3 fois le taux légal en vigueur.",
+      notes: "Devis valable 30 jours.\nTout travail supplémentaire fera l'objet d'un avenant.",
     },
   })
 
@@ -70,7 +70,7 @@ export default function DemoInvoiceForm() {
 
   const handleDemoAction = () => {
     toast.info("Fonctionnalité disponible après inscription", {
-      description: "Crée ton compte pour envoyer de vraies factures.",
+      description: "Crée ton compte pour envoyer de vrais devis.",
       action: { label: "Créer mon compte", onClick: () => window.location.href = "/signup" },
     })
   }
@@ -92,7 +92,7 @@ export default function DemoInvoiceForm() {
 
       {/* Section client + dates */}
       <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm space-y-4">
-        <h2 className="font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Informations de facturation</h2>
+        <h2 className="font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Informations du devis</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-1">
             <Label>Client *</Label>
@@ -110,8 +110,8 @@ export default function DemoInvoiceForm() {
             <Input type="date" className="mt-1 font-mono" {...register("issue_date")} />
           </div>
           <div>
-            <Label>Date d&apos;échéance</Label>
-            <Input type="date" className="mt-1 font-mono" {...register("due_date")} />
+            <Label>Valide jusqu&apos;au</Label>
+            <Input type="date" className="mt-1 font-mono" {...register("valid_until")} />
           </div>
         </div>
       </div>
@@ -171,7 +171,7 @@ export default function DemoInvoiceForm() {
               <div className="col-span-12 flex justify-end text-xs text-slate-400">
                 HT : <span className="font-mono font-medium text-[#0F172A] dark:text-[#E2E8F0] mx-1">{formatCurrency(computedLines[index]?.totalHT ?? 0)}</span>
                 · TVA : <span className="font-mono mx-1">{formatCurrency(computedLines[index]?.totalVAT ?? 0)}</span>
-                · TTC : <span className="font-mono font-semibold text-[#0F172A] ml-1">{formatCurrency(computedLines[index]?.totalTTC ?? 0)}</span>
+                · TTC : <span className="font-mono font-semibold text-[#0F172A] dark:text-[#E2E8F0] ml-1">{formatCurrency(computedLines[index]?.totalTTC ?? 0)}</span>
               </div>
             )}
           </div>
@@ -181,7 +181,7 @@ export default function DemoInvoiceForm() {
       {/* Totaux + notes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm">
-          <Label>Notes / conditions de paiement</Label>
+          <Label>Notes / conditions</Label>
           <textarea
             {...register("notes")}
             rows={4}
@@ -189,7 +189,7 @@ export default function DemoInvoiceForm() {
           />
         </div>
         <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6 shadow-sm">
-          <h3 className="font-semibold text-[#0F172A] mb-4">Récapitulatif</h3>
+          <h3 className="font-semibold text-[#0F172A] dark:text-[#E2E8F0] mb-4">Récapitulatif</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-slate-500 dark:text-slate-400">Sous-total HT</span>
@@ -222,7 +222,7 @@ export default function DemoInvoiceForm() {
           onClick={handleDemoAction}
         >
           <Send className="w-4 h-4" />
-          Envoyer la facture
+          Envoyer le devis
         </Button>
       </div>
     </div>

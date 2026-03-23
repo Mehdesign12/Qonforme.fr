@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic"
 
+import Link from "next/link"
 import { formatCurrency, formatDate } from "@/lib/utils/invoice"
 
 type QuoteStatus = "draft" | "sent" | "accepted" | "rejected" | "expired"
@@ -38,7 +39,7 @@ export default function DemoQuotesPage() {
           <button key={s} className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             s === "all"
               ? "bg-[#2563EB] text-white border-[#2563EB]"
-              : "bg-white text-slate-600 border-[#E2E8F0] hover:border-[#2563EB] hover:text-[#2563EB]"
+              : "bg-white dark:bg-[#162032] text-slate-600 dark:text-slate-400 border-[#E2E8F0] dark:border-[#1E3A5F] hover:border-[#2563EB] hover:text-[#2563EB]"
           }`}>
             {s === "all" ? "Tous" : QUOTE_STATUS_LABELS[s as QuoteStatus]}
           </button>
@@ -47,31 +48,30 @@ export default function DemoQuotesPage() {
 
       {/* Vue mobile : cards */}
       <div className="sm:hidden space-y-3">
-        {MOCK_QUOTES.map((q) => {
-          const styleClass = STATUS_STYLE[q.status]
-          return (
-            <div key={q.id} className="bg-white rounded-xl border border-[#E2E8F0] px-4 py-3.5 shadow-sm">
+        {MOCK_QUOTES.map((q) => (
+          <Link key={q.id} href={`/demo/quotes/${q.id}`}>
+            <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] px-4 py-3.5 shadow-sm">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-mono text-sm text-[#2563EB] font-bold">{q.quote_number}</span>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${styleClass}`}>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[q.status]}`}>
                   {QUOTE_STATUS_LABELS[q.status]}
                 </span>
               </div>
-              <p className="text-sm font-medium text-[#0F172A]">{q.client}</p>
+              <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">{q.client}</p>
               <div className="flex items-center justify-between mt-1.5">
                 <p className="text-xs text-slate-400">Valable jusqu&apos;au {formatDate(q.validity_date)}</p>
-                <p className="font-mono text-sm font-semibold text-[#0F172A]">{formatCurrency(q.total_ttc)}</p>
+                <p className="font-mono text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(q.total_ttc)}</p>
               </div>
             </div>
-          )
-        })}
+          </Link>
+        ))}
       </div>
 
       {/* Vue desktop : table */}
-      <div className="hidden sm:block bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
+      <div className="hidden sm:block bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] overflow-hidden shadow-sm">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+            <tr className="border-b border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032]">
               <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° devis</th>
               <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Client</th>
               <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Émission</th>
@@ -82,14 +82,15 @@ export default function DemoQuotesPage() {
           </thead>
           <tbody>
             {MOCK_QUOTES.map((q) => (
-              <tr key={q.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0">
+              <tr key={q.id} className="border-b border-[#F1F5F9] dark:border-[#162032] hover:bg-[#F8FAFC] dark:hover:bg-[#162032] transition-colors last:border-0 cursor-pointer"
+                onClick={() => window.location.href = `/demo/quotes/${q.id}`}>
                 <td className="px-5 py-4">
                   <span className="font-mono text-sm text-[#2563EB] font-bold">{q.quote_number}</span>
                 </td>
-                <td className="px-5 py-4 text-sm text-[#0F172A] font-medium">{q.client}</td>
-                <td className="px-5 py-4 text-sm text-slate-500">{formatDate(q.issue_date)}</td>
-                <td className="px-5 py-4 text-sm text-slate-500">{formatDate(q.validity_date)}</td>
-                <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#0F172A]">
+                <td className="px-5 py-4 text-sm text-[#0F172A] dark:text-[#E2E8F0] font-medium">{q.client}</td>
+                <td className="px-5 py-4 text-sm text-slate-500 dark:text-slate-400">{formatDate(q.issue_date)}</td>
+                <td className="px-5 py-4 text-sm text-slate-500 dark:text-slate-400">{formatDate(q.validity_date)}</td>
+                <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">
                   {formatCurrency(q.total_ttc)}
                 </td>
                 <td className="px-5 py-4">

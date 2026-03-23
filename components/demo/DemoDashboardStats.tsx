@@ -68,7 +68,7 @@ function KpiCard({ icon, iconBg, label, sub, value, badge, sparkline, alert }: K
           {badge}
         </div>
         <p className={`font-mono text-xl sm:text-2xl font-extrabold leading-none truncate mb-2 ${
-          alert ? 'text-[#EF4444]' : 'text-[#0F172A]'
+          alert ? 'text-[#EF4444]' : 'text-[#0F172A] dark:text-[#E2E8F0]'
         }`}>
           {value}
         </p>

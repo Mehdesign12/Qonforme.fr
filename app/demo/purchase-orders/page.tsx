@@ -34,7 +34,7 @@ export default function DemoPurchaseOrdersPage() {
           <button key={s} className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             s === "all"
               ? "bg-[#4F46E5] text-white border-[#4F46E5]"
-              : "bg-white text-slate-600 border-[#E2E8F0] hover:border-[#4F46E5] hover:text-[#4F46E5]"
+              : "bg-white dark:bg-[#162032] text-slate-600 dark:text-slate-400 border-[#E2E8F0] dark:border-[#1E3A5F] hover:border-[#4F46E5] hover:text-[#4F46E5]"
           }`}>
             {s === "all" ? "Tous" : PO_STATUS_LABELS[s as POStatus]}
           </button>
@@ -44,27 +44,27 @@ export default function DemoPurchaseOrdersPage() {
       {/* Vue mobile : cards */}
       <div className="sm:hidden space-y-3">
         {MOCK_POS.map((po) => (
-          <div key={po.id} className="bg-white rounded-xl border border-[#E2E8F0] px-4 py-3.5 shadow-sm">
+          <div key={po.id} className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] px-4 py-3.5 shadow-sm">
             <div className="flex items-center justify-between mb-1">
               <span className="font-mono text-sm text-[#4F46E5] font-bold">{po.po_number}</span>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[po.status]}`}>
                 {PO_STATUS_LABELS[po.status]}
               </span>
             </div>
-            <p className="text-sm font-medium text-[#0F172A]">{po.client}</p>
+            <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">{po.client}</p>
             <div className="flex items-center justify-between mt-1.5">
               <p className="text-xs text-slate-400">Livraison le {formatDate(po.delivery_date)}</p>
-              <p className="font-mono text-sm font-semibold text-[#0F172A]">{formatCurrency(po.total_ttc)}</p>
+              <p className="font-mono text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(po.total_ttc)}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Vue desktop : table */}
-      <div className="hidden sm:block bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
+      <div className="hidden sm:block bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] overflow-hidden shadow-sm">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+            <tr className="border-b border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032]">
               <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° bon de commande</th>
               <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Client / Fournisseur</th>
               <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Émission</th>
@@ -75,14 +75,14 @@ export default function DemoPurchaseOrdersPage() {
           </thead>
           <tbody>
             {MOCK_POS.map((po) => (
-              <tr key={po.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0">
+              <tr key={po.id} className="border-b border-[#F1F5F9] dark:border-[#162032] hover:bg-[#F8FAFC] dark:hover:bg-[#162032] transition-colors last:border-0">
                 <td className="px-5 py-4">
                   <span className="font-mono text-sm text-[#4F46E5] font-bold">{po.po_number}</span>
                 </td>
-                <td className="px-5 py-4 text-sm text-[#0F172A] font-medium">{po.client}</td>
-                <td className="px-5 py-4 text-sm text-slate-500">{formatDate(po.issue_date)}</td>
-                <td className="px-5 py-4 text-sm text-slate-500">{formatDate(po.delivery_date)}</td>
-                <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#0F172A]">
+                <td className="px-5 py-4 text-sm text-[#0F172A] dark:text-[#E2E8F0] font-medium">{po.client}</td>
+                <td className="px-5 py-4 text-sm text-slate-500 dark:text-slate-400">{formatDate(po.issue_date)}</td>
+                <td className="px-5 py-4 text-sm text-slate-500 dark:text-slate-400">{formatDate(po.delivery_date)}</td>
+                <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">
                   {formatCurrency(po.total_ttc)}
                 </td>
                 <td className="px-5 py-4">

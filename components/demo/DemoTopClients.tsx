@@ -18,11 +18,11 @@ export function DemoTopClients() {
       style={{ background: 'var(--card-glass-bg)', boxShadow: 'var(--card-glass-shadow)' }}>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-[14px] font-bold text-[#0F172A]">Top clients</h3>
+          <h3 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">Top clients</h3>
           <p className="text-[11px] text-slate-400 mt-0.5">par CA encaissé</p>
         </div>
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EFF6FF]">
-          <Users className="w-4 h-4 text-[#2563EB]" />
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EFF6FF] dark:bg-[#1E3A5F]">
+          <Users className="w-4 h-4 text-[#2563EB] dark:text-[#60A5FA]" />
         </div>
       </div>
 
@@ -32,14 +32,14 @@ export function DemoTopClients() {
             <span className="w-5 text-[11px] font-bold text-slate-300 shrink-0 text-center">{i + 1}</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-[13px] font-semibold text-[#0F172A] truncate group-hover:text-[#2563EB] transition-colors">
+                <p className="text-[13px] font-semibold text-[#0F172A] dark:text-[#E2E8F0] truncate group-hover:text-[#2563EB] transition-colors">
                   {client.name}
                 </p>
-                <p className="text-[12px] font-mono font-bold text-[#0F172A] shrink-0 ml-2">
+                <p className="text-[12px] font-mono font-bold text-[#0F172A] dark:text-[#E2E8F0] shrink-0 ml-2">
                   {formatCurrency(client.total)}
                 </p>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-[#F1F5F9] overflow-hidden">
+              <div className="h-1.5 w-full rounded-full bg-[#F1F5F9] dark:bg-[#1E3A5F] overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all"
                   style={{

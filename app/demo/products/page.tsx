@@ -27,9 +27,9 @@ export default function DemoProductsPage() {
       {/* Vue mobile : cards */}
       <div className="sm:hidden space-y-3">
         {MOCK_PRODUCTS.map((p) => (
-          <div key={p.id} className="bg-white rounded-xl border border-[#E2E8F0] px-4 py-3.5 shadow-sm">
+          <div key={p.id} className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] px-4 py-3.5 shadow-sm">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-semibold text-[#0F172A]">{p.name}</span>
+              <span className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{p.name}</span>
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                 p.active ? "bg-[#D1FAE5] text-[#065F46]" : "bg-[#F1F5F9] text-[#475569]"
               }`}>
@@ -38,18 +38,18 @@ export default function DemoProductsPage() {
             </div>
             <p className="text-xs text-slate-400 mb-2">{p.description}</p>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">{UNIT_LABELS[p.unit] ?? p.unit} · TVA {p.vat_rate}%</span>
-              <span className="font-mono text-sm font-bold text-[#0F172A]">{formatCurrency(p.unit_price_ht)} HT</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">{UNIT_LABELS[p.unit] ?? p.unit} · TVA {p.vat_rate}%</span>
+              <span className="font-mono text-sm font-bold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(p.unit_price_ht)} HT</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Vue desktop : table */}
-      <div className="hidden sm:block bg-white rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm">
+      <div className="hidden sm:block bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] overflow-hidden shadow-sm">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+            <tr className="border-b border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032]">
               <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Désignation</th>
               <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Référence</th>
               <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Unité</th>
@@ -60,17 +60,17 @@ export default function DemoProductsPage() {
           </thead>
           <tbody>
             {MOCK_PRODUCTS.map((p) => (
-              <tr key={p.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0">
+              <tr key={p.id} className="border-b border-[#F1F5F9] dark:border-[#162032] hover:bg-[#F8FAFC] dark:hover:bg-[#162032] transition-colors last:border-0">
                 <td className="px-5 py-4">
-                  <p className="text-sm font-medium text-[#0F172A]">{p.name}</p>
+                  <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">{p.name}</p>
                   <p className="text-xs text-slate-400 mt-0.5">{p.description}</p>
                 </td>
-                <td className="px-5 py-4 hidden md:table-cell font-mono text-xs text-slate-500">{p.reference}</td>
-                <td className="px-5 py-4 text-sm text-slate-500">{UNIT_LABELS[p.unit] ?? p.unit}</td>
-                <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#0F172A]">
+                <td className="px-5 py-4 hidden md:table-cell font-mono text-xs text-slate-500 dark:text-slate-400">{p.reference}</td>
+                <td className="px-5 py-4 text-sm text-slate-500 dark:text-slate-400">{UNIT_LABELS[p.unit] ?? p.unit}</td>
+                <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">
                   {formatCurrency(p.unit_price_ht)}
                 </td>
-                <td className="px-5 py-4 text-sm text-slate-500">{p.vat_rate} %</td>
+                <td className="px-5 py-4 text-sm text-slate-500 dark:text-slate-400">{p.vat_rate} %</td>
                 <td className="px-5 py-4">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                     p.active ? "bg-[#D1FAE5] text-[#065F46]" : "bg-[#F1F5F9] text-[#475569]"

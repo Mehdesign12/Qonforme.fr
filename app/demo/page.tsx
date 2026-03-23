@@ -64,7 +64,7 @@ export default function DemoDashboardPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Salutation */}
       <div>
-        <h1 className="text-xl font-bold text-[#0F172A]">Bonjour, Jean 👋</h1>
+        <h1 className="text-xl font-bold text-[#0F172A] dark:text-[#E2E8F0]">Bonjour, Jean 👋</h1>
         <p className="text-[13px] text-slate-400 mt-0.5">Voici un aperçu de votre activité ce mois-ci.</p>
       </div>
 
@@ -88,7 +88,7 @@ export default function DemoDashboardPage() {
 
         {/* Quick Actions */}
         <div>
-          <h2 className="text-[14px] font-bold text-[#0F172A] mb-4">Actions rapides</h2>
+          <h2 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-4">Actions rapides</h2>
           <div className="grid grid-cols-2 gap-3">
             {QUICK_ACTIONS.map((a) => (
               <Link key={a.href} href={a.href} className="block">
@@ -105,7 +105,7 @@ export default function DemoDashboardPage() {
                     <a.icon className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-[12px] font-bold text-[#0F172A] leading-tight">{a.label}</p>
+                    <p className="text-[12px] font-bold text-[#0F172A] dark:text-[#E2E8F0] leading-tight">{a.label}</p>
                     <p className="text-[11px] mt-0.5" style={{ color: a.color, opacity: 0.75 }}>{a.sub}</p>
                   </div>
                   <div
@@ -124,7 +124,7 @@ export default function DemoDashboardPage() {
 
         {/* Dernières factures */}
         <div className="lg:col-span-2">
-          <h2 className="text-[14px] font-bold text-[#0F172A] mb-4">Dernières factures</h2>
+          <h2 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-4">Dernières factures</h2>
           <DemoRecentInvoices />
         </div>
 
@@ -132,21 +132,21 @@ export default function DemoDashboardPage() {
 
       {/* CTA — maillage interne vers pricing et blog */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link href="/pricing" className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-[#2563EB]/30 hover:shadow-md transition-all">
+        <Link href="/pricing" className="group flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35] p-5 hover:border-[#2563EB]/30 hover:shadow-md transition-all">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF]">
             <ArrowRight className="h-4 w-4 text-[#2563EB]" />
           </div>
           <div>
-            <p className="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Prêt à démarrer ?</p>
+            <p className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0] group-hover:text-[#2563EB] transition-colors">Prêt à démarrer ?</p>
             <p className="text-[12px] text-slate-400">Voir les tarifs — à partir de 9 €/mois</p>
           </div>
         </Link>
-        <Link href="/blog" className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-[#2563EB]/30 hover:shadow-md transition-all">
+        <Link href="/blog" className="group flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35] p-5 hover:border-[#2563EB]/30 hover:shadow-md transition-all">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF]">
             <BookOpen className="h-4 w-4 text-[#2563EB]" />
           </div>
           <div>
-            <p className="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Guides et conseils</p>
+            <p className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0] group-hover:text-[#2563EB] transition-colors">Guides et conseils</p>
             <p className="text-[12px] text-slate-400">Tout savoir sur la facturation électronique 2026</p>
           </div>
         </Link>

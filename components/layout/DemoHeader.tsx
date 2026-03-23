@@ -41,6 +41,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/demo/invoices":         "Factures",
   "/demo/invoices/new":     "Nouvelle facture",
   "/demo/quotes":           "Devis",
+  "/demo/quotes/new":       "Nouveau devis",
   "/demo/clients":          "Clients",
   "/demo/products":         "Catalogue produits",
   "/demo/purchase-orders":  "Bons de commande",
@@ -77,7 +78,7 @@ interface CtaConfig {
 
 const PAGE_CTA: Record<string, CtaConfig> = {
   "/demo/invoices":        { href: "/demo/invoices/new",    label: "Nouvelle facture", icon: FileText     },
-  "/demo/quotes":          { href: "/demo/quotes",          label: "Nouveau devis",    icon: FileCheck2   },
+  "/demo/quotes":          { href: "/demo/quotes/new",      label: "Nouveau devis",    icon: FileCheck2   },
   "/demo/clients":         { href: "/demo/clients",         label: "Nouveau client",   icon: Plus         },
   "/demo/purchase-orders": { href: "/demo/purchase-orders", label: "Nouveau BdC",      icon: ShoppingCart },
   "/demo/products":        { href: "/demo/products",        label: "Nouveau produit",  icon: Plus         },
