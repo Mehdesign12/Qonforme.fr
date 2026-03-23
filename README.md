@@ -632,6 +632,7 @@ CRON_SECRET=
 | 2026-03-21 | Audit technique complet : revue architecture, sécurité, performance, testing, mobile, SEO, UX — score 77/100, top 10 priorités | `AUDIT-TECHNIQUE-2026-03-21.md` |
 | 2026-03-23 | Fix envoi factures/devis par email : le bouton "Envoyer" ne faisait que changer le statut sans appeler la route d'envoi Resend. Ajout appel `/api/{type}/{id}/send` après création + `maxDuration=30` sur toutes les routes d'envoi | `components/invoices/NewInvoiceForm.tsx`, `components/quotes/NewQuoteForm.tsx`, `app/api/invoices/[id]/send/route.ts`, `app/api/quotes/[id]/send/route.ts`, `app/api/credit-notes/[id]/send/route.ts`, `app/api/purchase-orders/[id]/send/route.ts`, `app/api/invoices/[id]/remind/route.ts` |
 | 2026-03-23 | Refonte démo : dark mode corrigé sur 12 pages, pages détail facture/devis avec données mock, formulaire création devis, bouton retour accueil dans sidebar, CTA header corrigés | `app/demo/`, `components/demo/`, `components/layout/DemoSidebar.tsx`, `components/layout/DemoHeader.tsx`, `components/invoices/DemoInvoiceForm.tsx`, `components/quotes/DemoQuoteForm.tsx` |
+| 2026-03-23 | Brand Studio v2 : suppression d'images galerie, métadonnées (ratio/instructions), skeletons, éditeur brand guidelines dynamiques, toast paste, compteur caractères, table historique | `app/admin/(panel)/brand-studio/page.tsx`, `app/api/admin/brand-studio/route.ts`, `lib/ai/gemini.ts`, `supabase/migrations/20260323_brand_studio_generations.sql` |
 
 ---
 

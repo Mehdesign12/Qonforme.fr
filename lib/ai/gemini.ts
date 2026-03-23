@@ -450,13 +450,50 @@ Réponds UNIQUEMENT avec le JSON, sans texte avant ou après.`
 }
 
 /**
- * Brand guidelines for Qonforme used in image generation.
+ * Default brand guidelines for Qonforme (used as fallback).
  */
-const BRAND_GUIDELINES = `Brand: Qonforme — French invoicing software for artisans & small businesses.
-Primary color: #2563EB (vibrant blue). Secondary: #0F172A (dark navy). Accents: #3B82F6, #EFF6FF.
-Mood: Professional yet approachable. Modern, clean, trustworthy.
-Target audience: French artisans, craftsmen, small business owners.
-Visual identity: Clean lines, blue gradients, warm human touches, French business aesthetic.`
+const DEFAULT_BRAND_GUIDELINES = {
+  primary_color: "#2563EB",
+  secondary_color: "#0F172A",
+  accent_colors: ["#3B82F6", "#EFF6FF"],
+  mood: "Professional yet approachable. Modern, clean, trustworthy.",
+  target: "French artisans, craftsmen, small business owners.",
+  visual_identity: "Clean lines, blue gradients, warm human touches, French business aesthetic.",
+}
+
+export type BrandGuidelines = typeof DEFAULT_BRAND_GUIDELINES
+
+/**
+ * Build the brand context string from guidelines object.
+ */
+function buildBrandContext(g: BrandGuidelines): string {
+  return `Brand: Qonforme — French invoicing software for artisans & small businesses.
+Primary color: ${g.primary_color}. Secondary: ${g.secondary_color}. Accents: ${g.accent_colors.join(", ")}.
+Mood: ${g.mood}
+Target audience: ${g.target}
+Visual identity: ${g.visual_identity}`
+}
+
+/**
+ * Fetch brand guidelines from app_settings, fallback to defaults.
+ */
+export async function fetchBrandGuidelines(): Promise<BrandGuidelines> {
+  try {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "brand_guidelines")
+      .single()
+    if (data?.value) {
+      const parsed = JSON.parse(data.value)
+      return { ...DEFAULT_BRAND_GUIDELINES, ...parsed }
+    }
+  } catch {
+    // fallback
+  }
+  return DEFAULT_BRAND_GUIDELINES
+}
 
 /**
  * Generate a branded image inspired by the analysis of a source image.
@@ -466,9 +503,12 @@ Visual identity: Clean lines, blue gradients, warm human touches, French busines
 export async function generateBrandedImage(
   analysis: ImageAnalysis,
   customInstructions: string = "",
-  aspectRatio: "1:1" | "16:9" | "9:16" | "4:3" | "3:4" = "16:9"
+  aspectRatio: "1:1" | "16:9" | "9:16" | "4:3" | "3:4" = "16:9",
+  brandGuidelines?: BrandGuidelines
 ): Promise<{ url: string; base64: string; mimeType: string }> {
   const apiKey = getApiKey()
+  const guidelines = brandGuidelines || DEFAULT_BRAND_GUIDELINES
+  const brandContext = buildBrandContext(guidelines)
 
   const imagePrompt = `Generate a high-quality image with these specifications:
 
@@ -482,9 +522,9 @@ MOOD & ATMOSPHERE: ${analysis.mood}
 
 KEY ELEMENTS TO INCLUDE: ${analysis.elements.join(", ")}
 
-COLOR PALETTE: Use the brand colors (vibrant blue #2563EB, dark navy #0F172A, light blue #EFF6FF) as the dominant palette, while incorporating the mood of these inspiration colors: ${analysis.colors.join(", ")}
+COLOR PALETTE: Use the brand colors (${guidelines.primary_color}, ${guidelines.secondary_color}, ${guidelines.accent_colors.join(", ")}) as the dominant palette, while incorporating the mood of these inspiration colors: ${analysis.colors.join(", ")}
 
-BRAND CONTEXT: ${BRAND_GUIDELINES}
+BRAND CONTEXT: ${brandContext}
 
 ${customInstructions ? `ADDITIONAL INSTRUCTIONS: ${customInstructions}` : ""}
 
