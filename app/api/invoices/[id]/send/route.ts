@@ -6,6 +6,9 @@ import { generateInvoicePdf } from "@/lib/pdf/invoice"
 
 interface Params { params: Promise<{ id: string }> }
 
+// Timeout étendu : génération PDF + envoi Resend peut prendre > 10s
+export const maxDuration = 30
+
 export async function POST(_req: NextRequest, { params }: Params) {
   try {
     const supabase = await createClient()
@@ -13,6 +16,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
     if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
     const { id } = await params
+    console.log(`[invoice-send] Début envoi facture ${id} par user ${user.id}`)
 
     // 1. Facture + client
     const { data: invoice, error: invErr } = await supabase
@@ -21,9 +25,13 @@ export async function POST(_req: NextRequest, { params }: Params) {
       .eq("id", id)
       .eq("user_id", user.id)
       .single()
-    if (invErr || !invoice) return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
+    if (invErr || !invoice) {
+      console.error(`[invoice-send] Facture introuvable: ${invErr?.message}`)
+      return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
+    }
 
     const clientEmail = invoice.client?.email
+    console.log(`[invoice-send] Client: ${invoice.client?.name}, email: ${clientEmail}`)
     if (!clientEmail) {
       return NextResponse.json({ error: "Le client n'a pas d'adresse email" }, { status: 422 })
     }
@@ -41,8 +49,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const clientName  = invoice.client?.name ?? ""
 
     // 3. Générer le PDF via la lib partagée — identique au téléchargement (logo, SIRET, etc.)
+    console.log(`[invoice-send] Génération PDF...`)
     const pdfBytes  = await generateInvoicePdf({ invoice, company })
     const pdfBuffer = Buffer.from(pdfBytes)
+    console.log(`[invoice-send] PDF généré (${pdfBuffer.length} bytes)`)
 
     // 4. Construire et envoyer l'email
     const { subject, html } = buildInvoiceEmail({
@@ -64,6 +74,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const cc        = senderEmail ? [senderEmail] : []
     const ccSubject = `Copie — Facture ${invoice.invoice_number} pour ${clientName}`
 
+    console.log(`[invoice-send] Envoi email à ${clientEmail}, CC: ${cc.join(",")}`)
     await sendEmail({
       to:          clientEmail,
       subject,
@@ -77,6 +88,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
         content:  pdfBuffer,
       }],
     })
+    console.log(`[invoice-send] Email envoyé avec succès`)
 
     // 5. Mettre à jour statut + sent_at
     await supabase

@@ -6,6 +6,8 @@ import { generatePurchaseOrderPdf } from "@/lib/pdf/purchase-order"
 
 type Params = { params: Promise<{ id: string }> }
 
+export const maxDuration = 30
+
 export async function POST(_req: NextRequest, { params }: Params) {
   try {
     const supabase = await createClient()
