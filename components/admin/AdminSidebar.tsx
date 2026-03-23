@@ -14,6 +14,7 @@ import {
   LogOut,
   Activity,
   Bot,
+  Palette,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -25,6 +26,7 @@ const NAV = [
   { href: '/admin/errors',        icon: AlertTriangle,   label: 'Erreurs' },
   { href: '/admin/blog',          icon: FileText,        label: 'Blog', exact: true },
   { href: '/admin/blog/ai',      icon: Bot,             label: 'Blog IA' },
+  { href: '/admin/brand-studio',  icon: Palette,         label: 'Brand Studio' },
   { href: '/admin/health',        icon: Activity,        label: 'Santé système' },
 ]
 
