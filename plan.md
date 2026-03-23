@@ -1,82 +1,94 @@
-# Plan : Diversité des sujets + qualité des images blog IA
+# Plan — Refonte démo : dark mode, fonctionnalités, mobile, navigation
 
-## Diagnostic
-
-### Problème 1 — Aucune diversité de sujets (CRITIQUE)
-**Cause racine** : `getNextTopic()` compare les slugs DB contre les slugs dérivés des titres `SEO_TOPICS`. Mais Gemini génère son **propre titre** (différent du sujet fourni), et le slug est en plus suffixé d'un timestamp. Résultat : la comparaison ne matche jamais → le système retourne **toujours le 1er sujet**.
-
-Exemple :
-- Sujet fourni : "Facturation électronique obligatoire 2026 : ce que les artisans doivent savoir"
-- Titre Gemini : "Facturation Électronique 2026 : Le Guide Complet pour les Artisans et TPE"
-- Slug DB : `facturation-electronique-2026-le-guide-complet-artisans-tpe-k9f2a`
-- Slug attendu par `getNextTopic` : `facturation-electronique-obligatoire-2026-ce-que-les-artisans-doivent-savoir`
-- → Jamais de match → toujours le même sujet
-
-### Problème 2 — Imagen génère du texte charabia sur les images
-Le prompt mentionne "Qonforme", le titre de l'article, et le code hex "#2563EB". Imagen 4.0 interprète ces éléments textuels et tente de les dessiner → résultat illisible ("Mandatire Electronuce", "#2563EB" en badge, etc.).
-
-### Problème 3 — L'illustration ne remplit pas tout le cadre
-Le prompt ne précise pas assez que le visuel doit être edge-to-edge sans marges.
+## Contexte
+La démo (`/demo/*`) a plusieurs problèmes :
+- Couleurs cassées en dark mode (hex hardcodés au lieu de `dark:` variants)
+- Impossible de créer factures/devis sur mobile (et partiellement sur desktop)
+- Pas de prévisualisation PDF, pas de pages détail
+- Aucun bouton pour revenir à la landing page
 
 ---
 
-## Modifications
+## 1. Fix dark mode sur toutes les pages démo
 
-### Étape 1 — Corriger la rotation des sujets
+**Problème** : Les couleurs de statut (badges, filtres, textes, backgrounds de cards) sont en hex hardcodé (`#F1F5F9`, `#0F172A`, etc.) — illisibles en mode sombre.
 
-**Fichier** : `lib/ai/seo-topics.ts`
-- Changer `getNextTopic(existingSlugs: string[])` → `getNextTopic(usedTopics: string[])`
-- Comparer par **inclusion du sujet original** dans le champ `ai_prompt` stocké en DB (qui contient `"Sujet: {topic} | Mots-clés: ..."`)
+**Fichiers à corriger (12 fichiers)** :
+- `app/demo/invoices/page.tsx` — badges statut + filtres + textes
+- `app/demo/quotes/page.tsx` — badges statut + textes
+- `app/demo/purchase-orders/page.tsx` — badges statut + textes
+- `app/demo/credit-notes/page.tsx` — badges statut + textes
+- `app/demo/clients/page.tsx` — cards clients + textes
+- `app/demo/products/page.tsx` — tableau produits + textes
+- `app/demo/settings/page.tsx` — cards paramètres
+- `app/demo/settings/ppf/page.tsx` — contenu PPF
+- `components/demo/DemoRecentInvoices.tsx` — badges statut
+- `components/demo/DemoDashboardStats.tsx` — textes KPI
+- `components/demo/DemoRevenueChart.tsx` — textes graphique
+- `components/demo/DemoTopClients.tsx` — textes classement
 
-**Fichiers** : `app/api/admin/blog/generate/route.ts` + `app/api/cron/generate-blog/route.ts`
-- Fetch `ai_prompt` au lieu de `slug` depuis les posts existants
-- Passer les `ai_prompt` à `getNextTopic()` pour matcher les sujets déjà couverts
-
-### Étape 2 — Enrichir les sujets SEO
-
-**Fichier** : `lib/ai/seo-topics.ts`
-- Ajouter ~15 nouveaux sujets dans des catégories complémentaires (toujours en lien avec Qonforme) :
-  - **Gestion d'entreprise** : tableaux de bord, suivi de CA, gestion administrative
-  - **Comptabilité pratique** : rapprochement bancaire, bilan simplifié, charges déductibles
-  - **Digital & productivité** : outils numériques artisan, gain de temps, paperasse zéro
-  - **Réglementaire élargi** : RGPD pour TPE, assurances obligatoires artisan, URSSAF
-  - **Cas d'usage / témoignages** : parcours type d'un artisan qui se numérise
-
-### Étape 3 — Réécrire le prompt image (zéro texte + plein cadre)
-
-**Fichier** : `lib/ai/gemini.ts`
-- **Supprimer toute mention de nom de marque, titre d'article, et code hex** du prompt image — c'est exactement ce qu'Imagen tente de dessiner
-- Insistance triple : "absolutely no text, no words, no letters, no numbers, no labels, no watermarks anywhere in the image"
-- Ajout explicite : "full-bleed illustration filling the entire canvas edge-to-edge, no margins, no borders, no empty background"
-- Style : "vector isometric illustration" avec palette bleue et blanche (sans code hex)
-- Varier le sujet visuel selon la **catégorie** du topic
-
-### Étape 4 — Passer la catégorie à `generateCoverImage`
-
-**Fichier** : `lib/ai/gemini.ts`
-- Nouveau paramètre `category` : `generateCoverImage(title, excerpt, category)`
-- Mapping catégorie → éléments visuels :
-  - `réglementation` → documents officiels, sceaux, balance juridique
-  - `tutoriel` → écrans, étapes, flèches de workflow
-  - `guide` → checklists, livres, loupe
-  - `comparatif` → graphiques, barres de comparaison, balances
-  - `pratique` → outils métier (marteau, clé, pinceau) + facture
-  - `actualité` → calendrier, horloge, nouvelles
-  - `gestion` → tableaux de bord, graphiques CA, calculatrice
-  - `comptabilité` → livres de comptes, colonnes chiffres, bilan
-  - `digital` → cloud, smartphone, connexions réseau
-  - `cas-usage` → personnage artisan stylisé, atelier
-
-**Fichiers** : routes admin + cron
-- Passer la catégorie du topic sélectionné (ou `"guide"` par défaut pour les topics custom)
+**Approche** : Remplacer les styles hardcodés par des classes Tailwind avec variantes `dark:` (ex: `bg-[#F1F5F9] dark:bg-[#1E3A5F]`, `text-[#0F172A] dark:text-[#E2E8F0]`). Aligner sur les couleurs du vrai dashboard.
 
 ---
 
-## Fichiers modifiés
+## 2. Bouton retour vers la landing
 
-| Fichier | Modification |
-|---------|-------------|
-| `lib/ai/seo-topics.ts` | Fix rotation + ~15 nouveaux sujets |
-| `lib/ai/gemini.ts` | Réécriture prompt image + paramètre catégorie |
-| `app/api/admin/blog/generate/route.ts` | Fetch `ai_prompt` + passer catégorie |
-| `app/api/cron/generate-blog/route.ts` | Fetch `ai_prompt` + passer catégorie |
+**Problème** : Aucun moyen de quitter la démo et revenir à l'accueil.
+
+**Action** :
+- `DemoSidebar.tsx` — Ajouter un lien "Retour à l'accueil" (icône Home, lien vers `/`) en haut ou en bas de la sidebar
+- `DemoHeader.tsx` — Ajouter un lien visible sur mobile aussi
+- `DemoMobileBottomNav` — Optionnel : remplacer un onglet ou ajouter dans le menu drawer
+
+---
+
+## 3. Pages détail mock (factures + devis)
+
+**Problème** : Cliquer sur une facture/devis dans la liste ne mène nulle part. Pas de page détail.
+
+**Action** :
+- `app/demo/invoices/[id]/page.tsx` — Page détail facture mock (affiche données fictives, boutons PDF/envoyer/statut en UI-only avec toast "Créez un compte pour cette fonctionnalité")
+- `app/demo/quotes/[id]/page.tsx` — Page détail devis mock (même pattern)
+- Rendre les lignes cliquables dans les listes existantes (lien vers `/demo/invoices/{id}`)
+
+---
+
+## 4. Formulaire de création devis
+
+**Problème** : Pas de formulaire devis en démo. Le lien "Nouveau devis" n'a pas de page.
+
+**Action** :
+- `app/demo/quotes/new/page.tsx` — Créer page avec `DemoQuoteForm`
+- `components/demo/DemoQuoteForm.tsx` — Formulaire mock (même pattern que `DemoInvoiceForm` : clients fictifs, lignes, calcul TVA, boutons aperçu/envoyer en UI-only)
+
+---
+
+## 5. Prévisualisation PDF de test
+
+**Problème** : Aucun moyen de voir un PDF dans la démo.
+
+**Action** :
+- Ajouter un PDF statique d'exemple dans `public/demo/` (ex: `exemple-facture.pdf`)
+- Bouton "Voir un exemple PDF" sur la page détail facture mock → ouvre le PDF dans un nouvel onglet
+
+---
+
+## 6. Vérification mobile globale
+
+**Action** : Passe finale sur toutes les pages corrigées :
+- Formulaires scrollables et bien spacés
+- Boutons assez grands pour le tactile (min 44px)
+- Cards empilées verticalement sur mobile
+- Pas de débordement horizontal
+- Dark mode correct sur mobile aussi
+
+---
+
+## Ordre d'exécution
+
+1. **Dark mode** (12 fichiers) — le plus visible, le plus impactant
+2. **Bouton retour landing** — rapide, important UX
+3. **Pages détail mock** (factures + devis) — navigation fonctionnelle
+4. **Formulaire devis** — fonctionnalité manquante
+5. **PDF de test** — aperçu visuel
+6. **Passe mobile** — vérification finale responsive
