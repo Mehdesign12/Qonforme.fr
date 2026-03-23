@@ -13,6 +13,10 @@ import {
   ZoomIn,
   Copy,
   Check,
+  Trash2,
+  Settings,
+  ChevronDown,
+  Save,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
@@ -27,8 +31,12 @@ interface ImageAnalysis {
 }
 
 interface GalleryImage {
-  name: string
+  id: string | null
+  file_name: string
   url: string
+  aspect_ratio: string | null
+  instructions: string | null
+  analysis: ImageAnalysis | null
   created_at: string
 }
 
@@ -62,6 +70,47 @@ export default function BrandStudioPage() {
   const [loadingGallery, setLoadingGallery] = useState(true)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
+  const [deletingImage, setDeletingImage] = useState<string | null>(null)
+
+  // Brand guidelines state
+  const [guidelinesOpen, setGuidelinesOpen] = useState(false)
+  const [guidelinesLoading, setGuidelinesLoading] = useState(false)
+  const [guidelinesSaving, setGuidelinesSaving] = useState(false)
+  const [guidelines, setGuidelines] = useState({
+    primary_color: '#2563EB',
+    secondary_color: '#0F172A',
+    accent_colors: ['#3B82F6', '#EFF6FF'],
+    mood: 'Professional yet approachable. Modern, clean, trustworthy.',
+    target: 'French artisans, craftsmen, small business owners.',
+    visual_identity: 'Clean lines, blue gradients, warm human touches, French business aesthetic.',
+  })
+
+  // ── Delete image ───────────────────────────────────────────────────────
+  const handleDeleteImage = async (fileName: string) => {
+    if (deletingImage) return
+    setDeletingImage(fileName)
+    try {
+      const res = await fetch(`/api/admin/brand-studio?name=${encodeURIComponent(fileName)}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Erreur')
+      }
+      setGallery((prev) => prev.filter((img) => img.file_name !== fileName))
+      if (previewImage) {
+        const deletedImg = gallery.find((img) => img.file_name === fileName)
+        if (deletedImg && previewImage === deletedImg.url) {
+          setPreviewImage(null)
+        }
+      }
+      toast.success('Image supprimée')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de la suppression')
+    } finally {
+      setDeletingImage(null)
+    }
+  }
 
   // ── Gallery ──────────────────────────────────────────────────────────────
   const fetchGallery = useCallback(async () => {
@@ -79,6 +128,44 @@ export default function BrandStudioPage() {
   }, [])
 
   useEffect(() => { fetchGallery() }, [fetchGallery])
+
+  // ── Brand guidelines ───────────────────────────────────────────────────
+  const fetchGuidelines = useCallback(async () => {
+    setGuidelinesLoading(true)
+    try {
+      const res = await fetch('/api/admin/settings?key=brand_guidelines')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.value) {
+          const parsed = JSON.parse(data.value)
+          setGuidelines((prev) => ({ ...prev, ...parsed }))
+        }
+      }
+    } catch {
+      // use defaults
+    } finally {
+      setGuidelinesLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchGuidelines() }, [fetchGuidelines])
+
+  const saveGuidelines = async () => {
+    setGuidelinesSaving(true)
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'brand_guidelines', value: JSON.stringify(guidelines) }),
+      })
+      if (!res.ok) throw new Error('Erreur')
+      toast.success('Brand guidelines sauvegardées')
+    } catch {
+      toast.error('Erreur lors de la sauvegarde')
+    } finally {
+      setGuidelinesSaving(false)
+    }
+  }
 
   // ── File upload ──────────────────────────────────────────────────────────
   const handleFileSelect = (file: File) => {
@@ -123,6 +210,7 @@ export default function BrandStudioPage() {
         if (file) {
           e.preventDefault()
           handleFileSelect(file)
+          toast.success('Image collée depuis le presse-papier')
           break
         }
       }
@@ -394,12 +482,16 @@ export default function BrandStudioPage() {
                 </label>
                 <textarea
                   value={instructions}
-                  onChange={(e) => setInstructions(e.target.value)}
+                  onChange={(e) => setInstructions(e.target.value.slice(0, 500))}
                   placeholder="Ex: Mettre en avant un artisan plombier, ajouter des outils en arrière-plan…"
                   disabled={generating}
                   rows={3}
+                  maxLength={500}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 resize-none"
                 />
+                <p className={`text-[11px] mt-1 text-right ${instructions.length > 450 ? 'text-amber-500' : 'text-slate-400'}`}>
+                  {instructions.length}/500
+                </p>
               </div>
 
               {/* Aspect ratio */}
@@ -498,6 +590,165 @@ export default function BrandStudioPage() {
         </div>
       </div>
 
+      {/* Brand Guidelines Editor (collapsible) */}
+      <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] overflow-hidden">
+        <button
+          onClick={() => setGuidelinesOpen(!guidelinesOpen)}
+          className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-50 dark:hover:bg-[#162032] transition-colors"
+        >
+          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Settings className="w-4 h-4 text-[#2563EB]" />
+            Brand Guidelines
+          </h2>
+          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${guidelinesOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {guidelinesOpen && (
+          <div className="px-5 pb-5 pt-2 border-t border-slate-100 dark:border-[#1E3A5F] space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+            {guidelinesLoading ? (
+              <div className="py-6 text-center">
+                <Loader2 className="w-5 h-5 mx-auto animate-spin text-slate-300" />
+              </div>
+            ) : (
+              <>
+                {/* Colors row */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Couleur primaire</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={guidelines.primary_color}
+                        onChange={(e) => setGuidelines({ ...guidelines, primary_color: e.target.value })}
+                        className="w-8 h-8 rounded border border-border cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={guidelines.primary_color}
+                        onChange={(e) => setGuidelines({ ...guidelines, primary_color: e.target.value })}
+                        className="flex-1 px-2 py-1.5 text-xs font-mono border border-border rounded-lg bg-background text-foreground"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Couleur secondaire</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={guidelines.secondary_color}
+                        onChange={(e) => setGuidelines({ ...guidelines, secondary_color: e.target.value })}
+                        className="w-8 h-8 rounded border border-border cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={guidelines.secondary_color}
+                        onChange={(e) => setGuidelines({ ...guidelines, secondary_color: e.target.value })}
+                        className="flex-1 px-2 py-1.5 text-xs font-mono border border-border rounded-lg bg-background text-foreground"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Accent 1</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={guidelines.accent_colors[0] || '#3B82F6'}
+                        onChange={(e) => {
+                          const newAccents = [...guidelines.accent_colors]
+                          newAccents[0] = e.target.value
+                          setGuidelines({ ...guidelines, accent_colors: newAccents })
+                        }}
+                        className="w-8 h-8 rounded border border-border cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={guidelines.accent_colors[0] || '#3B82F6'}
+                        onChange={(e) => {
+                          const newAccents = [...guidelines.accent_colors]
+                          newAccents[0] = e.target.value
+                          setGuidelines({ ...guidelines, accent_colors: newAccents })
+                        }}
+                        className="flex-1 px-2 py-1.5 text-xs font-mono border border-border rounded-lg bg-background text-foreground"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Accent 2</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={guidelines.accent_colors[1] || '#EFF6FF'}
+                        onChange={(e) => {
+                          const newAccents = [...guidelines.accent_colors]
+                          newAccents[1] = e.target.value
+                          setGuidelines({ ...guidelines, accent_colors: newAccents })
+                        }}
+                        className="w-8 h-8 rounded border border-border cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={guidelines.accent_colors[1] || '#EFF6FF'}
+                        onChange={(e) => {
+                          const newAccents = [...guidelines.accent_colors]
+                          newAccents[1] = e.target.value
+                          setGuidelines({ ...guidelines, accent_colors: newAccents })
+                        }}
+                        className="flex-1 px-2 py-1.5 text-xs font-mono border border-border rounded-lg bg-background text-foreground"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Text fields */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Ambiance / Mood</label>
+                    <textarea
+                      value={guidelines.mood}
+                      onChange={(e) => setGuidelines({ ...guidelines, mood: e.target.value })}
+                      rows={2}
+                      className="w-full px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-foreground resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Audience cible</label>
+                    <textarea
+                      value={guidelines.target}
+                      onChange={(e) => setGuidelines({ ...guidelines, target: e.target.value })}
+                      rows={2}
+                      className="w-full px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-foreground resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Identité visuelle</label>
+                    <textarea
+                      value={guidelines.visual_identity}
+                      onChange={(e) => setGuidelines({ ...guidelines, visual_identity: e.target.value })}
+                      rows={2}
+                      className="w-full px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-foreground resize-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    onClick={saveGuidelines}
+                    disabled={guidelinesSaving}
+                    className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-[#1d4ed8] transition-colors disabled:opacity-50"
+                  >
+                    {guidelinesSaving ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Sauvegarde…</>
+                    ) : (
+                      <><Save className="w-4 h-4" /> Sauvegarder</>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Gallery */}
       <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] overflow-hidden">
         <div className="px-5 py-3 border-b border-slate-100 dark:border-[#1E3A5F]">
@@ -508,9 +759,15 @@ export default function BrandStudioPage() {
         </div>
 
         {loadingGallery ? (
-          <div className="px-4 py-12 text-center">
-            <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-slate-300" />
-            <p className="text-sm text-slate-400">Chargement…</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="rounded-xl overflow-hidden border border-slate-100 dark:border-[#1E3A5F]">
+                <div className="w-full h-32 bg-slate-100 dark:bg-[#162032] animate-pulse" />
+                <div className="px-2 py-1.5 space-y-1">
+                  <div className="h-2.5 w-16 bg-slate-100 dark:bg-[#162032] rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : gallery.length === 0 ? (
           <div className="px-4 py-12 text-center">
@@ -524,13 +781,13 @@ export default function BrandStudioPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-4">
             {gallery.map((img) => (
               <div
-                key={img.name}
+                key={img.file_name}
                 className="group relative rounded-xl overflow-hidden border border-slate-100 dark:border-[#1E3A5F] cursor-pointer hover:ring-2 hover:ring-[#2563EB] transition-all"
                 onClick={() => setPreviewImage(img.url)}
               >
                 <Image
                   src={img.url}
-                  alt={img.name}
+                  alt={img.file_name}
                   width={300}
                   height={200}
                   className="w-full h-32 object-cover"
@@ -539,12 +796,38 @@ export default function BrandStudioPage() {
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                   <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-black/60 to-transparent">
+                {/* Delete button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteImage(img.file_name) }}
+                  disabled={deletingImage === img.file_name}
+                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-all disabled:opacity-50"
+                  title="Supprimer"
+                >
+                  {deletingImage === img.file_name ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3 h-3" />
+                  )}
+                </button>
+                {/* Bottom info */}
+                <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/60 to-transparent">
                   <p className="text-[10px] text-white/80 truncate">
                     {img.created_at
                       ? new Date(img.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-                      : img.name}
+                      : img.file_name}
                   </p>
+                  {(img.aspect_ratio || img.instructions) && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {img.aspect_ratio && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/20 text-white/90">{img.aspect_ratio}</span>
+                      )}
+                      {img.instructions && (
+                        <span className="text-[9px] text-white/70 truncate" title={img.instructions}>
+                          {img.instructions.length > 25 ? img.instructions.slice(0, 25) + '…' : img.instructions}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
