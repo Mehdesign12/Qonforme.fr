@@ -6,6 +6,8 @@ import { generateCreditNotePdf } from "@/lib/pdf/credit-note"
 
 interface Params { params: Promise<{ id: string }> }
 
+export const maxDuration = 30
+
 export async function POST(_req: NextRequest, { params }: Params) {
   try {
     const supabase = await createClient()
