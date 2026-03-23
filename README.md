@@ -631,6 +631,7 @@ CRON_SECRET=
 | 2026-03-19 | Admin toggle auto-publish blog : table `app_settings`, API `/api/admin/settings`, toggle UI dans `/admin/blog/ai`, cron lit depuis DB (fallback env var) | `supabase/migrations/20260319_create_app_settings.sql`, `app/api/admin/settings/route.ts`, `app/admin/(panel)/blog/ai/page.tsx`, `app/api/cron/generate-blog/route.ts` |
 | 2026-03-21 | Audit technique complet : revue architecture, sécurité, performance, testing, mobile, SEO, UX — score 77/100, top 10 priorités | `AUDIT-TECHNIQUE-2026-03-21.md` |
 | 2026-03-23 | Fix envoi factures/devis par email : le bouton "Envoyer" ne faisait que changer le statut sans appeler la route d'envoi Resend. Ajout appel `/api/{type}/{id}/send` après création + `maxDuration=30` sur toutes les routes d'envoi | `components/invoices/NewInvoiceForm.tsx`, `components/quotes/NewQuoteForm.tsx`, `app/api/invoices/[id]/send/route.ts`, `app/api/quotes/[id]/send/route.ts`, `app/api/credit-notes/[id]/send/route.ts`, `app/api/purchase-orders/[id]/send/route.ts`, `app/api/invoices/[id]/remind/route.ts` |
+| 2026-03-23 | Refonte démo : dark mode corrigé sur 12 pages, pages détail facture/devis avec données mock, formulaire création devis, bouton retour accueil dans sidebar, CTA header corrigés | `app/demo/`, `components/demo/`, `components/layout/DemoSidebar.tsx`, `components/layout/DemoHeader.tsx`, `components/invoices/DemoInvoiceForm.tsx`, `components/quotes/DemoQuoteForm.tsx` |
 
 ---
 
