@@ -137,7 +137,7 @@ export default function NewQuoteForm() {
         valid_until: form.valid_until,
         notes:       form.notes || null,
         lines:       enrichedLines,
-        status:      action === "draft" ? "draft" : "sent",
+        status:      "draft",
       }
 
       const res  = await fetch("/api/quotes", {
@@ -148,7 +148,20 @@ export default function NewQuoteForm() {
       const json = await res.json()
       if (!res.ok) { toast.error(json.error || "Erreur lors de la sauvegarde"); return }
 
-      toast.success(action === "send" ? "Devis créé !" : "Brouillon sauvegardé !")
+      // Si action "send" → envoyer réellement l'email via /api/quotes/{id}/send
+      if (action === "send" && json.quote?.id) {
+        const sendRes = await fetch(`/api/quotes/${json.quote.id}/send`, { method: "POST" })
+        const sendJson = await sendRes.json()
+        if (!sendRes.ok) {
+          toast.error(sendJson.error ?? "Devis créé mais l'envoi par email a échoué")
+          router.push(`/quotes/${json.quote.id}`)
+          router.refresh()
+          return
+        }
+        toast.success(`Devis envoyé à ${sendJson.sentTo}`)
+      } else {
+        toast.success("Brouillon sauvegardé !")
+      }
       router.push(`/quotes/${json.quote.id}`)
       router.refresh()
     } catch {

@@ -176,7 +176,7 @@ export default function NewInvoiceForm() {
         due_date:   form.due_date,
         notes:      form.notes || null,
         lines:      enrichedLines,
-        status:     action === "draft" ? "draft" : "sent",
+        status:     "draft",
       }
       const res  = await fetch("/api/invoices", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
@@ -193,7 +193,21 @@ export default function NewInvoiceForm() {
         }
         return
       }
-      toast.success(action === "send" ? "Facture créée !" : "Brouillon sauvegardé !")
+
+      // Si action "send" → envoyer réellement l'email via /api/invoices/{id}/send
+      if (action === "send" && json.invoice?.id) {
+        const sendRes = await fetch(`/api/invoices/${json.invoice.id}/send`, { method: "POST" })
+        const sendJson = await sendRes.json()
+        if (!sendRes.ok) {
+          toast.error(sendJson.error ?? "Facture créée mais l'envoi par email a échoué")
+          router.push(`/invoices/${json.invoice.id}`)
+          router.refresh()
+          return
+        }
+        toast.success(`Facture envoyée à ${sendJson.sentTo}`)
+      } else {
+        toast.success("Brouillon sauvegardé !")
+      }
       router.push("/invoices")
       router.refresh()
     } catch {
