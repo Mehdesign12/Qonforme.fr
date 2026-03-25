@@ -635,6 +635,7 @@ CRON_SECRET=
 | 2026-03-23 | Brand Studio v2 : suppression d'images galerie, métadonnées (ratio/instructions), skeletons, éditeur brand guidelines dynamiques, toast paste, compteur caractères, table historique | `app/admin/(panel)/brand-studio/page.tsx`, `app/api/admin/brand-studio/route.ts`, `lib/ai/gemini.ts`, `supabase/migrations/20260323_brand_studio_generations.sql` |
 | 2026-03-25 | Thème clair par défaut : suppression de l'auto dark mode nocturne (18h-5h), le thème initial est toujours "light", l'utilisateur bascule manuellement via le toggle desktop | `components/layout/AutoDarkMode.tsx` |
 | 2026-03-25 | Bannière info personnalisation factures : tip horizontal (icône Sparkles, CTA "Configurer" → `/settings/invoices`), masquée si logo existant ou fermée par l'utilisateur, responsive mobile/desktop, répliquée dans la démo | `components/invoices/NewInvoiceForm.tsx`, `components/invoices/DemoInvoiceForm.tsx` |
+| 2026-03-25 | Fix page démo factures : ajout `'use client'` (onClick sur Server Component causait un crash) | `app/demo/invoices/page.tsx` |
 
 ---
 
