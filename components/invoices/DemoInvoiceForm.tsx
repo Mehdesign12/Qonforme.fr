@@ -4,7 +4,7 @@ import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { Plus, Trash2, Eye, Send, Lock } from "lucide-react"
+import { Plus, Trash2, Eye, Send, Lock, Palette, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -76,7 +76,9 @@ export default function DemoInvoiceForm() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex gap-6 justify-center">
+      {/* ── Colonne formulaire ── */}
+      <div className="space-y-6 w-full max-w-[860px]">
       {/* Bandeau démo */}
       <div className="flex items-center justify-between gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-sm">
         <div className="flex items-center gap-2">
@@ -225,6 +227,33 @@ export default function DemoInvoiceForm() {
           Envoyer la facture
         </Button>
       </div>
+
+      </div>{/* fin colonne formulaire */}
+
+      {/* ── Cadran info identité — desktop uniquement ── */}
+      <div className="hidden lg:block w-[260px] flex-shrink-0">
+        <div className="sticky top-24 rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35] p-5 shadow-sm space-y-4">
+          <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] dark:bg-[#162032] flex items-center justify-center">
+            <Palette className="w-5 h-5 text-[#2563EB]" />
+          </div>
+          <div>
+            <h3 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">
+              Personnalisez vos documents
+            </h3>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+              Ajoutez votre logo et vos couleurs pour que vos factures reflètent votre identité.
+            </p>
+          </div>
+          <Link
+            href="/signup"
+            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-semibold text-[#2563EB] bg-[#EFF6FF] hover:bg-[#DBEAFE] rounded-xl transition-colors dark:bg-[#162032] dark:text-[#60A5FA] dark:hover:bg-[#1E3A5F]"
+          >
+            Créer mon compte
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+
     </div>
   )
 }
