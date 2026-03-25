@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Plus, Trash2, Loader2, Eye, Send, ChevronRight, Palette, ArrowRight } from "lucide-react"
+import { Plus, Trash2, Loader2, Eye, Send, ChevronRight, Lightbulb, X } from "lucide-react"
 import Link from "next/link"
 import { calculateLineTotals, calculateInvoiceTotals, formatCurrency, VAT_RATES } from "@/lib/utils/invoice"
 import { ProductCombobox, type ProductSuggestion } from "@/components/products/ProductCombobox"
@@ -47,6 +47,8 @@ export default function NewInvoiceForm() {
   const [clients,        setClients]        = useState<Client[]>([])
   const [clientsLoading, setClientsLoading] = useState(true)
   const [errors,         setErrors]         = useState<Record<string, string>>({})
+  const [hasLogo,        setHasLogo]        = useState(true) // true par défaut = masqué pendant le chargement
+  const [tipDismissed,   setTipDismissed]   = useState(false)
 
   const [form, setForm] = useState<FormState>({
     client_id: "", issue_date: today, due_date: in30days, notes: "", lines: [newLine()],
@@ -57,6 +59,10 @@ export default function NewInvoiceForm() {
       .then(r => r.json())
       .then(json => { if (json.clients) setClients(json.clients) })
       .finally(() => setClientsLoading(false))
+    fetch("/api/company")
+      .then(r => r.json())
+      .then(json => { setHasLogo(!!json?.company?.logo_url) })
+      .catch(() => {})
   }, [])
 
   const setField = (key: keyof Omit<FormState, "lines">) =>
@@ -218,10 +224,28 @@ export default function NewInvoiceForm() {
     }
   }
 
+  const showTip = !hasLogo && !tipDismissed
+
   return (
     <div className="flex gap-6 justify-center pb-8">
       {/* ── Colonne formulaire ── */}
       <div className="space-y-4 w-full max-w-[860px]">
+
+      {/* ── Tip identité — mobile (bannière discrète en haut) ── */}
+      {showTip && (
+        <div className="lg:hidden flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50">
+          <Lightbulb className="w-4 h-4 text-[#2563EB] dark:text-[#60A5FA] shrink-0" />
+          <p className="text-[13px] text-slate-600 dark:text-slate-300 flex-1">
+            <Link href="/settings/invoices" className="font-semibold text-[#2563EB] dark:text-[#60A5FA] hover:underline">
+              Ajoutez votre logo
+            </Link>
+            {" "}pour personnaliser vos factures.
+          </p>
+          <button onClick={() => setTipDismissed(true)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* ── Infos de facturation ── */}
       <div className="rounded-2xl border border-white/60 p-5 space-y-4 dark:border-[#1E3A5F]" style={cardStyle}>
@@ -482,29 +506,35 @@ export default function NewInvoiceForm() {
 
       </div>{/* fin colonne formulaire */}
 
-      {/* ── Cadran info identité — desktop uniquement ── */}
-      <div className="hidden lg:block w-[260px] flex-shrink-0">
-        <div className="sticky top-24 rounded-2xl border border-white/60 p-5 space-y-4 dark:border-[#1E3A5F]" style={cardStyle}>
-          <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] dark:bg-[#162032] flex items-center justify-center">
-            <Palette className="w-5 h-5 text-[#2563EB]" />
+      {/* ── Tip identité — desktop (sidebar) ── */}
+      {showTip && (
+        <div className="hidden lg:block w-[280px] flex-shrink-0">
+          <div className="sticky top-24 rounded-2xl border border-blue-100 dark:border-blue-900/50 bg-gradient-to-b from-blue-50 to-white dark:from-blue-950/30 dark:to-[#0B1120] p-5 space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="w-9 h-9 rounded-lg bg-[#2563EB]/10 dark:bg-[#2563EB]/20 flex items-center justify-center">
+                <Lightbulb className="w-[18px] h-[18px] text-[#2563EB] dark:text-[#60A5FA]" />
+              </div>
+              <button onClick={() => setTipDismissed(true)} className="p-1 -mt-1 -mr-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div>
+              <h3 className="text-[14px] font-semibold text-[#0F172A] dark:text-[#E2E8F0]">
+                Ajoutez votre identit&eacute;
+              </h3>
+              <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                Vos factures seront plus professionnelles avec votre logo et vos informations d&apos;entreprise.
+              </p>
+            </div>
+            <Link
+              href="/settings/invoices"
+              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-[13px] font-semibold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl transition-colors shadow-sm"
+            >
+              Configurer mes documents
+            </Link>
           </div>
-          <div>
-            <h3 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">
-              Personnalisez vos documents
-            </h3>
-            <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
-              Ajoutez votre logo et vos couleurs pour que vos factures reflètent votre identité.
-            </p>
-          </div>
-          <Link
-            href="/settings/invoice"
-            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-semibold text-[#2563EB] bg-[#EFF6FF] hover:bg-[#DBEAFE] rounded-xl transition-colors dark:bg-[#162032] dark:text-[#60A5FA] dark:hover:bg-[#1E3A5F]"
-          >
-            Paramètres
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
         </div>
-      </div>
+      )}
 
     </div>
   )
