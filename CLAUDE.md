@@ -291,3 +291,4 @@ Le middleware vérifie dans l'ordre :
 | 2026-03-25 | Thème clair par défaut : suppression auto dark mode nocturne (18h-5h), thème initial toujours "light", toggle manuel conservé sur desktop | `components/layout/AutoDarkMode.tsx` |
 | 2026-03-25 | Bannière info personnalisation factures : tip horizontal (Sparkles, CTA → `/settings/invoices`), masquée si logo existant ou fermée, responsive, répliquée dans démo | `components/invoices/NewInvoiceForm.tsx`, `components/invoices/DemoInvoiceForm.tsx` |
 | 2026-03-25 | Fix page démo factures : ajout `'use client'` (onClick sur Server Component causait un crash) | `app/demo/invoices/page.tsx` |
+| 2026-03-25 | pSEO : 3 axes (28 métiers, 9 guides, 8 modèles), ~45 pages statiques, JSON-LD, OG dynamiques, maillage interne, sitemap | `lib/pseo/`, `app/facturation/[slug]/`, `app/guide/[slug]/`, `app/modele/[slug]/`, `app/sitemap.ts` |
