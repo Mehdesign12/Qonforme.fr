@@ -636,6 +636,7 @@ CRON_SECRET=
 | 2026-03-25 | Thème clair par défaut : suppression de l'auto dark mode nocturne (18h-5h), le thème initial est toujours "light", l'utilisateur bascule manuellement via le toggle desktop | `components/layout/AutoDarkMode.tsx` |
 | 2026-03-25 | Bannière info personnalisation factures : tip horizontal (icône Sparkles, CTA "Configurer" → `/settings/invoices`), masquée si logo existant ou fermée par l'utilisateur, responsive mobile/desktop, répliquée dans la démo | `components/invoices/NewInvoiceForm.tsx`, `components/invoices/DemoInvoiceForm.tsx` |
 | 2026-03-25 | Fix page démo factures : ajout `'use client'` (onClick sur Server Component causait un crash) | `app/demo/invoices/page.tsx` |
+| 2026-03-25 | pSEO : 3 axes (28 métiers, 9 guides légaux, 8 modèles documents), ~45 pages statiques avec JSON-LD, OG dynamiques, maillage interne, sitemap | `lib/pseo/`, `app/facturation/[slug]/`, `app/guide/[slug]/`, `app/modele/[slug]/`, `app/sitemap.ts` |
 
 ---
 
