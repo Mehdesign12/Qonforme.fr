@@ -781,10 +781,10 @@ CRON_SECRET=
 
 ### 🟡 Priorité BASSE — Finition
 
-#### P7. JSON-LD BreadcrumbList sur les pages pSEO
-- [ ] Ajouter schema `BreadcrumbList` sur `/facturation/[slug]`, `/guide/[slug]`, `/modele/[slug]`
-- [ ] Format : Qonforme > Facturation > [Métier]
-- [ ] Impact : fil d'Ariane visible dans les SERP, meilleur CTR
+#### P7. JSON-LD BreadcrumbList sur les pages pSEO — ✅ Fait
+- [x] BreadcrumbList sur `/facturation/[slug]` : Accueil > Facturation par métier > [Métier]
+- [x] BreadcrumbList sur `/guide/[slug]` : Accueil > Guides pratiques > [Guide]
+- [x] BreadcrumbList sur `/modele/[slug]` : Accueil > Modèles gratuits > [Type]
 
 #### P8. Schema HowTo sur les guides
 - [ ] Convertir les guides étape par étape en schema `HowTo`
