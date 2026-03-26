@@ -797,9 +797,10 @@ CRON_SECRET=
 - [x] Lettre de relance impayé (`lettre-relance-impaye`) — 3 niveaux, pénalités, mise en demeure
 - [x] Total : 11 modèles (8 + 3), nouveau type "relance"
 
-#### P10. Aperçu visuel des modèles
-- [ ] Ajouter un screenshot/preview du template sur chaque page `/modele/[slug]`
-- [ ] Impact : conversion (pas SEO direct), mais améliore le temps sur page
+#### P10. Aperçu visuel des modèles — ✅ Fait
+- [x] Route `/api/preview` (edge, ImageResponse 1000x600) — preview stylisé par type (facture/devis/avoir/relance)
+- [x] Image preview affichée sur chaque page `/modele/[slug]` avec contenu dynamique
+- [x] Impact : conversion + temps sur page amélioré
 
 ---
 
