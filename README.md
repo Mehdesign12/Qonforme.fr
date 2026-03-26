@@ -761,30 +761,23 @@ CRON_SECRET=
 
 ### 🟠 Priorité MOYENNE — Trafic additionnel
 
-#### P4. Ajouter 10+ métiers à fort volume de recherche
-- [ ] Comptable / Expert-comptable
-- [ ] Avocat
-- [ ] Agent immobilier
-- [ ] Boulanger / Pâtissier
-- [ ] Chauffeur VTC / Taxi
-- [ ] Femme de ménage / Nettoyage
-- [ ] Informaticien / Réparateur
-- [ ] Jardinier
-- [ ] Déménageur
-- [ ] Artisan boulanger
-- [ ] Impact : capturer la longue traîne sur des requêtes non couvertes
+#### P4. Ajouter 10+ métiers à fort volume de recherche — ✅ Fait
+- [x] Comptable, Avocat, Agent immobilier, Boulanger, VTC, Taxi
+- [x] Femme de ménage, Informaticien, Jardinier, Déménageur
+- [x] Total : 39 métiers (29 + 10), chacun avec 5 FAQ et description personnalisée
+- [x] Nouvelle catégorie "Transport & Services à domicile" dans la page index
 
-#### P5. Ajouter 5+ guides informationnels
-- [ ] "Comment créer sa première facture"
-- [ ] "Facture sans TVA : quand et comment"
-- [ ] "Facture impayée : que faire" (recouvrement)
-- [ ] "Différence entre devis et facture"
-- [ ] "Facturer à l'étranger / export"
-- [ ] Impact : capter le trafic informationnel top-of-funnel
+#### P5. Ajouter 5+ guides informationnels — ✅ Fait
+- [x] "Comment créer sa première facture" (`premiere-facture`)
+- [x] "Facture sans TVA" (`facture-sans-tva`)
+- [x] "Facture impayée : relance et recouvrement" (`facture-impayee`)
+- [x] "Différence entre devis et facture" (`difference-devis-facture`)
+- [x] "Facturer à l'étranger" (`facturer-etranger`)
+- [x] Total : 14 guides (9 + 5), chacun avec 5 sections et 5 FAQ
 
-#### P6. Cross-links blog → pSEO
-- [ ] Ajouter 2-3 liens vers guides/modèles/métiers pertinents dans chaque article blog
-- [ ] Impact : distribuer le link equity du blog (contenu régulier IA) vers le pSEO
+#### P6. Cross-links blog → pSEO — ✅ Fait
+- [x] Section "Ressources utiles" sur chaque article blog (8 liens guides/modèles/index)
+- [x] Section "Ressources complémentaires" sur la page listing blog (4 liens pilules)
 
 ### 🟡 Priorité BASSE — Finition
 
