@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, FileText, Receipt, FileCheck, ClipboardList } from "lucide-react"
+import { ArrowRight, FileText, Receipt, FileCheck, ClipboardList, Mail } from "lucide-react"
 import { MODELES } from "@/lib/pseo/modeles"
 import Footer from "@/components/layout/Footer"
 
@@ -22,6 +22,7 @@ const TYPE_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
   devis: { label: "Devis", icon: <FileText className="w-4 h-4" /> },
   avoir: { label: "Avoir", icon: <FileCheck className="w-4 h-4" /> },
   "bon-de-commande": { label: "Bon de commande", icon: <ClipboardList className="w-4 h-4" /> },
+  relance: { label: "Relance", icon: <Mail className="w-4 h-4" /> },
 }
 
 export default function ModeleIndexPage() {

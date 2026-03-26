@@ -44,6 +44,7 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
     devis: "Devis",
     avoir: "Avoirs",
     "bon-de-commande": "Bons de commande",
+    relance: "Relances",
   }
 
   const jsonLd = [
