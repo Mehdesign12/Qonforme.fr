@@ -39,19 +39,37 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
   const modele = getModeleBySlug(slug)
   if (!modele) notFound()
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: modele.titre,
-    description: modele.description,
-    brand: { "@type": "Organization", name: "Qonforme" },
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "EUR",
-      availability: "https://schema.org/InStock",
-    },
+  const TYPE_NAMES: Record<string, string> = {
+    facture: "Factures",
+    devis: "Devis",
+    avoir: "Avoirs",
+    "bon-de-commande": "Bons de commande",
   }
+
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: modele.titre,
+      description: modele.description,
+      brand: { "@type": "Organization", name: "Qonforme" },
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "EUR",
+        availability: "https://schema.org/InStock",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Accueil", item: "https://qonforme.fr" },
+        { "@type": "ListItem", position: 2, name: "Modeles gratuits", item: "https://qonforme.fr/modele" },
+        { "@type": "ListItem", position: 3, name: TYPE_NAMES[modele.type] ?? modele.type, item: `https://qonforme.fr/modele/${modele.slug}` },
+      ],
+    },
+  ]
 
   return (
     <>
