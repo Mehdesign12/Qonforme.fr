@@ -26,6 +26,8 @@ export const GUIDES: Guide[] = [
       { question: "Que risque-t-on si une mention obligatoire manque sur une facture ?", reponse: "L'absence d'une mention obligatoire est passible d'une amende de 15 € par mention manquante et par facture, plafonnée à 25% du montant de la facture. En cas de récidive, l'amende peut atteindre 75 000 € pour une personne physique." },
       { question: "Faut-il un numéro de TVA intracommunautaire sur une facture ?", reponse: "Oui, le numéro de TVA intracommunautaire du vendeur est obligatoire dès que la facture comporte de la TVA. Il est aussi obligatoire pour les opérations intracommunautaires (ventes ou prestations à des clients dans d'autres pays de l'UE)." },
       { question: "Comment numéroter ses factures ?", reponse: "La numérotation doit être chronologique et continue, sans trous. Vous pouvez utiliser un préfixe (ex : F-2026-001) tant que la séquence est respectée. Il est interdit de revenir en arrière ou de supprimer un numéro." },
+      { question: "Peut-on envoyer une facture par email ?", reponse: "Oui, l'envoi de facture par email est parfaitement légal depuis la loi de finances 2013, à condition que le destinataire l'accepte. La facture envoyée par email doit comporter les mêmes mentions obligatoires qu'une facture papier et garantir l'authenticité de l'origine et l'intégrité du contenu." },
+      { question: "Faut-il signer une facture ?", reponse: "Non, la signature n'est pas une mention obligatoire sur une facture en France. Aucun texte légal (article 242 nonies A de l'annexe II du CGI) n'exige de signature. Cependant, un cachet ou une signature électronique peut renforcer l'authenticité du document, notamment dans le cadre de la facturation électronique." },
     ],
   },
   {
@@ -42,6 +44,9 @@ export const GUIDES: Guide[] = [
     faq: [
       { question: "Un auto-entrepreneur doit-il faire des factures ?", reponse: "Oui, la facture est obligatoire pour toute vente de produit ou prestation de service à un professionnel. Pour les ventes aux particuliers, un ticket ou une note suffit en dessous de 25 €, mais la facture est obligatoire au-delà ou sur demande du client." },
       { question: "Peut-on facturer sans numéro SIRET ?", reponse: "Non, le numéro SIRET est obligatoire sur toutes les factures. Si vous venez de créer votre auto-entreprise et n'avez pas encore reçu votre SIRET, attendez de le recevoir avant de facturer (délai habituel : 1 à 4 semaines)." },
+      { question: "Quel logiciel de facturation pour auto-entrepreneur ?", reponse: "Un auto-entrepreneur doit utiliser un logiciel conforme à la loi anti-fraude (article 286 I-3° bis du CGI), garantissant l'inaltérabilité, la sécurisation, la conservation et l'archivage des données. Qonforme est un logiciel certifié qui répond à ces obligations et génère des factures au format Factur-X." },
+      { question: "Comment gérer la TVA quand on dépasse les seuils ?", reponse: "Lorsque vous dépassez le seuil majoré (39 100 € pour les services ou 101 000 € pour la vente), la TVA s'applique dès le 1er jour du mois de dépassement. Vous devez alors demander un numéro de TVA intracommunautaire auprès de votre SIE, facturer la TVA à vos clients et déposer des déclarations de TVA (CA12 ou CA3)." },
+      { question: "Faut-il un compte bancaire dédié pour facturer ?", reponse: "Depuis la loi PACTE de 2019, un compte bancaire dédié est obligatoire uniquement si votre chiffre d'affaires dépasse 10 000 € pendant deux années consécutives. En dessous de ce seuil, vous pouvez utiliser votre compte personnel, mais un compte dédié reste recommandé pour simplifier votre comptabilité." },
     ],
   },
   {
@@ -58,6 +63,9 @@ export const GUIDES: Guide[] = [
     faq: [
       { question: "Peut-on accorder un délai de paiement de 90 jours ?", reponse: "Non, le délai maximum entre professionnels est de 60 jours date de facture ou 45 jours fin de mois. Tout accord dépassant ces limites est nul et expose l'entreprise à une amende administrative pouvant atteindre 2 millions d'euros." },
       { question: "Les pénalités de retard sont-elles automatiques ?", reponse: "Oui, les pénalités de retard sont exigibles de plein droit, le jour suivant la date de paiement figurant sur la facture, sans qu'un rappel soit nécessaire. Cependant, dans la pratique, il est recommandé d'envoyer une relance avant d'appliquer les pénalités." },
+      { question: "Comment calculer les pénalités de retard ?", reponse: "Les pénalités se calculent avec la formule : montant TTC × (taux annuel / 365) × nombre de jours de retard. Le taux minimum légal est de 3 fois le taux d'intérêt légal (article L441-10 du Code de commerce). Par exemple, avec un taux de 12 % et 30 jours de retard sur 1 000 €, les pénalités s'élèvent à 9,86 €." },
+      { question: "Que faire si un client ne paie pas ?", reponse: "Commencez par envoyer une relance amiable, puis une mise en demeure par lettre recommandée avec accusé de réception. Si le client ne répond pas, vous pouvez engager une procédure d'injonction de payer auprès du tribunal compétent (article 1405 du CPC). L'indemnité forfaitaire de 40 € et les pénalités de retard sont dues en plus du principal." },
+      { question: "Les pénalités de retard sont-elles soumises à la TVA ?", reponse: "Non, les pénalités de retard ne sont pas soumises à la TVA car elles constituent des dommages et intérêts, et non la contrepartie d'une prestation. Elles doivent cependant être déclarées en tant que produits financiers dans votre comptabilité et figurer sur une note de débit distincte de la facture initiale." },
     ],
   },
   {
@@ -74,6 +82,9 @@ export const GUIDES: Guide[] = [
     faq: [
       { question: "Le sous-traitant peut-il quand même déduire sa TVA ?", reponse: "Oui, le sous-traitant conserve son droit à déduction de la TVA sur ses achats et charges, même s'il ne facture plus la TVA à l'entrepreneur principal. Il continue de déposer des déclarations de TVA normalement." },
       { question: "L'autoliquidation s'applique-t-elle aux auto-entrepreneurs ?", reponse: "Les auto-entrepreneurs en franchise de TVA ne sont pas concernés par l'autoliquidation puisqu'ils ne facturent déjà pas la TVA. Si un auto-entrepreneur dépasse les seuils de franchise, il devient assujetti et doit alors appliquer l'autoliquidation en sous-traitance BTP." },
+      { question: "Que se passe-t-il si le sous-traitant facture par erreur la TVA ?", reponse: "Si le sous-traitant facture la TVA par erreur, il reste redevable de cette TVA auprès du Trésor Public (article 283-3 du CGI). L'entrepreneur principal ne pourra pas la déduire, car l'autoliquidation aurait dû s'appliquer. Il faut alors émettre un avoir et refacturer sans TVA avec la mention « Autoliquidation »." },
+      { question: "L'autoliquidation concerne-t-elle la fourniture de matériaux ?", reponse: "L'autoliquidation s'applique uniquement aux travaux immobiliers, c'est-à-dire aux prestations de services. La fourniture de matériaux seule, sans pose, n'est pas concernée par le mécanisme d'autoliquidation. En revanche, si la fourniture est accessoire à la prestation de pose, l'ensemble est soumis à l'autoliquidation." },
+      { question: "Comment mentionner l'autoliquidation dans sa comptabilité ?", reponse: "Le sous-traitant enregistre sa facture HT en chiffre d'affaires sans TVA collectée. L'entrepreneur principal comptabilise la TVA autoliquidée au débit du compte 4456 (TVA déductible) et au crédit du compte 4457 (TVA collectée), rendant l'opération neutre sur sa trésorerie. La déclaration CA3 doit refléter ces écritures." },
     ],
   },
   {
@@ -90,6 +101,9 @@ export const GUIDES: Guide[] = [
     faq: [
       { question: "Les auto-entrepreneurs sont-ils concernés ?", reponse: "Oui, tous les assujettis à la TVA sont concernés, y compris les auto-entrepreneurs en franchise de TVA. Ils doivent pouvoir recevoir des factures électroniques dès septembre 2026." },
       { question: "Quel format choisir pour ses factures électroniques ?", reponse: "Le format Factur-X est recommandé pour les TPE et PME : il combine un PDF lisible par l'humain et des données XML exploitables par les logiciels. C'est le format le plus simple à adopter car vos clients peuvent toujours lire le PDF normalement." },
+      { question: "Qu'est-ce qu'une PDP (Plateforme de Dématérialisation Partenaire) ?", reponse: "Une PDP est un opérateur privé immatriculé par l'administration fiscale pour transmettre les factures électroniques entre entreprises et effectuer le e-reporting auprès de la DGFiP. Les PDP assurent la conversion des formats, le routage des factures et la transmission des données fiscales. La liste des PDP agréées est publiée par la DGFiP." },
+      { question: "Une facture PDF envoyée par email est-elle une facture électronique ?", reponse: "Non, un simple PDF envoyé par email n'est pas considéré comme une facture électronique au sens de la réforme 2026. Une facture électronique doit être émise dans un format structuré (Factur-X, UBL ou CII) et transmise via une PDP ou le PPF. Le PDF classique ne contient pas les données structurées exigées par la norme EN 16931." },
+      { question: "Quelles sanctions en cas de non-conformité ?", reponse: "Le non-respect de l'obligation de facturation électronique est sanctionné par une amende de 15 € par facture non conforme, plafonnée à 15 000 € par an (article 1737-II du CGI). Le défaut de e-reporting est sanctionné par une amende de 250 € par transmission manquante, plafonnée à 15 000 € par an." },
     ],
   },
   {
@@ -106,6 +120,9 @@ export const GUIDES: Guide[] = [
     faq: [
       { question: "Un devis peut-il être payant ?", reponse: "Oui, un professionnel peut facturer l'établissement d'un devis, à condition d'en informer le client au préalable. C'est courant pour les devis complexes nécessitant un déplacement ou une étude approfondie. Le montant du devis est souvent déduit de la facture si le client accepte." },
       { question: "Quelle différence entre un devis et une facture ?", reponse: "Le devis est un document commercial émis avant la réalisation des travaux, il constitue une proposition de prix. La facture est un document comptable émis après la réalisation des travaux, elle constate une dette. Un devis signé engage les deux parties, la facture constate l'exécution." },
+      { question: "Le client peut-il annuler un devis signé ?", reponse: "Un devis signé a valeur de contrat, donc le client ne peut pas l'annuler unilatéralement sans conséquences. Si le client se rétracte, le professionnel peut réclamer des dommages et intérêts pour le préjudice subi (article 1217 du Code civil). Toutefois, un délai de rétractation de 14 jours s'applique pour les contrats conclus à distance ou hors établissement (article L221-18 du Code de la consommation)." },
+      { question: "Faut-il numéroter les devis ?", reponse: "La numérotation des devis n'est pas une obligation légale stricte, contrairement aux factures. Cependant, elle est fortement recommandée pour assurer un suivi commercial efficace et faciliter le lien entre le devis et la facture correspondante. Utilisez une séquence logique (ex : D-2026-001) distincte de la numérotation des factures." },
+      { question: "Un devis doit-il mentionner l'assurance décennale ?", reponse: "Oui, pour les travaux de bâtiment soumis à la garantie décennale, le professionnel doit obligatoirement mentionner son assurance décennale sur le devis (article L243-2 du Code des assurances). Doivent figurer : le nom de l'assureur, le numéro de police et la couverture géographique. L'absence de cette mention est passible d'une amende de 75 000 €." },
     ],
   },
   {
@@ -121,6 +138,9 @@ export const GUIDES: Guide[] = [
     faq: [
       { question: "Faut-il facturer la TVA sur un acompte ?", reponse: "Oui, la TVA est exigible sur l'acompte pour les prestations de services (au moment de l'encaissement). Pour les livraisons de biens, la TVA devient exigible à la livraison, mais elle doit quand même figurer sur la facture d'acompte." },
       { question: "Comment numéroter une facture d'acompte ?", reponse: "La facture d'acompte suit la même séquence chronologique que les autres factures. Elle porte un numéro unique dans la continuité de votre numérotation (ex : F-2026-042). Ne créez pas de séquence séparée pour les acomptes." },
+      { question: "Quel pourcentage d'acompte demander ?", reponse: "Il n'existe pas de règle légale imposant un pourcentage précis. Dans la pratique, 30 % à la commande est courant dans le BTP et les services. Pour les commandes importantes, vous pouvez échelonner : 30 % à la commande, 40 % en cours de réalisation et 30 % à la livraison. Le montant doit être défini dans le devis signé." },
+      { question: "Peut-on facturer un acompte sans devis signé ?", reponse: "Juridiquement, rien n'interdit de facturer un acompte sans devis signé, mais c'est fortement déconseillé. Le devis signé constitue la preuve de l'accord du client sur le prix et les prestations. Sans devis, en cas de litige, il sera difficile de prouver l'étendue des engagements réciproques." },
+      { question: "Comment gérer un acompte non encaissé ?", reponse: "Si le client ne verse pas l'acompte prévu, vous pouvez suspendre le démarrage des travaux conformément aux conditions du devis signé. La facture d'acompte émise reste valide et constitue une créance. Envoyez une relance écrite, puis une mise en demeure si nécessaire, avant d'envisager l'annulation du contrat." },
     ],
   },
   {
@@ -136,6 +156,9 @@ export const GUIDES: Guide[] = [
     faq: [
       { question: "Peut-on supprimer une facture au lieu de faire un avoir ?", reponse: "Non, il est strictement interdit de supprimer une facture émise. La numérotation doit rester continue et chronologique. Pour annuler une facture, vous devez émettre un avoir pour son montant total." },
       { question: "Comment comptabiliser un avoir ?", reponse: "L'avoir est comptabilisé en sens inverse de la facture d'origine : il vient diminuer le chiffre d'affaires et la TVA collectée. Il doit être enregistré dans le journal des ventes avec un montant négatif." },
+      { question: "Un avoir doit-il être numéroté ?", reponse: "Oui, un avoir doit obligatoirement porter un numéro unique et chronologique, au même titre qu'une facture (article 242 nonies A de l'annexe II du CGI). Vous pouvez utiliser la même séquence que vos factures ou une séquence dédiée avec un préfixe distinct (ex : AV-2026-001), tant que la continuité est respectée." },
+      { question: "Peut-on faire un avoir partiel ?", reponse: "Oui, un avoir partiel est tout à fait possible et courant. Il permet de corriger une partie seulement de la facture d'origine, par exemple en cas de retour partiel de marchandise ou de remise accordée sur certaines lignes. L'avoir partiel doit détailler précisément les lignes concernées et les montants corrigés (HT, TVA, TTC)." },
+      { question: "Quel est le délai pour émettre un avoir ?", reponse: "Il n'existe pas de délai légal spécifique pour émettre un avoir. Cependant, il est recommandé de l'émettre le plus rapidement possible après la constatation de l'erreur ou du retour, idéalement dans le même exercice comptable. Pour la TVA, la régularisation doit intervenir sur la déclaration du mois de l'événement justifiant l'avoir." },
     ],
   },
   {
@@ -150,6 +173,10 @@ export const GUIDES: Guide[] = [
     ],
     faq: [
       { question: "Peut-on numériser ses factures papier et jeter les originaux ?", reponse: "Oui, depuis 2017 (article A 102 B-2 du LPF), la numérisation fidèle est acceptée comme mode de conservation. La copie numérique doit être identique à l'original et horodatée. Les originaux papier peuvent alors être détruits." },
+      { question: "Faut-il conserver les devis ?", reponse: "Oui, les devis signés doivent être conservés pendant 10 ans en tant que documents commerciaux (article L123-22 du Code de commerce). Ils constituent la preuve de l'accord contractuel avec le client. Pour les travaux soumis à la garantie décennale, il est même recommandé de les conserver au moins 10 ans après la réception des travaux." },
+      { question: "Comment archiver ses factures électroniques ?", reponse: "Les factures électroniques doivent être conservées dans leur format d'origine pendant 10 ans, avec des garanties d'authenticité, d'intégrité et de lisibilité (article L102 B du LPF). L'archivage doit permettre une restitution rapide en cas de contrôle fiscal. Un logiciel comme Qonforme assure automatiquement cet archivage conforme." },
+      { question: "Le cloud est-il un mode de conservation valide ?", reponse: "Oui, le stockage cloud est un mode de conservation valide à condition que le prestataire garantisse l'intégrité, la sécurité et la disponibilité des documents pendant toute la durée légale de 10 ans. Le serveur doit être situé dans l'Union européenne ou dans un pays ayant signé une convention d'assistance administrative avec la France (article 96 F de l'annexe III du CGI)." },
+      { question: "Que faire en cas de perte de factures ?", reponse: "En cas de perte de factures, vous pouvez demander des duplicatas à vos fournisseurs ou clients. Informez votre expert-comptable et documentez la perte par écrit. En cas de contrôle fiscal, l'absence de factures peut entraîner un rejet de la comptabilité et une taxation d'office (article L192 du LPF), avec une amende de 10 000 € par exercice." },
     ],
   },
 ]
