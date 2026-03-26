@@ -32,15 +32,26 @@ export default async function MetierPage({ params }: { params: Promise<{ slug: s
   const metier = getMetierBySlug(slug)
   if (!metier) notFound()
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: metier.faq.map(f => ({
-      "@type": "Question",
-      name: f.question,
-      acceptedAnswer: { "@type": "Answer", text: f.reponse },
-    })),
-  }
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: metier.faq.map(f => ({
+        "@type": "Question",
+        name: f.question,
+        acceptedAnswer: { "@type": "Answer", text: f.reponse },
+      })),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Accueil", item: "https://qonforme.fr" },
+        { "@type": "ListItem", position: 2, name: "Facturation par metier", item: "https://qonforme.fr/facturation" },
+        { "@type": "ListItem", position: 3, name: metier.nom, item: `https://qonforme.fr/facturation/${metier.slug}` },
+      ],
+    },
+  ]
 
   return (
     <>

@@ -49,6 +49,15 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         acceptedAnswer: { "@type": "Answer", text: f.reponse },
       })),
     }] : []),
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Accueil", item: "https://qonforme.fr" },
+        { "@type": "ListItem", position: 2, name: "Guides pratiques", item: "https://qonforme.fr/guide" },
+        { "@type": "ListItem", position: 3, name: guide.titre, item: `https://qonforme.fr/guide/${guide.slug}` },
+      ],
+    },
   ]
 
   return (
