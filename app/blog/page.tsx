@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import Image from "next/image"
 import { createAdminClient } from "@/lib/supabase/server"
 import { FileText } from "lucide-react"
