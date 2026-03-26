@@ -1,12 +1,12 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Wrench, Briefcase, Heart, Scissors } from "lucide-react"
+import { ArrowRight, Wrench, Briefcase, Heart, Scissors, Car, Truck } from "lucide-react"
 import { METIERS } from "@/lib/pseo/metiers"
 import Footer from "@/components/layout/Footer"
 
 export const metadata: Metadata = {
   title: "Logiciel de facturation par metier | Qonforme",
-  description: "Decouvrez notre logiciel de facturation adapte a votre metier : BTP, freelance, sante, artisanat. Factures et devis conformes Factur-X 2026.",
+  description: "Decouvrez notre logiciel de facturation adapte a votre metier : BTP, freelance, sante, artisanat, transport. Factures et devis conformes Factur-X 2026.",
   keywords: ["logiciel facturation", "facturation par metier", "facture BTP", "facture freelance", "facture artisan"],
   alternates: { canonical: "/facturation" },
   openGraph: {
@@ -26,12 +26,17 @@ const CATEGORIES: { nom: string; icon: React.ReactNode; slugs: string[] }[] = [
   {
     nom: "Services & Freelance",
     icon: <Briefcase className="w-5 h-5" />,
-    slugs: ["auto-entrepreneur", "consultant", "developpeur-freelance", "graphiste", "photographe", "formateur", "coach", "community-manager", "traducteur"],
+    slugs: ["auto-entrepreneur", "consultant", "developpeur-freelance", "graphiste", "photographe", "formateur", "coach", "community-manager", "traducteur", "comptable", "avocat", "agent-immobilier", "informaticien"],
   },
   {
     nom: "Artisanat & Commerce",
     icon: <Scissors className="w-5 h-5" />,
-    slugs: ["coiffeur", "estheticienne", "paysagiste", "architecte-interieur", "traiteur", "fleuriste"],
+    slugs: ["coiffeur", "estheticienne", "paysagiste", "architecte-interieur", "traiteur", "fleuriste", "boulanger", "jardinier"],
+  },
+  {
+    nom: "Transport & Services a domicile",
+    icon: <Car className="w-5 h-5" />,
+    slugs: ["vtc", "taxi", "demenageur", "femme-de-menage"],
   },
   {
     nom: "Sante & Bien-etre",
