@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { CheckCircle2, ArrowRight, FileText, HelpCircle } from "lucide-react"
+import { CheckCircle2, ArrowRight, FileText, HelpCircle, Users } from "lucide-react"
 import { METIERS, getMetierBySlug } from "@/lib/pseo/metiers"
 import Footer from "@/components/layout/Footer"
 
@@ -120,6 +120,39 @@ export default async function MetierPage({ params }: { params: Promise<{ slug: s
             ))}
           </div>
         </section>
+
+        {/* Métiers proches */}
+        {metier.metiersProches.length > 0 && (
+          <section className="bg-white border-y border-[#E2E8F0]">
+            <div className="max-w-5xl mx-auto px-4 py-16">
+              <h2 className="text-2xl font-bold text-[#0F172A] mb-8 flex items-center gap-2">
+                <Users className="w-6 h-6 text-[#2563EB]" />
+                Metiers proches
+              </h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {metier.metiersProches.map((slug) => {
+                  const proche = getMetierBySlug(slug)
+                  if (!proche) return null
+                  return (
+                    <Link
+                      key={slug}
+                      href={`/facturation/${slug}`}
+                      className="group flex items-center justify-between rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 hover:border-[#2563EB]/30 hover:shadow-md transition-all"
+                    >
+                      <span className="font-semibold text-[#0F172A] group-hover:text-[#2563EB] transition-colors">{proche.nom}</span>
+                      <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#2563EB] transition-colors" />
+                    </Link>
+                  )
+                })}
+              </div>
+              <div className="mt-6 text-center">
+                <Link href="/facturation" className="text-sm font-semibold text-[#2563EB] hover:underline">
+                  Voir tous les metiers →
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* CTA + maillage */}
         <section className="bg-[#0F172A] text-white">

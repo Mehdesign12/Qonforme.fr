@@ -7,6 +7,7 @@ export interface Metier {
   features: { titre: string; texte: string }[]
   obligations: string[]
   faq: { question: string; reponse: string }[]
+  metiersProches: string[]
 }
 
 const BTP_FEATURES = [
@@ -40,6 +41,7 @@ function metier(
   motsCles: string[],
   obligations: string[],
   faq: { question: string; reponse: string }[],
+  metiersProches: string[] = [],
 ): Metier {
   const catFeatures = categorie === "btp" ? BTP_FEATURES : categorie === "sante" ? SANTE_FEATURES : SERVICE_FEATURES
   return {
@@ -51,6 +53,7 @@ function metier(
     features: [...catFeatures, ...COMMON_FEATURES],
     obligations,
     faq,
+    metiersProches,
   }
 }
 
@@ -66,6 +69,7 @@ export const METIERS: Metier[] = [
       { question: "Quel taux de TVA appliquer en plomberie ?", reponse: "Le taux de TVA dépend du type de travaux : 20 % pour les constructions neuves, 10 % pour les travaux de rénovation dans un logement de plus de 2 ans (article 279-0 bis du CGI), et 5,5 % pour les travaux d'amélioration de la performance énergétique." },
       { question: "La facturation électronique Factur-X est-elle obligatoire pour un plombier en 2026 ?", reponse: "Oui, à partir de 2026 la réforme de la facturation électronique impose aux artisans du BTP d'émettre des factures au format structuré (Factur-X EN 16931) pour les transactions B2B. Qonforme génère automatiquement vos factures dans ce format." },
     ],
+    ["electricien", "chauffagiste", "macon", "carreleur"],
   ),
   metier("electricien", "Électricien", "btp",
     ["facture electricite", "devis electricite", "norme NF C 15-100"],
@@ -77,6 +81,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer au forfait ou au mètre linéaire en électricité ?", reponse: "Les deux modes sont courants : le forfait convient aux installations complètes (tableau, circuit), tandis que le mètre linéaire est utilisé pour le câblage et les chemins de câbles. Détaillez toujours la méthode de calcul sur le devis." },
       { question: "Quelles sont les obligations Factur-X 2026 pour un électricien ?", reponse: "Dès 2026, tout électricien facturant en B2B devra émettre des factures électroniques au format structuré Factur-X. Cette obligation s'applique progressivement selon la taille de l'entreprise, en commençant par les grandes entreprises puis les TPE/PME." },
     ],
+    ["plombier", "chauffagiste", "plaquiste", "couvreur"],
   ),
   metier("macon", "Maçon", "btp",
     ["facture maconnerie", "devis maconnerie", "gros oeuvre"],
@@ -88,6 +93,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer la sous-traitance en maçonnerie (autoliquidation) ?", reponse: "En cas de sous-traitance BTP, c'est le donneur d'ordre qui reverse la TVA (article 283-2 nonies du CGI). Le sous-traitant maçon émet une facture HT avec la mention « Autoliquidation de la TVA » sans collecter de TVA." },
       { question: "La facturation électronique Factur-X concerne-t-elle les maçons ?", reponse: "Oui, la réforme 2026 de la facturation électronique s'applique à tous les professionnels du BTP, y compris les maçons. Les factures B2B devront être émises au format Factur-X EN 16931 via une plateforme de dématérialisation." },
     ],
+    ["plombier", "carreleur", "couvreur", "peintre"],
   ),
   metier("peintre", "Peintre en bâtiment", "btp",
     ["facture peinture", "devis peinture batiment"],
@@ -99,6 +105,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer des travaux de peinture au m² ?", reponse: "Indiquez la surface totale en m², le prix unitaire au m² (qui inclut main-d'œuvre et fournitures ou les sépare), le nombre de couches et le type de finition. Ce mode de facturation est le plus transparent pour le client." },
       { question: "Quelles sont les obligations Factur-X 2026 pour un peintre ?", reponse: "Comme tous les artisans du BTP, les peintres en bâtiment devront émettre des factures électroniques au format Factur-X EN 16931 pour leurs clients professionnels à partir de 2026. Qonforme intègre ce format nativement." },
     ],
+    ["plaquiste", "carreleur", "macon", "menuisier"],
   ),
   metier("carreleur", "Carreleur", "btp",
     ["facture carrelage", "devis pose carrelage"],
@@ -110,6 +117,7 @@ export const METIERS: Metier[] = [
       { question: "Comment établir un devis de carrelage au m² ?", reponse: "Indiquez la surface totale en m², le prix au m² pour la fourniture et la pose séparément, les découpes spéciales (angles, plinthes), et les travaux préparatoires. Précisez le type de pose car une pose diagonale coûte plus cher qu'une pose droite." },
       { question: "Quelles sont les obligations Factur-X 2026 pour un carreleur ?", reponse: "À partir de 2026, les carreleurs devront émettre des factures électroniques au format structuré Factur-X pour toute transaction B2B. Cette obligation concerne aussi les factures de sous-traitance avec autoliquidation de TVA." },
     ],
+    ["macon", "peintre", "plombier", "menuisier"],
   ),
   metier("menuisier", "Menuisier", "btp",
     ["facture menuiserie", "devis menuiserie"],
@@ -121,6 +129,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer la fabrication sur mesure et la pose séparément ?", reponse: "Créez deux sections distinctes sur votre facture : la fabrication (matériaux bois, quincaillerie, heures d'atelier) et la pose (déplacement, installation, ajustements). Ce détail facilite l'application des bons taux de TVA." },
       { question: "Quelles sont les obligations Factur-X 2026 pour un menuisier ?", reponse: "Dès 2026, la facturation électronique au format Factur-X devient obligatoire pour les menuisiers facturant des professionnels. Les factures devront transiter par une plateforme de dématérialisation partenaire (PDP) ou le portail public." },
     ],
+    ["couvreur", "peintre", "plaquiste", "carreleur"],
   ),
   metier("couvreur", "Couvreur", "btp",
     ["facture toiture", "devis couverture"],
@@ -132,6 +141,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer des travaux de couverture au m² ?", reponse: "Indiquez la surface totale en m², le prix au m² pour la dépose de l'ancienne couverture, la fourniture des matériaux neufs et la pose. Séparez les postes accessoires : zinguerie, gouttières, ventilation, échafaudage." },
       { question: "Un couvreur est-il concerné par la facturation Factur-X 2026 ?", reponse: "Oui, tous les artisans du BTP, y compris les couvreurs, sont soumis à l'obligation de facturation électronique Factur-X pour les échanges B2B à partir de 2026. Cela concerne aussi les factures de sous-traitance." },
     ],
+    ["macon", "menuisier", "plaquiste", "chauffagiste"],
   ),
   metier("plaquiste", "Plaquiste", "btp",
     ["facture placo", "devis plaquiste", "cloison seche"],
@@ -143,6 +153,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer la sous-traitance en plâtrerie avec autoliquidation ?", reponse: "Si vous intervenez comme sous-traitant, facturez HT avec la mention « Autoliquidation — article 283-2 nonies du CGI ». C'est le donneur d'ordre qui déclare et reverse la TVA. Aucune TVA ne doit apparaître sur votre facture." },
       { question: "Quelles sont les obligations Factur-X 2026 pour un plaquiste ?", reponse: "À partir de 2026, les plaquistes devront émettre des factures au format électronique structuré Factur-X EN 16931 pour leurs clients professionnels. Le e-reporting sera aussi requis pour les ventes aux particuliers." },
     ],
+    ["peintre", "electricien", "menuisier", "macon"],
   ),
   metier("chauffagiste", "Chauffagiste", "btp",
     ["facture chauffage", "devis installation chauffage"],
@@ -154,6 +165,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer l'entretien annuel d'une chaudière ?", reponse: "L'entretien annuel obligatoire (décret n° 2009-649) se facture généralement au forfait. Détaillez les opérations effectuées (nettoyage, vérifications, mesure de combustion) et remettez l'attestation d'entretien au client." },
       { question: "Un chauffagiste est-il concerné par Factur-X 2026 ?", reponse: "Oui, comme tous les professionnels du BTP, les chauffagistes devront émettre des factures électroniques au format Factur-X pour les transactions B2B. Les factures aux particuliers feront l'objet du e-reporting." },
     ],
+    ["plombier", "electricien", "couvreur", "macon"],
   ),
   metier("serrurier", "Serrurier", "btp",
     ["facture serrurerie", "devis serrurier"],
@@ -165,6 +177,7 @@ export const METIERS: Metier[] = [
       { question: "Quelle assurance est obligatoire pour un serrurier ?", reponse: "La RC professionnelle est obligatoire pour couvrir les dommages causés lors des interventions. L'assurance décennale est requise uniquement pour les travaux affectant la structure du bâtiment (blindage de porte d'entrée, par exemple)." },
       { question: "La facturation Factur-X 2026 concerne-t-elle les serruriers ?", reponse: "Oui, les serruriers devront émettre des factures électroniques Factur-X pour les clients professionnels à partir de 2026. Pour les particuliers, un e-reporting des données de facturation sera également requis." },
     ],
+    ["menuisier", "electricien", "plombier", "peintre"],
   ),
 
   // ── Services / Freelance ──
@@ -178,6 +191,7 @@ export const METIERS: Metier[] = [
       { question: "Quelles sont les pénalités de retard obligatoires sur une facture auto-entrepreneur ?", reponse: "Toute facture doit mentionner le taux de pénalités de retard (minimum : taux BCE + 10 points) et l'indemnité forfaitaire de 40 € pour frais de recouvrement, conformément aux articles L441-10 et D441-5 du Code de commerce." },
       { question: "Un auto-entrepreneur est-il concerné par Factur-X 2026 ?", reponse: "Oui, la facturation électronique s'appliquera progressivement aux micro-entreprises. Dès 2026, vous devrez au minimum recevoir des factures électroniques, puis émettre au format Factur-X pour vos clients professionnels." },
     ],
+    ["consultant", "developpeur-freelance", "graphiste", "photographe"],
   ),
   metier("consultant", "Consultant", "service",
     ["facture consultant", "facture prestation conseil"],
@@ -189,6 +203,7 @@ export const METIERS: Metier[] = [
       { question: "Un consultant doit-il facturer la TVA ?", reponse: "Oui, sauf en franchise de TVA (seuil de 36 800 € pour les prestations de services). Au-delà, le consultant collecte la TVA à 20 % et la reverse à l'État. Pour les clients étrangers (UE), l'autoliquidation peut s'appliquer." },
       { question: "Quelles sont les obligations Factur-X 2026 pour un consultant ?", reponse: "Dès 2026, les consultants devront émettre des factures électroniques au format Factur-X pour tous leurs clients professionnels français. Cette obligation vise à automatiser les contrôles fiscaux et réduire la fraude à la TVA." },
     ],
+    ["auto-entrepreneur", "formateur", "coach", "developpeur-freelance"],
   ),
   metier("developpeur-freelance", "Développeur freelance", "service",
     ["facture developpeur", "facture freelance informatique"],
@@ -200,6 +215,7 @@ export const METIERS: Metier[] = [
       { question: "Comment gérer les acomptes sur un projet de développement ?", reponse: "Émettez une facture d'acompte (30 à 50 % du montant total est courant) avant le démarrage, puis une facture de solde à la livraison. Chaque facture d'acompte doit comporter un numéro séquentiel et les mentions légales complètes." },
       { question: "Quelles obligations Factur-X 2026 pour un développeur freelance ?", reponse: "Les développeurs freelances devront émettre des factures électroniques Factur-X pour leurs clients professionnels dès 2026. Les plateformes de facturation comme Qonforme génèrent automatiquement le format conforme EN 16931." },
     ],
+    ["graphiste", "consultant", "community-manager", "auto-entrepreneur"],
   ),
   metier("graphiste", "Graphiste", "service",
     ["facture graphiste", "devis creation graphique"],
@@ -211,6 +227,7 @@ export const METIERS: Metier[] = [
       { question: "Comment gérer les frais d'achat (typos, images) sur une facture de graphiste ?", reponse: "Les achats de typographies, images stock ou impressions réalisés pour le compte du client peuvent être refacturés sur une ligne séparée avec le même taux de TVA. Conservez les justificatifs pour votre comptabilité." },
       { question: "Quelles obligations Factur-X 2026 pour un graphiste ?", reponse: "Dès 2026, les graphistes devront émettre des factures électroniques au format Factur-X pour leurs clients professionnels. Cette obligation s'accompagne du e-reporting pour les transactions avec les particuliers et clients étrangers." },
     ],
+    ["photographe", "developpeur-freelance", "community-manager", "auto-entrepreneur"],
   ),
   metier("photographe", "Photographe", "service",
     ["facture photographe", "devis reportage photo"],
@@ -222,6 +239,7 @@ export const METIERS: Metier[] = [
       { question: "Un photographe auto-entrepreneur doit-il facturer la TVA ?", reponse: "Non, tant qu'il reste sous le seuil de franchise de TVA (36 800 € pour les prestations de services). La mention « TVA non applicable, art. 293 B du CGI » doit figurer sur chaque facture. Au-delà du seuil, la TVA est obligatoire." },
       { question: "Quelles obligations Factur-X 2026 pour un photographe ?", reponse: "Les photographes devront émettre des factures au format électronique Factur-X pour leurs clients professionnels dès 2026. Cela concerne les reportages corporate, événementiels et toute prestation facturée à une entreprise." },
     ],
+    ["graphiste", "community-manager", "auto-entrepreneur", "traducteur"],
   ),
   metier("formateur", "Formateur", "service",
     ["facture formation", "convention de formation"],
@@ -233,6 +251,7 @@ export const METIERS: Metier[] = [
       { question: "Comment gérer les frais annexes sur une facture de formation ?", reponse: "Les frais de déplacement, d'hébergement et de restauration du formateur peuvent être refacturés au réel ou au forfait. Créez des lignes distinctes sur la facture pour séparer les honoraires pédagogiques des frais annexes." },
       { question: "Quelles obligations Factur-X 2026 pour un formateur indépendant ?", reponse: "Les formateurs devront émettre des factures au format Factur-X pour leurs clients professionnels et OPCO dès 2026. Cette obligation s'applique même aux formateurs exonérés de TVA : le format structuré est indépendant du régime fiscal." },
     ],
+    ["consultant", "coach", "auto-entrepreneur", "traducteur"],
   ),
   metier("coach", "Coach professionnel", "service",
     ["facture coaching", "devis accompagnement"],
@@ -244,6 +263,7 @@ export const METIERS: Metier[] = [
       { question: "Quels délais de paiement appliquer pour du coaching ?", reponse: "Le délai légal maximum est de 60 jours date de facture ou 45 jours fin de mois (article L441-10 du Code de commerce). En pratique, beaucoup de coachs facturent avant la prestation ou au comptant pour sécuriser leur trésorerie." },
       { question: "Quelles obligations Factur-X 2026 pour un coach ?", reponse: "Les coachs professionnels facturant des entreprises devront émettre des factures électroniques au format Factur-X dès 2026. Cela concerne le coaching individuel dirigeant, le coaching d'équipe et toute prestation B2B." },
     ],
+    ["formateur", "consultant", "community-manager", "auto-entrepreneur"],
   ),
   metier("community-manager", "Community manager", "service",
     ["facture community management", "devis gestion reseaux sociaux"],
@@ -255,6 +275,7 @@ export const METIERS: Metier[] = [
       { question: "Comment protéger sa propriété intellectuelle en community management ?", reponse: "Les visuels et textes créés restent la propriété du community manager jusqu'à cession explicite. Précisez dans vos CGV et sur la facture si les droits d'exploitation sont cédés au client ou s'il dispose d'une simple licence d'utilisation." },
       { question: "Quelles obligations Factur-X 2026 pour un community manager ?", reponse: "Les community managers facturant des entreprises devront émettre des factures au format Factur-X EN 16931 dès 2026. Cette obligation concerne toutes les prestations B2B, y compris les forfaits mensuels récurrents." },
     ],
+    ["graphiste", "developpeur-freelance", "photographe", "consultant"],
   ),
   metier("traducteur", "Traducteur", "service",
     ["facture traduction", "devis traduction"],
@@ -266,6 +287,7 @@ export const METIERS: Metier[] = [
       { question: "Comment gérer les pénalités de retard sur une facture de traduction ?", reponse: "La facture doit mentionner le taux de pénalités de retard applicable (minimum : taux directeur BCE + 10 points) et l'indemnité forfaitaire de 40 € pour frais de recouvrement, conformément à l'article L441-10 du Code de commerce." },
       { question: "Quelles obligations Factur-X 2026 pour un traducteur ?", reponse: "Les traducteurs devront émettre des factures électroniques Factur-X pour leurs clients professionnels français dès 2026. Pour les clients étrangers, le e-reporting des données de transaction sera requis auprès de l'administration fiscale." },
     ],
+    ["formateur", "consultant", "graphiste", "auto-entrepreneur"],
   ),
 
   // ── Artisanat / Commerce ──
@@ -279,6 +301,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer la vente de produits en salon de coiffure ?", reponse: "La vente de produits (shampoings, soins, accessoires) doit apparaître sur une ligne distincte de la prestation de coiffure. Le taux de TVA est identique (20 %) mais la distinction facilite le suivi comptable et la gestion des stocks." },
       { question: "Quelles obligations Factur-X 2026 pour un coiffeur ?", reponse: "Les coiffeurs facturant des clients professionnels (contrats entreprise, spectacles) devront émettre des factures Factur-X dès 2026. Pour les particuliers, le e-reporting sera requis pour transmettre les données de vente à l'administration fiscale." },
     ],
+    ["estheticienne", "auto-entrepreneur", "fleuriste", "traiteur"],
   ),
   metier("estheticienne", "Esthéticienne", "artisanat",
     ["facture institut beaute", "logiciel facturation esthetique"],
@@ -290,6 +313,7 @@ export const METIERS: Metier[] = [
       { question: "Comment gérer les cartes prépayées et abonnements en institut ?", reponse: "Émettez une facture lors de la vente de la carte ou de l'abonnement. Le chiffre d'affaires est comptabilisé au fur et à mesure de l'utilisation des séances (produit constaté d'avance). Précisez la durée de validité et les conditions de remboursement." },
       { question: "Quelles obligations Factur-X 2026 pour une esthéticienne ?", reponse: "Les esthéticiennes facturant des entreprises (comités d'entreprise, hôtels, spas) devront émettre des factures Factur-X dès 2026. Le e-reporting concernera les ventes aux particuliers pour la transmission des données à l'administration fiscale." },
     ],
+    ["coiffeur", "auto-entrepreneur", "fleuriste", "dieteticien"],
   ),
   metier("paysagiste", "Paysagiste", "btp",
     ["facture entretien jardin", "devis amenagement paysager"],
@@ -301,6 +325,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer un contrat d'entretien annuel de jardin ?", reponse: "Proposez un forfait annuel avec un calendrier d'interventions (mensuel ou trimestriel). Détaillez les prestations incluses (tonte, taille, traitement) et émettez une facture par passage ou une facture mensuelle selon l'accord." },
       { question: "Un paysagiste est-il concerné par Factur-X 2026 ?", reponse: "Oui, les paysagistes devront émettre des factures électroniques Factur-X pour les clients professionnels (copropriétés, entreprises, collectivités) dès 2026. Le e-reporting s'appliquera pour les prestations aux particuliers." },
     ],
+    ["macon", "menuisier", "carreleur", "fleuriste"],
   ),
   metier("architecte-interieur", "Architecte d'intérieur", "service",
     ["facture architecte interieur", "devis decoration interieure", "honoraires architecte"],
@@ -312,6 +337,7 @@ export const METIERS: Metier[] = [
       { question: "Quelles pénalités de retard mentionner sur une facture d'architecte d'intérieur ?", reponse: "La facture doit indiquer le taux de pénalités de retard (minimum : taux directeur BCE + 10 points) et l'indemnité forfaitaire de 40 € pour frais de recouvrement, conformément aux articles L441-10 et D441-5 du Code de commerce." },
       { question: "Quelles obligations Factur-X 2026 pour un architecte d'intérieur ?", reponse: "Les architectes d'intérieur devront émettre des factures Factur-X pour leurs clients professionnels dès 2026. Les factures de suivi de chantier, honoraires de conception et achats refacturés sont tous concernés par cette obligation." },
     ],
+    ["peintre", "menuisier", "carreleur", "graphiste"],
   ),
   metier("traiteur", "Traiteur", "artisanat",
     ["facture traiteur", "devis reception traiteur"],
@@ -323,6 +349,7 @@ export const METIERS: Metier[] = [
       { question: "Comment gérer les acomptes pour une prestation traiteur ?", reponse: "Il est courant de demander un acompte de 30 à 50 % à la commande. Émettez une facture d'acompte avec numéro séquentiel, puis une facture de solde après l'événement. La facture de solde doit déduire l'acompte déjà versé." },
       { question: "Quelles obligations Factur-X 2026 pour un traiteur ?", reponse: "Les traiteurs devront émettre des factures électroniques Factur-X pour leurs clients professionnels (entreprises, associations, collectivités) dès 2026. Les prestations aux particuliers feront l'objet du e-reporting." },
     ],
+    ["fleuriste", "photographe", "coiffeur", "auto-entrepreneur"],
   ),
   metier("fleuriste", "Fleuriste", "artisanat",
     ["facture fleuriste", "logiciel caisse fleuriste"],
@@ -334,6 +361,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer des prestations de décoration florale événementielle ?", reponse: "Établissez un devis détaillant : les compositions (nombre, taille, variétés), la livraison, l'installation, le démontage éventuel et la location de vases/structures. Facturez un acompte de 30 à 50 % à la commande." },
       { question: "Quelles obligations Factur-X 2026 pour un fleuriste ?", reponse: "Les fleuristes devront émettre des factures électroniques Factur-X pour leurs clients professionnels (entreprises, collectivités, hôtels) dès 2026. Le e-reporting des ventes aux particuliers sera aussi requis." },
     ],
+    ["traiteur", "coiffeur", "estheticienne", "auto-entrepreneur"],
   ),
 
   // ── Santé ──
@@ -347,6 +375,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer un patient pour le remboursement par la mutuelle ?", reponse: "Émettez une note d'honoraires détaillée avec votre numéro ADELI/RPPS, la nature de l'acte (« consultation d'ostéopathie »), la date et le montant. La plupart des mutuelles exigent ce document pour rembourser leurs assurés." },
       { question: "La facturation électronique Factur-X concerne-t-elle les ostéopathes ?", reponse: "Pour les consultations de particuliers, le e-reporting sera requis dès 2026. Pour les prestations facturées à des entreprises (séances en entreprise, clubs sportifs), les notes d'honoraires devront être au format Factur-X." },
     ],
+    ["kinesitherapeute", "dieteticien", "infirmier-liberal", "coach"],
   ),
   metier("kinesitherapeute", "Kinésithérapeute", "sante",
     ["facture kine", "note honoraires kinesitherapie"],
@@ -358,6 +387,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer des séances de kiné en tiers payant ?", reponse: "En tiers payant, la part Sécurité sociale est facturée directement à la CPAM via le système Sesam-Vitale. Seul le reste à charge (ticket modérateur) est facturé au patient, sauf si la mutuelle pratique aussi le tiers payant complémentaire." },
       { question: "Un kiné peut-il facturer des actes hors nomenclature ?", reponse: "Oui, les actes hors nomenclature (kiné du sport, drainage esthétique, bien-être) sont facturés librement via une note d'honoraires. Ces actes ne sont pas remboursés par la Sécurité sociale mais peuvent l'être par certaines mutuelles." },
     ],
+    ["osteopathe", "infirmier-liberal", "dieteticien", "formateur"],
   ),
   metier("infirmier-liberal", "Infirmier libéral", "sante",
     ["facture infirmier liberal", "facturation soins infirmiers"],
@@ -369,6 +399,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer les indemnités de déplacement en soins infirmiers ?", reponse: "Les indemnités forfaitaires de déplacement (IFD) et les indemnités kilométriques (IK) sont codifiées par la convention nationale. Elles s'ajoutent automatiquement aux actes lors de la télétransmission via Sesam-Vitale." },
       { question: "Un infirmier libéral est-il concerné par Factur-X 2026 ?", reponse: "Pour les actes conventionnés aux particuliers, la facturation passe par Sesam-Vitale. En revanche, les prestations facturées à des entreprises (médecine du travail, EHPAD) devront être au format Factur-X dès 2026." },
     ],
+    ["kinesitherapeute", "osteopathe", "dieteticien", "auto-entrepreneur"],
   ),
   metier("dieteticien", "Diététicien", "sante",
     ["facture dieteticien", "note honoraires nutrition"],
@@ -380,6 +411,7 @@ export const METIERS: Metier[] = [
       { question: "Les consultations diététiques sont-elles remboursées ?", reponse: "Les consultations diététiques ne sont pas remboursées par la Sécurité sociale (sauf dans le cadre du dispositif « Mon bilan diététique » pour les jeunes). Certaines mutuelles proposent un forfait annuel. La note d'honoraires est indispensable pour le remboursement." },
       { question: "La facturation Factur-X 2026 concerne-t-elle les diététiciens ?", reponse: "Pour les consultations aux particuliers, le e-reporting sera requis. Pour les prestations facturées à des entreprises ou établissements de santé (EHPAD, cliniques, cantines), les notes d'honoraires devront être au format Factur-X dès 2026." },
     ],
+    ["osteopathe", "kinesitherapeute", "infirmier-liberal", "coach"],
   ),
 ]
 
