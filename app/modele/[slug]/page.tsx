@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import { notFound } from "next/navigation"
 import { FileText, CheckCircle2, ArrowRight, Lightbulb, AlertTriangle } from "lucide-react"
 import { MODELES, getModeleBySlug } from "@/lib/pseo/modeles"
@@ -113,6 +114,19 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
             <Link href="/demo" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC]">
               Voir la demo
             </Link>
+          </div>
+
+          {/* Preview visuel */}
+          <div className="mt-10 rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm bg-white">
+            <Image
+              src={`/api/preview?title=${encodeURIComponent(modele.titre)}&type=${encodeURIComponent(modele.type)}&items=${encodeURIComponent(modele.contenu.slice(0, 5).join("|"))}`}
+              alt={`Apercu du ${modele.titre}`}
+              width={1000}
+              height={600}
+              className="w-full h-auto"
+              sizes="(max-width: 768px) 100vw, 800px"
+              priority
+            />
           </div>
 
           {/* Pour qui */}
