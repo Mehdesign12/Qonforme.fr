@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Wrench, Briefcase, Heart, Scissors, Car, Truck } from "lucide-react"
+import { ArrowRight, Wrench, Briefcase, Heart, Scissors, Car } from "lucide-react"
 import { METIERS } from "@/lib/pseo/metiers"
 import Footer from "@/components/layout/Footer"
 
