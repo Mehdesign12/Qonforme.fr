@@ -735,6 +735,81 @@ CRON_SECRET=
 - [x] Remplacé par `md:backdrop-blur-[18px]` (classe Tailwind desktop-only) — conforme CLAUDE.md
 - [x] Mobile utilise le fond opaque `rgba(255,255,255,0.96)` sans blur
 
+---
+
+## 🚀 pSEO — TODO list améliorations (Mars 2026)
+
+> Axes d'amélioration identifiés le 26 mars 2026 après audit du pSEO existant (~46 pages).
+> Pages index `/facturation`, `/guide`, `/modele` + maillage landing/footer déjà implémentés.
+
+### 🔴 Priorité HAUTE — Impact SEO direct
+
+#### P1. Enrichir les FAQ à 5-6 questions par page
+- [ ] Métiers : passer de 2-3 à 5-6 FAQ par métier (29 pages)
+- [ ] Guides : passer de 2-3 à 5-6 FAQ par guide (9 pages)
+- [ ] Impact : rich snippets FAQ dans Google (position 0)
+
+#### P2. Cross-links entre métiers connexes
+- [ ] Ajouter une section "Métiers proches" sur chaque page `/facturation/[slug]`
+- [ ] Liens vers 3-4 métiers du même secteur (plombier → électricien, chauffagiste, maçon)
+- [ ] Impact : maillage en silo dense, meilleur crawl et autorité thématique
+
+#### P3. Descriptions personnalisées par métier
+- [ ] Remplacer le template générique `Créez et envoyez vos factures...` par des descriptions uniques
+- [ ] Chaque description doit être spécifique au métier (150-160 caractères, mots-clés ciblés)
+- [ ] Impact : éviter le contenu dupliqué mince, meilleure indexation
+
+### 🟠 Priorité MOYENNE — Trafic additionnel
+
+#### P4. Ajouter 10+ métiers à fort volume de recherche
+- [ ] Comptable / Expert-comptable
+- [ ] Avocat
+- [ ] Agent immobilier
+- [ ] Boulanger / Pâtissier
+- [ ] Chauffeur VTC / Taxi
+- [ ] Femme de ménage / Nettoyage
+- [ ] Informaticien / Réparateur
+- [ ] Jardinier
+- [ ] Déménageur
+- [ ] Artisan boulanger
+- [ ] Impact : capturer la longue traîne sur des requêtes non couvertes
+
+#### P5. Ajouter 5+ guides informationnels
+- [ ] "Comment créer sa première facture"
+- [ ] "Facture sans TVA : quand et comment"
+- [ ] "Facture impayée : que faire" (recouvrement)
+- [ ] "Différence entre devis et facture"
+- [ ] "Facturer à l'étranger / export"
+- [ ] Impact : capter le trafic informationnel top-of-funnel
+
+#### P6. Cross-links blog → pSEO
+- [ ] Ajouter 2-3 liens vers guides/modèles/métiers pertinents dans chaque article blog
+- [ ] Impact : distribuer le link equity du blog (contenu régulier IA) vers le pSEO
+
+### 🟡 Priorité BASSE — Finition
+
+#### P7. JSON-LD BreadcrumbList sur les pages pSEO
+- [ ] Ajouter schema `BreadcrumbList` sur `/facturation/[slug]`, `/guide/[slug]`, `/modele/[slug]`
+- [ ] Format : Qonforme > Facturation > [Métier]
+- [ ] Impact : fil d'Ariane visible dans les SERP, meilleur CTR
+
+#### P8. Schema HowTo sur les guides
+- [ ] Convertir les guides étape par étape en schema `HowTo`
+- [ ] Candidats : "Mentions obligatoires", "Facture auto-entrepreneur", "Facture d'acompte"
+- [ ] Impact : rich snippets avec étapes dans Google
+
+#### P9. Modèles supplémentaires
+- [ ] Facture de situation (BTP)
+- [ ] Facture récurrente
+- [ ] Lettre de relance impayé
+- [ ] Impact : longue traîne additionnelle
+
+#### P10. Aperçu visuel des modèles
+- [ ] Ajouter un screenshot/preview du template sur chaque page `/modele/[slug]`
+- [ ] Impact : conversion (pas SEO direct), mais améliore le temps sur page
+
+---
+
 ### 📊 Récapitulatif de l'audit
 
 | Aspect | Statut | Priorité |
