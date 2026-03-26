@@ -3,7 +3,7 @@ export interface Modele {
   titre: string
   description: string
   motsCles: string[]
-  type: "facture" | "devis" | "avoir" | "bon-de-commande"
+  type: "facture" | "devis" | "avoir" | "bon-de-commande" | "relance"
   pourQui: string
   contenu: string[]
   conseils: string[]
@@ -230,6 +230,92 @@ export const MODELES: Modele[] = [
     ],
     mentionsSpecifiques: [
       "PROFORMA — Ce document n'est pas une facture et n'a pas de valeur comptable",
+    ],
+  },
+  {
+    slug: "facture-situation",
+    titre: "Modele de facture de situation (BTP) gratuit",
+    description: "Modele de facture de situation gratuit pour le BTP. Facturation par avancement de chantier, cumul et solde. Conforme 2026.",
+    motsCles: ["facture de situation", "facture avancement travaux", "facture situation BTP gratuit"],
+    type: "facture",
+    pourQui: "Entreprises du batiment facturant par tranches selon l'avancement des travaux (gros oeuvre, second oeuvre, finitions).",
+    contenu: [
+      "Mention « Facture de situation n° [X] »",
+      "Reference du marche ou devis accepte",
+      "Tableau d'avancement par poste (% realise)",
+      "Montant cumule des situations precedentes",
+      "Montant de la situation en cours",
+      "Retenue de garantie (5% maximum, art. L. 111-10-1 CCH)",
+      "TVA calculee sur la situation",
+      "Solde restant a facturer",
+      "Toutes les mentions obligatoires d'une facture classique",
+    ],
+    conseils: [
+      "Faites valider le pourcentage d'avancement par le maitre d'ouvrage ou le maitre d'oeuvre avant d'emettre la facture",
+      "Numerotez les situations dans l'ordre (situation 1, 2, 3...)",
+      "La retenue de garantie de 5% est liberee un an apres la reception des travaux",
+      "Conservez le tableau d'avancement signe avec chaque facture",
+    ],
+    mentionsSpecifiques: [
+      "Situation n° [X] sur [Y] — Avancement global : [Z] %",
+      "Retenue de garantie de 5 % conformement a l'article L. 111-10-1 du CCH",
+    ],
+  },
+  {
+    slug: "facture-recurrente",
+    titre: "Modele de facture recurrente gratuit",
+    description: "Modele de facture recurrente gratuit pour abonnements et prestations mensuelles. Automatisez votre facturation periodique. Conforme 2026.",
+    motsCles: ["facture recurrente", "facture abonnement", "facture mensuelle modele gratuit"],
+    type: "facture",
+    pourQui: "Prestataires de services facturant de maniere periodique : maintenance, abonnements, locations, contrats mensuels.",
+    contenu: [
+      "Toutes les mentions obligatoires d'une facture classique",
+      "Mention de la periodicite (mensuelle, trimestrielle, annuelle)",
+      "Reference du contrat ou de l'abonnement",
+      "Periode couverte (du [date] au [date])",
+      "Montant fixe ou variable selon la consommation",
+      "Conditions de resiliation",
+      "Date de prelevement ou echeance",
+      "Numero de facture unique et sequentiel (meme pour les recurrentes)",
+    ],
+    conseils: [
+      "Chaque facture recurrente doit avoir un numero unique dans votre sequence chronologique",
+      "Mentionnez clairement la periode couverte pour eviter les contestations",
+      "Utilisez un logiciel de facturation pour automatiser l'emission periodique",
+      "Prevoyez une clause de revision de prix dans le contrat",
+    ],
+    mentionsSpecifiques: [
+      "Facture periodique — Contrat n° [X]",
+      "Periode : du [date debut] au [date fin]",
+    ],
+  },
+  {
+    slug: "lettre-relance-impaye",
+    titre: "Modele de lettre de relance pour facture impayee",
+    description: "Modele gratuit de lettre de relance pour facture impayee. 3 niveaux de relance : amiable, ferme, mise en demeure. Conforme 2026.",
+    motsCles: ["lettre relance facture impayee", "relance impaye modele", "modele mise en demeure facture"],
+    type: "relance",
+    pourQui: "Toute entreprise confrontee a des retards de paiement et souhaitant relancer ses clients de maniere professionnelle et conforme.",
+    contenu: [
+      "En-tete avec coordonnees de l'entreprise",
+      "Coordonnees du debiteur",
+      "Reference de la ou des factures impayees (numero, date, montant)",
+      "Date d'echeance depassee",
+      "Montant du et penalites de retard calculees",
+      "Indemnite forfaitaire de recouvrement de 40 EUR",
+      "Delai accorde pour le reglement (8 a 15 jours)",
+      "Mention des suites en cas de non-paiement",
+      "3 modeles progressifs : relance amiable, relance ferme, mise en demeure LRAR",
+    ],
+    conseils: [
+      "Envoyez la premiere relance 7 jours apres l'echeance (email suffit)",
+      "La deuxieme relance (15 jours) doit etre plus ferme et mentionner les penalites",
+      "La mise en demeure par LRAR est un prealable necessaire a l'action en justice",
+      "Conservez une copie de toutes les relances envoyees comme preuve",
+    ],
+    mentionsSpecifiques: [
+      "Penalites de retard : taux de [X] % (minimum 3 fois le taux d'interet legal)",
+      "Indemnite forfaitaire de recouvrement : 40 EUR (article D441-5 du Code de commerce)",
     ],
   },
 ]

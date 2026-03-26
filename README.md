@@ -791,11 +791,11 @@ CRON_SECRET=
 - [x] Sections converties en `HowToStep` avec position, name et text
 - [x] Impact : rich snippets avec étapes dans Google
 
-#### P9. Modèles supplémentaires
-- [ ] Facture de situation (BTP)
-- [ ] Facture récurrente
-- [ ] Lettre de relance impayé
-- [ ] Impact : longue traîne additionnelle
+#### P9. Modèles supplémentaires — ✅ Fait
+- [x] Facture de situation BTP (`facture-situation`) — avancement, retenue de garantie
+- [x] Facture récurrente (`facture-recurrente`) — abonnements, contrats mensuels
+- [x] Lettre de relance impayé (`lettre-relance-impaye`) — 3 niveaux, pénalités, mise en demeure
+- [x] Total : 11 modèles (8 + 3), nouveau type "relance"
 
 #### P10. Aperçu visuel des modèles
 - [ ] Ajouter un screenshot/preview du template sur chaque page `/modele/[slug]`
