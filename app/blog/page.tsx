@@ -85,6 +85,19 @@ export default async function BlogPage() {
         )}
       </section>
 
+      {/* Maillage pSEO */}
+      <section className="mx-auto max-w-5xl px-4 sm:px-6 pb-16">
+        <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-6">
+          <p className="text-sm font-bold text-[#0F172A] uppercase tracking-wide mb-4">Ressources complémentaires</p>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/facturation" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#0F172A] hover:border-[#2563EB]/30 hover:text-[#2563EB] transition-all">Facturation par métier</Link>
+            <Link href="/guide" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#0F172A] hover:border-[#2563EB]/30 hover:text-[#2563EB] transition-all">Guides pratiques</Link>
+            <Link href="/modele" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#0F172A] hover:border-[#2563EB]/30 hover:text-[#2563EB] transition-all">Modèles gratuits</Link>
+            <Link href="/guide/facture-electronique-2026" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#0F172A] hover:border-[#2563EB]/30 hover:text-[#2563EB] transition-all">Facture électronique 2026</Link>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <Footer />
     </div>

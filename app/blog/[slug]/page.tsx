@@ -282,6 +282,21 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
               </div>
             </div>
 
+            {/* Ressources pSEO — maillage interne */}
+            <div className="mt-10 rounded-xl border border-slate-200 bg-[#F8FAFC] p-6">
+              <h3 className="text-sm font-bold text-[#0F172A] uppercase tracking-wide mb-4">Ressources utiles</h3>
+              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2">
+                <Link href="/guide/mentions-obligatoires-facture" className="text-sm text-slate-600 hover:text-[#2563EB] transition-colors">→ Mentions obligatoires sur une facture</Link>
+                <Link href="/guide/facture-electronique-2026" className="text-sm text-slate-600 hover:text-[#2563EB] transition-colors">→ Facture électronique 2026</Link>
+                <Link href="/guide/facture-auto-entrepreneur" className="text-sm text-slate-600 hover:text-[#2563EB] transition-colors">→ Facture auto-entrepreneur</Link>
+                <Link href="/guide/delai-paiement-facture" className="text-sm text-slate-600 hover:text-[#2563EB] transition-colors">→ Délais de paiement</Link>
+                <Link href="/modele/facture-classique" className="text-sm text-slate-600 hover:text-[#2563EB] transition-colors">→ Modèle de facture gratuit</Link>
+                <Link href="/modele/devis-travaux" className="text-sm text-slate-600 hover:text-[#2563EB] transition-colors">→ Modèle de devis travaux</Link>
+                <Link href="/facturation" className="text-sm font-semibold text-[#2563EB] hover:underline">→ Facturation par métier</Link>
+                <Link href="/guide" className="text-sm font-semibold text-[#2563EB] hover:underline">→ Tous les guides</Link>
+              </div>
+            </div>
+
             {/* Previous / Next navigation */}
             {(adjacent.prev || adjacent.next) && (
               <nav className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
