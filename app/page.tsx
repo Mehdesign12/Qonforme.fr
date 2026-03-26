@@ -877,6 +877,96 @@ export default function HomePage() {
       <UrgencyBannerSection />
       {/* 10 — FAQ */}
       <FAQSection />
+      {/* 10a — pSEO : facturation par métier + guides + modèles */}
+      <section className="bg-[#F8FAFC] py-14 sm:py-16 border-t border-slate-100">
+        <div className="mx-auto max-w-5xl px-5">
+          <p className="text-center text-[13px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-2">Ressources</p>
+          <h2 className="text-center text-2xl sm:text-3xl font-bold text-[#0F172A] mb-10">
+            Facturation adaptée à <span className="text-[#2563EB]">votre métier</span>
+          </h2>
+
+          {/* Métiers populaires */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 mb-10">
+            {[
+              { slug: "plombier", nom: "Plombier" },
+              { slug: "electricien", nom: "Électricien" },
+              { slug: "auto-entrepreneur", nom: "Auto-entrepreneur" },
+              { slug: "consultant", nom: "Consultant" },
+              { slug: "developpeur-freelance", nom: "Développeur" },
+              { slug: "graphiste", nom: "Graphiste" },
+              { slug: "coiffeur", nom: "Coiffeur" },
+              { slug: "osteopathe", nom: "Ostéopathe" },
+              { slug: "photographe", nom: "Photographe" },
+              { slug: "macon", nom: "Maçon" },
+            ].map((m) => (
+              <Link
+                key={m.slug}
+                href={`/facturation/${m.slug}`}
+                className="group rounded-xl border border-slate-200 bg-white p-3 text-center text-[13px] font-semibold text-[#0F172A] hover:border-[#2563EB]/30 hover:shadow-md hover:text-[#2563EB] transition-all"
+              >
+                {m.nom}
+              </Link>
+            ))}
+          </div>
+          <div className="text-center mb-12">
+            <Link href="/facturation" className="inline-flex items-center gap-1 text-sm font-semibold text-[#2563EB] hover:underline">
+              Voir les {29} métiers <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Guides + Modèles */}
+          <div className="grid sm:grid-cols-2 gap-6">
+            <div className="rounded-xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold text-[#0F172A] mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#2563EB]" />
+                Guides pratiques
+              </h3>
+              <ul className="space-y-2.5">
+                {[
+                  { slug: "mentions-obligatoires-facture", label: "Mentions obligatoires sur une facture" },
+                  { slug: "facture-electronique-2026", label: "Facture électronique 2026" },
+                  { slug: "facture-auto-entrepreneur", label: "Facture auto-entrepreneur" },
+                  { slug: "delai-paiement-facture", label: "Délais de paiement" },
+                ].map((g) => (
+                  <li key={g.slug}>
+                    <Link href={`/guide/${g.slug}`} className="text-sm text-slate-600 hover:text-[#2563EB] transition-colors">
+                      → {g.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <Link href="/guide" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#2563EB] hover:underline">
+                Tous les guides <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold text-[#0F172A] mb-4 flex items-center gap-2">
+                <FileCheck className="w-5 h-5 text-[#2563EB]" />
+                Modèles gratuits
+              </h3>
+              <ul className="space-y-2.5">
+                {[
+                  { slug: "facture-classique", label: "Modèle de facture classique" },
+                  { slug: "facture-auto-entrepreneur", label: "Modèle facture auto-entrepreneur" },
+                  { slug: "devis-travaux", label: "Modèle de devis travaux" },
+                  { slug: "devis-prestation-service", label: "Modèle devis prestation de service" },
+                ].map((m) => (
+                  <li key={m.slug}>
+                    <Link href={`/modele/${m.slug}`} className="text-sm text-slate-600 hover:text-[#2563EB] transition-colors">
+                      → {m.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <Link href="/modele" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#2563EB] hover:underline">
+                Tous les modèles <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 10b — Ressources (maillage interne) */}
       <section className="bg-white py-14 sm:py-16 border-t border-slate-100">
         <div className="mx-auto max-w-3xl px-5">
