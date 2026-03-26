@@ -15,7 +15,7 @@ export default function Footer() {
 
       <div className="relative z-10 mx-auto max-w-6xl px-5 pt-16 pb-10">
         {/* 4 colonnes */}
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 mb-12">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-5 mb-12">
           {/* Col 1 — Marque */}
           <div className="lg:col-span-1">
             <Link href="/">
@@ -47,7 +47,25 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Col 3 — Légal */}
+          {/* Col 3 — Ressources */}
+          <div>
+            <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Ressources</p>
+            <ul className="flex flex-col gap-2.5">
+              {[
+                { label: "Facturation par métier", href: "/facturation" },
+                { label: "Guides pratiques", href: "/guide" },
+                { label: "Modèles gratuits", href: "/modele" },
+                { label: "Mentions obligatoires", href: "/guide/mentions-obligatoires-facture" },
+                { label: "Facture électronique 2026", href: "/guide/facture-electronique-2026" },
+              ].map((l) => (
+                <li key={l.label}>
+                  <Link href={l.href} className="text-[13px] text-slate-400 transition-colors hover:text-white">{l.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Col 4 — Légal */}
           <div>
             <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Légal</p>
             <ul className="flex flex-col gap-2.5">
