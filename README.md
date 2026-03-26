@@ -744,20 +744,20 @@ CRON_SECRET=
 
 ### 🔴 Priorité HAUTE — Impact SEO direct
 
-#### P1. Enrichir les FAQ à 5-6 questions par page
-- [ ] Métiers : passer de 2-3 à 5-6 FAQ par métier (29 pages)
-- [ ] Guides : passer de 2-3 à 5-6 FAQ par guide (9 pages)
-- [ ] Impact : rich snippets FAQ dans Google (position 0)
+#### P1. Enrichir les FAQ à 5-6 questions par page — ✅ Fait
+- [x] Métiers : 29 pages enrichies à 5 FAQ chacune (147 FAQ total)
+- [x] Guides : 9 pages enrichies à 5 FAQ chacune (45 FAQ total)
+- [x] Impact : rich snippets FAQ dans Google (position 0)
 
-#### P2. Cross-links entre métiers connexes
-- [ ] Ajouter une section "Métiers proches" sur chaque page `/facturation/[slug]`
-- [ ] Liens vers 3-4 métiers du même secteur (plombier → électricien, chauffagiste, maçon)
-- [ ] Impact : maillage en silo dense, meilleur crawl et autorité thématique
+#### P2. Cross-links entre métiers connexes — ✅ Fait
+- [x] Section "Métiers proches" sur chaque page `/facturation/[slug]` (4 liens par page)
+- [x] Relations bidirectionnelles par secteur (BTP↔BTP, services↔services, etc.)
+- [x] Impact : maillage en silo dense, meilleur crawl et autorité thématique
 
-#### P3. Descriptions personnalisées par métier
-- [ ] Remplacer le template générique `Créez et envoyez vos factures...` par des descriptions uniques
-- [ ] Chaque description doit être spécifique au métier (150-160 caractères, mots-clés ciblés)
-- [ ] Impact : éviter le contenu dupliqué mince, meilleure indexation
+#### P3. Descriptions personnalisées par métier — ✅ Fait
+- [x] 29 descriptions uniques avec mots-clés spécifiques (TVA, normes, articles CGI)
+- [x] Chaque description 150-160 caractères, fallback vers template si slug inconnu
+- [x] Impact : éviter le contenu dupliqué mince, meilleure indexation
 
 ### 🟠 Priorité MOYENNE — Trafic additionnel
 
