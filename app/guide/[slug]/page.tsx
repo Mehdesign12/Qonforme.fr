@@ -32,6 +32,18 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   const guide = getGuideBySlug(slug)
   if (!guide) notFound()
 
+  // Guides dont les sections forment des étapes → schema HowTo
+  const HOWTO_SLUGS = new Set([
+    "premiere-facture",
+    "facture-acompte",
+    "facture-impayee",
+    "avoir-facture",
+    "mentions-obligatoires-facture",
+    "facture-auto-entrepreneur",
+  ])
+
+  const isHowTo = HOWTO_SLUGS.has(guide.slug)
+
   const jsonLd = [
     {
       "@context": "https://schema.org",
@@ -47,6 +59,18 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         "@type": "Question",
         name: f.question,
         acceptedAnswer: { "@type": "Answer", text: f.reponse },
+      })),
+    }] : []),
+    ...(isHowTo ? [{
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      name: guide.titre,
+      description: guide.description,
+      step: guide.sections.map((s, i) => ({
+        "@type": "HowToStep",
+        position: i + 1,
+        name: s.titre,
+        text: s.contenu,
       })),
     }] : []),
     {

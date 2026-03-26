@@ -786,10 +786,10 @@ CRON_SECRET=
 - [x] BreadcrumbList sur `/guide/[slug]` : Accueil > Guides pratiques > [Guide]
 - [x] BreadcrumbList sur `/modele/[slug]` : Accueil > Modèles gratuits > [Type]
 
-#### P8. Schema HowTo sur les guides
-- [ ] Convertir les guides étape par étape en schema `HowTo`
-- [ ] Candidats : "Mentions obligatoires", "Facture auto-entrepreneur", "Facture d'acompte"
-- [ ] Impact : rich snippets avec étapes dans Google
+#### P8. Schema HowTo sur les guides — ✅ Fait
+- [x] Schema `HowTo` conditionnel sur 6 guides : `premiere-facture`, `facture-acompte`, `facture-impayee`, `avoir-facture`, `mentions-obligatoires-facture`, `facture-auto-entrepreneur`
+- [x] Sections converties en `HowToStep` avec position, name et text
+- [x] Impact : rich snippets avec étapes dans Google
 
 #### P9. Modèles supplémentaires
 - [ ] Facture de situation (BTP)
