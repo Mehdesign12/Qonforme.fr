@@ -804,6 +804,62 @@ CRON_SECRET=
 
 ---
 
+## 🚀 Trafic organique — TODO list Phase 2 (Mars 2026)
+
+> Axes d'amélioration identifiés le 27 mars 2026 pour augmenter le trafic organique au-delà du pSEO existant (64 pages).
+
+### 🔴 Priorité HAUTE — Gros levier trafic
+
+#### T1. Pages ville x métier (pSEO géolocalisé)
+- [ ] Créer `lib/pseo/villes.ts` (top 20 villes françaises)
+- [ ] Créer la route `/facturation/[metier]-[ville]/page.tsx`
+- [ ] Contenu personnalisé par ville (CCI, chambre des métiers, spécificités)
+- [ ] ~39 métiers x 20 villes = ~780 pages
+- [ ] Sitemap, JSON-LD, OG dynamiques, maillage interne
+- [ ] Impact : volume massif de longue traîne géolocalisée
+
+#### T2. Pages comparatif "Qonforme vs X"
+- [ ] Créer `lib/pseo/comparatifs.ts` (données concurrents)
+- [ ] Créer la route `/comparatif/[concurrent]/page.tsx`
+- [ ] Candidats : Henrri, Facture.net, Tiime, Abby, Freebe, Pennylane, Indy, Mon Expert en Gestion
+- [ ] Tableau comparatif features, prix, conformité Factur-X
+- [ ] Impact : requêtes à forte intention d'achat
+
+#### T3. Glossaire facturation
+- [ ] Créer `lib/pseo/glossaire.ts` (30-50 termes)
+- [ ] Créer les routes `/glossaire/page.tsx` (index) + `/glossaire/[terme]/page.tsx`
+- [ ] Termes : acompte, avoir, CGV, Factur-X, SIRET, TVA intracommunautaire, e-reporting, PDP...
+- [ ] Impact : requêtes définitionnelles, maillage vers guides/métiers
+
+### 🟠 Priorité MOYENNE — Optimisation contenu existant
+
+#### T4. Augmenter la fréquence du blog IA
+- [ ] Passer le cron blog à 3-5 articles/semaine
+- [ ] Ajouter des sujets longue traîne ciblés dans `lib/ai/seo-topics.ts`
+- [ ] Impact : plus de pages indexées, plus de trafic informationnel
+
+#### T5. Auto-linking blog → pSEO
+- [ ] Créer un système de détection de mots-clés dans le contenu blog
+- [ ] Transformer automatiquement les mots-clés en liens vers les pages pSEO
+- [ ] Impact : distribution du link equity sans effort
+
+#### T6. FAQ schema sur la page pricing
+- [ ] Ajouter un schema FAQPage sur `/pricing` avec 5-6 questions fréquentes
+- [ ] Impact : rich snippets sur une page à forte intention d'achat
+
+### 🟡 Priorité BASSE — Long terme
+
+#### T7. Schema SoftwareApplication enrichi
+- [ ] Enrichir le schema existant avec ratings, screenshots, prix
+- [ ] Impact : meilleur affichage dans les SERP
+
+#### T8. Stratégie backlinks
+- [ ] Inscription annuaires SaaS français (Capterra FR, AppVizer, GetApp)
+- [ ] Guest posts blogs comptabilité/artisanat
+- [ ] Partenariats chambres des métiers
+
+---
+
 ### 📊 Récapitulatif de l'audit
 
 | Aspect | Statut | Priorité |
