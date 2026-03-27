@@ -5,6 +5,7 @@ import { GUIDES } from "@/lib/pseo/guides";
 import { MODELES } from "@/lib/pseo/modeles";
 import { VILLES } from "@/lib/pseo/villes";
 import { COMPARATIFS } from "@/lib/pseo/comparatifs";
+import { GLOSSAIRE } from "@/lib/pseo/glossaire";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://qonforme.fr";
@@ -140,6 +141,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.7,
+    })),
+    // Glossaire
+    {
+      url: `${baseUrl}/glossaire`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    },
+    ...GLOSSAIRE.map((t) => ({
+      url: `${baseUrl}/glossaire/${t.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
     })),
     // pSEO géolocalisé : métier x ville
     ...METIERS.flatMap((m) =>

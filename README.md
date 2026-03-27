@@ -824,11 +824,11 @@ CRON_SECRET=
 - [x] Concurrents : Henrri, Facture.net, Tiime, Abby, Freebe, Pennylane, Indy, MEG
 - [x] Sitemap : 9 entrées + lien footer
 
-#### T3. Glossaire facturation
-- [ ] Créer `lib/pseo/glossaire.ts` (30-50 termes)
-- [ ] Créer les routes `/glossaire/page.tsx` (index) + `/glossaire/[terme]/page.tsx`
-- [ ] Termes : acompte, avoir, CGV, Factur-X, SIRET, TVA intracommunautaire, e-reporting, PDP...
-- [ ] Impact : requêtes définitionnelles, maillage vers guides/métiers
+#### T3. Glossaire facturation — ✅ Fait
+- [x] `lib/pseo/glossaire.ts` : 27 termes (acompte, avoir, Factur-X, FEC, PDP, PPF, TVA intracom...)
+- [x] `app/glossaire/page.tsx` (index trié A-Z) + `app/glossaire/[slug]/page.tsx` (définition + exemple + liens)
+- [x] JSON-LD DefinedTerm + BreadcrumbList sur chaque terme
+- [x] Sitemap : 28 entrées + lien footer
 
 ### 🟠 Priorité MOYENNE — Optimisation contenu existant
 
