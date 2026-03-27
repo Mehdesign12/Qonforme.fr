@@ -810,20 +810,19 @@ CRON_SECRET=
 
 ### 🔴 Priorité HAUTE — Gros levier trafic
 
-#### T1. Pages ville x métier (pSEO géolocalisé)
-- [ ] Créer `lib/pseo/villes.ts` (top 20 villes françaises)
-- [ ] Créer la route `/facturation/[metier]-[ville]/page.tsx`
-- [ ] Contenu personnalisé par ville (CCI, chambre des métiers, spécificités)
-- [ ] ~39 métiers x 20 villes = ~780 pages
-- [ ] Sitemap, JSON-LD, OG dynamiques, maillage interne
-- [ ] Impact : volume massif de longue traîne géolocalisée
+#### T1. Pages ville x métier (pSEO géolocalisé) — ✅ Fait
+- [x] `lib/pseo/villes.ts` : 20 villes françaises (CCI, chambre des métiers)
+- [x] `app/facturation/[slug]/[ville]/page.tsx` : URL `/facturation/plombier/paris`
+- [x] Contenu : infos locales, features métier, FAQ, maillage inter-villes/inter-métiers
+- [x] 39 métiers x 20 villes = **780 pages** avec JSON-LD (FAQPage + BreadcrumbList + LocalBusiness)
+- [x] Sitemap : 780 entrées (priority 0.6)
 
-#### T2. Pages comparatif "Qonforme vs X"
-- [ ] Créer `lib/pseo/comparatifs.ts` (données concurrents)
-- [ ] Créer la route `/comparatif/[concurrent]/page.tsx`
-- [ ] Candidats : Henrri, Facture.net, Tiime, Abby, Freebe, Pennylane, Indy, Mon Expert en Gestion
-- [ ] Tableau comparatif features, prix, conformité Factur-X
-- [ ] Impact : requêtes à forte intention d'achat
+#### T2. Pages comparatif "Qonforme vs X" — ✅ Fait
+- [x] `lib/pseo/comparatifs.ts` : 8 concurrents avec features, prix, points forts/faibles, verdict
+- [x] `app/comparatif/[slug]/page.tsx` : tableau comparatif, JSON-LD Article + BreadcrumbList
+- [x] `app/comparatif/page.tsx` : page index avec 8 cards
+- [x] Concurrents : Henrri, Facture.net, Tiime, Abby, Freebe, Pennylane, Indy, MEG
+- [x] Sitemap : 9 entrées + lien footer
 
 #### T3. Glossaire facturation
 - [ ] Créer `lib/pseo/glossaire.ts` (30-50 termes)
