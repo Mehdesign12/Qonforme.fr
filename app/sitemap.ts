@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { METIERS } from "@/lib/pseo/metiers";
 import { GUIDES } from "@/lib/pseo/guides";
 import { MODELES } from "@/lib/pseo/modeles";
+import { VILLES } from "@/lib/pseo/villes";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://qonforme.fr";
@@ -126,5 +127,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...metierEntries,
     ...guideEntries,
     ...modeleEntries,
+    // pSEO géolocalisé : métier x ville
+    ...METIERS.flatMap((m) =>
+      VILLES.map((v) => ({
+        url: `${baseUrl}/facturation/${m.slug}/${v.slug}`,
+        lastModified: new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.6,
+      }))
+    ),
   ];
 }
