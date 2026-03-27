@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { CheckCircle2, XCircle, ArrowRight, Minus } from "lucide-react"
+import { CheckCircle2, XCircle, ArrowRight } from "lucide-react"
 import { COMPARATIFS, getComparatifBySlug, QONFORME_FEATURES } from "@/lib/pseo/comparatifs"
 import Footer from "@/components/layout/Footer"
 
