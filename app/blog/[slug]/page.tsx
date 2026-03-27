@@ -4,6 +4,7 @@ import Image from "next/image"
 import { notFound } from "next/navigation"
 import { createAdminClient } from "@/lib/supabase/server"
 import { markdownToHtml } from "@/lib/markdown"
+import { autoLinkPseo } from "@/lib/blog-autolink"
 import {
   getReadingTime,
   getCategoryFromPrompt,
@@ -103,7 +104,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const post = await getPost(slug)
   if (!post) notFound()
 
-  const contentHtml = markdownToHtml(post.content)
+  const contentHtml = autoLinkPseo(markdownToHtml(post.content))
   const readingTime = getReadingTime(post.content)
   const category = getCategoryFromPrompt(post.ai_prompt)
   const headings = extractHeadings(post.content)

@@ -837,10 +837,10 @@ CRON_SECRET=
 - [x] Sujets : nouveaux métiers, glossaire, comparatifs, questions pratiques, études de cas
 - [x] Note : fréquence du cron à ajuster dans cron-job.org (passer de 1x/jour à 3-5x/semaine)
 
-#### T5. Auto-linking blog → pSEO
-- [ ] Créer un système de détection de mots-clés dans le contenu blog
-- [ ] Transformer automatiquement les mots-clés en liens vers les pages pSEO
-- [ ] Impact : distribution du link equity sans effort
+#### T5. Auto-linking blog → pSEO — ✅ Fait
+- [x] `lib/blog-autolink.ts` : 19 patterns regex → liens vers guides, modèles, glossaire
+- [x] Appliqué sur `contentHtml` dans `app/blog/[slug]/page.tsx` (1 lien max par keyword par article)
+- [x] Évite les doublons et les remplacements dans les `<a>` existants
 
 #### T6. FAQ schema sur la page pricing
 - [ ] Ajouter un schema FAQPage sur `/pricing` avec 5-6 questions fréquentes
