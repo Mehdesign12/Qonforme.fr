@@ -842,9 +842,9 @@ CRON_SECRET=
 - [x] Appliqué sur `contentHtml` dans `app/blog/[slug]/page.tsx` (1 lien max par keyword par article)
 - [x] Évite les doublons et les remplacements dans les `<a>` existants
 
-#### T6. FAQ schema sur la page pricing
-- [ ] Ajouter un schema FAQPage sur `/pricing` avec 5-6 questions fréquentes
-- [ ] Impact : rich snippets sur une page à forte intention d'achat
+#### T6. FAQ schema sur la page pricing — ✅ Fait
+- [x] JSON-LD FAQPage avec 6 questions (conformité 2026, essai gratuit, plans, résiliation, BTP, mobile)
+- [x] Impact : rich snippets sur une page à forte intention d'achat
 
 ### 🟡 Priorité BASSE — Long terme
 

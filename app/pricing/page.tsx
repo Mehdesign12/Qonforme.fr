@@ -40,11 +40,32 @@ export default async function PricingPage() {
     }
   }
 
+  const pricingFaq = [
+    { question: "Qonforme est-il conforme a la reforme de facturation electronique 2026 ?", reponse: "Oui, Qonforme genere nativement des factures au format Factur-X EN 16931, le format obligatoire pour la facturation electronique B2B a partir de septembre 2026." },
+    { question: "Puis-je essayer Qonforme gratuitement ?", reponse: "Oui, vous pouvez creer un compte et tester Qonforme sans carte bancaire. L'abonnement demarre a partir de 9 EUR/mois sans engagement." },
+    { question: "Quelle est la difference entre le plan Starter et le plan Pro ?", reponse: "Le plan Starter (9 EUR/mois) couvre la facturation essentielle. Le plan Pro (19 EUR/mois) ajoute les relances automatiques, l'export FEC comptable et le support prioritaire." },
+    { question: "Puis-je resilier a tout moment ?", reponse: "Oui, Qonforme est sans engagement. Vous pouvez resilier votre abonnement a tout moment depuis les parametres de votre compte. Vos donnees restent accessibles pendant 30 jours apres la resiliation." },
+    { question: "Qonforme gere-t-il l'autoliquidation TVA pour le BTP ?", reponse: "Oui, Qonforme gere automatiquement l'autoliquidation de TVA pour la sous-traitance BTP conformement a l'article 283-2 nonies du CGI. La mention est ajoutee automatiquement sur vos factures." },
+    { question: "Est-ce que Qonforme fonctionne sur mobile ?", reponse: "Oui, Qonforme est entierement responsive et fonctionne sur smartphone, tablette et ordinateur. Vous pouvez creer et envoyer des factures depuis n'importe quel appareil." },
+  ]
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: pricingFaq.map(f => ({
+      "@type": "Question",
+      name: f.question,
+      acceptedAnswer: { "@type": "Answer", text: f.reponse },
+    })),
+  }
+
   return (
-    /*
+    <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+    {/*
      * min-h = 100dvh pour couvrir exactement le viewport mobile (barre Safari incluse).
      * overflow-x-hidden évite tout scroll horizontal accidentel.
-     */
+     */}
     <div className="relative min-h-[100dvh] flex flex-col overflow-x-hidden">
 
       {/* ── Fond dégradé (identique AuthLayout) ──────────────────────────── */}
@@ -111,5 +132,6 @@ export default async function PricingPage() {
         <PricingSelector />
       </div>
     </div>
+    </>
   )
 }
