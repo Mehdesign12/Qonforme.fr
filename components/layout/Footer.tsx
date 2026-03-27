@@ -57,6 +57,7 @@ export default function Footer() {
                 { label: "Modèles gratuits", href: "/modele" },
                 { label: "Mentions obligatoires", href: "/guide/mentions-obligatoires-facture" },
                 { label: "Facture électronique 2026", href: "/guide/facture-electronique-2026" },
+                { label: "Comparatifs", href: "/comparatif" },
               ].map((l) => (
                 <li key={l.label}>
                   <Link href={l.href} className="text-[13px] text-slate-400 transition-colors hover:text-white">{l.label}</Link>
