@@ -832,10 +832,10 @@ CRON_SECRET=
 
 ### 🟠 Priorité MOYENNE — Optimisation contenu existant
 
-#### T4. Augmenter la fréquence du blog IA
-- [ ] Passer le cron blog à 3-5 articles/semaine
-- [ ] Ajouter des sujets longue traîne ciblés dans `lib/ai/seo-topics.ts`
-- [ ] Impact : plus de pages indexées, plus de trafic informationnel
+#### T4. Augmenter la fréquence du blog IA — ✅ Fait
+- [x] 30 nouveaux sujets longue traîne ajoutés (rounds 9-11) → total **76 sujets**
+- [x] Sujets : nouveaux métiers, glossaire, comparatifs, questions pratiques, études de cas
+- [x] Note : fréquence du cron à ajuster dans cron-job.org (passer de 1x/jour à 3-5x/semaine)
 
 #### T5. Auto-linking blog → pSEO
 - [ ] Créer un système de détection de mots-clés dans le contenu blog

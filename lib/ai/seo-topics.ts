@@ -284,6 +284,162 @@ export const SEO_TOPICS: Topic[] = [
     keywords: ["URSSAF artisan", "cotisations sociales", "déclaration URSSAF", "échéances sociales TPE"],
     category: "réglementation",
   },
+
+  // ── Round 9 — Nouveaux métiers & longue traîne ────────────────────────
+  {
+    topic: "Facturation pour avocat : convention d'honoraires, TVA et notes d'honoraires",
+    keywords: ["facture avocat", "convention honoraires avocat", "note honoraires avocat", "TVA avocat"],
+    category: "pratique",
+  },
+  {
+    topic: "Facturation pour comptable et expert-comptable : spécificités et obligations",
+    keywords: ["facture expert comptable", "facturation cabinet comptable", "honoraires comptable"],
+    category: "pratique",
+  },
+  {
+    topic: "Chauffeur VTC : comment facturer ses courses et gérer sa comptabilité",
+    keywords: ["facture VTC", "facturation chauffeur privé", "comptabilité VTC", "auto-entrepreneur VTC"],
+    category: "pratique",
+  },
+  {
+    topic: "Agent immobilier : facturer ses commissions et honoraires correctement",
+    keywords: ["facture agent immobilier", "commission immobilière", "honoraires agence immobilière"],
+    category: "pratique",
+  },
+  {
+    topic: "Boulanger-pâtissier : TVA à 5,5 %, 10 % ou 20 % — comment s'y retrouver",
+    keywords: ["TVA boulangerie", "taux TVA boulanger", "facture boulangerie", "TVA viennoiseries"],
+    category: "pratique",
+  },
+  {
+    topic: "Femme de ménage et entreprise de nettoyage : CESU, crédit d'impôt et facturation",
+    keywords: ["facture ménage", "CESU facturation", "crédit impôt SAP", "facturation nettoyage"],
+    category: "pratique",
+  },
+  {
+    topic: "C'est quoi un avoir en facturation ? Définition et exemples concrets",
+    keywords: ["avoir facturation définition", "note de crédit explication", "quand faire un avoir", "exemple avoir"],
+    category: "guide",
+  },
+  {
+    topic: "Comment calculer les pénalités de retard sur une facture impayée",
+    keywords: ["calcul pénalités retard", "pénalités retard facture", "taux intérêt légal", "formule pénalités"],
+    category: "tutoriel",
+  },
+  {
+    topic: "Factur-X : tout comprendre sur le format de facture électronique français",
+    keywords: ["Factur-X explication", "format Factur-X", "norme EN 16931 Factur-X", "facture hybride PDF XML"],
+    category: "guide",
+  },
+  {
+    topic: "Quel logiciel de facturation gratuit choisir en 2026 ?",
+    keywords: ["logiciel facturation gratuit 2026", "meilleur logiciel gratuit facture", "facturation gratuite comparatif"],
+    category: "comparatif",
+  },
+
+  // ── Round 10 — Questions pratiques & glossaire ────────────────────────
+  {
+    topic: "Comment facturer un client à l'étranger : TVA, devises et obligations",
+    keywords: ["facturer étranger", "facture export", "TVA intracommunautaire", "facture internationale"],
+    category: "guide",
+  },
+  {
+    topic: "Facture sans TVA : dans quels cas et comment la rédiger",
+    keywords: ["facture sans TVA", "franchise TVA facture", "facture HT seulement", "exonération TVA"],
+    category: "guide",
+  },
+  {
+    topic: "PDP vs PPF : quelle plateforme de facturation électronique choisir ?",
+    keywords: ["PDP PPF différence", "plateforme dématérialisation", "choisir PDP ou PPF", "facturation électronique plateforme"],
+    category: "comparatif",
+  },
+  {
+    topic: "Facture de situation BTP : comment facturer par avancement de chantier",
+    keywords: ["facture situation BTP", "avancement chantier", "retenue garantie", "facturation progressive"],
+    category: "tutoriel",
+  },
+  {
+    topic: "Déménageur : obligations de facturation, devis gratuit et assurance",
+    keywords: ["facture déménagement", "devis déménageur", "obligation devis déménagement", "assurance déménageur"],
+    category: "pratique",
+  },
+  {
+    topic: "Informaticien et réparateur : comment facturer un dépannage ou une maintenance",
+    keywords: ["facture réparation informatique", "devis dépannage informatique", "facturation maintenance IT"],
+    category: "pratique",
+  },
+  {
+    topic: "Taxi : note de course, facture et obligations du chauffeur de taxi",
+    keywords: ["facture taxi", "note course taxi", "obligation facture taxi", "taximètre facturation"],
+    category: "pratique",
+  },
+  {
+    topic: "Jardinier : crédit d'impôt SAP, CESU et facturation de l'entretien de jardin",
+    keywords: ["facture jardinier", "crédit impôt jardinage", "CESU jardinier", "facturation entretien jardin"],
+    category: "pratique",
+  },
+  {
+    topic: "Le glossaire de la facturation : 25 termes essentiels à connaître",
+    keywords: ["glossaire facturation", "vocabulaire facture", "termes facturation", "lexique comptabilité"],
+    category: "guide",
+  },
+  {
+    topic: "Qonforme vs Henrri : quel logiciel de facturation choisir en 2026 ?",
+    keywords: ["Qonforme vs Henrri", "alternative Henrri", "comparatif Henrri Qonforme", "Henrri Factur-X"],
+    category: "comparatif",
+  },
+
+  // ── Round 11 — Cas d'usage & approfondissements ──────────────────────
+  {
+    topic: "Première facture : guide pas à pas pour créer son premier document",
+    keywords: ["première facture", "créer facture débutant", "comment facturer première fois", "modèle première facture"],
+    category: "tutoriel",
+  },
+  {
+    topic: "Facture impayée : les 5 étapes du recouvrement amiable et judiciaire",
+    keywords: ["facture impayée recouvrement", "relance impayé étapes", "mise en demeure facture", "injonction payer"],
+    category: "guide",
+  },
+  {
+    topic: "Différence entre devis et facture : rôles juridiques et obligations",
+    keywords: ["différence devis facture", "devis vs facture", "valeur juridique devis", "quand facturer"],
+    category: "guide",
+  },
+  {
+    topic: "Qonforme vs Pennylane : comparatif complet pour TPE et artisans",
+    keywords: ["Qonforme vs Pennylane", "alternative Pennylane", "Pennylane prix", "comparatif Pennylane"],
+    category: "comparatif",
+  },
+  {
+    topic: "Comment un électricien gère sa facturation avec Qonforme : étude de cas",
+    keywords: ["témoignage électricien", "facturation électricien logiciel", "cas usage artisan", "retour expérience"],
+    category: "cas-usage",
+  },
+  {
+    topic: "La retenue de garantie dans le BTP : fonctionnement et facturation",
+    keywords: ["retenue garantie BTP", "5% retenue garantie", "facturation retenue", "libération garantie"],
+    category: "guide",
+  },
+  {
+    topic: "Qonforme vs Tiime : quel logiciel pour les indépendants en 2026 ?",
+    keywords: ["Qonforme vs Tiime", "alternative Tiime", "Tiime facturation avis", "comparatif indépendant"],
+    category: "comparatif",
+  },
+  {
+    topic: "Auto-entrepreneur : comment gérer la TVA quand on dépasse les seuils",
+    keywords: ["auto-entrepreneur TVA seuils", "dépassement franchise TVA", "micro-entreprise TVA 2026"],
+    category: "guide",
+  },
+  {
+    topic: "Formation Qualiopi et facturation : convention, facture et exonération TVA",
+    keywords: ["facturation formation Qualiopi", "convention formation facture", "exonération TVA formation"],
+    category: "pratique",
+  },
+  {
+    topic: "Photographe freelance : cession de droits, TVA et facturation créative",
+    keywords: ["facture photographe", "cession droits photo", "TVA photographe", "facturation créative"],
+    category: "pratique",
+  },
 ]
 
 /**
