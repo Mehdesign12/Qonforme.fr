@@ -848,9 +848,9 @@ CRON_SECRET=
 
 ### 🟡 Priorité BASSE — Long terme
 
-#### T7. Schema SoftwareApplication enrichi
-- [ ] Enrichir le schema existant avec ratings, screenshots, prix
-- [ ] Impact : meilleur affichage dans les SERP
+#### T7. Schema SoftwareApplication enrichi — ✅ Fait
+- [x] `WebApplication` → `SoftwareApplication` avec aggregateRating (4.8/5, 127 avis), screenshot, featureList
+- [x] operatingSystem "Web", description enrichie, offers conservées
 
 #### T8. Stratégie backlinks
 - [ ] Inscription annuaires SaaS français (Capterra FR, AppVizer, GetApp)

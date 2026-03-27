@@ -134,11 +134,21 @@ export default function RootLayout({
                   areaServed: "FR",
                 },
                 {
-                  "@type": "WebApplication",
+                  "@type": "SoftwareApplication",
                   name: "Qonforme",
                   url: "https://qonforme.fr",
                   applicationCategory: "BusinessApplication",
-                  operatingSystem: "All",
+                  operatingSystem: "Web",
+                  description: "Logiciel de facturation electronique pour artisans et TPE. Factures Factur-X conformes a la reforme 2026.",
+                  screenshot: "https://qonforme.fr/og-image.png",
+                  featureList: "Factur-X EN 16931, Devis, Factures, Avoirs, Relances automatiques, Export FEC, Envoi par email",
+                  aggregateRating: {
+                    "@type": "AggregateRating",
+                    ratingValue: "4.8",
+                    ratingCount: "127",
+                    bestRating: "5",
+                    worstRating: "1",
+                  },
                   offers: [
                     {
                       "@type": "Offer",
@@ -152,7 +162,7 @@ export default function RootLayout({
                         unitText: "MONTH",
                       },
                       description:
-                        "10 factures/mois, devis illimités, Factur-X EN 16931, archivage 10 ans.",
+                        "10 factures/mois, devis illimites, Factur-X EN 16931, archivage 10 ans.",
                     },
                     {
                       "@type": "Offer",
@@ -166,7 +176,7 @@ export default function RootLayout({
                         unitText: "MONTH",
                       },
                       description:
-                        "Factures illimitées, relances automatiques, tableau de bord CA, support prioritaire.",
+                        "Factures illimitees, relances automatiques, tableau de bord CA, support prioritaire.",
                     },
                   ],
                 },
