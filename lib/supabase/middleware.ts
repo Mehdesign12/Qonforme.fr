@@ -43,7 +43,18 @@ export async function updateSession(request: NextRequest) {
     '/reset-password',
     '/demo',
     '/pricing',
+    '/blog',
+    '/cgu',
+    '/mentions-legales',
+    '/confidentialite',
+    '/facturation',
+    '/guide',
+    '/modele',
+    '/comparatif',
+    '/glossaire',
     '/api/webhooks/stripe', // webhook Stripe : ne doit jamais être bloqué
+    '/api/og',
+    '/api/preview',
   ]
 
   const isPublic = publicPaths.some((path) =>
