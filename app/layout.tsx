@@ -5,6 +5,7 @@ import { ReduxProvider } from "@/components/shared/ReduxProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { AutoDarkMode } from "@/components/layout/AutoDarkMode";
+import { PostHogProvider } from "@/components/shared/PostHogProvider";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -195,10 +196,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AutoDarkMode />
-          <ReduxProvider>
-            {children}
-            <Toaster richColors position="top-right" />
-          </ReduxProvider>
+          <PostHogProvider>
+            <ReduxProvider>
+              {children}
+              <Toaster richColors position="top-right" />
+            </ReduxProvider>
+          </PostHogProvider>
         </ThemeProvider>
       </body>
     </html>
