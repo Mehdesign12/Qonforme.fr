@@ -117,46 +117,6 @@ function HowItWorksSection() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────
-   Section logos / marques — EXISTANTE inchangée
-───────────────────────────────────────────────────────── */
-function TrustedBySection() {
-  const logos = [
-    { name: "Batimat", abbr: "BAT", color: "#FF6B35" },
-    { name: "Qualibat", abbr: "QLB", color: "#1D4ED8" },
-    { name: "Artisans de France", abbr: "ADF", color: "#059669" },
-    { name: "CMA France", abbr: "CMA", color: "#7C3AED" },
-    { name: "BTP Banque", abbr: "BTP", color: "#0F172A" },
-    { name: "Chorus Pro", abbr: "CHO", color: "#2563EB" },
-  ];
-  return (
-    <section className="border-y border-[#E2E8F0] bg-white py-12">
-      <div className="mx-auto max-w-5xl px-5">
-        <p className="mb-8 text-center text-[13px] font-medium uppercase tracking-[0.2em] text-slate-400">Ils nous font confiance</p>
-        <div className="relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-white to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-white to-transparent" />
-          <div className="flex gap-12 animate-marquee whitespace-nowrap">
-            {[...logos, ...logos].map((logo, i) => (
-              <div key={i} className="inline-flex shrink-0 items-center gap-2.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-5 py-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold text-white" style={{ backgroundColor: logo.color }}>{logo.abbr}</span>
-                <span className="text-sm font-semibold text-slate-600">{logo.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mt-10 grid grid-cols-3 gap-4 sm:gap-6">
-          {[{ value: "500+", label: "artisans actifs" }, { value: "10 000+", label: "factures transmises" }, { value: "99,9 %", label: "taux de conformité" }].map((s, i) => (
-            <FadeIn key={s.label} delay={i * 0.1} className="text-center">
-              <p className="font-mono text-2xl font-extrabold text-[#0F172A] sm:text-3xl">{s.value}</p>
-              <p className="mt-0.5 text-[13px] text-slate-400">{s.label}</p>
-            </FadeIn>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ─────────────────────────────────────────────────────────
    Section feature alternée — EXISTANTE, pills ajoutées
@@ -832,9 +792,7 @@ export default function HomePage() {
       <LandingHero />
       {/* 2 — Comment ça marche */}
       <HowItWorksSection />
-      {/* 3 — Social proof */}
-      <TrustedBySection />
-      {/* 4 — Chiffres clés */}
+      {/* 3 — Chiffres clés */}
       <KeyMetricsSection />
       {/* 5 — Création rapide */}
       <FeatureSection
