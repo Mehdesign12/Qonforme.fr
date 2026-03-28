@@ -577,11 +577,30 @@ function FAQSection() {
 ───────────────────────────────────────────────────────── */
 function ContactSection() {
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ prenom: "", nom: "", email: "", sujet: "", message: "" });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent(true);
+    setSending(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Erreur lors de l'envoi");
+      }
+      setSent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'envoi");
+    } finally {
+      setSending(false);
+    }
   };
 
   const inputCls = "w-full rounded-[10px] border border-[#E2E8F0] bg-white px-3.5 py-3 text-sm text-[#0F172A] placeholder-slate-400 outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.1)]";
@@ -673,9 +692,17 @@ function ContactSection() {
                   <label className={labelCls}>Message</label>
                   <textarea required rows={4} placeholder="Décris ta question ou ton problème..." value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} className={`${inputCls} resize-none`} />
                 </div>
+                {/* Error */}
+                {error && (
+                  <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+                )}
                 {/* Submit */}
-                <button type="submit" className="mt-1 w-full rounded-[10px] bg-[#2563EB] py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[#1D4ED8]">
-                  Envoyer mon message →
+                <button
+                  type="submit"
+                  disabled={sending}
+                  className="mt-1 w-full rounded-[10px] bg-[#2563EB] py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[#1D4ED8] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sending ? "Envoi en cours…" : "Envoyer mon message →"}
                 </button>
               </form>
             )}
