@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { Menu, ArrowRight, Shield, Zap, Play, Lock, X } from "lucide-react";
+import { Menu, ArrowRight, Shield, Zap, Play, Lock, X, Star } from "lucide-react";
 import { motion } from "motion/react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -332,37 +332,27 @@ function Hero() {
             </Link>
           </motion.div>
 
-          {/* Social proof */}
+          {/* Social proof — Trustpilot + reassurance */}
           <motion.div
-            className="flex flex-col items-center gap-2.5 pt-1 md:items-start"
+            className="flex flex-col items-center gap-3 pt-2 md:items-start"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.34, duration: 0.5 }}
           >
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2.5">
-                {[
-                  { bg: "#DBEAFE", initials: "GM" },
-                  { bg: "#EDE9FE", initials: "AB" },
-                  { bg: "#D1FAE5", initials: "PL" },
-                  { bg: "#FEF3C7", initials: "+5" },
-                ].map((a, i) => (
-                  <div
-                    key={i}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-[10px] font-semibold text-slate-600"
-                    style={{ backgroundColor: a.bg }}
-                  >
-                    {a.initials}
-                  </div>
-                ))}
+            {/* Trustpilot-style rating */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-[#00B67A] text-[#00B67A]" />
+                  ))}
+                </div>
+                <span className="text-[13px] font-bold text-[#0F172A]">4.8/5</span>
               </div>
-              <div>
-                <p className="text-[13px] font-semibold text-[#0F172A]">500+ artisans</p>
-                <p className="text-[11px] text-slate-400">utilisent Qonforme au quotidien</p>
-              </div>
+              <span className="text-[12px] text-slate-400">sur Trustpilot</span>
             </div>
 
-            {/* 2.4 — Badges de réassurance mis à jour */}
+            {/* Badges de réassurance */}
             <div className="flex flex-wrap justify-center gap-2 md:justify-start">
               {[
                 {
@@ -374,14 +364,14 @@ function Hero() {
                 },
                 {
                   icon: <Shield className="h-3 w-3" />,
-                  label: "Conforme réglementation 2026",
+                  label: "Conforme réglementation",
                   color: "text-[#059669]",
                   bg: "bg-[#ECFDF5]",
                   border: "border-[#A7F3D0]/60",
                 },
                 {
                   icon: <Lock className="h-3 w-3" />,
-                  label: "Résiliable à tout moment",
+                  label: "Sans engagement",
                   color: "text-slate-500",
                   bg: "bg-white/70",
                   border: "border-slate-200/70",
@@ -389,7 +379,7 @@ function Hero() {
               ].map((b) => (
                 <span
                   key={b.label}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${b.color} ${b.bg} ${b.border} backdrop-blur-sm`}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${b.color} ${b.bg} ${b.border}`}
                 >
                   {b.icon}
                   {b.label}
