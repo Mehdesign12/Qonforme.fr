@@ -490,6 +490,46 @@ function PricingSection() {
             </div>
           </FadeIn>
         </div>
+
+        {/* Ancrage prix — comparaison coût */}
+        <FadeIn delay={0.3} className="mt-10 max-w-3xl mx-auto">
+          <div className="rounded-2xl border border-[#FEF3C7] bg-[#FFFBEB] p-5 sm:p-6">
+            <p className="text-[13px] font-bold text-[#92400E] uppercase tracking-wider mb-3">
+              Le coût de la non-conformité
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+              <div className="flex items-start gap-2.5">
+                <XCircle className="w-4 h-4 text-[#D97706] mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-[#0F172A]">150 à 300 €/mois</p>
+                  <p className="text-[12px] text-slate-500">Prestataire facturation ou comptable</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <XCircle className="w-4 h-4 text-[#D97706] mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-[#0F172A]">15 € par facture</p>
+                  <p className="text-[12px] text-slate-500">Amende non-conformité (art.&nbsp;1737 CGI)</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <XCircle className="w-4 h-4 text-[#D97706] mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-[#0F172A]">Rejet Chorus Pro</p>
+                  <p className="text-[12px] text-slate-500">Paiement repoussé de 30 à 60 jours</p>
+                </div>
+              </div>
+            </div>
+            <div className="h-px bg-[#FDE68A] my-4" />
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0" />
+              <p className="text-sm text-[#0F172A]">
+                <strong className="font-bold">Qonforme : à partir de 9&nbsp;€/mois</strong>
+                <span className="text-slate-500"> — tout inclus, sans engagement.</span>
+              </p>
+            </div>
+          </div>
+        </FadeIn>
       </div>
     </section>
   );
