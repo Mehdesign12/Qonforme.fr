@@ -4,7 +4,6 @@ import { isAdminAuthenticated } from "@/lib/admin-require";
 export const dynamic = "force-dynamic";
 
 const PH_HOST = "https://us.i.posthog.com";
-const PH_PROJECT_ID = "101932"; // will be auto-detected
 
 async function phQuery(query: string) {
   const key = process.env.POSTHOG_PERSONAL_API_KEY;
