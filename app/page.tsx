@@ -108,7 +108,7 @@ function HowItWorksSection() {
         <FadeIn delay={0.3} className="mt-12 flex justify-center">
           <Link href="/signup">
             <ShimmerButton background="rgba(37,99,235,1)" shimmerColor="#ffffff" shimmerDuration="2.5s" borderRadius="10px" className="h-11 px-6 text-[15px] font-semibold gap-2">
-              Commencer maintenant <ArrowRight className="h-4 w-4" />
+              Créer mon compte gratuitement <ArrowRight className="h-4 w-4" />
             </ShimmerButton>
           </Link>
         </FadeIn>
@@ -131,9 +131,10 @@ interface FeatureSectionProps {
   mockup: React.ReactNode;
   reverse?: boolean;
   bg?: string;
+  ctaLabel?: string;
 }
 
-function FeatureSection({ pillLabel, tag, title, titleHighlight, description, features, mockup, reverse = false, bg = "bg-white" }: FeatureSectionProps) {
+function FeatureSection({ pillLabel, tag, title, titleHighlight, description, features, mockup, reverse = false, bg = "bg-white", ctaLabel = "Commencer maintenant" }: FeatureSectionProps) {
   return (
     <section className={`${bg} py-20 sm:py-24`} id={tag === "Création rapide" ? "features" : undefined}>
       <div className="mx-auto max-w-6xl px-5">
@@ -158,7 +159,7 @@ function FeatureSection({ pillLabel, tag, title, titleHighlight, description, fe
             </ul>
             <Link href="/signup" className="w-fit mt-2">
               <ShimmerButton background="rgba(37,99,235,1)" shimmerColor="#ffffff" shimmerDuration="2.5s" borderRadius="10px" className="h-10 px-5 text-sm font-semibold gap-2">
-                Commencer maintenant <ArrowRight className="h-3.5 w-3.5" />
+                {ctaLabel} <ArrowRight className="h-3.5 w-3.5" />
               </ShimmerButton>
             </Link>
           </FadeIn>
@@ -334,7 +335,7 @@ function ComparisonSection() {
         <FadeIn delay={0.3} className="mt-10 flex justify-center">
           <Link href="/signup">
             <ShimmerButton background="rgba(37,99,235,1)" shimmerColor="#ffffff" shimmerDuration="2.5s" borderRadius="10px" className="h-11 px-6 text-[15px] font-semibold gap-2">
-              Commencer maintenant <ArrowRight className="h-4 w-4" />
+              Passer à Qonforme <ArrowRight className="h-4 w-4" />
             </ShimmerButton>
           </Link>
         </FadeIn>
@@ -835,6 +836,7 @@ export default function HomePage() {
         ]}
         mockup={<InvoiceCreationMockup />}
         bg="bg-white"
+        ctaLabel="Créer ma première facture"
       />
       {/* 5 — Conformité & suivi */}
       <FeatureSection
@@ -851,6 +853,7 @@ export default function HomePage() {
         mockup={<ComplianceMockup />}
         reverse={true}
         bg="bg-[#F8FAFC]"
+        ctaLabel="Vérifier ma conformité"
       />
       {/* 6 — Comparaison */}
       <ComparisonSection />
