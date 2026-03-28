@@ -11,7 +11,6 @@ import {
   Loader2,
   RefreshCw,
   ExternalLink,
-  MousePointerClick,
 } from "lucide-react";
 
 export default function AnalyticsPage() {
