@@ -292,62 +292,86 @@ function HowItWorksSection() {
           </div>
         </div>
 
-        {/* Mobile — vertical timeline */}
+        {/* Mobile — cards centrées avec connecteurs */}
         <div className="sm:hidden">
-          <div className="relative pl-10">
-            {/* Ligne verticale SVG */}
-            <svg aria-hidden className="pointer-events-none absolute left-[18px] top-0 z-0 h-full w-[3px] overflow-visible">
-              <line x1="1.5" y1="0" x2="1.5" y2="100%" stroke="#DBEAFE" strokeWidth="2" />
-              <motion.line
-                x1="1.5" y1="0" x2="1.5" y2="100%"
-                stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                animate={isInView ? { pathLength: 1 } : {}}
-                transition={{ duration: 2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </svg>
-
-            <div className="flex flex-col gap-10">
-              {steps.map((s, i) => (
-                <div key={i} className="relative flex items-start gap-5">
-                  {/* Cercle sur la ligne */}
+          <div className="flex flex-col items-center gap-0">
+            {steps.map((s, i) => (
+              <div key={i} className="flex flex-col items-center w-full">
+                {/* Connecteur vertical entre les cards */}
+                {i > 0 && (
                   <motion.div
-                    className="absolute -left-10 top-0"
-                    initial={{ scale: 0 }}
-                    animate={isInView ? { scale: 1 } : {}}
-                    transition={{ delay: 0.4 + i * 0.5, type: "spring", stiffness: 260, damping: 20 }}
+                    className="flex flex-col items-center gap-0.5 py-2"
+                    initial={{ opacity: 0, scaleY: 0 }}
+                    animate={isInView ? { opacity: 1, scaleY: 1 } : {}}
+                    transition={{ delay: 0.3 + i * 0.4, duration: 0.3, ease: "easeOut" }}
+                    style={{ transformOrigin: "top" }}
                   >
-                    <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-[0_4px_14px_rgba(37,99,235,0.35)]">
+                    <div className="w-px h-4 bg-gradient-to-b from-[#BFDBFE] to-[#2563EB]/40" />
+                    <ChevronDown className="h-3.5 w-3.5 text-[#2563EB]/40" />
+                  </motion.div>
+                )}
+
+                {/* Card */}
+                <motion.div
+                  className="w-full rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm"
+                  initial={{ opacity: 0, y: 20, scale: 0.96 }}
+                  animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+                  transition={{ delay: 0.4 + i * 0.4, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <div className="flex flex-col items-center text-center gap-3">
+                    {/* Cercle + numéro */}
+                    <motion.div
+                      className="relative"
+                      initial={{ scale: 0 }}
+                      animate={isInView ? { scale: 1 } : {}}
+                      transition={{ delay: 0.5 + i * 0.4, type: "spring", stiffness: 260, damping: 20 }}
+                    >
                       <motion.div
-                        initial={{ rotate: -20, opacity: 0 }}
-                        animate={isInView ? { rotate: 0, opacity: 1 } : {}}
-                        transition={{ delay: 0.6 + i * 0.5, duration: 0.4 }}
-                      >
-                        {s.icon}
-                      </motion.div>
-                      <motion.span
-                        className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-[#2563EB] ring-2 ring-[#EFF6FF]"
-                        initial={{ scale: 0 }}
-                        animate={isInView ? { scale: 1 } : {}}
-                        transition={{ delay: 0.7 + i * 0.5, type: "spring", stiffness: 400, damping: 15 }}
-                      >
-                        {s.n}
-                      </motion.span>
-                    </div>
-                  </motion.div>
+                        className="absolute inset-0 rounded-full bg-[#2563EB]"
+                        initial={{ scale: 1, opacity: 0 }}
+                        animate={isInView ? { scale: [1, 1.5, 1.7], opacity: [0.3, 0.08, 0] } : {}}
+                        transition={{ delay: 0.6 + i * 0.4, duration: 0.7, ease: "easeOut" }}
+                      />
+                      <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-[0_4px_14px_rgba(37,99,235,0.35)]">
+                        <motion.div
+                          initial={{ rotate: -20, opacity: 0 }}
+                          animate={isInView ? { rotate: 0, opacity: 1 } : {}}
+                          transition={{ delay: 0.6 + i * 0.4, duration: 0.4 }}
+                        >
+                          {s.icon}
+                        </motion.div>
+                        <motion.span
+                          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#2563EB] ring-2 ring-[#EFF6FF]"
+                          initial={{ scale: 0 }}
+                          animate={isInView ? { scale: 1 } : {}}
+                          transition={{ delay: 0.7 + i * 0.4, type: "spring", stiffness: 400, damping: 15 }}
+                        >
+                          {s.n}
+                        </motion.span>
+                      </div>
+                    </motion.div>
 
-                  {/* Texte */}
-                  <motion.div
-                    initial={{ opacity: 0, x: 16, filter: "blur(4px)" }}
-                    animate={isInView ? { opacity: 1, x: 0, filter: "blur(0px)" } : {}}
-                    transition={{ delay: 0.6 + i * 0.5, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <h3 className="text-[15px] font-bold text-[#0F172A] mb-1">{s.title}</h3>
-                    <p className="text-[13px] leading-relaxed text-slate-500">{s.desc}</p>
-                  </motion.div>
-                </div>
-              ))}
-            </div>
+                    {/* Texte */}
+                    <motion.h3
+                      className="text-[15px] font-bold text-[#0F172A]"
+                      initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
+                      animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
+                      transition={{ delay: 0.65 + i * 0.4, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      {s.title}
+                    </motion.h3>
+                    <motion.p
+                      className="text-[13px] leading-relaxed text-slate-500"
+                      initial={{ opacity: 0, y: 6, filter: "blur(4px)" }}
+                      animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
+                      transition={{ delay: 0.75 + i * 0.4, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      {s.desc}
+                    </motion.p>
+                  </div>
+                </motion.div>
+              </div>
+            ))}
           </div>
         </div>
 
