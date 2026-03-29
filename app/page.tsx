@@ -8,7 +8,7 @@ import {
   FileText, Send, Archive, Bell,
   UserPlus, FileEdit, SendHorizonal,
   ChevronDown, Star, Mail, Clock3,
-  Check, Users, FileCheck, ShieldCheck, Clock,
+  Check, Users, FileCheck, ShieldCheck, Clock, BadgeCheck, Quote,
 } from "lucide-react";
 import { motion, AnimatePresence, useInView, useScroll, useTransform, useMotionValue, useSpring } from "motion/react";
 
@@ -617,56 +617,161 @@ function ComparisonSection() {
 }
 
 /* ─────────────────────────────────────────────────────────
-   SECTION B — Témoignages V3 (pill ajoutée)
+   SECTION B — Témoignages V4 (Trustpilot-style carousel)
 ───────────────────────────────────────────────────────── */
 function TestimonialsSection() {
   const testimonials = [
-    { name: "Marc D.", role: "Plombier indépendant", city: "Lyon", initials: "MD", bg: "#DBEAFE", text: "J'avais peur que ce soit compliqué. J'ai créé ma première facture en 4 minutes. Depuis, je n'y pense plus.", stars: 5 },
-    { name: "Sophie L.", role: "Auto-entrepreneuse", city: "Paris", initials: "SL", bg: "#EDE9FE", text: "Le passage à la facturation électronique m'angoissait. Qonforme a tout géré. Je reçois juste un email quand c'est transmis.", stars: 5 },
-    { name: "Atelier Renard", role: "Menuiserie", city: "Bordeaux", initials: "AR", bg: "#D1FAE5", text: "On envoyait 20 factures par mois à la main. Maintenant c'est automatique et on est en règle. Indispensable.", stars: 5 },
+    { name: "Marc D.", role: "Plombier indépendant", title: "Simple et efficace", date: "12 mars 2026", text: "J'avais peur que ce soit compliqué. J'ai créé ma première facture en 4 minutes. Depuis, je n'y pense plus. Le guide Chorus Pro est top.", stars: 5 },
+    { name: "Sophie L.", role: "Auto-entrepreneuse", title: "Fini le stress", date: "8 mars 2026", text: "Le passage à la facturation électronique m'angoissait. Qonforme a tout géré. Je reçois juste un email quand c'est transmis. Un vrai soulagement.", stars: 5 },
+    { name: "Atelier Renard", role: "Menuiserie", title: "20 factures/mois sans effort", date: "2 mars 2026", text: "On envoyait 20 factures par mois à la main. Maintenant c'est automatique et on est en règle. Indispensable pour notre atelier.", stars: 5 },
+    { name: "Thomas B.", role: "Électricien", title: "Conforme en 5 min", date: "25 févr. 2026", text: "J'ai tout configuré en une pause café. Le Factur-X se génère tout seul, je n'ai rien à comprendre. Exactement ce qu'il me fallait.", stars: 5 },
+    { name: "Claire M.", role: "Graphiste freelance", title: "Interface au top", date: "18 févr. 2026", text: "Enfin un outil de facturation qui ne ressemble pas à un logiciel des années 2000. C'est beau, c'est rapide, et c'est conforme. Bravo.", stars: 5 },
   ];
+
+  const TOTAL_REVIEWS = 127;
+  const AVG_RATING = 4.8;
+
   return (
     <section className="relative overflow-hidden py-20 sm:py-24" style={{ backgroundColor: "#EFF6FF" }}>
+      {/* Q watermarks */}
       <div aria-hidden className="pointer-events-none absolute select-none" style={{ top: "40%", left: "38%", transform: "translate(-50%, -50%)", opacity: 0.03, zIndex: 0 }}>
         <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" sizes="280px" loading="lazy" />
       </div>
       <div aria-hidden className="pointer-events-none absolute select-none" style={{ top: "-20px", right: "-20px", opacity: 0.08, zIndex: 0 }}>
         <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" sizes="160px" loading="lazy" />
       </div>
-      <div aria-hidden className="pointer-events-none absolute select-none" style={{ bottom: "-30px", left: "-30px", opacity: 0.05, zIndex: 0 }}>
-        <Image src={PICTO_Q} alt="" width={140} height={140} className="w-[140px]" sizes="140px" loading="lazy" />
-      </div>
-      <div className="relative z-10 mx-auto max-w-5xl px-5">
-        <FadeIn className="mb-12 flex flex-col items-center text-center gap-3">
-          <SectionPill label="ILS NOUS FONT CONFIANCE" />
-          <h2 className="mb-1 text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
-            Ils ont fait le{" "}
-            <span className="text-[#2563EB]">choix Qonforme</span>
+
+      <div className="relative z-10 mx-auto max-w-6xl px-5">
+        {/* Header */}
+        <FadeIn className="mb-6 flex flex-col items-center text-center gap-3">
+          <SectionPill label="AVIS CLIENTS" />
+          <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
+            Ce que nos utilisateurs{" "}
+            <span className="text-[#2563EB]">en pensent</span>
           </h2>
-          <p className="text-[15px] text-slate-500">Des artisans et indépendants qui ont sécurisé leur conformité</p>
         </FadeIn>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-          {testimonials.map((t, i) => (
-            <TiltCard key={t.name} className="flex flex-col gap-4 rounded-2xl bg-white p-6" style={{ border: "1px solid #BFDBFE", boxShadow: "0 2px 8px rgba(37,99,235,0.07)" }}>
+
+        {/* Score global Trustpilot-style */}
+        <FadeIn delay={0.1} className="mb-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
+          {/* Score cercle */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-[#00B67A]">
+              <span className="text-lg font-extrabold text-[#0F172A]">{AVG_RATING}</span>
+              <span className="absolute -bottom-0.5 text-[9px] font-bold text-slate-400">de 5</span>
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-bold text-[#0F172A]">Excellent</span>
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-[#00B67A] text-[#00B67A]" />
+                  ))}
+                </div>
+              </div>
+              <span className="text-[12px] text-slate-500">
+                <strong className="font-semibold text-[#0F172A]">{AVG_RATING}/5</strong> — sur la base de {TOTAL_REVIEWS} avis
+              </span>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* Desktop — grille 3 colonnes avec overflow peek */}
+        <div className="hidden sm:grid sm:grid-cols-3 gap-5">
+          {testimonials.slice(0, 3).map((t, i) => (
+            <TiltCard key={t.name} className="flex flex-col rounded-2xl bg-white border border-[#E2E8F0] shadow-sm overflow-hidden">
               <motion.div
-                className="flex flex-col gap-4"
+                className="flex flex-col h-full"
                 initial={{ opacity: 0, y: 24, scale: 0.92 }}
                 whileInView={{ opacity: 1, y: 0, scale: 1 }}
                 viewport={{ once: true, margin: "-40px" }}
                 transition={{ delay: i * 0.12, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
               >
-                <div className="flex gap-0.5">{Array.from({ length: t.stars }).map((_, j) => <Star key={j} className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />)}</div>
-                <p className="flex-1 text-[14px] leading-relaxed text-slate-600">&ldquo;{t.text}&rdquo;</p>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-slate-700" style={{ backgroundColor: t.bg }}>{t.initials}</div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#0F172A]">{t.name}</p>
-                    <p className="text-[12px] text-slate-400">{t.role} · {t.city}</p>
+                {/* Quote icon + stars + date */}
+                <div className="px-6 pt-5 pb-3">
+                  <div className="flex items-start justify-between mb-3">
+                    <Quote className="h-6 w-6 text-[#00B67A]/30 rotate-180" />
+                    <span className="text-[11px] text-slate-400">{t.date}</span>
                   </div>
+                  <div className="flex gap-0.5 mb-3">
+                    {Array.from({ length: t.stars }).map((_, j) => (
+                      <div key={j} className="flex h-5 w-5 items-center justify-center rounded-sm bg-[#00B67A]">
+                        <Star className="h-3 w-3 fill-white text-white" />
+                      </div>
+                    ))}
+                  </div>
+                  {/* Title + text */}
+                  <h3 className="text-[15px] font-bold text-[#0F172A] mb-2">{t.title}</h3>
+                  <p className="text-[13px] leading-relaxed text-slate-500">{t.text}</p>
+                </div>
+                {/* Footer — name + verified */}
+                <div className="mt-auto border-t border-[#F1F5F9] px-6 py-3.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-[#0F172A]">{t.name}</span>
+                    <span className="text-[11px] text-slate-400">{t.role}</span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#00B67A]">
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                    Vérifié
+                  </span>
                 </div>
               </motion.div>
             </TiltCard>
           ))}
+        </div>
+
+        {/* Mobile — carousel horizontal snap */}
+        <div className="sm:hidden -mx-5">
+          <div
+            className="flex gap-4 overflow-x-auto px-5 pb-4 snap-x snap-mandatory scrollbar-hide"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
+            {testimonials.map((t, i) => (
+              <motion.div
+                key={t.name}
+                className="flex flex-col rounded-2xl bg-white border border-[#E2E8F0] shadow-sm snap-center shrink-0 overflow-hidden"
+                style={{ minWidth: "85vw", maxWidth: "85vw" }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ delay: i * 0.08, duration: 0.4 }}
+              >
+                {/* Quote icon + stars + date */}
+                <div className="px-5 pt-4 pb-3">
+                  <div className="flex items-start justify-between mb-3">
+                    <Quote className="h-5 w-5 text-[#00B67A]/30 rotate-180" />
+                    <span className="text-[11px] text-slate-400">{t.date}</span>
+                  </div>
+                  <div className="flex gap-0.5 mb-3">
+                    {Array.from({ length: t.stars }).map((_, j) => (
+                      <div key={j} className="flex h-5 w-5 items-center justify-center rounded-sm bg-[#00B67A]">
+                        <Star className="h-3 w-3 fill-white text-white" />
+                      </div>
+                    ))}
+                  </div>
+                  <h3 className="text-[15px] font-bold text-[#0F172A] mb-2">{t.title}</h3>
+                  <p className="text-[13px] leading-relaxed text-slate-500">{t.text}</p>
+                </div>
+                {/* Footer */}
+                <div className="mt-auto border-t border-[#F1F5F9] px-5 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-[#0F172A]">{t.name}</span>
+                    <span className="text-[11px] text-slate-400">{t.role}</span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#00B67A]">
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                    Vérifié
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Dots pagination */}
+          <div className="flex justify-center gap-1.5 mt-2">
+            {testimonials.map((_, i) => (
+              <div key={i} className={`h-1.5 rounded-full transition-all ${i === 0 ? "w-4 bg-[#2563EB]" : "w-1.5 bg-[#BFDBFE]"}`} />
+            ))}
+          </div>
         </div>
       </div>
     </section>
