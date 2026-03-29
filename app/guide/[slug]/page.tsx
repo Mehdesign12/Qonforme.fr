@@ -6,7 +6,7 @@ import { BookOpen, ArrowRight, HelpCircle } from "lucide-react"
 import { GUIDES, getGuideBySlug } from "@/lib/pseo/guides"
 import Footer from "@/components/layout/Footer"
 
-const LOGO_URL = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20simple.png"
+const LOGO_URL = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
 
 export function generateStaticParams() {
   return GUIDES.map(g => ({ slug: g.slug }))
@@ -96,8 +96,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
             <Link href="/"><Image src={LOGO_URL} alt="Qonforme" width={130} height={32} className="h-7 w-auto object-contain" sizes="130px" priority /></Link>
             <div className="flex items-center gap-4">
-              <Link href="/pricing" className="text-sm text-slate-600 hover:text-[#2563EB]">Tarifs</Link>
-              <Link href="/signup" className="px-4 py-2 text-sm font-semibold text-white bg-[#2563EB] rounded-lg hover:bg-[#1D4ED8]">Essayer gratuitement</Link>
+              <Link href="/signup" className="px-3 py-2 text-xs sm:text-sm font-semibold text-white bg-[#2563EB] rounded-lg hover:bg-[#1D4ED8]">Essayer gratuitement</Link>
             </div>
           </div>
         </nav>
