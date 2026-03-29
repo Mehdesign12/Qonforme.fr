@@ -24,7 +24,7 @@ export default function ComparatifIndexPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Nav */}
-      <nav className="border-b border-[#E2E8F0] bg-white">
+      <nav className="sticky top-0 z-50 border-b border-[#E2E8F0] bg-white">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/"><Image src={LOGO_URL} alt="Qonforme" width={130} height={32} className="h-7 w-auto object-contain" sizes="130px" priority /></Link>
           <div className="flex items-center gap-4">
