@@ -1,9 +1,12 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import { notFound } from "next/navigation"
 import { ArrowRight, BookOpen } from "lucide-react"
 import { GLOSSAIRE, getTermeBySlug } from "@/lib/pseo/glossaire"
 import Footer from "@/components/layout/Footer"
+
+const LOGO_URL = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20simple.png"
 
 export function generateStaticParams() {
   return GLOSSAIRE.map(t => ({ slug: t.slug }))
@@ -56,7 +59,7 @@ export default async function TermePage({ params }: { params: Promise<{ slug: st
       <div className="min-h-screen bg-[#F8FAFC]">
         <nav className="border-b border-[#E2E8F0] bg-white">
           <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="text-xl font-bold text-[#0F172A]">Qonforme</Link>
+            <Link href="/"><Image src={LOGO_URL} alt="Qonforme" width={130} height={32} className="h-7 w-auto object-contain" sizes="130px" priority /></Link>
             <div className="flex items-center gap-4">
               <Link href="/pricing" className="text-sm text-slate-600 hover:text-[#2563EB]">Tarifs</Link>
               <Link href="/signup" className="px-4 py-2 text-sm font-semibold text-white bg-[#2563EB] rounded-lg hover:bg-[#1D4ED8]">Essayer gratuitement</Link>
