@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   CheckCircle2, XCircle, Zap, Shield, ArrowRight,
   FileText, Send, Archive, Bell,
@@ -10,7 +10,7 @@ import {
   ChevronDown, Star, Mail, Clock3,
   Check, Users, FileCheck, ShieldCheck, Clock,
 } from "lucide-react";
-import { motion, AnimatePresence, useInView } from "motion/react";
+import { motion, AnimatePresence, useInView, useScroll, useTransform, useMotionValue, useSpring } from "motion/react";
 
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { LandingHero } from "@/components/landing/LandingHero";
@@ -63,6 +63,106 @@ function FadeIn({
     >
       {children}
     </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   HELPER — Counter animé (0 → valeur finale au scroll)
+───────────────────────────────────────────────────────── */
+function AnimatedCounter({ value, suffix = "", prefix = "" }: { value: number; suffix?: string; prefix?: string }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.5 });
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (!isInView) return;
+    const duration = 1200;
+    const start = performance.now();
+    const step = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+      setDisplay(Math.round(eased * value));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [isInView, value]);
+
+  return <span ref={ref}>{prefix}{display.toLocaleString("fr-FR")}{suffix}</span>;
+}
+
+/* ─────────────────────────────────────────────────────────
+   HELPER — Parallax wrapper (mockups qui bougent au scroll)
+───────────────────────────────────────────────────────── */
+function ParallaxWrapper({ children, offset = 40, className }: { children: React.ReactNode; offset?: number; className?: string }) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], [offset, -offset]);
+
+  return (
+    <motion.div ref={ref} style={{ y }} className={className}>
+      {children}
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   HELPER — Tilt 3D hover sur cards
+───────────────────────────────────────────────────────── */
+function TiltCard({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const rotateX = useMotionValue(0);
+  const rotateY = useMotionValue(0);
+  const smoothX = useSpring(rotateX, { stiffness: 200, damping: 20 });
+  const smoothY = useSpring(rotateY, { stiffness: 200, damping: 20 });
+
+  const handleMouse = useCallback((e: React.MouseEvent) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    rotateX.set(y * -8);
+    rotateY.set(x * 8);
+  }, [rotateX, rotateY]);
+
+  const handleLeave = useCallback(() => {
+    rotateX.set(0);
+    rotateY.set(0);
+  }, [rotateX, rotateY]);
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMouse}
+      onMouseLeave={handleLeave}
+      style={{ rotateX: smoothX, rotateY: smoothY, transformPerspective: 800, ...style }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   HELPER — Draw checkmark SVG animé
+───────────────────────────────────────────────────────── */
+function DrawCheckmark({ size = 20, color = "#10B981", delay = 0 }: { size?: number; color?: string; delay?: number }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.5 });
+
+  return (
+    <svg ref={ref} width={size} height={size} viewBox="0 0 24 24" fill="none" className="shrink-0">
+      <motion.path
+        d="M5 12l5 5L19 7"
+        stroke={color}
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={isInView ? { pathLength: 1, opacity: 1 } : {}}
+        transition={{ duration: 0.5, delay, ease: "easeOut" }}
+      />
+    </svg>
   );
 }
 
@@ -164,8 +264,10 @@ function FeatureSection({ pillLabel, tag, title, titleHighlight, description, fe
             </Link>
           </FadeIn>
           <FadeIn delay={0.1} x={reverse ? -20 : 20} className={`relative ${reverse ? "lg:col-start-1 lg:row-start-1" : ""}`}>
-            <div className="pointer-events-none absolute -inset-6 rounded-3xl bg-gradient-to-br from-[#DBEAFE]/40 via-[#EDE9FE]/20 to-transparent blur-2xl" />
-            <div className="relative overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_20px_60px_-12px_rgba(15,23,42,0.12)]">{mockup}</div>
+            <ParallaxWrapper offset={30}>
+              <div className="pointer-events-none absolute -inset-6 rounded-3xl bg-gradient-to-br from-[#DBEAFE]/40 via-[#EDE9FE]/20 to-transparent blur-2xl" />
+              <div className="relative overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_20px_60px_-12px_rgba(15,23,42,0.12)]">{mockup}</div>
+            </ParallaxWrapper>
           </FadeIn>
         </div>
       </div>
@@ -222,7 +324,7 @@ function ComplianceMockup() {
           { step: "04", label: "Paiement en attente", sub: "Échéance : 30 jours", done: false, color: "#D97706" },
         ].map((s) => (
           <div key={s.step} className={`flex items-start gap-3 rounded-xl border p-3 bg-white ${s.done ? "border-[#D1FAE5]" : "border-[#FEF3C7]"}`}>
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ backgroundColor: s.color }}>{s.done ? "✓" : s.step}</span>
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ backgroundColor: s.color }}>{s.done ? <DrawCheckmark size={16} color="#ffffff" delay={0.1} /> : s.step}</span>
             <div>
               <p className="text-[12px] font-semibold text-[#0F172A]">{s.label}</p>
               <p className="text-[11px] text-slate-400">{s.sub}</p>
@@ -375,17 +477,25 @@ function TestimonialsSection() {
         </FadeIn>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
           {testimonials.map((t, i) => (
-            <FadeIn key={t.name} delay={i * 0.1} className="flex flex-col gap-4 rounded-2xl bg-white p-6" style={{ border: "1px solid #BFDBFE", boxShadow: "0 2px 8px rgba(37,99,235,0.07)" }}>
-              <div className="flex gap-0.5">{Array.from({ length: t.stars }).map((_, i) => <Star key={i} className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />)}</div>
-              <p className="flex-1 text-[14px] leading-relaxed text-slate-600">&ldquo;{t.text}&rdquo;</p>
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-slate-700" style={{ backgroundColor: t.bg }}>{t.initials}</div>
-                <div>
-                  <p className="text-sm font-semibold text-[#0F172A]">{t.name}</p>
-                  <p className="text-[12px] text-slate-400">{t.role} · {t.city}</p>
+            <TiltCard key={t.name} className="flex flex-col gap-4 rounded-2xl bg-white p-6" style={{ border: "1px solid #BFDBFE", boxShadow: "0 2px 8px rgba(37,99,235,0.07)" }}>
+              <motion.div
+                className="flex flex-col gap-4"
+                initial={{ opacity: 0, y: 24, scale: 0.92 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ delay: i * 0.12, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="flex gap-0.5">{Array.from({ length: t.stars }).map((_, j) => <Star key={j} className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />)}</div>
+                <p className="flex-1 text-[14px] leading-relaxed text-slate-600">&ldquo;{t.text}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-slate-700" style={{ backgroundColor: t.bg }}>{t.initials}</div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#0F172A]">{t.name}</p>
+                    <p className="text-[12px] text-slate-400">{t.role} · {t.city}</p>
+                  </div>
                 </div>
-              </div>
-            </FadeIn>
+              </motion.div>
+            </TiltCard>
           ))}
         </div>
       </div>
@@ -763,25 +873,25 @@ function KeyMetricsSection() {
   const metrics = [
     {
       icon: <Users className="h-5 w-5" />,
-      value: "500+",
+      numValue: 500, suffix: "+", prefix: "",
       label: "entreprises accompagnées",
       desc: "artisans, indépendants, TPE",
     },
     {
       icon: <FileCheck className="h-5 w-5" />,
-      value: "10 000+",
+      numValue: 10000, suffix: "+", prefix: "",
       label: "factures conformes émises",
       desc: "sans une seule pénalité",
     },
     {
       icon: <Clock className="h-5 w-5" />,
-      value: "< 3 min",
+      numValue: 3, suffix: " min", prefix: "< ",
       label: "pour créer et envoyer",
       desc: "en moyenne, depuis n'importe où",
     },
     {
       icon: <ShieldCheck className="h-5 w-5" />,
-      value: "99,9 %",
+      numValue: 99, suffix: ",9 %", prefix: "",
       label: "taux de conformité",
       desc: "certifié Chorus Pro & DGFiP",
     },
@@ -803,25 +913,29 @@ function KeyMetricsSection() {
 
         <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
           {metrics.map((m, i) => (
-            <motion.div
+            <TiltCard
               key={m.label}
               className="flex flex-col items-center gap-3 rounded-2xl border border-[#BFDBFE]/60 bg-white p-6 text-center shadow-sm"
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ delay: i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]">
-                {m.icon}
-              </span>
-              <p className="font-mono text-3xl font-extrabold text-[#0F172A] sm:text-4xl">
-                {m.value}
-              </p>
-              <div>
-                <p className="text-sm font-semibold text-[#0F172A]">{m.label}</p>
-                <p className="mt-0.5 text-[13px] text-slate-400">{m.desc}</p>
-              </div>
-            </motion.div>
+              <motion.div
+                className="flex flex-col items-center gap-3 w-full"
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ delay: i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]">
+                  {m.icon}
+                </span>
+                <p className="font-mono text-3xl font-extrabold text-[#0F172A] sm:text-4xl">
+                  <AnimatedCounter value={m.numValue} suffix={m.suffix} prefix={m.prefix} />
+                </p>
+                <div>
+                  <p className="text-sm font-semibold text-[#0F172A]">{m.label}</p>
+                  <p className="mt-0.5 text-[13px] text-slate-400">{m.desc}</p>
+                </div>
+              </motion.div>
+            </TiltCard>
           ))}
         </div>
       </div>

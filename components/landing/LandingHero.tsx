@@ -269,23 +269,26 @@ function Hero() {
             </span>
           </motion.div>
 
-          {/* 2.2 — Accroche principale (option recommandée) */}
-          <motion.h1
-            className="text-[2.3rem] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#0F172A] sm:text-[2.75rem] lg:text-[3rem]"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.12, duration: 0.55 }}
-          >
-            La facturation électronique{" "}
-            <span
-              className="text-[#2563EB]"
-              style={{ fontFamily: "var(--font-bricolage)" }}
-            >
-              devient obligatoire.
-            </span>
-            <br />
-            <span className="text-[#0F172A]">Sois prêt avant tout le monde.</span>
-          </motion.h1>
+          {/* 2.2 — Accroche principale — text reveal ligne par ligne */}
+          <h1 className="text-[2.3rem] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#0F172A] sm:text-[2.75rem] lg:text-[3rem]">
+            {[
+              { text: "La facturation électronique ", delay: 0.08, color: "" },
+              { text: "devient obligatoire.", delay: 0.2, color: "text-[#2563EB]", font: "var(--font-bricolage)" },
+              { text: "Sois prêt avant tout le monde.", delay: 0.35, color: "text-[#0F172A]", br: true },
+            ].map((line, i) => (
+              <motion.span
+                key={i}
+                className={`inline ${line.color}`}
+                style={line.font ? { fontFamily: line.font } : undefined}
+                initial={{ opacity: 0, y: 18, filter: "blur(6px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={{ delay: line.delay, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {line.br && <br />}
+                {line.text}
+              </motion.span>
+            ))}
+          </h1>
 
           {/* 2.3 — Sous-titre */}
           <motion.p
