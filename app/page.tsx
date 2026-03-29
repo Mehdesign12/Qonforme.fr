@@ -167,7 +167,7 @@ function DrawCheckmark({ size = 20, color = "#10B981", delay = 0 }: { size?: num
 }
 
 /* ─────────────────────────────────────────────────────────
-   SECTION C — Comment ça marche
+   SECTION C — Comment ça marche (timeline animée)
 ───────────────────────────────────────────────────────── */
 function HowItWorksSection() {
   const steps = [
@@ -176,13 +176,16 @@ function HowItWorksSection() {
     { n: "03", icon: <SendHorizonal className="h-6 w-6" />, title: "Télécharge & transmets", desc: "Qonforme génère ton Factur-X certifié EN 16931. Télécharge-le en 1 clic et transmets-le en 2 minutes via Chorus Pro (gratuit) — notre guide t'accompagne étape par étape." },
   ];
 
+  const sectionRef = useRef(null);
+  const isInView = useInView(sectionRef, { once: true, amount: 0.3 });
+
   return (
-    <section className="relative overflow-hidden bg-[#F8FAFC] py-20 sm:py-24">
+    <section ref={sectionRef} className="relative overflow-hidden bg-[#F8FAFC] py-20 sm:py-24">
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 select-none" style={{ opacity: 0.05 }}>
         <Image src={PICTO_Q} alt="" width={500} height={500} className="w-[420px] sm:w-[500px]" sizes="(min-width: 640px) 500px, 420px" loading="lazy" />
       </div>
       <div className="relative z-10 mx-auto max-w-5xl px-5">
-        <FadeIn className="mb-12 flex flex-col items-center text-center gap-3">
+        <FadeIn className="mb-14 flex flex-col items-center text-center gap-3">
           <SectionPill label="SIMPLICITÉ" />
           <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
             En 3 étapes,{" "}
@@ -192,19 +195,162 @@ function HowItWorksSection() {
             Le Factur-X EN 16931, c&apos;est 47 champs obligatoires et zéro droit à l&apos;erreur. On le génère pour toi.
           </p>
         </FadeIn>
-        <div className="relative grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-4">
-          <div aria-hidden className="pointer-events-none absolute left-[16.66%] right-[16.66%] top-[28px] hidden h-px bg-gradient-to-r from-[#BFDBFE] via-[#2563EB]/30 to-[#BFDBFE] sm:block" />
-          {steps.map((s, i) => (
-            <FadeIn key={i} delay={i * 0.1} className="relative flex flex-col items-center text-center">
-              <div className="relative mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-[0_4px_14px_rgba(37,99,235,0.35)]">
-                {s.icon}
-                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#2563EB] ring-2 ring-[#EFF6FF]">{s.n}</span>
+
+        {/* Desktop — horizontal timeline */}
+        <div className="hidden sm:block">
+          <div className="relative grid grid-cols-3 gap-4">
+            {/* SVG ligne + pulse lumineux */}
+            <svg aria-hidden className="pointer-events-none absolute left-[16.66%] right-[16.66%] top-[28px] z-0 h-[3px] w-[66.66%] overflow-visible">
+              {/* Ligne de fond grise */}
+              <line x1="0" y1="1.5" x2="100%" y2="1.5" stroke="#DBEAFE" strokeWidth="2" />
+              {/* Ligne qui se dessine */}
+              <motion.line
+                x1="0" y1="1.5" x2="100%" y2="1.5"
+                stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round"
+                initial={{ pathLength: 0 }}
+                animate={isInView ? { pathLength: 1 } : {}}
+                transition={{ duration: 1.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              />
+              {/* Pulse lumineux qui parcourt la ligne */}
+              <motion.circle
+                r="6" cy="1.5" fill="#2563EB"
+                initial={{ cx: "0%", opacity: 0 }}
+                animate={isInView ? { cx: ["0%", "100%"], opacity: [0, 1, 1, 0] } : {}}
+                transition={{ duration: 1.8, delay: 0.3, ease: "easeInOut" }}
+                style={{ filter: "blur(3px)" }}
+              />
+              <motion.circle
+                r="3" cy="1.5" fill="white"
+                initial={{ cx: "0%", opacity: 0 }}
+                animate={isInView ? { cx: ["0%", "100%"], opacity: [0, 1, 1, 0] } : {}}
+                transition={{ duration: 1.8, delay: 0.3, ease: "easeInOut" }}
+              />
+            </svg>
+
+            {steps.map((s, i) => (
+              <div key={i} className="relative flex flex-col items-center text-center">
+                {/* Cercle avec bounce-in + glow */}
+                <motion.div
+                  className="relative mb-5"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={isInView ? { scale: 1, opacity: 1 } : {}}
+                  transition={{
+                    delay: 0.3 + i * 0.4,
+                    duration: 0.5,
+                    type: "spring",
+                    stiffness: 260,
+                    damping: 20,
+                  }}
+                >
+                  {/* Ring glow animé */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-[#2563EB]"
+                    initial={{ scale: 1, opacity: 0 }}
+                    animate={isInView ? { scale: [1, 1.6, 1.8], opacity: [0.4, 0.1, 0] } : {}}
+                    transition={{ delay: 0.5 + i * 0.4, duration: 0.8, ease: "easeOut" }}
+                  />
+                  <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-[0_4px_14px_rgba(37,99,235,0.35)]">
+                    {/* Icône avec micro-rotation */}
+                    <motion.div
+                      initial={{ rotate: -20, opacity: 0 }}
+                      animate={isInView ? { rotate: 0, opacity: 1 } : {}}
+                      transition={{ delay: 0.5 + i * 0.4, duration: 0.4 }}
+                    >
+                      {s.icon}
+                    </motion.div>
+                    {/* Numéro badge */}
+                    <motion.span
+                      className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#2563EB] ring-2 ring-[#EFF6FF]"
+                      initial={{ scale: 0 }}
+                      animate={isInView ? { scale: 1 } : {}}
+                      transition={{ delay: 0.7 + i * 0.4, type: "spring", stiffness: 400, damping: 15 }}
+                    >
+                      {s.n}
+                    </motion.span>
+                  </div>
+                </motion.div>
+
+                {/* Texte slide-up + blur-in */}
+                <motion.h3
+                  className="mb-2 text-[15px] font-bold text-[#0F172A]"
+                  initial={{ opacity: 0, y: 14, filter: "blur(4px)" }}
+                  animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
+                  transition={{ delay: 0.7 + i * 0.4, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {s.title}
+                </motion.h3>
+                <motion.p
+                  className="max-w-[220px] text-[13px] leading-relaxed text-slate-500"
+                  initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+                  animate={isInView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
+                  transition={{ delay: 0.85 + i * 0.4, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {s.desc}
+                </motion.p>
               </div>
-              <h3 className="mb-2 text-[15px] font-bold text-[#0F172A]">{s.title}</h3>
-              <p className="max-w-[200px] text-[13px] leading-relaxed text-slate-500">{s.desc}</p>
-            </FadeIn>
-          ))}
+            ))}
+          </div>
         </div>
+
+        {/* Mobile — vertical timeline */}
+        <div className="sm:hidden">
+          <div className="relative pl-10">
+            {/* Ligne verticale SVG */}
+            <svg aria-hidden className="pointer-events-none absolute left-[18px] top-0 z-0 h-full w-[3px] overflow-visible">
+              <line x1="1.5" y1="0" x2="1.5" y2="100%" stroke="#DBEAFE" strokeWidth="2" />
+              <motion.line
+                x1="1.5" y1="0" x2="1.5" y2="100%"
+                stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round"
+                initial={{ pathLength: 0 }}
+                animate={isInView ? { pathLength: 1 } : {}}
+                transition={{ duration: 2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              />
+            </svg>
+
+            <div className="flex flex-col gap-10">
+              {steps.map((s, i) => (
+                <div key={i} className="relative flex items-start gap-5">
+                  {/* Cercle sur la ligne */}
+                  <motion.div
+                    className="absolute -left-10 top-0"
+                    initial={{ scale: 0 }}
+                    animate={isInView ? { scale: 1 } : {}}
+                    transition={{ delay: 0.4 + i * 0.5, type: "spring", stiffness: 260, damping: 20 }}
+                  >
+                    <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-[0_4px_14px_rgba(37,99,235,0.35)]">
+                      <motion.div
+                        initial={{ rotate: -20, opacity: 0 }}
+                        animate={isInView ? { rotate: 0, opacity: 1 } : {}}
+                        transition={{ delay: 0.6 + i * 0.5, duration: 0.4 }}
+                      >
+                        {s.icon}
+                      </motion.div>
+                      <motion.span
+                        className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-[#2563EB] ring-2 ring-[#EFF6FF]"
+                        initial={{ scale: 0 }}
+                        animate={isInView ? { scale: 1 } : {}}
+                        transition={{ delay: 0.7 + i * 0.5, type: "spring", stiffness: 400, damping: 15 }}
+                      >
+                        {s.n}
+                      </motion.span>
+                    </div>
+                  </motion.div>
+
+                  {/* Texte */}
+                  <motion.div
+                    initial={{ opacity: 0, x: 16, filter: "blur(4px)" }}
+                    animate={isInView ? { opacity: 1, x: 0, filter: "blur(0px)" } : {}}
+                    transition={{ delay: 0.6 + i * 0.5, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <h3 className="text-[15px] font-bold text-[#0F172A] mb-1">{s.title}</h3>
+                    <p className="text-[13px] leading-relaxed text-slate-500">{s.desc}</p>
+                  </motion.div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <FadeIn delay={0.3} className="mt-12 flex justify-center">
           <Link href="/signup">
             <ShimmerButton background="rgba(37,99,235,1)" shimmerColor="#ffffff" shimmerDuration="2.5s" borderRadius="10px" className="h-11 px-6 text-[15px] font-semibold gap-2">
