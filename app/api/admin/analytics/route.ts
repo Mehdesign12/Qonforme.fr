@@ -9,10 +9,7 @@ async function phQuery(query: string) {
   const key = process.env.POSTHOG_PERSONAL_API_KEY;
   if (!key) throw new Error("POSTHOG_PERSONAL_API_KEY missing");
 
-  // First, get the project ID dynamically
-  const projectId = await getProjectId(key);
-
-  const res = await fetch(`${PH_HOST}/api/projects/${projectId}/query`, {
+  const res = await fetch(`${PH_HOST}/api/projects/@current/query`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
@@ -28,25 +25,6 @@ async function phQuery(query: string) {
 
   const data = await res.json();
   return data.results ?? [];
-}
-
-let cachedProjectId: string | null = null;
-
-async function getProjectId(key: string): Promise<string> {
-  if (cachedProjectId) return cachedProjectId;
-
-  const res = await fetch(`${PH_HOST}/api/projects/`, {
-    headers: { Authorization: `Bearer ${key}` },
-  });
-
-  if (!res.ok) throw new Error(`Cannot fetch projects: ${res.status}`);
-
-  const data = await res.json();
-  const projects = data.results ?? data;
-  if (!projects.length) throw new Error("No PostHog projects found");
-
-  cachedProjectId = String(projects[0].id);
-  return cachedProjectId;
 }
 
 export async function GET() {
