@@ -47,7 +47,9 @@ export async function GET() {
       visitors30d,
       topPages,
       topReferrers,
-      signupFunnel,
+      funnelLanding,
+      funnelSignup,
+      funnelCompleted,
       dailyVisitors,
     ] = await Promise.all([
       // Visiteurs uniques aujourd'hui
@@ -103,18 +105,31 @@ export async function GET() {
         LIMIT 8
       `),
 
-      // Funnel : landing → signup page → inscription
+      // Funnel : landing
       phQuery(`
-        SELECT
-          count(DISTINCT CASE WHEN path = '/' THEN distinct_id END) AS landing,
-          count(DISTINCT CASE WHEN path = '/signup' THEN distinct_id END) AS signup_page,
-          count(DISTINCT CASE WHEN path = '/dashboard' THEN distinct_id END) AS completed
-        FROM (
-          SELECT distinct_id, properties.$pathname AS path
-          FROM events
-          WHERE event = '$pageview'
-            AND timestamp >= now() - interval 30 day
-        )
+        SELECT count(DISTINCT distinct_id)
+        FROM events
+        WHERE event = '$pageview'
+          AND properties.$pathname = '/'
+          AND timestamp >= now() - interval 30 day
+      `),
+
+      // Funnel : signup page
+      phQuery(`
+        SELECT count(DISTINCT distinct_id)
+        FROM events
+        WHERE event = '$pageview'
+          AND properties.$pathname = '/signup'
+          AND timestamp >= now() - interval 30 day
+      `),
+
+      // Funnel : completed (reached dashboard)
+      phQuery(`
+        SELECT count(DISTINCT distinct_id)
+        FROM events
+        WHERE event = '$pageview'
+          AND properties.$pathname = '/dashboard'
+          AND timestamp >= now() - interval 30 day
       `),
 
       // Visiteurs par jour (14 derniers jours)
@@ -147,9 +162,9 @@ export async function GET() {
         uniques: r[1],
       })),
       funnel: {
-        landing: signupFunnel[0]?.[0] ?? 0,
-        signupPage: signupFunnel[0]?.[1] ?? 0,
-        completed: signupFunnel[0]?.[2] ?? 0,
+        landing: funnelLanding[0]?.[0] ?? 0,
+        signupPage: funnelSignup[0]?.[0] ?? 0,
+        completed: funnelCompleted[0]?.[0] ?? 0,
       },
       dailyVisitors: dailyVisitors.map((r: string[]) => ({
         day: r[0],
