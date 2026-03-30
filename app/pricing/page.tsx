@@ -101,7 +101,7 @@ export default async function PricingPage() {
 
         {/* Plans */}
         <section className="max-w-[1080px] mx-auto px-4 sm:px-6 py-12">
-          <PricingSelector />
+          <PricingSelector isAuthenticated={!!user} />
         </section>
 
         {/* FAQ */}
