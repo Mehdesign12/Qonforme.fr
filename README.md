@@ -859,6 +859,60 @@ CRON_SECRET=
 
 ---
 
+## 📱 App mobile iOS & Android — Plan (Capacitor)
+
+> Option retenue : **Capacitor en mode Remote URL** — wrapper natif autour de `https://qonforme.fr`.
+> L'app charge le site Vercel dans une WebView plein écran. Mises à jour instantanées, 0 rebuild natif.
+
+### Prérequis
+- Compte Apple Developer (99 €/an) — https://developer.apple.com
+- Compte Google Play Console (25 € one-time) — https://play.google.com/console
+- Un Mac avec Xcode pour le build iOS
+- Android Studio (Mac ou PC) pour le build Android
+
+### Étapes
+
+#### M1. Setup Capacitor
+- [ ] `npm install @capacitor/core @capacitor/cli`
+- [ ] `npx cap init "Qonforme" "fr.qonforme.app"`
+- [ ] `npx cap add ios && npx cap add android`
+- [ ] Configurer `capacitor.config.ts` : `server.url = "https://qonforme.fr"`
+
+#### M2. Assets
+- [ ] Icône 1024x1024 (App Store + Play Store)
+- [ ] Splash screen 2732x2732
+- [ ] Screenshots pour les fiches stores (iPhone 6.7", iPad, Android)
+
+#### M3. Build iOS
+- [ ] `npx cap open ios` → Xcode
+- [ ] Signer avec le certificat Apple Developer
+- [ ] Tester simulateur + appareil réel
+- [ ] Soumettre à l'App Store (review : 1-3 jours)
+
+#### M4. Build Android
+- [ ] `npx cap open android` → Android Studio
+- [ ] Générer l'AAB signé
+- [ ] Soumettre au Play Store (review : quelques heures)
+
+#### M5. Optionnel — Fonctionnalités natives
+- [ ] Notifications push (Firebase + APNs)
+- [ ] Scanner de documents (caméra)
+- [ ] Deep links (`qonforme.fr/*` → ouvre l'app)
+
+### Coûts
+| Poste | Coût |
+|-------|------|
+| Apple Developer | 99 €/an |
+| Google Play | 25 € (one-time) |
+| Capacitor | Gratuit (open-source) |
+| **Total année 1** | **~125 €** |
+
+### Maintenance
+- Mises à jour du site sur Vercel → l'app se met à jour automatiquement
+- Republication stores uniquement si changement d'icône, splash screen ou permissions natives
+
+---
+
 ### 📊 Récapitulatif de l'audit
 
 | Aspect | Statut | Priorité |
