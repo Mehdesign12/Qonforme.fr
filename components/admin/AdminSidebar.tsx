@@ -17,6 +17,7 @@ import {
   Palette,
   BarChart3,
   UserSearch,
+  Megaphone,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -30,6 +31,7 @@ const NAV = [
   { href: '/admin/blog/ai',      icon: Bot,             label: 'Blog IA' },
   { href: '/admin/brand-studio',  icon: Palette,         label: 'Brand Studio' },
   { href: '/admin/prospects',      icon: UserSearch,      label: 'Prospects' },
+  { href: '/admin/outreach',      icon: Megaphone,       label: 'Outreach' },
   { href: '/admin/analytics',     icon: BarChart3,       label: 'Analytics' },
   { href: '/admin/health',        icon: Activity,        label: 'Santé système' },
 ]
