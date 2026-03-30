@@ -116,7 +116,7 @@ export default function BillingPageClient({
           Choisis un plan pour accéder à toutes les fonctionnalités de Qonforme.
         </p>
         <button
-          onClick={() => (window.location.href = '/pricing')}
+          onClick={() => (window.location.href = '/signup/plan')}
           className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           <Zap className="w-4 h-4" />
@@ -175,7 +175,7 @@ export default function BillingPageClient({
               Abonnement annulé — Renouvelle ton abonnement pour retrouver l&apos;accès
             </p>
             <button
-              onClick={() => (window.location.href = '/pricing')}
+              onClick={() => (window.location.href = '/signup/plan')}
               className="text-sm font-semibold text-[#991B1B] underline mt-1"
             >
               Voir les plans →

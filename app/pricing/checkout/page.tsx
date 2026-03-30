@@ -37,9 +37,9 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
     ? (period as BillingPeriod)
     : null
 
-  // Paramètres invalides → retour à /pricing
+  // Paramètres invalides → retour au choix de plan
   if (!planId || !billingPeriod) {
-    redirect('/pricing')
+    redirect('/signup/plan')
   }
 
   return (

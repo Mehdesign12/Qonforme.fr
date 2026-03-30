@@ -121,7 +121,7 @@ export default function CompanyForm() {
         throw new Error(err?.error || "Erreur inconnue")
       }
       toast.success("Profil entreprise enregistré !")
-      router.push("/pricing")
+      router.push("/signup/plan")
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur lors de la sauvegarde"
       toast.error(msg)

@@ -2,31 +2,36 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import PricingSelector from '@/components/billing/PricingSelector'
-import StepIndicator from '@/components/auth/StepIndicator'
 import Image from 'next/image'
 import Link from 'next/link'
+import { ArrowRight, CheckCircle2, Shield, Zap, Lock } from 'lucide-react'
+import Footer from '@/components/layout/Footer'
 
 export const metadata: Metadata = {
-  title: 'Choisir un plan — Qonforme',
-  description: 'Choisissez le plan Qonforme adapté à votre activité : Starter dès 9 €/mois ou Pro à 19 €/mois. Facturation électronique conforme.',
+  title: 'Tarifs — Qonforme | Facturation dès 9 €/mois',
+  description: 'Découvrez les tarifs Qonforme : plan Starter dès 9 €/mois, plan Pro à 19 €/mois. Factur-X conforme, sans engagement. Comparez les fonctionnalités.',
   alternates: { canonical: '/pricing' },
   openGraph: {
-    images: [{ url: '/api/og?title=Starter%20d%C3%A8s%209%20%E2%82%AC%2Fmois%20%E2%80%94%20Pro%20%C3%A0%2019%20%E2%82%AC%2Fmois&subtitle=Facturation%20%C3%A9lectronique%20conforme%20pour%20artisans%20et%20TPE', width: 1200, height: 630 }],
+    title: 'Tarifs Qonforme — dès 9 €/mois',
+    description: 'Facturation électronique conforme dès 9 €/mois. Sans engagement.',
+    images: [{ url: '/api/og?title=Tarifs%20Qonforme&subtitle=D%C3%A8s%209%20%E2%82%AC%2Fmois%20%E2%80%94%20Sans%20engagement', width: 1200, height: 630 }],
   },
 }
 export const dynamic = 'force-dynamic'
 
 const LOGO_LONG_BLEU = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp'
-const PICTO_Q        = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp'
 
-const STEPS = [
-  { label: 'Ton compte' },
-  { label: 'Ton entreprise' },
-  { label: 'Ton plan' },
+const FAQ = [
+  { question: "Qonforme est-il conforme à la réforme de facturation électronique 2026 ?", reponse: "Oui, Qonforme génère nativement des factures au format Factur-X EN 16931, le format obligatoire pour la facturation électronique B2B à partir de septembre 2026." },
+  { question: "Puis-je essayer Qonforme gratuitement ?", reponse: "Oui, vous pouvez créer un compte et tester Qonforme sans carte bancaire. L'abonnement démarre à partir de 9 €/mois sans engagement." },
+  { question: "Quelle est la différence entre le plan Starter et le plan Pro ?", reponse: "Le plan Starter (9 €/mois) couvre la facturation essentielle : 10 factures/mois, devis illimités, Factur-X. Le plan Pro (19 €/mois) ajoute les factures illimitées, relances automatiques, tableau de bord CA et support prioritaire." },
+  { question: "Puis-je résilier à tout moment ?", reponse: "Oui, Qonforme est sans engagement. Vous pouvez résilier votre abonnement à tout moment depuis les paramètres de votre compte." },
+  { question: "Qonforme gère-t-il l'autoliquidation TVA pour le BTP ?", reponse: "Oui, Qonforme gère automatiquement l'autoliquidation de TVA pour la sous-traitance BTP (article 283-2 nonies du CGI)." },
+  { question: "Est-ce que Qonforme fonctionne sur mobile ?", reponse: "Oui, Qonforme est entièrement responsive et fonctionne sur smartphone, tablette et ordinateur." },
 ]
 
 export default async function PricingPage() {
-  // Rediriger les utilisateurs avec un abonnement actif vers le dashboard
+  // Utilisateur déjà abonné → dashboard
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
@@ -40,19 +45,10 @@ export default async function PricingPage() {
     }
   }
 
-  const pricingFaq = [
-    { question: "Qonforme est-il conforme a la reforme de facturation electronique 2026 ?", reponse: "Oui, Qonforme genere nativement des factures au format Factur-X EN 16931, le format obligatoire pour la facturation electronique B2B a partir de septembre 2026." },
-    { question: "Puis-je essayer Qonforme gratuitement ?", reponse: "Oui, vous pouvez creer un compte et tester Qonforme sans carte bancaire. L'abonnement demarre a partir de 9 EUR/mois sans engagement." },
-    { question: "Quelle est la difference entre le plan Starter et le plan Pro ?", reponse: "Le plan Starter (9 EUR/mois) couvre la facturation essentielle. Le plan Pro (19 EUR/mois) ajoute les relances automatiques, l'export FEC comptable et le support prioritaire." },
-    { question: "Puis-je resilier a tout moment ?", reponse: "Oui, Qonforme est sans engagement. Vous pouvez resilier votre abonnement a tout moment depuis les parametres de votre compte. Vos donnees restent accessibles pendant 30 jours apres la resiliation." },
-    { question: "Qonforme gere-t-il l'autoliquidation TVA pour le BTP ?", reponse: "Oui, Qonforme gere automatiquement l'autoliquidation de TVA pour la sous-traitance BTP conformement a l'article 283-2 nonies du CGI. La mention est ajoutee automatiquement sur vos factures." },
-    { question: "Est-ce que Qonforme fonctionne sur mobile ?", reponse: "Oui, Qonforme est entierement responsive et fonctionne sur smartphone, tablette et ordinateur. Vous pouvez creer et envoyer des factures depuis n'importe quel appareil." },
-  ]
-
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: pricingFaq.map(f => ({
+    mainEntity: FAQ.map(f => ({
       "@type": "Question",
       name: f.question,
       acceptedAnswer: { "@type": "Answer", text: f.reponse },
@@ -61,77 +57,87 @@ export default async function PricingPage() {
 
   return (
     <>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-    {/*
-     * min-h = 100dvh pour couvrir exactement le viewport mobile (barre Safari incluse).
-     * overflow-x-hidden évite tout scroll horizontal accidentel.
-     */}
-    <div className="relative min-h-[100dvh] flex flex-col overflow-x-hidden">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div className="min-h-screen bg-[#F8FAFC]">
+        {/* Header */}
+        <nav className="sticky top-0 z-50 border-b border-[#E2E8F0] bg-white">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <Link href="/">
+              <Image src={LOGO_LONG_BLEU} alt="Qonforme" width={130} height={32} className="h-7 w-auto object-contain" sizes="130px" priority />
+            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/demo" className="hidden sm:inline text-sm text-slate-600 hover:text-[#2563EB]">Démo</Link>
+              <Link href="/signup" className="px-4 py-2 text-sm font-semibold text-white bg-[#2563EB] rounded-lg hover:bg-[#1D4ED8]">
+                Commencer →
+              </Link>
+            </div>
+          </div>
+        </nav>
 
-      {/* ── Fond dégradé (identique AuthLayout) ──────────────────────────── */}
-      <div aria-hidden className="pointer-events-none select-none fixed inset-0 z-0"
-        style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 30%, #EEF2FF 60%, #F0F9FF 85%, #F8FAFC 100%)' }}
-      />
-      <div aria-hidden className="pointer-events-none select-none fixed -top-32 -left-32 z-0 w-[480px] h-[480px] rounded-full"
-        style={{ background: 'radial-gradient(circle at center, rgba(37,99,235,0.13) 0%, rgba(37,99,235,0.04) 55%, transparent 75%)' }}
-      />
-      <div aria-hidden className="pointer-events-none select-none fixed -bottom-24 -right-24 z-0 w-[420px] h-[420px] rounded-full"
-        style={{ background: 'radial-gradient(circle at center, rgba(99,102,241,0.10) 0%, rgba(37,99,235,0.04) 50%, transparent 72%)' }}
-      />
-      {/* Grille de points — masquée sur mobile pour alléger le rendu */}
-      <div aria-hidden className="pointer-events-none select-none fixed inset-0 z-0 hidden sm:block"
-        style={{
-          backgroundImage: 'radial-gradient(circle, rgba(37,99,235,0.08) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-          maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)',
-        }}
-      />
-      {/* Filigrane Q — plus petit sur mobile */}
-      <div aria-hidden className="pointer-events-none select-none fixed inset-0 z-0 flex items-center justify-center" style={{ opacity: 0.045 }}>
-        <Image
-          src={PICTO_Q}
-          alt=""
-          width={900}
-          height={900}
-          className="w-[340px] sm:w-[560px] lg:w-[900px]"
-          sizes="(min-width: 1024px) 900px, (min-width: 640px) 560px, 340px"
-          priority
-        />
-      </div>
+        {/* Hero */}
+        <header className="bg-gradient-to-b from-white to-[#F8FAFC] border-b border-[#E2E8F0]">
+          <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+            <p className="text-sm font-medium text-[#2563EB] mb-3">Tarifs simples, sans surprise</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-[#0F172A] leading-tight">
+              Choisissez le plan adapté à votre activité
+            </h1>
+            <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
+              Facturation électronique conforme Factur-X 2026. Sans engagement, résiliable à tout moment.
+            </p>
+            {/* Badges réassurance */}
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              {[
+                { icon: <Zap className="w-3.5 h-3.5" />, label: "Accès immédiat", color: "text-[#2563EB]", bg: "bg-[#EFF6FF]", border: "border-[#BFDBFE]" },
+                { icon: <Shield className="w-3.5 h-3.5" />, label: "Conforme 2026", color: "text-[#059669]", bg: "bg-[#ECFDF5]", border: "border-[#A7F3D0]" },
+                { icon: <Lock className="w-3.5 h-3.5" />, label: "Sans engagement", color: "text-slate-500", bg: "bg-white", border: "border-slate-200" },
+              ].map((b) => (
+                <span key={b.label} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${b.color} ${b.bg} ${b.border}`}>
+                  {b.icon} {b.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </header>
 
-      {/* ── Header : logo + StepIndicator ────────────────────────────────── */}
-      {/*
-       * pt-[env(safe-area-inset-top)] assure que le logo ne passe pas
-       * sous la Dynamic Island / notch sur iPhone en mode Safari plein écran.
-       */}
-      <div
-        className="relative z-10 flex flex-col items-center px-4"
-        style={{ paddingTop: 'max(20px, env(safe-area-inset-top, 20px))' }}
-      >
-        <Link href="/" aria-label="Retour à l'accueil" className="mb-5 lg:mb-7">
-          <Image
-            src={LOGO_LONG_BLEU}
-            alt="Qonforme"
-            width={180}
-            height={44}
-            /* Plus petit sur mobile pour laisser de l'espace */
-            className="h-8 lg:h-10 w-auto drop-shadow-sm"
-            sizes="180px"
-            priority
-          />
-        </Link>
-        <StepIndicator steps={STEPS} current={2} />
-      </div>
+        {/* Plans */}
+        <section className="max-w-[1080px] mx-auto px-4 sm:px-6 py-12">
+          <PricingSelector />
+        </section>
 
-      {/* ── Contenu ───────────────────────────────────────────────────────── */}
-      {/*
-       * Sur mobile : px-4 serré, pb avec safe-area pour ne pas masquer le CTA sticky.
-       * Sur desktop : max-w-[1080px] centré, padding généreux.
-       */}
-      <div className="relative z-10 flex-1 w-full max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-6 pb-4 lg:pb-12">
-        <PricingSelector />
+        {/* FAQ */}
+        <section className="bg-white border-y border-[#E2E8F0]">
+          <div className="max-w-3xl mx-auto px-4 py-16">
+            <h2 className="text-2xl font-bold text-[#0F172A] text-center mb-10">Questions fréquentes</h2>
+            <div className="space-y-4">
+              {FAQ.map((f, i) => (
+                <div key={i} className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-5">
+                  <h3 className="font-semibold text-[#0F172A] mb-2">{f.question}</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">{f.reponse}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="bg-[#0F172A] text-white">
+          <div className="max-w-3xl mx-auto px-4 py-16 text-center">
+            <h2 className="text-2xl font-bold mb-4">Prêt à simplifier votre facturation ?</h2>
+            <p className="text-slate-300 mb-8">Créez votre première facture Factur-X en quelques clics.</p>
+            <Link href="/signup" className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8] shadow-lg">
+              Commencer gratuitement <ArrowRight className="w-4 h-4" />
+            </Link>
+            <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
+              <Link href="/facturation" className="hover:text-white">Facturation par métier</Link>
+              <Link href="/guide" className="hover:text-white">Guides pratiques</Link>
+              <Link href="/comparatif" className="hover:text-white">Comparatifs</Link>
+              <Link href="/demo" className="hover:text-white">Démo</Link>
+            </div>
+          </div>
+        </section>
+
+        <Footer />
       </div>
-    </div>
     </>
   )
 }
