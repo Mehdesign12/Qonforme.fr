@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import PricingSelector from '@/components/billing/PricingSelector'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, CheckCircle2, Shield, Zap, Lock } from 'lucide-react'
+import { ArrowRight, Shield, Zap, Lock } from 'lucide-react'
 import Footer from '@/components/layout/Footer'
 
 export const metadata: Metadata = {
