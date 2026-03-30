@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { isAdminAuthenticated } from '@/lib/admin-require'
 import { redirect } from 'next/navigation'
-import { Database, Mail, Send, UserCheck, Search, Download, Play, Building2 } from 'lucide-react'
+import { Database, Mail, MailCheck, Send, UserCheck, Search, Building2 } from 'lucide-react'
 import { METIER_OPTIONS } from '@/lib/scraping/naf-mapping'
 import ProspectsActions from './ProspectsActions'
 
@@ -54,17 +54,20 @@ async function getStats(admin: ReturnType<typeof createAdminClient>) {
   const [
     { count: total },
     { count: avecEmail },
+    { count: emailVerifie },
     { count: contactes },
     { count: convertis },
   ] = await Promise.all([
     admin.from('prospects').select('*', { head: true, count: 'exact' }),
     admin.from('prospects').select('*', { head: true, count: 'exact' }).not('email', 'is', null),
+    admin.from('prospects').select('*', { head: true, count: 'exact' }).eq('email_verified', true),
     admin.from('prospects').select('*', { head: true, count: 'exact' }).in('statut', ['contacte', 'relance_1', 'relance_2']),
     admin.from('prospects').select('*', { head: true, count: 'exact' }).eq('statut', 'converti'),
   ])
   return {
     total: total ?? 0,
     avecEmail: avecEmail ?? 0,
+    emailVerifie: emailVerifie ?? 0,
     contactes: contactes ?? 0,
     convertis: convertis ?? 0,
   }
@@ -166,10 +169,11 @@ export default async function AdminProspectsPage({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { icon: <Database className="w-5 h-5 text-[#2563EB]" />, bg: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)', value: stats.total.toLocaleString('fr-FR'), label: 'Total prospects' },
           { icon: <Mail className="w-5 h-5 text-[#059669]" />, bg: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)', value: stats.avecEmail.toLocaleString('fr-FR'), label: 'Avec email' },
+          { icon: <MailCheck className="w-5 h-5 text-[#0891B2]" />, bg: 'linear-gradient(135deg, #ECFEFF 0%, #CFFAFE 100%)', value: stats.emailVerifie.toLocaleString('fr-FR'), label: 'Email vérifié' },
           { icon: <Send className="w-5 h-5 text-[#D97706]" />, bg: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)', value: stats.contactes.toLocaleString('fr-FR'), label: 'Contactés' },
           { icon: <UserCheck className="w-5 h-5 text-[#7C3AED]" />, bg: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)', value: stats.convertis.toLocaleString('fr-FR'), label: 'Convertis' },
         ].map((kpi) => (
