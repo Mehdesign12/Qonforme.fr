@@ -43,6 +43,7 @@ export async function updateSession(request: NextRequest) {
     '/reset-password',
     '/demo',
     '/pricing',
+    '/signup/plan',
     '/blog',
     '/cgu',
     '/mentions-legales',
@@ -155,9 +156,9 @@ export async function updateSession(request: NextRequest) {
       }
 
       if (!sub) {
-        // Pas d'abonnement → page de sélection de plan
+        // Pas d'abonnement → page de sélection de plan (parcours signup)
         const url = request.nextUrl.clone()
-        url.pathname = '/pricing'
+        url.pathname = '/signup/plan'
         return NextResponse.redirect(url)
       }
 
@@ -171,7 +172,7 @@ export async function updateSession(request: NextRequest) {
       if (sub.status === 'canceled' || sub.status === 'incomplete') {
         // Abonnement annulé ou checkout incomplet → retour au choix de plan
         const url = request.nextUrl.clone()
-        url.pathname = '/pricing'
+        url.pathname = '/signup/plan'
         return NextResponse.redirect(url)
       }
     }

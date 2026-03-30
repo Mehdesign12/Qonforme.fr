@@ -191,7 +191,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
             style={{ paddingTop: 'max(14px, env(safe-area-inset-top, 14px))' }}
           >
             <button
-              onClick={() => router.push('/pricing')}
+              onClick={() => router.push('/signup/plan')}
               className={`flex items-center gap-1.5 text-sm font-medium ${backBtn} transition-colors`}
               aria-label="Retour au choix du plan"
             >
@@ -377,7 +377,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
         <div className="relative z-10 flex flex-col h-full">
           {/* Retour */}
           <button
-            onClick={() => router.push('/pricing')}
+            onClick={() => router.push('/signup/plan')}
             className={`flex items-center gap-1.5 text-sm ${backBtn} transition-colors mb-7 self-start`}
           >
             <ArrowLeft className="w-4 h-4" />
@@ -516,7 +516,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               </button>
               <br />
               <button
-                onClick={() => router.push('/pricing')}
+                onClick={() => router.push('/signup/plan')}
                 className="text-sm text-slate-400 hover:text-slate-600 underline transition-colors"
               >
                 Retour au choix du plan

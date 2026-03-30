@@ -36,7 +36,7 @@ export default async function PricingReturnPage({ searchParams }: ReturnPageProp
   const { session_id } = await searchParams
 
   if (!session_id) {
-    redirect('/pricing')
+    redirect('/signup/plan')
   }
 
   try {
@@ -44,7 +44,7 @@ export default async function PricingReturnPage({ searchParams }: ReturnPageProp
 
     if (session.status !== 'complete') {
       // Session encore ouverte ou expirée → retour pricing
-      redirect('/pricing')
+      redirect('/signup/plan')
     }
 
     // ── Paiement confirmé — activer l'abonnement en DB ──────────────────────
@@ -103,6 +103,6 @@ export default async function PricingReturnPage({ searchParams }: ReturnPageProp
   } catch (err) {
     // Erreur Stripe (session_id invalide, réseau) → retour pricing
     console.error('[/pricing/return] Erreur récupération session Stripe:', err)
-    redirect('/pricing')
+    redirect('/signup/plan')
   }
 }
