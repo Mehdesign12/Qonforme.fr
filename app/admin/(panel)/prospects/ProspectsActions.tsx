@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Play, Download, Loader2 } from 'lucide-react'
+import { Play, Download, Loader2, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function ProspectsActions() {
   const [extracting, setExtracting] = useState(false)
+  const [enriching, setEnriching] = useState(false)
   const [exporting, setExporting] = useState(false)
 
   async function handleExtract() {
@@ -14,7 +15,7 @@ export default function ProspectsActions() {
       const res = await fetch('/api/admin/scraping/sirene', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}), // batch auto
+        body: JSON.stringify({}),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur inconnue')
@@ -23,12 +24,30 @@ export default function ProspectsActions() {
         (sum: number, r: { totalInserted: number }) => sum + r.totalInserted, 0
       ) ?? 0
       toast.success(`Extraction terminée : ${totalInserted} nouveaux prospects insérés`)
-      // Refresh la page pour voir les résultats
       window.location.reload()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur lors de l\'extraction')
     } finally {
       setExtracting(false)
+    }
+  }
+
+  async function handleEnrich() {
+    setEnriching(true)
+    try {
+      const res = await fetch('/api/admin/prospects/enrich', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur inconnue')
+
+      const r = data.results
+      toast.success(
+        `Enrichissement terminé : ${r.scraping?.found ?? 0} emails scrapés, ${r.enrichment?.enriched ?? 0} enrichis, ${r.verification?.valid ?? 0} vérifiés`
+      )
+      window.location.reload()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de l\'enrichissement')
+    } finally {
+      setEnriching(false)
     }
   }
 
@@ -67,6 +86,14 @@ export default function ProspectsActions() {
       >
         {extracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
         {extracting ? 'Extraction…' : 'Extraire Sirene'}
+      </button>
+      <button
+        onClick={handleEnrich}
+        disabled={enriching}
+        className="h-9 px-4 text-sm font-medium rounded-lg bg-[#059669] text-white hover:bg-[#047857] disabled:opacity-50 transition-colors flex items-center gap-2"
+      >
+        {enriching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+        {enriching ? 'Enrichissement…' : 'Enrichir emails'}
       </button>
       <button
         onClick={handleExport}
