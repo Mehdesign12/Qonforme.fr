@@ -400,7 +400,7 @@ function Hero() {
           transition={{ delay: 0.18, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
         >
           <Image
-            src="https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/company-assets/Images%20lP/Group%20261.webp"
+            src="https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/company-assets/Images%20lP/Instagram%20post%20-%2024.webp"
             alt="Qonforme — facturation sur mobile et desktop"
             width={700}
             height={580}
