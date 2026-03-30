@@ -392,86 +392,22 @@ function Hero() {
           </motion.div>
         </motion.div>
 
-        {/* ── Colonne droite — mockup dashboard ── */}
+        {/* ── Colonne droite — illustration hero ── */}
         <motion.div
           className="relative"
           initial={{ opacity: 0, x: 20, y: 10 }}
           animate={{ opacity: 1, x: 0, y: 0 }}
           transition={{ delay: 0.18, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
         >
-          {/* Halo lumineux derrière la carte */}
-          <div className="pointer-events-none absolute -inset-6 rounded-3xl bg-gradient-to-br from-[#DBEAFE]/60 via-[#EDE9FE]/40 to-[#D1FAE5]/20 blur-2xl" />
-
-          <div className="relative overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_24px_64px_-12px_rgba(15,23,42,0.14)]">
-            {/* Window bar */}
-            <div className="flex items-center gap-1.5 border-b border-[#F1F5F9] bg-[#F8FAFC] px-4 py-2.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#FC6058]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#FEC02F]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#2ACA44]" />
-              <span className="mx-auto font-mono text-[11px] tracking-wide text-slate-400">
-                app.qonforme.fr/dashboard
-              </span>
-            </div>
-
-            <div className="bg-[#F8FAFC] p-4">
-              {/* KPIs */}
-              <div className="mb-3 grid grid-cols-2 gap-2.5">
-                {[
-                  { label: "CA ce mois", value: "8 450 €", delta: "+12 %", dc: "#059669" },
-                  { label: "Factures émises", value: "7", delta: "ce mois", dc: "#2563EB" },
-                  { label: "En attente", value: "2 100 €", delta: "3 factures", dc: "#D97706" },
-                  { label: "En retard", value: "0 €", delta: "tout est ok ✓", dc: "#059669" },
-                ].map((kpi) => (
-                  <div
-                    key={kpi.label}
-                    className="rounded-xl border border-[#E8EFF6] bg-white px-3 py-2.5"
-                  >
-                    <p className="mb-0.5 text-[11px] text-slate-400">{kpi.label}</p>
-                    <p className="font-mono text-[15px] font-bold text-[#0F172A]">{kpi.value}</p>
-                    <p className="mt-0.5 text-[11px] font-medium" style={{ color: kpi.dc }}>
-                      {kpi.delta}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Table factures */}
-              <div className="overflow-hidden rounded-xl border border-[#E8EFF6] bg-white">
-                <div className="flex items-center justify-between border-b border-[#F1F5F9] px-3.5 py-2">
-                  <span className="text-[12px] font-semibold text-[#0F172A]">
-                    Dernières factures
-                  </span>
-                  <span className="text-[11px] font-medium text-[#2563EB]">Voir tout →</span>
-                </div>
-                {[
-                  { num: "FAC-2026-007", client: "Garage Martin", amount: "1 200 €", status: "Payée", sc: "#059669", sb: "#D1FAE5" },
-                  { num: "FAC-2026-006", client: "Atelier Dubois", amount: "890 €", status: "Envoyée", sc: "#1E40AF", sb: "#DBEAFE" },
-                  { num: "FAC-2026-005", client: "Plomberie Moreau", amount: "460 €", status: "En retard", sc: "#991B1B", sb: "#FEE2E2" },
-                ].map((row) => (
-                  <div
-                    key={row.num}
-                    className="flex items-center justify-between border-b border-[#F8FAFC] px-3.5 py-2.5 last:border-0"
-                  >
-                    <div>
-                      <p className="text-[12px] font-medium text-[#0F172A]">{row.num}</p>
-                      <p className="text-[11px] text-slate-400">{row.client}</p>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-mono text-[12px] font-semibold text-[#0F172A]">
-                        {row.amount}
-                      </span>
-                      <span
-                        className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                        style={{ color: row.sc, backgroundColor: row.sb }}
-                      >
-                        {row.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <Image
+            src="https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/company-assets/Images%20lP/Group%20261.webp"
+            alt="Qonforme — facturation sur mobile et desktop"
+            width={700}
+            height={580}
+            className="w-full h-auto"
+            sizes="(max-width: 768px) 100vw, 55vw"
+            priority
+          />
         </motion.div>
       </div>
     </section>
