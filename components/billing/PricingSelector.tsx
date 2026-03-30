@@ -42,7 +42,7 @@ function CheckItem({
 }
 
 /* ─── PricingSelector ───────────────────────────────────────────────────── */
-export default function PricingSelector() {
+export default function PricingSelector({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const router = useRouter()
 
   const [period,     setPeriod]     = useState<BillingPeriod>('monthly')
@@ -52,7 +52,12 @@ export default function PricingSelector() {
   function select(planId: PlanId) {
     if (loading) return
     setLoading(planId)
-    router.push(`/pricing/checkout?plan=${planId}&period=${period}`)
+    if (isAuthenticated) {
+      router.push(`/pricing/checkout?plan=${planId}&period=${period}`)
+    } else {
+      // Visiteur non connecté → inscription d'abord, plan mémorisé en query param
+      router.push(`/signup?plan=${planId}&period=${period}`)
+    }
   }
 
   const sPrice = period === 'monthly' ? PLANS.starter.monthlyPrice            : PLANS.starter.yearlyMonthlyEquivalent

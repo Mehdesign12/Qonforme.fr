@@ -89,7 +89,7 @@ export default async function SignupPlanPage() {
 
       {/* Contenu */}
       <div className="relative z-10 flex-1 w-full max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-6 pb-4 lg:pb-12">
-        <PricingSelector />
+        <PricingSelector isAuthenticated />
       </div>
     </div>
   )
