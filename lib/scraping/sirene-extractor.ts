@@ -246,6 +246,7 @@ async function searchSirene(
   })
 
   const url = `https://api.insee.fr/entreprises/sirene/V3.11/siret?${params}`
+  console.log("[Sirene] URL:", url)
   console.log("[Sirene] Requête:", query)
 
   const response = await fetch(url, {
@@ -307,13 +308,12 @@ export async function extractByNaf(
   // Construire la requête
   // L'API Sirene utilise les codes NAF SANS le point (ex: "4322A" et non "43.22A")
   const nafClean = naf.replace(".", "")
-  // TPE : tranches "00" (0 salarié), "01" (1-2), "02" (3-5), "03" (6-9)
-  // Actifs uniquement
-  let query = `activitePrincipaleEtablissement:"${nafClean}" AND etatAdministratifEtablissement:"A"`
-  // Filtre effectifs : on cible les TPE (0-9 salariés)
-  query += ` AND (trancheEffectifsEtablissement:"00" OR trancheEffectifsEtablissement:"01" OR trancheEffectifsEtablissement:"02" OR trancheEffectifsEtablissement:"03" OR trancheEffectifsEtablissement:"NN")`
+  // Requête simple : NAF + actif uniquement
+  // Note : on ne filtre PAS par tranche effectifs pour maximiser les résultats
+  // Le filtrage TPE se fera en post-traitement si nécessaire
+  let query = `activitePrincipaleEtablissement:${nafClean} AND etatAdministratifEtablissement:A`
   if (options.departement) {
-    query += ` AND codePostalEtablissement:"${options.departement}*"`
+    query += ` AND codePostalEtablissement:${options.departement}*`
   }
 
   while (prospects.length < maxResults) {
