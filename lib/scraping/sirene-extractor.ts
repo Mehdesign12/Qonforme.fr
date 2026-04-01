@@ -184,6 +184,52 @@ function transformSireneToProspect(
   }
 }
 
+// ── Gestion du token OAuth2 INSEE ──────────────────────────────────────────────
+
+let cachedToken: { token: string; expiresAt: number } | null = null
+
+async function getInseeToken(): Promise<string> {
+  // Si INSEE_API_KEY ressemble à un Bearer token (long, pas de tirets groupés), l'utiliser directement
+  const apiKey = process.env.INSEE_API_KEY
+  if (!apiKey) throw new Error("INSEE_API_KEY manquante dans les variables d'environnement")
+
+  // Si on a aussi un secret, c'est du OAuth2 (consumer_key:consumer_secret)
+  const apiSecret = process.env.INSEE_API_SECRET
+  if (!apiSecret) {
+    // Pas de secret → utiliser la clé directement comme Bearer token
+    return apiKey
+  }
+
+  // OAuth2 : échanger consumer_key + consumer_secret contre un token
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
+    return cachedToken.token
+  }
+
+  const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64")
+  const response = await fetch("https://api.insee.fr/token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${credentials}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials",
+  })
+
+  if (!response.ok) {
+    const body = await response.text()
+    throw new Error(`INSEE OAuth2 error ${response.status}: ${body.slice(0, 200)}`)
+  }
+
+  const data = await response.json()
+  cachedToken = {
+    token: data.access_token,
+    expiresAt: Date.now() + (data.expires_in ?? 600) * 1000,
+  }
+
+  console.log("[Sirene] Token OAuth2 obtenu, expire dans", data.expires_in, "s")
+  return cachedToken.token
+}
+
 // ── Requête Sirene search ──────────────────────────────────────────────────────
 
 async function searchSirene(
@@ -191,8 +237,7 @@ async function searchSirene(
   debut: number = 0,
   nombre: number = 1000,
 ): Promise<SireneSearchResponse> {
-  const apiKey = process.env.INSEE_API_KEY
-  if (!apiKey) throw new Error("INSEE_API_KEY manquante dans les variables d'environnement")
+  const token = await getInseeToken()
 
   const params = new URLSearchParams({
     q: query,
@@ -201,21 +246,21 @@ async function searchSirene(
   })
 
   const url = `https://api.insee.fr/entreprises/sirene/V3.11/siret?${params}`
+  console.log("[Sirene] Requête:", query)
 
   const response = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${token}`,
       Accept: "application/json",
     },
   })
 
   if (response.status === 429) {
-    // Rate limited — attendre 60s et réessayer une fois
     console.warn("[Sirene] Rate limited (429), attente 60s...")
     await sleep(60_000)
     const retry = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${token}`,
         Accept: "application/json",
       },
     })
@@ -224,7 +269,6 @@ async function searchSirene(
   }
 
   if (response.status === 404) {
-    // Aucun résultat pour cette requête
     console.log("[Sirene] 404 — aucun résultat pour la requête")
     return { header: { total: 0, debut: 0, nombre: 0 }, etablissements: [] }
   }
@@ -232,7 +276,7 @@ async function searchSirene(
   if (response.status === 401 || response.status === 403) {
     const body = await response.text()
     console.error(`[Sirene] Auth error ${response.status}:`, body)
-    throw new Error(`Sirene API auth error: ${response.status} — Vérifiez INSEE_API_KEY. Réponse: ${body.slice(0, 200)}`)
+    throw new Error(`Sirene API auth error: ${response.status} — Vérifiez INSEE_API_KEY (et INSEE_API_SECRET si OAuth2). Réponse: ${body.slice(0, 200)}`)
   }
 
   if (!response.ok) {
