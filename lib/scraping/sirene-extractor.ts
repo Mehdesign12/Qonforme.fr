@@ -224,12 +224,21 @@ async function searchSirene(
   }
 
   if (response.status === 404) {
-    // Aucun résultat
+    // Aucun résultat pour cette requête
+    console.log("[Sirene] 404 — aucun résultat pour la requête")
     return { header: { total: 0, debut: 0, nombre: 0 }, etablissements: [] }
   }
 
+  if (response.status === 401 || response.status === 403) {
+    const body = await response.text()
+    console.error(`[Sirene] Auth error ${response.status}:`, body)
+    throw new Error(`Sirene API auth error: ${response.status} — Vérifiez INSEE_API_KEY. Réponse: ${body.slice(0, 200)}`)
+  }
+
   if (!response.ok) {
-    throw new Error(`Sirene API error: ${response.status} ${response.statusText}`)
+    const body = await response.text()
+    console.error(`[Sirene] Error ${response.status}:`, body)
+    throw new Error(`Sirene API error: ${response.status} ${response.statusText} — ${body.slice(0, 200)}`)
   }
 
   return response.json()
@@ -251,9 +260,13 @@ export async function extractByNaf(
   const nombre = 1000 // max par page Sirene
 
   // Construire la requête
+  // L'API Sirene utilise les codes NAF SANS le point (ex: "4322A" et non "43.22A")
+  const nafClean = naf.replace(".", "")
   // TPE : tranches "00" (0 salarié), "01" (1-2), "02" (3-5), "03" (6-9)
   // Actifs uniquement
-  let query = `activitePrincipaleEtablissement:"${naf}" AND trancheEffectifsEtablissement:[00 TO 03] AND etatAdministratifEtablissement:"A"`
+  let query = `activitePrincipaleEtablissement:"${nafClean}" AND etatAdministratifEtablissement:"A"`
+  // Filtre effectifs : on cible les TPE (0-9 salariés)
+  query += ` AND (trancheEffectifsEtablissement:"00" OR trancheEffectifsEtablissement:"01" OR trancheEffectifsEtablissement:"02" OR trancheEffectifsEtablissement:"03" OR trancheEffectifsEtablissement:"NN")`
   if (options.departement) {
     query += ` AND codePostalEtablissement:"${options.departement}*"`
   }
