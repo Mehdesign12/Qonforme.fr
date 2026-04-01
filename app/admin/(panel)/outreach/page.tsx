@@ -121,7 +121,7 @@ export default async function AdminOutreachPage() {
                 <tr>
                   <td colSpan={8} className="px-4 py-16 text-center text-sm text-slate-400">
                     <Megaphone className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    Aucune campagne. Créez votre première campagne d'outreach.
+                    Aucune campagne. Créez votre première campagne d&apos;outreach.
                   </td>
                 </tr>
               ) : campaigns.map((c) => {
