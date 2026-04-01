@@ -239,13 +239,11 @@ async function searchSirene(
 ): Promise<SireneSearchResponse> {
   const token = await getInseeToken()
 
-  const params = new URLSearchParams({
-    q: query,
-    nombre: String(nombre),
-    debut: String(debut),
-  })
-
-  const url = `https://api.insee.fr/api-sirene/3.11/siret?${params}`
+  // Construire l'URL manuellement pour contrôler l'encodage
+  // URLSearchParams encode les espaces en "+" et double-encode les guillemets,
+  // ce que l'API INSEE n'accepte pas
+  const encodedQuery = encodeURIComponent(query)
+  const url = `https://api.insee.fr/api-sirene/3.11/siret?q=${encodedQuery}&nombre=${nombre}&debut=${debut}`
   console.log("[Sirene] URL:", url)
   console.log("[Sirene] Requête:", query)
 
