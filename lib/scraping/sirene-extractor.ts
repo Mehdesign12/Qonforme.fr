@@ -269,7 +269,8 @@ async function searchSirene(
   }
 
   if (response.status === 404) {
-    console.log("[Sirene] 404 — aucun résultat pour la requête")
+    const body = await response.text()
+    console.log(`[Sirene] 404 — body: ${body.slice(0, 500)}`)
     return { header: { total: 0, debut: 0, nombre: 0 }, etablissements: [] }
   }
 
