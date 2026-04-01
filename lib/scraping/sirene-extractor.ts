@@ -245,13 +245,13 @@ async function searchSirene(
     debut: String(debut),
   })
 
-  const url = `https://api.insee.fr/entreprises/sirene/V3.11/siret?${params}`
+  const url = `https://api.insee.fr/api-sirene/3.11/siret?${params}`
   console.log("[Sirene] URL:", url)
   console.log("[Sirene] Requête:", query)
 
   const response = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${token}`,
+      "X-INSEE-Api-Key-Integration": token,
       Accept: "application/json",
     },
   })
@@ -261,7 +261,7 @@ async function searchSirene(
     await sleep(60_000)
     const retry = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${token}`,
+        "X-INSEE-Api-Key-Integration": token,
         Accept: "application/json",
       },
     })

@@ -4,10 +4,10 @@ import { SireneResult } from '@/types'
 export async function searchBySiren(siren: string): Promise<SireneResult | null> {
   try {
     const response = await fetch(
-      `https://api.insee.fr/entreprises/sirene/V3.11/siren/${siren}`,
+      `https://api.insee.fr/api-sirene/3.11/siren/${siren}`,
       {
         headers: {
-          Authorization: `Bearer ${process.env.INSEE_API_KEY}`,
+          'X-INSEE-Api-Key-Integration': process.env.INSEE_API_KEY!,
           Accept: 'application/json',
         },
       }
@@ -43,10 +43,10 @@ export async function searchBySiren(siren: string): Promise<SireneResult | null>
 export async function searchBySiret(siret: string): Promise<SireneResult | null> {
   try {
     const response = await fetch(
-      `https://api.insee.fr/entreprises/sirene/V3.11/siret/${siret}`,
+      `https://api.insee.fr/api-sirene/3.11/siret/${siret}`,
       {
         headers: {
-          Authorization: `Bearer ${process.env.INSEE_API_KEY}`,
+          'X-INSEE-Api-Key-Integration': process.env.INSEE_API_KEY!,
           Accept: 'application/json',
         },
       }
