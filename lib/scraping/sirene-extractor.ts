@@ -306,14 +306,10 @@ export async function extractByNaf(
   const nombre = 1000 // max par page Sirene
 
   // Construire la requête
-  // L'API Sirene utilise les codes NAF SANS le point (ex: "4322A" et non "43.22A")
-  const nafClean = naf.replace(".", "")
-  // Requête simple : NAF + actif uniquement
-  // Note : on ne filtre PAS par tranche effectifs pour maximiser les résultats
-  // Le filtrage TPE se fera en post-traitement si nécessaire
-  let query = `activitePrincipaleEtablissement:${nafClean} AND etatAdministratifEtablissement:A`
+  // L'API Sirene v3.11 (nouveau portail) utilise les codes NAF AVEC le point et entre guillemets
+  let query = `activitePrincipaleEtablissement:"${naf}" AND etatAdministratifEtablissement:"A"`
   if (options.departement) {
-    query += ` AND codePostalEtablissement:${options.departement}*`
+    query += ` AND codePostalEtablissement:"${options.departement}*"`
   }
 
   while (prospects.length < maxResults) {
