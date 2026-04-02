@@ -25,6 +25,7 @@ interface SireneEtablissement {
     prenom1UniteLegale?: string
     dateCreationUniteLegale?: string
     trancheEffectifsUniteLegale?: string
+    categorieJuridiqueUniteLegale?: string
   }
   adresseEtablissement?: {
     numeroVoieEtablissement?: string
@@ -136,14 +137,32 @@ function getRegion(dept: string | null): string | null {
 
 // ── Transformation Sirene → Prospect ───────────────────────────────────────────
 
+// ── Filtrage des entités publiques ──────────────────────────────────────────────
+
+// Catégories juridiques à exclure (collectivités, établissements publics, etc.)
+// 7xxx = Personnes morales de droit public
+// 8xxx = Organismes divers (certains sont publics)
+function isPublicEntity(categorieJuridique: string | undefined): boolean {
+  if (!categorieJuridique) return false
+  const code = categorieJuridique.charAt(0)
+  return code === "7" || code === "8"
+}
+
+// ── Transformation Sirene → Prospect ───────────────────────────────────────────
+
 function transformSireneToProspect(
   etab: SireneEtablissement,
   metierSlug: string,
   codeNaf: string,
-): ProspectInsert {
+): ProspectInsert | null {
   const ul = etab.uniteLegale
   const addr = etab.adresseEtablissement
   const periode = etab.periodesEtablissement?.[0]
+
+  // Filtrer les entités publiques (communes, collectivités, etc.)
+  if (isPublicEntity(ul?.categorieJuridiqueUniteLegale)) {
+    return null
+  }
 
   const denomination = ul?.denominationUniteLegale
     || periode?.denominationUsuelleEtablissement
@@ -164,14 +183,15 @@ function transformSireneToProspect(
   const cp = addr?.codePostalEtablissement ?? null
   const dept = getDepartement(cp ?? undefined)
 
+  // Utiliser le label du métier recherché comme activité
+  const metierLabel = NAF_MAPPING[metierSlug]?.label ?? metierSlug
+
   return {
     siren: etab.siren,
     siret: etab.siret,
     nom_entreprise: nomEntreprise,
     nom_dirigeant: nomDirigeant,
-    activite: periode?.activitePrincipaleEtablissement
-      ? NAF_MAPPING[metierSlug]?.label ?? null
-      : null,
+    activite: metierLabel,
     code_naf: codeNaf,
     metier_qonforme: resolveMetier(metierSlug),
     adresse: adresseParts.length > 0 ? adresseParts.join(" ") : null,
@@ -318,7 +338,8 @@ export async function extractByNaf(
 
     for (const etab of data.etablissements) {
       if (prospects.length >= maxResults) break
-      prospects.push(transformSireneToProspect(etab, metierSlug, naf))
+      const prospect = transformSireneToProspect(etab, metierSlug, naf)
+      if (prospect) prospects.push(prospect) // null = entité publique filtrée
     }
 
     // Plus de pages ?
