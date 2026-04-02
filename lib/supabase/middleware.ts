@@ -5,6 +5,40 @@ import { ADMIN_COOKIE, verifyAdminSession } from '@/lib/admin-auth'
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // ──────────────────────────────────────────────────────────────
+  // Routes purement publiques — retour immédiat SANS appel Supabase
+  // Cela évite que supabase.auth.getUser() déclenche des Set-Cookie
+  // qui provoquent des erreurs de redirection pour Googlebot.
+  // ──────────────────────────────────────────────────────────────
+  const purePublicPaths = [
+    '/blog',
+    '/cgu',
+    '/mentions-legales',
+    '/confidentialite',
+    '/facturation',
+    '/guide',
+    '/modele',
+    '/comparatif',
+    '/glossaire',
+    '/pricing',
+    '/demo',
+    '/api/webhooks/stripe',
+    '/api/og',
+    '/api/preview',
+    '/api/cron',
+  ]
+
+  const isPurePublic = purePublicPaths.some((path) =>
+    pathname === path || pathname.startsWith(path + '/')
+  )
+
+  if (isPurePublic) {
+    return NextResponse.next()
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Routes nécessitant Supabase (auth check)
+  // ──────────────────────────────────────────────────────────────
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -35,27 +69,14 @@ export async function updateSession(request: NextRequest) {
   // ──────────────────────────────────────────────────────────────
   // Routes publiques — toujours accessibles, sans vérification
   // ──────────────────────────────────────────────────────────────
+  // Routes publiques qui nécessitent quand même le check user
+  // (pour rediriger les utilisateurs connectés vers /dashboard)
   const publicPaths = [
     '/',
     '/login',
     '/signup',
     '/forgot-password',
     '/reset-password',
-    '/demo',
-    '/pricing',
-    '/signup/plan',
-    '/blog',
-    '/cgu',
-    '/mentions-legales',
-    '/confidentialite',
-    '/facturation',
-    '/guide',
-    '/modele',
-    '/comparatif',
-    '/glossaire',
-    '/api/webhooks/stripe', // webhook Stripe : ne doit jamais être bloqué
-    '/api/og',
-    '/api/preview',
   ]
 
   const isPublic = publicPaths.some((path) =>
