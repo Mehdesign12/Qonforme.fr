@@ -89,7 +89,8 @@ export async function updateSession(request: NextRequest) {
     const authOnlyPaths = ['/login', '/signup']
     const isAuthPage =
       authOnlyPaths.some((p) => pathname.startsWith(p)) &&
-      !pathname.startsWith('/signup/company')
+      !pathname.startsWith('/signup/company') &&
+      !pathname.startsWith('/signup/plan')
 
     if (isAuthPage && user) {
       const url = request.nextUrl.clone()
