@@ -304,10 +304,11 @@ export async function extractByNaf(
   const nombre = 1000 // max par page Sirene
 
   // Construire la requête
-  // L'API Sirene v3.11 (nouveau portail) utilise les codes NAF AVEC le point et entre guillemets
-  let query = `activitePrincipaleEtablissement:"${naf}" AND etatAdministratifEtablissement:"A"`
+  // Les champs activitePrincipale et etatAdministratif sont des champs "période"
+  // et doivent être wrappés dans periode(...) — pas de guillemets autour des valeurs
+  let query = `periode(activitePrincipaleEtablissement:${naf} AND etatAdministratifEtablissement:A)`
   if (options.departement) {
-    query += ` AND codePostalEtablissement:"${options.departement}*"`
+    query += ` AND codePostalEtablissement:${options.departement}*`
   }
 
   while (prospects.length < maxResults) {
