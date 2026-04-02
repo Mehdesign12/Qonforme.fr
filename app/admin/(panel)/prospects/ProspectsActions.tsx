@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Play, Download, Loader2, Sparkles } from 'lucide-react'
+import { Play, Download, Loader2, Sparkles, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function ProspectsActions() {
   const [extracting, setExtracting] = useState(false)
   const [enriching, setEnriching] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [purging, setPurging] = useState(false)
 
   async function handleExtract() {
     setExtracting(true)
@@ -77,6 +78,22 @@ export default function ProspectsActions() {
     }
   }
 
+  async function handlePurge() {
+    if (!confirm('Supprimer TOUS les prospects, campagnes et historique de scraping ? Cette action est irréversible.')) return
+    setPurging(true)
+    try {
+      const res = await fetch('/api/admin/prospects/purge', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
+      toast.success(`Base vidée : ${data.deleted ?? 0} prospects supprimés`)
+      window.location.reload()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de la purge')
+    } finally {
+      setPurging(false)
+    }
+  }
+
   return (
     <div className="flex gap-2">
       <button
@@ -102,6 +119,14 @@ export default function ProspectsActions() {
       >
         {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
         CSV
+      </button>
+      <button
+        onClick={handlePurge}
+        disabled={purging}
+        className="h-9 px-4 text-sm font-medium rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 transition-colors flex items-center gap-2"
+      >
+        {purging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+        Vider
       </button>
     </div>
   )
