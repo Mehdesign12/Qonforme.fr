@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic"
+"use client"
 
 import { AlertCircle, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"

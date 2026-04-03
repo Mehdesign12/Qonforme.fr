@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic"
+"use client"
 
 import Link from "next/link"
 import { ChevronRight, Building2, FileText, Wifi, Bell, CreditCard } from "lucide-react"

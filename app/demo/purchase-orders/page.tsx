@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic"
+"use client"
 
 import { formatCurrency, formatDate } from "@/lib/utils/invoice"
 
