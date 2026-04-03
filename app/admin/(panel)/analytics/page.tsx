@@ -301,16 +301,65 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Lien PostHog */}
-      <a
-        href="https://us.posthog.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 rounded-xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] px-4 py-3 text-sm font-medium text-slate-500 hover:text-[#2563EB] hover:border-[#BFDBFE] dark:hover:border-[#2563EB]/30 transition-colors"
-      >
-        <ExternalLink className="w-3.5 h-3.5" />
-        Ouvrir le dashboard complet sur PostHog
-      </a>
+      {/* Vercel Analytics */}
+      <div>
+        <h2 className="text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-3">
+          Vercel Web Analytics
+        </h2>
+        <div className="rounded-2xl border bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F] p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-black dark:bg-white/10">
+              <svg className="w-5 h-5 text-white" viewBox="0 0 76 65" fill="currentColor">
+                <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">
+                Vercel Analytics
+              </p>
+              <p className="text-[11px] text-slate-400">
+                Pages vues, visiteurs uniques, vitesse de chargement
+              </p>
+            </div>
+          </div>
+          <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-4">
+            Les données Vercel Analytics (Core Web Vitals, pages vues en temps réel, géolocalisation)
+            sont disponibles sur le dashboard Vercel.
+          </p>
+          <a
+            href="https://vercel.com/mehdesign12s-projects/qonforme-fr/analytics"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg bg-black dark:bg-white text-white dark:text-black px-4 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Ouvrir Vercel Analytics
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
+      </div>
+
+      {/* Liens dashboards externes */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <a
+          href="https://us.posthog.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 rounded-xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] px-4 py-3 text-sm font-medium text-slate-500 hover:text-[#2563EB] hover:border-[#BFDBFE] dark:hover:border-[#2563EB]/30 transition-colors"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Dashboard PostHog
+        </a>
+        <a
+          href="https://vercel.com/mehdesign12s-projects/qonforme-fr/analytics"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 rounded-xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] px-4 py-3 text-sm font-medium text-slate-500 hover:text-[#2563EB] hover:border-[#BFDBFE] dark:hover:border-[#2563EB]/30 transition-colors"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Dashboard Vercel Analytics
+        </a>
+      </div>
 
       <p className="text-[11px] text-slate-300 dark:text-slate-600 flex items-center gap-1.5 pb-4">
         <RefreshCw className="w-3 h-3" />
