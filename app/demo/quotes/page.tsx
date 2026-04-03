@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic"
+"use client"
 
 import Link from "next/link"
 import { formatCurrency, formatDate } from "@/lib/utils/invoice"
