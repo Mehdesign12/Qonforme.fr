@@ -117,13 +117,36 @@ export default function DemoPurchaseOrderDetailPage() {
       </div>
 
       {/* Status actions */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={ctaToast}>
-          <CheckCircle2 className="w-4 h-4" /> Confirmer la réception
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+        <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={ctaToast}>
+          <CheckCircle2 className="w-4 h-4" /> <span className="hidden xs:inline">Confirmer</span><span className="xs:hidden">OK</span>
         </Button>
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={ctaToast}>
+        <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={ctaToast}>
           <XCircle className="w-4 h-4" /> Annuler
         </Button>
+      </div>
+
+      {/* Mobile: sidebar info first (dates + fournisseur) */}
+      <div className="lg:hidden space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] px-4 py-3 shadow-sm">
+            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1">Émission</p>
+            <p className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatDate(po.issue_date)}</p>
+          </div>
+          <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] px-4 py-3 shadow-sm">
+            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1">Livraison</p>
+            <p className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatDate(po.delivery_date)}</p>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] px-4 py-3 shadow-sm flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#4F46E5] text-[11px] font-bold">
+            {po.client.name.split(' ').slice(0, 2).map(w => w[0]).join('')}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0] truncate">{po.client.name}</p>
+            <p className="text-xs text-slate-400 truncate">{po.client.city} · {po.client.email}</p>
+          </div>
+        </div>
       </div>
 
       {/* Two-column layout */}
@@ -139,7 +162,7 @@ export default function DemoPurchaseOrderDetailPage() {
               {po.lines.map((line, i) => (
                 <div key={i} className="px-5 py-3.5 flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">{line.description}</p>
+                    <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0] truncate">{line.description}</p>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {line.quantity} × {formatCurrency(line.unit_price_ht)} HT · TVA {line.vat_rate}%
                     </p>
@@ -176,8 +199,8 @@ export default function DemoPurchaseOrderDetailPage() {
           )}
         </div>
 
-        {/* Sidebar info */}
-        <div className="space-y-4">
+        {/* Sidebar info — desktop only (mobile shown above) */}
+        <div className="hidden lg:flex flex-col space-y-4">
           {/* Dates */}
           <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] px-5 py-4 shadow-sm space-y-3">
             <h3 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Dates</h3>
