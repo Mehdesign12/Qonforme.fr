@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { AutoDarkMode } from "@/components/layout/AutoDarkMode";
 import { PostHogProvider } from "@/components/shared/PostHogProvider";
+import { Analytics } from "@vercel/analytics/react";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -202,6 +203,7 @@ export default function RootLayout({
               <Toaster richColors position="top-right" />
             </ReduxProvider>
           </PostHogProvider>
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
