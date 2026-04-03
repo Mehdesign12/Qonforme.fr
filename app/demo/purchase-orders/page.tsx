@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { formatCurrency, formatDate } from "@/lib/utils/invoice"
 
 type POStatus = "draft" | "sent" | "confirmed" | "cancelled"
@@ -44,7 +45,8 @@ export default function DemoPurchaseOrdersPage() {
       {/* Vue mobile : cards */}
       <div className="sm:hidden space-y-3">
         {MOCK_POS.map((po) => (
-          <div key={po.id} className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] px-4 py-3.5 shadow-sm">
+          <Link key={po.id} href={`/demo/purchase-orders/${po.id}`}>
+          <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] px-4 py-3.5 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
             <div className="flex items-center justify-between mb-1">
               <span className="font-mono text-sm text-[#4F46E5] font-bold">{po.po_number}</span>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[po.status]}`}>
@@ -57,6 +59,7 @@ export default function DemoPurchaseOrdersPage() {
               <p className="font-mono text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(po.total_ttc)}</p>
             </div>
           </div>
+          </Link>
         ))}
       </div>
 
@@ -75,7 +78,8 @@ export default function DemoPurchaseOrdersPage() {
           </thead>
           <tbody>
             {MOCK_POS.map((po) => (
-              <tr key={po.id} className="border-b border-[#F1F5F9] dark:border-[#162032] hover:bg-[#F8FAFC] dark:hover:bg-[#162032] transition-colors last:border-0">
+              <tr key={po.id} className="border-b border-[#F1F5F9] dark:border-[#162032] hover:bg-[#F8FAFC] dark:hover:bg-[#162032] transition-colors last:border-0 cursor-pointer"
+                onClick={() => window.location.href = `/demo/purchase-orders/${po.id}`}>
                 <td className="px-5 py-4">
                   <span className="font-mono text-sm text-[#4F46E5] font-bold">{po.po_number}</span>
                 </td>
