@@ -171,7 +171,7 @@ export default function GenerateurFacturePage() {
                         <label className="text-[12px] font-bold text-slate-500">SIRET</label>
                         <input className={inputClass} value={client.siret} onChange={(e) => setClient((p) => ({ ...p, siret: e.target.value }))} placeholder="987 654 321 00034" />
                       </div>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                         <div>
                           <label className="text-[12px] font-bold text-slate-500">N° facture</label>
                           <input className={inputClass} value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="F-2026-001" />

@@ -94,7 +94,7 @@ export default function GenerateurDevisPage() {
                     <div className="space-y-3">
                       <div><label className="text-[12px] font-bold text-slate-500">Nom / Raison sociale *</label><input className={inputClass} value={client.nom} onChange={(e) => setClient((p) => ({ ...p, nom: e.target.value }))} placeholder="Client SARL" /></div>
                       <div><label className="text-[12px] font-bold text-slate-500">Adresse</label><input className={inputClass} value={client.adresse} onChange={(e) => setClient((p) => ({ ...p, adresse: e.target.value }))} placeholder="5 avenue des Champs-Élysées" /></div>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                         <div><label className="text-[12px] font-bold text-slate-500">N° devis</label><input className={inputClass} value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="D-2026-001" /></div>
                         <div><label className="text-[12px] font-bold text-slate-500">Date</label><input className={inputClass} type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
                         <div><label className="text-[12px] font-bold text-slate-500">Validité</label><input className={inputClass} type="date" value={validite} onChange={(e) => setValidite(e.target.value)} /></div>
