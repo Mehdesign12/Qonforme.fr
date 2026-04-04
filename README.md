@@ -259,10 +259,10 @@ Le blog sera alimenté automatiquement par un cron job quotidien :
 
 | # | Outil | Route | Statut |
 |---|-------|-------|--------|
-| OG-9 | **Simulateur seuil TVA auto-entrepreneur** | `/outils/simulateur-seuil-tva` | 🔜 À faire |
-| OG-10 | **Simulateur revenus net auto-entrepreneur** | `/outils/simulateur-revenu-net` | 🔜 À faire |
-| OG-11 | **Générateur de numéro de facture** | `/outils/generateur-numero-facture` | 🔜 À faire |
-| OG-12 | **Générateur de conditions de paiement** | `/outils/generateur-conditions-paiement` | 🔜 À faire |
+| OG-9 | **Simulateur seuil TVA auto-entrepreneur** | `/outils/simulateur-seuil-tva` | ✅ Fait |
+| OG-10 | **Simulateur revenus net auto-entrepreneur** | `/outils/simulateur-revenu-net` | ✅ Fait |
+| OG-11 | **Générateur de numéro de facture** | `/outils/generateur-numero-facture` | ✅ Fait |
+| OG-12 | **Générateur de conditions de paiement** | `/outils/generateur-conditions-paiement` | ✅ Fait |
 
 #### Stratégie de conversion
 
