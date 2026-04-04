@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, Calculator, ArrowLeftRight, Info, RotateCcw, ChevronRight } from "lucide-react"
+import { ArrowRight, Calculator, ArrowLeftRight, RotateCcw, ChevronRight } from "lucide-react"
 import { motion } from "motion/react"
 import Footer from "@/components/layout/Footer"
 import { TVA_RATES, htToTtc, ttcToHt, calculateVat } from "@/lib/outils/tva"
