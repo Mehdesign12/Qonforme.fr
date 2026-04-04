@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Simulateur charges auto-entrepreneur 2026 gratuit | Qonforme",
-  description: "Calculez vos cotisations URSSAF, CFP et versement libératoire selon votre CA et activité. Barèmes 2026 à jour. Gratuit, sans inscription.",
+  description: "Calculez vos cotisations URSSAF, CFP et versement libératoire d'impôt selon votre chiffre d'affaires et type d'activité. Barèmes auto-entrepreneur 2026 à jour.",
   keywords: ["simulateur charges auto-entrepreneur", "cotisations urssaf", "charges micro-entrepreneur", "calcul charges 2026"],
   alternates: { canonical: "/outils/simulateur-charges-auto-entrepreneur" },
   openGraph: {

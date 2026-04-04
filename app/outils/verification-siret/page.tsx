@@ -253,6 +253,7 @@ export default function VerificationSiretPage() {
         </section>
 
         <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Vérificateur SIREN SIRET gratuit", url: "https://qonforme.fr/outils/verification-siret", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
+      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Différence SIREN / SIRET ?","acceptedAnswer":{"@type":"Answer","text":"SIREN (9 chiffres) = entreprise. SIRET (14 chiffres) = établissement."}},{"@type":"Question","name":"Le SIREN est-il obligatoire sur les factures ?","acceptedAnswer":{"@type":"Answer","text":"Oui, le SIRET est une mention obligatoire sur toute facture."}},{"@type":"Question","name":"D'où viennent ces données ?","acceptedAnswer":{"@type":"Answer","text":"API Sirene de l'INSEE, source officielle du répertoire des entreprises françaises."}}]}) }} />
       </main>
 
       <OutilsCtaBar text="Pré-remplissage client SIREN" cta="Essayer →" />

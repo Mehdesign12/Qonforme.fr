@@ -142,6 +142,7 @@ export default function CalculateurPenalitesPage() {
         </section>
 
         <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Calculateur pénalités de retard facture", url: "https://qonforme.fr/outils/calculateur-penalites-retard", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
+      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"L'indemnité de 40 € est-elle par facture ou globale ?","acceptedAnswer":{"@type":"Answer","text":"Par facture. 3 factures en retard = 3 × 40 € = 120 €."}},{"@type":"Question","name":"Dois-je envoyer une mise en demeure avant ?","acceptedAnswer":{"@type":"Answer","text":"Non, les pénalités sont exigibles de plein droit (art. L441-10)."}},{"@type":"Question","name":"Quel taux appliquer si rien n'est précisé ?","acceptedAnswer":{"@type":"Answer","text":"Le taux par défaut est le taux BCE × 3 (12% en 2026)."}}]}) }} />
       </main>
       <OutilsCtaBar text="Relances auto J+30/J+45" cta="Activer →" />
       <Footer />

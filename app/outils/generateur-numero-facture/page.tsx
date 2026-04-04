@@ -165,6 +165,7 @@ export default function GenerateurNumeroFacturePage() {
           </div>
         </section>
         <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Générateur numéro de facture conforme", url: "https://qonforme.fr/outils/generateur-numero-facture", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
+      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Puis-je recommencer à 1 chaque année ?","acceptedAnswer":{"@type":"Answer","text":"Oui, à condition d'inclure l'année dans le numéro."}},{"@type":"Question","name":"Que faire si j'ai un trou dans ma numérotation ?","acceptedAnswer":{"@type":"Answer","text":"Documentez la raison (facture annulée) et conservez la trace."}},{"@type":"Question","name":"Puis-je utiliser des lettres ?","acceptedAnswer":{"@type":"Answer","text":"Oui, la loi n'impose aucun format précis."}}]}) }} />
       </main>
       <OutilsCtaBar text="Numérotation auto conforme" cta="Essayer →" />
       <Footer />

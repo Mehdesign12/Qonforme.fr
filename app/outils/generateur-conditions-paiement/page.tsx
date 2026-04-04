@@ -153,6 +153,7 @@ ${rib ? "\nMode de paiement : virement bancaire. RIB joint à la facture." : ""}
           </div>
         </section>
         <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Générateur conditions de paiement facture", url: "https://qonforme.fr/outils/generateur-conditions-paiement", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
+      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Le délai de 60 jours est-il un maximum ?","acceptedAnswer":{"@type":"Answer","text":"Oui, sauf accord dérogatoire interprofessionnel."}},{"@type":"Question","name":"Puis-je choisir n'importe quel taux de pénalités ?","acceptedAnswer":{"@type":"Answer","text":"Le taux minimum est le taux BCE × 1 (4% en 2026)."}},{"@type":"Question","name":"La mention escompte est-elle obligatoire ?","acceptedAnswer":{"@type":"Answer","text":"Oui, même si vous n'accordez pas d'escompte."}}]}) }} />
       </main>
       <OutilsCtaBar text="Conditions auto sur vos factures" cta="Essayer →" />
       <Footer />

@@ -138,6 +138,7 @@ export default function SimulateurSeuilTvaPage() {
           </div>
         </section>
         <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Simulateur seuil TVA auto-entrepreneur", url: "https://qonforme.fr/outils/simulateur-seuil-tva", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
+      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Quand dois-je commencer à facturer la TVA ?","acceptedAnswer":{"@type":"Answer","text":"Dès le 1er jour du mois de dépassement du seuil majoré."}},{"@type":"Question","name":"Dois-je rembourser la TVA sur mes anciennes factures ?","acceptedAnswer":{"@type":"Answer","text":"Non, les factures émises avant le dépassement restent sans TVA."}},{"@type":"Question","name":"Puis-je récupérer la TVA sur mes achats ?","acceptedAnswer":{"@type":"Answer","text":"Seulement une fois assujetti à la TVA."}}]}) }} />
       </main>
       <OutilsCtaBar text="Alertes seuil TVA auto" cta="Activer →" />
       <Footer />

@@ -193,6 +193,7 @@ export default function GenerateurDevisPage() {
         </section>
 
         <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Générateur de devis gratuit en ligne", url: "https://qonforme.fr/outils/generateur-devis-gratuit", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
+      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Un devis est-il obligatoire ?","acceptedAnswer":{"@type":"Answer","text":"Oui dans certains secteurs (BTP > 150 €, dépannage). Sinon, fortement recommandé."}},{"@type":"Question","name":"Quelle est la durée de validité d'un devis ?","acceptedAnswer":{"@type":"Answer","text":"Pas de durée légale. En pratique, 30 jours est le standard."}},{"@type":"Question","name":"Un devis signé engage-t-il le client ?","acceptedAnswer":{"@type":"Answer","text":"Oui, un devis signé avec « Bon pour accord » a valeur de contrat."}}]}) }} />
       </main>
       <Footer />
     </>
