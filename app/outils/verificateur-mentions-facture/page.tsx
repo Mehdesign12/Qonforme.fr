@@ -130,6 +130,7 @@ export default function VerificateurMentionsPage() {
         </section>
 
         <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Vérificateur mentions obligatoires facture", url: "https://qonforme.fr/outils/verificateur-mentions-facture", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
+      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Quelle amende pour une mention manquante ?","acceptedAnswer":{"@type":"Answer","text":"15 € par mention et par facture, plafonné à 25% du montant."}},{"@type":"Question","name":"L'indemnité de 40 € est-elle obligatoire ?","acceptedAnswer":{"@type":"Answer","text":"Oui, la mention doit figurer sur toute facture B2B depuis 2013."}},{"@type":"Question","name":"Un auto-entrepreneur a-t-il les mêmes obligations ?","acceptedAnswer":{"@type":"Answer","text":"Oui, plus la mention TVA non applicable art. 293 B du CGI."}}]}) }} />
       </main>
       <OutilsCtaBar text="21 mentions auto sur vos factures" cta="Essayer →" />
       <Footer />

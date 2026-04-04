@@ -382,6 +382,7 @@ export default function GenerateurFacturePage() {
         </section>
 
         <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Générateur de facture gratuit en ligne", url: "https://qonforme.fr/outils/generateur-facture-gratuite", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
+      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Cette facture est-elle conforme 2026 ?","acceptedAnswer":{"@type":"Answer","text":"Non, c'est un PDF basique. Pour la conformité 2026, utilisez le format Factur-X."}},{"@type":"Question","name":"Mes données sont-elles sauvegardées ?","acceptedAnswer":{"@type":"Answer","text":"Non, aucune donnée n'est stockée. Le PDF est généré puis téléchargé."}},{"@type":"Question","name":"Combien de factures puis-je générer ?","acceptedAnswer":{"@type":"Answer","text":"Autant que vous voulez, 100% gratuit."}}]}) }} />
       </main>
 
       <Footer />

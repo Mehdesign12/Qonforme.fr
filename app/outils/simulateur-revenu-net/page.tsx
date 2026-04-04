@@ -166,6 +166,7 @@ export default function SimulateurRevenuNetPage() {
           </div>
         </section>
         <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Simulateur revenus net auto-entrepreneur", url: "https://qonforme.fr/outils/simulateur-revenu-net", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
+      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"L'abattement fiscal est-il automatique ?","acceptedAnswer":{"@type":"Answer","text":"Oui, le fisc l'applique automatiquement. Vous déclarez votre CA brut."}},{"@type":"Question","name":"Le versement libératoire change-t-il le calcul ?","acceptedAnswer":{"@type":"Answer","text":"Oui, il remplace l'IR progressif par un taux fixe (1% à 2,2%)."}},{"@type":"Question","name":"Ce calcul est-il exact ?","acceptedAnswer":{"@type":"Answer","text":"C'est une estimation pour 1 part fiscale."}}]}) }} />
       </main>
       <OutilsCtaBar text="Dashboard revenus en temps réel" cta="Essayer →" />
       <Footer />

@@ -295,6 +295,7 @@ export default function SimulateurChargesPage() {
         </section>
 
         <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Simulateur charges auto-entrepreneur 2026", url: "https://qonforme.fr/outils/simulateur-charges-auto-entrepreneur", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
+      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Quand payer mes cotisations URSSAF ?","acceptedAnswer":{"@type":"Answer","text":"Chaque mois ou trimestre sur autoentrepreneur.urssaf.fr. Déclaration obligatoire même si CA = 0 €."}},{"@type":"Question","name":"Que se passe-t-il si je dépasse le plafond ?","acceptedAnswer":{"@type":"Answer","text":"Si dépassement 2 ans consécutifs, basculement vers le régime réel."}},{"@type":"Question","name":"Le versement libératoire est-il intéressant ?","acceptedAnswer":{"@type":"Answer","text":"Intéressant si votre taux marginal d'imposition dépasse 1%-2,2%."}}]}) }} />
       </main>
 
       <OutilsCtaBar text="Suivez votre CA en temps réel" cta="Essayer →" />

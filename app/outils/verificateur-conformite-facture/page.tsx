@@ -167,6 +167,7 @@ export default function VerificateurConformitePage() {
         </section>
 
         <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Vérificateur conformité facture 2026", url: "https://qonforme.fr/outils/verificateur-conformite-facture", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
+      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Ma facture PDF classique est-elle conforme en 2026 ?","acceptedAnswer":{"@type":"Answer","text":"Non, les factures doivent être au format Factur-X (PDF + XML)."}},{"@type":"Question","name":"Qu'est-ce que la norme EN 16931 ?","acceptedAnswer":{"@type":"Answer","text":"La norme européenne pour la facturation électronique. Factur-X en est l'implémentation."}},{"@type":"Question","name":"Comment garantir l'intégrité d'une facture ?","acceptedAnswer":{"@type":"Answer","text":"Par signature électronique qualifiée ou piste d'audit fiable."}}]}) }} />
       </main>
       <OutilsCtaBar text="Factures 100% conformes 2026" cta="Essayer →" />
       <Footer />
