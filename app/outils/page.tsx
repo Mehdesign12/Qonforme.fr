@@ -64,12 +64,12 @@ const SPRINT2 = [
   { title: "Vérificateur conformité facture", desc: "Score de conformité 2026 : format, mentions, Factur-X, archivage.", href: "/outils/verificateur-conformite-facture", icon: Shield, color: "text-violet-600 bg-violet-50 border-violet-100" },
 ]
 
-/* ── Autres outils (Sprint 3 — bientôt) ── */
-const AUTRES = [
-  { title: "Simulateur seuil TVA", href: "/outils/simulateur-seuil-tva", icon: Calculator, color: "text-blue-600 bg-blue-50" },
-  { title: "Simulateur revenus net", href: "/outils/simulateur-revenu-net", icon: TrendingUp, color: "text-cyan-600 bg-cyan-50" },
-  { title: "Générateur n° de facture", href: "/outils/generateur-numero-facture", icon: Hash, color: "text-slate-600 bg-slate-100" },
-  { title: "Générateur conditions paiement", href: "/outils/generateur-conditions-paiement", icon: Receipt, color: "text-rose-600 bg-rose-50" },
+/* ── Outils Sprint 3 (actifs) ── */
+const SPRINT3 = [
+  { title: "Simulateur seuil TVA", desc: "Franchise TVA dépassée ? Seuils 2026, barre visuelle, alertes.", href: "/outils/simulateur-seuil-tva", icon: Calculator, color: "text-blue-600 bg-blue-50 border-blue-100" },
+  { title: "Simulateur revenus net", desc: "De votre CA brut à votre revenu net après charges et IR.", href: "/outils/simulateur-revenu-net", icon: TrendingUp, color: "text-cyan-600 bg-cyan-50 border-cyan-100" },
+  { title: "Générateur n° de facture", desc: "Numérotation conforme : chronologique, sans rupture, personnalisable.", href: "/outils/generateur-numero-facture", icon: Hash, color: "text-slate-600 bg-slate-100 border-slate-200" },
+  { title: "Générateur conditions paiement", desc: "Mentions légales à copier-coller : délai, pénalités, escompte.", href: "/outils/generateur-conditions-paiement", icon: Receipt, color: "text-rose-600 bg-rose-50 border-rose-100" },
 ]
 
 export default function OutilsPage() {
@@ -204,28 +204,24 @@ export default function OutilsPage() {
           </div>
         </section>
 
-        {/* ── Sprint 3 — bientôt ── */}
+        {/* ── Sprint 3 — cards actives ── */}
         <section className="mx-auto max-w-5xl px-5 pb-20">
-          <div className="mb-6 flex items-center gap-2">
-            <h2 className="text-[14px] font-bold text-slate-400">Prochainement</h2>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {AUTRES.map((tool) => (
-              <div
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {SPRINT3.map((tool) => (
+              <Link
                 key={tool.href}
-                className="group relative flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm opacity-60 cursor-default"
+                href={tool.href}
+                className="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-[#2563EB]/30 hover:shadow-md"
               >
-                <span className={`shrink-0 flex h-9 w-9 items-center justify-center rounded-lg ${tool.color}`}>
-                  <tool.icon className="h-4 w-4" />
+                <span className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl border ${tool.color}`}>
+                  <tool.icon className="h-5 w-5" />
                 </span>
-                <div className="min-w-0">
-                  <h3 className="text-[13px] font-semibold text-[#0F172A] leading-snug">{tool.title}</h3>
-                  <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Bientôt
-                  </span>
-                </div>
-              </div>
+                <h3 className="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors leading-snug">{tool.title}</h3>
+                <p className="mt-1.5 flex-1 text-[12px] leading-relaxed text-slate-500">{tool.desc}</p>
+                <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[#2563EB] opacity-0 transition-opacity group-hover:opacity-100">
+                  Utiliser <ArrowRight className="h-3 w-3" />
+                </span>
+              </Link>
             ))}
           </div>
         </section>
