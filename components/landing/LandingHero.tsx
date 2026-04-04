@@ -270,30 +270,30 @@ function Header() {
       <AnimatePresence>
         {mobileOpen && (
           <>
-            {/* Backdrop transparent — ferme au tap */}
+            {/* Backdrop — léger assombrissement, ferme au tap */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[98] md:hidden"
+              className="fixed inset-0 z-[98] bg-black/10 md:hidden"
               onClick={() => setMobileOpen(false)}
             />
 
-            {/* Panel dropdown — positionné sous la nav pill */}
+            {/* Panel dropdown — positionné juste sous la nav pill */}
             <motion.div
-              initial={{ opacity: 0, y: -12, scaleY: 0.95 }}
-              animate={{ opacity: 1, y: 0, scaleY: 1 }}
-              exit={{ opacity: 0, y: -12, scaleY: 0.95 }}
+              initial={{ opacity: 0, y: -8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.98 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed left-4 right-4 z-[99] rounded-2xl border border-slate-200/80 bg-white/95 shadow-xl shadow-slate-900/10 md:hidden overflow-hidden"
+              className="fixed left-3 right-3 z-[99] rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 md:hidden overflow-hidden"
               style={{
-                top: "calc(env(safe-area-inset-top, 0px) + 68px)",
-                originY: 0,
-                maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - 80px)",
+                top: "calc(env(safe-area-inset-top, 0px) + 72px)",
+                transformOrigin: "top center",
+                maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - 84px)",
               }}
             >
-              <div className="overflow-y-auto overscroll-contain" style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - 80px)" }}>
+              <div className="overflow-y-auto overscroll-contain" style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - 84px)" }}>
                 {/* ── CTAs en haut ── */}
                 <motion.div
                   initial={{ opacity: 0, y: -8 }}
