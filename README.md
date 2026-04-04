@@ -231,6 +231,74 @@ Le blog sera alimenté automatiquement par un cron job quotidien :
 - **SEO** : chaque article obtient automatiquement ses metadata (title, description, canonical, OG dynamique via `/api/og`)
 - **Objectif** : 1 article/jour, indexation continue, longue traîne SEO sur les mots-clés facturation électronique / conformité / artisans
 
+### 🛠️ Outils Gratuits SEO — Acquisition organique
+
+> 12 outils interactifs gratuits pour capter du trafic SEO qualifié et convertir vers l'inscription.
+> Chaque outil a : metadata SEO, JSON-LD, OG dynamique, FAQ, CTA contextuel, maillage interne.
+> Route hub : `/outils` — Routes outils : `/outils/[slug]`
+
+#### Sprint 1 — Priorité HAUTE (fort volume de recherche)
+
+| # | Outil | Route | Statut |
+|---|-------|-------|--------|
+| OG-1 | **Calculateur TVA HT ↔ TTC** | `/outils/calculateur-tva` | 🔜 À faire |
+| OG-2 | **Simulateur charges auto-entrepreneur** | `/outils/simulateur-charges-auto-entrepreneur` | 🔜 À faire |
+| OG-3 | **Vérificateur SIREN/SIRET** | `/outils/verification-siret` | 🔜 À faire |
+| OG-4 | **Générateur de facture gratuit (PDF bridé)** | `/outils/generateur-facture-gratuite` | 🔜 À faire |
+
+#### Sprint 2 — Priorité MOYENNE (niche, forte intention)
+
+| # | Outil | Route | Statut |
+|---|-------|-------|--------|
+| OG-5 | **Générateur de devis gratuit (PDF bridé)** | `/outils/generateur-devis-gratuit` | 🔜 À faire |
+| OG-6 | **Calculateur pénalités de retard** | `/outils/calculateur-penalites-retard` | 🔜 À faire |
+| OG-7 | **Vérificateur mentions obligatoires facture** | `/outils/verificateur-mentions-facture` | 🔜 À faire |
+| OG-8 | **Vérificateur de conformité facture** | `/outils/verificateur-conformite-facture` | 🔜 À faire |
+
+#### Sprint 3 — Priorité BASSE (différenciation, backlinks)
+
+| # | Outil | Route | Statut |
+|---|-------|-------|--------|
+| OG-9 | **Simulateur seuil TVA auto-entrepreneur** | `/outils/simulateur-seuil-tva` | 🔜 À faire |
+| OG-10 | **Simulateur revenus net auto-entrepreneur** | `/outils/simulateur-revenu-net` | 🔜 À faire |
+| OG-11 | **Générateur de numéro de facture** | `/outils/generateur-numero-facture` | 🔜 À faire |
+| OG-12 | **Générateur de conditions de paiement** | `/outils/generateur-conditions-paiement` | 🔜 À faire |
+
+#### Stratégie de conversion
+
+```
+Google → Outil gratuit (valeur immédiate, 0 friction)
+       → CTA contextuel ("Automatisez tout ça avec Qonforme →")
+       → /signup ou /demo
+```
+
+#### Architecture fichiers
+
+```
+app/outils/
+├── page.tsx                                        # Hub listing tous les outils
+├── layout.tsx                                      # Layout commun (CTA sticky)
+├── calculateur-tva/page.tsx                        # OG-1
+├── simulateur-charges-auto-entrepreneur/page.tsx   # OG-2
+├── verification-siret/page.tsx                     # OG-3
+├── generateur-facture-gratuite/page.tsx            # OG-4
+├── generateur-devis-gratuit/page.tsx               # OG-5
+├── calculateur-penalites-retard/page.tsx           # OG-6
+├── verificateur-mentions-facture/page.tsx          # OG-7
+├── verificateur-conformite-facture/page.tsx        # OG-8
+├── simulateur-seuil-tva/page.tsx                   # OG-9
+├── simulateur-revenu-net/page.tsx                  # OG-10
+├── generateur-numero-facture/page.tsx              # OG-11
+└── generateur-conditions-paiement/page.tsx         # OG-12
+
+lib/outils/
+├── tva.ts          # Logique calcul TVA (5.5%, 10%, 20%)
+├── charges.ts      # Barèmes URSSAF 2026
+├── penalites.ts    # Calcul intérêts de retard (BCE + 10 points)
+├── seuil-tva.ts    # Seuils franchise TVA
+└── facture-pdf.ts  # Génération PDF basique (pdf-lib)
+```
+
 ### 🟢 Priorité 4 — Croissance (V2)
 
 | # | Quoi | Détail | Impact |
