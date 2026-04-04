@@ -241,10 +241,10 @@ Le blog sera alimenté automatiquement par un cron job quotidien :
 
 | # | Outil | Route | Statut |
 |---|-------|-------|--------|
-| OG-1 | **Calculateur TVA HT ↔ TTC** | `/outils/calculateur-tva` | 🔜 À faire |
-| OG-2 | **Simulateur charges auto-entrepreneur** | `/outils/simulateur-charges-auto-entrepreneur` | 🔜 À faire |
-| OG-3 | **Vérificateur SIREN/SIRET** | `/outils/verification-siret` | 🔜 À faire |
-| OG-4 | **Générateur de facture gratuit (PDF bridé)** | `/outils/generateur-facture-gratuite` | 🔜 À faire |
+| OG-1 | **Calculateur TVA HT ↔ TTC** | `/outils/calculateur-tva` | ✅ Fait |
+| OG-2 | **Simulateur charges auto-entrepreneur** | `/outils/simulateur-charges-auto-entrepreneur` | ✅ Fait |
+| OG-3 | **Vérificateur SIREN/SIRET** | `/outils/verification-siret` | ✅ Fait |
+| OG-4 | **Générateur de facture gratuit (PDF bridé)** | `/outils/generateur-facture-gratuite` | ✅ Fait |
 
 #### Sprint 2 — Priorité MOYENNE (niche, forte intention)
 
