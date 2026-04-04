@@ -247,140 +247,122 @@ function Header() {
           </Link>
         </div>
 
-        {/* Hamburger mobile */}
+        {/* Hamburger mobile — toggle (Menu ↔ X) */}
         <button
           className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-white/50 active:bg-white/70"
-          onClick={() => setMobileOpen(true)}
+          onClick={() => setMobileOpen((v) => !v)}
           aria-label="Menu"
         >
-          <Menu className="h-5 w-5" />
+          <AnimatePresence mode="wait">
+            {mobileOpen ? (
+              <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                <X className="h-5 w-5" />
+              </motion.span>
+            ) : (
+              <motion.span key="m" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                <Menu className="h-5 w-5" />
+              </motion.span>
+            )}
+          </AnimatePresence>
         </button>
 
-        {/* ── Menu mobile plein écran — animation scale+fade+stagger ── */}
-        <AnimatePresence>
-          {mobileOpen && (
-            <>
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                className="fixed inset-0 z-[199] bg-black/20"
-                onClick={() => setMobileOpen(false)}
-              />
+      {/* ── Menu mobile dropdown — tombe sous le header pill ── */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            {/* Backdrop transparent — ferme au tap */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[98] md:hidden"
+              onClick={() => setMobileOpen(false)}
+            />
 
-              {/* Panel */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96, y: -8 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: -8 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="fixed inset-0 z-[200] flex flex-col overflow-hidden"
-                style={{
-                  background:
-                    "linear-gradient(145deg, #EFF6FF 0%, #EEF2FF 28%, #F5F3FF 52%, #E0F2FE 72%, #EFF6FF 100%)",
-                }}
-              >
-                {/* Q filigrane */}
-                <div aria-hidden className="pointer-events-none absolute -bottom-6 -right-6 select-none z-0" style={{ opacity: 0.08 }}>
-                  <Image src={PICTO_Q_URL} alt="" width={200} height={200} className="w-[180px] select-none" sizes="180px" loading="lazy" />
-                </div>
-
-                {/* Contenu */}
-                <div className="relative z-10 flex flex-col h-full">
-
-                  {/* ── Header : logo + bouton fermer ── */}
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05, duration: 0.3 }}
-                    className="flex items-center justify-between px-6 border-b border-white/60 shrink-0"
-                    style={{ paddingTop: 'max(20px, env(safe-area-inset-top, 20px))', paddingBottom: '18px' }}
-                  >
-                    <Link href="/" onClick={() => setMobileOpen(false)}>
-                      <Image src={LOGO_URL} alt="Qonforme" width={124} height={30} className="h-8 w-auto" sizes="124px" priority />
-                    </Link>
-                    <button
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/70 border border-white/60 text-slate-500 shadow-sm active:scale-95 transition-all touch-manipulation"
-                      aria-label="Fermer le menu"
+            {/* Panel dropdown — positionné sous la nav pill */}
+            <motion.div
+              initial={{ opacity: 0, y: -12, scaleY: 0.95 }}
+              animate={{ opacity: 1, y: 0, scaleY: 1 }}
+              exit={{ opacity: 0, y: -12, scaleY: 0.95 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="fixed left-4 right-4 z-[99] rounded-2xl border border-slate-200/80 bg-white/95 shadow-xl shadow-slate-900/10 md:hidden overflow-hidden"
+              style={{
+                top: "calc(env(safe-area-inset-top, 0px) + 68px)",
+                originY: 0,
+                maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - 80px)",
+              }}
+            >
+              <div className="overflow-y-auto overscroll-contain" style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - 80px)" }}>
+                {/* ── CTAs en haut ── */}
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05, duration: 0.25 }}
+                  className="px-4 pt-4 pb-3 flex flex-col gap-2"
+                >
+                  <Link href="/signup" onClick={() => setMobileOpen(false)} className="block">
+                    <ShimmerButton
+                      background="rgba(37,99,235,1)"
+                      shimmerColor="#ffffff"
+                      shimmerDuration="2.5s"
+                      borderRadius="14px"
+                      className="w-full h-[48px] text-[14px] font-semibold justify-center"
                     >
-                      <X className="h-4 w-4" />
+                      Commencer maintenant →
+                    </ShimmerButton>
+                  </Link>
+                  <Link href="/login" onClick={() => setMobileOpen(false)} className="block">
+                    <button className="w-full h-[42px] rounded-xl bg-slate-50 border border-slate-200/80 text-[13px] font-semibold text-[#0F172A] active:scale-[0.98] transition-all touch-manipulation">
+                      Se connecter
                     </button>
-                  </motion.div>
+                  </Link>
+                </motion.div>
 
-                  {/* ── CTAs — EN HAUT, avant les liens ── */}
+                {/* Séparateur */}
+                <div className="mx-4 h-px bg-slate-100" />
+
+                {/* ── Liens de navigation ── */}
+                <nav className="flex flex-col px-2 py-2 gap-0.5">
+                  {navLinks.map((l, i) => (
+                    <motion.div
+                      key={l.label}
+                      initial={{ opacity: 0, x: 16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.08 + i * 0.04, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <Link
+                        href={l.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="group flex items-center justify-between rounded-xl px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-all touch-manipulation"
+                      >
+                        <span className="text-[15px] font-semibold text-[#0F172A]">{l.label}</span>
+                        <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-[#2563EB] transition-colors" />
+                      </Link>
+                    </motion.div>
+                  ))}
+
+                  {/* Outils gratuits — expandable */}
                   <motion.div
-                    initial={{ opacity: 0, x: 20 }}
+                    initial={{ opacity: 0, x: 16 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1, duration: 0.35 }}
-                    className="px-5 pt-5 pb-2 flex flex-col gap-2.5 shrink-0"
+                    transition={{ delay: 0.2, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <Link href="/signup" onClick={() => setMobileOpen(false)} className="block">
-                      <ShimmerButton
-                        background="rgba(37,99,235,1)"
-                        shimmerColor="#ffffff"
-                        shimmerDuration="2.5s"
-                        borderRadius="16px"
-                        className="w-full h-[52px] text-[15px] font-semibold justify-center"
-                      >
-                        Commencer maintenant →
-                      </ShimmerButton>
-                    </Link>
-                    <Link href="/login" onClick={() => setMobileOpen(false)} className="block">
-                      <button className="w-full h-[46px] rounded-2xl bg-white/80 border border-white/80 text-[14px] font-semibold text-[#0F172A] shadow-sm active:scale-[0.98] transition-all touch-manipulation">
-                        Se connecter
-                      </button>
-                    </Link>
-                    <p className="text-center text-[11px] text-slate-400 pt-0.5 whitespace-nowrap">
-                      ✓ Accès immédiat &nbsp;·&nbsp; ✓ Sans engagement
-                    </p>
+                    <MobileOutilsMenu onNavigate={() => setMobileOpen(false)} />
                   </motion.div>
+                </nav>
 
-                  {/* Séparateur */}
-                  <div className="mx-5 mt-3 h-px bg-white/70 shrink-0" />
-
-                  {/* ── Liens de navigation — zone scrollable ── */}
-                  <div className="flex-1 overflow-y-auto overscroll-contain">
-                    <nav className="flex flex-col px-4 pt-4 pb-2 gap-0.5">
-                      {navLinks.map((l, i) => (
-                        <motion.div
-                          key={l.label}
-                          initial={{ opacity: 0, x: 30 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.15 + i * 0.05, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                        >
-                          <Link
-                            href={l.href}
-                            onClick={() => setMobileOpen(false)}
-                            className="group flex items-center justify-between rounded-2xl px-5 py-[17px] bg-white/0 hover:bg-white/50 active:bg-white/70 transition-all touch-manipulation"
-                          >
-                            <span className="text-[18px] font-semibold text-[#0F172A]">{l.label}</span>
-                            <span className="text-slate-300 group-hover:text-[#2563EB] transition-colors text-[18px] leading-none">→</span>
-                          </Link>
-                        </motion.div>
-                      ))}
-
-                      {/* Outils gratuits — expandable submenu */}
-                      <motion.div
-                        initial={{ opacity: 0, x: 30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                      >
-                        <MobileOutilsMenu onNavigate={() => setMobileOpen(false)} />
-                      </motion.div>
-                    </nav>
-
-                    {/* Bottom padding for safe area */}
-                    <div style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }} />
-                  </div>
-
+                {/* Réassurance */}
+                <div className="px-4 pb-4 pt-1">
+                  <p className="text-center text-[11px] text-slate-400">
+                    ✓ Accès immédiat &nbsp;·&nbsp; ✓ Sans engagement
+                  </p>
                 </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       </motion.nav>
     </div>
   );
@@ -405,10 +387,10 @@ function MobileOutilsMenu({ onNavigate }: { onNavigate: () => void }) {
     <div>
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="group flex w-full items-center justify-between rounded-2xl px-5 py-[17px] bg-white/0 hover:bg-white/50 active:bg-white/70 transition-all touch-manipulation"
+        className="group flex w-full items-center justify-between rounded-xl px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-all touch-manipulation"
       >
-        <span className="text-[18px] font-semibold text-[#0F172A]">Outils gratuits</span>
-        <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
+        <span className="text-[15px] font-semibold text-[#0F172A]">Outils gratuits</span>
+        <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
       </button>
 
       <AnimatePresence>
@@ -417,30 +399,30 @@ function MobileOutilsMenu({ onNavigate }: { onNavigate: () => void }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
-            <div className="flex flex-col gap-0.5 px-3 pb-2">
+            <div className="flex flex-col gap-0.5 px-2 pb-1">
               {topItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={onNavigate}
-                  className="group flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-white/60 active:bg-white/80 transition-all touch-manipulation"
+                  className="group flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-slate-50 active:bg-slate-100 transition-all touch-manipulation"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/80 text-[#2563EB]">
-                    <item.icon className="h-4 w-4" />
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#EFF6FF] text-[#2563EB]">
+                    <item.icon className="h-3.5 w-3.5" />
                   </span>
-                  <span className="text-[15px] font-medium text-[#0F172A]">{item.label}</span>
+                  <span className="text-[13px] font-medium text-slate-700">{item.label}</span>
                 </Link>
               ))}
               <Link
                 href="/outils"
                 onClick={onNavigate}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-[#EFF6FF] px-4 py-3 mt-1 text-[14px] font-semibold text-[#2563EB] active:bg-[#DBEAFE] transition-colors touch-manipulation"
+                className="flex items-center justify-center gap-1.5 rounded-lg bg-slate-50 px-3 py-2 mt-1 text-[12px] font-semibold text-[#2563EB] active:bg-slate-100 transition-colors touch-manipulation"
               >
                 Voir les 12 outils
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-3 w-3" />
               </Link>
             </div>
           </motion.div>
