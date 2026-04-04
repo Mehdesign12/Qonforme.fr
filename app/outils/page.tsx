@@ -1,10 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, Calculator, FileText, Search, Receipt, FileCheck, Scale, TrendingUp, Hash, ClipboardList, Shield, Zap } from "lucide-react"
+import { ArrowRight, Calculator, FileText, Search, Receipt, FileCheck, Scale, TrendingUp, Hash, ClipboardList, Shield, Zap, Lock, Star, Sparkles } from "lucide-react"
 import Footer from "@/components/layout/Footer"
+import { HubClient } from "./hub-client"
 
-const LOGO_URL = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
+const PICTO_Q_URL = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
 
 export const metadata: Metadata = {
   title: "Outils gratuits pour auto-entrepreneurs et TPE | Qonforme",
@@ -19,185 +20,187 @@ export const metadata: Metadata = {
   },
 }
 
-const OUTILS = [
+/* ── Outils populaires (Sprint 1 — actifs) ── */
+const POPULAIRES = [
   {
-    category: "Calculateurs",
-    items: [
-      {
-        title: "Calculateur TVA HT ↔ TTC",
-        desc: "Convertissez instantanément vos montants HT en TTC (et inversement) avec les taux de TVA français : 20%, 10%, 5,5%, 2,1%.",
-        href: "/outils/calculateur-tva",
-        icon: Calculator,
-        color: "bg-blue-50 text-blue-600 border-blue-100",
-        badge: "Populaire",
-      },
-      {
-        title: "Simulateur charges auto-entrepreneur",
-        desc: "Calculez vos cotisations URSSAF, CFP et impôt sur le revenu selon votre CA et votre activité. Barèmes 2026.",
-        href: "/outils/simulateur-charges-auto-entrepreneur",
-        icon: TrendingUp,
-        color: "bg-emerald-50 text-emerald-600 border-emerald-100",
-        badge: "Populaire",
-      },
-      {
-        title: "Calculateur pénalités de retard",
-        desc: "Calculez les intérêts de retard et l'indemnité forfaitaire de recouvrement pour vos factures impayées.",
-        href: "/outils/calculateur-penalites-retard",
-        icon: Scale,
-        color: "bg-amber-50 text-amber-600 border-amber-100",
-      },
-      {
-        title: "Simulateur seuil TVA",
-        desc: "Vérifiez si vous dépassez le seuil de franchise de TVA auto-entrepreneur et quand vous devez facturer la TVA.",
-        href: "/outils/simulateur-seuil-tva",
-        icon: Calculator,
-        color: "bg-violet-50 text-violet-600 border-violet-100",
-      },
-      {
-        title: "Simulateur revenus net",
-        desc: "Découvrez votre revenu net réel après charges sociales et impôts à partir de votre chiffre d'affaires.",
-        href: "/outils/simulateur-revenu-net",
-        icon: TrendingUp,
-        color: "bg-cyan-50 text-cyan-600 border-cyan-100",
-      },
-    ],
+    title: "Calculateur TVA HT ↔ TTC",
+    desc: "Convertissez instantanément vos montants HT en TTC et inversement avec les 4 taux de TVA français.",
+    href: "/outils/calculateur-tva",
+    icon: Calculator,
+    gradient: "from-blue-500 to-indigo-600",
+    iconBg: "bg-white/20",
   },
   {
-    category: "Générateurs",
-    items: [
-      {
-        title: "Générateur de facture gratuit",
-        desc: "Créez une facture professionnelle en PDF en quelques minutes. Remplissez le formulaire, téléchargez votre facture.",
-        href: "/outils/generateur-facture-gratuite",
-        icon: FileText,
-        color: "bg-blue-50 text-blue-600 border-blue-100",
-        badge: "Populaire",
-      },
-      {
-        title: "Générateur de devis gratuit",
-        desc: "Créez un devis professionnel en PDF. Ajoutez vos lignes, votre logo et téléchargez-le immédiatement.",
-        href: "/outils/generateur-devis-gratuit",
-        icon: ClipboardList,
-        color: "bg-indigo-50 text-indigo-600 border-indigo-100",
-      },
-      {
-        title: "Générateur de numéro de facture",
-        desc: "Générez un numéro de facture conforme à la réglementation française. Chronologique et sans rupture.",
-        href: "/outils/generateur-numero-facture",
-        icon: Hash,
-        color: "bg-slate-50 text-slate-600 border-slate-200",
-      },
-      {
-        title: "Générateur de conditions de paiement",
-        desc: "Générez les mentions légales de conditions de paiement à ajouter sur vos factures et devis.",
-        href: "/outils/generateur-conditions-paiement",
-        icon: Receipt,
-        color: "bg-rose-50 text-rose-600 border-rose-100",
-      },
-    ],
+    title: "Simulateur charges auto-entrepreneur",
+    desc: "Cotisations URSSAF, CFP, versement libératoire. Barèmes 2026 à jour.",
+    href: "/outils/simulateur-charges-auto-entrepreneur",
+    icon: TrendingUp,
+    gradient: "from-emerald-500 to-teal-600",
+    iconBg: "bg-white/20",
   },
   {
-    category: "Vérificateurs",
-    items: [
-      {
-        title: "Vérificateur SIREN/SIRET",
-        desc: "Vérifiez l'existence et les informations d'une entreprise à partir de son numéro SIREN ou SIRET.",
-        href: "/outils/verification-siret",
-        icon: Search,
-        color: "bg-emerald-50 text-emerald-600 border-emerald-100",
-        badge: "Populaire",
-      },
-      {
-        title: "Vérificateur mentions obligatoires facture",
-        desc: "Vérifiez que votre facture contient toutes les mentions obligatoires exigées par la loi en 2026.",
-        href: "/outils/verificateur-mentions-facture",
-        icon: FileCheck,
-        color: "bg-amber-50 text-amber-600 border-amber-100",
-      },
-      {
-        title: "Vérificateur de conformité facture",
-        desc: "Analysez votre facture et identifiez les éléments manquants ou non conformes à la réglementation 2026.",
-        href: "/outils/verificateur-conformite-facture",
-        icon: Shield,
-        color: "bg-violet-50 text-violet-600 border-violet-100",
-      },
-    ],
+    title: "Vérificateur SIREN / SIRET",
+    desc: "Vérifiez une entreprise française avec les données officielles INSEE.",
+    href: "/outils/verification-siret",
+    icon: Search,
+    gradient: "from-violet-500 to-purple-600",
+    iconBg: "bg-white/20",
   },
+  {
+    title: "Générateur de facture gratuit",
+    desc: "Créez une facture professionnelle en PDF. Formulaire simple, téléchargement immédiat.",
+    href: "/outils/generateur-facture-gratuite",
+    icon: FileText,
+    gradient: "from-amber-500 to-orange-600",
+    iconBg: "bg-white/20",
+  },
+]
+
+/* ── Autres outils (Sprint 2-3 — bientôt) ── */
+const AUTRES = [
+  { title: "Générateur de devis gratuit", href: "/outils/generateur-devis-gratuit", icon: ClipboardList, color: "text-indigo-600 bg-indigo-50" },
+  { title: "Calculateur pénalités de retard", href: "/outils/calculateur-penalites-retard", icon: Scale, color: "text-amber-600 bg-amber-50" },
+  { title: "Vérificateur mentions facture", href: "/outils/verificateur-mentions-facture", icon: FileCheck, color: "text-emerald-600 bg-emerald-50" },
+  { title: "Vérificateur conformité facture", href: "/outils/verificateur-conformite-facture", icon: Shield, color: "text-violet-600 bg-violet-50" },
+  { title: "Simulateur seuil TVA", href: "/outils/simulateur-seuil-tva", icon: Calculator, color: "text-blue-600 bg-blue-50" },
+  { title: "Simulateur revenus net", href: "/outils/simulateur-revenu-net", icon: TrendingUp, color: "text-cyan-600 bg-cyan-50" },
+  { title: "Générateur n° de facture", href: "/outils/generateur-numero-facture", icon: Hash, color: "text-slate-600 bg-slate-100" },
+  { title: "Générateur conditions paiement", href: "/outils/generateur-conditions-paiement", icon: Receipt, color: "text-rose-600 bg-rose-50" },
 ]
 
 export default function OutilsPage() {
   return (
     <>
-      {/* Nav minimal */}
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 md:backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
-          <Link href="/">
-            <Image src={LOGO_URL} alt="Qonforme" width={120} height={30} className="h-7 w-auto" sizes="120px" priority />
-          </Link>
-          <Link
-            href="/signup"
-            className="rounded-lg bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1D4ED8]"
-          >
-            Commencer →
-          </Link>
-        </div>
-      </header>
+      {/* Header pill — client component */}
+      <HubClient />
 
-      <main className="min-h-screen bg-[#F8FAFC]">
-        {/* Hero */}
-        <section className="bg-gradient-to-b from-[#EFF6FF] to-[#F8FAFC] px-5 pb-16 pt-16 md:pt-20">
-          <div className="mx-auto max-w-4xl text-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-1 text-[13px] font-medium text-[#2563EB]">
-              <Zap className="h-3 w-3" />
-              100% gratuit — Sans inscription
-            </span>
-            <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl lg:text-5xl" style={{ fontFamily: "var(--font-bricolage)" }}>
-              Outils gratuits pour{" "}
-              <span className="text-[#2563EB]">auto-entrepreneurs</span> et TPE
-            </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-slate-500 sm:text-lg">
-              Calculateurs, générateurs et vérificateurs — tout ce dont vous avez besoin pour gérer votre facturation, estimer vos charges et rester conforme. Aucune inscription requise.
-            </p>
+      {/* ── Hero gradient + Q ── */}
+      <div
+        className="relative w-full overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(125deg, #EFF6FF 0%, #EEF2FF 20%, #F5F3FF 35%, #E0F2FE 50%, #EFF6FF 65%, #F0FDF4 80%, #EEF2FF 100%)",
+        }}
+      >
+        {/* Lueurs */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 hidden md:block"
+          style={{
+            background:
+              "radial-gradient(ellipse 60% 50% at 20% -10%, rgba(37,99,235,0.08) 0%, transparent 55%), " +
+              "radial-gradient(ellipse 40% 40% at 80% 0%, rgba(124,58,237,0.06) 0%, transparent 50%)",
+          }}
+        />
+
+        {/* Q mobile */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center md:hidden" style={{ opacity: 0.05 }}>
+          <Image src={PICTO_Q_URL} alt="" width={260} height={260} className="w-[220px] select-none" sizes="220px" loading="lazy" />
+        </div>
+
+        {/* Q desktop */}
+        <div aria-hidden className="pointer-events-none absolute -right-12 -top-4 z-[1] hidden md:block" style={{ opacity: 0.04 }}>
+          <Image src={PICTO_Q_URL} alt="" width={400} height={400} className="w-[340px] select-none" sizes="340px" loading="lazy" />
+        </div>
+
+        <div className="relative z-10 mx-auto max-w-5xl px-5 pb-10 pt-24 text-center sm:pb-16 sm:pt-28 lg:pt-32">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#BFDBFE] bg-white/70 px-3.5 py-1 text-[12px] font-semibold text-[#2563EB]">
+            <Zap className="h-3 w-3" />
+            100% gratuit — Sans inscription
+          </span>
+
+          <h1 className="mt-6 text-[1.9rem] font-extrabold leading-tight tracking-[-0.02em] text-[#0F172A] sm:text-[2.6rem] lg:text-[3.2rem]" style={{ fontFamily: "var(--font-bricolage)" }}>
+            Outils gratuits pour{" "}
+            <span className="text-[#2563EB]">auto-entrepreneurs</span>
+            <br className="hidden sm:block" />
+            {" "}et TPE
+          </h1>
+
+          <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-relaxed text-slate-500 sm:text-base lg:text-lg">
+            Calculateurs, générateurs et vérificateurs — tout ce dont vous avez besoin pour gérer votre facturation, estimer vos charges et rester conforme.
+          </p>
+
+          {/* Reassurance */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            {[
+              { icon: <Zap className="h-3 w-3" />, label: "Résultat instantané", color: "text-[#2563EB] bg-[#EFF6FF] border-[#BFDBFE]/60" },
+              { icon: <Lock className="h-3 w-3" />, label: "Aucune inscription", color: "text-slate-500 bg-white/70 border-slate-200/70" },
+              { icon: <Shield className="h-3 w-3" />, label: "Données non stockées", color: "text-emerald-600 bg-[#ECFDF5] border-[#A7F3D0]/60" },
+            ].map((b) => (
+              <span key={b.label} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${b.color}`}>
+                {b.icon} {b.label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Fade bas */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-24" style={{ background: "linear-gradient(to bottom, transparent 0%, #F8FAFC 100%)" }} />
+      </div>
+
+      <main className="bg-[#F8FAFC]">
+        {/* ── Section populaires — grandes cards gradient ── */}
+        <section className="mx-auto max-w-5xl px-5 pb-16 -mt-2">
+          <div className="mb-6 flex items-center gap-2">
+            <Star className="h-4 w-4 text-amber-400" />
+            <h2 className="text-lg font-bold text-[#0F172A]">Les plus populaires</h2>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {POPULAIRES.map((tool) => (
+              <Link
+                key={tool.href}
+                href={tool.href}
+                className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br ${tool.gradient} p-6 text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.01] sm:p-7`}
+              >
+                {/* Decorative circle */}
+                <div aria-hidden className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
+                <div aria-hidden className="pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/5" />
+
+                <div className="relative z-10">
+                  <span className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl ${tool.iconBg}`}>
+                    <tool.icon className="h-5 w-5" />
+                  </span>
+                  <h3 className="text-[17px] font-bold leading-snug sm:text-[18px]">{tool.title}</h3>
+                  <p className="mt-2 text-[13px] leading-relaxed text-white/80">{tool.desc}</p>
+                </div>
+
+                <span className="relative z-10 mt-5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-white/90 group-hover:text-white transition-colors">
+                  Utiliser l&apos;outil <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                </span>
+              </Link>
+            ))}
           </div>
         </section>
 
-        {/* Grille d'outils par catégorie */}
-        <section className="mx-auto max-w-6xl px-5 pb-20">
-          {OUTILS.map((cat) => (
-            <div key={cat.category} className="mb-14">
-              <h2 className="mb-6 text-xl font-bold text-[#0F172A]">{cat.category}</h2>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {cat.items.map((tool) => (
-                  <Link
-                    key={tool.href}
-                    href={tool.href}
-                    className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-[#2563EB]/30 hover:shadow-md"
-                  >
-                    {"badge" in tool && tool.badge && (
-                      <span className="absolute right-4 top-4 rounded-full bg-[#2563EB] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                        {tool.badge}
-                      </span>
-                    )}
-                    <span className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl border ${tool.color}`}>
-                      <tool.icon className="h-5 w-5" />
-                    </span>
-                    <h3 className="text-[15px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors">
-                      {tool.title}
-                    </h3>
-                    <p className="mt-2 flex-1 text-[13px] leading-relaxed text-slate-500">
-                      {tool.desc}
-                    </p>
-                    <span className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-[#2563EB] opacity-0 transition-opacity group-hover:opacity-100">
-                      Utiliser l&apos;outil <ArrowRight className="h-3.5 w-3.5" />
-                    </span>
-                  </Link>
-                ))}
+        {/* ── Autres outils — grille compacte avec badges "Bientôt" ── */}
+        <section className="mx-auto max-w-5xl px-5 pb-20">
+          <div className="mb-6 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-[#2563EB]" />
+            <h2 className="text-lg font-bold text-[#0F172A]">Tous les outils</h2>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {AUTRES.map((tool) => (
+              <div
+                key={tool.href}
+                className="group relative flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm opacity-60 cursor-default"
+              >
+                <span className={`shrink-0 flex h-9 w-9 items-center justify-center rounded-lg ${tool.color}`}>
+                  <tool.icon className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-[13px] font-semibold text-[#0F172A] leading-snug">{tool.title}</h3>
+                  <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Bientôt
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
 
-        {/* CTA */}
+        {/* ── CTA conversion ── */}
         <section className="border-t border-slate-200 bg-gradient-to-r from-[#EFF6FF] to-[#F5F3FF] px-5 py-16">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-2xl font-extrabold text-[#0F172A] sm:text-3xl" style={{ fontFamily: "var(--font-bricolage)" }}>
