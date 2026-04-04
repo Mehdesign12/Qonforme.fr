@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
-import { Menu, ArrowRight, Shield, Zap, Play, Lock, X, Star } from "lucide-react";
-import { motion } from "motion/react";
+import { useState, useEffect, useRef } from "react";
+import { Menu, ArrowRight, Shield, Zap, Play, Lock, X, Star, ChevronDown, Calculator, FileText, Search, Receipt, FileCheck, Scale, TrendingUp, Hash, ClipboardList, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -20,14 +20,51 @@ const PICTO_Q_URL =
   "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp";
 
 /* ─────────────────────────────────────────────────────────
+   OUTILS GRATUITS — données pour le mega-menu
+───────────────────────────────────────────────────────── */
+const OUTILS_CATEGORIES = [
+  {
+    title: "Calculateurs",
+    items: [
+      { label: "Calculateur TVA HT ↔ TTC", href: "/outils/calculateur-tva", icon: Calculator, desc: "Conversion instantanée HT/TTC" },
+      { label: "Simulateur charges auto-entrepreneur", href: "/outils/simulateur-charges-auto-entrepreneur", icon: TrendingUp, desc: "Cotisations URSSAF 2026" },
+      { label: "Calculateur pénalités de retard", href: "/outils/calculateur-penalites-retard", icon: Scale, desc: "Intérêts légaux & indemnité" },
+      { label: "Simulateur seuil TVA", href: "/outils/simulateur-seuil-tva", icon: Calculator, desc: "Franchise TVA dépassée ?" },
+    ],
+  },
+  {
+    title: "Générateurs",
+    items: [
+      { label: "Générateur de facture gratuit", href: "/outils/generateur-facture-gratuite", icon: FileText, desc: "Créez un PDF en 2 min" },
+      { label: "Générateur de devis gratuit", href: "/outils/generateur-devis-gratuit", icon: ClipboardList, desc: "Devis professionnel PDF" },
+      { label: "Générateur n° de facture", href: "/outils/generateur-numero-facture", icon: Hash, desc: "Numérotation conforme" },
+      { label: "Générateur conditions de paiement", href: "/outils/generateur-conditions-paiement", icon: Receipt, desc: "Mentions légales à copier" },
+    ],
+  },
+  {
+    title: "Vérificateurs",
+    items: [
+      { label: "Vérificateur SIREN/SIRET", href: "/outils/verification-siret", icon: Search, desc: "Vérifiez une entreprise" },
+      { label: "Vérificateur mentions facture", href: "/outils/verificateur-mentions-facture", icon: FileCheck, desc: "Mentions obligatoires 2026" },
+      { label: "Vérificateur conformité facture", href: "/outils/verificateur-conformite-facture", icon: Shield, desc: "Votre facture est-elle conforme ?" },
+      { label: "Simulateur revenus net", href: "/outils/simulateur-revenu-net", icon: TrendingUp, desc: "Revenus réels après charges" },
+    ],
+  },
+];
+
+/* ─────────────────────────────────────────────────────────
    HEADER
    - Au départ : totalement transparent
    - Au scroll > 40px : pilule blanche avec ombre + backdrop blur
    - CTA secondaire "Voir la démo" ajouté (3.1)
+   - "Démo" remplacé par "Outils gratuits" avec mega-menu (4.1)
 ───────────────────────────────────────────────────────── */
 function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [outilsOpen, setOutilsOpen] = useState(false);
+  const outilsTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -35,11 +72,30 @@ function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  /* Fermer le dropdown si clic en dehors */
+  useEffect(() => {
+    if (!outilsOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOutilsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [outilsOpen]);
+
+  const handleOutilsEnter = () => {
+    if (outilsTimeout.current) clearTimeout(outilsTimeout.current);
+    setOutilsOpen(true);
+  };
+  const handleOutilsLeave = () => {
+    outilsTimeout.current = setTimeout(() => setOutilsOpen(false), 200);
+  };
+
   const navLinks = [
     { label: "Fonctionnalités", href: "#features" },
     { label: "Tarifs", href: "#pricing" },
     { label: "Blog", href: "/blog" },
-    { label: "Démo", href: "/demo" },
   ];
 
   return (
@@ -86,6 +142,84 @@ function Header() {
               {l.label}
             </Link>
           ))}
+
+          {/* Outils gratuits — dropdown mega-menu */}
+          <div
+            ref={dropdownRef}
+            className="relative"
+            onMouseEnter={handleOutilsEnter}
+            onMouseLeave={handleOutilsLeave}
+          >
+            <button
+              className="inline-flex items-center gap-1 text-sm font-medium text-slate-700 transition-colors hover:text-[#0F172A]"
+              onClick={() => setOutilsOpen((v) => !v)}
+            >
+              Outils gratuits
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${outilsOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            <AnimatePresence>
+              {outilsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  className="absolute right-1/2 translate-x-1/2 top-full mt-3 w-[720px] rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/50"
+                  style={{ zIndex: 150 }}
+                >
+                  {/* 3 colonnes */}
+                  <div className="grid grid-cols-3 gap-5">
+                    {OUTILS_CATEGORIES.map((cat) => (
+                      <div key={cat.title}>
+                        <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                          {cat.title}
+                        </p>
+                        <div className="flex flex-col gap-0.5">
+                          {cat.items.map((item) => (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => setOutilsOpen(false)}
+                              className="group flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-[#EFF6FF]"
+                            >
+                              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F1F5F9] text-slate-500 transition-colors group-hover:bg-[#DBEAFE] group-hover:text-[#2563EB]">
+                                <item.icon className="h-4 w-4" />
+                              </span>
+                              <div className="min-w-0">
+                                <p className="text-[13px] font-semibold text-[#0F172A] leading-tight">
+                                  {item.label}
+                                </p>
+                                <p className="mt-0.5 text-[11px] text-slate-400 leading-tight">
+                                  {item.desc}
+                                </p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer du dropdown */}
+                  <div className="mt-4 flex items-center justify-between rounded-xl bg-gradient-to-r from-[#EFF6FF] to-[#F5F3FF] px-4 py-3">
+                    <div>
+                      <p className="text-[13px] font-semibold text-[#0F172A]">Tous les outils gratuits</p>
+                      <p className="text-[11px] text-slate-500">12 outils pour gérer votre activité</p>
+                    </div>
+                    <Link
+                      href="/outils"
+                      onClick={() => setOutilsOpen(false)}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] px-3.5 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-[#1D4ED8]"
+                    >
+                      Voir tout
+                      <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Actions desktop — bien à droite (3.1 : CTA secondaire + principal) */}
@@ -201,6 +335,9 @@ function Header() {
                     <span className="text-slate-300 group-hover:text-[#2563EB] transition-colors text-[18px] leading-none">→</span>
                   </Link>
                 ))}
+
+                {/* Outils gratuits — expandable submenu mobile */}
+                <MobileOutilsMenu onNavigate={() => setMobileOpen(false)} />
               </nav>
 
               {/* Séparateur */}
@@ -234,6 +371,70 @@ function Header() {
           </SheetContent>
         </Sheet>
       </motion.nav>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   MOBILE OUTILS MENU — sous-menu expandable
+───────────────────────────────────────────────────────── */
+function MobileOutilsMenu({ onNavigate }: { onNavigate: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const topItems = [
+    { label: "Calculateur TVA", href: "/outils/calculateur-tva", icon: Calculator },
+    { label: "Simulateur charges", href: "/outils/simulateur-charges-auto-entrepreneur", icon: TrendingUp },
+    { label: "Vérificateur SIRET", href: "/outils/verification-siret", icon: Search },
+    { label: "Générateur facture", href: "/outils/generateur-facture-gratuite", icon: FileText },
+    { label: "Générateur devis", href: "/outils/generateur-devis-gratuit", icon: ClipboardList },
+    { label: "Conformité facture", href: "/outils/verificateur-conformite-facture", icon: Shield },
+  ];
+
+  return (
+    <div>
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="group flex w-full items-center justify-between rounded-2xl px-5 py-[17px] bg-white/0 hover:bg-white/50 active:bg-white/70 transition-all touch-manipulation"
+      >
+        <span className="text-[18px] font-semibold text-[#0F172A]">Outils gratuits</span>
+        <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-col gap-0.5 px-3 pb-2">
+              {topItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className="group flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-white/60 active:bg-white/80 transition-all touch-manipulation"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/80 text-[#2563EB]">
+                    <item.icon className="h-4 w-4" />
+                  </span>
+                  <span className="text-[15px] font-medium text-[#0F172A]">{item.label}</span>
+                </Link>
+              ))}
+              <Link
+                href="/outils"
+                onClick={onNavigate}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-[#EFF6FF] px-4 py-3 mt-1 text-[14px] font-semibold text-[#2563EB] active:bg-[#DBEAFE] transition-colors touch-manipulation"
+              >
+                Voir les 12 outils
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
