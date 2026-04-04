@@ -56,12 +56,16 @@ const POPULAIRES = [
   },
 ]
 
-/* ── Autres outils (Sprint 2-3 — bientôt) ── */
+/* ── Outils Sprint 2 (actifs) ── */
+const SPRINT2 = [
+  { title: "Générateur de devis gratuit", desc: "Devis professionnel en PDF. Wizard 4 étapes, téléchargement immédiat.", href: "/outils/generateur-devis-gratuit", icon: ClipboardList, color: "text-indigo-600 bg-indigo-50 border-indigo-100" },
+  { title: "Calculateur pénalités de retard", desc: "Intérêts de retard + indemnité forfaitaire 40 €. Taux BCE 2026.", href: "/outils/calculateur-penalites-retard", icon: Scale, color: "text-amber-600 bg-amber-50 border-amber-100" },
+  { title: "Vérificateur mentions facture", desc: "Checklist interactive des 21 mentions obligatoires. Score instantané.", href: "/outils/verificateur-mentions-facture", icon: FileCheck, color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
+  { title: "Vérificateur conformité facture", desc: "Score de conformité 2026 : format, mentions, Factur-X, archivage.", href: "/outils/verificateur-conformite-facture", icon: Shield, color: "text-violet-600 bg-violet-50 border-violet-100" },
+]
+
+/* ── Autres outils (Sprint 3 — bientôt) ── */
 const AUTRES = [
-  { title: "Générateur de devis gratuit", href: "/outils/generateur-devis-gratuit", icon: ClipboardList, color: "text-indigo-600 bg-indigo-50" },
-  { title: "Calculateur pénalités de retard", href: "/outils/calculateur-penalites-retard", icon: Scale, color: "text-amber-600 bg-amber-50" },
-  { title: "Vérificateur mentions facture", href: "/outils/verificateur-mentions-facture", icon: FileCheck, color: "text-emerald-600 bg-emerald-50" },
-  { title: "Vérificateur conformité facture", href: "/outils/verificateur-conformite-facture", icon: Shield, color: "text-violet-600 bg-violet-50" },
   { title: "Simulateur seuil TVA", href: "/outils/simulateur-seuil-tva", icon: Calculator, color: "text-blue-600 bg-blue-50" },
   { title: "Simulateur revenus net", href: "/outils/simulateur-revenu-net", icon: TrendingUp, color: "text-cyan-600 bg-cyan-50" },
   { title: "Générateur n° de facture", href: "/outils/generateur-numero-facture", icon: Hash, color: "text-slate-600 bg-slate-100" },
@@ -173,11 +177,37 @@ export default function OutilsPage() {
           </div>
         </section>
 
-        {/* ── Autres outils — grille compacte avec badges "Bientôt" ── */}
-        <section className="mx-auto max-w-5xl px-5 pb-20">
+        {/* ── Sprint 2 — cards actives ── */}
+        <section className="mx-auto max-w-5xl px-5 pb-16">
           <div className="mb-6 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-[#2563EB]" />
             <h2 className="text-lg font-bold text-[#0F172A]">Tous les outils</h2>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {SPRINT2.map((tool) => (
+              <Link
+                key={tool.href}
+                href={tool.href}
+                className="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-[#2563EB]/30 hover:shadow-md"
+              >
+                <span className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl border ${tool.color}`}>
+                  <tool.icon className="h-5 w-5" />
+                </span>
+                <h3 className="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors leading-snug">{tool.title}</h3>
+                <p className="mt-1.5 flex-1 text-[12px] leading-relaxed text-slate-500">{tool.desc}</p>
+                <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[#2563EB] opacity-0 transition-opacity group-hover:opacity-100">
+                  Utiliser <ArrowRight className="h-3 w-3" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Sprint 3 — bientôt ── */}
+        <section className="mx-auto max-w-5xl px-5 pb-20">
+          <div className="mb-6 flex items-center gap-2">
+            <h2 className="text-[14px] font-bold text-slate-400">Prochainement</h2>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

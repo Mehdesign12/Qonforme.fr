@@ -250,10 +250,10 @@ Le blog sera alimenté automatiquement par un cron job quotidien :
 
 | # | Outil | Route | Statut |
 |---|-------|-------|--------|
-| OG-5 | **Générateur de devis gratuit (PDF bridé)** | `/outils/generateur-devis-gratuit` | 🔜 À faire |
-| OG-6 | **Calculateur pénalités de retard** | `/outils/calculateur-penalites-retard` | 🔜 À faire |
-| OG-7 | **Vérificateur mentions obligatoires facture** | `/outils/verificateur-mentions-facture` | 🔜 À faire |
-| OG-8 | **Vérificateur de conformité facture** | `/outils/verificateur-conformite-facture` | 🔜 À faire |
+| OG-5 | **Générateur de devis gratuit (PDF bridé)** | `/outils/generateur-devis-gratuit` | ✅ Fait |
+| OG-6 | **Calculateur pénalités de retard** | `/outils/calculateur-penalites-retard` | ✅ Fait |
+| OG-7 | **Vérificateur mentions obligatoires facture** | `/outils/verificateur-mentions-facture` | ✅ Fait |
+| OG-8 | **Vérificateur de conformité facture** | `/outils/verificateur-conformite-facture` | ✅ Fait |
 
 #### Sprint 3 — Priorité BASSE (différenciation, backlinks)
 
