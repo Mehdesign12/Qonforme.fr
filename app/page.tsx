@@ -787,8 +787,6 @@ function TestimonialsSection() {
 function PricingSection() {
   const [annual, setAnnual] = useState(false);
 
-  const starterPrice = annual ? 7.5 : 9;
-  const proPrice = annual ? 15.83 : 19;
   const starterTotal = annual ? "90 €/an HT" : "/mois HT";
   const proTotal = annual ? "190 €/an HT" : "/mois HT";
 
