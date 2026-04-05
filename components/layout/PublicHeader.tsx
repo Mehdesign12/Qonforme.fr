@@ -112,7 +112,7 @@ export function PublicHeader({ isLandingPage = false }: PublicHeaderProps) {
             boxShadow: scrolled || mobileOpen ? "0 8px 32px -4px rgba(15,23,42,0.12), 0 2px 8px -2px rgba(15,23,42,0.06)" : "none",
           }}
           transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-          className={`relative z-[101] w-full max-w-5xl border py-2.5 transition-[border-radius] duration-150 ease-out ${mobileOpen ? "rounded-3xl" : scrolled ? "rounded-full" : "rounded-2xl"} ${scrolled ? "md:backdrop-blur-[18px]" : ""}`}
+          className={`relative z-[101] w-full max-w-5xl border py-2.5 ${mobileOpen ? "rounded-3xl" : scrolled ? "rounded-full" : "rounded-2xl"} ${scrolled ? "md:backdrop-blur-[18px]" : ""}`}
         >
           {/* Top row */}
           <div className="flex items-center justify-between">
@@ -177,15 +177,15 @@ export function PublicHeader({ isLandingPage = false }: PublicHeaderProps) {
             </button>
           </div>
 
-          {/* Mobile menu — clip-path reveal */}
+          {/* Mobile menu — height reveal */}
           <AnimatePresence>
             {mobileOpen && (
               <motion.div
-                initial={{ clipPath: "inset(0 0 100% 0)", opacity: 0 }}
-                animate={{ clipPath: "inset(0 0 0% 0)", opacity: 1 }}
-                exit={{ clipPath: "inset(0 0 100% 0)", opacity: 0 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="md:hidden"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden md:hidden"
               >
                 <div className="overflow-y-auto overscroll-contain scrollbar-hide" style={{ maxHeight: "calc(100dvh - 100px)" }}>
                   <div className="mt-3 h-px bg-slate-100" />
