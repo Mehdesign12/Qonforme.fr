@@ -25,7 +25,7 @@ const PICTO_Q =
 ───────────────────────────────────────────────────────── */
 function SectionPill({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-1 text-[13px] font-medium text-[#2563EB]">
+    <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-1 text-[13px] font-medium text-[#2563EB]">
       <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
       {label}
     </span>
