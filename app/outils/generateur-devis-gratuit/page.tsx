@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, ArrowLeft, ClipboardList, ChevronRight, Plus, Trash2, Download, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
 import Footer from "@/components/layout/Footer"
-import { OutilsHeader } from "@/components/outils/OutilsHeader"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 
 interface Ligne { id: string; description: string; quantite: number; prixHT: number; tauxTVA: number }
@@ -54,7 +54,7 @@ export default function GenerateurDevisPage() {
 
   return (
     <>
-      <OutilsHeader breadcrumb="Générateur devis" />
+      <PublicHeader />
       <OutilsHero icon={<ClipboardList className="h-8 w-8" />} iconBg="bg-indigo-50 text-indigo-600" title={<>Générateur de <span className="text-[#2563EB]">devis gratuit</span></>} subtitle="Créez un devis professionnel en PDF. Remplissez, téléchargez. Gratuit, sans inscription." badge="PDF gratuit" />
 
       <main className="bg-[#F8FAFC] pb-20 sm:pb-16">

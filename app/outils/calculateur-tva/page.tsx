@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, Calculator, ArrowLeftRight, RotateCcw, ChevronRight, Copy, Check } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
 import Footer from "@/components/layout/Footer"
-import { OutilsHeader } from "@/components/outils/OutilsHeader"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 import { TVA_RATES, htToTtc, ttcToHt, calculateVat } from "@/lib/outils/tva"
@@ -58,7 +58,7 @@ export default function CalculateurTvaPage() {
 
   return (
     <>
-      <OutilsHeader breadcrumb="Calculateur TVA" />
+      <PublicHeader />
 
       <OutilsHero
         icon={<Calculator className="h-8 w-8" />}

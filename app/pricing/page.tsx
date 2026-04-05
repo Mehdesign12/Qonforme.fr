@@ -2,10 +2,10 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import PricingSelector from '@/components/billing/PricingSelector'
-import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Shield, Zap, Lock } from 'lucide-react'
 import Footer from '@/components/layout/Footer'
+import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
 
 export const metadata: Metadata = {
   title: 'Tarifs — Qonforme | Facturation dès 9 €/mois',
@@ -19,7 +19,6 @@ export const metadata: Metadata = {
 }
 export const dynamic = 'force-dynamic'
 
-const LOGO_LONG_BLEU = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp'
 
 const FAQ = [
   { question: "Qonforme est-il conforme à la réforme de facturation électronique 2026 ?", reponse: "Oui, Qonforme génère nativement des factures au format Factur-X EN 16931, le format obligatoire pour la facturation électronique B2B à partir de septembre 2026." },
@@ -60,19 +59,7 @@ export default async function PricingPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="min-h-screen bg-[#F8FAFC]">
         {/* Header */}
-        <nav className="sticky top-0 z-50 border-b border-[#E2E8F0] bg-white">
-          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <Link href="/">
-              <Image src={LOGO_LONG_BLEU} alt="Qonforme" width={130} height={32} className="h-7 w-auto object-contain" sizes="130px" priority />
-            </Link>
-            <div className="flex items-center gap-3">
-              <Link href="/demo" className="hidden sm:inline text-sm text-slate-600 hover:text-[#2563EB]">Démo</Link>
-              <Link href="/signup" className="px-4 py-2 text-sm font-semibold text-white bg-[#2563EB] rounded-lg hover:bg-[#1D4ED8]">
-                Commencer →
-              </Link>
-            </div>
-          </div>
-        </nav>
+        <PublicHeaderWrapper />
 
         {/* Hero */}
         <header className="bg-gradient-to-b from-white to-[#F8FAFC] border-b border-[#E2E8F0]">

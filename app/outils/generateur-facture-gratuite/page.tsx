@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, ArrowLeft, FileText, ChevronRight, Plus, Trash2, Download, Loader2, RotateCcw, User, Users, List, Eye } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
 import Footer from "@/components/layout/Footer"
-import { OutilsHeader } from "@/components/outils/OutilsHeader"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 
 interface Ligne {
@@ -75,7 +75,7 @@ export default function GenerateurFacturePage() {
 
   return (
     <>
-      <OutilsHeader breadcrumb="Générateur facture" />
+      <PublicHeader />
 
       <OutilsHero
         icon={<FileText className="h-8 w-8" />}

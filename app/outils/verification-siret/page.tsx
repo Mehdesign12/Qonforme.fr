@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, Search, ChevronRight, Building2, MapPin, Hash, FileText, AlertCircle, CheckCircle2, RotateCcw, Copy, Check } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
 import Footer from "@/components/layout/Footer"
-import { OutilsHeader } from "@/components/outils/OutilsHeader"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 
@@ -72,7 +72,7 @@ export default function VerificationSiretPage() {
 
   return (
     <>
-      <OutilsHeader breadcrumb="Vérificateur SIRET" />
+      <PublicHeader />
 
       <OutilsHero
         icon={<Search className="h-8 w-8" />}

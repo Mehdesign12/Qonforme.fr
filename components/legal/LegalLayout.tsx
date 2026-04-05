@@ -1,8 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
 
-const LOGO_LONG_BLEU = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
 const PICTO_Q        = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
 
 interface LegalLayoutProps {
@@ -50,32 +49,11 @@ export function LegalLayout({ children, title, subtitle, lastUpdated }: LegalLay
         <Image src={PICTO_Q} alt="" width={400} height={400} sizes="400px" loading="lazy" />
       </div>
 
-      {/* ── Barre header ── */}
-      <header className="relative z-10 border-b border-[#BFDBFE]/50 bg-white/60" style={{ backdropFilter: undefined }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/" aria-label="Retour à l'accueil">
-            <Image
-              src={LOGO_LONG_BLEU}
-              alt="Qonforme"
-              width={150}
-              height={37}
-              className="h-8 w-auto"
-              sizes="150px"
-              priority
-            />
-          </Link>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8] transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Retour au site
-          </Link>
-        </div>
-      </header>
+      {/* ── Header pill ── */}
+      <PublicHeaderWrapper />
 
       {/* ── Contenu ── */}
-      <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+      <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pt-24 pb-10 sm:pt-28 sm:pb-14">
 
         {/* En-tête de la page */}
         <div className="mb-10">

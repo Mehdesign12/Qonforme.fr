@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, Scale, ChevronRight, RotateCcw, Copy, Check, AlertTriangle } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
 import Footer from "@/components/layout/Footer"
-import { OutilsHeader } from "@/components/outils/OutilsHeader"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 import { calculerPenalites, joursEntre, TAUX_BCE, INDEMNITE_FORFAITAIRE } from "@/lib/outils/penalites"
@@ -39,7 +39,7 @@ export default function CalculateurPenalitesPage() {
 
   return (
     <>
-      <OutilsHeader breadcrumb="Pénalités de retard" />
+      <PublicHeader />
       <OutilsHero icon={<Scale className="h-8 w-8" />} iconBg="bg-amber-50 text-amber-600" title={<>Calculateur <span className="text-[#2563EB]">pénalités de retard</span></>} subtitle="Calculez les intérêts de retard et l'indemnité forfaitaire de recouvrement (40 €) pour vos factures impayées." badge="Taux BCE 2026" />
 
       <main className="bg-[#F8FAFC] pb-20 sm:pb-16">

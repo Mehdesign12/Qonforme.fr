@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, Calculator, ChevronRight, RotateCcw, AlertTriangle, CheckCircle2, Info } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
 import Footer from "@/components/layout/Footer"
-import { OutilsHeader } from "@/components/outils/OutilsHeader"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 
@@ -40,7 +40,7 @@ export default function SimulateurSeuilTvaPage() {
 
   return (
     <>
-      <OutilsHeader breadcrumb="Seuil TVA" />
+      <PublicHeader />
       <OutilsHero icon={<Calculator className="h-8 w-8" />} iconBg="bg-blue-50 text-[#2563EB]" title={<>Simulateur <span className="text-[#2563EB]">seuil TVA</span></>} subtitle="Vérifiez si votre chiffre d'affaires dépasse le seuil de franchise de TVA auto-entrepreneur. Seuils 2026." badge="Seuils 2026" />
 
       <main className="bg-[#F8FAFC] pb-20 sm:pb-16">

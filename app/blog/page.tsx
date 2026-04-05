@@ -6,7 +6,7 @@ import { FileText } from "lucide-react"
 import { getReadingTime, getCategoryFromPrompt } from "@/lib/blog-utils"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
 import CategoryFilter from "@/components/blog/CategoryFilter"
-import BlogHeader from "@/components/blog/BlogHeader"
+import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
 import Footer from "@/components/layout/Footer"
 
 export const metadata: Metadata = {
@@ -56,7 +56,7 @@ export default async function BlogPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
-      <BlogHeader />
+      <PublicHeaderWrapper />
 
       {/* Hero section — pt-24 compense le header fixed */}
       <section className="relative overflow-hidden pt-24 pb-12 sm:pt-28 sm:pb-16">

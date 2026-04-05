@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, Hash, ChevronRight, Copy, Check } from "lucide-react"
 import { motion } from "motion/react"
 import Footer from "@/components/layout/Footer"
-import { OutilsHeader } from "@/components/outils/OutilsHeader"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 
@@ -57,7 +57,7 @@ export default function GenerateurNumeroFacturePage() {
 
   return (
     <>
-      <OutilsHeader breadcrumb="N° facture" />
+      <PublicHeader />
       <OutilsHero icon={<Hash className="h-8 w-8" />} iconBg="bg-slate-100 text-slate-600" title={<>Générateur <span className="text-[#2563EB]">n° de facture</span></>} subtitle="Générez un numéro de facture conforme à la réglementation : chronologique, sans rupture, personnalisable." badge="Conforme 2026" />
 
       <main className="bg-[#F8FAFC] pb-20 sm:pb-16">

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, Shield, ChevronRight, CheckCircle2, XCircle, AlertTriangle, RotateCcw } from "lucide-react"
 import { motion } from "motion/react"
 import Footer from "@/components/layout/Footer"
-import { OutilsHeader } from "@/components/outils/OutilsHeader"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 
@@ -56,7 +56,7 @@ export default function VerificateurConformitePage() {
 
   return (
     <>
-      <OutilsHeader breadcrumb="Conformité facture" />
+      <PublicHeader />
       <OutilsHero icon={<Shield className="h-8 w-8" />} iconBg="bg-violet-50 text-violet-600" title={<>Vérificateur de <span className="text-[#2563EB]">conformité facture</span></>} subtitle="Évaluez la conformité de votre facture selon les critères 2026 : format, mentions, Factur-X, archivage." badge="Normes 2026" />
 
       <main className="bg-[#F8FAFC] pb-20 sm:pb-16">
