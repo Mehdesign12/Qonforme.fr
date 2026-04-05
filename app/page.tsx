@@ -787,12 +787,13 @@ function TestimonialsSection() {
 function PricingSection() {
   const [annual, setAnnual] = useState(false);
 
-  const starterTotal = annual ? "90 €/an HT" : "/mois HT";
-  const proTotal = annual ? "190 €/an HT" : "/mois HT";
-
   return (
-    <section id="pricing" className="bg-white py-20 sm:py-24">
-      <div className="max-w-5xl mx-auto px-5">
+    <section id="pricing" className="relative overflow-hidden py-20 sm:py-24" style={{ background: "linear-gradient(135deg, #EFF6FF 0%, #F5F3FF 40%, #E0F2FE 70%, #EFF6FF 100%)" }}>
+      {/* Q filigrane background */}
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 select-none" style={{ opacity: 0.04 }}>
+        <Image src={PICTO_Q} alt="" width={500} height={500} className="w-[420px] sm:w-[500px]" sizes="(min-width: 640px) 500px, 420px" loading="lazy" />
+      </div>
+      <div className="relative z-10 max-w-5xl mx-auto px-5">
         <FadeIn className="text-center mb-8 flex flex-col items-center gap-3">
           <SectionPill label="TARIFS" />
           <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
@@ -828,12 +829,12 @@ function PricingSection() {
 
             {/* Prix + CTA groupés */}
             <div className="flex items-baseline gap-1 mb-1">
-              {annual && <span className="text-lg font-bold text-slate-300 line-through font-mono mr-1">9&nbsp;€</span>}
-              <span className="text-4xl font-extrabold text-[#0F172A] font-mono">{annual ? "7,50 €" : "9 €"}</span>
-              <span className="text-slate-400 text-sm">{annual ? "/mois HT" : "/mois HT"}</span>
+              {annual && <span className="text-lg font-bold text-slate-300 line-through font-mono mr-1">9€</span>}
+              <span className="text-4xl font-extrabold text-[#0F172A] font-mono">{annual ? "7,50€" : "9€"}</span>
+              <span className="text-slate-400 text-sm">/mois HT</span>
             </div>
-            {annual && <p className="text-[12px] text-[#059669] font-medium mb-3">Soit {starterTotal} — tu économises 18&nbsp;€</p>}
-            <p className="text-[13px] text-slate-400 mb-4">{!annual ? "Facturé mensuellement" : "Facturé 90 € par an"}</p>
+            {annual && <p className="text-[12px] text-[#059669] font-medium mb-3">Soit 90€/an HT — tu économises 18€</p>}
+            <p className="text-[13px] text-slate-400 mb-4">{!annual ? "Facturé mensuellement" : "Facturé 90€ par an"}</p>
 
             <Link href="/signup">
               <button className="w-full rounded-xl border border-[#E2E8F0] bg-white py-3 text-sm font-semibold text-[#0F172A] transition-colors hover:bg-[#F8FAFC] active:scale-[0.98]">
@@ -843,16 +844,31 @@ function PricingSection() {
 
             <div className="h-px bg-[#E2E8F0] my-5" />
 
-            {/* Features différenciantes seulement */}
-            <ul className="space-y-3 flex-1">
+            {/* Features incluses */}
+            <ul className="space-y-3">
               {[
                 "10 factures/mois",
                 "Devis & bons de commande illimités",
                 "Guide transmission Chorus Pro",
-                "Support email 48h",
+                "Support 48h",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
                   <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 shrink-0" />{item}
+                </li>
+              ))}
+            </ul>
+
+            {/* Features absentes */}
+            <div className="h-px bg-[#E2E8F0] my-4" />
+            <ul className="space-y-3 flex-1">
+              {[
+                "Factures illimitées",
+                "Tableau de bord CA & encours",
+                "Relances automatiques",
+                "Support 24h prioritaire",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2 text-sm text-slate-400">
+                  <XCircle className="w-4 h-4 text-slate-300 mt-0.5 shrink-0" />{item}
                 </li>
               ))}
             </ul>
@@ -873,12 +889,12 @@ function PricingSection() {
 
               {/* Prix + CTA groupés */}
               <div className="flex items-baseline gap-1 mb-1">
-                {annual && <span className="text-lg font-bold text-slate-500 line-through font-mono mr-1">19&nbsp;€</span>}
-                <span className="text-4xl font-extrabold text-white font-mono">{annual ? "15,83 €" : "19 €"}</span>
-                <span className="text-slate-400 text-sm">{annual ? "/mois HT" : "/mois HT"}</span>
+                {annual && <span className="text-lg font-bold text-slate-500 line-through font-mono mr-1">19€</span>}
+                <span className="text-4xl font-extrabold text-white font-mono">{annual ? "15,83€" : "19€"}</span>
+                <span className="text-slate-400 text-sm">/mois HT</span>
               </div>
-              {annual && <p className="text-[12px] text-[#34D399] font-medium mb-3">Soit {proTotal} — tu économises 38&nbsp;€</p>}
-              <p className="text-[13px] text-slate-500 mb-4">{!annual ? "Facturé mensuellement" : "Facturé 190 € par an"}</p>
+              {annual && <p className="text-[12px] text-[#34D399] font-medium mb-3">Soit 190€/an HT — tu économises 38€</p>}
+              <p className="text-[13px] text-slate-500 mb-4">{!annual ? "Facturé mensuellement" : "Facturé 190€ par an"}</p>
 
               <Link href="/signup">
                 <button className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-[#0F172A] transition-colors hover:bg-slate-100 active:scale-[0.98]">
@@ -896,7 +912,7 @@ function PricingSection() {
                   "Guide multiplateforme (Chorus Pro, IOPOLE, 137 PA)",
                   "Tableau de bord CA & encours",
                   "Relances automatiques J+30/J+45",
-                  "Support email 24h prioritaire",
+                  "Support 24h prioritaire",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2 text-sm text-slate-300">
                     <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 shrink-0" />{item}
