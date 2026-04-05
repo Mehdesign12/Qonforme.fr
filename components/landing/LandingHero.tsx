@@ -101,23 +101,25 @@ function Header() {
     <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center px-5 pt-4">
       <motion.nav
         animate={{
-          borderRadius: scrolled ? "9999px" : "16px",
-          paddingLeft: scrolled ? "24px" : "16px",
-          paddingRight: scrolled ? "24px" : "16px",
-          backgroundColor: scrolled
-            ? "rgba(255,255,255,0.96)"
+          borderRadius: mobileOpen ? "24px" : scrolled ? "9999px" : "16px",
+          paddingLeft: scrolled || mobileOpen ? "24px" : "16px",
+          paddingRight: scrolled || mobileOpen ? "24px" : "16px",
+          backgroundColor: scrolled || mobileOpen
+            ? "rgba(255,255,255,0.98)"
             : "rgba(255,255,255,0)",
-          borderColor: scrolled
+          borderColor: scrolled || mobileOpen
             ? "rgba(226,232,240,0.9)"
             : "rgba(255,255,255,0)",
-          boxShadow: scrolled
+          boxShadow: scrolled || mobileOpen
             ? "0 8px 32px -4px rgba(15,23,42,0.12), 0 2px 8px -2px rgba(15,23,42,0.06)"
             : "none",
         }}
         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        className={`flex w-full max-w-5xl items-center justify-between border py-2.5 ${scrolled ? "md:backdrop-blur-[18px]" : ""}`}
+        className={`w-full max-w-5xl border py-2.5 ${scrolled ? "md:backdrop-blur-[18px]" : ""}`}
       >
-        {/* Logo — sans fond, bien à gauche */}
+        {/* ── Row : Logo + Nav desktop + Actions + Hamburger ── */}
+        <div className="flex items-center justify-between">
+        {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center pl-3">
           <Image
             src={LOGO_URL}
@@ -247,9 +249,9 @@ function Header() {
           </Link>
         </div>
 
-        {/* Hamburger mobile — toggle (Menu ↔ X) */}
+        {/* Hamburger mobile — toggle Menu ↔ X */}
         <button
-          className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-white/50 active:bg-white/70"
+          className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100/50 active:bg-slate-100"
           onClick={() => setMobileOpen((v) => !v)}
           aria-label="Menu"
         >
@@ -265,76 +267,57 @@ function Header() {
             )}
           </AnimatePresence>
         </button>
+        </div>{/* end top row */}
 
-      {/* ── Menu mobile dropdown — tombe sous le header pill ── */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <>
-            {/* Backdrop — léger assombrissement, ferme au tap */}
+        {/* ── Menu mobile — s'expand DANS la pill (même container) ── */}
+        <AnimatePresence>
+          {mobileOpen && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[98] bg-black/10 md:hidden"
-              onClick={() => setMobileOpen(false)}
-            />
-
-            {/* Panel dropdown — positionné juste sous la nav pill */}
-            <motion.div
-              initial={{ opacity: 0, y: -8, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.98 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed left-3 right-3 z-[99] rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15 md:hidden overflow-hidden"
-              style={{
-                top: "calc(env(safe-area-inset-top, 0px) + 72px)",
-                transformOrigin: "top center",
-                maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - 84px)",
-              }}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden md:hidden"
             >
-              <div className="overflow-y-auto overscroll-contain" style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - 84px)" }}>
-                {/* ── CTAs en haut ── */}
+              <div className="overflow-y-auto overscroll-contain scrollbar-hide" style={{ maxHeight: "calc(100dvh - 100px)" }}>
+                {/* Séparateur */}
+                <div className="mt-3 h-px bg-slate-100" />
+
+                {/* CTAs */}
                 <motion.div
-                  initial={{ opacity: 0, y: -8 }}
+                  initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05, duration: 0.25 }}
-                  className="px-4 pt-4 pb-3 flex flex-col gap-2"
+                  transition={{ delay: 0.08, duration: 0.25 }}
+                  className="pt-4 pb-3 flex flex-col gap-2"
                 >
                   <Link href="/signup" onClick={() => setMobileOpen(false)} className="block">
-                    <ShimmerButton
-                      background="rgba(37,99,235,1)"
-                      shimmerColor="#ffffff"
-                      shimmerDuration="2.5s"
-                      borderRadius="14px"
-                      className="w-full h-[48px] text-[14px] font-semibold justify-center"
-                    >
+                    <ShimmerButton background="rgba(37,99,235,1)" shimmerColor="#ffffff" shimmerDuration="2.5s" borderRadius="14px" className="w-full h-[46px] text-[14px] font-semibold justify-center">
                       Commencer maintenant →
                     </ShimmerButton>
                   </Link>
                   <Link href="/login" onClick={() => setMobileOpen(false)} className="block">
-                    <button className="w-full h-[42px] rounded-xl bg-slate-50 border border-slate-200/80 text-[13px] font-semibold text-[#0F172A] active:scale-[0.98] transition-all touch-manipulation">
+                    <button className="w-full h-[40px] rounded-xl bg-slate-50 border border-slate-200/80 text-[13px] font-semibold text-[#0F172A] active:scale-[0.98] transition-all touch-manipulation">
                       Se connecter
                     </button>
                   </Link>
                 </motion.div>
 
                 {/* Séparateur */}
-                <div className="mx-4 h-px bg-slate-100" />
+                <div className="h-px bg-slate-100" />
 
-                {/* ── Liens de navigation ── */}
-                <nav className="flex flex-col px-2 py-2 gap-0.5">
+                {/* Nav links */}
+                <nav className="flex flex-col py-2 gap-0.5">
                   {navLinks.map((l, i) => (
                     <motion.div
                       key={l.label}
-                      initial={{ opacity: 0, x: 16 }}
+                      initial={{ opacity: 0, x: 12 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.08 + i * 0.04, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{ delay: 0.1 + i * 0.04, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                     >
                       <Link
                         href={l.href}
                         onClick={() => setMobileOpen(false)}
-                        className="group flex items-center justify-between rounded-xl px-4 py-3 hover:bg-slate-50 active:bg-slate-100 transition-all touch-manipulation"
+                        className="group flex items-center justify-between rounded-xl px-2 py-3 hover:bg-slate-50 active:bg-slate-100 transition-all touch-manipulation"
                       >
                         <span className="text-[15px] font-semibold text-[#0F172A]">{l.label}</span>
                         <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-[#2563EB] transition-colors" />
@@ -342,28 +325,42 @@ function Header() {
                     </motion.div>
                   ))}
 
-                  {/* Outils gratuits — expandable */}
+                  {/* Outils gratuits */}
                   <motion.div
-                    initial={{ opacity: 0, x: 16 }}
+                    initial={{ opacity: 0, x: 12 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    transition={{ delay: 0.22, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <MobileOutilsMenu onNavigate={() => setMobileOpen(false)} />
                   </motion.div>
                 </nav>
 
                 {/* Réassurance */}
-                <div className="px-4 pb-4 pt-1">
+                <div className="pb-3 pt-1">
                   <p className="text-center text-[11px] text-slate-400">
                     ✓ Accès immédiat &nbsp;·&nbsp; ✓ Sans engagement
                   </p>
                 </div>
               </div>
             </motion.div>
-          </>
+          )}
+        </AnimatePresence>
+
+      </motion.nav>
+
+      {/* Backdrop mobile */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[99] bg-black/10 md:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
         )}
       </AnimatePresence>
-      </motion.nav>
     </div>
   );
 }
