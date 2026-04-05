@@ -7,13 +7,7 @@ const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/publ
 
 export default function Footer() {
   return (
-    <footer className="relative overflow-hidden" style={{ background: "#0F172A" }}>
-      {/* Gradient transition top — blanc vers navy */}
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-24 pointer-events-none"
-        style={{ background: "linear-gradient(to bottom, #ffffff 0%, #0F172A 100%)" }}
-      />
+    <footer className="relative overflow-hidden" style={{ background: "#0F172A", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
 
       {/* Q filigrane — eager pour éviter le layout shift */}
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none" style={{ opacity: 0.03, zIndex: 0 }}>
@@ -22,7 +16,7 @@ export default function Footer() {
 
       <div className="relative z-10 mx-auto max-w-6xl px-5">
         {/* ── Mini CTA banner ── */}
-        <div className="pt-28 pb-10">
+        <div className="pt-14 pb-10">
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-8 sm:px-10 sm:py-10 text-center">
             <h3
               className="text-2xl sm:text-3xl font-extrabold text-white tracking-[-0.02em] mb-3"
