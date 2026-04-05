@@ -98,10 +98,24 @@ function Header() {
   ];
 
   return (
+    <>
+    {/* Backdrop mobile — ferme au tap */}
+    <AnimatePresence>
+      {mobileOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[99] bg-black/10 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+    </AnimatePresence>
+
     <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center px-5 pt-4">
       <motion.nav
         animate={{
-          borderRadius: mobileOpen ? "24px" : scrolled ? "9999px" : "16px",
           paddingLeft: scrolled || mobileOpen ? "24px" : "16px",
           paddingRight: scrolled || mobileOpen ? "24px" : "16px",
           backgroundColor: scrolled || mobileOpen
@@ -114,8 +128,10 @@ function Header() {
             ? "0 8px 32px -4px rgba(15,23,42,0.12), 0 2px 8px -2px rgba(15,23,42,0.06)"
             : "none",
         }}
-        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        className={`w-full max-w-5xl border py-2.5 ${scrolled ? "md:backdrop-blur-[18px]" : ""}`}
+        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+        className={`relative z-[101] w-full max-w-5xl border py-2.5 transition-[border-radius] duration-150 ease-out ${
+          mobileOpen ? "rounded-3xl" : scrolled ? "rounded-full" : "rounded-2xl"
+        } ${scrolled ? "md:backdrop-blur-[18px]" : ""}`}
       >
         {/* ── Row : Logo + Nav desktop + Actions + Hamburger ── */}
         <div className="flex items-center justify-between">
@@ -269,15 +285,15 @@ function Header() {
         </button>
         </div>{/* end top row */}
 
-        {/* ── Menu mobile — s'expand DANS la pill (même container) ── */}
+        {/* ── Menu mobile — clip-path reveal dans la pill ── */}
         <AnimatePresence>
           {mobileOpen && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden md:hidden"
+              initial={{ clipPath: "inset(0 0 100% 0)", opacity: 0 }}
+              animate={{ clipPath: "inset(0 0 0% 0)", opacity: 1 }}
+              exit={{ clipPath: "inset(0 0 100% 0)", opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="md:hidden"
             >
               <div className="overflow-y-auto overscroll-contain scrollbar-hide" style={{ maxHeight: "calc(100dvh - 100px)" }}>
                 {/* Séparateur */}
@@ -347,21 +363,8 @@ function Header() {
         </AnimatePresence>
 
       </motion.nav>
-
-      {/* Backdrop mobile */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[99] bg-black/10 md:hidden"
-            onClick={() => setMobileOpen(false)}
-          />
-        )}
-      </AnimatePresence>
     </div>
+    </>
   );
 }
 
