@@ -628,7 +628,7 @@ function TestimonialsSection() {
     { name: "Claire M.", role: "Graphiste freelance", title: "Interface au top", date: "18 févr. 2026", text: "Enfin un outil de facturation qui ne ressemble pas à un logiciel des années 2000. C'est beau, c'est rapide, et c'est conforme. Bravo.", stars: 5 },
   ];
 
-  const TOTAL_REVIEWS = 127;
+  const TOTAL_REVIEWS = 47;
   const AVG_RATING = 4.8;
 
   return (
@@ -1148,13 +1148,13 @@ function KeyMetricsSection() {
   const metrics = [
     {
       icon: <Users className="h-5 w-5" />,
-      numValue: 500, suffix: "+", prefix: "",
+      numValue: 50, suffix: "+", prefix: "",
       label: "entreprises accompagnées",
       desc: "artisans, indépendants, TPE",
     },
     {
       icon: <FileCheck className="h-5 w-5" />,
-      numValue: 10000, suffix: "+", prefix: "",
+      numValue: 1200, suffix: "+", prefix: "",
       label: "factures conformes émises",
       desc: "sans une seule pénalité",
     },
@@ -1166,9 +1166,9 @@ function KeyMetricsSection() {
     },
     {
       icon: <ShieldCheck className="h-5 w-5" />,
-      numValue: 99, suffix: ",9 %", prefix: "",
+      numValue: 100, suffix: " %", prefix: "",
       label: "taux de conformité",
-      desc: "certifié Chorus Pro & DGFiP",
+      desc: "chaque facture est certifiée EN 16931",
     },
   ];
 
