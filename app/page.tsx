@@ -652,23 +652,26 @@ function TestimonialsSection() {
         </FadeIn>
 
         {/* Score global Trustpilot-style */}
-        <FadeIn delay={0.1} className="mb-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
-          {/* Score cercle */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-[#00B67A]">
-              <span className="text-lg font-extrabold text-[#0F172A]">{AVG_RATING}</span>
-              <span className="absolute -bottom-0.5 text-[9px] font-bold text-slate-400">de 5</span>
+        <FadeIn delay={0.1} className="mb-10 flex justify-center">
+          <div className="inline-flex flex-col sm:flex-row items-center gap-4 sm:gap-5 rounded-2xl border border-[#E2E8F0] bg-white px-6 py-4 shadow-sm">
+            {/* Score cercle */}
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-[#00B67A] bg-[#F0FDF4]">
+              <div className="text-center">
+                <span className="text-xl font-extrabold text-[#0F172A] leading-none">{AVG_RATING}</span>
+                <p className="text-[10px] font-semibold text-slate-400 -mt-0.5">de 5</p>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold text-[#0F172A]">Excellent</span>
+            {/* Texte + étoiles */}
+            <div className="flex flex-col items-center sm:items-start gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[15px] font-bold text-[#0F172A]">Excellent</span>
                 <div className="flex gap-0.5">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-[#00B67A] text-[#00B67A]" />
+                    <Star key={i} className="h-4.5 w-4.5 fill-[#00B67A] text-[#00B67A]" />
                   ))}
                 </div>
               </div>
-              <span className="text-[12px] text-slate-500">
+              <span className="text-[13px] text-slate-500">
                 <strong className="font-semibold text-[#0F172A]">{AVG_RATING}/5</strong> — sur la base de {TOTAL_REVIEWS} avis
               </span>
             </div>
@@ -689,7 +692,7 @@ function TestimonialsSection() {
                 {/* Quote icon + stars + date */}
                 <div className="px-6 pt-5 pb-3">
                   <div className="flex items-start justify-between mb-3">
-                    <Quote className="h-6 w-6 text-[#00B67A]/30 rotate-180" />
+                    <Quote className="h-6 w-6 text-[#00B67A]/50 rotate-180" />
                     <span className="text-[11px] text-slate-400">{t.date}</span>
                   </div>
                   <div className="flex gap-0.5 mb-3">
@@ -705,11 +708,11 @@ function TestimonialsSection() {
                 </div>
                 {/* Footer — name + verified */}
                 <div className="mt-auto border-t border-[#F1F5F9] px-6 py-3.5 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#0F172A]">{t.name}</span>
-                    <span className="text-[11px] text-slate-400">{t.role}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-[#0F172A]">{t.name}</p>
+                    <p className="text-[11px] text-slate-400">{t.role}</p>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#00B67A]">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#00B67A] shrink-0">
                     <BadgeCheck className="h-3.5 w-3.5" />
                     Vérifié
                   </span>
@@ -738,7 +741,7 @@ function TestimonialsSection() {
                 {/* Quote icon + stars + date */}
                 <div className="px-5 pt-4 pb-3">
                   <div className="flex items-start justify-between mb-3">
-                    <Quote className="h-5 w-5 text-[#00B67A]/30 rotate-180" />
+                    <Quote className="h-5 w-5 text-[#00B67A]/50 rotate-180" />
                     <span className="text-[11px] text-slate-400">{t.date}</span>
                   </div>
                   <div className="flex gap-0.5 mb-3">
@@ -753,11 +756,11 @@ function TestimonialsSection() {
                 </div>
                 {/* Footer */}
                 <div className="mt-auto border-t border-[#F1F5F9] px-5 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#0F172A]">{t.name}</span>
-                    <span className="text-[11px] text-slate-400">{t.role}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-[#0F172A]">{t.name}</p>
+                    <p className="text-[11px] text-slate-400">{t.role}</p>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#00B67A]">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#00B67A] shrink-0">
                     <BadgeCheck className="h-3.5 w-3.5" />
                     Vérifié
                   </span>
