@@ -787,100 +787,151 @@ function TestimonialsSection() {
 function PricingSection() {
   const [annual, setAnnual] = useState(false);
 
-
+  const starterPrice = annual ? 7.5 : 9;
+  const proPrice = annual ? 15.83 : 19;
+  const starterTotal = annual ? "90 €/an HT" : "/mois HT";
+  const proTotal = annual ? "190 €/an HT" : "/mois HT";
 
   return (
     <section id="pricing" className="bg-white py-20 sm:py-24">
       <div className="max-w-5xl mx-auto px-5">
-        <FadeIn className="text-center mb-10 flex flex-col items-center gap-3">
+        <FadeIn className="text-center mb-8 flex flex-col items-center gap-3">
           <SectionPill label="TARIFS" />
           <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
             Un prix fixe.{" "}
             <span className="text-[#2563EB]">Aucune surprise.</span>
           </h2>
           <p className="text-slate-500 max-w-md">
-            Tout ce qu&apos;il faut pour être conforme. Pas de frais cachés, pas de limite de fonctionnalités essentielles.
+            Tout ce qu&apos;il faut pour être conforme. Sans engagement, résiliable en 1 clic.
           </p>
 
-          {/* Toggle mensuel / annuel */}
-          <div className="mt-4 flex items-center gap-1 rounded-full border border-[#E2E8F0] bg-[#F8FAFC] p-1">
+          {/* Toggle mensuel / annuel — plus gros */}
+          <div className="mt-3 flex items-center gap-1 rounded-full border border-[#E2E8F0] bg-[#F8FAFC] p-1">
             <button
               onClick={() => setAnnual(false)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${!annual ? "bg-[#2563EB] text-white shadow-sm" : "text-slate-500 hover:text-[#0F172A]"}`}
+              className={`rounded-full px-5 py-2 text-sm font-semibold transition-all ${!annual ? "bg-[#2563EB] text-white shadow-sm" : "text-slate-500 hover:text-[#0F172A]"}`}
             >
               Mensuel
             </button>
             <button
               onClick={() => setAnnual(true)}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-all ${annual ? "bg-[#2563EB] text-white shadow-sm" : "text-slate-500 hover:text-[#0F172A]"}`}
+              className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all ${annual ? "bg-[#2563EB] text-white shadow-sm" : "text-slate-500 hover:text-[#0F172A]"}`}
             >
               Annuel
-              <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${annual ? "bg-white/20 text-white" : "bg-[#D1FAE5] text-[#065F46]"}`}>-16%</span>
+              <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${annual ? "bg-white/20 text-white" : "bg-[#D1FAE5] text-[#065F46]"}`}>-16%</span>
             </button>
           </div>
         </FadeIn>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-          {/* Card Starter */}
-          <FadeIn delay={0.15} x={-10} className="bg-white rounded-2xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <span className="rounded-full bg-[#F1F5F9] px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[#64748B]">Starter</span>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl mx-auto">
+          {/* ── Card Starter ── */}
+          <FadeIn delay={0.15} x={-10} className="bg-white rounded-2xl p-6 sm:p-7 border border-[#E2E8F0] shadow-sm flex flex-col">
+            <span className="w-fit rounded-full bg-[#F1F5F9] px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[#64748B] mb-4">Starter</span>
+
+            {/* Prix + CTA groupés */}
             <div className="flex items-baseline gap-1 mb-1">
-              <span className="text-4xl font-extrabold text-[#0F172A] font-mono">{annual ? "90 €" : "9 €"}</span>
-              <span className="text-slate-400 text-sm">{annual ? "/an HT" : "/mois HT"}</span>
+              {annual && <span className="text-lg font-bold text-slate-300 line-through font-mono mr-1">9&nbsp;€</span>}
+              <span className="text-4xl font-extrabold text-[#0F172A] font-mono">{annual ? "7,50 €" : "9 €"}</span>
+              <span className="text-slate-400 text-sm">{annual ? "/mois HT" : "/mois HT"}</span>
             </div>
+            {annual && <p className="text-[12px] text-[#059669] font-medium mb-3">Soit {starterTotal} — tu économises 18&nbsp;€</p>}
+            <p className="text-[13px] text-slate-400 mb-4">{!annual ? "Facturé mensuellement" : "Facturé 90 € par an"}</p>
+
+            <Link href="/signup">
+              <button className="w-full rounded-xl border border-[#E2E8F0] bg-white py-3 text-sm font-semibold text-[#0F172A] transition-colors hover:bg-[#F8FAFC] active:scale-[0.98]">
+                Choisir Starter →
+              </button>
+            </Link>
+
             <div className="h-px bg-[#E2E8F0] my-5" />
-            <ul className="space-y-3 mb-6 flex-1">
-              {["10 factures/mois · devis & bons de commande illimités", "Avoirs en 1 clic depuis une facture", "Factur-X EN 16931 certifié — généré automatiquement", "Guide de transmission Chorus Pro inclus", "Envoi par email avec PDF joint", "Catalogue produits réutilisables", "Archivage légal 10 ans inclus", "Support email 48h"].map((item) => (
+
+            {/* Features différenciantes seulement */}
+            <ul className="space-y-3 flex-1">
+              {[
+                "10 factures/mois",
+                "Devis & bons de commande illimités",
+                "Guide transmission Chorus Pro",
+                "Support email 48h",
+              ].map((item) => (
                 <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
                   <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 shrink-0" />{item}
                 </li>
               ))}
             </ul>
-            <Link href="/signup">
-              <button className="w-full rounded-xl border border-[#E2E8F0] bg-white py-2.5 text-sm font-semibold text-[#0F172A] transition-colors hover:bg-[#F8FAFC]">
-                Choisir ce plan →
-              </button>
-            </Link>
-            <p className="mt-3 text-center text-[12px] text-slate-400">Idéal pour démarrer</p>
+            <p className="mt-4 text-center text-[12px] text-slate-400">Idéal pour démarrer</p>
           </FadeIn>
 
-          {/* Card Pro */}
-          <FadeIn delay={0.25} x={10} className="relative overflow-hidden rounded-2xl p-8 flex flex-col" style={{ background: "#0F172A", border: "1px solid rgba(37,99,235,0.3)", boxShadow: "0 0 40px rgba(37,99,235,0.15)" }}>
-            {/* Q filigrane dans la card */}
+          {/* ── Card Pro — dominant ── */}
+          <FadeIn delay={0.2} x={10} className="relative overflow-hidden rounded-2xl p-6 sm:p-7 flex flex-col md:scale-[1.03] md:origin-top" style={{ background: "#0F172A", border: "1px solid rgba(37,99,235,0.3)", boxShadow: "0 0 60px rgba(37,99,235,0.18)" }}>
+            {/* Q filigrane */}
             <div aria-hidden className="pointer-events-none absolute -bottom-6 -right-6 select-none" style={{ opacity: 0.06, zIndex: 0 }}>
               <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" sizes="160px" loading="lazy" />
             </div>
             <div className="relative z-10 flex flex-col flex-1">
               <div className="flex items-center justify-between mb-4">
                 <span className="rounded-full bg-[#F1F5F9]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">Pro</span>
-                <span className="rounded-lg bg-[#2563EB] px-2.5 py-1 text-[11px] font-bold text-white">Populaire</span>
+                <span className="rounded-lg bg-[#2563EB] px-3 py-1 text-[11px] font-bold text-white">Recommandé</span>
               </div>
+
+              {/* Prix + CTA groupés */}
               <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-extrabold text-white font-mono">{annual ? "190 €" : "19 €"}</span>
-                <span className="text-slate-400 text-sm">{annual ? "/an HT" : "/mois HT"}</span>
+                {annual && <span className="text-lg font-bold text-slate-500 line-through font-mono mr-1">19&nbsp;€</span>}
+                <span className="text-4xl font-extrabold text-white font-mono">{annual ? "15,83 €" : "19 €"}</span>
+                <span className="text-slate-400 text-sm">{annual ? "/mois HT" : "/mois HT"}</span>
               </div>
+              {annual && <p className="text-[12px] text-[#34D399] font-medium mb-3">Soit {proTotal} — tu économises 38&nbsp;€</p>}
+              <p className="text-[13px] text-slate-500 mb-4">{!annual ? "Facturé mensuellement" : "Facturé 190 € par an"}</p>
+
+              <Link href="/signup">
+                <button className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-[#0F172A] transition-colors hover:bg-slate-100 active:scale-[0.98]">
+                  Choisir Pro →
+                </button>
+              </Link>
+
               <div className="h-px bg-white/10 my-5" />
-              <ul className="space-y-3 mb-6 flex-1">
-                {["Factures illimitées · devis & bons de commande illimités", "Avoirs en 1 clic depuis une facture", "Factur-X EN 16931 certifié — généré automatiquement", "Guide de transmission multiplateforme (Chorus Pro, IOPOLE, 137 PA)", "Envoi par email avec PDF joint", "Catalogue produits réutilisables", "Archivage légal 10 ans inclus", "Tableau de bord CA : chiffre du mois, encours, retards", "Relances automatiques J+30/J+45", "Support email 24h prioritaire"].map((item) => (
+
+              {/* Features différenciantes */}
+              <ul className="space-y-3 flex-1">
+                {[
+                  "Factures illimitées",
+                  "Devis & bons de commande illimités",
+                  "Guide multiplateforme (Chorus Pro, IOPOLE, 137 PA)",
+                  "Tableau de bord CA & encours",
+                  "Relances automatiques J+30/J+45",
+                  "Support email 24h prioritaire",
+                ].map((item) => (
                   <li key={item} className="flex items-start gap-2 text-sm text-slate-300">
                     <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 shrink-0" />{item}
                   </li>
                 ))}
               </ul>
-              <Link href="/signup">
-                <button className="w-full rounded-xl bg-white py-2.5 text-sm font-semibold text-[#0F172A] transition-colors hover:bg-slate-100">
-                  Choisir ce plan →
-                </button>
-              </Link>
-              <p className="mt-3 text-center text-[12px] text-[#60A5FA]">Le choix de 8 artisans sur 10</p>
+              <p className="mt-4 text-center text-[12px] text-[#60A5FA]">Le choix de 8 artisans sur 10</p>
             </div>
           </FadeIn>
         </div>
 
-        {/* Ancrage prix — comparaison coût */}
+        {/* ── Inclus dans tous les plans ── */}
         <FadeIn delay={0.3} className="mt-10 max-w-3xl mx-auto">
+          <p className="text-center text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-5">Inclus dans tous les plans</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[
+              { icon: <FileText className="h-4 w-4" />, label: "Factur-X EN 16931 certifié" },
+              { icon: <Send className="h-4 w-4" />, label: "Envoi email avec PDF" },
+              { icon: <Archive className="h-4 w-4" />, label: "Archivage légal 10 ans" },
+              { icon: <Zap className="h-4 w-4" />, label: "Avoirs en 1 clic" },
+              { icon: <Shield className="h-4 w-4" />, label: "Catalogue produits" },
+              { icon: <Users className="h-4 w-4" />, label: "Gestion clients" },
+            ].map((f) => (
+              <div key={f.label} className="flex items-center gap-2.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#EFF6FF] text-[#2563EB]">{f.icon}</span>
+                <span className="text-[12px] sm:text-[13px] font-medium text-[#0F172A]">{f.label}</span>
+              </div>
+            ))}
+          </div>
+        </FadeIn>
+
+        {/* Ancrage prix — comparaison coût */}
+        <FadeIn delay={0.35} className="mt-8 max-w-3xl mx-auto">
           <div className="rounded-2xl border border-[#FEF3C7] bg-[#FFFBEB] p-5 sm:p-6">
             <p className="text-[13px] font-bold text-[#92400E] uppercase tracking-wider mb-3">
               Le coût de la non-conformité
