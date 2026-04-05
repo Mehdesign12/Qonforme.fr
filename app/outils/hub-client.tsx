@@ -1,7 +1,7 @@
 "use client"
 
-import { OutilsHeader } from "@/components/outils/OutilsHeader"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 
 export function HubClient() {
-  return <OutilsHeader breadcrumb="" />
+  return <PublicHeader />
 }

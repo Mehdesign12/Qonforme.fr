@@ -1,12 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import Image from "next/image"
 import { notFound } from "next/navigation"
 import { CheckCircle2, XCircle, ArrowRight } from "lucide-react"
 import { COMPARATIFS, getComparatifBySlug, QONFORME_FEATURES } from "@/lib/pseo/comparatifs"
 import Footer from "@/components/layout/Footer"
+import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
 
-const LOGO_URL = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
 
 export function generateStaticParams() {
   return COMPARATIFS.map(c => ({ slug: c.slug }))
@@ -78,14 +77,7 @@ export default async function ComparatifPage({ params }: { params: Promise<{ slu
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="min-h-screen bg-[#F8FAFC]">
         {/* Nav */}
-        <nav className="sticky top-0 z-50 border-b border-[#E2E8F0] bg-white">
-          <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/"><Image src={LOGO_URL} alt="Qonforme" width={130} height={32} className="h-7 w-auto object-contain" sizes="130px" priority /></Link>
-            <div className="flex items-center gap-4">
-              <Link href="/signup" className="px-3 py-2 text-xs sm:text-sm font-semibold text-white bg-[#2563EB] rounded-lg hover:bg-[#1D4ED8]">Essayer gratuitement</Link>
-            </div>
-          </div>
-        </nav>
+        <PublicHeaderWrapper />
 
         {/* Breadcrumb */}
         <div className="max-w-5xl mx-auto px-4 pt-6">

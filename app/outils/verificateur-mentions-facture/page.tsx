@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, FileCheck, ChevronRight, CheckCircle2, XCircle, RotateCcw } from "lucide-react"
 import { motion } from "motion/react"
 import Footer from "@/components/layout/Footer"
-import { OutilsHeader } from "@/components/outils/OutilsHeader"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 
@@ -56,7 +56,7 @@ export default function VerificateurMentionsPage() {
 
   return (
     <>
-      <OutilsHeader breadcrumb="Mentions facture" />
+      <PublicHeader />
       <OutilsHero icon={<FileCheck className="h-8 w-8" />} iconBg="bg-emerald-50 text-emerald-600" title={<>Vérificateur <span className="text-[#2563EB]">mentions obligatoires</span></>} subtitle="Cochez chaque mention présente sur votre facture. Obtenez votre score de conformité instantanément." badge="Réglementation 2026" />
 
       <main className="bg-[#F8FAFC] pb-20 sm:pb-16">

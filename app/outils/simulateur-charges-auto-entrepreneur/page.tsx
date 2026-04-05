@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, TrendingUp, RotateCcw, ChevronRight, Info, Copy, Check } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
 import Footer from "@/components/layout/Footer"
-import { OutilsHeader } from "@/components/outils/OutilsHeader"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 import { ACTIVITES, calculerCharges, type ActiviteId } from "@/lib/outils/charges"
@@ -53,7 +53,7 @@ export default function SimulateurChargesPage() {
 
   return (
     <>
-      <OutilsHeader breadcrumb="Simulateur charges" />
+      <PublicHeader />
 
       <OutilsHero
         icon={<TrendingUp className="h-8 w-8" />}

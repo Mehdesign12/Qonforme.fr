@@ -13,7 +13,7 @@ import {
 } from "@/lib/blog-utils"
 import { Calendar, Clock, ChevronLeft, ChevronRight, ArrowRight, Sparkles } from "lucide-react"
 import CategoryBadge from "@/components/blog/CategoryBadge"
-import BlogHeader from "@/components/blog/BlogHeader"
+import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
 import ReadingProgressBar from "@/components/blog/ReadingProgressBar"
 import TableOfContents from "@/components/blog/TableOfContents"
 import ShareButtons from "@/components/blog/ShareButtons"
@@ -161,7 +161,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         />
       ))}
       <ReadingProgressBar />
-      <BlogHeader showBackLink />
+      <PublicHeaderWrapper />
 
       {/* Hero cover — full width, edge-to-edge, image extends behind the fixed header */}
       <div className="relative w-full overflow-hidden bg-[#0F172A]">

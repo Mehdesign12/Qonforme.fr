@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, Receipt, ChevronRight, Copy, Check } from "lucide-react"
 import { motion } from "motion/react"
 import Footer from "@/components/layout/Footer"
-import { OutilsHeader } from "@/components/outils/OutilsHeader"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 
@@ -48,7 +48,7 @@ ${rib ? "\nMode de paiement : virement bancaire. RIB joint à la facture." : ""}
 
   return (
     <>
-      <OutilsHeader breadcrumb="Conditions paiement" />
+      <PublicHeader />
       <OutilsHero icon={<Receipt className="h-8 w-8" />} iconBg="bg-rose-50 text-rose-600" title={<>Générateur <span className="text-[#2563EB]">conditions de paiement</span></>} subtitle="Générez les mentions légales de conditions de paiement à ajouter sur vos factures et devis. Texte prêt à copier-coller." badge="Mentions légales" />
 
       <main className="bg-[#F8FAFC] pb-20 sm:pb-16">
