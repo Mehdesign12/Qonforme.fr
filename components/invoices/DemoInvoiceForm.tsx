@@ -63,6 +63,7 @@ function DemoProductCombobox({ onSelect }: { onSelect: (p: typeof MOCK_PRODUCTS[
   const [isMobile, setIsMobile] = useState(false)
   const [mounted,  setMounted]  = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const dropdownRef  = useRef<HTMLDivElement>(null)
   const inputRef     = useRef<HTMLInputElement>(null)
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
 
@@ -78,7 +79,11 @@ function DemoProductCombobox({ onSelect }: { onSelect: (p: typeof MOCK_PRODUCTS[
   useEffect(() => {
     if (isMobile) return
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      if (
+        containerRef.current && !containerRef.current.contains(target) &&
+        dropdownRef.current && !dropdownRef.current.contains(target)
+      ) {
         setOpen(false)
       }
     }
@@ -196,7 +201,7 @@ function DemoProductCombobox({ onSelect }: { onSelect: (p: typeof MOCK_PRODUCTS[
   )
 
   const desktopDropdown = mounted && open && !isMobile ? createPortal(
-    <div className="bg-white dark:bg-[#0F1E35] border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-2xl shadow-[0_8px_32px_rgba(15,23,42,0.12)] overflow-hidden" style={dropdownStyle}>
+    <div ref={dropdownRef} className="bg-white dark:bg-[#0F1E35] border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-2xl shadow-[0_8px_32px_rgba(15,23,42,0.12)] overflow-hidden" style={dropdownStyle}>
       {listContent}
     </div>,
     document.body
