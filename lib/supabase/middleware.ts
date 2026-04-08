@@ -22,10 +22,12 @@ export async function updateSession(request: NextRequest) {
     '/glossaire',
     '/pricing',
     '/demo',
+    '/outils',
     '/api/webhooks/stripe',
     '/api/og',
     '/api/preview',
     '/api/cron',
+    '/api/outils',
   ]
 
   const isPurePublic = purePublicPaths.some((path) =>
