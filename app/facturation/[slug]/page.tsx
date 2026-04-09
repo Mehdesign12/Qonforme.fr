@@ -3,7 +3,6 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { CheckCircle2, ArrowRight, FileText, HelpCircle, Users } from "lucide-react"
 import { METIERS, getMetierBySlug } from "@/lib/pseo/metiers"
-import { VILLES } from "@/lib/pseo/villes"
 import Footer from "@/components/layout/Footer"
 import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
 
@@ -159,22 +158,6 @@ export default async function MetierPage({ params }: { params: Promise<{ slug: s
             </div>
           </section>
         )}
-
-        {/* Villes */}
-        <section className="max-w-5xl mx-auto px-4 py-12">
-          <h2 className="text-xl font-bold text-[#0F172A] mb-6">{metier.nom} par ville</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-            {VILLES.slice(0, 10).map((v) => (
-              <Link
-                key={v.slug}
-                href={`/facturation/${metier.slug}/${v.slug}`}
-                className="group rounded-xl border border-[#E2E8F0] bg-white p-3 text-center text-sm font-medium text-[#0F172A] hover:border-[#2563EB]/30 hover:text-[#2563EB] hover:shadow-md transition-all"
-              >
-                {v.nom}
-              </Link>
-            ))}
-          </div>
-        </section>
 
         {/* CTA + maillage */}
         <section className="bg-[#0F172A] text-white">
