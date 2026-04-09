@@ -804,18 +804,74 @@ CRON_SECRET=
 
 ---
 
+## 📊 Audit SEO Indexation — 09/04/2026
+
+> Source : Google Search Console, rapport au 06/04/2026.
+
+### État actuel
+- **Pages indexées** : 59 / 963 connues (**6 % — critique**)
+- **Pages non indexées** : 904
+
+### Répartition des 904 pages non indexées
+
+| Motif | Nombre | Analyse |
+|-------|--------|---------|
+| Détectée, actuellement non indexée | 847 | Pages ville x métier (780) + blog + comparatifs — Google refuse de les crawler |
+| Autre page avec balise canonique correcte | 38 | À investiguer |
+| Erreur liée à des redirections | 18 | Middleware corrigé (bypass Supabase pour routes publiques) |
+| Page avec redirection | 1 | À investiguer |
+
+### Diagnostic — Causes racines
+
+1. **Pages ville x métier = thin content** — 780 pages quasi-identiques (même template, seuls la ville et la CCI changent). Google les considère comme spam programmatique.
+2. **Crawl budget insuffisant** — Domaine jeune (59 pages indexées) qui publie 800+ pages d'un coup → Google n'alloue pas de budget crawl.
+3. **Publication en masse** — L'apparition soudaine de centaines de pages est un signal négatif (perçu comme spam).
+4. **Slugs blog avec hash** — Les suffixes auto-générés (`-dq3db`, `-1fyuv`) renforcent l'impression de contenu automatisé.
+
+### Décision — Reculer pour mieux sauter
+
+**Les 780 pages ville x métier sont contre-productives à ce stade.** Elles dégradent la confiance de Google envers le domaine et ralentissent l'indexation des pages de qualité.
+
+### Plan d'action SEO (Avril 2026)
+
+#### S1. Retirer les pages ville du sitemap ⚠️ PRIORITAIRE
+- [ ] Retirer les entrées `METIERS x VILLES` du sitemap (`app/sitemap.ts`)
+- [ ] Garder les pages en ligne (pas de 404) mais ne plus les soumettre à Google
+- [ ] Impact : Google arrête de compter 780 pages thin contre le domaine
+
+#### S2. Garder les 64 pages pSEO core
+- [ ] Métiers (39), Guides (14), Modèles (11) → contenu unique, garder dans le sitemap
+- [ ] Comparatifs (8) → contenu unique, garder
+- [ ] Glossaire (27) → contenu unique, garder
+
+#### S3. Nettoyer les slugs blog
+- [ ] Régénérer les slugs en format propre (sans suffixes hash)
+- [ ] Redirection 301 des anciens slugs si déjà indexés
+
+#### S4. Attendre l'indexation des pages core
+- [ ] Objectif : 100+ pages indexées avant de réintroduire les pages géolocalisées
+- [ ] Surveiller GSC chaque semaine
+
+#### S5. Réintroduire les pages ville (plus tard)
+- [ ] Seulement quand le domaine a 100+ pages indexées et des backlinks
+- [ ] Avec du contenu vraiment unique par ville (stats INSEE, avis locaux, données économiques)
+- [ ] Publication progressive (10-20 pages/semaine, pas 780 d'un coup)
+
+---
+
 ## 🚀 Trafic organique — TODO list Phase 2 (Mars 2026)
 
 > Axes d'amélioration identifiés le 27 mars 2026 pour augmenter le trafic organique au-delà du pSEO existant (64 pages).
 
 ### 🔴 Priorité HAUTE — Gros levier trafic
 
-#### T1. Pages ville x métier (pSEO géolocalisé) — ✅ Fait
+#### T1. Pages ville x métier (pSEO géolocalisé) — ⚠️ Suspendu (voir Audit SEO Indexation)
 - [x] `lib/pseo/villes.ts` : 20 villes françaises (CCI, chambre des métiers)
 - [x] `app/facturation/[slug]/[ville]/page.tsx` : URL `/facturation/plombier/paris`
 - [x] Contenu : infos locales, features métier, FAQ, maillage inter-villes/inter-métiers
 - [x] 39 métiers x 20 villes = **780 pages** avec JSON-LD (FAQPage + BreadcrumbList + LocalBusiness)
-- [x] Sitemap : 780 entrées (priority 0.6)
+- [ ] ⚠️ **Retirées du sitemap** — Google les considère comme thin content (847 pages "Détectée, non indexée")
+- [ ] À réintroduire quand le domaine a 100+ pages indexées, avec contenu unique par ville
 
 #### T2. Pages comparatif "Qonforme vs X" — ✅ Fait
 - [x] `lib/pseo/comparatifs.ts` : 8 concurrents avec features, prix, points forts/faibles, verdict
