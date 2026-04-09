@@ -3,7 +3,6 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { METIERS } from "@/lib/pseo/metiers";
 import { GUIDES } from "@/lib/pseo/guides";
 import { MODELES } from "@/lib/pseo/modeles";
-import { VILLES } from "@/lib/pseo/villes";
 import { COMPARATIFS } from "@/lib/pseo/comparatifs";
 import { GLOSSAIRE } from "@/lib/pseo/glossaire";
 
@@ -155,14 +154,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.6,
     })),
-    // pSEO géolocalisé : métier x ville
-    ...METIERS.flatMap((m) =>
-      VILLES.map((v) => ({
-        url: `${baseUrl}/facturation/${m.slug}/${v.slug}`,
-        lastModified: new Date(),
-        changeFrequency: "monthly" as const,
-        priority: 0.6,
-      }))
-    ),
+    // pSEO géolocalisé : métier x ville — SUSPENDU (voir Audit SEO 09/04/2026)
+    // Les 780 pages sont considérées comme thin content par Google.
+    // À réintroduire quand le domaine a 100+ pages indexées, avec contenu unique.
   ];
 }
