@@ -15,7 +15,7 @@ export default function ConfidentialitePage() {
     <LegalLayout
       title="Politique de confidentialit\u00e9"
       subtitle="Comment Qonforme collecte, utilise et prot\u00e8ge vos donn\u00e9es personnelles."
-      lastUpdated="17 mars 2026"
+      lastUpdated="12 avril 2026"
     >
       <h2>1. Responsable du traitement</h2>
       <p>
@@ -81,12 +81,18 @@ export default function ConfidentialitePage() {
       </ul>
 
       <h2>6. Sous-traitants</h2>
-      <p>Qonforme fait appel aux sous-traitants suivants pour la fourniture du service :</p>
+      <p>
+        Qonforme fait appel aux sous-traitants suivants pour la fourniture du service.
+        Un accord de traitement des donn\u00e9es (DPA) conforme \u00e0 l&apos;article 28 du RGPD est en place avec chacun d&apos;entre eux.
+      </p>
       <ul>
         <li><strong>Supabase Inc.</strong> \u2014 h\u00e9bergement de la base de donn\u00e9es (r\u00e9gion eu-west-3, Paris, France)</li>
         <li><strong>Vercel Inc.</strong> \u2014 h\u00e9bergement de l&apos;application web</li>
         <li><strong>Stripe Inc.</strong> \u2014 traitement des paiements (certifi\u00e9 PCI-DSS)</li>
         <li><strong>Resend Inc.</strong> \u2014 envoi d&apos;e-mails transactionnels (factures, relances, bienvenue)</li>
+        <li><strong>PostHog Inc.</strong> \u2014 mesure d&apos;audience anonymis\u00e9e (aucun profil individuel cr\u00e9\u00e9, pas de cookie publicitaire)</li>
+        <li><strong>Sentry (Functional Software Inc.)</strong> \u2014 surveillance des erreurs techniques et stabilit\u00e9 du service</li>
+        <li><strong>Google LLC (Gemini API)</strong> \u2014 g\u00e9n\u00e9ration de contenu \u00e9ditorial pour le blog (aucune donn\u00e9e utilisateur transmise)</li>
       </ul>
       <p>
         Aucun de ces sous-traitants n&apos;est autoris\u00e9 \u00e0 utiliser vos donn\u00e9es \u00e0 des fins propres.
@@ -110,9 +116,20 @@ export default function ConfidentialitePage() {
         <li><strong>Pr\u00e9f\u00e9rence de th\u00e8me</strong> \u2014 stockage local (localStorage, cl\u00e9 &laquo;theme&raquo;)</li>
       </ul>
       <p>
-        <strong>Aucun cookie publicitaire, de tra\u00e7age ou analytique tiers n&apos;est d\u00e9pos\u00e9.</strong> Qonforme
-        n&apos;utilise ni Google Analytics, ni Facebook Pixel, ni aucun outil de tracking tiers. En cons\u00e9quence,
-        aucun bandeau de consentement aux cookies n&apos;est requis (exemption CNIL pour les cookies strictement n\u00e9cessaires).
+        <strong>Aucun cookie publicitaire ou de tra\u00e7age n&apos;est d\u00e9pos\u00e9.</strong> Qonforme
+        n&apos;utilise ni Google Analytics, ni Facebook Pixel, ni aucun outil de tracking publicitaire.
+      </p>
+      <p>
+        Qonforme utilise <strong>PostHog</strong> pour la mesure d&apos;audience anonymis\u00e9e (pages vues, sources de trafic).
+        Cet outil fonctionne <strong>sans cr\u00e9ation de profil individuel</strong> (mode &laquo;&nbsp;identified_only&nbsp;&raquo;)
+        et sans d\u00e9p\u00f4t de cookie publicitaire. Les donn\u00e9es collect\u00e9es sont agr\u00e9g\u00e9es et ne permettent pas
+        d&apos;identifier personnellement un visiteur. Cette mesure d&apos;audience est exempt\u00e9e de consentement
+        conform\u00e9ment aux recommandations de la CNIL (d\u00e9lib\u00e9ration n\u00b0 2020-091).
+      </p>
+      <p>
+        <strong>Sentry</strong> est utilis\u00e9 pour la d\u00e9tection automatique des erreurs techniques.
+        Il ne collecte aucune donn\u00e9e personnelle identifiante et fonctionne exclusivement pour assurer
+        la stabilit\u00e9 du service.
       </p>
 
       <h2>9. Vos droits</h2>
