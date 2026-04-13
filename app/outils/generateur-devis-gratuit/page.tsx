@@ -6,6 +6,7 @@ import { ArrowRight, ArrowLeft, ClipboardList, ChevronRight, Plus, Trash2, Downl
 import { motion, AnimatePresence } from "motion/react"
 import Footer from "@/components/layout/Footer"
 import { PublicHeader } from "@/components/layout/PublicHeader"
+import { trackEvent } from "@/lib/meta-pixel"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 
 interface Ligne { id: string; description: string; quantite: number; prixHT: number; tauxTVA: number }
@@ -48,7 +49,9 @@ export default function GenerateurDevisPage() {
       if (!res.ok) throw new Error("Erreur")
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
-      const a = document.createElement("a"); a.href = url; a.download = `devis-${numero || "brouillon"}.pdf`; a.click(); URL.revokeObjectURL(url)
+      const a = document.createElement("a"); a.href = url; a.download = `devis-${numero || "brouillon"}.pdf`; a.click()
+      trackEvent("Schedule", { content_name: "Generateur devis PDF", content_category: "tools" })
+      URL.revokeObjectURL(url)
     } catch { alert("Erreur lors de la génération.") } finally { setLoading(false) }
   }
 

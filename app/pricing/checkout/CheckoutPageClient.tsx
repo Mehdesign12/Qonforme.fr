@@ -10,6 +10,7 @@ import {
 import { loadStripe } from '@stripe/stripe-js'
 import { Check, ArrowLeft, Shield, RefreshCw, ChevronDown, ChevronUp, Lock, Zap } from 'lucide-react'
 import { PLANS, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { trackEvent } from '@/lib/meta-pixel'
 
 /* ─── Assets ─────────────────────────────────────────────────────────────── */
 const LOGO_LONG_BLANC = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20simple.png'
@@ -61,7 +62,16 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
     const FAST_MAX = 40
     const FAST_INTERVAL = 2000
 
-    const redirectToDashboard = () => router.replace('/dashboard')
+    const redirectToDashboard = () => {
+      trackEvent('Purchase', {
+        currency: 'EUR',
+        value: billingPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice,
+        content_name: plan.name,
+        content_ids: [planId],
+        num_items: 1,
+      })
+      router.replace('/dashboard')
+    }
 
     let slowTimer: ReturnType<typeof setInterval> | null = null
 

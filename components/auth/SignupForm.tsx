@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2, Eye, EyeOff } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { trackEvent } from "@/lib/meta-pixel"
 
 /* ─── classes communes ──────────────────────────────────────────────────── */
 const inputBase =
@@ -100,6 +101,7 @@ export default function SignupForm() {
       }
 
       toast.success("Compte créé ! Complète ton profil entreprise.")
+      trackEvent("Lead", { currency: "EUR", value: 0 })
       router.push("/signup/company")
     } catch {
       toast.error("Une erreur inattendue s'est produite. Réessayez.", { duration: 8000 })

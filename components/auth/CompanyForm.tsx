@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2, Search } from "lucide-react"
 import { isValidSiren, sirenToVAT } from "@/lib/utils/invoice"
+import { trackEvent } from "@/lib/meta-pixel"
 
 /* ─── classes communes ──────────────────────────────────────────────────── */
 const inputBase =
@@ -121,6 +122,7 @@ export default function CompanyForm() {
         throw new Error(err?.error || "Erreur inconnue")
       }
       toast.success("Profil entreprise enregistré !")
+      trackEvent("CompleteRegistration", { currency: "EUR", value: 0 })
       router.push("/signup/plan")
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur lors de la sauvegarde"
