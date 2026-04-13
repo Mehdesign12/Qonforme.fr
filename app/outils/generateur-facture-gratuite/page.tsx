@@ -6,6 +6,7 @@ import { ArrowRight, ArrowLeft, FileText, ChevronRight, Plus, Trash2, Download, 
 import { motion, AnimatePresence } from "motion/react"
 import Footer from "@/components/layout/Footer"
 import { PublicHeader } from "@/components/layout/PublicHeader"
+import { trackEvent } from "@/lib/meta-pixel"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 
 interface Ligne {
@@ -63,6 +64,7 @@ export default function GenerateurFacturePage() {
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a"); a.href = url; a.download = `facture-${numero || "brouillon"}.pdf`; a.click()
+      trackEvent("Schedule", { content_name: "Generateur facture PDF", content_category: "tools" })
       URL.revokeObjectURL(url)
     } catch { alert("Erreur lors de la génération. Veuillez réessayer.") }
     finally { setLoading(false) }

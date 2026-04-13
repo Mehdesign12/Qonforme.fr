@@ -4,6 +4,7 @@ import Image from "next/image"
 import { ArrowRight, Calculator, FileText, Search, Receipt, FileCheck, Scale, TrendingUp, Hash, ClipboardList, Shield, Zap, Lock, Star, Sparkles } from "lucide-react"
 import Footer from "@/components/layout/Footer"
 import { HubClient } from "./hub-client"
+import { MetaPixelEvent } from "@/components/shared/MetaPixelEvent"
 
 const PICTO_Q_URL = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
 
@@ -75,6 +76,7 @@ const SPRINT3 = [
 export default function OutilsPage() {
   return (
     <>
+      <MetaPixelEvent event="ViewContent" data={{ content_name: 'Outils gratuits', content_category: 'tools' }} />
       {/* Header pill — client component */}
       <HubClient />
 

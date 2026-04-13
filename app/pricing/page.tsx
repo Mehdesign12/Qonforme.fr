@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowRight, Shield, Zap, Lock } from 'lucide-react'
 import Footer from '@/components/layout/Footer'
 import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
+import { MetaPixelEvent } from '@/components/shared/MetaPixelEvent'
 
 export const metadata: Metadata = {
   title: 'Tarifs — Qonforme | Facturation dès 9 €/mois',
@@ -56,6 +57,7 @@ export default async function PricingPage() {
 
   return (
     <>
+      <MetaPixelEvent event="ViewContent" data={{ content_name: 'Pricing', content_category: 'pricing' }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="min-h-screen bg-[#F8FAFC]">
         {/* Header */}

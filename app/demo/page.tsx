@@ -15,6 +15,7 @@ import { DemoDashboardStats } from "@/components/demo/DemoDashboardStats"
 import { DemoRecentInvoices } from "@/components/demo/DemoRecentInvoices"
 import { DemoRevenueChart } from "@/components/demo/DemoRevenueChart"
 import { DemoTopClients } from "@/components/demo/DemoTopClients"
+import { MetaPixelEvent } from "@/components/shared/MetaPixelEvent"
 
 const QUICK_ACTIONS = [
   {
@@ -62,6 +63,7 @@ const QUICK_ACTIONS = [
 export default function DemoDashboardPage() {
   return (
     <div className="space-y-6 animate-fade-in">
+      <MetaPixelEvent event="ViewContent" data={{ content_name: 'Demo', content_category: 'demo' }} />
       {/* Salutation */}
       <div>
         <h1 className="text-xl font-bold text-[#0F172A] dark:text-[#E2E8F0]">Bonjour, Jean 👋</h1>

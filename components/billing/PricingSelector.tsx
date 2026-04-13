@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Check, Loader2, ShieldCheck, Clock, Award, ArrowLeft, Play } from 'lucide-react'
 import { PLANS, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { trackEvent } from '@/lib/meta-pixel'
 
 /* ─── Data ───────────────────────────────────────────────────────────────── */
 const STARTER_SET   = new Set(PLANS.starter.features)
@@ -52,6 +53,14 @@ export default function PricingSelector({ isAuthenticated = false }: { isAuthent
   function select(planId: PlanId) {
     if (loading) return
     setLoading(planId)
+    const p = PLANS[planId]
+    trackEvent('InitiateCheckout', {
+      currency: 'EUR',
+      value: period === 'monthly' ? p.monthlyPrice : p.yearlyMonthlyEquivalent,
+      content_name: p.name,
+      content_ids: [planId],
+      num_items: 1,
+    })
     if (isAuthenticated) {
       router.push(`/pricing/checkout?plan=${planId}&period=${period}`)
     } else {
