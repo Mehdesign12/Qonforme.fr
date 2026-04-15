@@ -3,6 +3,10 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import PricingSelector from '@/components/billing/PricingSelector'
 import Link from 'next/link'
+import { ArrowRight, Shield, Zap, Lock } from 'lucide-react'
+import Footer from '@/components/layout/Footer'
+import PublicHeaderWrapper from '@/components/layout/PublicHeaderWrapper'
+import { MetaPixelEvent } from '@/components/shared/MetaPixelEvent'
 import { stripe } from '@/lib/stripe/client'
 import { upsertSubscription } from '@/lib/stripe/subscription'
 import { getPlanByPriceId, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
@@ -153,16 +157,42 @@ export default async function PricingPage() {
 
         {/* Plans */}
         <section className="max-w-[1080px] mx-auto px-4 sm:px-6 py-12">
-          <PricingSelector isAuthenticated={!!user} />
+          <PricingSelector isAuthenticated={!!user} backHref={backHref} />
         </section>
 
-      {/* ── Contenu ───────────────────────────────────────────────────────── */}
-      {/*
-       * Sur mobile : px-4 serré, pb avec safe-area pour ne pas masquer le CTA sticky.
-       * Sur desktop : max-w-[1080px] centré, padding généreux.
-       */}
-      <div className="relative z-10 flex-1 w-full max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-6 pb-4 lg:pb-12">
-        <PricingSelector backHref={backHref} />
+        {/* FAQ */}
+        <section className="bg-white border-y border-[#E2E8F0]">
+          <div className="max-w-3xl mx-auto px-4 py-16">
+            <h2 className="text-2xl font-bold text-[#0F172A] text-center mb-10">Questions fréquentes</h2>
+            <div className="space-y-4">
+              {FAQ.map((f, i) => (
+                <div key={i} className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-5">
+                  <h3 className="font-semibold text-[#0F172A] mb-2">{f.question}</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">{f.reponse}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="bg-[#0F172A] text-white">
+          <div className="max-w-3xl mx-auto px-4 py-16 text-center">
+            <h2 className="text-2xl font-bold mb-4">Prêt à simplifier votre facturation ?</h2>
+            <p className="text-slate-300 mb-8">Créez votre première facture Factur-X en quelques clics.</p>
+            <Link href="/signup" className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8] shadow-lg">
+              Commencer gratuitement <ArrowRight className="w-4 h-4" />
+            </Link>
+            <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
+              <Link href="/facturation" className="hover:text-white">Facturation par métier</Link>
+              <Link href="/guide" className="hover:text-white">Guides pratiques</Link>
+              <Link href="/comparatif" className="hover:text-white">Comparatifs</Link>
+              <Link href="/demo" className="hover:text-white">Démo</Link>
+            </div>
+          </div>
+        </section>
+
+        <Footer />
       </div>
     </>
   )
