@@ -43,7 +43,13 @@ function CheckItem({
 }
 
 /* ─── PricingSelector ───────────────────────────────────────────────────── */
-export default function PricingSelector({ backHref = '/' }: { backHref?: string }) {
+export default function PricingSelector({
+  backHref = '/',
+  isAuthenticated = false,
+}: {
+  backHref?: string
+  isAuthenticated?: boolean
+}) {
   const router = useRouter()
 
   const [period,     setPeriod]     = useState<BillingPeriod>('monthly')
