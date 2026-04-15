@@ -3,10 +3,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import PricingSelector from '@/components/billing/PricingSelector'
 import Link from 'next/link'
-import { ArrowRight, Shield, Zap, Lock } from 'lucide-react'
-import Footer from '@/components/layout/Footer'
-import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
-import { MetaPixelEvent } from '@/components/shared/MetaPixelEvent'
+import { stripe } from '@/lib/stripe/client'
+import { upsertSubscription } from '@/lib/stripe/subscription'
+import { getPlanByPriceId, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 
 export const metadata: Metadata = {
   title: 'Tarifs — Qonforme | Facturation dès 9 €/mois',
@@ -31,17 +30,81 @@ const FAQ = [
 ]
 
 export default async function PricingPage() {
-  // Utilisateur déjà abonné → dashboard
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  // backHref pour le bouton "Retour" dans PricingSelector :
+  // — utilisateur connecté → /settings/billing (évite la boucle de redirection)
+  // — visiteur anonyme → / (landing page)
+  let backHref = '/'
+
   if (user) {
+    backHref = '/settings/billing'
+
     const { data: sub } = await supabase
       .from('subscriptions')
-      .select('status')
+      .select('status, stripe_customer_id, stripe_subscription_id')
       .eq('user_id', user.id)
       .single()
+
     if (sub?.status === 'active') {
       redirect('/dashboard')
+    }
+
+    // ── Recovery automatique ────────────────────────────────────────────────
+    // Si l'abonnement est "incomplete" (webhook non reçu ou erreur réseau) mais
+    // que l'utilisateur a un stripe_customer_id, on interroge Stripe directement
+    // pour trouver un abonnement actif et récupérer l'accès sans intervention.
+    if (sub?.stripe_customer_id) {
+      try {
+        const stripeCustomerSubs = await stripe.subscriptions.list({
+          customer: sub.stripe_customer_id,
+          status: 'active',
+          limit: 1,
+        })
+
+        if (stripeCustomerSubs.data.length > 0) {
+          const stripeSub = stripeCustomerSubs.data[0]
+          const priceId = stripeSub.items.data[0]?.price.id
+
+          if (priceId) {
+            const planInfo = getPlanByPriceId(priceId)
+            const metaPlan = stripeSub.metadata?.plan
+            const resolvedPlan: PlanId | undefined =
+              planInfo?.plan ??
+              (metaPlan === 'starter' || metaPlan === 'pro' ? (metaPlan as PlanId) : undefined)
+            const resolvedPeriod: BillingPeriod =
+              planInfo?.period ??
+              (stripeSub.metadata?.billing_period === 'yearly' ? 'yearly' : 'monthly')
+
+            if (resolvedPlan) {
+              // Extraire current_period_end depuis l'item (Stripe API 2025)
+              const item = stripeSub.items?.data?.[0]
+              const ts = item
+                ? (item as unknown as { current_period_end?: number }).current_period_end
+                : null
+              const currentPeriodEnd = ts ? new Date(ts * 1000) : null
+
+              await upsertSubscription({
+                userId:               user.id,
+                stripeCustomerId:     sub.stripe_customer_id!,
+                stripeSubscriptionId: stripeSub.id,
+                stripePriceId:        priceId,
+                plan:                 resolvedPlan,
+                billingPeriod:        resolvedPeriod,
+                status:               'active',
+                currentPeriodEnd,
+              })
+
+              console.log(`[pricing] Recovery OK — user ${user.id} → plan ${resolvedPlan}`)
+              redirect('/dashboard')
+            }
+          }
+        }
+      } catch (err) {
+        // Stripe inaccessible ou données incomplètes → on affiche la page normalement
+        console.error('[pricing] Recovery check failed:', err)
+      }
     }
   }
 
@@ -93,39 +156,13 @@ export default async function PricingPage() {
           <PricingSelector isAuthenticated={!!user} />
         </section>
 
-        {/* FAQ */}
-        <section className="bg-white border-y border-[#E2E8F0]">
-          <div className="max-w-3xl mx-auto px-4 py-16">
-            <h2 className="text-2xl font-bold text-[#0F172A] text-center mb-10">Questions fréquentes</h2>
-            <div className="space-y-4">
-              {FAQ.map((f, i) => (
-                <div key={i} className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-5">
-                  <h3 className="font-semibold text-[#0F172A] mb-2">{f.question}</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">{f.reponse}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="bg-[#0F172A] text-white">
-          <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-            <h2 className="text-2xl font-bold mb-4">Prêt à simplifier votre facturation ?</h2>
-            <p className="text-slate-300 mb-8">Créez votre première facture Factur-X en quelques clics.</p>
-            <Link href="/signup" className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8] shadow-lg">
-              Commencer gratuitement <ArrowRight className="w-4 h-4" />
-            </Link>
-            <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
-              <Link href="/facturation" className="hover:text-white">Facturation par métier</Link>
-              <Link href="/guide" className="hover:text-white">Guides pratiques</Link>
-              <Link href="/comparatif" className="hover:text-white">Comparatifs</Link>
-              <Link href="/demo" className="hover:text-white">Démo</Link>
-            </div>
-          </div>
-        </section>
-
-        <Footer />
+      {/* ── Contenu ───────────────────────────────────────────────────────── */}
+      {/*
+       * Sur mobile : px-4 serré, pb avec safe-area pour ne pas masquer le CTA sticky.
+       * Sur desktop : max-w-[1080px] centré, padding généreux.
+       */}
+      <div className="relative z-10 flex-1 w-full max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-6 pb-4 lg:pb-12">
+        <PricingSelector backHref={backHref} />
       </div>
     </>
   )
