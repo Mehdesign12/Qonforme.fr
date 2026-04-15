@@ -5,6 +5,9 @@ import PricingSelector from '@/components/billing/PricingSelector'
 import StepIndicator from '@/components/auth/StepIndicator'
 import Image from 'next/image'
 import Link from 'next/link'
+import { stripe } from '@/lib/stripe/client'
+import { upsertSubscription } from '@/lib/stripe/subscription'
+import { getPlanByPriceId, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 
 export const metadata: Metadata = {
   title: 'Choisir un plan — Qonforme',
@@ -25,15 +28,75 @@ export default async function SignupPlanPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Si déjà abonné → dashboard
+  // backHref : pour un utilisateur connecté, /settings/billing est exempt de
+  // la vérification d'abonnement → évite la boucle /signup/plan ↔ /dashboard
+  let backHref = '/'
+
   if (user) {
+    backHref = '/settings/billing'
+
     const { data: sub } = await supabase
       .from('subscriptions')
-      .select('status')
+      .select('status, stripe_customer_id, stripe_subscription_id')
       .eq('user_id', user.id)
       .single()
+
     if (sub?.status === 'active') {
       redirect('/dashboard')
+    }
+
+    // ── Recovery automatique ────────────────────────────────────────────────
+    // Si l'abonnement est "incomplete" (webhook non reçu ou erreur réseau) mais
+    // que l'utilisateur a un stripe_customer_id, on interroge Stripe directement
+    // pour trouver un abonnement actif et récupérer l'accès sans intervention.
+    if (sub?.stripe_customer_id) {
+      try {
+        const stripeCustomerSubs = await stripe.subscriptions.list({
+          customer: sub.stripe_customer_id,
+          status: 'active',
+          limit: 1,
+        })
+
+        if (stripeCustomerSubs.data.length > 0) {
+          const stripeSub = stripeCustomerSubs.data[0]
+          const priceId = stripeSub.items.data[0]?.price.id
+
+          if (priceId) {
+            const planInfo = getPlanByPriceId(priceId)
+            const metaPlan = stripeSub.metadata?.plan
+            const resolvedPlan: PlanId | undefined =
+              planInfo?.plan ??
+              (metaPlan === 'starter' || metaPlan === 'pro' ? (metaPlan as PlanId) : undefined)
+            const resolvedPeriod: BillingPeriod =
+              planInfo?.period ??
+              (stripeSub.metadata?.billing_period === 'yearly' ? 'yearly' : 'monthly')
+
+            if (resolvedPlan) {
+              const item = stripeSub.items?.data?.[0]
+              const ts = item
+                ? (item as unknown as { current_period_end?: number }).current_period_end
+                : null
+              const currentPeriodEnd = ts ? new Date(ts * 1000) : null
+
+              await upsertSubscription({
+                userId:               user.id,
+                stripeCustomerId:     sub.stripe_customer_id!,
+                stripeSubscriptionId: stripeSub.id,
+                stripePriceId:        priceId,
+                plan:                 resolvedPlan,
+                billingPeriod:        resolvedPeriod,
+                status:               'active',
+                currentPeriodEnd,
+              })
+
+              console.log(`[signup/plan] Recovery OK — user ${user.id} → plan ${resolvedPlan}`)
+              redirect('/dashboard')
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[signup/plan] Recovery check failed:', err)
+      }
     }
   }
 
@@ -73,7 +136,7 @@ export default async function SignupPlanPage() {
         className="relative z-10 flex flex-col items-center px-4"
         style={{ paddingTop: 'max(20px, env(safe-area-inset-top, 20px))' }}
       >
-        <Link href="/" aria-label="Retour à l'accueil" className="mb-5 lg:mb-7">
+        <Link href={backHref} aria-label={backHref === '/' ? "Retour à l'accueil" : 'Mon espace'} className="mb-5 lg:mb-7">
           <Image
             src={LOGO_LONG_BLEU}
             alt="Qonforme"
@@ -89,7 +152,7 @@ export default async function SignupPlanPage() {
 
       {/* Contenu */}
       <div className="relative z-10 flex-1 w-full max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-6 pb-4 lg:pb-12">
-        <PricingSelector isAuthenticated />
+        <PricingSelector isAuthenticated backHref={backHref} />
       </div>
     </div>
   )
