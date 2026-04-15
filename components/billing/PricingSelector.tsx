@@ -42,7 +42,7 @@ function CheckItem({
 }
 
 /* ─── PricingSelector ───────────────────────────────────────────────────── */
-export default function PricingSelector() {
+export default function PricingSelector({ backHref = '/' }: { backHref?: string }) {
   const router = useRouter()
 
   const [period,     setPeriod]     = useState<BillingPeriod>('monthly')
@@ -81,13 +81,13 @@ export default function PricingSelector() {
         <div className="flex flex-col gap-7">
           {/* Bouton retour */}
           <Link
-            href="/"
+            href={backHref}
             className="inline-flex items-center gap-2 text-[13px] font-medium text-slate-500 hover:text-[#0F172A] transition-colors w-fit group"
           >
             <span className="w-7 h-7 rounded-lg bg-white/80 border border-[#E2E8F0] flex items-center justify-center shadow-sm group-hover:bg-white group-hover:border-[#CBD5E1] transition-all">
               <ArrowLeft className="w-3.5 h-3.5" />
             </span>
-            Retour à l&apos;accueil
+            {backHref === '/' ? 'Retour à l\'accueil' : 'Mon espace'}
           </Link>
 
           <div>
@@ -250,11 +250,11 @@ export default function PricingSelector() {
         {/* ── Bouton retour mobile ──────────────────────────────────────── */}
         <div className="mb-4">
           <Link
-            href="/"
+            href={backHref}
             className="inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-500 active:text-[#0F172A] transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Retour
+            {backHref === '/' ? 'Retour' : 'Mon espace'}
           </Link>
         </div>
 

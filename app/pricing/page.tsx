@@ -5,6 +5,9 @@ import PricingSelector from '@/components/billing/PricingSelector'
 import StepIndicator from '@/components/auth/StepIndicator'
 import Image from 'next/image'
 import Link from 'next/link'
+import { stripe } from '@/lib/stripe/client'
+import { upsertSubscription } from '@/lib/stripe/subscription'
+import { getPlanByPriceId, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 
 export const metadata: Metadata = {
   title: 'Choisir un plan — Qonforme',
@@ -26,17 +29,81 @@ const STEPS = [
 ]
 
 export default async function PricingPage() {
-  // Rediriger les utilisateurs avec un abonnement actif vers le dashboard
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  // backHref pour le bouton "Retour" dans PricingSelector :
+  // — utilisateur connecté → /settings/billing (évite la boucle de redirection)
+  // — visiteur anonyme → / (landing page)
+  let backHref = '/'
+
   if (user) {
+    backHref = '/settings/billing'
+
     const { data: sub } = await supabase
       .from('subscriptions')
-      .select('status')
+      .select('status, stripe_customer_id, stripe_subscription_id')
       .eq('user_id', user.id)
       .single()
+
     if (sub?.status === 'active') {
       redirect('/dashboard')
+    }
+
+    // ── Recovery automatique ────────────────────────────────────────────────
+    // Si l'abonnement est "incomplete" (webhook non reçu ou erreur réseau) mais
+    // que l'utilisateur a un stripe_customer_id, on interroge Stripe directement
+    // pour trouver un abonnement actif et récupérer l'accès sans intervention.
+    if (sub?.stripe_customer_id) {
+      try {
+        const stripeCustomerSubs = await stripe.subscriptions.list({
+          customer: sub.stripe_customer_id,
+          status: 'active',
+          limit: 1,
+        })
+
+        if (stripeCustomerSubs.data.length > 0) {
+          const stripeSub = stripeCustomerSubs.data[0]
+          const priceId = stripeSub.items.data[0]?.price.id
+
+          if (priceId) {
+            const planInfo = getPlanByPriceId(priceId)
+            const metaPlan = stripeSub.metadata?.plan
+            const resolvedPlan: PlanId | undefined =
+              planInfo?.plan ??
+              (metaPlan === 'starter' || metaPlan === 'pro' ? (metaPlan as PlanId) : undefined)
+            const resolvedPeriod: BillingPeriod =
+              planInfo?.period ??
+              (stripeSub.metadata?.billing_period === 'yearly' ? 'yearly' : 'monthly')
+
+            if (resolvedPlan) {
+              // Extraire current_period_end depuis l'item (Stripe API 2025)
+              const item = stripeSub.items?.data?.[0]
+              const ts = item
+                ? (item as unknown as { current_period_end?: number }).current_period_end
+                : null
+              const currentPeriodEnd = ts ? new Date(ts * 1000) : null
+
+              await upsertSubscription({
+                userId:               user.id,
+                stripeCustomerId:     sub.stripe_customer_id!,
+                stripeSubscriptionId: stripeSub.id,
+                stripePriceId:        priceId,
+                plan:                 resolvedPlan,
+                billingPeriod:        resolvedPeriod,
+                status:               'active',
+                currentPeriodEnd,
+              })
+
+              console.log(`[pricing] Recovery OK — user ${user.id} → plan ${resolvedPlan}`)
+              redirect('/dashboard')
+            }
+          }
+        }
+      } catch (err) {
+        // Stripe inaccessible ou données incomplètes → on affiche la page normalement
+        console.error('[pricing] Recovery check failed:', err)
+      }
     }
   }
 
@@ -129,7 +196,7 @@ export default async function PricingPage() {
        * Sur desktop : max-w-[1080px] centré, padding généreux.
        */}
       <div className="relative z-10 flex-1 w-full max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-6 pb-4 lg:pb-12">
-        <PricingSelector />
+        <PricingSelector backHref={backHref} />
       </div>
     </div>
     </>
