@@ -79,7 +79,7 @@ interface CtaConfig {
 const PAGE_CTA: Record<string, CtaConfig> = {
   "/demo/invoices":        { href: "/demo/invoices/new",    label: "Nouvelle facture", icon: FileText     },
   "/demo/quotes":          { href: "/demo/quotes/new",      label: "Nouveau devis",    icon: FileCheck2   },
-  "/demo/clients":         { href: "/demo/clients",         label: "Nouveau client",   icon: Plus         },
+  "/demo/clients":         { href: "/demo/clients/new",     label: "Nouveau client",   icon: Plus         },
   "/demo/purchase-orders": { href: "/demo/purchase-orders", label: "Nouveau BdC",      icon: ShoppingCart },
   "/demo/products":        { href: "/demo/products",        label: "Nouveau produit",  icon: Plus         },
 }
