@@ -30,6 +30,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     description,
     keywords: [...metier.motsCles, `${metier.nom.toLowerCase()} ${v.nom.toLowerCase()}`, `facturation ${v.nom.toLowerCase()}`],
     alternates: { canonical: `/facturation/${slug}/${ville}` },
+    // Pages géo-ciblées (métier × ville) retirées du sitemap le 09/04/2026 — jugées
+    // thin content par Google (voir README "Audit SEO"). Noindex,follow le temps
+    // d'une refonte avec contenu différencié par ville (voir CLAUDE.md 2026-07-02).
+    robots: { index: false, follow: true },
     openGraph: {
       title,
       description,
