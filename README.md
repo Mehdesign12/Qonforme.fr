@@ -706,6 +706,7 @@ CRON_SECRET=
 | 2026-03-25 | Fix page démo factures : ajout `'use client'` (onClick sur Server Component causait un crash) | `app/demo/invoices/page.tsx` |
 | 2026-03-25 | pSEO : 3 axes (28 métiers, 9 guides légaux, 8 modèles documents), ~45 pages statiques avec JSON-LD, OG dynamiques, maillage interne, sitemap | `lib/pseo/`, `app/facturation/[slug]/`, `app/guide/[slug]/`, `app/modele/[slug]/`, `app/sitemap.ts` |
 | 2026-06-15 | Fix indexation Google "Autre page avec balise canonique sélectionnée par l'utilisateur" : le domaine primaire Vercel était inversé (www.qonforme.fr servait 200 alors que tout le code déclare qonforme.fr comme canonique → boucle de signaux contradictoire pour Googlebot). Bascule Vercel : qonforme.fr → Production (200), www.qonforme.fr → redirect 308 vers qonforme.fr. Aucun changement de code | — (config Vercel : Settings → Domains) |
+| 2026-07-02 | Audit SEO/GEO complet (voir CLAUDE.md) : les 780 pages pSEO géo (métier×ville), retirées du sitemap le 09/04 mais laissées crawlables sans noindex et orphelines de tout lien interne, identifiées comme cause probable du plafond d'indexation site-wide (signal "Explorée, actuellement non indexée" dans GSC). Passage en `noindex,follow` en attendant une refonte du contenu par ville | `app/facturation/[slug]/[ville]/page.tsx` |
 
 ---
 
