@@ -1325,7 +1325,7 @@ export default function HomePage() {
         tag="Création rapide"
         title="Une facture envoyée en"
         titleHighlight="moins de 3 minutes."
-        description="Sélectionne ton client, renseigne ta prestation. Qonforme génère ton Factur-X certifié EN 16931 en un clic — la partie la plus technique, résolue en 3 secondes. La transmission via Chorus Pro prend 2 minutes de plus avec notre guide."
+        description="Sélectionne ton client, renseigne ta prestation. Ce logiciel de facturation génère ton Factur-X certifié EN 16931 en un clic — la partie la plus technique, résolue en 3 secondes. La transmission via Chorus Pro prend 2 minutes de plus avec notre guide."
         features={[
           { icon: <FileText className="h-4 w-4" />, label: "PDF Factur-X auto-généré", desc: "Format légal certifié EN 16931, prêt en un clic." },
           { icon: <Send className="h-4 w-4" />, label: "Prêt à transmettre en 1 clic", desc: "Factur-X généré, guide inclus. Chorus Pro en 2 minutes." },

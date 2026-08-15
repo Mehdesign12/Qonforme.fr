@@ -51,7 +51,7 @@ export default function Footer() {
               <Image src={LOGO_URL} alt="Qonforme" width={130} height={32} className="h-7 w-auto object-contain mb-4" sizes="130px" loading="lazy" />
             </Link>
             <p className="text-[13px] leading-relaxed text-slate-400 mb-4">
-              Facturation électronique conforme à la réglementation française 2026.
+              Le logiciel de facturation électronique conforme à la réglementation française 2026.
             </p>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-400">
               <CheckCircle2 className="h-3 w-3 text-[#10B981]" />
