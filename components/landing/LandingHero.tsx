@@ -73,7 +73,7 @@ function Hero() {
           >
             La loi impose la facturation électronique à toutes les entreprises dès septembre&nbsp;2026.{" "}
             <strong className="font-semibold text-[#0F172A]">
-              Qonforme génère ton Factur-X certifié EN&nbsp;16931 — la partie la plus technique — et t&apos;accompagne pas à pas pour la transmission.
+              Qonforme, ton logiciel de facturation conforme, génère ton Factur-X certifié EN&nbsp;16931 — la partie la plus technique — et t&apos;accompagne pas à pas pour la transmission.
             </strong>{" "}
             Tu restes concentré sur ton métier.
           </motion.p>

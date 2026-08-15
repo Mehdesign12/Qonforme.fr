@@ -33,12 +33,12 @@ const bricolageGrotesque = Bricolage_Grotesque({
 export const metadata: Metadata = {
   metadataBase: new URL("https://qonforme.fr"),
   title: {
-    default: "Qonforme — Facturation électronique simplifiée",
+    default: "Qonforme — Logiciel de facturation électronique 2026",
     template: "%s | Qonforme",
   },
   description:
-    "Créez et transmettez vos factures électroniques en toute conformité avec la réglementation française. Simple, rapide, conforme.",
-  keywords: ["facturation électronique", "facture", "artisan", "TPE", "Factur-X", "PPF"],
+    "Qonforme, le logiciel de facturation en ligne pour artisans et TPE. Créez et transmettez vos factures électroniques conformes Factur-X 2026 en quelques clics.",
+  keywords: ["logiciel de facturation", "logiciel facturation en ligne", "facturation électronique", "facture", "artisan", "TPE", "Factur-X", "PPF"],
   alternates: {
     canonical: "/",
   },
@@ -57,8 +57,8 @@ export const metadata: Metadata = {
 
   /* ── Open Graph ── */
   openGraph: {
-    title:       "Qonforme — Facturation électronique simplifiée",
-    description: "Facturation électronique conforme pour artisans et TPE",
+    title:       "Qonforme — Logiciel de facturation électronique 2026",
+    description: "Le logiciel de facturation conforme pour artisans et TPE",
     url:         "https://qonforme.fr",
     siteName:    "Qonforme",
     locale:      "fr_FR",
@@ -76,8 +76,8 @@ export const metadata: Metadata = {
   /* ── Twitter Card ── */
   twitter: {
     card:        "summary_large_image",
-    title:       "Qonforme — Facturation électronique simplifiée",
-    description: "Facturation électronique conforme pour artisans et TPE",
+    title:       "Qonforme — Logiciel de facturation électronique 2026",
+    description: "Le logiciel de facturation conforme pour artisans et TPE",
     images:      ["/api/og?title=Facturation%20%C3%A9lectronique%20simplifi%C3%A9e&subtitle=Conforme%20Factur-X%20EN%2016931%20%E2%80%94%20Pour%20artisans%20et%20TPE"],
   },
 
@@ -127,7 +127,7 @@ export default function RootLayout({
                   url: "https://qonforme.fr",
                   logo: "https://qonforme.fr/og-image.png",
                   description:
-                    "Facturation électronique simplifiée pour artisans et TPE, conforme à la réglementation française 2026.",
+                    "Qonforme, le logiciel de facturation électronique pour artisans et TPE, conforme à la réglementation française 2026.",
                   contactPoint: {
                     "@type": "ContactPoint",
                     contactType: "Customer Service",
