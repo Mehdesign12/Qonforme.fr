@@ -38,10 +38,8 @@ next-env.d.ts
 core
 
 # Capacitor — projet iOS natif
-# Le dossier ios/ est généré par `npx cap add ios` sur un Mac et peut être
-# commité, mais ces sous-dossiers sont des artefacts de build.
-/ios/App/Pods/
-/ios/App/App/public/
-/ios/App/Podfile.lock
+# Le dossier ios/ EST commité : il porte la configuration Xcode et les icônes.
+# Capacitor 8 utilise Swift Package Manager, donc aucun dossier Pods à exclure.
+# ios/.gitignore (généré) couvre déjà App/App/public, régénéré par `cap sync`.
 /ios/DerivedData/
 /ios/build/
