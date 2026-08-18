@@ -1,0 +1,13 @@
+Jamais servi — jamais chargé par personne.
+
+Capacitor exige qu'un fichier existe localement au chemin exact de
+server.appStartPath (webDir + appStartPath), MÊME en mode server.url distant
+où le vrai contenu vient du réseau : CAPBridgeViewController.swift, loadWebView() —
+guard FileManager.default.fileExists(atPath: bridge.config.appStartFileURL.path)
+else { fatalLoadError() }  ← exit(1) immédiat si absent, avant toute tentative réseau.
+
+Sans ce fichier, présent au chemin exact "dashboard" (sans extension, sans
+slash de tête — appendingPathComponent l'ajoute), l'app crashait au lancement.
+
+Si server.appStartPath change un jour (capacitor.config.ts), créer un fichier
+du même nom ici, sinon même crash garanti.
