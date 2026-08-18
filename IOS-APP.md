@@ -96,17 +96,52 @@ npm run ios:open    # ouvre Xcode
 Dans Xcode : sélectionner la cible **App**, onglet *Signing & Capabilities*,
 choisir ton équipe de développement. Puis ▶ pour lancer sur simulateur ou iPhone.
 
+### Premier lancement : viser la production
+
+Par défaut l'app charge `https://qonforme.fr`. **C'est le chemin à privilégier
+pour le premier essai** : rien à configurer, et HTTPS évite le blocage ATS
+décrit ci-dessous. La coquille native et ses plugins fonctionnent que le site
+déployé embarque ou non les nouveautés PWA.
+
 ### Développement contre un serveur local
 
-Par défaut l'app charge `https://qonforme.fr`. Pour la pointer sur ta machine :
-
 ```bash
-npm run dev                                          # terminal 1
-CAPACITOR_SERVER_URL=http://192.168.1.20:3000 npm run ios:sync   # terminal 2
+npm run dev                                                  # terminal 1
+CAPACITOR_SERVER_URL=http://localhost:3000 npm run ios:sync  # terminal 2
 ```
 
-Utiliser l'**IP du Mac sur le réseau local**, pas `localhost` : depuis un iPhone
-physique, `localhost` désigne le téléphone lui-même.
+Sur **simulateur**, `localhost` fonctionne : il partage le réseau du Mac.
+Sur **iPhone physique**, `localhost` désigne le téléphone lui-même — il faut
+l'IP du Mac sur le réseau local (`ipconfig getifaddr en0`).
+
+#### Le piège ATS
+
+iOS bloque le HTTP en clair par défaut (App Transport Security). Deux points
+vérifiés qu'il faut connaître :
+
+- l'option `server.cleartext` de `capacitor.config.ts` **n'agit que sur
+  Android** — elle écrit `usesCleartextTraffic` dans le manifest Android et ne
+  touche pas iOS ;
+- le template `Info.plist` livré par `@capacitor/ios` ne contient **aucune**
+  exception ATS.
+
+Pour un serveur local en `http://`, ajouter à `ios/App/App/Info.plist` :
+
+```xml
+<key>NSAppTransportSecurity</key>
+<dict>
+  <key>NSAllowsLocalNetworking</key>
+  <true/>
+</dict>
+```
+
+`NSAllowsLocalNetworking` n'ouvre que le réseau local et laisse ATS actif pour
+le reste d'Internet. **À retirer avant toute soumission à l'App Store** — Apple
+demande une justification pour toute exception ATS.
+
+Alternative sans rien modifier : exposer le serveur de dev en HTTPS via un
+tunnel (`cloudflared tunnel --url http://localhost:3000`) et pointer
+`CAPACITOR_SERVER_URL` sur l'URL HTTPS obtenue.
 
 ### Après chaque changement de configuration
 
