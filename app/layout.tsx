@@ -8,6 +8,13 @@ import { AutoDarkMode } from "@/components/layout/AutoDarkMode";
 import { PostHogProvider } from "@/components/shared/PostHogProvider";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
+import { AppleSplashScreens } from "@/components/pwa/AppleSplashScreens";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { ThemeColorSync } from "@/components/pwa/ThemeColorSync";
+import { StandaloneFlag } from "@/components/pwa/StandaloneFlag";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { NativeAppInit } from "@/components/native/NativeAppInit";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -91,6 +98,13 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable:    true,
     title:      "Qonforme",
+    /*
+     * "default" : iOS réserve la barre d'état au-dessus de la webview et la
+     * peint avec <meta name="theme-color">. Le contenu démarre donc sous la
+     * barre, sans qu'aucun des ~20 layouts n'ait à gérer safe-area-inset-top.
+     * "black-translucent" ferait passer le contenu dessous et exigerait ce
+     * padding partout — un seul écran oublié masquerait l'heure.
+     */
     statusBarStyle: "default",
   },
   formatDetection: { telephone: false },
@@ -104,13 +118,20 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
-        {/* theme-color pour Chrome Android et Safari iOS */}
-        <meta name="theme-color" content="#2563EB" />
+        {/*
+         * theme-color = fond de l'app (--background), et non le bleu de marque :
+         * en PWA plein écran, iOS peint la barre d'état avec cette couleur, juste
+         * au-dessus d'un header clair. <ThemeColorSync /> la bascule en sombre
+         * quand l'utilisateur change de thème.
+         */}
+        <meta name="theme-color" content="#F8FAFC" />
         {/* Empêche le zoom auto sur les inputs iOS */}
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
+        {/* Écrans de démarrage iOS — sinon l'app lancée depuis l'écran d'accueil démarre en blanc */}
+        <AppleSplashScreens />
         {/* Hreflang — site monolingue FR */}
         <link rel="alternate" hrefLang="fr" href="https://qonforme.fr/" />
         <link rel="alternate" hrefLang="x-default" href="https://qonforme.fr/" />
@@ -209,9 +230,16 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AutoDarkMode />
+          {/* PWA / app native — sans rendu visible sauf OfflineBanner et InstallPrompt */}
+          <ThemeColorSync />
+          <StandaloneFlag />
+          <ServiceWorkerRegister />
+          <NativeAppInit />
           <PostHogProvider>
             <ReduxProvider>
+              <OfflineBanner />
               {children}
+              <InstallPrompt />
               <Toaster richColors position="top-right" />
             </ReduxProvider>
           </PostHogProvider>

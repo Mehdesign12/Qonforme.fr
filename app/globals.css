@@ -453,3 +453,41 @@ a,
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* ── PWA plein écran — écran d'accueil iOS / app installée ───────────────────
+ *
+ * Sélecteur posé par <StandaloneFlag /> plutôt que le média `display-mode:
+ * standalone`, que iOS n'a implémenté qu'en 16.4.
+ *
+ * Aucune de ces règles n'introduit `backdrop-filter` ni `will-change` :
+ * voir la règle absolue en tête de CLAUDE.md.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/*
+ * Hauteur du clavier natif, tenue à jour par <NativeAppInit /> via le plugin
+ * Keyboard. Vaut 0 sur le web et clavier fermé : une action collée en bas peut
+ * s'en servir sans condition (`bottom: var(--keyboard-height)`).
+ */
+:root {
+  --keyboard-height: 0px;
+}
+
+html[data-standalone="true"],
+html[data-standalone="true"] body {
+  /* Supprime le rebond élastique et le pull-to-refresh : dans une app installée,
+     ces gestes de navigateur n'ont plus de cible et donnent une impression de page web. */
+  overscroll-behavior: none;
+}
+
+html[data-standalone="true"] nav,
+html[data-standalone="true"] header,
+html[data-standalone="true"] button,
+html[data-standalone="true"] a[href],
+html[data-standalone="true"] [role="button"] {
+  /* Un appui long sur un bouton ne doit pas ouvrir le menu « Copier / Partager » d'iOS.
+     Limité au chrome de l'app : montants, numéros de facture et adresses
+     restent sélectionnables dans le contenu. */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
