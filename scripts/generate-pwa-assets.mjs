@@ -18,6 +18,8 @@ import path from 'node:path'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const SOURCE_ICON = path.join(ROOT, 'public/web-app-manifest-512x512.png')
+// Même visuel en 1024 natif et sans canal alpha — source de l'icône native.
+const SOURCE_ICON_HD = path.join(ROOT, 'public/favicon-source-1024.png')
 const BACKGROUND = { r: 0xf8, g: 0xfa, b: 0xfc, alpha: 1 } // #F8FAFC — var(--background)
 
 /**
@@ -119,6 +121,84 @@ async function renderMaskable(size, outFile) {
     .toFile(outFile)
 }
 
+
+/**
+ * Icône de l'app native : carré plein, sans transparence.
+ *
+ * iOS applique lui-même le masque arrondi et refuse les icônes à canal alpha.
+ * On rebouche donc les coins noirs de la source en prolongeant, sur chaque
+ * ligne, la couleur du premier pixel clair rencontré — le fond du logo étant un
+ * dégradé doux, la reprise est invisible.
+ *
+ * Le travail se fait sur `favicon-source-1024.png` : même visuel, mais en 1024
+ * natif et déjà sans canal alpha. Passer par le logo à coins transparents
+ * obligerait à tester l'alpha *après* redimensionnement, où l'interpolation de
+ * sharp brouille la frontière et fait ressortir le noir des coins.
+ */
+async function renderOpaqueIcon(size, outFile) {
+  const { data, info } = await sharp(SOURCE_ICON_HD)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  const { width, height } = info
+  const out = Buffer.alloc(width * height * 3)
+  /*
+   * Seuil haut, volontairement : la transition noir → fond est anticrénelée et
+   * traverse toutes les valeurs intermédiaires. Un seuil bas (40) faisait
+   * passer un pixel encore sombre pour le début du fond, qui était alors étalé
+   * sur tout le coin. Le fond vaut 245 et le bleu du « Q » plafonne à 235 :
+   * 220 ne peut désigner que du contenu réel.
+   */
+  const isLight = (i) => Math.max(data[i], data[i + 1], data[i + 2]) >= 220
+  // Deux pixels de marge pour écarter le résidu d'anticrénelage.
+  const MARGIN = 2
+
+  for (let y = 0; y < height; y++) {
+    const row = y * width
+
+    let first = 0
+    while (first < width && !isLight((row + first) * 3)) first++
+    let last = width - 1
+    while (last >= 0 && !isLight((row + last) * 3)) last--
+
+    const sampleFirst = Math.min(first + MARGIN, last)
+    const sampleLast = Math.max(last - MARGIN, first)
+
+    // Ligne entièrement sombre : impossible sur cette source, mais on ne veut
+    // pas écrire de pixels non initialisés si elle changeait un jour.
+    if (first >= width) {
+      out.fill(245, row * 3, (row + width) * 3)
+      continue
+    }
+
+    for (let x = 0; x < width; x++) {
+      const src = x < first ? sampleFirst : x > last ? sampleLast : x
+      const i = (row + src) * 3
+      const o = (row + x) * 3
+      out[o] = data[i]
+      out[o + 1] = data[i + 1]
+      out[o + 2] = data[i + 2]
+    }
+  }
+
+  await sharp(out, { raw: { width, height, channels: 3 } })
+    .resize(size, size)
+    .png({ compressionLevel: 9 })
+    .toFile(outFile)
+}
+
+/** Écran de démarrage natif : carré, le cadrage étant fait par Capacitor. */
+async function renderNativeSplash(size, background, outFile) {
+  const logoSize = Math.round(size * 0.22)
+  const logo = await sharp(await getLogo()).resize(logoSize, logoSize).toBuffer()
+
+  await sharp({ create: { width: size, height: size, channels: 4, background } })
+    .composite([{ input: logo, gravity: 'center' }])
+    .png({ palette: true, compressionLevel: 9 })
+    .toFile(outFile)
+}
+
 async function main() {
   await mkdir(path.join(ROOT, 'public/splash'), { recursive: true })
   await mkdir(path.join(ROOT, 'public/icons'), { recursive: true })
@@ -170,6 +250,21 @@ export const APPLE_SPLASH_SCREENS: AppleSplashScreen[] = ${JSON.stringify(entrie
 `
   await writeFile(path.join(ROOT, 'lib/pwa/apple-splash-screens.ts'), ts, 'utf8')
   console.log('✓ lib/pwa/apple-splash-screens.ts')
+
+  /*
+   * Sources consommées par `npx @capacitor/assets generate`, qui en dérive
+   * l'AppIcon et le LaunchScreen du projet Xcode. Sans elles, l'app native
+   * afficherait l'icône Capacitor par défaut.
+   */
+  await mkdir(path.join(ROOT, 'assets'), { recursive: true })
+  await renderOpaqueIcon(1024, path.join(ROOT, 'assets/icon.png'))
+  await renderNativeSplash(2732, BACKGROUND, path.join(ROOT, 'assets/splash.png'))
+  await renderNativeSplash(
+    2732,
+    { r: 0x0b, g: 0x16, b: 0x28, alpha: 1 }, // --background en thème sombre
+    path.join(ROOT, 'assets/splash-dark.png'),
+  )
+  console.log('✓ assets/ (icône + écrans de démarrage natifs)')
 }
 
 main().catch((err) => {

@@ -11,7 +11,8 @@
     "pwa:assets": "node scripts/generate-pwa-assets.mjs",
     "ios:add": "cap add ios",
     "ios:sync": "cap sync ios",
-    "ios:open": "cap open ios"
+    "ios:open": "cap open ios",
+    "ios:assets": "capacitor-assets generate --ios"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
@@ -63,6 +64,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.0",
     "@types/node": "^20",
     "@types/react": "^18",
