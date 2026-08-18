@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Share, SquarePlus, X, Download } from 'lucide-react'
 import { usePlatform } from '@/lib/pwa/hooks'
 import { isInstallPromptSnoozed, snoozeInstallPrompt } from '@/lib/pwa/client'
+import { isNativeApp } from '@/lib/native/platform'
 import { cn } from '@/lib/utils'
 
 /**
@@ -39,6 +40,15 @@ const APPEARANCE_DELAY_MS = 4000
  * Deux parcours très différents :
  *   - iOS Safari n'expose aucune API d'installation → on affiche la marche à suivre ;
  *   - Chromium émet `beforeinstallprompt` → on déclenche la boîte native.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Pourquoi vérifier isNativeApp() en plus de isSafari()
+ * ─────────────────────────────────────────────────────────────────────────────
+ * La WKWebView de la coquille Capacitor s'annonce comme Safari dans son user
+ * agent : `isIOS() && isSafari()` renvoie donc `true` aussi à l'intérieur de
+ * l'app installée, où « Appuyez sur Partager dans la barre Safari » n'a
+ * aucun sens — l'utilisateur a déjà l'app ouverte. Repéré en test réel sur
+ * simulateur : la bannière s'affichait par-dessus l'écran de connexion natif.
  */
 export function InstallPrompt() {
   const pathname = usePathname()
@@ -71,6 +81,8 @@ export function InstallPrompt() {
 
   useEffect(() => {
     if (!ready || isStandalone) return
+    // Déjà dans l'app installée : proposer de l'installer n'a pas de sens.
+    if (isNativeApp()) return
     if (!canPromptNatively && !canShowIosGuide) return
     if (isInstallPromptSnoozed()) return
 
