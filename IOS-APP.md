@@ -282,12 +282,35 @@ chacun des ~20 layouts. Un seul oubli masquerait l'heure.
 navigation aux domaines déclarés dans `WKAppBoundDomains` et casserait les
 redirections Stripe et Supabase Auth.
 
-**Ne pas pointer `server.url` sur le domaine nu (`https://qonforme.fr`).**
-Ça sert la landing marketing (hero, tarifs, blog, footer SEO) — pensée pour
-Google et les visiteurs web, pas pour quelqu'un qui vient d'installer l'app.
-L'URL par défaut est `/dashboard?source=native-app` : route protégée, le
-middleware s'occupe de tout renvoyer au bon endroit (connecté → tableau de
-bord direct, non connecté → `/login`) sans dupliquer cette logique ici.
+**Ne jamais mettre de chemin dans `server.url` lui-même** (`.../dashboard`,
+`.../login`…). Piège réel, reproduit en test sur simulateur : l'app entière
+s'ouvrait dans Safari au lieu de rester dans la coquille, dès la première
+redirection du middleware.
+
+Capacitor réutilise `server.url`, chaîne pour chaîne, comme préfixe pour
+décider si une navigation reste « dans l'app » — `WebViewDelegationHandler.swift` :
+```swift
+let isApplicationNavigation = navURL.absoluteString.starts(with: bridge.config.serverURL.absoluteString)
+if !isApplicationNavigation, toplevelNavigation {
+    UIApplication.shared.open(navURL, ...)   // éjecte vers Safari
+    decisionHandler(.cancel)
+}
+```
+Avec `server.url = ".../dashboard"`, la redirection du middleware vers
+`/login` (chemin différent) échoue ce préfixe, et Safari s'ouvre à la place
+de la WKWebView.
+
+`server.url` doit toujours être la **racine du domaine** — le préfixe matche
+alors n'importe quel chemin. Pour un point d'entrée différent de `/`, utiliser
+`server.appStartPath` (un champ Capacitor séparé, qui ne participe jamais à
+cette comparaison) : c'est ce que fait `capacitor.config.ts` pour ouvrir sur
+`/dashboard` plutôt que la landing marketing, sans casser les redirections
+internes du middleware (connecté → tableau de bord, non connecté → `/login`).
+
+Une query string dans `CAPACITOR_SERVER_URL` (`?source=...`) est acceptée
+mais silencieusement ignorée : `appStartPath` ne prend que le chemin, jamais
+la requête (`URL.appendingPathComponent` d'iOS encoderait le `?` littéralement
+et casserait la route).
 
 **Le `theme-color` doit rester la couleur de fond de l'app**, pas le bleu de
 marque : en plein écran, iOS peint la barre d'état avec cette couleur, juste
