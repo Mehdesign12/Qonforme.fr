@@ -16,8 +16,22 @@ import { KeyboardResize } from '@capacitor/keyboard'
  * En développement, pointer sur une machine locale :
  *   CAPACITOR_SERVER_URL=http://192.168.1.20:3000 npx cap sync ios
  * (`localhost` ne fonctionne pas depuis un iPhone physique — il faut l'IP du Mac.)
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Pourquoi /dashboard et non le domaine nu
+ * ─────────────────────────────────────────────────────────────────────────────
+ * `https://qonforme.fr` tout court sert la landing page marketing : hero,
+ * tarifs, blog, footer SEO — pensée pour Google et les visiteurs web, pas pour
+ * quelqu'un qui vient d'installer l'app. `/dashboard` est une route protégée :
+ * le middleware s'occupe de tout renvoyer au bon endroit sans qu'on ait à
+ * dupliquer cette logique ici — utilisateur connecté → tableau de bord direct,
+ * non connecté → /login. La landing marketing n'apparaît alors plus jamais
+ * dans la coquille native.
+ * `?source=native-app` suit la convention déjà en place pour le PWA
+ * (`?source=pwa` dans public/manifest.json) : on pourra distinguer ce trafic
+ * dans PostHog/GA le jour où ça compte.
  */
-const serverUrl = process.env.CAPACITOR_SERVER_URL ?? 'https://qonforme.fr'
+const serverUrl = process.env.CAPACITOR_SERVER_URL ?? 'https://qonforme.fr/dashboard?source=native-app'
 const isLocalServer = serverUrl.startsWith('http://')
 
 const config: CapacitorConfig = {

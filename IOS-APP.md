@@ -282,6 +282,13 @@ chacun des ~20 layouts. Un seul oubli masquerait l'heure.
 navigation aux domaines déclarés dans `WKAppBoundDomains` et casserait les
 redirections Stripe et Supabase Auth.
 
+**Ne pas pointer `server.url` sur le domaine nu (`https://qonforme.fr`).**
+Ça sert la landing marketing (hero, tarifs, blog, footer SEO) — pensée pour
+Google et les visiteurs web, pas pour quelqu'un qui vient d'installer l'app.
+L'URL par défaut est `/dashboard?source=native-app` : route protégée, le
+middleware s'occupe de tout renvoyer au bon endroit (connecté → tableau de
+bord direct, non connecté → `/login`) sans dupliquer cette logique ici.
+
 **Le `theme-color` doit rester la couleur de fond de l'app**, pas le bleu de
 marque : en plein écran, iOS peint la barre d'état avec cette couleur, juste
 au-dessus d'un header clair. `components/pwa/ThemeColorSync.tsx` la bascule
