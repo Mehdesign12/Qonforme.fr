@@ -111,10 +111,15 @@ export function InstallPrompt() {
         'p-4 animate-in fade-in slide-in-from-bottom-4 duration-300',
       )}
       style={{
-        // La barre de navigation basse occupe ~4,5rem sur les routes applicatives.
+        /*
+         * On ajoute la marge à la zone sûre au lieu d'en prendre le maximum :
+         * sur un iPhone à barre d'accueil, `max(1rem, 34px)` collerait la carte
+         * juste sur l'indicateur. `calc()` laisse une vraie respiration.
+         * La barre de navigation basse occupe ~4,5rem sur les routes applicatives.
+         */
         bottom: hasBottomNav
           ? 'calc(env(safe-area-inset-bottom, 0px) + 5rem)'
-          : 'max(1rem, env(safe-area-inset-bottom, 0px))',
+          : 'calc(env(safe-area-inset-bottom, 0px) + 1rem)',
       }}
     >
       <button

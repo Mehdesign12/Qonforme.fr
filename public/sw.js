@@ -182,30 +182,46 @@ async function handleStaticAsset(request) {
   const cached = await caches.match(request)
   if (cached) return cached
 
-  const response = await fetch(request)
-  if (isStorable(response)) {
-    const cache = await caches.open(STATIC_CACHE)
-    cache.put(request, response.clone())
+  try {
+    const response = await fetch(request)
+    if (isStorable(response)) {
+      const cache = await caches.open(STATIC_CACHE)
+      await cache.put(request, response.clone())
+    }
+    return response
+  } catch {
+    // Asset jamais mis en cache et réseau coupé. On rend une Response en échec
+    // plutôt que de laisser la promesse rejeter : le comportement est identique
+    // côté navigateur, mais aucune exception non gérée ne remonte du worker.
+    return Response.error()
   }
-  return response
 }
 
 /** Images : réponse immédiate depuis le cache, rafraîchissement en arrière-plan. */
 async function handleImage(request) {
-  const cache = await caches.open(IMAGES_CACHE)
-  const cached = await cache.match(request)
+  /*
+   * `caches.match` interroge TOUS les caches, pas seulement IMAGES_CACHE.
+   * Indispensable : les icônes du manifest (`/web-app-manifest-192x192.png`,
+   * affichée par offline.html) sont précachées dans STATIC_CACHE. Une recherche
+   * limitée à IMAGES_CACHE les manquait, et la page hors-ligne s'affichait avec
+   * un logo cassé — précisément quand le réseau ne peut pas rattraper l'erreur.
+   */
+  const cached = await caches.match(request)
 
   const network = fetch(request)
-    .then((response) => {
+    .then(async (response) => {
       if (isStorable(response)) {
-        cache.put(request, response.clone())
+        const cache = await caches.open(IMAGES_CACHE)
+        await cache.put(request, response.clone())
         trimCache(IMAGES_CACHE, MAX_CACHED_IMAGES)
       }
       return response
     })
     .catch(() => cached)
 
-  return cached || network
+  // `respondWith()` résolu sur `undefined` produit une erreur réseau : on
+  // garantit toujours une Response, quitte à ce qu'elle soit en échec.
+  return (await (cached ?? network)) ?? Response.error()
 }
 
 self.addEventListener('fetch', (event) => {
