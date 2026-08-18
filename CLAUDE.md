@@ -249,6 +249,71 @@ Le middleware vérifie dans l'ordre :
 
 ---
 
+## 🚨 RÈGLE — Service worker : jamais de données authentifiées en cache
+
+### Le risque
+Le Cache Storage est persistant et **partagé par toutes les sessions** d'un même
+navigateur. Mettre en cache le HTML d'une route authentifiée exposerait les
+factures d'un utilisateur à la personne suivante sur le même appareil, et
+afficherait des données périmées après déconnexion.
+
+### La règle
+**`public/sw.js` ne met en cache que des assets immuables et des pages 100 % publiques.**
+
+La liste `CACHEABLE_PAGE_PREFIXES` dans `public/sw.js` doit rester alignée sur
+`purePublicPaths` dans `lib/supabase/middleware.ts` — ce sont les seules routes
+dont la réponse est identique pour tous les visiteurs.
+
+```js
+// ✅ Correct — page publique, réponse identique pour tous
+const CACHEABLE_PAGE_PREFIXES = ['/blog', '/pricing', '/outils', '/guide']
+
+// ❌ Incorrect — /dashboard dépend de l'utilisateur connecté
+const CACHEABLE_PAGE_PREFIXES = ['/blog', '/dashboard']
+```
+
+Ne jamais mettre en cache :
+- `/api/*` — sans exception (réponses authentifiées ou à effet de bord) ;
+- les routes protégées (`/dashboard`, `/invoices`, `/clients`, `/settings`…) ;
+- `/`, `/login`, `/signup` — publiques, mais le middleware y redirige selon
+  l'état de connexion.
+
+**En ajoutant une route publique au middleware**, l'ajouter aussi au service
+worker (sinon elle est simplement indisponible hors ligne — pas de risque de
+sécurité, juste une perte de fonctionnalité).
+
+---
+
+## 🚨 RÈGLE — Code natif : toujours un repli web
+
+### Le principe
+Le même code React sert le site web et l'app iOS compilée. Aucun composant ne
+doit supposer la présence de la coquille native.
+
+### La règle
+**Tout appel à un plugin Capacitor passe par `lib/native/`, jamais par un import
+direct dans un composant.**
+
+```tsx
+// ✅ Correct — fonctionne sur le web comme dans l'app
+import { hapticImpact } from '@/lib/native/feedback'
+import { shareContent } from '@/lib/native/share'
+
+// ❌ Incorrect — casse le web et alourdit le bundle
+import { Haptics } from '@capacitor/haptics'
+```
+
+Les helpers de `lib/native/` sont gardés par `isNativeApp()` et importent les
+plugins dynamiquement : le bundle web ne les embarque pas.
+
+**Stripe Checkout et tout lien externe doivent passer par `openExternalUrl()`** —
+un tunnel de paiement dans la WKWebView est refusé par Apple (règle 3.1), ne
+partage pas les cookies Safari et piège l'utilisateur sans retour possible.
+
+Détails complets dans `IOS-APP.md`.
+
+---
+
 ## 📋 Suivi des modifications
 
 > **Instruction pour Claude Code** : À chaque session, ajouter une ligne dans ce tableau pour toute modification significative apportée au projet (nouvelle feature, correction bug, refacto, mise à jour copywriting, fix build, etc.). Même règle dans `README.md` section "Suivi des modifications".
@@ -298,3 +363,4 @@ Le middleware vérifie dans l'ordre :
 | 2026-04-04 | Sprint 3 outils gratuits : 4 outils interactifs (simulateur seuil TVA, simulateur revenus net, générateur n° facture, générateur conditions paiement), hub 12/12 outils actifs, tous les badges "Bientôt" supprimés | `app/outils/*/page.tsx`, `app/outils/*/layout.tsx` |
 | 2026-06-15 | Fix indexation Google "Autre page avec balise canonique sélectionnée par l'utilisateur" : domaine primaire Vercel inversé (www.qonforme.fr servait 200 alors que tout le code déclare qonforme.fr comme canonique). qonforme.fr → Production (200), www.qonforme.fr → redirect 308 vers qonforme.fr. Aucun changement de code, config Vercel uniquement | — (config Vercel : Settings → Domains) |
 | 2026-07-02 | Audit SEO/GEO complet : cause racine identifiée sur le plafond d'indexation — 780 pages pSEO géo (métier×ville) orpheline, retirées du sitemap le 09/04 mais toujours crawlables sans noindex, jugées thin content par Google et pénalisant la confiance du domaine entier. Passage en `robots: noindex,follow` en attendant une refonte avec contenu différencié par ville. Recommandation de pause de l'auto-publication du blog IA (toggle admin `/admin/blog/ai`) le temps d'un audit qualité des 70 articles existants | `app/facturation/[slug]/[ville]/page.tsx` |
+| 2026-08-18 | Transformation en app iOS : PWA complète (service worker avec cache strictement non authentifié, 40 splash screens iOS, manifest enrichi + raccourcis, invite d'installation, bannière hors-ligne, mode plein écran) + coquille native Capacitor (config, plugins natifs, pont haptique/partage/browser, push APNs avec table `push_tokens` et route d'enregistrement). Aucun code existant supprimé — l'app native charge le même site. Doc : `IOS-APP.md` | `public/sw.js`, `public/manifest.json`, `public/splash/`, `components/pwa/`, `components/native/`, `lib/pwa/`, `lib/native/`, `capacitor.config.ts`, `app/api/native/push-token/`, `supabase/migrations/20260818_create_push_tokens.sql`, `app/layout.tsx`, `app/globals.css`, `next.config.mjs`, `IOS-APP.md` |
