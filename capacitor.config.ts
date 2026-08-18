@@ -18,21 +18,46 @@ import { KeyboardResize } from '@capacitor/keyboard'
  * (`localhost` ne fonctionne pas depuis un iPhone physique — il faut l'IP du Mac.)
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * Pourquoi /dashboard et non le domaine nu
+ * Pourquoi /dashboard et non le domaine nu — et pourquoi via appStartPath
  * ─────────────────────────────────────────────────────────────────────────────
  * `https://qonforme.fr` tout court sert la landing page marketing : hero,
  * tarifs, blog, footer SEO — pensée pour Google et les visiteurs web, pas pour
  * quelqu'un qui vient d'installer l'app. `/dashboard` est une route protégée :
  * le middleware s'occupe de tout renvoyer au bon endroit sans qu'on ait à
  * dupliquer cette logique ici — utilisateur connecté → tableau de bord direct,
- * non connecté → /login. La landing marketing n'apparaît alors plus jamais
- * dans la coquille native.
- * `?source=native-app` suit la convention déjà en place pour le PWA
- * (`?source=pwa` dans public/manifest.json) : on pourra distinguer ce trafic
- * dans PostHog/GA le jour où ça compte.
+ * non connecté → /login.
+ *
+ * Le chemin de départ ne doit JAMAIS être collé dans `server.url` lui-même
+ * (`.../dashboard`) — piège réel, reproduit en test sur simulateur. Capacitor
+ * réutilise `server.url`, chaîne pour chaîne, comme préfixe pour décider si
+ * une navigation reste « dans l'app » :
+ *   WebViewDelegationHandler.swift → isApplicationNavigation =
+ *     navURL.absoluteString.starts(with: bridge.config.serverURL.absoluteString)
+ *   → si faux et navigation de premier niveau : UIApplication.shared.open(navURL)
+ *     (éjecte vers Safari) au lieu de charger dans la WKWebView.
+ * Avec `server.url = ".../dashboard"`, la redirection du middleware vers
+ * `/login` (chemin différent) échouait ce préfixe et l'app entière s'ouvrait
+ * dans Safari au lieu de rester dans la coquille — dès le premier redirect
+ * après le splash. `server.url` doit rester la racine du domaine (le préfixe
+ * matche alors n'importe quel chemin) ; `server.appStartPath`, un champ
+ * Capacitor séparé, porte le chemin de la toute première page chargée
+ * (CAPInstanceConfiguration.swift → appStartServerURL) sans jamais entrer
+ * dans cette comparaison.
  */
-const serverUrl = process.env.CAPACITOR_SERVER_URL ?? 'https://qonforme.fr/dashboard?source=native-app'
-const isLocalServer = serverUrl.startsWith('http://')
+const rawServerUrl = process.env.CAPACITOR_SERVER_URL ?? 'https://qonforme.fr/dashboard'
+const parsedServerUrl = new URL(rawServerUrl)
+const serverUrl = parsedServerUrl.origin
+const isLocalServer = parsedServerUrl.protocol === 'http:'
+/*
+ * `URL.appendingPathComponent` (utilisé par Capacitor pour construire
+ * appStartServerURL) encoderait un `?` littéral au lieu de l'interpréter
+ * comme début de requête — une query string ici casserait le chemin. On se
+ * limite donc au chemin ; distinguer le trafic natif dans PostHog se fait
+ * mieux côté JS, avec Capacitor.getPlatform(), qui couvre aussi les pages
+ * suivantes et pas seulement ce tout premier chargement.
+ */
+const appStartPath =
+  parsedServerUrl.pathname !== '/' ? parsedServerUrl.pathname : undefined
 
 const config: CapacitorConfig = {
   appId: 'fr.qonforme.app',
@@ -47,8 +72,17 @@ const config: CapacitorConfig = {
   webDir: 'capacitor/www',
 
   server: {
+    // Racine du domaine uniquement — jamais de chemin ici, voir l'explication ci-dessus.
     url: serverUrl,
-    // Les cookies de session Supabase doivent être partagés avec le domaine chargé.
+    // Chemin de la première page chargée ; sans effet sur les navigations suivantes.
+    appStartPath,
+    /*
+     * Sans effet en mode server.url distant (vérifié dans le code source iOS de
+     * Capacitor : consommé uniquement par le mode fichiers locaux, absent de
+     * la moindre autre logique). Conservé tel quel — un identifiant stable,
+     * pas une valeur qui doit suivre server.url quand celui-ci change pour
+     * un aperçu Vercel ou un serveur local.
+     */
     hostname: 'qonforme.fr',
     androidScheme: 'https',
     iosScheme: 'https',
