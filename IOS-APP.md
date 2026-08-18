@@ -77,24 +77,51 @@ de fonctionnalité).
 ### Prérequis
 
 1. Un **Mac** (Xcode ne tourne que sur macOS) ;
-2. **Xcode 16+** depuis le Mac App Store ;
-3. **CocoaPods** : `sudo gem install cocoapods` ;
-4. Un compte **Apple Developer** (99 €/an) pour publier — un compte gratuit
-   suffit pour tester sur son propre iPhone.
+2. **Xcode 16+** depuis le Mac App Store, ouvert une première fois pour qu'il
+   installe ses composants ;
+3. Un compte **Apple Developer** (99 €/an) pour publier — un compte Apple
+   gratuit suffit pour tester sur son propre iPhone.
 
-### Première génération du projet iOS
+**CocoaPods n'est pas nécessaire.** Capacitor 8 génère un projet basé sur
+Swift Package Manager : il n'y a ni `Podfile` ni `pod install`, Xcode résout
+les dépendances lui-même à l'ouverture.
 
-Le dossier `ios/` n'est pas dans le dépôt : il se génère.
+### Lancer le projet iOS
+
+Le dossier `ios/` **est versionné** — il porte la configuration Xcode, l'icône
+et les écrans de démarrage. Rien à générer :
 
 ```bash
 npm install
-npm run ios:add     # crée ios/ — une seule fois
-npm run ios:sync    # copie la config + installe les pods
+npm run ios:sync    # aligne config, plugins et assets web
 npm run ios:open    # ouvre Xcode
 ```
 
 Dans Xcode : sélectionner la cible **App**, onglet *Signing & Capabilities*,
 choisir ton équipe de développement. Puis ▶ pour lancer sur simulateur ou iPhone.
+
+### Régénérer depuis zéro
+
+Seulement si le projet Xcode est corrompu ou après une montée de version majeure
+de Capacitor :
+
+```bash
+rm -rf ios
+npm run ios:add       # recrée ios/
+npm run ios:assets    # réinjecte l'icône et les écrans de démarrage
+npm run ios:sync
+```
+
+### Changer le logo
+
+`assets/icon.png`, `assets/splash.png` et `assets/splash-dark.png` sont générés
+par `npm run pwa:assets` à partir du logo source. Pour les répercuter dans
+Xcode :
+
+```bash
+npm run pwa:assets    # régénère les sources + tous les assets PWA
+npm run ios:assets    # les décline dans le catalogue Xcode
+```
 
 ### Premier lancement : viser la production
 
