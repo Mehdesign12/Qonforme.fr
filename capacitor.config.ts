@@ -43,6 +43,16 @@ import { KeyboardResize } from '@capacitor/keyboard'
  * Capacitor séparé, porte le chemin de la toute première page chargée
  * (CAPInstanceConfiguration.swift → appStartServerURL) sans jamais entrer
  * dans cette comparaison.
+ *
+ * Piège suivant, également réel : `appStartPath` doit EN PLUS exister comme
+ * fichier local dans `webDir`, même si le contenu réel vient du réseau —
+ * Capacitor vérifie `webDir + appStartPath` avant de charger quoi que ce
+ * soit (CAPBridgeViewController.swift → loadWebView()) :
+ *   guard FileManager.default.fileExists(atPath: appStartFileURL.path)
+ *   else { fatalLoadError() }   // exit(1) immédiat, avant toute requête réseau
+ * D'où `capacitor/www/dashboard`, un fichier vide qui n'est jamais servi —
+ * seule son existence compte. Changer `appStartPath` exige un fichier du
+ * même nom au même endroit, sous peine du même crash.
  */
 const rawServerUrl = process.env.CAPACITOR_SERVER_URL ?? 'https://qonforme.fr/dashboard'
 const parsedServerUrl = new URL(rawServerUrl)
