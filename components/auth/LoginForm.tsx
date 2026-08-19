@@ -6,8 +6,11 @@ import { Loader2, Eye, EyeOff } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 /* ─── classes communes ──────────────────────────────────────────────────── */
+// text-base (16px) sur mobile : sous ce seuil, iOS Safari/WKWebView zoome
+// automatiquement la page au focus d'un champ. md:text-[15px] garde la
+// densité desktop existante. Filet de sécurité global aussi dans globals.css.
 const inputBase =
-  "w-full h-12 rounded-xl border border-[#E2E8F0] bg-white/90 px-4 text-[15px] text-[#0F172A] placeholder:text-slate-400 outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 disabled:opacity-50 [-webkit-appearance:none]"
+  "w-full h-12 rounded-xl border border-[#E2E8F0] bg-white/90 px-4 text-base md:text-[15px] text-[#0F172A] placeholder:text-slate-400 outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 disabled:opacity-50 [-webkit-appearance:none]"
 const inputError =
   "border-red-400 focus:border-red-400 focus:ring-red-400/10"
 const labelCls  = "block text-[13px] font-semibold text-[#0F172A] mb-1.5"
