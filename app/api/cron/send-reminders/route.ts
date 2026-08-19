@@ -19,6 +19,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/resend"
 import { buildReminderEmail } from "@/lib/email/templates/reminder"
+import { fmtEur } from "@/lib/email/templates/base"
+import { openApnsClient } from "@/lib/push/apns"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -40,6 +42,12 @@ export async function GET(request: NextRequest) {
 
   // ── Client admin (service role — accès à toutes les factures, bypass RLS) ──
   const admin = createAdminClient()
+
+  // Connexion APNs ouverte une seule fois pour tout le run (Apple traite une
+  // reconnexion par notification comme un usage abusif) — `null` tant que
+  // APNS_KEY_ID/APNS_TEAM_ID/APNS_PRIVATE_KEY ne sont pas définis, auquel cas
+  // les relances continuent par email seul, sans aucune régression.
+  const apns = openApnsClient()
 
   const now   = new Date()
   const j30   = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -68,8 +76,8 @@ export async function GET(request: NextRequest) {
   if (r2Err) console.error("[cron] Erreur requête R2:", r2Err)
 
   const results = {
-    reminder_1: { sent: 0, skipped: 0, errors: [] as string[] },
-    reminder_2: { sent: 0, skipped: 0, errors: [] as string[] },
+    reminder_1: { sent: 0, skipped: 0, errors: [] as string[], push_sent: 0 },
+    reminder_2: { sent: 0, skipped: 0, errors: [] as string[], push_sent: 0 },
   }
 
   // ── Cache des entreprises (évite de requêter N fois pour le même user) ─────
@@ -87,6 +95,58 @@ export async function GET(request: NextRequest) {
     const result = data ?? { name: "Votre prestataire", iban: null, accent_color: null, email: null }
     companyCache.set(userId, result)
     return result
+  }
+
+  // ── Cache des jetons push (un utilisateur peut avoir plusieurs appareils) ──
+  const pushTokensCache = new Map<string, string[]>()
+
+  async function getPushTokens(userId: string): Promise<string[]> {
+    if (pushTokensCache.has(userId)) return pushTokensCache.get(userId)!
+    const { data } = await admin.from("push_tokens").select("token").eq("user_id", userId)
+    const tokens = (data ?? []).map((row) => row.token)
+    pushTokensCache.set(userId, tokens)
+    return tokens
+  }
+
+  /**
+   * Notifie l'utilisateur Qonforme (pas le client final) qu'une de ses
+   * factures reste impayée. Best-effort total : n'importe quelle erreur ici
+   * est avalée et loguée — un push manqué ne doit jamais faire échouer une
+   * relance email déjà envoyée (qui, elle, ne sera pas retentée le lendemain).
+   */
+  async function notifyOwnerByPush(
+    invoice: { id: string; user_id: string; invoice_number: string; total_ttc: number },
+    reminderNumber: 1 | 2,
+    clientName: string,
+  ): Promise<boolean> {
+    if (!apns) return false
+
+    try {
+      const tokens = await getPushTokens(invoice.user_id)
+      if (tokens.length === 0) return false
+
+      const title = reminderNumber === 2
+        ? "⚠️ Facture toujours impayée"
+        : "Facture en retard de paiement"
+      const body = reminderNumber === 2
+        ? `${clientName || "Votre client"} n'a toujours pas réglé la facture ${invoice.invoice_number} (${fmtEur(invoice.total_ttc)}), 45 jours après l'échéance.`
+        : `${clientName || "Votre client"} n'a pas encore réglé la facture ${invoice.invoice_number} (${fmtEur(invoice.total_ttc)}).`
+
+      const outcomes = await Promise.all(
+        tokens.map((token) => apns.send(token, { title, body, path: `/invoices/${invoice.id}` })),
+      )
+
+      const staleTokens = outcomes.filter((o) => o.shouldRemove).map((o) => o.token)
+      if (staleTokens.length > 0) {
+        await admin.from("push_tokens").delete().in("token", staleTokens)
+        pushTokensCache.set(invoice.user_id, tokens.filter((t) => !staleTokens.includes(t)))
+      }
+
+      return outcomes.some((o) => o.ok)
+    } catch (err) {
+      console.error(`[cron] Push non envoyé pour la facture ${invoice.invoice_number}:`, err)
+      return false
+    }
   }
 
   // ── Traitement des relances 1 ──────────────────────────────────────────────
@@ -130,6 +190,10 @@ export async function GET(request: NextRequest) {
 
       results.reminder_1.sent++
       console.log(`[cron] R1 envoyée : ${invoice.invoice_number} → ${clientEmail}`)
+
+      if (await notifyOwnerByPush(invoice, 1, invoice.client?.name ?? "")) {
+        results.reminder_1.push_sent++
+      }
     } catch (err) {
       const msg = `${invoice.invoice_number}: ${err instanceof Error ? err.message : String(err)}`
       results.reminder_1.errors.push(msg)
@@ -178,12 +242,18 @@ export async function GET(request: NextRequest) {
 
       results.reminder_2.sent++
       console.log(`[cron] R2 envoyée : ${invoice.invoice_number} → ${clientEmail}`)
+
+      if (await notifyOwnerByPush(invoice, 2, invoice.client?.name ?? "")) {
+        results.reminder_2.push_sent++
+      }
     } catch (err) {
       const msg = `${invoice.invoice_number}: ${err instanceof Error ? err.message : String(err)}`
       results.reminder_2.errors.push(msg)
       console.error(`[cron] Erreur R2 ${invoice.invoice_number}:`, err)
     }
   }
+
+  apns?.close()
 
   const duration = Date.now() - startedAt
   const hasErrors = results.reminder_1.errors.length > 0 || results.reminder_2.errors.length > 0
