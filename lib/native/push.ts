@@ -11,8 +11,61 @@ import { isNativeApp, getPlatform } from './platform'
 /** Clé Preferences conservant le jeton, pour pouvoir le révoquer à la déconnexion. */
 const TOKEN_STORAGE_KEY = 'qonforme.push-token'
 
+/** Clé Preferences : l'écran d'amorçage a-t-il déjà été montré sur cet appareil ? */
+const PRIMING_SEEN_KEY = 'qonforme.push-priming-seen'
+
 /** Reçoit le chemin interne à ouvrir quand l'utilisateur touche une notification. */
 export type PushOpenHandler = (path: string) => void
+
+export type PushPermissionStatus = 'granted' | 'denied' | 'prompt' | 'unavailable'
+
+/**
+ * État actuel de l'autorisation, sans jamais déclencher la popup système.
+ *
+ * Sert à décider EN AMONT s'il faut montrer l'écran d'amorçage : inutile de
+ * l'afficher si l'utilisateur a déjà tranché (accepté ou refusé) sur cet
+ * appareil, via cette app ou une session précédente.
+ */
+export async function checkPushPermissionStatus(): Promise<PushPermissionStatus> {
+  if (!isNativeApp()) return 'unavailable'
+
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications')
+    const status = await PushNotifications.checkPermissions()
+    return status.receive as PushPermissionStatus
+  } catch {
+    return 'unavailable'
+  }
+}
+
+/** L'écran d'amorçage a-t-il déjà été montré (accepté ou passé) sur cet appareil ? */
+export async function hasSeenPushPriming(): Promise<boolean> {
+  try {
+    const { Preferences } = await import('@capacitor/preferences')
+    const { value } = await Preferences.get({ key: PRIMING_SEEN_KEY })
+    return value === '1'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Marque l'amorçage comme vu — que l'utilisateur ait activé ou passé.
+ *
+ * Empêche de le reproposer à chaque connexion : après un "Plus tard", on ne
+ * relance plus jamais `requestPermissions()` automatiquement (ça ferait
+ * réapparaître la popup système froide qu'on cherche justement à éviter).
+ * Seule une action explicite plus tard (ex. un bouton dans les Réglages,
+ * pas encore construit) pourrait redemander.
+ */
+export async function markPushPrimingSeen(): Promise<void> {
+  try {
+    const { Preferences } = await import('@capacitor/preferences')
+    await Preferences.set({ key: PRIMING_SEEN_KEY, value: '1' })
+  } catch {
+    // Stockage indisponible : l'écran pourra réapparaître à la prochaine session, sans gravité.
+  }
+}
 
 async function readStoredToken(): Promise<string | null> {
   try {

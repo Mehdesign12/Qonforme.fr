@@ -1,11 +1,17 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getPlatform, isNativeApp } from '@/lib/native/platform'
-import { initPushNotifications } from '@/lib/native/push'
+import {
+  initPushNotifications,
+  checkPushPermissionStatus,
+  hasSeenPushPriming,
+  markPushPrimingSeen,
+} from '@/lib/native/push'
 import { closeExternalBrowser } from '@/lib/native/browser'
+import { PushPrimingScreen } from './PushPrimingScreen'
 
 /**
  * Initialise la coquille native au démarrage.
@@ -16,6 +22,7 @@ import { closeExternalBrowser } from '@/lib/native/browser'
  */
 export function NativeAppInit() {
   const router = useRouter()
+  const [showPushPriming, setShowPushPriming] = useState(false)
 
   /* ── Barre d'état, écran de démarrage, marqueur de plateforme ───────────── */
   useEffect(() => {
@@ -88,12 +95,30 @@ export function NativeAppInit() {
     const supabase = createClient()
     let initialised = false
 
-    const start = () => {
+    const start = async () => {
       // iOS ne montre la demande d'autorisation qu'une fois par installation :
-      // on ne la déclenche pas deux fois dans la même session.
+      // on ne déclenche cette logique qu'une fois par session.
       if (initialised) return
       initialised = true
-      initPushNotifications((path) => router.push(path))
+
+      const status = await checkPushPermissionStatus()
+
+      if (status === 'granted') {
+        // Déjà accepté lors d'une session précédente : réenregistrement
+        // silencieux (le jeton APNs peut avoir changé), sans UI ni popup.
+        initPushNotifications((path) => router.push(path))
+        return
+      }
+
+      if (status !== 'prompt') return // 'denied' ou 'unavailable' : rien à proposer
+
+      // Statut encore indécis : ne montrer l'amorçage qu'une seule fois par
+      // appareil. S'il a déjà été vu (activé ou passé), on ne relance jamais
+      // requestPermissions() tout seul — ça ferait réapparaître la popup
+      // système froide, exactement ce que l'amorçage cherche à éviter.
+      if (await hasSeenPushPriming()) return
+
+      setShowPushPriming(true)
     }
 
     supabase.auth.getSession().then(({ data }) => {
@@ -106,6 +131,17 @@ export function NativeAppInit() {
 
     return () => subscription.subscription.unsubscribe()
   }, [router])
+
+  const handlePushPrimingActivate = () => {
+    setShowPushPriming(false)
+    markPushPrimingSeen()
+    initPushNotifications((path) => router.push(path))
+  }
+
+  const handlePushPrimingSkip = () => {
+    setShowPushPriming(false)
+    markPushPrimingSeen()
+  }
 
   /* ── Clavier : expose sa hauteur en variable CSS ────────────────────────── */
   useEffect(() => {
@@ -142,6 +178,12 @@ export function NativeAppInit() {
       removeHide?.()
     }
   }, [])
+
+  if (showPushPriming) {
+    return (
+      <PushPrimingScreen onActivate={handlePushPrimingActivate} onSkip={handlePushPrimingSkip} />
+    )
+  }
 
   return null
 }
