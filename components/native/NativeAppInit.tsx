@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getPlatform, isNativeApp } from '@/lib/native/platform'
 import {
@@ -10,8 +10,10 @@ import {
   hasSeenPushPriming,
   markPushPrimingSeen,
 } from '@/lib/native/push'
+import { hasSeenAppOnboarding, markAppOnboardingSeen } from '@/lib/native/onboarding'
 import { closeExternalBrowser } from '@/lib/native/browser'
 import { PushPrimingScreen } from './PushPrimingScreen'
+import { AppOnboardingCarousel } from './AppOnboardingCarousel'
 
 /**
  * Initialise la coquille native au démarrage.
@@ -22,7 +24,18 @@ import { PushPrimingScreen } from './PushPrimingScreen'
  */
 export function NativeAppInit() {
   const router = useRouter()
-  const [showPushPriming, setShowPushPriming] = useState(false)
+  const pathname = usePathname()
+  // Un seul overlay plein écran à la fois — l'onboarding (découverte, avant
+  // toute connexion) précède toujours l'amorçage push (déjà connecté).
+  const [overlay, setOverlay] = useState<'onboarding' | 'push-priming' | null>(null)
+  // Ne devient `true` qu'une fois l'onboarding vu — voir l'effet push plus bas,
+  // qui en dépend pour ne jamais se superposer au carrousel de découverte.
+  const [onboardingDone, setOnboardingDone] = useState(false)
+  // Écran cible après un CTA de l'onboarding (Créer un compte / J'ai déjà un
+  // compte) : l'overlay reste monté jusqu'à ce que la page en dessous ait
+  // réellement changé, sinon /login (déjà chargée) flashe une fraction de
+  // seconde avant que /signup ne prenne sa place.
+  const [pendingDestination, setPendingDestination] = useState<'/login' | '/signup' | null>(null)
 
   /* ── Barre d'état, écran de démarrage, marqueur de plateforme ───────────── */
   useEffect(() => {
@@ -88,9 +101,64 @@ export function NativeAppInit() {
     return () => remove?.()
   }, [router])
 
+  /* ── Onboarding de découverte — une fois par appareil, avant toute connexion ─ */
+  useEffect(() => {
+    if (!isNativeApp()) return
+
+    hasSeenAppOnboarding().then((seen) => {
+      if (seen) {
+        setOnboardingDone(true)
+        return
+      }
+      setOverlay('onboarding')
+    })
+  }, [])
+
+  const handleOnboardingFinish = (destination?: '/login' | '/signup') => {
+    markAppOnboardingSeen()
+    // Débloque l'effet d'amorçage push ci-dessous, qui attendait cette étape.
+    setOnboardingDone(true)
+
+    if (!destination) {
+      // "Passer", ou fin du dernier "Suivant" : rien à charger, la page déjà
+      // affichée en dessous (login ou dashboard, selon le middleware) est la bonne.
+      setOverlay(null)
+      return
+    }
+
+    // Le carrousel reste monté (avec son spinner) jusqu'à ce que la navigation
+    // aboutisse réellement — voir l'effet ci-dessous sur `pathname`.
+    setPendingDestination(destination)
+    router.push(destination)
+  }
+
+  // Démonte l'overlay une fois que la page cible a effectivement pris la main.
+  useEffect(() => {
+    if (pendingDestination && pathname === pendingDestination) {
+      setOverlay(null)
+      setPendingDestination(null)
+    }
+  }, [pathname, pendingDestination])
+
+  // Filet de sécurité : si la navigation n'aboutit jamais exactement au
+  // pathname attendu (redirection intermédiaire, etc.), ne pas garder
+  // quelqu'un bloqué indéfiniment derrière l'onboarding.
+  useEffect(() => {
+    if (!pendingDestination) return
+    const timeout = setTimeout(() => {
+      setOverlay(null)
+      setPendingDestination(null)
+    }, 1500)
+    return () => clearTimeout(timeout)
+  }, [pendingDestination])
+
   /* ── Notifications push — seulement une fois l'utilisateur connecté ─────── */
   useEffect(() => {
     if (!isNativeApp()) return
+    // Ne jamais superposer l'amorçage push au carrousel de découverte : cet
+    // effet se relance tout seul dès que `onboardingDone` bascule à `true`
+    // (voir `handleOnboardingFinish`), donc rien à perdre à attendre ici.
+    if (!onboardingDone) return
 
     const supabase = createClient()
     let initialised = false
@@ -118,7 +186,7 @@ export function NativeAppInit() {
       // système froide, exactement ce que l'amorçage cherche à éviter.
       if (await hasSeenPushPriming()) return
 
-      setShowPushPriming(true)
+      setOverlay('push-priming')
     }
 
     supabase.auth.getSession().then(({ data }) => {
@@ -130,16 +198,16 @@ export function NativeAppInit() {
     })
 
     return () => subscription.subscription.unsubscribe()
-  }, [router])
+  }, [router, onboardingDone])
 
   const handlePushPrimingActivate = () => {
-    setShowPushPriming(false)
+    setOverlay(null)
     markPushPrimingSeen()
     initPushNotifications((path) => router.push(path))
   }
 
   const handlePushPrimingSkip = () => {
-    setShowPushPriming(false)
+    setOverlay(null)
     markPushPrimingSeen()
   }
 
@@ -179,7 +247,11 @@ export function NativeAppInit() {
     }
   }, [])
 
-  if (showPushPriming) {
+  if (overlay === 'onboarding') {
+    return <AppOnboardingCarousel onFinish={handleOnboardingFinish} />
+  }
+
+  if (overlay === 'push-priming') {
     return (
       <PushPrimingScreen onActivate={handlePushPrimingActivate} onSkip={handlePushPrimingSkip} />
     )
