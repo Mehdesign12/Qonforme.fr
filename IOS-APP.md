@@ -234,22 +234,66 @@ d'une personne qui découvre Qonforme, et le contenu reste pertinent pour lui
 
 ## 6. Notifications push — état d'avancement
 
-**Fait :** demande d'autorisation, récupération du jeton APNs, envoi à
-`/api/native/push-token`, table `push_tokens` avec RLS, révocation à la
-déconnexion, ouverture de la bonne page au tap sur une notification.
+**Fait, côté code :** demande d'autorisation, récupération du jeton APNs,
+envoi à `/api/native/push-token`, table `push_tokens` avec RLS (migration déjà
+appliquée), révocation à la déconnexion, ouverture de la bonne page au tap sur
+une notification — **et maintenant l'émetteur côté serveur**
+(`lib/push/apns.ts`), branché dans le cron `app/api/cron/send-reminders/route.ts` :
+chaque relance J+30/J+45 envoie désormais une notification push en plus de
+l'email, avec le même contenu (montant, numéro de facture, client).
 
-**Reste à faire pour envoyer réellement une notification :**
+Aucune dépendance ajoutée : `node:http2` (APNs n'accepte que du HTTP/2) et
+`node:crypto` (signature JWT ES256 avec la clé .p8) suffisent. La connexion
+HTTP/2 est ouverte une seule fois par run de cron et réutilisée pour tous les
+envois — Apple traite une reconnexion par notification comme un usage abusif.
+Testé : `__tests__/apns-jwt.test.ts` vérifie que la signature produite est
+authentifiable avec la clé publique correspondante.
 
-1. Appliquer la migration `supabase/migrations/20260818_create_push_tokens.sql` ;
-2. Créer une **clé APNs** (.p8) dans le portail Apple Developer ;
-3. Activer *Push Notifications* dans les capacités Xcode ;
-4. Écrire l'émetteur côté serveur — le plus simple est de brancher l'envoi APNs
-   dans le cron existant `app/api/cron/send-reminders/route.ts`, qui sait déjà
-   quelles factures sont en retard. Récupérer les jetons via le client
-   `service_role` (il contourne la RLS), et supprimer ceux qu'APNs signale invalides.
+**Tant que la config ci-dessous n'est pas en place, le cron continue de
+fonctionner normalement par email** — `openApnsClient()` retourne `null` et
+logue un avertissement une fois, sans jamais bloquer les relances existantes.
 
-Le payload doit contenir `{ "path": "/invoices/<id>" }` : `NativeAppInit` ouvre
-ce chemin au tap, et rejette toute valeur qui n'est pas un chemin interne.
+**Reste à faire — 3 actions de ton côté, aucune ligne de code :**
+
+1. **Créer une clé APNs (.p8)** dans le portail Apple Developer :
+   *Certificates, Identifiers & Profiles* → *Keys* → bouton **+** → cocher
+   *Apple Push Notifications service (APNs)* → *Continue* → *Register* →
+   **Download** (le fichier .p8 ne se télécharge qu'**une seule fois** —
+   à conserver précieusement). Noter aussi le **Key ID** affiché à l'écran
+   (10 caractères) et le **Team ID** du compte (en haut à droite du portail,
+   ou *Membership* → *Team ID*).
+
+2. **Activer la capacité *Push Notifications* dans Xcode** : projet *App* →
+   onglet *Signing & Capabilities* → *+ Capability* → *Push Notifications*.
+   Indispensable même si l'envoi se fait depuis le serveur : sans cette
+   capacité, iOS ne délivre aucun jeton APNs à l'app, et `push_tokens` reste
+   vide quoi qu'il arrive. Après l'avoir ajoutée, relancer l'app une fois
+   depuis Xcode et vérifier qu'une ligne apparaît dans `push_tokens` (table
+   Supabase) — c'est le signe que l'enregistrement fonctionne bout en bout.
+
+3. **Ajouter 3 variables d'environnement sur Vercel** (*Project Settings* →
+   *Environment Variables*) :
+   - `APNS_KEY_ID` — le Key ID de l'étape 1
+   - `APNS_TEAM_ID` — le Team ID de l'étape 1
+   - `APNS_PRIVATE_KEY` — le contenu du fichier .p8 (ouvrir avec un éditeur de
+     texte, copier-coller tel quel, lignes `-----BEGIN PRIVATE KEY-----` /
+     `-----END PRIVATE KEY-----` comprises)
+
+   Inutile de définir `APNS_ENVIRONMENT` : `lib/push/apns.ts` détecte tout
+   seul si un jeton vient d'un build Xcode Debug (sandbox) ou App
+   Store/TestFlight (production), et retente automatiquement sur l'autre
+   serveur en cas de refus.
+
+Le payload envoyé contient `{ "path": "/invoices/<id>" }` : `NativeAppInit`
+ouvre ce chemin au tap, et rejette toute valeur qui n'est pas un chemin interne.
+
+**Pour tester sans attendre J+30 :** modifier temporairement en base la
+`due_date` d'une facture au statut `sent`/`overdue` à plus de 30 jours dans le
+passé, puis appeler `GET /api/cron/send-reminders` avec le header
+`Authorization: Bearer <CRON_SECRET>` (Postman, curl, ou une extension
+navigateur permettant d'ajouter un header). Vérifier la notification sur
+l'iPhone **et** la ligne `results` retournée par la route (`push_sent`
+compte les envois réussis séparément des emails).
 
 ---
 
