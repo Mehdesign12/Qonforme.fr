@@ -285,6 +285,29 @@ a,
   }
 }
 
+/*
+ * RÈGLE — Empêcher le zoom automatique iOS au focus d'un champ.
+ *
+ * iOS Safari/WKWebView zoome automatiquement la page quand un <input>,
+ * <select> ou <textarea> reçoit le focus si son font-size calculé est
+ * inférieur à 16px (pensé pour garder le texte lisible sur le web ouvert,
+ * mais gênant dans une app — l'utilisateur doit dézoomer manuellement à
+ * chaque champ, et ce zoom persiste souvent après avoir quitté le champ).
+ *
+ * Filet de sécurité global, même logique que la règle backdrop-filter
+ * ci-dessus : quelle que soit la source (Tailwind `text-sm`/`text-xs`,
+ * style inline, composant tiers, futur code), aucun champ ne doit
+ * descendre sous 16px sur mobile. Le desktop n'est pas concerné — ce
+ * comportement de zoom n'existe que sur iOS Safari/WKWebView.
+ */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* ── Blog — card stagger animation ───────────────────────────────────────── */
 .blog-card-animate {
   opacity: 0;

@@ -76,6 +76,44 @@ const cardStyle = { backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12
 
 ---
 
+## 🚨 RÈGLE — Champs de formulaire : jamais moins de 16px sur mobile
+
+### Le bug
+iOS Safari/WKWebView zoome automatiquement toute la page quand un `<input>`,
+`<select>` ou `<textarea>` reçoit le focus si son `font-size` calculé est
+inférieur à 16px. Comportement natif iOS (pensé pour le web ouvert, pas pour
+une app), pas un bug du site — mais dans l'app native, l'utilisateur doit
+dézoomer manuellement à chaque champ, et le zoom persiste souvent après avoir
+quitté le champ.
+
+### La règle
+**Aucun champ ne doit avoir un `font-size` inférieur à 16px sur mobile.**
+
+#### Filet de sécurité CSS global (dans `globals.css`)
+Une règle `@media (max-width: 767px)` force `font-size: 16px !important` sur
+tout `input`/`select`/`textarea`, quelle que soit la source (Tailwind, style
+inline, composant tiers). **Ne jamais supprimer cette règle** — même filet de
+sécurité que la règle backdrop-filter ci-dessus.
+
+#### Pattern pour chaque composant
+```tsx
+// ✅ Correct — 16px sur mobile, densité normale sur desktop
+const inputBase = "... text-base md:text-sm ..."
+
+// ✅ Correct — composant partagé components/ui/input.tsx (déjà conforme)
+className="... text-base md:text-sm ..."
+
+// ❌ Incorrect — sous 16px sur mobile, déclenche le zoom iOS
+const inputBase = "... text-sm ..."       // 14px
+const inputBase = "... text-[15px] ..."   // 15px
+```
+
+Le filet de sécurité global rattrape un oubli, mais corriger chaque
+composant reste préférable : ça évite de dépendre d'un `!important` et ça
+documente l'intention directement dans le code.
+
+---
+
 ## 🚨 RÈGLE — Composants `next-themes` : toujours vérifier `mounted`
 
 ### Le bug
@@ -368,3 +406,4 @@ Détails complets dans `IOS-APP.md`.
 | 2026-08-18 | Fix critique app iOS : app entière éjectée vers Safari au lieu de rester dans la coquille native, dès la première redirection (middleware /dashboard → /login). Cause identifiée dans le code source Capacitor (WebViewDelegationHandler.swift) : la comparaison isApplicationNavigation fait un match de préfixe littéral sur server.url — un chemin dedans (/dashboard) faisait échouer toute redirection vers un autre chemin. server.url revient à la racine du domaine, le chemin de démarrage passe par le champ Capacitor dédié server.appStartPath, qui ne participe jamais à cette comparaison | `capacitor.config.ts`, `IOS-APP.md` |
 | 2026-08-19 | Écran d'amorçage avant la demande d'autorisation push (au lieu d'un onboarding générique 3 écrans, écarté après discussion — l'audience principale de l'app est des clients existants, pas des découvreurs) : explique le bénéfice concret (alertes d'échéance/retard) avant la popup système iOS, montré une seule fois par appareil (Preferences), jamais reproposé après un "Plus tard" pour éviter de renvoyer la popup froide | `lib/native/push.ts`, `components/native/PushPrimingScreen.tsx`, `components/native/NativeAppInit.tsx` |
 | 2026-08-19 | Onboarding de découverte App/Play Store (3 écrans, montré une fois par appareil avant toute connexion — public distinct de l'amorçage push ci-dessus) : même langage visuel que le dashboard réel (dégradé `--dashboard-bg`, halos radiaux, picto Q de la sidebar), écran de conversion final (créer un compte / déjà client), séquencé avant l'amorçage push existant (`NativeAppInit` attend `onboardingDone`), overlay maintenu jusqu'à navigation réelle vers `/signup`/`/login` pour éviter un flash de la mauvaise page | `lib/native/onboarding.ts`, `components/native/AppOnboardingCarousel.tsx`, `components/native/NativeAppInit.tsx`, `IOS-APP.md` |
+| 2026-08-19 | Fix zoom automatique iOS au focus d'un champ (signalé pendant un test de création de compte dans l'app) : les 5 formulaires auth avaient un `font-size` sous le seuil 16px (`text-sm`/`text-[15px]`) qui déclenche le zoom natif iOS Safari/WKWebView ; corrigés en `text-base md:...`, + filet de sécurité CSS global (`@media max-width:767px`) pour tout champ présent ou futur | `app/globals.css`, `components/auth/SignupForm.tsx`, `components/auth/CompanyForm.tsx`, `components/auth/LoginForm.tsx`, `components/auth/ForgotPasswordForm.tsx`, `components/auth/ResetPasswordForm.tsx` |
