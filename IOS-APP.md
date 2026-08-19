@@ -201,7 +201,38 @@ ressaisie, et l'utilisateur se retrouve bloqué sur la page Stripe sans retour.
 
 ---
 
-## 5. Notifications push — état d'avancement
+## 5. Premier lancement — onboarding et amorçage push
+
+Deux écrans plein écran, natifs uniquement, chacun montré **une seule fois
+par appareil** (`@capacitor/preferences`, jamais reproposés après un skip) :
+
+| Écran | Cible | Déclenché | Composant |
+|---|---|---|---|
+| Carrousel de découverte (3 écrans) | Quelqu'un qui installe l'app depuis le Store, avant toute connexion | Au montage de `NativeAppInit`, inconditionnel | `AppOnboardingCarousel.tsx` |
+| Amorçage notifications (1 écran) | Client déjà connecté | Après connexion, si le statut d'autorisation push est encore `prompt` | `PushPrimingScreen.tsx` |
+
+Le second attend explicitement que le premier soit passé : `NativeAppInit`
+retient un état `onboardingDone`, et l'effet d'amorçage push ne s'exécute
+qu'une fois celui-ci à `true` — sinon un client existant qui installe l'app
+pour la première fois (session déjà valide, restaurée dès le montage)
+pourrait voir la popup push se déclencher **par-dessus** le carrousel de
+découverte.
+
+Les deux CTA de conversion du dernier écran (« Créer un compte gratuitement »
+/ « J'ai déjà un compte ») gardent le carrousel monté le temps que la
+navigation vers `/signup` ou `/login` aboutisse réellement (comparaison sur
+`usePathname()`, avec un filet de sécurité de 1,5 s) — sinon la page déjà
+chargée en dessous (`/login`, servie par le middleware) flashe une fraction
+de seconde avant que la bonne page ne prenne sa place.
+
+Un client existant qui installe l'app pour la première fois sur un nouvel
+appareil verra quand même le carrousel : rien ne le distingue côté client
+d'une personne qui découvre Qonforme, et le contenu reste pertinent pour lui
+(« J'ai déjà un compte » est justement son chemin).
+
+---
+
+## 6. Notifications push — état d'avancement
 
 **Fait :** demande d'autorisation, récupération du jeton APNs, envoi à
 `/api/native/push-token`, table `push_tokens` avec RLS, révocation à la
@@ -222,7 +253,7 @@ ce chemin au tap, et rejette toute valeur qui n'est pas un chemin interne.
 
 ---
 
-## 6. Soumission à l'App Store — les deux risques réels
+## 7. Soumission à l'App Store — les deux risques réels
 
 ### Règle 4.2 « Minimum Functionality »
 
@@ -237,7 +268,7 @@ Ce qui plaide en notre faveur, à mettre en avant dans les notes de review :
 - retour haptique et écrans de démarrage natifs ;
 - fonctionnement hors-ligne.
 
-**Ne pas soumettre avant que les push fonctionnent réellement** (section 5) :
+**Ne pas soumettre avant que les push fonctionnent réellement** (section 6) :
 c'est l'argument le plus solide du dossier.
 
 ### Règle 3.1 — paiements
@@ -267,7 +298,7 @@ précautions qui réduisent nettement le risque :
 
 ---
 
-## 7. Pièges connus
+## 8. Pièges connus
 
 **Ne jamais ajouter `backdrop-filter` ni `will-change: transform` sur mobile.**
 Voir la règle en tête de `CLAUDE.md` : cela provoque un crash GPU en boucle sur
