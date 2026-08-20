@@ -109,6 +109,23 @@ export async function GET(request: NextRequest) {
   }
 
   /**
+   * Nombre de factures en retard de l'utilisateur — affiché en badge sur
+   * l'icône de l'app. Non caché (contrairement aux jetons/entreprises) :
+   * une requête COUNT est bon marché, et un utilisateur avec plusieurs
+   * factures relancées dans le même run doit voir un badge à jour à chaque
+   * envoi, pas la valeur figée du premier calcul.
+   */
+  async function getOverdueBadgeCount(userId: string): Promise<number> {
+    const { count } = await admin
+      .from("invoices")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "overdue")
+      .eq("is_archived", false)
+    return count ?? 0
+  }
+
+  /**
    * Notifie l'utilisateur Qonforme (pas le client final) qu'une de ses
    * factures reste impayée. Best-effort total : n'importe quelle erreur ici
    * est avalée et loguée — un push manqué ne doit jamais faire échouer une
@@ -132,8 +149,10 @@ export async function GET(request: NextRequest) {
         ? `${clientName || "Votre client"} n'a toujours pas réglé la facture ${invoice.invoice_number} (${fmtEur(invoice.total_ttc)}), 45 jours après l'échéance.`
         : `${clientName || "Votre client"} n'a pas encore réglé la facture ${invoice.invoice_number} (${fmtEur(invoice.total_ttc)}).`
 
+      const badge = await getOverdueBadgeCount(invoice.user_id)
+
       const outcomes = await Promise.all(
-        tokens.map((token) => apns.send(token, { title, body, path: `/invoices/${invoice.id}` })),
+        tokens.map((token) => apns.send(token, { title, body, path: `/invoices/${invoice.id}`, badge })),
       )
 
       const staleTokens = outcomes.filter((o) => o.shouldRemove).map((o) => o.token)
