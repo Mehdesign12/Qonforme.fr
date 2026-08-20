@@ -193,11 +193,32 @@ donc les appeler sans condition depuis n'importe quel composant.
 | `shareContent()` — `lib/native/share.ts` | Feuille de partage iOS | Web Share API, sinon copie du lien |
 | `openExternalUrl()` — `lib/native/browser.ts` | SFSafariViewController | `window.open` |
 | `initPushNotifications()` — `lib/native/push.ts` | APNs | Sans effet |
+| `capturePhoto()` — `lib/native/camera.ts` | Choix caméra/photothèque natif | `null` (voir note) |
 
 **`openExternalUrl()` est obligatoire pour Stripe Checkout.** Laisser un tunnel
 de paiement s'exécuter dans la WKWebView pose trois problèmes : Apple le refuse
 (règle 3.1), les cookies de Safari ne sont pas partagés donc la carte doit être
 ressaisie, et l'utilisateur se retrouve bloqué sur la page Stripe sans retour.
+
+**`capturePhoto()` suit un pattern différent des trois autres** : au lieu d'un
+repli web fonctionnel, elle retourne `null` sur le web et c'est au composant
+appelant de masquer le bouton (`isNativeApp() && <Button.../>`) plutôt que de
+l'appeler à l'aveugle. Pas de repli "propre" à écrire ici : le `<input
+type="file" accept="image/*">` déjà présent couvre déjà ce cas sur mobile web
+(il ouvre nativement l'appareil photo dans la plupart des navigateurs), donc
+dupliquer le bouton n'aurait ajouté aucune valeur, juste de la confusion.
+Utilisée dans `components/settings/InvoiceSettingsForm.tsx` (photo du logo
+entreprise) — nécessite `NSCameraUsageDescription` et
+`NSPhotoLibraryUsageDescription` dans `Info.plist` (déjà ajoutées).
+
+**`components/native/PrivacyScreen.tsx`** — pas un helper `lib/native/`, un
+composant autonome monté à côté de `NativeAppInit` dans `app/layout.tsx`.
+Cache le contenu de l'app (montants de factures, IBAN…) dans l'aperçu du
+sélecteur d'apps iOS dès que l'app quitte le premier plan
+(`App.addListener('appStateChange', …)`), avec un fond opaque plutôt qu'un
+flou (`backdrop-filter` interdit sur mobile, règle CLAUDE.md). Sans lui,
+n'importe qui avec un accès physique momentané au téléphone verrait ces
+données sans déverrouiller l'app.
 
 ---
 
@@ -248,6 +269,17 @@ HTTP/2 est ouverte une seule fois par run de cron et réutilisée pour tous les
 envois — Apple traite une reconnexion par notification comme un usage abusif.
 Testé : `__tests__/apns-jwt.test.ts` vérifie que la signature produite est
 authentifiable avec la clé publique correspondante.
+
+Chaque notification porte aussi `aps.badge` (nombre de factures au statut
+`overdue` de l'utilisateur) — iOS met à jour le badge sur l'icône de l'app
+sans rien de plus côté client, c'est natif dès qu'un push distant l'inclut.
+**Limite connue :** rien ne le remet à jour/zéro quand l'utilisateur ouvre
+l'app et traite ses factures — iOS ne le fait pas tout seul pour un badge
+posé par un push distant. Nécessiterait un plugin tiers
+(`@capawesome/capacitor-badge`, pas de solution officielle Capacitor) non
+ajouté pour l'instant : ça veut dire un nouveau `npx cap sync` + rebuild à
+tester sur appareil, pour un gain secondaire par rapport au reste de cette
+section. À ajouter si ça devient gênant en usage réel.
 
 **Tant que la config ci-dessous n'est pas en place, le cron continue de
 fonctionner normalement par email** — `openApnsClient()` retourne `null` et
@@ -306,11 +338,17 @@ principal de cette approche.
 
 Ce qui plaide en notre faveur, à mettre en avant dans les notes de review :
 
-- notifications push de relance de factures impayées (impossible en web sur iOS) ;
+- notifications push de relance de factures impayées, badge sur l'icône (impossible en web sur iOS) ;
 - feuille de partage native pour envoyer un PDF de facture ;
-- appareil photo pour capturer un logo ou un justificatif ;
+- appareil photo pour photographier le logo de l'entreprise ;
+- écran de confidentialité : les données financières sont masquées dans le sélecteur d'apps iOS ;
 - retour haptique et écrans de démarrage natifs ;
 - fonctionnement hors-ligne.
+
+⚠️ Ne jamais lister ici une capacité qui n'est pas réellement branchée à une
+fonctionnalité utilisable — un reviewer Apple qui ne retrouve pas ce qui est
+annoncé dans les notes de review est le pire scénario, pire que ne rien dire
+du tout. Cette liste doit rester synchronisée avec le tableau de la section 4.
 
 **Ne pas soumettre avant que les push fonctionnent réellement** (section 6) :
 c'est l'argument le plus solide du dossier.

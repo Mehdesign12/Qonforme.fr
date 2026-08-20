@@ -24,6 +24,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Qonforme utilise l'appareil photo pour vous permettre de prendre une photo du logo de votre entreprise, à afficher sur vos factures et devis.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Qonforme accède à vos photos pour vous permettre de choisir le logo de votre entreprise, à afficher sur vos factures et devis.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
