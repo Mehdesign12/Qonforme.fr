@@ -179,9 +179,12 @@ async function getOverviewData() {
   const chartData = Object.entries(monthCounts).map(([month, count]) => ({ month, count }))
 
   // Total users (Supabase Admin API renvoie le total dans la pagination)
+  // listUsers() interroge l'API Auth Admin, un sous-système à part — si elle
+  // échoue (réseau, API down), ne pas confondre avec "0 utilisateur" réel.
   const totalUsers = (usersRes.data as { users: unknown[]; total?: number } | null)?.total
     ?? (usersRes.data as { users: unknown[] } | null)?.users?.length
     ?? 0
+  const totalUsersError = !!usersRes.error
 
   // Enrichir les derniers abonnements avec les emails (via auth admin)
   const recentSubsWithEmail = await Promise.all(
@@ -197,6 +200,7 @@ async function getOverviewData() {
 
   return {
     totalUsers,
+    totalUsersError,
     newUsersThisMonth: newUsersRes.count ?? 0,
     activeSubscriptions: active,
     pastDue,
@@ -238,10 +242,14 @@ export default async function AdminOverviewPage() {
         <KpiCard
           iconBg="linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)"
           icon={<Users className="w-4 h-4 text-[#2563EB]" />}
-          value={d.totalUsers.toLocaleString('fr-FR')}
+          value={d.totalUsersError ? '—' : d.totalUsers.toLocaleString('fr-FR')}
           label="Utilisateurs"
-          sub="inscrits au total"
-          badge={d.newUsersThisMonth > 0 ? (
+          sub={d.totalUsersError ? 'Données indisponibles' : 'inscrits au total'}
+          badge={d.totalUsersError ? (
+            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold rounded-full px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              Erreur
+            </span>
+          ) : d.newUsersThisMonth > 0 ? (
             <span className="inline-flex items-center gap-0.5 text-[11px] font-bold rounded-full px-2 py-0.5 bg-[#D1FAE5] text-[#065F46]">
               <ArrowUpRight className="w-3 h-3" />
               +{d.newUsersThisMonth} ce mois
