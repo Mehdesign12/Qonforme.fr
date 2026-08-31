@@ -113,14 +113,21 @@ async function getHealthData() {
     (usersRes.data as { users?: unknown[] } | null)?.users?.length ??
     0
 
+  // listUsers() interroge l'API Auth Admin de Supabase — un sous-système
+  // distinct de PostgREST (pingSupabase ci-dessus ne l'exerce pas). Sans
+  // vérifier .error, un échec réseau/API se confond avec "0 utilisateur"
+  // (même piège que documenté dans CLAUDE.md pour le middleware).
   return {
     checkedAt: new Date(),
     services: { supabase, stripe, resend },
     cronLogs: (cronLogsRes.data ?? []) as CronLog[],
     users: {
       total: totalUsers,
+      totalError: !!usersRes.error,
       newThisWeek: newUsersRes.count ?? 0,
+      newThisWeekError: !!newUsersRes.error,
       activeSubscriptions: activeSubsRes.count ?? 0,
+      activeSubscriptionsError: !!activeSubsRes.error,
     },
   }
 }
@@ -231,7 +238,8 @@ export default async function HealthPage() {
   if (!(await isAdminAuthenticated())) redirect("/admin/login")
 
   const d = await getHealthData()
-  const allOk = Object.values(d.services).every((s) => s.status === "ok")
+  const statsOk = !d.users.totalError && !d.users.newThisWeekError && !d.users.activeSubscriptionsError
+  const allOk = Object.values(d.services).every((s) => s.status === "ok") && statsOk
 
   return (
     <div className="space-y-6 max-w-[1000px] mx-auto">
@@ -281,35 +289,62 @@ export default async function HealthPage() {
           Utilisateurs
         </h2>
         <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-2xl border p-4 bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]">
+          <div className={`rounded-2xl border p-4 ${d.users.totalError ? "bg-red-50/80 dark:bg-red-900/10 border-red-200 dark:border-red-900/40" : "bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]"}`}>
             <div className="flex items-center gap-2 mb-2">
               <Users className="w-4 h-4 text-[#2563EB]" />
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total</span>
             </div>
-            <p className="font-mono text-2xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0]">
-              {d.users.total.toLocaleString("fr-FR")}
-            </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">inscrits</p>
+            {d.users.totalError ? (
+              <>
+                <p className="font-mono text-2xl font-extrabold text-red-500 dark:text-red-400">—</p>
+                <p className="text-[11px] text-red-500 dark:text-red-400 mt-0.5">Données indisponibles</p>
+              </>
+            ) : (
+              <>
+                <p className="font-mono text-2xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0]">
+                  {d.users.total.toLocaleString("fr-FR")}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">inscrits</p>
+              </>
+            )}
           </div>
-          <div className="rounded-2xl border p-4 bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]">
+          <div className={`rounded-2xl border p-4 ${d.users.newThisWeekError ? "bg-red-50/80 dark:bg-red-900/10 border-red-200 dark:border-red-900/40" : "bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]"}`}>
             <div className="flex items-center gap-2 mb-2">
               <UserPlus className="w-4 h-4 text-emerald-500" />
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">7 derniers jours</span>
             </div>
-            <p className="font-mono text-2xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0]">
-              +{d.users.newThisWeek}
-            </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">nouvelles inscriptions</p>
+            {d.users.newThisWeekError ? (
+              <>
+                <p className="font-mono text-2xl font-extrabold text-red-500 dark:text-red-400">—</p>
+                <p className="text-[11px] text-red-500 dark:text-red-400 mt-0.5">Données indisponibles</p>
+              </>
+            ) : (
+              <>
+                <p className="font-mono text-2xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0]">
+                  +{d.users.newThisWeek}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">nouvelles inscriptions</p>
+              </>
+            )}
           </div>
-          <div className="rounded-2xl border p-4 bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]">
+          <div className={`rounded-2xl border p-4 ${d.users.activeSubscriptionsError ? "bg-red-50/80 dark:bg-red-900/10 border-red-200 dark:border-red-900/40" : "bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]"}`}>
             <div className="flex items-center gap-2 mb-2">
               <CreditCard className="w-4 h-4 text-violet-500" />
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Abonnés actifs</span>
             </div>
-            <p className="font-mono text-2xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0]">
-              {d.users.activeSubscriptions}
-            </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">abonnements actifs</p>
+            {d.users.activeSubscriptionsError ? (
+              <>
+                <p className="font-mono text-2xl font-extrabold text-red-500 dark:text-red-400">—</p>
+                <p className="text-[11px] text-red-500 dark:text-red-400 mt-0.5">Données indisponibles</p>
+              </>
+            ) : (
+              <>
+                <p className="font-mono text-2xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0]">
+                  {d.users.activeSubscriptions}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">abonnements actifs</p>
+              </>
+            )}
           </div>
         </div>
       </div>
