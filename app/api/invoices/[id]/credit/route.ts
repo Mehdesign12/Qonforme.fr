@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { insertWithSequentialNumber } from "@/lib/utils/document-numbering"
+
+const EPSILON = 0.01 // tolérance d'arrondi centime sur les comparaisons de montants
 
 interface Params {
   params: Promise<{ id: string }>
@@ -65,33 +68,36 @@ export async function POST(request: NextRequest, { params }: Params) {
   const total_vat   = creditLines.reduce((s: number, l: { total_vat: number }) => s + l.total_vat, 0)
   const total_ttc   = subtotal_ht + total_vat
 
-  // 6. Numérotation de l'avoir : AV-{ANNÉE}-{SEQ}
-  const year   = new Date().getFullYear()
-  const avPfx  = `AV-${year}-`
-
-  // Numérotation robuste : MAX des avoirs existants pour cet utilisateur
-  const { data: existingAv } = await supabase
+  // 6. Un avoir partiel ne doit ni dépasser le solde restant de la facture,
+  //    ni bloquer l'émission d'avoirs partiels suivants sur ce qui reste dû.
+  const { data: priorCredits } = await supabase
     .from("credit_notes")
-    .select("credit_note_number")
+    .select("total_ttc")
+    .eq("original_invoice_id", id)
     .eq("user_id", user.id)
-    .like("credit_note_number", `${avPfx}%`)
-    .order("credit_note_number", { ascending: false })
-    .limit(1)
 
-  let nextAvSeq = 1
-  if (existingAv && existingAv.length > 0) {
-    const lastNum = existingAv[0].credit_note_number
-    const parts   = lastNum.split("-")
-    const lastSeq = parseInt(parts[parts.length - 1], 10)
-    if (!isNaN(lastSeq)) nextAvSeq = lastSeq + 1
+  const alreadyCredited = (priorCredits ?? []).reduce((s, c) => s + (c.total_ttc || 0), 0)
+
+  if (alreadyCredited + total_ttc > invoice.total_ttc + EPSILON) {
+    return NextResponse.json({
+      error: `Le montant total des avoirs (${(alreadyCredited + total_ttc).toFixed(2)} €) dépasserait le montant de la facture (${invoice.total_ttc.toFixed(2)} €)`,
+    }, { status: 400 })
   }
 
-  const credit_note_number = `${avPfx}${String(nextAvSeq).padStart(3, "0")}`
+  // Cet avoir solde-t-il entièrement la facture (compte tenu des avoirs déjà émis) ?
+  const isFullCredit = alreadyCredited + total_ttc >= invoice.total_ttc - EPSILON
 
-  // 7. Créer l'avoir
-  const { data: creditNote, error: cnErr } = await supabase
-    .from("credit_notes")
-    .insert({
+  // 7. Numérotation de l'avoir : AV-{ANNÉE}-{SEQ} — numérotation robuste
+  //    (voir lib/utils/document-numbering.ts)
+  const year  = new Date().getFullYear()
+  const avPfx = `AV-${year}-`
+
+  const { data: creditNote, error: cnErr } = await insertWithSequentialNumber(supabase, {
+    table: "credit_notes",
+    numberColumn: "credit_note_number",
+    userId: user.id,
+    prefix: avPfx,
+    buildRow: (credit_note_number) => ({
       user_id: user.id,
       credit_note_number,
       original_invoice_id: invoice.id,
@@ -102,20 +108,23 @@ export async function POST(request: NextRequest, { params }: Params) {
       total_vat,
       total_ttc,
       issue_date: new Date().toISOString().split("T")[0],
-    })
-    .select()
-    .single()
+    }),
+  })
 
   if (cnErr) {
     return NextResponse.json({ error: cnErr.message }, { status: 500 })
   }
 
-  // 8. Mettre la facture en statut "credited"
-  await supabase
-    .from("invoices")
-    .update({ status: "credited" })
-    .eq("id", id)
-    .eq("user_id", user.id)
+  // 8. Ne marquer la facture "credited" que si l'avoir la solde entièrement —
+  //    un avoir partiel laisse le statut inchangé pour ne pas bloquer un
+  //    avoir ultérieur ni fausser les calculs de CA encaissé ailleurs dans l'app.
+  if (isFullCredit) {
+    await supabase
+      .from("invoices")
+      .update({ status: "credited" })
+      .eq("id", id)
+      .eq("user_id", user.id)
+  }
 
   return NextResponse.json({ credit_note: creditNote }, { status: 201 })
 }

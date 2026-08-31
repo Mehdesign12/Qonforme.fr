@@ -333,15 +333,18 @@ export default function ProductsPage() {
   const [showInactive, setShowInactive] = useState(false)
   const [panel, setPanel]           = useState<"create" | Product | null>(null)
 
+  // Toujours récupérer actifs + inactifs : le bouton "Voir les inactifs" a besoin
+  // de connaître inactiveProducts.length pour savoir s'il doit s'afficher, ce qui
+  // est impossible si on ne demande les inactifs qu'une fois le bouton déjà activé
+  // (showInactive ne contrôle plus que l'affichage, côté client, via `displayed`).
   const fetchProducts = useCallback(async () => {
     setLoading(true)
-    const params = new URLSearchParams({ search })
-    if (showInactive) params.set("include_inactive", "true")
+    const params = new URLSearchParams({ search, include_inactive: "true" })
     const res  = await fetch(`/api/products?${params}`)
     const json = await res.json()
     if (json.products) setProducts(json.products)
     setLoading(false)
-  }, [search, showInactive])
+  }, [search])
 
   useEffect(() => {
     const timer = setTimeout(fetchProducts, 250)

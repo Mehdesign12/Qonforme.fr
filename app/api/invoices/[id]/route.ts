@@ -33,9 +33,34 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const { id } = await params
   const body = await request.json()
 
+  // Le contenu d'une facture (lignes, montants, client, dates) ne doit plus
+  // bouger une fois qu'elle n'est plus un brouillon — le formulaire d'édition
+  // le bloque déjà côté client, mais un appel direct à cette route contournait
+  // ce garde-fou et pouvait réécrire les montants d'un document Factur-X déjà
+  // émis. Les changements de statut (draft→sent, sent→paid…) et l'archivage
+  // restent autorisés quel que soit le statut actuel.
+  const contentFields = ["lines", "client_id", "issue_date", "due_date", "notes", "payment_terms"]
+  const touchesContent = contentFields.some((f) => body[f] !== undefined)
+
+  if (touchesContent) {
+    const { data: current } = await supabase
+      .from("invoices")
+      .select("status")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .single()
+
+    if (current && current.status !== "draft") {
+      return NextResponse.json(
+        { error: "Seules les factures brouillons peuvent être modifiées" },
+        { status: 403 }
+      )
+    }
+  }
+
   // Recalculer les totaux si les lignes sont modifiées
   let updateData: Record<string, unknown> = {}
-  
+
   if (body.lines) {
     const subtotal_ht = body.lines.reduce((sum: number, l: { total_ht: number }) => sum + (l.total_ht || 0), 0)
     const total_vat = body.lines.reduce((sum: number, l: { total_vat: number }) => sum + (l.total_vat || 0), 0)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { insertWithSequentialNumber } from "@/lib/utils/document-numbering"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -25,22 +26,28 @@ export async function POST(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Ce devis a déjà été converti en facture" }, { status: 400 })
   }
 
-  // 2. Numérotation facture
+  // 2. Numérotation facture — même compteur (MAX robuste sur la table invoices,
+  //    voir lib/utils/document-numbering.ts) que la création directe, pour ne
+  //    plus jamais produire de doublon avec les factures déjà émises hors
+  //    conversion de devis (ancien bug : ce compteur relisait companies.invoice_sequence,
+  //    un compteur séparé jamais incrémenté par la création directe de facture).
   const { data: company } = await supabase
     .from("companies")
-    .select("invoice_prefix, invoice_sequence")
+    .select("invoice_prefix")
     .eq("user_id", user.id)
     .single()
 
-  const prefix   = company?.invoice_prefix || "F"
-  const sequence = company?.invoice_sequence || 1
-  const year     = new Date().getFullYear()
-  const invoice_number = `${prefix}-${year}-${String(sequence).padStart(3, "0")}`
+  const prefix = company?.invoice_prefix || "F"
+  const year   = new Date().getFullYear()
+  const pfx    = `${prefix}-${year}-`
 
   // 3. Créer la facture à partir du devis
-  const { data: invoice, error: invErr } = await supabase
-    .from("invoices")
-    .insert({
+  const { data: invoice, error: invErr } = await insertWithSequentialNumber<{ id: string }>(supabase, {
+    table: "invoices",
+    numberColumn: "invoice_number",
+    userId: user.id,
+    prefix: pfx,
+    buildRow: (invoice_number) => ({
       user_id:     user.id,
       client_id:   quote.client_id,
       invoice_number,
@@ -52,19 +59,12 @@ export async function POST(_req: NextRequest, { params }: Params) {
       total_vat:   quote.total_vat,
       total_ttc:   quote.total_ttc,
       notes:       quote.notes,
-    })
-    .select()
-    .single()
+    }),
+  })
 
-  if (invErr) return NextResponse.json({ error: invErr.message }, { status: 500 })
+  if (invErr || !invoice) return NextResponse.json({ error: invErr?.message ?? "Erreur création facture" }, { status: 500 })
 
-  // 4. Incrémenter la séquence facture
-  await supabase
-    .from("companies")
-    .update({ invoice_sequence: sequence + 1 })
-    .eq("user_id", user.id)
-
-  // 5. Marquer le devis comme converti
+  // 4. Marquer le devis comme converti
   await supabase
     .from("quotes")
     .update({ converted_invoice_id: invoice.id, status: "accepted" })

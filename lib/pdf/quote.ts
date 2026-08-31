@@ -5,6 +5,7 @@
  */
 import { PDFDocument, rgb, PageSizes } from "pdf-lib"
 import fontkit from "@pdf-lib/fontkit"
+import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 import path from "path"
 import fs from "fs"
 
@@ -54,7 +55,9 @@ export interface QuotePdfInput {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function hexToRgb(hex: string) {
-  const h = (hex ?? "#2563EB").replace("#", "").padEnd(6, "0")
+  let h = (hex ?? "#2563EB").replace("#", "")
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("") // "fff" → "ffffff"
+  h = h.padEnd(6, "0").slice(0, 6)
   return rgb(
     parseInt(h.slice(0, 2), 16) / 255,
     parseInt(h.slice(2, 4), 16) / 255,
@@ -80,8 +83,8 @@ export async function generateQuotePdf({ quote, company }: QuotePdfInput): Promi
   doc.registerFontkit(fontkit)
 
   const fontsDir    = path.join(process.cwd(), "public", "fonts")
-  const fontRegular = await doc.embedFont(fs.readFileSync(path.join(fontsDir, "Roboto-Regular.ttf")))
-  const fontBold    = await doc.embedFont(fs.readFileSync(path.join(fontsDir, "Roboto-Bold.ttf")))
+  const fontRegular = await doc.embedFont(fs.readFileSync(path.join(fontsDir, "Roboto-Regular.ttf")), { subset: true })
+  const fontBold    = await doc.embedFont(fs.readFileSync(path.join(fontsDir, "Roboto-Bold.ttf")), { subset: true })
 
   const page           = doc.addPage(PageSizes.A4)
   const { width, height } = page.getSize()
@@ -121,7 +124,7 @@ export async function generateQuotePdf({ quote, company }: QuotePdfInput): Promi
 
   // ── Logo ─────────────────────────────────────────────────────────────────
   let logoImg: Awaited<ReturnType<typeof doc.embedPng>> | null = null
-  if (company?.logo_url) {
+  if (company?.logo_url && isAllowedLogoUrl(company.logo_url)) {
     try {
       const res = await fetch(company.logo_url)
       if (res.ok) {

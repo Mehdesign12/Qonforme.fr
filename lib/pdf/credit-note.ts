@@ -5,6 +5,7 @@
  */
 import { PDFDocument, rgb, PageSizes } from "pdf-lib"
 import fontkit from "@pdf-lib/fontkit"
+import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 import path from "path"
 import fs from "fs"
 
@@ -60,7 +61,9 @@ export interface CreditNotePdfInput {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function hexToRgb(hex: string) {
-  const h = (hex ?? "#C2410C").replace("#", "").padEnd(6, "0")
+  let h = (hex ?? "#C2410C").replace("#", "")
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("") // "fff" → "ffffff"
+  h = h.padEnd(6, "0").slice(0, 6)
   return rgb(
     parseInt(h.slice(0, 2), 16) / 255,
     parseInt(h.slice(2, 4), 16) / 255,
@@ -88,8 +91,8 @@ export async function generateCreditNotePdf({ creditNote, company }: CreditNoteP
   const fontsDir     = path.join(process.cwd(), "public", "fonts")
   const regularBytes = fs.readFileSync(path.join(fontsDir, "Roboto-Regular.ttf"))
   const boldBytes    = fs.readFileSync(path.join(fontsDir, "Roboto-Bold.ttf"))
-  const fontRegular  = await doc.embedFont(regularBytes)
-  const fontBold     = await doc.embedFont(boldBytes)
+  const fontRegular  = await doc.embedFont(regularBytes, { subset: true })
+  const fontBold     = await doc.embedFont(boldBytes, { subset: true })
 
   const page = doc.addPage(PageSizes.A4)
   const { width, height } = page.getSize()
@@ -129,7 +132,7 @@ export async function generateCreditNotePdf({ creditNote, company }: CreditNoteP
 
   // ── Logo ─────────────────────────────────────────────────────────────────
   let logoImg: Awaited<ReturnType<typeof doc.embedPng>> | null = null
-  if (company?.logo_url) {
+  if (company?.logo_url && isAllowedLogoUrl(company.logo_url)) {
     try {
       const res = await fetch(company.logo_url)
       if (res.ok) {

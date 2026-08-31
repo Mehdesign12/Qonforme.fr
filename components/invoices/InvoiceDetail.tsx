@@ -493,7 +493,11 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   )
 
   const actions    = NEXT_ACTIONS[invoice.status] ?? []
-  const isOverdue  = invoice.status === "sent" && new Date(invoice.due_date) < new Date()
+  // due_date est une date seule ("2026-08-31") — new Date(due_date) la parse comme
+  // minuit UTC, ce qui bascule la facture "en retard" 1 à 2h trop tôt en heure
+  // française (UTC+1/+2). On compare contre la fin de la journée d'échéance en
+  // heure locale (pas de suffixe "Z" → parsé en heure locale par le navigateur).
+  const isOverdue  = invoice.status === "sent" && new Date(`${invoice.due_date}T23:59:59`) < new Date()
   const canCredit  = CAN_CREDIT.includes(invoice.status)
 
   return (

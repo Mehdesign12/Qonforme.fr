@@ -31,9 +31,6 @@ type FormState = {
 
 interface Client { id: string; name: string }
 
-const today    = new Date().toISOString().split("T")[0]
-const in30days = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
-
 function newLine(): Line {
   return { id: crypto.randomUUID(), description: "", quantity: "1", unit_price_ht: "", vat_rate: 20 }
 }
@@ -46,12 +43,12 @@ export default function NewQuoteForm() {
   const [clientsLoading, setClientsLoading] = useState(true)
   const [errors, setErrors]             = useState<Record<string, string>>({})
 
-  const [form, setForm] = useState<FormState>({
-    client_id:   "",
-    issue_date:  today,
-    valid_until: in30days,
-    notes:       "",
-    lines:       [newLine()],
+  // Calculées au montage du composant (pas au chargement du module) — voir
+  // components/invoices/NewInvoiceForm.tsx pour le même fix et son pourquoi.
+  const [form, setForm] = useState<FormState>(() => {
+    const today    = new Date().toISOString().split("T")[0]
+    const in30days = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
+    return { client_id: "", issue_date: today, valid_until: in30days, notes: "", lines: [newLine()] }
   })
 
   useEffect(() => {

@@ -25,8 +25,6 @@ type FormState = {
 }
 interface Client { id: string; name: string }
 
-const today    = new Date().toISOString().split("T")[0]
-const in30days = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
 function newLine(): Line {
   return { id: crypto.randomUUID(), description: "", quantity: "1", unit_price_ht: "", vat_rate: 20 }
 }
@@ -50,8 +48,13 @@ export default function NewInvoiceForm() {
   const [hasLogo,        setHasLogo]        = useState(true) // true par défaut = masqué pendant le chargement
   const [tipDismissed,   setTipDismissed]   = useState(false)
 
-  const [form, setForm] = useState<FormState>({
-    client_id: "", issue_date: today, due_date: in30days, notes: "", lines: [newLine()],
+  // Calculées au montage du composant (pas au chargement du module) pour ne
+  // pas rester figées sur la date de la veille pour un onglet resté ouvert
+  // (ou préchargé par Next.js) à cheval sur minuit.
+  const [form, setForm] = useState<FormState>(() => {
+    const today    = new Date().toISOString().split("T")[0]
+    const in30days = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
+    return { client_id: "", issue_date: today, due_date: in30days, notes: "", lines: [newLine()] }
   })
 
   useEffect(() => {
@@ -132,31 +135,26 @@ export default function NewInvoiceForm() {
         total_vat:     computedLines[i].totalVAT,
         total_ttc:     computedLines[i].totalTTC,
       }))
-      const res = await fetch("/api/invoices", {
+      // Aperçu pur : ne crée aucune facture (pas d'écriture en base, pas de
+      // numéro consommé, pas de slot de quota Starter utilisé) — contrairement
+      // à l'ancien comportement qui appelait POST /api/invoices comme "Envoyer".
+      const res = await fetch("/api/invoices/preview-pdf", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           client_id: form.client_id, issue_date: form.issue_date,
           due_date: form.due_date, notes: form.notes || null,
-          lines: enrichedLines, status: "draft",
+          lines: enrichedLines,
         }),
       })
-      const json = await res.json()
       if (!res.ok) {
-        if (res.status === 402 && json.code === "STARTER_LIMIT_REACHED") {
-          toast.error(`Limite Starter atteinte (${json.invoicesThisMonth}/${json.limit} ce mois). Passez au plan Pro.`, {
-            duration: 8000,
-            action: { label: "Passer au Pro", onClick: () => window.location.href = "/settings/billing" },
-          })
-        } else {
-          toast.error(json.error || "Erreur lors de la sauvegarde")
-        }
+        const json = await res.json().catch(() => ({}))
+        toast.error(json.error || "Erreur lors de la génération de l'aperçu")
         return
       }
-      const invoiceId = json.invoice?.id
-      window.open(`/api/invoices/${invoiceId}/pdf`, "_blank")
-      toast.success("Brouillon sauvegardé — aperçu PDF ouvert dans un nouvel onglet")
-      router.push(`/invoices/${invoiceId}`)
-      router.refresh()
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      window.open(url, "_blank")
+      toast.success("Aperçu PDF ouvert dans un nouvel onglet")
     } catch {
       toast.error("Erreur réseau")
     } finally {
