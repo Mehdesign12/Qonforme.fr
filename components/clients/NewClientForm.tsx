@@ -7,6 +7,7 @@ import { Loader2, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { isValidSiren } from "@/lib/utils/invoice"
 
 type Fields = {
   name: string
@@ -23,8 +24,8 @@ function validate(f: Fields): Record<string, string> {
   const errs: Record<string, string> = {}
   if (!f.name || f.name.trim().length < 2)
     errs.name = "Raison sociale requise (2 caractères min.)"
-  if (f.siren && !/^\d{9}$/.test(f.siren.trim()))
-    errs.siren = "SIREN invalide (9 chiffres)"
+  if (f.siren && !isValidSiren(f.siren.trim()))
+    errs.siren = "SIREN invalide (algorithme de Luhn)"
   if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim()))
     errs.email = "Email invalide"
   return errs

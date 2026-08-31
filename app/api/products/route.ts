@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
+// Construit une clause ilike pour .or() en échappant le motif si besoin.
+// PostgREST utilise ',' pour séparer les clauses et '()' pour grouper : un
+// terme de recherche contenant ces caractères (ou un point/deux-points) doit
+// voir son motif entier entouré de guillemets doubles, sans quoi le filtre
+// est mal formé (ou matche autre chose que ce que l'utilisateur a tapé).
+function buildIlikeClause(column: string, search: string): string {
+  const pattern = `%${search}%`
+  if (!/[,()".:]/.test(pattern)) return `${column}.ilike.${pattern}`
+  const escaped = pattern.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+  return `${column}.ilike."${escaped}"`
+}
+
 // GET /api/products — liste tous les produits actifs de l'utilisateur
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -25,7 +37,11 @@ export async function GET(request: NextRequest) {
   }
 
   if (search) {
-    query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,reference.ilike.%${search}%`)
+    query = query.or([
+      buildIlikeClause("name", search),
+      buildIlikeClause("description", search),
+      buildIlikeClause("reference", search),
+    ].join(","))
   }
 
   const { data, error } = await query

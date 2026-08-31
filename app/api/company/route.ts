@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createAdminClient, createClientWithToken } from "@/lib/supabase/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 
 // Helper : résout l'utilisateur ET le client DB adapté.
 // - Cookie (navigateur) : createClient() cookie-based → RLS via session cookie ✅
@@ -74,6 +75,14 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
   const body = await request.json()
+
+  // logo_url est fetch()é côté serveur à chaque génération de PDF (lib/pdf/*) —
+  // ne jamais accepter autre chose que le bucket Supabase Storage de ce projet
+  // (sinon SSRF : un utilisateur pourrait faire pointer le serveur vers une
+  // adresse interne de son choix).
+  if (body.logo_url && !isAllowedLogoUrl(body.logo_url)) {
+    return NextResponse.json({ error: "URL de logo invalide" }, { status: 400 })
+  }
 
   const { data, error } = await supabase
     .from("companies")
