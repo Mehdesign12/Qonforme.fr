@@ -422,4 +422,17 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 - Une table d'événements.
 - De nouveaux statuts de devis, enregistrés en base : `expired` (aujourd'hui calculé à l'affichage), `withdrawn` (rétracté), `superseded` (remplacé).
 
-**Maquettes :** voir le canevas. Pages client (devis et bon de commande, sur ordinateur et sur téléphone, avec leurs états), écrans de l'artisan (partage, signature sur place, suivi et preuve), emails.
+**Maquettes (canevas, section « Signature en ligne », version 17) :**
+- **Pages du client :**
+  - `Signer-devis` : particulier, taux réduit de TVA, rétractation, sans code sous 5 000 € TTC ;
+  - `Signer-bon-de-commande` : client professionnel, fonction, numéro de commande, code par email ;
+  - `Signer-devis-mobile` ;
+  - `Signer-etats` : signé, expiré, remplacé, désactivé, rétractation, lien introuvable.
+- **Signature chez le client :** `Signer-sur-place`, sur le téléphone de l'artisan, avec les règles du hors établissement.
+- **Emails :** `Emails-signature`, huit emails, du lien de signature jusqu'à la rétractation.
+- **Écrans de l'artisan, sur toutes les fiches devis et bons de commande :**
+  - un panneau « Signature en ligne » (lien, partage, signature sur place, preuve) ;
+  - une fenêtre « Partager pour signature » (email, SMS, WhatsApp, QR code, code de vérification) ;
+  - l'accord sur papier gardé en solution de secours.
+- **Réglages :** une section « Signature en ligne » dans Paramètres › Modèles de documents.
+- **Corrigé partout :** la mention « sous réserve de l'attestation du client » est remplacée par la certification à la signature.
