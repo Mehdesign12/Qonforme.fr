@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { canRemindInvoice } from "@/lib/utils/document-status"
 import { sendEmail } from "@/lib/email/resend"
 import { buildReminderEmail } from "@/lib/email/templates/reminder"
 
@@ -25,6 +26,12 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
     if (invErr || !invoice) {
       return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
+    }
+
+    // Une relance ne concerne qu'une facture émise et non réglée : jamais un
+    // brouillon, une facture payée, créditée ou refusée (qu'elle repasserait sinon « en retard »).
+    if (!canRemindInvoice(invoice.status)) {
+      return NextResponse.json({ error: "Cette facture ne peut pas être relancée dans son état actuel" }, { status: 422 })
     }
 
     const clientEmail = invoice.client?.email

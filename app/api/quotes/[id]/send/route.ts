@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { statusAfterSend } from "@/lib/utils/document-status"
 import { sendEmail } from "@/lib/email/resend"
 import { buildQuoteEmail } from "@/lib/email/templates/quote"
 import { generateQuotePdf } from "@/lib/pdf/quote"
@@ -75,7 +76,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
     // 5. Mettre à jour le statut
     await supabase
       .from("quotes")
-      .update({ status: "sent", sent_at: new Date().toISOString() })
+      .update({ status: statusAfterSend("quote", quote.status), sent_at: new Date().toISOString() })
       .eq("id", id)
       .eq("user_id", user.id)
 

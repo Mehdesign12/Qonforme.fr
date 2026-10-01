@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { statusAfterSend } from "@/lib/utils/document-status"
 import { sendEmail } from "@/lib/email/resend"
 import { buildInvoiceEmail } from "@/lib/email/templates/invoice"
 import { generateInvoicePdf } from "@/lib/pdf/invoice"
@@ -90,10 +91,11 @@ export async function POST(_req: NextRequest, { params }: Params) {
     })
     console.log(`[invoice-send] Email envoyé avec succès`)
 
-    // 5. Mettre à jour statut + sent_at
+    // 5. Mettre à jour statut + sent_at. Renvoyer une copie d'une facture payée
+    //    ou créditée ne doit pas écraser son statut (lib/utils/document-status.ts).
     await supabase
       .from("invoices")
-      .update({ status: "sent", sent_at: new Date().toISOString() })
+      .update({ status: statusAfterSend("invoice", invoice.status), sent_at: new Date().toISOString() })
       .eq("id", id)
       .eq("user_id", user.id)
 

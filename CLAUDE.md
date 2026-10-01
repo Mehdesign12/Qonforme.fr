@@ -352,6 +352,41 @@ Détails complets dans `IOS-APP.md`.
 
 ---
 
+## 🚨 RÈGLE — Documents émis : jamais modifiés, jamais supprimés
+
+### Le bug
+Un simple `PATCH /api/invoices/[id]` avec `{ "status": "draft" }` remettait une
+facture émise en brouillon ; elle redevenait alors modifiable puis supprimable.
+Or une facture émise ne se modifie ni ne se supprime : la numérotation doit rester
+continue et toute erreur se corrige par un avoir (CGI art. 242 nonies A).
+
+### La règle
+**Tout changement de statut d'une facture, d'un devis ou d'un bon de commande passe
+par `lib/utils/document-status.ts`, côté serveur.** Masquer un bouton dans l'interface
+ne protège rien : la route doit refuser elle-même.
+
+- Jamais de retour à `draft` une fois envoyé.
+- Contenu (lignes, montants, client, dates) modifiable seulement en `draft`.
+- `credited` est posé uniquement par la route d'avoir ; `cancelled` ne se pose jamais à la main.
+- Un renvoi par email (`statusAfterSend`) n'écrase jamais un statut payé, accepté ou crédité.
+- Une relance (`canRemindInvoice`) ne vise qu'une facture émise et non réglée.
+- Création : toujours `INITIAL_STATUS` (`draft`), jamais un statut fourni par la requête.
+
+```ts
+// ✅ Correct
+if (body.status !== undefined && !canTransition("invoice", current.status, body.status)) {
+  return NextResponse.json({ error: transitionError("invoice", current.status, body.status) }, { status: 403 })
+}
+
+// ❌ Incorrect — n'importe quel statut accepté, y compris le retour au brouillon
+if (body.status) updateData.status = body.status
+```
+
+Un nouveau statut ou un nouveau type de document s'ajoute dans la liste blanche
+`TRANSITIONS`, avec un test dans `__tests__/document-status.test.ts`.
+
+---
+
 ## 🧭 Décisions stratégiques en vigueur
 
 > Avant tout travail de copywriting, de marketing, de design ou d'acquisition, lire `DECISIONS-STRATEGIQUES.md`. Il fait foi sur `STRATEGIE-CROISSANCE-2026-10.md`.
@@ -360,6 +395,7 @@ Détails complets dans `IOS-APP.md`.
 - **Ne jamais nommer un concurrent** dans un contenu public : site, emails, publicités, contenus.
 - **Aucun démarchage :** ni appels ni emails à froid. Le moteur de prospection (`lib/outreach`, `lib/scraping`) reste désactivé.
 - **Aucune affirmation invérifiable :** pas de faux avis, faux chiffres, fausse homologation ou certification.
+- **Chaîne des documents :** le devis signé vaut commande ; le bon de commande est facultatif, jamais une étape obligatoire. Signature en ligne et règles d'immutabilité : section 11 de `DECISIONS-STRATEGIQUES.md`.
 - **Aucune promesse de contact humain :** pas d'appel, de visio, de rendez-vous, de « un humain vous répond » ni d'email signé du fondateur. Ce service n'existe pas. Les emails partent au nom de Qonforme.
 
 ---
@@ -428,3 +464,4 @@ Détails complets dans `IOS-APP.md`.
 | 2026-10-01 | Décisions stratégiques validées avec le fondateur, consignées dans un document vivant. Cible : les artisans du bâtiment qui choisissent leur premier logiciel (un cœur, trois profils), promesse « premier et dernier logiciel ». Aucune mention de concurrents, aucun démarchage, pas de logique de remplacement. Chiffres du marché sourcés (INSEE, Urssaf, SDES, CAPEB, France Num). Design : héros « Clair sobre » validé. Recommandation « devis gratuits, factures payantes » en attente de décision. Renvoi ajouté dans CLAUDE.md et bandeau dans la stratégie | `DECISIONS-STRATEGIQUES.md`, `STRATEGIE-CROISSANCE-2026-10.md`, `CLAUDE.md` |
 | 2026-10-01 | Maquettes d'onboarding revues à la demande du fondateur (canevas de design, aucun code applicatif modifié) : accès libre au tableau de bord à tout moment (« Passer au tableau de bord » dans l'en-tête de chaque étape, « Explorer le tableau de bord » sur l'écran « Par quoi commencer ? », nouvelle planche du tableau de bord d'un compte neuf) ; suppression de toute promesse de contact humain (aide « un humain vous répond », appel de 10 minutes, carte et emails signés du fondateur, support téléphonique, mise en route en visio) ; écrans épurés, une action principale par écran ; icônes de la barre latérale en trait fin, sans pastille. Nouvelle règle de communication : ne jamais promettre de contact humain | `DECISIONS-STRATEGIQUES.md`, `CLAUDE.md` |
 | 2026-10-01 | Logo personnalisé dans les maquettes Paramètres › Entreprise (compte actif et compte neuf) : zone de dépôt, logo réellement affiché une fois importé, remplacer/retirer, aperçu en direct sur un devis ; tuile « Ajouter votre logo » sur le tableau de bord du compte neuf. Inventaire de la refonte comparé au code en ligne (section 10 de `DECISIONS-STRATEGIQUES.md`) : statut existe / partiel / à construire de chaque apport et ordre suggéré. Constats dans le code, non corrigés ici : une facture relancée passe au statut `overdue` et sort des montants « en attente » et « en retard » du tableau de bord ; la FAQ tarifs affirme gérer l'autoliquidation, absente du code | `DECISIONS-STRATEGIQUES.md` |
+| 2026-10-01 | Fix faille documents émis : un `PATCH { status: "draft" }` remettait une facture émise en brouillon (puis modifiable et supprimable). Liste blanche des changements de statut côté serveur pour factures, devis et bons de commande (`lib/utils/document-status.ts`) : jamais de retour au brouillon, `credited`/`cancelled` jamais posés à la main, contenu des devis et bons de commande figé hors brouillon (il ne l'était que dans l'interface), renvoi par email sans écraser un statut payé/accepté/crédité, relance refusée sur une facture brouillon/payée/créditée, conversion limitée aux devis envoyés ou acceptés, création toujours en brouillon. 23 tests. Cascade des documents et cahier des charges de la signature en ligne consignés (section 11 de `DECISIONS-STRATEGIQUES.md`), nouvelle règle dans `CLAUDE.md` | `lib/utils/document-status.ts`, `app/api/invoices/route.ts`, `app/api/invoices/[id]/{route,send/route,remind/route}.ts`, `app/api/quotes/[id]/{route,send/route,convert/route}.ts`, `app/api/purchase-orders/[id]/{route,send/route}.ts`, `__tests__/document-status.test.ts`, `DECISIONS-STRATEGIQUES.md`, `CLAUDE.md` |

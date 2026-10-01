@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { statusAfterSend } from "@/lib/utils/document-status"
 import { sendEmail } from "@/lib/email/resend"
 import { buildPurchaseOrderEmail } from "@/lib/email/templates/purchase-order"
 import { generatePurchaseOrderPdf } from "@/lib/pdf/purchase-order"
@@ -76,7 +77,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
     // 5. Mettre à jour le statut → sent
     await supabase
       .from("purchase_orders")
-      .update({ status: "sent", sent_at: new Date().toISOString() })
+      .update({ status: statusAfterSend("purchase_order", po.status), sent_at: new Date().toISOString() })
       .eq("id", id)
       .eq("user_id", user.id)
 
