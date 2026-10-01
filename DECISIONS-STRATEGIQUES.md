@@ -2,7 +2,7 @@
 
 > **Document vivant.** Il consigne ce qui a été décidé avec le fondateur et ce qui reste ouvert.
 >
-> **Dernière mise à jour :** 1er octobre 2026 (modèle d'accès tranché).
+> **Dernière mise à jour :** 1er octobre 2026 (accès libre au tableau de bord, aucun contact humain promis, écrans épurés).
 >
 > **Il complète `STRATEGIE-CROISSANCE-2026-10.md` (l'analyse de départ).** En cas de contradiction, **ce document fait foi**. La section 9 liste ce qu'il remplace.
 
@@ -21,6 +21,7 @@
   - Conséquence : les 8 pages `/comparatif/*` (« Qonforme contre X ») doivent être retirées, ou transformées en guides neutres sans aucun nom, du type « Comment choisir son premier logiciel de facturation quand on est artisan ».
   - Les données de concurrence restent un outil interne, par exemple pour fixer les prix.
 - **Aucune affirmation invérifiable :** pas de faux avis, pas de faux chiffres, pas de fausse homologation ou certification. Les éléments actuels du site sont listés dans le lot 1 de la stratégie.
+- **Aucune promesse de contact humain :** pas d'appel, de visio, de rendez-vous, de « un humain vous répond » ni de message signé du fondateur. Ce service n'existe pas : le promettre serait une affirmation invérifiable de plus. Les emails partent au nom de Qonforme, sans inviter à répondre. L'aide passe par le produit : écrans clairs, devis d'essai, tableau de bord explorable.
 - **Ton :** vouvoiement. Dates exactes de la réforme : réception obligatoire depuis le 1er septembre 2026, émission obligatoire pour les TPE au 1er septembre 2027. Pas de marketing de la peur.
 
 ## 3. Acquisition — validée
@@ -48,7 +49,7 @@
 | Profil | Qui | Ce qu'il lui faut | Offre visée |
 |---|---|---|---|
 | **1. Le nouvel installé** | Ancien ouvrier ou chef d'équipe qui se met à son compte, en micro-entreprise ou en société | Un devis et une facture professionnels en 5 minutes, depuis le chantier, avec les bonnes mentions (décennale, franchise de TVA) et la conformité sans y penser | Gratuit (devis), puis Essentiel |
-| **2. L'installé sans logiciel** | 2 à 15 ans d'activité, factures sur Word, Excel ou carnet. L'échéance 2027 l'oblige à s'équiper | La simplicité, l'import de ses clients, une aide humaine pour démarrer | Essentiel, plus la mise en route accompagnée |
+| **2. L'installé sans logiciel** | 2 à 15 ans d'activité, factures sur Word, Excel ou carnet. L'échéance 2027 l'oblige à s'équiper | La simplicité, l'import de ses clients, un démarrage guidé dans l'application | Essentiel |
 | **3. L'artisan qui grandit** | Passe en société, embauche, travaille avec des entreprises ou en sous-traitance | Situations, retenue de garantie, autoliquidation, accès comptable, plusieurs utilisateurs | Artisan |
 
 **Hors cible pour l'instant :**
@@ -92,7 +93,9 @@
   - boutons en pilule avec micro-interactions : survol, pression, focus ;
   - visuel produit intégré sans cartes collées ni rognées.
 - **Verre liquide :** seulement sur les surfaces flottantes, sur ordinateur. Jamais sur mobile (règle iOS de `CLAUDE.md`).
-- **Canevas de référence :** https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG (13 écrans).
+- **Écrans épurés (demande du fondateur) :** une action principale par écran, des sous-titres d'une ligne, pas de surtitres, de badges décoratifs ni d'encarts d'aide empilés.
+- **Icônes :** celles de la barre latérale de l'application (style Lucide), en trait fin (1,25), **sans fond, sans pastille ni carré arrondi**.
+- **Canevas de référence :** https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG (28 planches).
   - Le héros « Clair sobre » de l'accueil est **validé**.
   - Les autres écrans sont à relire.
   - Le bloc d'appel à l'action en bas de l'accueil a encore l'ancien fond bleu : il faut l'aligner.
@@ -100,7 +103,7 @@
 ## 7. Questions ouvertes
 
 1. ~~Modèle d'accès~~ : **tranché le 01/10/2026**, « devis gratuits, factures payantes » (section 8).
-2. **Grille de prix.** Proposition actuelle : Essentiel 12 € HT, Artisan 24 € HT, mise en route accompagnée 149 € HT (offerte avec l'abonnement annuel Artisan). L'offre gratuite « Réception » est remise en question (section 8).
+2. **Grille de prix.** Proposition actuelle : Essentiel 12 € HT, Artisan 24 € HT (10 € et 20 € par mois à l'année). Plus de mise en route accompagnée : aucun contact humain n'est proposé (§ 2). L'offre gratuite « Réception » est remise en question (section 8).
 3. **Plateforme agréée partenaire** pour devenir « Solution compatible » : Super PDP, Iopole ou autre.
    - Coût réel pour un éditeur à confirmer.
    - Repère public chez Super PDP : vérification d'identité de l'entreprise à 2 € HT par entreprise, plus un coût par facture.
@@ -126,7 +129,7 @@
 
 ### Décision validée le 01/10/2026 : « Devis gratuits, factures payantes »
 
-**Maquettes du parcours :** rangée « Onboarding » du canevas de design (inscription, entreprise, prestations, premier devis, devis envoyé, première facture, bienvenue), plus la séquence de 5 emails et deux écrans mobiles. L'accueil et les tarifs ont été réécrits pour ce modèle.
+**Maquettes du parcours :** rangée « Onboarding » du canevas de design (inscription, entreprise, prestations, premier devis, devis envoyé, première facture, bienvenue), la rangée « Étape 4 » avec le tableau de bord d'un compte neuf, plus la séquence de 5 emails et deux écrans mobiles. L'accueil et les tarifs ont été réécrits pour ce modèle.
 
 **Gratuit, sans carte bancaire :**
 - création du compte, entreprise remplie depuis le SIRET, logo ;
@@ -138,16 +141,21 @@
 
 **Écran de paiement :**
 - garantie « satisfait ou remboursé » de 30 jours ;
-- mise en route offerte avec l'abonnement annuel.
+- sans engagement.
 
 **Après l'inscription : pas de passage obligé par le devis (validé le 01/10/2026).** L'étape 4 est un écran « Par quoi voulez-vous commencer ? » avec quatre choix. Chacun donne un premier résultat concret, même sans client sous la main :
 
 1. **Faire un vrai devis.**
 2. **M'envoyer un devis d'essai** : un devis d'exemple à son nom, envoyé sur sa propre adresse email. Il porte la mention « Exemple », n'a pas de numéro et reste hors des devis et des chiffres.
 3. **Facturer un chantier terminé** : la préparation est gratuite, le choix de la formule arrive à l'envoi. Le numéro de facture n'est attribué qu'à l'envoi, pour garder une numérotation continue.
-4. **Je le ferai plus tard** : un rappel au moment choisi (ce soir 19 h, demain 7 h 30, samedi 9 h, autre moment), par email ou notification, ou un QR code pour continuer sur le téléphone, valable 15 minutes.
+4. **Je le ferai plus tard** : un rappel par email au moment choisi (ce soir 19 h, demain 7 h 30, samedi 9 h, autre moment).
 
-En liens secondaires : importer ses clients et ses prix, faire le point sur 2026-2027 (5 questions), parler à un humain (10 minutes, à la demande de l'artisan).
+**Accès libre au tableau de bord (validé le 01/10/2026).** L'artisan qui veut seulement regarder n'est jamais bloqué :
+- « Explorer le tableau de bord » sous les quatre choix ;
+- « Passer au tableau de bord » dans l'en-tête de chaque étape, dès l'étape 2 ;
+- le même accès depuis le devis d'essai, le rappel, le devis envoyé, la bienvenue et l'email de relance à 7 jours.
+
+Le tableau de bord d'un compte neuf montre trois premiers pas (faire un devis, recevoir les factures fournisseurs, importer ses clients), des compteurs à zéro et des listes vides qui expliquent ce qui s'y affichera. Rien n'est envoyé sans action de l'artisan.
 
 **Indicateurs à suivre :**
 - premier document envoyé, réel ou d'essai, le premier jour ;
@@ -178,7 +186,7 @@ Si certains n'utilisent que les devis sans jamais payer, on pourra plafonner (pa
 
 - Retirer toutes les promesses de gratuité.
 - Proposer une démo personnalisée : l'artisan saisit son SIRET et voit la démo à son nom, avec son entreprise.
-- Ajouter la garantie de 30 jours et la mise en route offerte avec l'abonnement annuel.
+- Ajouter la garantie de 30 jours.
 
 ## 9. Ce que ce document remplace dans `STRATEGIE-CROISSANCE-2026-10.md`
 
@@ -189,6 +197,7 @@ Si certains n'utilisent que les devis sans jamais payer, on pourra plafonner (pa
 | Message « remplacez votre outil » et rachat de clients déjà équipés | **Abandonnés** (§ 3) |
 | § 7 lot 8 et phase 3 : comparatifs « datés et sourcés » | Remplacés : retirer ou neutraliser, sans nommer de concurrent (§ 2) |
 | § 5 : offre gratuite « Réception » et essai de 14 jours | **Remplacés** par « devis gratuits, factures payantes » (§ 8). Plus d'essai de 14 jours ni d'offre gratuite « Réception » |
+| § 0, § 4, § 4.2, § 5 et § 8 : « un humain derrière l'outil », fondateur visible, mise en route accompagnée en visio, support prioritaire par téléphone | **Abandonnés** : aucun contact humain n'est proposé (§ 2). L'aide passe par le produit |
 | § 6 : objectif de 3 300 €/mois en décembre | À recaler : sans démarchage, plutôt vers le 6e à 9e mois, sauf budget publicitaire ou partenaire (§ 5) |
 
 **Reste valable dans la stratégie :**
