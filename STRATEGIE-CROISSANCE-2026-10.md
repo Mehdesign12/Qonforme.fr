@@ -7,6 +7,8 @@
 > **Base de travail :** lecture complète du code, vérification du site en ligne et étude de marché sourcée (section 10).
 >
 > **Limite :** les chiffres réels (abonnés, revenu mensuel, trafic) n'étaient pas accessibles depuis cette session. Les objectifs de la section 6 sont donc des hypothèses à recaler avec ces chiffres (section 9).
+>
+> **Mise à jour du 01/10/2026 :** plusieurs choix de ce document ont été revus avec le fondateur : cible élargie aux artisans du bâtiment qui choisissent leur premier logiciel, aucun démarchage, aucune mention de concurrents. **`DECISIONS-STRATEGIQUES.md` fait foi** ; sa section 9 liste ce qui est remplacé ici.
 
 ---
 
