@@ -2,7 +2,7 @@
 
 > **Document vivant.** Il consigne ce qui a été décidé avec le fondateur et ce qui reste ouvert.
 >
-> **Dernière mise à jour :** 1er octobre 2026.
+> **Dernière mise à jour :** 1er octobre 2026 (modèle d'accès tranché).
 >
 > **Il complète `STRATEGIE-CROISSANCE-2026-10.md` (l'analyse de départ).** En cas de contradiction, **ce document fait foi**. La section 9 liste ce qu'il remplace.
 
@@ -99,7 +99,7 @@
 
 ## 7. Questions ouvertes
 
-1. **Modèle d'accès** (mur de paiement ou gratuité partielle) : voir la section 8, recommandation en attente de décision.
+1. ~~Modèle d'accès~~ : **tranché le 01/10/2026**, « devis gratuits, factures payantes » (section 8).
 2. **Grille de prix.** Proposition actuelle : Essentiel 12 € HT, Artisan 24 € HT, mise en route accompagnée 149 € HT (offerte avec l'abonnement annuel Artisan). L'offre gratuite « Réception » est remise en question (section 8).
 3. **Plateforme agréée partenaire** pour devenir « Solution compatible » : Super PDP, Iopole ou autre.
    - Coût réel pour un éditeur à confirmer.
@@ -124,7 +124,9 @@
 - Le paiement arrive avant que l'artisan ait vu **son** document, avec **son** logo et **son** client. La démo montre l'entreprise de quelqu'un d'autre.
 - Sans démarchage, chaque visiteur compte. Pour la cible « premier logiciel », payer avant d'essayer est le frein le plus fort.
 
-### Recommandation, à valider : « Devis gratuits, factures payantes »
+### Décision validée le 01/10/2026 : « Devis gratuits, factures payantes »
+
+**Maquettes du parcours :** rangée « Onboarding » du canevas de design (inscription, entreprise, prestations, premier devis, devis envoyé, première facture, bienvenue), plus la séquence de 5 emails et deux écrans mobiles. L'accueil et les tarifs ont été réécrits pour ce modèle.
 
 **Gratuit, sans carte bancaire :**
 - création du compte, entreprise remplie depuis le SIRET, logo ;
@@ -173,7 +175,7 @@ Si certains n'utilisent que les devis sans jamais payer, on pourra plafonner (pa
 | § 7, phase 3, points 1 et 2 : prospection par email et par téléphone | **Abandonnés** (§ 3) |
 | Message « remplacez votre outil » et rachat de clients déjà équipés | **Abandonnés** (§ 3) |
 | § 7 lot 8 et phase 3 : comparatifs « datés et sourcés » | Remplacés : retirer ou neutraliser, sans nommer de concurrent (§ 2) |
-| § 5 : offre gratuite « Réception » et essai de 14 jours | En attente de décision sur le modèle d'accès (§ 8) |
+| § 5 : offre gratuite « Réception » et essai de 14 jours | **Remplacés** par « devis gratuits, factures payantes » (§ 8). Plus d'essai de 14 jours ni d'offre gratuite « Réception » |
 | § 6 : objectif de 3 300 €/mois en décembre | À recaler : sans démarchage, plutôt vers le 6e à 9e mois, sauf budget publicitaire ou partenaire (§ 5) |
 
 **Reste valable dans la stratégie :**
