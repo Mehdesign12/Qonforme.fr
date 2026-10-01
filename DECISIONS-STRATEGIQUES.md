@@ -2,7 +2,7 @@
 
 > **Document vivant.** Il consigne ce qui a été décidé avec le fondateur et ce qui reste ouvert.
 >
-> **Dernière mise à jour :** 1er octobre 2026 (accès libre au tableau de bord, aucun contact humain promis, écrans épurés).
+> **Dernière mise à jour :** 1er octobre 2026 (accès libre au tableau de bord, aucun contact humain promis, écrans épurés, inventaire de la refonte en section 10).
 >
 > **Il complète `STRATEGIE-CROISSANCE-2026-10.md` (l'analyse de départ).** En cas de contradiction, **ce document fait foi**. La section 9 liste ce qu'il remplace.
 
@@ -95,7 +95,7 @@
 - **Verre liquide :** seulement sur les surfaces flottantes, sur ordinateur. Jamais sur mobile (règle iOS de `CLAUDE.md`).
 - **Écrans épurés (demande du fondateur) :** une action principale par écran, des sous-titres d'une ligne, pas de surtitres, de badges décoratifs ni d'encarts d'aide empilés.
 - **Icônes :** celles de la barre latérale de l'application (style Lucide), en trait fin (1,25), **sans fond, sans pastille ni carré arrondi**.
-- **Canevas de référence :** https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG (28 planches).
+- **Canevas de référence :** https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG (environ 190 planches au 01/10/2026).
   - Le héros « Clair sobre » de l'accueil est **validé**.
   - Les autres écrans sont à relire.
   - Le bloc d'appel à l'action en bas de l'accueil a encore l'ancien fond bleu : il faut l'aligner.
@@ -207,3 +207,92 @@ Si certains n'utilisent que les devis sans jamais payer, on pourra plafonner (pa
 - raccordement à une plateforme agréée ;
 - fonctions chantier ;
 - cycle d'emails et mesure de l'audience.
+
+## 10. Ce que la refonte apporte à la plateforme (inventaire du 01/10/2026)
+
+Chaque apport des maquettes est comparé au code en ligne.
+- **Existe** : déjà en production.
+- **Partiel** : une base existe, à compléter.
+- **À construire** : absent du code.
+
+Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
+
+### Conformité 2026-2027 (la plus urgente)
+
+| Apport | Aujourd'hui | Valeur |
+|---|---|---|
+| Réception des factures fournisseurs, raccordement à une plateforme agréée, inscription à l'annuaire | **À construire** : `/settings/ppf` est un guide manuel | Obligation légale depuis le 1er septembre 2026. C'est le premier argument de « conforme » |
+| Cycle de la facture sur la plateforme (déposée, reçue, acceptée, refusée, payée) | **Partiel** : statuts saisis à la main, `ppf_status` jamais écrit | Visibilité réelle, moins de relances inutiles |
+| Factur-X valide (profil EN 16931, PDF/A-3, motif d'exonération) | **À corriger** (stratégie, lot 1) | Condition pour devenir « Solution compatible » |
+
+### Accès, offre et conversion
+
+| Apport | Aujourd'hui | Valeur |
+|---|---|---|
+| « Devis gratuits, factures payantes » : application ouverte sans abonnement, paiement à la première facture | **À construire** : paiement obligatoire avant tout usage, seule limite `canCreateInvoice` | Lève le principal frein pour un premier logiciel |
+| Grille Essentiel 12 € / Artisan 24 € HT (10 € et 20 € à l'année), satisfait ou remboursé 30 jours | **À décider** : aujourd'hui Starter 9 € (10 factures/mois) et Pro 19 € | Panier moyen plus haut, garantie qui rassure |
+| Lien « Propulsé par Qonforme » cliquable, avec provenance | **Partiel** : texte seul dans les emails et les PDF | Bouche-à-oreille mesurable, sans démarchage |
+| Accueil et tarifs réécrits, sans faux avis ni promesse non tenue | **À construire** | Confiance. À noter : la FAQ tarifs affirme gérer l'autoliquidation, ce que le code ne fait pas |
+
+### Premiers pas
+
+| Apport | Aujourd'hui | Valeur |
+|---|---|---|
+| Entreprise remplie depuis le SIRET | **Existe** (`/api/sirene`) | — |
+| Mentions BTP automatiques : franchise de TVA (art. 293 B), décennale avec champs dédiés | **Partiel** : modèle de texte libre à remplir | Documents conformes sans y penser |
+| Catalogue de prestations pré-rempli selon le métier | **Partiel** : le catalogue démarre vide | Premier devis en 2 minutes |
+| Écran « Par quoi commencer ? » et accès libre au tableau de bord | **Partiel** : fenêtre de bienvenue à 3 actions | Personne n'est bloqué ni forcé |
+| Devis d'essai envoyé à soi-même | **À construire** | Premier résultat même sans client |
+| Rappel « plus tard » au moment choisi | **À construire** | Récupère les inscrits pressés |
+| Tableau de bord d'un compte neuf (premiers pas, états vides expliqués) | **Partiel** : états vides seulement | Activation |
+| Séquence de 5 emails déclenchés par les actions | **Partiel** : email de bienvenue seulement | Activation et passage au payant |
+| Logo personnalisé, avec aperçu sur un devis | **Existe** dans Paramètres › Préférences factures (import, photo depuis l'app, couleur). La maquette le place dans Paramètres › Entreprise avec un aperçu en direct | Documents à l'image de l'artisan |
+
+### Devis, facture, paiement (le cœur)
+
+| Apport | Aujourd'hui | Valeur |
+|---|---|---|
+| Acceptation du devis en ligne par le client | **À construire** : l'artisan change le statut à la main | Chantiers signés plus vite |
+| Lien de paiement par carte ou virement dans la facture, page de paiement du client | **À construire** : IBAN seulement | Payé plus vite, argument de vente fort |
+| Relances réglables (avant échéance, J+7, J+15) et relance des devis non signés | **Partiel** : J+30 et J+45 fixes, factures seulement | Trésorerie |
+| Suivi d'ouverture des devis et factures | **À construire** | L'artisan sait quand relancer |
+| Devis transformé en facture en un clic | **Existe** (ne vérifie pas la limite du plan) | — |
+| Aperçu du document en direct pendant la saisie | **Partiel** : bouton « Aperçu PDF » | Moins d'erreurs |
+| Numéro de facture attribué à l'envoi (brouillons sans numéro) | **À construire** : numéro dès la création | Numérotation continue, conforme |
+
+### Fonctions du bâtiment (les raisons de rester)
+
+| Apport | Aujourd'hui | Valeur |
+|---|---|---|
+| Situations de travaux, acomptes, retenue de garantie, autoliquidation | **À construire** | Justifie l'offre Artisan, garde les clients qui grandissent |
+| Suivi par chantier | **À construire** | Vision claire par chantier |
+| TVA par ligne (5,5 / 10 / 20 %) | **Existe** | — |
+| Bons de commande, avoirs | **Existent** | — |
+
+### Pilotage et équipe
+
+| Apport | Aujourd'hui | Valeur |
+|---|---|---|
+| Tableau de bord : encaissé, à encaisser, en retard, prévision à 30 jours | **Partiel** : pas de prévision. Bug : une facture relancée passe au statut `overdue` et sort des montants « en attente » et « en retard » | Pilotage fiable |
+| Trésorerie | **À construire** | Anticiper les mois creux |
+| Liste des factures : recherche, vues enregistrées, actions groupées | **Partiel** : filtres par statut | Gain de temps au-delà de 50 factures |
+| Recherche globale ⌘K | **À construire** (composant présent, non branché) | Rapidité |
+| Exports comptables | **Partiel** : FEC seulement | Le comptable reçoit ce qu'il attend |
+| Accès pour le comptable et l'équipe | **À construire** : un seul utilisateur | Prescription par les comptables |
+| Plusieurs entreprises par compte | **À construire** | Artisans qui ont plusieurs structures |
+
+### Mobile
+
+| Apport | Aujourd'hui | Valeur |
+|---|---|---|
+| Application iOS (push, photo, partage) | **Existe** | — |
+| Parcours mobiles : devis sur le chantier, paiement de la première facture | **Partiel** : l'app charge le site | Le devis se fait là où se décide le chantier |
+
+### Ordre suggéré, à valider
+
+1. **Réception des factures fournisseurs et plateforme agréée.** C'est une obligation légale.
+2. **« Devis gratuits, factures payantes ».** Il faut aussi retirer de la page tarifs ce qui n'existe pas (autoliquidation, support prioritaire).
+3. **Acceptation du devis en ligne et lien de paiement.** C'est la plus grosse valeur perçue.
+4. **Mentions BTP automatiques et catalogue par métier.** C'est ce qui permet le premier devis en 2 minutes.
+5. **Relances réglables et correction du bug `overdue`.**
+6. **Situations, acomptes, retenue de garantie, autoliquidation.** C'est l'offre Artisan.
