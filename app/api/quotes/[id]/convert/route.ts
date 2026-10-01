@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { insertWithSequentialNumber } from "@/lib/utils/document-numbering"
+import { canConvertQuote } from "@/lib/utils/document-status"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -24,6 +25,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
   if (quote.converted_invoice_id) {
     return NextResponse.json({ error: "Ce devis a déjà été converti en facture" }, { status: 400 })
+  }
+
+  if (!canConvertQuote(quote.status)) {
+    return NextResponse.json({ error: "Seul un devis envoyé ou accepté peut être converti en facture" }, { status: 400 })
   }
 
   // 2. Numérotation facture — même compteur (MAX robuste sur la table invoices,

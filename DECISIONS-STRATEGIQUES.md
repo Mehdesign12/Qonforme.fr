@@ -2,7 +2,7 @@
 
 > **Document vivant.** Il consigne ce qui a été décidé avec le fondateur et ce qui reste ouvert.
 >
-> **Dernière mise à jour :** 1er octobre 2026 (accès libre au tableau de bord, aucun contact humain promis, écrans épurés, inventaire de la refonte en section 10).
+> **Dernière mise à jour :** 1er octobre 2026 (accès libre au tableau de bord, aucun contact humain promis, écrans épurés, inventaire de la refonte en section 10, chaîne des documents et signature en ligne en section 11).
 >
 > **Il complète `STRATEGIE-CROISSANCE-2026-10.md` (l'analyse de départ).** En cas de contradiction, **ce document fait foi**. La section 9 liste ce qu'il remplace.
 
@@ -252,7 +252,7 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 
 | Apport | Aujourd'hui | Valeur |
 |---|---|---|
-| Acceptation du devis en ligne par le client | **À construire** : l'artisan change le statut à la main | Chantiers signés plus vite |
+| Signature en ligne des devis et bons de commande (§ 11) | **À construire**, maquettée le 01/10/2026 : l'artisan change le statut à la main | Chantiers signés plus vite |
 | Lien de paiement par carte ou virement dans la facture, page de paiement du client | **À construire** : IBAN seulement | Payé plus vite, argument de vente fort |
 | Relances réglables (avant échéance, J+7, J+15) et relance des devis non signés | **Partiel** : J+30 et J+45 fixes, factures seulement | Trésorerie |
 | Suivi d'ouverture des devis et factures | **À construire** | L'artisan sait quand relancer |
@@ -267,7 +267,7 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 | Situations de travaux, acomptes, retenue de garantie, autoliquidation | **À construire** | Justifie l'offre Artisan, garde les clients qui grandissent |
 | Suivi par chantier | **À construire** | Vision claire par chantier |
 | TVA par ligne (5,5 / 10 / 20 %) | **Existe** | — |
-| Bons de commande, avoirs | **Existent** | — |
+| Bons de commande, avoirs | **Existent**. Le bon de commande devient facultatif (§ 11) | — |
 
 ### Pilotage et équipe
 
@@ -296,3 +296,130 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 4. **Mentions BTP automatiques et catalogue par métier.** C'est ce qui permet le premier devis en 2 minutes.
 5. **Relances réglables et correction du bug `overdue`.**
 6. **Situations, acomptes, retenue de garantie, autoliquidation.** C'est l'offre Artisan.
+
+## 11. Chaîne des documents et signature en ligne (validée le 01/10/2026)
+
+### La cascade
+
+Le **chantier** est le fil conducteur : chaque document y est rattaché.
+
+1. **Devis.**
+   - Il se versionne tant qu'il n'est pas signé.
+   - Signé en ligne, il est figé et **vaut commande**.
+   - Tout changement ultérieur passe par un **avenant** (devis complémentaire, signé lui aussi).
+2. **Bon de commande (facultatif).** Ce n'est jamais une étape obligatoire. Il sert dans trois cas :
+   - **confirmation de commande signable** pour un client professionnel qui la demande ;
+   - **commande reçue du client** (entreprise générale, syndic, bailleur, acheteur public) : on saisit son numéro et on joint le PDF. Le numéro est reporté sur toutes les factures du chantier. C'est le « numéro d'engagement » de Chorus Pro, que certains acheteurs publics exigent ;
+   - plus tard, les **commandes aux fournisseurs**, côté achats, à côté de la réception des factures fournisseurs.
+3. **Facture d'acompte.** Elle est obligatoire dès qu'un acompte est encaissé. La TVA est due à l'encaissement et la facture mentionne le devis.
+4. **Factures de situation** (professionnels, gros chantiers) :
+   - avancement cumulé, déduction des situations précédentes ;
+   - retenue de garantie de 5 % au plus (loi du 16 juillet 1971).
+5. **Facture de solde.** Elle déduit les acomptes et les situations.
+6. **Encaissements.** Chaque paiement est enregistré. Le statut « Encaissée » est transmis à la plateforme : c'est obligatoire en TVA sur les encaissements, le régime par défaut des travaux.
+7. **Avoir.** C'est le seul moyen d'annuler ou de corriger une facture émise, en totalité ou en partie. Il cite la facture d'origine.
+8. **Réception des travaux** (procès-verbal, réserves). La retenue de garantie est libérée un an après, sauf opposition motivée.
+
+### Règles d'immutabilité
+
+**Factures :**
+- **Brouillon :** sans numéro, modifiable, supprimable.
+- **Émission :** le numéro est attribué à ce moment, dans une série continue sans trou, et le document est figé.
+- **Facture émise :** jamais modifiée, jamais supprimée, jamais remise en brouillon. « Archiver » ne fait que masquer.
+- **Correction :** une erreur se corrige par un avoir, suivi d'une nouvelle facture si besoin.
+- **Plateforme :**
+  - « Rejetée » (problème technique) : on corrige et on redépose ;
+  - « Refusée » (désaccord commercial, motif obligatoire) : on émet un avoir puis une nouvelle facture.
+
+**Devis et bons de commande :**
+- Une fois envoyés, leur contenu est figé : on crée une nouvelle version.
+- Une fois signés, ils sont définitifs : un changement passe par un avenant.
+
+**Côté serveur.** Depuis le 01/10/2026, ces règles sont appliquées par `lib/utils/document-status.ts`, quel que soit l'appel. Restent à faire :
+- attribuer le numéro à l'émission : aujourd'hui, il est donné dès le brouillon, et supprimer un brouillon laisse un trou ;
+- appliquer la migration d'unicité des numéros `20260901_unique_document_numbers.sql`.
+
+### Signature en ligne : cahier des charges
+
+**Valeur juridique.**
+- Une signature électronique simple suffit pour un devis (art. 1366 et 1367 du Code civil, règlement eIDAS), à condition d'identifier le signataire et de garantir l'intégrité du document.
+- Une signature avancée, via un prestataire, pourra être proposée plus tard pour les gros montants.
+
+**Le lien.**
+- Une adresse par document et par version : `signer.qonforme.fr/<code>`.
+- Il n'est pas devinable et le jeton est stocké haché.
+- Il expire avec la validité du devis. L'artisan peut le désactiver.
+- Une nouvelle version rend l'ancien lien caduc : la page renvoie vers la nouvelle.
+- La page publique n'est jamais mise en cache (règle du service worker dans `CLAUDE.md`).
+
+**Parcours du client** (sur ordinateur et sur téléphone) :
+1. Il lit le document en entier sur la page, pas seulement le PDF, et peut le télécharger.
+2. Il indique son identité :
+   - nom et prénom ;
+   - pour une société, la raison sociale et sa fonction ;
+   - pour un client professionnel, son numéro de commande, s'il en a un (facultatif, reporté sur les factures).
+3. Il donne ses consentements :
+   - acceptation des conditions générales, si l'artisan en a joint ;
+   - **certification pour le taux réduit de TVA** (10 % ou 5,5 %), seulement si le devis en contient. Elle remplace l'attestation papier, supprimée en 2025 ;
+   - **information sur la rétractation** pour un particulier (14 jours), avec une case facultative et décochée par défaut : « Je demande que les travaux commencent avant la fin de ce délai ».
+4. Il signe : tracé au doigt ou à la souris, ou nom tapé. Les deux sont accessibles au clavier.
+5. Il saisit un **code à 6 chiffres reçu par email** : c'est un réglage de l'artisan, activé par défaut au-delà de 5 000 € TTC.
+6. Il voit la confirmation.
+
+**Après la signature :**
+- **PDF signé**, avec un bloc de signature : « Bon pour accord », nom, date et heure.
+- **Dossier de preuve** : identité, email, adresse IP, appareil, horodatage serveur, empreinte SHA-256 du PDF, journal des événements.
+- **Email de confirmation au client** : le PDF signé, plus le formulaire de rétractation pour un particulier. C'est la confirmation sur support durable exigée par l'article L221-13 du Code de la consommation.
+- **Notification à l'artisan.**
+- **Devis figé** et passé à « accepté ».
+- **Prochaine étape** proposée : l'acompte.
+
+**L'acompte :**
+- **Signature à distance :** le paiement est possible tout de suite. La page précise qu'il est remboursé en cas de rétractation.
+- **Signature sur place chez le client (hors établissement) :** aucun paiement avant 7 jours (art. L221-10). Le lien d'acompte part tout seul à J+8, sauf réparation urgente demandée par le client.
+
+**Refus.** Le client choisit un motif (prix, délai, autre proposition, projet abandonné, autre) et peut ajouter un message. L'artisan est prévenu.
+
+**Rétractation (particulier, 14 jours) :**
+- un lien « Changer d'avis » figure dans l'email de confirmation et sur la page ;
+- le formulaire est en ligne ;
+- l'artisan est prévenu et doit rembourser l'acompte sous 14 jours ;
+- le devis passe à « rétracté ».
+
+**États de la page publique :**
+- à signer ;
+- signé (consultation et téléchargement) ;
+- expiré (demander un nouveau devis à l'artisan) ;
+- remplacé par une nouvelle version ;
+- lien désactivé ;
+- refusé ;
+- rétracté.
+
+**Côté artisan :**
+- **Partage :** envoi par email avec le lien, copie du lien, QR code, SMS ou WhatsApp (partage natif de l'application).
+- **Signature sur place :** l'artisan tend son téléphone ou sa tablette au client.
+- **Suivi :** envoyé, ouvert (combien de fois), signé.
+- **Actions :** relance automatique avant expiration, désactivation du lien, téléchargement du dossier de preuve.
+- **Réglages :** code de vérification, conditions générales en PDF, validité et acompte par défaut, relance avant expiration.
+
+**Les emails :**
+- **Au client :**
+  - le document à signer, avec un bouton « Consulter et signer » ;
+  - le code de vérification ;
+  - la relance avant expiration ;
+  - la confirmation de signature.
+- **À l'artisan :** la signature reçue (avec les prochaines étapes) et le refus (avec son motif).
+- **Expéditeur :** le nom de l'artisan, via Qonforme. Les réponses vont à l'artisan, jamais à « l'équipe Qonforme » (§ 2).
+
+**Données à prévoir :**
+- Une table `document_signatures` :
+  - type et identifiant du document, version ;
+  - empreinte du jeton, expiration, désactivation ;
+  - signataire (nom, email, fonction, société) ;
+  - IP, appareil ;
+  - dates de signature et de vérification du code ;
+  - empreinte du PDF, consentements, numéro de commande du client, image de la signature.
+- Une table d'événements.
+- De nouveaux statuts de devis, enregistrés en base : `expired` (aujourd'hui calculé à l'affichage), `withdrawn` (rétracté), `superseded` (remplacé).
+
+**Maquettes :** voir le canevas. Pages client (devis et bon de commande, sur ordinateur et sur téléphone, avec leurs états), écrans de l'artisan (partage, signature sur place, suivi et preuve), emails.

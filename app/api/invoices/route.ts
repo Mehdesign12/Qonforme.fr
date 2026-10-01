@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { INITIAL_STATUS } from "@/lib/utils/document-status"
 import { canCreateInvoice } from "@/lib/stripe/subscription"
 import { insertWithSequentialNumber } from "@/lib/utils/document-numbering"
 
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       client_id: body.client_id,
       invoice_number,
-      status: body.status || "draft",
+      status: INITIAL_STATUS, // jamais un statut fourni par la requête (avoir, annulée…)
       issue_date: body.issue_date,
       due_date: body.due_date,
       lines: body.lines,

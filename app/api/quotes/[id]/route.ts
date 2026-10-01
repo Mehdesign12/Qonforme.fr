@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { canTransition, isContentLocked, transitionError } from "@/lib/utils/document-status"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -29,6 +30,32 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   const { id }  = await params
   const body    = await request.json()
+
+  // Contenu figé hors brouillon et changements de statut en liste blanche
+  // (lib/utils/document-status.ts) : l'interface masque déjà ces actions,
+  // mais un appel direct à la route ne doit pas pouvoir les contourner.
+  const contentFields = ["lines", "client_id", "issue_date", "valid_until", "notes"]
+  const touchesContent = contentFields.some((f) => body[f] !== undefined)
+
+  if (touchesContent || body.status !== undefined) {
+    const { data: current } = await supabase
+      .from("quotes")
+      .select("status")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .single()
+
+    if (!current) return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
+
+    if (touchesContent && isContentLocked(current.status)) {
+      return NextResponse.json({ error: "Un devis envoyé ne se modifie plus. Dupliquez-le pour en faire une nouvelle version." }, { status: 403 })
+    }
+
+    if (body.status !== undefined && !canTransition("quote", current.status, body.status)) {
+      return NextResponse.json({ error: transitionError("quote", current.status, body.status) }, { status: 403 })
+    }
+  }
+
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
 
   if (body.lines) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { canTransition, isContentLocked, transitionError } from "@/lib/utils/document-status"
 
 interface Params {
   params: Promise<{ id: string }>
@@ -37,12 +38,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   // bouger une fois qu'elle n'est plus un brouillon — le formulaire d'édition
   // le bloque déjà côté client, mais un appel direct à cette route contournait
   // ce garde-fou et pouvait réécrire les montants d'un document Factur-X déjà
-  // émis. Les changements de statut (draft→sent, sent→paid…) et l'archivage
-  // restent autorisés quel que soit le statut actuel.
+  // émis. Les changements de statut suivent la liste blanche de
+  // lib/utils/document-status.ts : jamais de retour au brouillon, pas
+  // d'annulation ni d'avoir posés à la main. L'archivage reste libre.
   const contentFields = ["lines", "client_id", "issue_date", "due_date", "notes", "payment_terms"]
   const touchesContent = contentFields.some((f) => body[f] !== undefined)
 
-  if (touchesContent) {
+  if (touchesContent || body.status !== undefined) {
     const { data: current } = await supabase
       .from("invoices")
       .select("status")
@@ -50,9 +52,18 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       .eq("user_id", user.id)
       .single()
 
-    if (current && current.status !== "draft") {
+    if (!current) return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
+
+    if (touchesContent && isContentLocked(current.status)) {
       return NextResponse.json(
-        { error: "Seules les factures brouillons peuvent être modifiées" },
+        { error: "Seules les factures brouillons peuvent être modifiées. Pour corriger une facture émise, créez un avoir." },
+        { status: 403 }
+      )
+    }
+
+    if (body.status !== undefined && !canTransition("invoice", current.status, body.status)) {
+      return NextResponse.json(
+        { error: transitionError("invoice", current.status, body.status) },
         { status: 403 }
       )
     }
