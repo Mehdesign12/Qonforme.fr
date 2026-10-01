@@ -140,6 +140,19 @@
 - garantie « satisfait ou remboursé » de 30 jours ;
 - mise en route offerte avec l'abonnement annuel.
 
+**Après l'inscription : pas de passage obligé par le devis (validé le 01/10/2026).** L'étape 4 est un écran « Par quoi voulez-vous commencer ? » avec quatre choix. Chacun donne un premier résultat concret, même sans client sous la main :
+
+1. **Faire un vrai devis.**
+2. **M'envoyer un devis d'essai** : un devis d'exemple à son nom, envoyé sur sa propre adresse email. Il porte la mention « Exemple », n'a pas de numéro et reste hors des devis et des chiffres.
+3. **Facturer un chantier terminé** : la préparation est gratuite, le choix de la formule arrive à l'envoi. Le numéro de facture n'est attribué qu'à l'envoi, pour garder une numérotation continue.
+4. **Je le ferai plus tard** : un rappel au moment choisi (ce soir 19 h, demain 7 h 30, samedi 9 h, autre moment), par email ou notification, ou un QR code pour continuer sur le téléphone, valable 15 minutes.
+
+En liens secondaires : importer ses clients et ses prix, faire le point sur 2026-2027 (5 questions), parler à un humain (10 minutes, à la demande de l'artisan).
+
+**Indicateurs à suivre :**
+- premier document envoyé, réel ou d'essai, le premier jour ;
+- premier vrai devis sous 7 jours.
+
 **Pourquoi ce modèle :**
 - Dans le BTP, le devis précède la facture. Le premier besoin d'un nouvel installé est de décrocher des chantiers.
 - L'artisan vit le moment de satisfaction avec ses propres données.
