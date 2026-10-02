@@ -85,12 +85,12 @@ export function CreditNoteListView({
         <FileText className="size-[15px]" strokeWidth={1.75} aria-hidden />
         Factures
       </Link>
-      <span className="is-active" aria-current="page">
+      <button type="button" className="is-active" aria-current="page">
         Avoirs
         {count != null && (
           <span className="q-count rounded-md bg-[var(--q-wash)] px-[7px] py-px font-semibold">{count}</span>
         )}
-      </span>
+      </button>
     </div>
   )
 

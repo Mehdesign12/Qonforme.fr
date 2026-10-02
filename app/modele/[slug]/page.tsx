@@ -1,18 +1,23 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
-import { FileText, CheckCircle2, ArrowRight, Lightbulb, AlertTriangle } from "lucide-react"
+import { Check, FileText, Wand2 } from "lucide-react"
 import { MODELES, getModeleBySlug } from "@/lib/pseo/modeles"
-import Footer from "@/components/layout/Footer"
-import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
-
+import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
+import { fr } from "@/components/content/text"
 
 const TYPE_LABELS: Record<string, string> = {
   facture: "Facture",
   devis: "Devis",
   avoir: "Avoir",
   "bon-de-commande": "Bon de commande",
+  relance: "Relance",
+}
+
+/** Générateur gratuit (/outils) correspondant au type de modèle, s'il existe. */
+const GENERATOR: Record<string, { href: string; title: string } | undefined> = {
+  facture: { href: "/outils/generateur-facture-gratuite", title: "Générateur de facture gratuit" },
+  devis: { href: "/outils/generateur-devis-gratuit", title: "Générateur de devis gratuit" },
 }
 
 export function generateStaticParams() {
@@ -32,7 +37,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       title: modele.titre,
       description: modele.description,
       url: `https://qonforme.fr/modele/${modele.slug}`,
-      images: [{ url: `/api/og?title=${encodeURIComponent(modele.titre)}&subtitle=Modele%20gratuit%20Qonforme`, width: 1200, height: 630 }],
+      images: [{ url: `/api/og?title=${encodeURIComponent(modele.titre)}&subtitle=Mod%C3%A8le%20gratuit%20Qonforme`, width: 1200, height: 630 }],
     },
   }
 }
@@ -69,141 +74,131 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Accueil", item: "https://qonforme.fr" },
-        { "@type": "ListItem", position: 2, name: "Modeles gratuits", item: "https://qonforme.fr/modele" },
+        { "@type": "ListItem", position: 2, name: "Modèles gratuits", item: "https://qonforme.fr/modele" },
         { "@type": "ListItem", position: 3, name: TYPE_NAMES[modele.type] ?? modele.type, item: `https://qonforme.fr/modele/${modele.slug}` },
       ],
     },
   ]
 
+  const generator = GENERATOR[modele.type]
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="min-h-screen bg-[#F8FAFC]">
-        {/* Nav */}
-        <PublicHeaderWrapper />
+      <ContentPage>
+        <ContentHero
+          align="start"
+          size="md"
+          crumbs={[{ label: "Accueil", href: "/" }, { label: "Modèles", href: "/modele" }, { label: TYPE_LABELS[modele.type] ?? modele.type }]}
+          eyebrow={<><FileText className="h-3.5 w-3.5" aria-hidden />Modèle gratuit</>}
+          title={fr(modele.titre)}
+          sub={fr(modele.description)}
+        >
+          <CtaButtons align="start" className="mt-8" />
+        </ContentHero>
 
-        <div className="max-w-4xl mx-auto px-4 py-12">
-          {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 text-sm text-slate-400 mb-8">
-            <Link href="/" className="hover:text-[#2563EB]">Accueil</Link>
-            <span>/</span>
-            <span className="text-slate-600">Modeles</span>
-            <span>/</span>
-            <span className="text-[#0F172A] font-medium truncate">{TYPE_LABELS[modele.type]}</span>
-          </nav>
-
-          {/* Header */}
-          <div className="flex items-center gap-2 text-sm font-medium text-[#2563EB] mb-4">
-            <FileText className="w-4 h-4" />
-            Modele gratuit
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-[#0F172A] leading-tight">{modele.titre}</h1>
-          <p className="mt-4 text-lg text-slate-600">{modele.description}</p>
-
-          {/* CTA hero */}
-          <div className="mt-8 flex flex-col sm:flex-row items-start gap-3">
-            <Link href="/signup" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8] shadow-sm">
-              Creer ce document gratuitement <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link href="/demo" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC]">
-              Voir la demo
-            </Link>
-          </div>
-
-          {/* Preview visuel */}
-          <div className="mt-10 rounded-xl border border-[#E2E8F0] overflow-hidden shadow-sm bg-white">
-            <Image
-              src={`/api/preview?title=${encodeURIComponent(modele.titre)}&type=${encodeURIComponent(modele.type)}&items=${encodeURIComponent(modele.contenu.slice(0, 5).join("|"))}`}
-              alt={`Apercu du ${modele.titre}`}
-              width={1000}
-              height={600}
-              className="w-full h-auto"
-              sizes="(max-width: 768px) 100vw, 800px"
-              priority
-            />
-          </div>
-
-          {/* Pour qui */}
-          <section className="mt-12">
-            <h2 className="text-xl font-bold text-[#0F172A] mb-3">A qui s&apos;adresse ce modele ?</h2>
-            <p className="text-[15px] text-slate-700 leading-relaxed">{modele.pourQui}</p>
-          </section>
-
-          {/* Contenu du modèle */}
-          <section className="mt-10">
-            <h2 className="text-xl font-bold text-[#0F172A] mb-4">Ce que contient ce modele</h2>
-            <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
-              <div className="space-y-2.5">
-                {modele.contenu.map((item, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-4 h-4 text-[#059669] mt-0.5 shrink-0" />
-                    <p className="text-sm text-slate-700">{item}</p>
-                  </div>
-                ))}
+        <div className="px-4 sm:px-6">
+          <div className={`${WRAP} grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-12`}>
+            {/* Aperçu : feuille sur fond grisé */}
+            <div className="q-paper-bed min-w-0 p-4 sm:p-8 lg:col-start-1 lg:row-start-1">
+              <div className="q-paper mx-auto max-w-[760px] overflow-hidden">
+                <Image
+                  src={`/api/preview?title=${encodeURIComponent(modele.titre)}&type=${encodeURIComponent(modele.type)}&items=${encodeURIComponent(modele.contenu.slice(0, 5).join("|"))}`}
+                  alt={`Aperçu du ${modele.titre}`}
+                  width={1000}
+                  height={600}
+                  className="h-auto w-full"
+                  sizes="(max-width: 1024px) 100vw, 760px"
+                  priority
+                />
               </div>
             </div>
-          </section>
 
-          {/* Mentions spécifiques */}
-          {modele.mentionsSpecifiques.length > 0 && (
-            <section className="mt-10">
-              <h2 className="text-xl font-bold text-[#0F172A] mb-4 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-500" />
-                Mentions specifiques a inclure
-              </h2>
-              <div className="space-y-2">
-                {modele.mentionsSpecifiques.map((m, i) => (
-                  <div key={i} className="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
-                    <p className="text-sm text-amber-900 font-mono">&laquo; {m} &raquo;</p>
-                  </div>
-                ))}
+            {/* Colonne : contenu du modèle et remplissage en ligne */}
+            <aside className="flex flex-col gap-4 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+              <div className="flex flex-col gap-4 lg:sticky lg:top-28">
+                <section aria-labelledby="contenu-modele" className="q-card overflow-hidden">
+                  <h2 id="contenu-modele" className="q-card-head q-h2">
+                    Ce que contient ce modèle
+                    <span className="text-[13px] font-medium text-q-text-4">{modele.contenu.length} éléments</span>
+                  </h2>
+                  <ul className="flex flex-col gap-3 px-5 py-4">
+                    {modele.contenu.map((item, i) => (
+                      <li key={i} className="flex items-start gap-3 text-[14px] leading-[1.5] text-q-text-2">
+                        <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-q-ok-bg text-q-ok">
+                          <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
+                        </span>
+                        {fr(item)}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+                {generator && (
+                  <LinkCard
+                    href={generator.href}
+                    icon={<Wand2 />}
+                    title={generator.title}
+                    text="Remplissez ce modèle en ligne et téléchargez le PDF, sans créer de compte."
+                    cta="Ouvrir l'outil"
+                    as="h2"
+                  />
+                )}
               </div>
-            </section>
-          )}
+            </aside>
 
-          {/* Conseils */}
-          <section className="mt-10">
-            <h2 className="text-xl font-bold text-[#0F172A] mb-4 flex items-center gap-2">
-              <Lightbulb className="w-5 h-5 text-[#2563EB]" />
-              Conseils pratiques
-            </h2>
-            <div className="space-y-2.5">
-              {modele.conseils.map((c, i) => (
-                <div key={i} className="flex items-start gap-3 p-4 bg-[#EFF6FF] rounded-xl">
-                  <span className="text-sm font-bold text-[#2563EB] mt-0.5">{i + 1}.</span>
-                  <p className="text-sm text-slate-700">{c}</p>
-                </div>
-              ))}
-            </div>
-          </section>
+            <article className="min-w-0 lg:col-start-1 lg:row-start-2">
+              <section aria-labelledby="pour-qui">
+                <SectionHeading id="pour-qui" title="À qui s'adresse" accent="ce modèle&nbsp;?" className="mb-4" />
+                <p className="max-w-[68ch] text-[17px] leading-[1.75] text-q-text-2">{fr(modele.pourQui)}</p>
+              </section>
 
-          {/* CTA */}
-          <div className="mt-12 p-8 bg-gradient-to-r from-[#EFF6FF] to-[#F8FAFC] rounded-2xl border border-blue-100 text-center">
-            <h2 className="text-xl font-bold text-[#0F172A] mb-2">Creez ce document en 2 minutes</h2>
-            <p className="text-sm text-slate-600 mb-6">Remplissez les champs, Qonforme genere un PDF conforme Factur-X automatiquement.</p>
-            <Link href="/signup" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8]">
-              Commencer gratuitement <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
+              {modele.mentionsSpecifiques.length > 0 && (
+                <section aria-labelledby="mentions" className="mt-14">
+                  <SectionHeading id="mentions" title="Mentions spécifiques" accent="à inclure." className="mb-5" />
+                  <ul className="flex flex-col gap-2.5">
+                    {modele.mentionsSpecifiques.map((m, i) => (
+                      <li key={i} className="rounded-2xl border border-q-line border-l-[3px] border-l-q-accent bg-q-surface px-5 py-4 text-[15px] leading-[1.55] text-q-ink">
+                        {fr(`« ${m} »`)}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
 
-          {/* Maillage interne */}
-          <div className="mt-12 pt-8 border-t border-[#E2E8F0]">
-            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">Autres modeles</h3>
-            <div className="flex flex-wrap gap-2">
-              {MODELES.filter(m => m.slug !== modele.slug).slice(0, 5).map(m => (
-                <Link key={m.slug} href={`/modele/${m.slug}`} className="text-sm text-[#2563EB] bg-[#EFF6FF] px-3 py-1.5 rounded-lg hover:bg-[#DBEAFE]">
-                  {m.titre.replace("Modele de ", "").replace("Modele d'", "").replace(" gratuit", "")}
-                </Link>
-              ))}
-              <Link href="/guide/mentions-obligatoires-facture" className="text-sm text-[#2563EB] bg-[#EFF6FF] px-3 py-1.5 rounded-lg hover:bg-[#DBEAFE]">
-                Mentions obligatoires
-              </Link>
-            </div>
+              <section aria-labelledby="conseils" className="mt-14">
+                <SectionHeading id="conseils" title="Conseils" accent="pratiques." className="mb-5" />
+                <ol className="flex flex-col gap-3">
+                  {modele.conseils.map((c, i) => (
+                    <li key={i} className="flex items-start gap-4 rounded-2xl border border-q-line bg-q-surface p-4 sm:p-5">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#0A1122] text-[13px] font-semibold text-white tabular-nums dark:bg-q-accent">
+                        {i + 1}
+                      </span>
+                      <p className="pt-1 text-[15px] leading-[1.6] text-q-text-2">{fr(c)}</p>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+
+              {/* Maillage interne */}
+              <section aria-labelledby="autres-modeles" className="mt-14">
+                <h2 id="autres-modeles" className="q-eyebrow mb-4">
+                  Autres modèles
+                </h2>
+                <ChipLinks
+                  links={[
+                    ...MODELES.filter((m) => m.slug !== modele.slug)
+                      .slice(0, 5)
+                      .map((m) => ({ href: `/modele/${m.slug}`, label: m.titre.replace("Modele de ", "").replace("Modele d'", "").replace("Modèle de ", "").replace("Modèle d'", "").replace(" gratuit", "") })),
+                    { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires" },
+                  ]}
+                />
+              </section>
+            </article>
           </div>
         </div>
 
-        <Footer />
-      </div>
+        <ContentCta />
+      </ContentPage>
     </>
   )
 }

@@ -280,7 +280,7 @@ export function CreditNoteDetailView({
         <div className="grid grid-cols-2 gap-2.5">
           <BarBtn label="PDF" icon={Download} onClick={actions.onDownloadPdf} loading={actions.busy.pdf} />
           {inv?.href
-            ? <BarBtn label="Facture d'origine" icon={FileText} href={inv.href} />
+            ? <BarBtn label="Voir la facture" icon={FileText} href={inv.href} />
             : <BarBtn label="Imprimer" icon={Printer} onClick={() => window.print()} />}
         </div>
       </MobileActionBar>

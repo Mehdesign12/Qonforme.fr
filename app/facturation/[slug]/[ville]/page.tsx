@@ -1,12 +1,12 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { CheckCircle2, ArrowRight, FileText, HelpCircle, MapPin, Building2 } from "lucide-react"
+import { MapPin, Building2 } from "lucide-react"
 import { METIERS, getMetierBySlug } from "@/lib/pseo/metiers"
 import { VILLES, getVilleBySlug } from "@/lib/pseo/villes"
-import Footer from "@/components/layout/Footer"
-import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
-
+import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, FaqList, SectionHeading, WRAP } from "@/components/content/ui"
+import { MetierFeatures, MetierObligations, tradeHeroPhoto } from "@/components/content/metier"
+import { lcFirst, withoutClaims } from "@/components/content/text"
 
 export function generateStaticParams() {
   const params: { slug: string; ville: string }[] = []
@@ -23,8 +23,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const metier = getMetierBySlug(slug)
   const v = getVilleBySlug(ville)
   if (!metier || !v) return {}
-  const title = `${metier.nom} a ${v.nom} — Facturation conforme | Qonforme`
-  const description = `Logiciel de facturation pour ${metier.nom.toLowerCase()} a ${v.nom} (${v.codePostal}). Devis, factures et obligations legales. Conforme Factur-X 2026.`
+  const title = `${metier.nom} à ${v.nom} — Facturation | Qonforme`
+  const description = `Logiciel de facturation pour ${metier.nom.toLowerCase()} à ${v.nom} (${v.codePostal}). Devis, factures et obligations légales. Devis gratuits et illimités.`
   return {
     title,
     description,
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       title,
       description,
       url: `https://qonforme.fr/facturation/${slug}/${ville}`,
-      images: [{ url: `/api/og?title=${encodeURIComponent(`${metier.nom} a ${v.nom}`)}&subtitle=${encodeURIComponent(`Facturation conforme Factur-X 2026 — ${v.region}`)}`, width: 1200, height: 630 }],
+      images: [{ url: `/api/og?title=${encodeURIComponent(`${metier.nom} à ${v.nom}`)}&subtitle=${encodeURIComponent(`Devis et factures — ${v.region}`)}`, width: 1200, height: 630 }],
     },
   }
 }
@@ -58,14 +58,17 @@ export default async function MetierVillePage({ params }: { params: Promise<{ sl
   // Métiers proches dans la même ville
   const metiersProchesVille = metier.metiersProches.slice(0, 4)
 
+  // Réponses sans autopromotion invérifiable, identiques à l'écran et dans le JSON-LD
+  const faq = metier.faq.map((f) => ({ question: f.question, answer: withoutClaims(f.reponse) })).filter((f) => f.answer).slice(0, 3)
+
   const jsonLd = [
     {
       "@context": "https://schema.org",
       "@type": "FAQPage",
-      mainEntity: metier.faq.slice(0, 3).map(f => ({
+      mainEntity: faq.map(f => ({
         "@type": "Question",
         name: f.question,
-        acceptedAnswer: { "@type": "Answer", text: f.reponse },
+        acceptedAnswer: { "@type": "Answer", text: f.answer },
       })),
     },
     {
@@ -73,7 +76,7 @@ export default async function MetierVillePage({ params }: { params: Promise<{ sl
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Accueil", item: "https://qonforme.fr" },
-        { "@type": "ListItem", position: 2, name: "Facturation par metier", item: "https://qonforme.fr/facturation" },
+        { "@type": "ListItem", position: 2, name: "Facturation par métier", item: "https://qonforme.fr/facturation" },
         { "@type": "ListItem", position: 3, name: metier.nom, item: `https://qonforme.fr/facturation/${metier.slug}` },
         { "@type": "ListItem", position: 4, name: v.nom, item: `https://qonforme.fr/facturation/${metier.slug}/${v.slug}` },
       ],
@@ -82,7 +85,7 @@ export default async function MetierVillePage({ params }: { params: Promise<{ sl
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
       name: `${metier.nom} — Facturation Qonforme`,
-      description: `Logiciel de facturation pour ${metier.nom.toLowerCase()} a ${v.nom}`,
+      description: `Logiciel de facturation pour ${metier.nom.toLowerCase()} à ${v.nom}`,
       areaServed: { "@type": "City", name: v.nom },
     },
   ]
@@ -90,176 +93,96 @@ export default async function MetierVillePage({ params }: { params: Promise<{ sl
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="min-h-screen bg-[#F8FAFC]">
-        {/* Nav */}
-        <PublicHeaderWrapper />
+      <ContentPage>
+        <ContentHero
+          align="start"
+          size="md"
+          crumbs={[
+            { label: "Accueil", href: "/" },
+            { label: "Facturation", href: "/facturation" },
+            { label: metier.nom, href: `/facturation/${metier.slug}` },
+            { label: v.nom },
+          ]}
+          eyebrow={<><MapPin className="h-3.5 w-3.5" aria-hidden />{v.nom} · {v.region}</>}
+          title={`Logiciel de facturation pour ${lcFirst(metier.nom)}`}
+          accent={`à ${v.nom}.`}
+          sub={`Créez et envoyez vos devis et vos factures à ${v.nom} et partout en ${v.region}, avec les mentions obligatoires de votre métier.`}
+          media={tradeHeroPhoto(metier.slug)}
+        >
+          <CtaButtons align="start" className="mt-8" />
+        </ContentHero>
 
-        {/* Breadcrumb */}
-        <div className="max-w-5xl mx-auto px-4 pt-6">
-          <nav className="flex items-center gap-2 text-sm text-slate-400">
-            <Link href="/" className="hover:text-[#2563EB]">Accueil</Link>
-            <span>/</span>
-            <Link href="/facturation" className="hover:text-[#2563EB]">Facturation</Link>
-            <span>/</span>
-            <Link href={`/facturation/${metier.slug}`} className="hover:text-[#2563EB]">{metier.nom}</Link>
-            <span>/</span>
-            <span className="text-[#0F172A] font-medium">{v.nom}</span>
-          </nav>
-        </div>
-
-        {/* Hero */}
-        <header className="bg-gradient-to-b from-white to-[#F8FAFC] border-b border-[#E2E8F0]">
-          <div className="max-w-5xl mx-auto px-4 py-16 text-center">
-            <div className="inline-flex items-center gap-2 text-sm font-medium text-[#2563EB] mb-3">
-              <MapPin className="w-4 h-4" />
-              {v.nom} · {v.region}
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-[#0F172A] leading-tight">
-              Logiciel de facturation pour {metier.nom.toLowerCase()} a {v.nom}
-            </h1>
-            <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
-              Creez et envoyez vos factures et devis {metier.nom.toLowerCase()} a {v.nom} et en {v.region}. Conforme Factur-X 2026, adapte aux professionnels du {v.codePostal}.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/signup" className="px-6 py-3 text-sm font-bold text-white bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8] shadow-sm">
-                Creer mon premier document
-              </Link>
-              <Link href="/demo" className="px-6 py-3 text-sm font-semibold text-slate-600 bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC]">
-                Voir la demo
-              </Link>
-            </div>
-          </div>
-        </header>
-
-        {/* Infos locales */}
-        <section className="max-w-5xl mx-auto px-4 py-12">
-          <h2 className="text-2xl font-bold text-[#0F172A] mb-6 flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-[#2563EB]" />
-            Ressources locales a {v.nom}
-          </h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Chambre de Commerce</p>
-              <p className="text-sm text-[#0F172A] font-semibold">{v.cci}</p>
-              <p className="mt-1 text-sm text-slate-500">Accompagnement creation d&apos;entreprise, formalites et formations pour les professionnels du {v.codePostal}.</p>
-            </div>
-            <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Chambre des metiers</p>
-              <p className="text-sm text-[#0F172A] font-semibold">{v.chambreMetiers}</p>
-              <p className="mt-1 text-sm text-slate-500">Immatriculation, stage de preparation, accompagnement des artisans en {v.region}.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Features du métier */}
-        <section className="max-w-5xl mx-auto px-4 py-12">
-          <h2 className="text-2xl font-bold text-[#0F172A] mb-8">Fonctionnalites pour {metier.nom.toLowerCase()}s a {v.nom}</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {metier.features.slice(0, 6).map((f, i) => (
-              <div key={i} className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
-                <div className="w-10 h-10 rounded-lg bg-[#EFF6FF] flex items-center justify-center mb-4">
-                  <FileText className="w-5 h-5 text-[#2563EB]" />
-                </div>
-                <h3 className="font-semibold text-[#0F172A] mb-2">{f.titre}</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">{f.texte}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Obligations */}
-        <section className="bg-white border-y border-[#E2E8F0]">
-          <div className="max-w-5xl mx-auto px-4 py-12">
-            <h2 className="text-2xl font-bold text-[#0F172A] mb-6">Obligations legales pour {metier.nom.toLowerCase()}s</h2>
-            <div className="space-y-3">
-              {metier.obligations.map((o, i) => (
-                <div key={i} className="flex items-start gap-3 p-4 bg-[#F8FAFC] rounded-xl">
-                  <CheckCircle2 className="w-5 h-5 text-[#059669] mt-0.5 shrink-0" />
-                  <p className="text-sm text-slate-700">{o}</p>
+        {/* Ressources locales */}
+        <section aria-labelledby="ressources-locales" className="px-4 pb-10 sm:px-6">
+          <div className={WRAP}>
+            <SectionHeading id="ressources-locales" title="Ressources locales" accent={`à ${v.nom}.`} className="mb-8" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[
+                { label: "Chambre de commerce", name: v.cci, text: `Accompagnement à la création d'entreprise, formalités et formations pour les professionnels du ${v.codePostal}.` },
+                { label: "Chambre de métiers", name: v.chambreMetiers, text: `Immatriculation, stage de préparation et accompagnement des artisans en ${v.region}.` },
+              ].map((r) => (
+                <div key={r.label} className="flex gap-4 rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[var(--q-shadow-card)]">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-q-wash text-q-accent-strong">
+                    <Building2 className="h-5 w-5" aria-hidden />
+                  </span>
+                  <div>
+                    <p className="q-eyebrow mb-1.5">{r.label}</p>
+                    <p className="text-[16px] font-semibold text-q-ink">{r.name}</p>
+                    <p className="mt-1.5 text-[14px] leading-[1.6] text-q-text-3">{r.text}</p>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* FAQ (3 premières du métier) */}
-        <section className="max-w-5xl mx-auto px-4 py-12">
-          <h2 className="text-2xl font-bold text-[#0F172A] mb-6 flex items-center gap-2">
-            <HelpCircle className="w-6 h-6 text-[#2563EB]" />
-            Questions frequentes
-          </h2>
-          <div className="space-y-4">
-            {metier.faq.slice(0, 3).map((f, i) => (
-              <div key={i} className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
-                <h3 className="font-semibold text-[#0F172A] mb-2">{f.question}</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">{f.reponse}</p>
+        <MetierFeatures metier={metier} limit={6} />
+        <MetierObligations metier={metier} />
+
+        {faq.length > 0 && (
+          <section aria-labelledby="faq" className="px-4 pt-16 sm:px-6 sm:pt-20">
+            <div className="mx-auto w-full max-w-[800px]">
+              <SectionHeading id="faq" title="Questions" accent="fréquentes." className="mb-8" />
+              <FaqList items={faq} />
+              <Link href={`/facturation/${metier.slug}`} className="q-link mt-6 inline-block text-[14px]">
+                Toutes les questions sur le métier de {lcFirst(metier.nom)}
+              </Link>
+            </div>
+          </section>
+        )}
+
+        {/* Maillage : même métier ailleurs, autres métiers dans la ville */}
+        <section className="px-4 pt-16 sm:px-6 sm:pt-20">
+          <div className={`${WRAP} grid gap-10 lg:grid-cols-2`}>
+            <div>
+              <h2 className="q-eyebrow mb-4">{metier.nom} dans d&apos;autres villes</h2>
+              <ChipLinks links={villesProches.map((vp) => ({ href: `/facturation/${metier.slug}/${vp.slug}`, label: vp.nom }))} />
+            </div>
+            {metiersProchesVille.length > 0 && (
+              <div>
+                <h2 className="q-eyebrow mb-4">Autres métiers à {v.nom}</h2>
+                <ChipLinks
+                  links={metiersProchesVille
+                    .map((ms) => getMetierBySlug(ms))
+                    .filter((mp): mp is NonNullable<typeof mp> => mp !== undefined)
+                    .map((mp) => ({ href: `/facturation/${mp.slug}/${v.slug}`, label: mp.nom }))}
+                />
               </div>
-            ))}
-          </div>
-          <div className="mt-4 text-center">
-            <Link href={`/facturation/${metier.slug}`} className="text-sm font-semibold text-[#2563EB] hover:underline">
-              Voir toutes les FAQ {metier.nom.toLowerCase()} →
-            </Link>
+            )}
           </div>
         </section>
 
-        {/* Maillage : même métier dans d'autres villes */}
-        <section className="bg-white border-y border-[#E2E8F0]">
-          <div className="max-w-5xl mx-auto px-4 py-12">
-            <h2 className="text-xl font-bold text-[#0F172A] mb-6">{metier.nom} dans d&apos;autres villes</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {villesProches.map((vp) => (
-                <Link
-                  key={vp.slug}
-                  href={`/facturation/${metier.slug}/${vp.slug}`}
-                  className="group rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-center text-sm font-semibold text-[#0F172A] hover:border-[#2563EB]/30 hover:text-[#2563EB] hover:shadow-md transition-all"
-                >
-                  {vp.nom}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Maillage : autres métiers dans la même ville */}
-        <section className="max-w-5xl mx-auto px-4 py-12">
-          <h2 className="text-xl font-bold text-[#0F172A] mb-6">Autres metiers a {v.nom}</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {metiersProchesVille.map((ms) => {
-              const mp = getMetierBySlug(ms)
-              if (!mp) return null
-              return (
-                <Link
-                  key={ms}
-                  href={`/facturation/${ms}/${v.slug}`}
-                  className="group rounded-xl border border-[#E2E8F0] bg-white p-3 text-center text-sm font-semibold text-[#0F172A] hover:border-[#2563EB]/30 hover:text-[#2563EB] hover:shadow-md transition-all"
-                >
-                  {mp.nom}
-                </Link>
-              )
-            })}
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="bg-[#0F172A] text-white">
-          <div className="max-w-5xl mx-auto px-4 py-16 text-center">
-            <h2 className="text-2xl font-bold mb-4">Pret a facturer a {v.nom} ?</h2>
-            <p className="text-slate-300 mb-8 max-w-xl mx-auto">Creez vos factures et devis conformes en quelques clics. Factur-X 2026.</p>
-            <Link href="/signup" className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8] shadow-lg">
-              Commencer gratuitement <ArrowRight className="w-4 h-4" />
-            </Link>
-            <div className="mt-12 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
-              <Link href={`/facturation/${metier.slug}`} className="hover:text-white">{metier.nom} (national)</Link>
-              <Link href="/facturation" className="hover:text-white">Tous les metiers</Link>
-              <Link href="/guide/mentions-obligatoires-facture" className="hover:text-white">Mentions obligatoires</Link>
-              <Link href="/pricing" className="hover:text-white">Tarifs</Link>
-            </div>
-          </div>
-        </section>
-
-        <Footer />
-      </div>
+        <ContentCta
+          title="Prêt à facturer"
+          accent={`à ${v.nom}\u00A0?`}
+          links={[
+            { href: `/facturation/${metier.slug}`, label: `${metier.nom} (national)` },
+            { href: "/facturation", label: "Tous les métiers" },
+            { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires" },
+            { href: "/pricing", label: "Tarifs" },
+          ]}
+        />
+      </ContentPage>
     </>
   )
 }

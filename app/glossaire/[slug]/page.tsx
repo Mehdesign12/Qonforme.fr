@@ -1,11 +1,10 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowRight, BookOpen } from "lucide-react"
+import { ArrowRight, Library } from "lucide-react"
 import { GLOSSAIRE, getTermeBySlug } from "@/lib/pseo/glossaire"
-import Footer from "@/components/layout/Footer"
-import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
-
+import { ChipLinks, ContentCta, ContentHero, ContentPage, SectionHeading } from "@/components/content/ui"
+import { fr, resolveContentLink, withoutClaims } from "@/components/content/text"
 
 export function generateStaticParams() {
   return GLOSSAIRE.map(t => ({ slug: t.slug }))
@@ -16,12 +15,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const terme = getTermeBySlug(slug)
   if (!terme) return {}
   return {
-    title: `${terme.terme} — Definition facturation | Qonforme`,
+    title: `${terme.terme} — Définition facturation | Qonforme`,
     description: terme.definition,
     keywords: [terme.slug, `definition ${terme.slug}`, `${terme.slug} facturation`],
     alternates: { canonical: `/glossaire/${terme.slug}` },
     openGraph: {
-      title: `${terme.terme} — Definition | Qonforme`,
+      title: `${terme.terme} — Définition | Qonforme`,
       description: terme.definition,
       url: `https://qonforme.fr/glossaire/${terme.slug}`,
       images: [{ url: `/api/og?title=${encodeURIComponent(terme.terme)}&subtitle=${encodeURIComponent("Glossaire facturation")}`, width: 1200, height: 630 }],
@@ -52,99 +51,91 @@ export default async function TermePage({ params }: { params: Promise<{ slug: st
     },
   ]
 
+  // Textes sans autopromotion invérifiable ; liens internes résolus en libellés lisibles
+  const explication = withoutClaims(terme.explication)
+  const exemple = withoutClaims(terme.exemple)
+  const liens = terme.liens.map(resolveContentLink).filter((l): l is NonNullable<typeof l> => l !== null)
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="min-h-screen bg-[#F8FAFC]">
-        <PublicHeaderWrapper />
+      <ContentPage>
+        <ContentHero
+          align="start"
+          size="md"
+          crumbs={[{ label: "Accueil", href: "/" }, { label: "Glossaire", href: "/glossaire" }, { label: terme.terme }]}
+          eyebrow={<><Library className="h-3.5 w-3.5" aria-hidden />Glossaire de la facturation</>}
+          title={terme.terme}
+        />
 
-        <div className="max-w-3xl mx-auto px-4 pt-6">
-          <nav className="flex items-center gap-2 text-sm text-slate-400">
-            <Link href="/" className="hover:text-[#2563EB]">Accueil</Link>
-            <span>/</span>
-            <Link href="/glossaire" className="hover:text-[#2563EB]">Glossaire</Link>
-            <span>/</span>
-            <span className="text-[#0F172A] font-medium">{terme.terme}</span>
-          </nav>
-        </div>
-
-        <article className="max-w-3xl mx-auto px-4 py-12">
-          <div className="flex items-center gap-2 text-sm font-medium text-[#2563EB] mb-4">
-            <BookOpen className="w-4 h-4" />
-            Glossaire facturation
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-[#0F172A] mb-4">{terme.terme}</h1>
-
-          {/* Definition */}
-          <div className="rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] p-6 mb-8">
-            <p className="text-sm font-bold text-[#2563EB] uppercase tracking-wide mb-2">Definition</p>
-            <p className="text-[#0F172A] font-medium leading-relaxed">{terme.definition}</p>
-          </div>
-
-          {/* Explication */}
-          <section className="mb-8">
-            <h2 className="text-xl font-bold text-[#0F172A] mb-3">Explication detaillee</h2>
-            <p className="text-slate-700 leading-relaxed">{terme.explication}</p>
-          </section>
-
-          {/* Exemple */}
-          <section className="mb-8">
-            <h2 className="text-xl font-bold text-[#0F172A] mb-3">Exemple concret</h2>
-            <div className="rounded-xl border border-[#E2E8F0] bg-white p-5 shadow-sm">
-              <p className="text-sm text-slate-700 italic leading-relaxed">{terme.exemple}</p>
-            </div>
-          </section>
-
-          {/* Liens */}
-          {terme.liens.length > 0 && (
-            <section className="mb-8">
-              <h2 className="text-xl font-bold text-[#0F172A] mb-3">En savoir plus</h2>
-              <div className="space-y-2">
-                {terme.liens.map((lien) => (
-                  <Link key={lien} href={lien} className="flex items-center gap-2 text-sm text-[#2563EB] hover:underline">
-                    <ArrowRight className="w-3.5 h-3.5" />
-                    {lien}
-                  </Link>
-                ))}
+        <article className="px-4 sm:px-6">
+          <div className="mx-auto w-full max-w-[1200px]">
+            <div className="max-w-[760px]">
+              {/* Définition */}
+              <div className="rounded-[20px] border border-q-wash-line bg-q-wash p-6 sm:p-8">
+                <p className="q-eyebrow mb-3">Définition</p>
+                <p className="text-[18px] font-medium leading-[1.6] text-q-ink sm:text-[19px]">{fr(terme.definition)}</p>
               </div>
-            </section>
-          )}
 
-          {/* Autres termes */}
-          <section className="mt-12 pt-8 border-t border-[#E2E8F0]">
-            <h2 className="text-lg font-bold text-[#0F172A] mb-4">Autres definitions</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {GLOSSAIRE.filter(t => t.slug !== terme.slug).slice(0, 9).map((t) => (
-                <Link
-                  key={t.slug}
-                  href={`/glossaire/${t.slug}`}
-                  className="rounded-lg border border-[#E2E8F0] bg-white p-3 text-sm font-medium text-[#0F172A] hover:border-[#2563EB]/30 hover:text-[#2563EB] transition-all"
-                >
-                  {t.terme}
-                </Link>
-              ))}
+              {explication && (
+                <section aria-labelledby="explication" className="mt-14">
+                  <SectionHeading id="explication" title="Explication" accent="détaillée." className="mb-4" />
+                  <p className="max-w-[68ch] text-[17px] leading-[1.75] text-q-text-2">{fr(explication)}</p>
+                </section>
+              )}
+
+              {exemple && (
+                <section aria-labelledby="exemple" className="mt-14">
+                  <SectionHeading id="exemple" title="Exemple" accent="concret." className="mb-5" />
+                  <p className="rounded-2xl border border-q-line border-l-[3px] border-l-q-accent bg-q-surface px-5 py-4 text-[16px] leading-[1.65] text-q-text-2">
+                    {fr(exemple)}
+                  </p>
+                </section>
+              )}
+
+              {liens.length > 0 && (
+                <section aria-labelledby="en-savoir-plus" className="mt-14">
+                  <h2 id="en-savoir-plus" className="q-eyebrow mb-4">
+                    En savoir plus
+                  </h2>
+                  <ul className="flex flex-col gap-2">
+                    {liens.map((lien) => (
+                      <li key={lien.href}>
+                        <Link
+                          href={lien.href}
+                          className="group flex items-center justify-between gap-4 rounded-2xl border border-q-line bg-q-surface px-5 py-4 text-[15px] font-semibold text-q-ink transition-colors hover:border-q-wash-line hover:text-q-accent-strong"
+                        >
+                          {fr(lien.label)}
+                          <ArrowRight className="h-4 w-4 shrink-0 text-q-accent-strong transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {/* Autres termes */}
+              <section aria-labelledby="autres-definitions" className="mt-14">
+                <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+                  <h2 id="autres-definitions" className="q-eyebrow">
+                    Autres définitions
+                  </h2>
+                  <Link href="/glossaire" className="q-link text-[14px]">
+                    Voir tout le glossaire
+                  </Link>
+                </div>
+                <ChipLinks
+                  links={GLOSSAIRE.filter((t) => t.slug !== terme.slug)
+                    .slice(0, 9)
+                    .map((t) => ({ href: `/glossaire/${t.slug}`, label: t.terme }))}
+                />
+              </section>
             </div>
-            <div className="mt-4 text-center">
-              <Link href="/glossaire" className="text-sm font-semibold text-[#2563EB] hover:underline">
-                Voir tout le glossaire →
-              </Link>
-            </div>
-          </section>
+          </div>
         </article>
 
-        {/* CTA */}
-        <section className="bg-[#0F172A] text-white">
-          <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-            <h2 className="text-2xl font-bold mb-4">Simplifiez votre facturation</h2>
-            <p className="text-slate-300 mb-8">Qonforme gere toutes ces notions pour vous. Conforme Factur-X 2026.</p>
-            <Link href="/signup" className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8] shadow-lg">
-              Commencer gratuitement <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </section>
-
-        <Footer />
-      </div>
+        <ContentCta />
+      </ContentPage>
     </>
   )
 }
