@@ -87,6 +87,7 @@
 ## 6. Design — validé en partie
 
 - **Identité conservée :** bleu Qonforme `#2563EB`, marine, Bricolage Grotesque, DM Sans et DM Mono. Elle est resserrée vers un rendu fintech sobre.
+- **Titres en deux voix (demande du fondateur, 02/10/2026) :** la fin des grands titres passe en Instrument Serif italique, en bleu (`#8FB0FF` sur fond marine). Exemple : « La facturation des pros du bâtiment, *conforme de bout en bout.* »
 - **Refusé par le fondateur :** les fonds bleus avec dégradés ou halos (« ça fait IA »).
 - **Retenu :**
   - héros sur fond blanc, textes et boutons centrés ;
@@ -102,12 +103,19 @@
   - **Titre de l'accueil en ligne :** « La facturation des pros du bâtiment, simple dès le premier devis. » Le titre validé (« conforme de bout en bout ») reviendra quand la transmission par plateforme agréée sera livrée : d'ici là, ce serait une promesse non tenue.
   - **Photos :** des illustrations d'artisans au travail, jamais présentées comme des clients (ni nom, ni citation, ni écran lisible).
     - Sur le canevas (version 19), photos de la banque d'images Pexels : usage commercial gratuit, sans attribution. Sa licence interdit de laisser croire que les personnes photographiées recommandent le produit, ce qui rejoint notre règle.
-    - Sources : pexels.com/photo/6474471, 8447842, 17842832, 8961032, 5493653.
+    - Sources (version 19) : pexels.com/photo/6474471, 8447842, 17842832, 8961032, 5493653.
+    - Ajoutées en version 20 : 6474343 (plaquiste), 6419128 (plombier), 29181494 (carreleur), 374049 (menuisier), 31771166 (couvreur), 32913797 (maçon), 5691536 (chauffagiste), 7480728 (artisan au téléphone), 7190873 (artisan chez une cliente), 6195897 (utilitaire), 8961008 (cheffe de chantier).
   - **Accueil du canevas (version 19, 02/10/2026) :**
     - tableau de bord dans un ordinateur et accueil mobile dans un téléphone, cadres dessinés en CSS ;
     - photos dans les trois profils, bande photo, signature du devis sur téléphone ;
     - appel final sur fond clair avec photo ;
     - animations au défilement en CSS seul, désactivées par « Réduire les animations ».
+  - **Accueil du canevas (version 20, 02/10/2026) :**
+    - téléphone aux bonnes proportions (coins et îlot proportionnels, plus d'inclinaison) ;
+    - titres en deux voix ; éléments flottants (notifications, puces) qui ondulent puis s'arrêtent ;
+    - nouvelles sections : bandeau des métiers, devis sur ordinateur, manifeste qui s'encre au défilement, mobile sur fond marine (trois téléphones), « Payé à l'heure » avec la page de règlement et le scénario de relances, trésorerie, seconde bande photo, galerie des métiers en deux rangées qui glissent, démarrage en trois étapes, aperçu des tarifs ;
+    - 14 nouveaux écrans rendus depuis les planches du canevas, 11 nouvelles photos ;
+    - relu par quatre angles (design, textes et règles, format et accessibilité, animations), chaque point vérifié une seconde fois avant correction. Corrigé au passage : « Mercredi 1er octobre » devient « Jeudi » sur trois planches.
 
 ## 7. Questions ouvertes
 
