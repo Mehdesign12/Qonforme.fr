@@ -9,7 +9,7 @@ import { useState } from "react"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { PersonalizeTip } from "@/components/documents/PersonalizeTip"
 import { DemoNotice, demoAction, DEMO_DOC_CLIENTS, DEMO_DOC_COMPANY, DEMO_DOC_PRODUCTS, demoLines } from "@/components/documents/demo"
-import { useDocumentForm } from "@/components/documents/useDocumentForm"
+import { useDocumentForm, usePreselectedClient } from "@/components/documents/useDocumentForm"
 import { isoDateIn } from "@/components/documents/model"
 
 export default function DemoInvoiceForm() {
@@ -23,6 +23,7 @@ export default function DemoInvoiceForm() {
     notes: "Paiement par virement à 30 jours.\nPénalités de retard : 3 fois le taux d'intérêt légal.\nIndemnité forfaitaire pour frais de recouvrement : 40 €.",
     lines: demoLines([["lissage", 24], ["bandes", 24], ["deplacement", 1]]),
   }))
+  usePreselectedClient(doc, DEMO_DOC_CLIENTS)
 
   // Mêmes contrôles que le vrai formulaire avant d'expliquer la démo
   const act = (validate: boolean, what: string) => () => demoAction(doc, validate, what)
