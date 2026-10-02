@@ -13,8 +13,8 @@ interface Props {
 }
 
 /**
- * Sticky table of contents for desktop (hidden on mobile).
- * Highlights the current section using IntersectionObserver.
+ * Sommaire collé au défilement, sur grand écran seulement.
+ * Met en avant la section en cours (IntersectionObserver).
  */
 export default function TableOfContents({ headings }: Props) {
   const [activeId, setActiveId] = useState("")
@@ -46,25 +46,26 @@ export default function TableOfContents({ headings }: Props) {
   if (headings.length < 3) return null
 
   return (
-    <nav className="hidden xl:block sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-none">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-3">
+    <nav aria-label="Sommaire" className="sticky top-28 hidden max-h-[calc(100vh-9rem)] overflow-y-auto [scrollbar-width:none] xl:block">
+      <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-q-text-4">
         Sommaire
       </p>
-      <ul className="space-y-1 border-l-2 border-slate-100">
+      <ul className="space-y-0.5 border-l border-q-line">
         {headings.map((h) => (
           <li key={h.id}>
             <a
               href={`#${h.id}`}
+              aria-current={activeId === h.id ? "location" : undefined}
               onClick={(e) => {
                 e.preventDefault()
                 document.getElementById(h.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
               }}
               className={`
-                block text-[13px] leading-snug py-1 transition-colors duration-200
+                -ml-px block border-l py-1.5 text-[13px] leading-snug transition-colors duration-200
                 ${h.level === 3 ? "pl-6" : "pl-4"}
                 ${activeId === h.id
-                  ? "text-[#2563EB] font-medium border-l-2 border-[#2563EB] -ml-[2px]"
-                  : "text-slate-400 hover:text-slate-600"
+                  ? "border-q-accent font-semibold text-q-accent-strong"
+                  : "border-transparent text-q-text-4 hover:text-q-ink"
                 }
               `}
             >

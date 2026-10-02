@@ -227,7 +227,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
 
 /** Bouton d'action (classes q-btn) : lien ou bouton, avec état de chargement. */
 export function Act({
-  label, icon: Icon, onClick, href, variant = "secondary", size, loading, disabled,
+  label, icon: Icon, onClick, href, variant = "secondary", size, loading, disabled, iconOnly,
 }: {
   label: string
   icon?: LucideIcon
@@ -237,20 +237,24 @@ export function Act({
   size?: "sm"
   loading?: boolean
   disabled?: boolean
+  /** Icône seule (le libellé reste lu par les lecteurs d'écran et en infobulle). */
+  iconOnly?: boolean
 }) {
   const cls = cn(
     "q-btn",
     variant === "primary" ? "q-btn-primary" : variant === "danger" ? "q-btn-danger" : variant === "ghost" ? "q-btn-ghost" : "q-btn-secondary",
     size === "sm" && "q-btn-sm",
+    iconOnly && "q-btn-icon",
   )
   const content = (
     <>
       {loading ? <Loader2 className="animate-spin" aria-hidden /> : Icon && <Icon aria-hidden />}
-      {label}
+      {iconOnly ? <span className="sr-only">{label}</span> : label}
     </>
   )
-  if (href) return <Link href={href} className={cls}>{content}</Link>
-  return <button type="button" className={cls} onClick={onClick} disabled={loading || disabled}>{content}</button>
+  const title = iconOnly ? label : undefined
+  if (href) return <Link href={href} className={cls} title={title}>{content}</Link>
+  return <button type="button" className={cls} onClick={onClick} disabled={loading || disabled} title={title}>{content}</button>
 }
 
 /** Bouton de la barre d'actions mobile : 52 px pour l'action principale, 48 px sinon. */

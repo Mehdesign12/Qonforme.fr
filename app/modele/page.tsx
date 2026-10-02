@@ -1,38 +1,41 @@
 import type { Metadata } from "next"
-import Link from "next/link"
-import { ArrowRight, FileText, Receipt, FileCheck, ClipboardList, Mail } from "lucide-react"
+import { FileText, Receipt, FileCheck, ClipboardList, Mail, Wand2 } from "lucide-react"
 import { MODELES } from "@/lib/pseo/modeles"
-import Footer from "@/components/layout/Footer"
-import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
-
+import { ContentCta, ContentHero, ContentPage, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
 
 export const metadata: Metadata = {
-  title: "Modeles de factures et devis gratuits | Qonforme",
-  description: "Modeles gratuits de factures, devis, avoirs et bons de commande. Conformes a la reglementation francaise 2026, prets a utiliser.",
+  title: "Modèles de factures et devis gratuits | Qonforme",
+  description: "Modèles gratuits de factures, devis, avoirs et bons de commande, avec les mentions obligatoires de la réglementation française. Prêts à utiliser.",
   keywords: ["modele facture gratuit", "modele devis gratuit", "modele avoir", "modele bon de commande"],
   alternates: { canonical: "/modele" },
   openGraph: {
-    title: "Modeles de factures et devis gratuits | Qonforme",
-    description: "Modeles gratuits et conformes. Factures, devis, avoirs, bons de commande.",
+    title: "Modèles de factures et devis gratuits | Qonforme",
+    description: "Modèles gratuits : factures, devis, avoirs, bons de commande, avec les mentions obligatoires.",
     url: "https://qonforme.fr/modele",
     images: [{ url: "/api/og?title=Mod%C3%A8les%20gratuits&subtitle=Factures%2C%20devis%2C%20avoirs%20et%20bons%20de%20commande", width: 1200, height: 630 }],
   },
 }
 
 const TYPE_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
-  facture: { label: "Facture", icon: <Receipt className="w-4 h-4" /> },
-  devis: { label: "Devis", icon: <FileText className="w-4 h-4" /> },
-  avoir: { label: "Avoir", icon: <FileCheck className="w-4 h-4" /> },
-  "bon-de-commande": { label: "Bon de commande", icon: <ClipboardList className="w-4 h-4" /> },
-  relance: { label: "Relance", icon: <Mail className="w-4 h-4" /> },
+  facture: { label: "Facture", icon: <Receipt /> },
+  devis: { label: "Devis", icon: <FileText /> },
+  avoir: { label: "Avoir", icon: <FileCheck /> },
+  "bon-de-commande": { label: "Bon de commande", icon: <ClipboardList /> },
+  relance: { label: "Relance", icon: <Mail /> },
 }
+
+/** Générateurs gratuits existants (/outils) : remplir un modèle en ligne. */
+const GENERATORS = [
+  { href: "/outils/generateur-facture-gratuite", title: "Générateur de facture gratuit", text: "Remplissez les champs, téléchargez votre facture en PDF. Sans inscription." },
+  { href: "/outils/generateur-devis-gratuit", title: "Générateur de devis gratuit", text: "Préparez un devis propre en quelques minutes et téléchargez-le en PDF." },
+]
 
 export default function ModeleIndexPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "Modeles de factures et devis gratuits",
-    description: "Modeles gratuits conformes a la reglementation francaise.",
+    name: "Modèles de factures et devis gratuits",
+    description: "Modèles gratuits avec les mentions obligatoires de la réglementation française.",
     url: "https://qonforme.fr/modele",
     publisher: { "@type": "Organization", name: "Qonforme", url: "https://qonforme.fr" },
   }
@@ -40,74 +43,62 @@ export default function ModeleIndexPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="min-h-screen bg-[#F8FAFC]">
-        {/* Nav */}
-        <PublicHeaderWrapper />
+      <ContentPage>
+        <ContentHero
+          eyebrow="Ressources"
+          title="Modèles de factures et de devis,"
+          accent="gratuits."
+          sub="Factures, devis, avoirs, bons de commande et relances : chaque modèle liste les mentions obligatoires et les pièges à éviter."
+        />
 
-        {/* Hero */}
-        <header className="bg-gradient-to-b from-white to-[#F8FAFC] border-b border-[#E2E8F0]">
-          <div className="max-w-5xl mx-auto px-4 py-16 text-center">
-            <p className="text-sm font-medium text-[#2563EB] mb-3">Ressources</p>
-            <h1 className="text-3xl sm:text-4xl font-bold text-[#0F172A] leading-tight">
-              Modeles gratuits de factures et devis
-            </h1>
-            <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
-              Telechargez nos modeles conformes a la reglementation francaise 2026. Factures, devis, avoirs et bons de commande prets a utiliser.
-            </p>
-          </div>
-        </header>
-
-        {/* Modeles grid */}
-        <section className="max-w-5xl mx-auto px-4 py-16">
-          <div className="grid sm:grid-cols-2 gap-6">
+        <section aria-label="Modèles" className="px-4 sm:px-6">
+          <div className={`${WRAP} grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5`}>
             {MODELES.map((modele) => {
-              const typeInfo = TYPE_LABELS[modele.type] ?? { label: modele.type, icon: <FileText className="w-4 h-4" /> }
+              const typeInfo = TYPE_LABELS[modele.type] ?? { label: modele.type, icon: <FileText /> }
               return (
-                <Link
+                <LinkCard
                   key={modele.slug}
                   href={`/modele/${modele.slug}`}
-                  className="group bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm hover:shadow-md hover:border-[#2563EB]/30 transition-all"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#2563EB] text-xs font-medium">
-                      {typeInfo.icon}
-                      {typeInfo.label}
-                    </span>
-                  </div>
-                  <h2 className="font-semibold text-[#0F172A] group-hover:text-[#2563EB] transition-colors mb-2">
-                    {modele.titre}
-                  </h2>
-                  <p className="text-sm text-slate-500 leading-relaxed line-clamp-2 mb-4">{modele.description}</p>
-                  <span className="inline-flex items-center gap-1 text-sm font-medium text-[#2563EB]">
-                    Voir le modele <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
-                </Link>
+                  icon={typeInfo.icon}
+                  kicker={<span className="q-pill q-pill-info">{typeInfo.label}</span>}
+                  title={modele.titre}
+                  text={modele.description}
+                  cta="Voir le modèle"
+                />
               )
             })}
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="bg-[#0F172A] text-white">
-          <div className="max-w-5xl mx-auto px-4 py-16 text-center">
-            <h2 className="text-2xl font-bold mb-4">Creez vos documents en ligne</h2>
-            <p className="text-slate-300 mb-8 max-w-xl mx-auto">
-              Plutot que de remplir un modele manuellement, utilisez Qonforme pour generer vos factures et devis conformes automatiquement.
-            </p>
-            <Link href="/signup" className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8] shadow-lg">
-              Commencer gratuitement <ArrowRight className="w-4 h-4" />
-            </Link>
-            <div className="mt-12 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
-              <Link href="/facturation" className="hover:text-white">Facturation par metier</Link>
-              <Link href="/guide" className="hover:text-white">Guides pratiques</Link>
-              <Link href="/pricing" className="hover:text-white">Tarifs</Link>
-              <Link href="/blog" className="hover:text-white">Blog</Link>
+        {/* Générateurs gratuits */}
+        <section className="px-4 pt-16 sm:px-6 sm:pt-20">
+          <div className={WRAP}>
+            <SectionHeading
+              title="Remplir un modèle"
+              accent="en ligne."
+              sub="Nos générateurs gratuits produisent un PDF prêt à envoyer, sans créer de compte."
+              className="mb-8"
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              {GENERATORS.map((g) => (
+                <LinkCard key={g.href} href={g.href} icon={<Wand2 />} title={g.title} text={g.text} cta="Ouvrir l'outil" as="h3" />
+              ))}
             </div>
           </div>
         </section>
 
-        <Footer />
-      </div>
+        <ContentCta
+          title="Plutôt qu'un modèle à remplir,"
+          accent="vos devis en ligne."
+          links={[
+            { href: "/facturation", label: "Facturation par métier" },
+            { href: "/guide", label: "Guides pratiques" },
+            { href: "/glossaire", label: "Glossaire" },
+            { href: "/pricing", label: "Tarifs" },
+            { href: "/blog", label: "Blog" },
+          ]}
+        />
+      </ContentPage>
     </>
   )
 }
