@@ -5,8 +5,8 @@ import { useTheme } from 'next-themes'
 
 /** Valeurs de `--background` dans `globals.css`. */
 const THEME_COLORS = {
-  light: '#F8FAFC',
-  dark: '#0B1628',
+  light: '#F6F8FB',
+  dark: '#0A1122',
 } as const
 
 /**

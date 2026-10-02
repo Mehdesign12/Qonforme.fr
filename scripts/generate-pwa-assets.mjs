@@ -8,7 +8,7 @@
  *   - public/splash/apple-splash-*.png      → écrans de démarrage iOS (portrait + paysage)
  *   - lib/pwa/apple-splash-screens.ts       → média-queries associées, consommées par <AppleSplashScreens />
  *
- * Le fond reprend --background (#F8FAFC) : l'app force `defaultTheme="light"`
+ * Le fond reprend --background (#F6F8FB) : l'app force `defaultTheme="light"`
  * avec `enableSystem={false}`, donc un seul jeu de splash clairs suffit.
  */
 import sharp from 'sharp'
@@ -18,7 +18,7 @@ import path from 'node:path'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const SOURCE_ICON = path.join(ROOT, 'public/web-app-manifest-512x512.png')
-const BACKGROUND = { r: 0xf8, g: 0xfa, b: 0xfc, alpha: 1 } // #F8FAFC — var(--background)
+const BACKGROUND = { r: 0xf6, g: 0xf8, b: 0xfb, alpha: 1 } // #F6F8FB — var(--background)
 
 /**
  * Le PNG source a ses coins arrondis *aplatis en noir opaque* (alpha = 255 partout).
