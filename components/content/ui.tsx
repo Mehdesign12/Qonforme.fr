@@ -126,6 +126,7 @@ export function ContentHero({
   align = "center",
   size = "lg",
   children,
+  media,
   className,
 }: {
   crumbs?: Crumb[]
@@ -139,36 +140,48 @@ export function ContentHero({
   size?: "lg" | "md"
   /** Boutons, méta ou recherche, sous le chapeau. */
   children?: React.ReactNode
+  /** Visuel à droite sur grand écran, sous le texte sur mobile (photo de métier). */
+  media?: React.ReactNode
   className?: string
 }) {
-  const center = align === "center"
+  const center = align === "center" && !media
+  const text = (
+    <div className={cn("flex min-w-0 flex-col", center ? "items-center text-center" : "items-start")}>
+      {crumbs && <Breadcrumbs items={crumbs} className="mb-6" />}
+      {eyebrow && <p className="q-eyebrow mb-4 inline-flex items-center gap-2">{eyebrow}</p>}
+      <h1
+        className={cn(
+          "font-display font-semibold tracking-[-0.03em] text-q-ink-strong [text-wrap:balance]",
+          size === "lg" ? "max-w-[900px] text-[clamp(36px,5vw,60px)] leading-[1.04]" : "max-w-[860px] text-[clamp(30px,4vw,48px)] leading-[1.08]",
+        )}
+      >
+        {title}
+        {accent && (
+          <>
+            {" "}
+            <span className="q-serif">{accent}</span>
+          </>
+        )}
+      </h1>
+      {sub && (
+        <p className={cn("mt-5 max-w-[640px] text-[17px] leading-[1.6] text-q-text-3 sm:text-[18px]", center && "mx-auto")}>{sub}</p>
+      )}
+      {children}
+    </div>
+  )
   return (
     <header
       className={cn("relative px-4 pb-10 pt-[112px] sm:px-6 sm:pb-14 sm:pt-[140px]", className)}
       style={{ backgroundImage: "var(--q-glow)" }}
     >
-      <div className={cn(WRAP, "flex flex-col", center ? "items-center text-center" : "items-start")}>
-        {crumbs && <Breadcrumbs items={crumbs} className="mb-6" />}
-        {eyebrow && <p className="q-eyebrow mb-4 inline-flex items-center gap-2">{eyebrow}</p>}
-        <h1
-          className={cn(
-            "font-display font-semibold tracking-[-0.03em] text-q-ink-strong [text-wrap:balance]",
-            size === "lg" ? "max-w-[900px] text-[clamp(36px,5vw,60px)] leading-[1.04]" : "max-w-[860px] text-[clamp(30px,4vw,48px)] leading-[1.08]",
-          )}
-        >
-          {title}
-          {accent && (
-            <>
-              {" "}
-              <span className="q-serif">{accent}</span>
-            </>
-          )}
-        </h1>
-        {sub && (
-          <p className={cn("mt-5 max-w-[640px] text-[17px] leading-[1.6] text-q-text-3 sm:text-[18px]", center && "mx-auto")}>{sub}</p>
-        )}
-        {children}
-      </div>
+      {media ? (
+        <div className={cn(WRAP, "grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-14")}>
+          {text}
+          {media}
+        </div>
+      ) : (
+        <div className={WRAP}>{text}</div>
+      )}
     </header>
   )
 }

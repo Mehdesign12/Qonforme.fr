@@ -1,104 +1,18 @@
 "use client"
 
-import Link from "next/link"
-import { formatCurrency, formatDate } from "@/lib/utils/invoice"
+import { PurchaseOrderListView } from "@/components/purchase-orders/PurchaseOrderListView"
+import { DEMO_PO_ITEMS } from "@/components/purchase-orders/demo"
+import { DEMO_QUOTES, DEMO_TODAY } from "@/lib/demo/data"
 
-type POStatus = "draft" | "sent" | "confirmed" | "cancelled"
-
-const PO_STATUS_LABELS: Record<POStatus, string> = {
-  draft:     "Brouillon",
-  sent:      "Envoyé",
-  confirmed: "Confirmé",
-  cancelled: "Annulé",
-}
-
-const STATUS_STYLE: Record<POStatus, string> = {
-  draft:     "bg-[#F1F5F9] text-[#475569] border-[#CBD5E1]",
-  sent:      "bg-[#DBEAFE] text-[#1E40AF] border-[#93C5FD]",
-  confirmed: "bg-[#D1FAE5] text-[#065F46] border-[#6EE7B7]",
-  cancelled: "bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]",
-}
-
-const MOCK_POS = [
-  { id: "1", po_number: "BC-2026-004", client: "Renovbat SARL",         issue_date: "2026-03-06", delivery_date: "2026-03-20", total_ttc: 3600,  status: "confirmed" as POStatus },
-  { id: "2", po_number: "BC-2026-003", client: "Électricité Dupont",    issue_date: "2026-02-22", delivery_date: "2026-03-10", total_ttc: 1980,  status: "sent"      as POStatus },
-  { id: "3", po_number: "BC-2026-002", client: "Fournitures Leclerc Pro", issue_date: "2026-02-14", delivery_date: "2026-03-05", total_ttc: 850, status: "draft"     as POStatus },
-  { id: "4", po_number: "BC-2026-001", client: "Martin Plomberie",      issue_date: "2026-01-28", delivery_date: "2026-02-15", total_ttc: 2400,  status: "cancelled" as POStatus },
-]
-
+/** Démo : même liste que /purchase-orders, alimentée par les données fictives communes. */
 export default function DemoPurchaseOrdersPage() {
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Filtres rapides */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {(["all", "draft", "sent", "confirmed", "cancelled"] as const).map((s) => (
-          <button key={s} className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-            s === "all"
-              ? "bg-[#4F46E5] text-white border-[#4F46E5]"
-              : "bg-white dark:bg-[#162032] text-slate-600 dark:text-slate-400 border-[#E2E8F0] dark:border-[#1E3A5F] hover:border-[#4F46E5] hover:text-[#4F46E5]"
-          }`}>
-            {s === "all" ? "Tous" : PO_STATUS_LABELS[s as POStatus]}
-          </button>
-        ))}
-      </div>
-
-      {/* Vue mobile : cards */}
-      <div className="sm:hidden space-y-3">
-        {MOCK_POS.map((po) => (
-          <Link key={po.id} href={`/demo/purchase-orders/${po.id}`}>
-          <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] px-4 py-3.5 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-mono text-sm text-[#4F46E5] font-bold">{po.po_number}</span>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[po.status]}`}>
-                {PO_STATUS_LABELS[po.status]}
-              </span>
-            </div>
-            <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">{po.client}</p>
-            <div className="flex items-center justify-between mt-1.5">
-              <p className="text-xs text-slate-400">Livraison le {formatDate(po.delivery_date)}</p>
-              <p className="font-mono text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(po.total_ttc)}</p>
-            </div>
-          </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* Vue desktop : table */}
-      <div className="hidden sm:block bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] overflow-hidden shadow-sm">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032]">
-              <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° bon de commande</th>
-              <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Client / Fournisseur</th>
-              <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Émission</th>
-              <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Livraison prévue</th>
-              <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Montant TTC</th>
-              <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Statut</th>
-            </tr>
-          </thead>
-          <tbody>
-            {MOCK_POS.map((po) => (
-              <tr key={po.id} className="border-b border-[#F1F5F9] dark:border-[#162032] hover:bg-[#F8FAFC] dark:hover:bg-[#162032] transition-colors last:border-0 cursor-pointer"
-                onClick={() => window.location.href = `/demo/purchase-orders/${po.id}`}>
-                <td className="px-5 py-4">
-                  <span className="font-mono text-sm text-[#4F46E5] font-bold">{po.po_number}</span>
-                </td>
-                <td className="px-5 py-4 text-sm text-[#0F172A] dark:text-[#E2E8F0] font-medium">{po.client}</td>
-                <td className="px-5 py-4 text-sm text-slate-500 dark:text-slate-400">{formatDate(po.issue_date)}</td>
-                <td className="px-5 py-4 text-sm text-slate-500 dark:text-slate-400">{formatDate(po.delivery_date)}</td>
-                <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">
-                  {formatCurrency(po.total_ttc)}
-                </td>
-                <td className="px-5 py-4">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[po.status]}`}>
-                    {PO_STATUS_LABELS[po.status]}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <PurchaseOrderListView
+      items={DEMO_PO_ITEMS}
+      today={DEMO_TODAY}
+      newHref="/demo/purchase-orders/new"
+      quotesHref="/demo/quotes"
+      quotesCount={DEMO_QUOTES.length}
+    />
   )
 }

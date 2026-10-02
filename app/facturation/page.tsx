@@ -1,19 +1,20 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Wrench, Briefcase, Heart, Scissors, Car } from "lucide-react"
+import Image from "next/image"
+import { ArrowRight, Wrench, Briefcase, Heart, Scissors, Car, KeyRound } from "lucide-react"
 import { METIERS } from "@/lib/pseo/metiers"
-import Footer from "@/components/layout/Footer"
-import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
-
+import { ContentCta, ContentHero, ContentPage, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
+import { withoutClaims } from "@/components/content/text"
+import { TRADE_PHOTOS } from "@/components/content/metier"
 
 export const metadata: Metadata = {
-  title: "Logiciel de facturation par metier | Qonforme",
-  description: "Decouvrez notre logiciel de facturation adapte a votre metier : BTP, freelance, sante, artisanat, transport. Factures et devis conformes Factur-X 2026.",
+  title: "Logiciel de facturation par métier | Qonforme",
+  description: "Découvrez un logiciel de facturation adapté à votre métier : bâtiment, services, santé, artisanat, transport. Devis gratuits et illimités, mentions obligatoires.",
   keywords: ["logiciel facturation", "facturation par metier", "facture BTP", "facture freelance", "facture artisan"],
   alternates: { canonical: "/facturation" },
   openGraph: {
-    title: "Logiciel de facturation par metier | Qonforme",
-    description: "Facturation adaptee a chaque metier. Conforme Factur-X 2026.",
+    title: "Logiciel de facturation par métier | Qonforme",
+    description: "Une facturation adaptée à chaque métier, du bâtiment aux services.",
     url: "https://qonforme.fr/facturation",
     images: [{ url: "/api/og?title=Facturation%20par%20m%C3%A9tier&subtitle=Logiciel%20adapt%C3%A9%20%C3%A0%20votre%20activit%C3%A9", width: 1200, height: 630 }],
   },
@@ -21,27 +22,27 @@ export const metadata: Metadata = {
 
 const CATEGORIES: { nom: string; icon: React.ReactNode; slugs: string[] }[] = [
   {
-    nom: "BTP & Construction",
+    nom: "Bâtiment",
     icon: <Wrench className="w-5 h-5" />,
     slugs: ["plombier", "electricien", "macon", "peintre", "carreleur", "menuisier", "couvreur", "plaquiste", "chauffagiste", "serrurier"],
   },
   {
-    nom: "Services & Freelance",
+    nom: "Services et indépendants",
     icon: <Briefcase className="w-5 h-5" />,
     slugs: ["auto-entrepreneur", "consultant", "developpeur-freelance", "graphiste", "photographe", "formateur", "coach", "community-manager", "traducteur", "comptable", "avocat", "agent-immobilier", "informaticien"],
   },
   {
-    nom: "Artisanat & Commerce",
+    nom: "Artisanat et commerce",
     icon: <Scissors className="w-5 h-5" />,
     slugs: ["coiffeur", "estheticienne", "paysagiste", "architecte-interieur", "traiteur", "fleuriste", "boulanger", "jardinier"],
   },
   {
-    nom: "Transport & Services a domicile",
+    nom: "Transport et services à domicile",
     icon: <Car className="w-5 h-5" />,
     slugs: ["vtc", "taxi", "demenageur", "femme-de-menage"],
   },
   {
-    nom: "Sante & Bien-etre",
+    nom: "Santé et bien-être",
     icon: <Heart className="w-5 h-5" />,
     slugs: ["osteopathe", "kinesitherapeute", "infirmier-liberal", "dieteticien"],
   },
@@ -49,90 +50,104 @@ const CATEGORIES: { nom: string; icon: React.ReactNode; slugs: string[] }[] = [
 
 const metiersBySlug = Object.fromEntries(METIERS.map(m => [m.slug, m]))
 
+
 export default function FacturationIndexPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "Facturation par metier",
-    description: "Logiciel de facturation adapte a chaque metier professionnel.",
+    name: "Facturation par métier",
+    description: "Logiciel de facturation adapté à chaque métier.",
     url: "https://qonforme.fr/facturation",
     publisher: { "@type": "Organization", name: "Qonforme", url: "https://qonforme.fr" },
   }
 
+  const [btp, ...others] = CATEGORIES
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="min-h-screen bg-[#F8FAFC]">
-        {/* Nav */}
-        <PublicHeaderWrapper />
+      <ContentPage>
+        <ContentHero
+          eyebrow="Facturation par métier"
+          title="Un logiciel de facturation"
+          accent="adapté à votre métier."
+          sub={`${METIERS.length} métiers couverts : devis, factures et obligations légales propres à votre activité.`}
+        />
 
-        {/* Hero */}
-        <header className="bg-gradient-to-b from-white to-[#F8FAFC] border-b border-[#E2E8F0]">
-          <div className="max-w-5xl mx-auto px-4 py-16 text-center">
-            <p className="text-sm font-medium text-[#2563EB] mb-3">Facturation par metier</p>
-            <h1 className="text-3xl sm:text-4xl font-bold text-[#0F172A] leading-tight">
-              Un logiciel de facturation adapte a votre metier
-            </h1>
-            <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
-              {METIERS.length} professions couvertes. Factures, devis et obligations legales specifiques a votre activite. Conforme Factur-X 2026.
-            </p>
-          </div>
-        </header>
-
-        {/* Categories */}
-        <section className="max-w-5xl mx-auto px-4 py-16">
-          <div className="space-y-12">
-            {CATEGORIES.map((cat) => (
-              <div key={cat.nom}>
-                <h2 className="text-xl font-bold text-[#0F172A] mb-6 flex items-center gap-2">
-                  <span className="w-9 h-9 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[#2563EB]">{cat.icon}</span>
-                  {cat.nom}
-                </h2>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {cat.slugs.map((slug) => {
-                    const m = metiersBySlug[slug]
-                    if (!m) return null
-                    return (
-                      <Link
-                        key={slug}
-                        href={`/facturation/${slug}`}
-                        className="group bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm hover:shadow-md hover:border-[#2563EB]/30 transition-all"
-                      >
-                        <h3 className="font-semibold text-[#0F172A] group-hover:text-[#2563EB] transition-colors flex items-center justify-between">
+        {/* Bâtiment : galerie de photos (canevas « Main », galerie des métiers) */}
+        <section aria-labelledby="cat-batiment" className="px-4 sm:px-6">
+          <div className={WRAP}>
+            <SectionHeading id="cat-batiment" title="Les métiers" accent="du bâtiment." className="mb-8" />
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+              {btp.slugs.map((slug) => {
+                const m = metiersBySlug[slug]
+                if (!m) return null
+                const photo = TRADE_PHOTOS[slug]
+                return (
+                  <li key={slug}>
+                    <Link
+                      href={`/facturation/${slug}`}
+                      className="group relative block aspect-[4/5] overflow-hidden rounded-[20px] border border-q-line bg-q-wash focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent"
+                    >
+                      {photo ? (
+                        <Image
+                          src={photo.src}
+                          alt=""
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 232px"
+                          className="object-cover transition-transform duration-700 group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                        />
+                      ) : (
+                        <span aria-hidden className="absolute inset-0 grid place-items-center text-q-accent-strong">
+                          <KeyRound className="h-10 w-10 opacity-60" strokeWidth={1.5} />
+                        </span>
+                      )}
+                      <span className="absolute bottom-3 left-3 right-3 flex">
+                        <span className="inline-flex h-8 max-w-full items-center gap-1.5 truncate rounded-full bg-white px-3 text-[13px] font-semibold text-[#0F172A] shadow-[0_1px_2px_rgba(10,17,34,.15)]">
                           {m.nom}
-                          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#2563EB] transition-colors" />
-                        </h3>
-                        <p className="mt-1.5 text-sm text-slate-500 line-clamp-2">{m.description}</p>
-                      </Link>
-                    )
-                  })}
-                </div>
+                          <ArrowRight className="h-3.5 w-3.5 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        </section>
+
+        {/* Autres catégories */}
+        {others.map((cat) => (
+          <section key={cat.nom} aria-label={cat.nom} className="px-4 pt-16 sm:px-6 sm:pt-20">
+            <div className={WRAP}>
+              <div className="mb-8 flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-q-wash text-q-accent-strong">{cat.icon}</span>
+                <SectionHeading title={cat.nom} />
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="bg-[#0F172A] text-white">
-          <div className="max-w-5xl mx-auto px-4 py-16 text-center">
-            <h2 className="text-2xl font-bold mb-4">Votre metier n&apos;est pas dans la liste ?</h2>
-            <p className="text-slate-300 mb-8 max-w-xl mx-auto">
-              Qonforme s&apos;adapte a toutes les activites. Creez vos factures et devis conformes en quelques clics.
-            </p>
-            <Link href="/signup" className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8] shadow-lg">
-              Commencer gratuitement <ArrowRight className="w-4 h-4" />
-            </Link>
-            <div className="mt-12 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
-              <Link href="/guide" className="hover:text-white">Guides pratiques</Link>
-              <Link href="/modele" className="hover:text-white">Modeles gratuits</Link>
-              <Link href="/pricing" className="hover:text-white">Tarifs</Link>
-              <Link href="/blog" className="hover:text-white">Blog</Link>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+                {cat.slugs.map((slug) => {
+                  const m = metiersBySlug[slug]
+                  if (!m) return null
+                  return <LinkCard key={slug} href={`/facturation/${slug}`} title={m.nom} text={withoutClaims(m.description)} cta="Voir le métier" as="h3" />
+                })}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ))}
 
-        <Footer />
-      </div>
+        <ContentCta
+          title="Votre métier n'est pas dans la liste&nbsp;?"
+          accent="Qonforme s'adapte."
+          sub="Vous enregistrez vos prestations et vos mentions une fois pour toutes. Les devis restent gratuits et illimités."
+          links={[
+            { href: "/guide", label: "Guides pratiques" },
+            { href: "/modele", label: "Modèles gratuits" },
+            { href: "/glossaire", label: "Glossaire" },
+            { href: "/pricing", label: "Tarifs" },
+            { href: "/blog", label: "Blog" },
+          ]}
+        />
+      </ContentPage>
     </>
   )
 }

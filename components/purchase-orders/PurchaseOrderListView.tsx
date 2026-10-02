@@ -54,6 +54,18 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "cancelled", label: "Annulés" },
 ]
 
+/**
+ * Objet d'un bon réel (il n'a pas de champ « objet ») : la première ligne,
+ * et le nombre d'autres articles si `withCount`.
+ */
+export function poSubject(lines: { description?: string | null }[] | null | undefined, withCount = true): string {
+  const named = (lines ?? []).filter((l) => l.description?.trim())
+  if (named.length === 0) return "Bon sans article"
+  const first = named[0].description!.trim()
+  if (!withCount || named.length === 1) return first
+  return `${first}, et ${plural(named.length - 1, "autre article", "autres articles")}`
+}
+
 /** « 1,8 j » ; « < 1 j » sous 24 h. */
 function fmtDelay(days: number): string {
   if (days < 1) return "< 1 j"
@@ -167,9 +179,9 @@ export function PurchaseOrderListView({
         <PageHeader title="Bons de commande" subtitle="Aucun pour l'instant · facultatifs" actions={newButton} />
         <div className="q-tabs hidden md:flex">
           {quotesTab}
-          <span className="is-active" aria-current="page">
+          <button type="button" className="is-active" aria-current="page">
             Bons de commande <CountBadge active>0</CountBadge>
-          </span>
+          </button>
         </div>
         <section className="q-card" aria-label="Aucun bon de commande">
           <EmptyState
@@ -230,7 +242,7 @@ export function PurchaseOrderListView({
         <Kpi
           label="Délai de confirmation"
           value={stats.delay == null ? "—" : fmtDelay(stats.delay)}
-          sub={stats.delayCount === 0 ? "Pas encore de bon confirmé après envoi" : `Moyenne sur ${plural(stats.delayCount, "bon", "bons")}, de l'envoi à la confirmation`}
+          sub={stats.delayCount === 0 ? "Pas encore de bon confirmé après envoi" : `De l'envoi à la confirmation, sur ${plural(stats.delayCount, "bon", "bons")}`}
         />
       </KpiGrid>
 
