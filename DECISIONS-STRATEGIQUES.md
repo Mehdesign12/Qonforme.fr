@@ -116,6 +116,10 @@
     - nouvelles sections : bandeau des métiers, devis sur ordinateur, manifeste qui s'encre au défilement, mobile sur fond marine (trois téléphones), « Payé à l'heure » avec la page de règlement et le scénario de relances, trésorerie, seconde bande photo, galerie des métiers en deux rangées qui glissent, démarrage en trois étapes, aperçu des tarifs ;
     - 14 nouveaux écrans rendus depuis les planches du canevas, 11 nouvelles photos ;
     - relu par quatre angles (design, textes et règles, format et accessibilité, animations), chaque point vérifié une seconde fois avant correction. Corrigé au passage : « Mercredi 1er octobre » devient « Jeudi » sur trois planches.
+  - **Design appliqué au code (02/10/2026) :** tout le site reprend le canevas.
+    - Fondations : jetons de couleur `--q-*` (clair et sombre) et kit `q-*` dans `app/globals.css`, composants partagés dans `components/app/kit.tsx`, Instrument Serif pour la seconde voix des titres publics, montants en DM Sans à chiffres tabulaires, références en DM Mono.
+    - Application et démo sur la même coque (barre latérale blanche, barre supérieure flottante avec recherche ⌘K et menu « Nouveau », barre flottante du bas sur mobile) et sur les mêmes vues : la démo ne peut plus diverger du produit.
+    - Écarts volontaires avec le canevas : aucune entrée ni aucun écran pour ce qui n'est pas livré (chantiers, réception, trésorerie, situations, retenue, autoliquidation, transmission, lien de paiement, signature en ligne, équipe) ; « Facturé » plutôt qu'« Encaissé » au tableau de bord ; « En préparation » pour la transmission.
 
 ## 7. Questions ouvertes
 
@@ -249,7 +253,7 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 | « Devis gratuits, factures payantes » : application ouverte sans abonnement, paiement à la première facture | **Construit le 02/10/2026** (§ 12) | Lève le principal frein pour un premier logiciel |
 | Grille Essentiel 12 € / Artisan 24 € HT (10 € et 20 € à l'année), satisfait ou remboursé 30 jours | **Construit le 02/10/2026** (§ 12). Artisan affiché « bientôt » tant que ses fonctions manquent | Panier moyen plus haut, garantie qui rassure |
 | Lien « Propulsé par Qonforme » cliquable, avec provenance | **Partiel** : texte seul dans les emails et les PDF | Bouche-à-oreille mesurable, sans démarchage |
-| Accueil et tarifs réécrits, sans faux avis ni promesse non tenue | **Construit le 02/10/2026** : accueil refait (héros validé, vrai produit dans un Mac et un iPhone, animations au défilement, FAQ honnête), tarifs, données structurées, CGU et pied de page corrigés. Photos d'artisans en attente d'une clé de génération d'images | Confiance |
+| Accueil et tarifs réécrits, sans faux avis ni promesse non tenue | **Construit le 02/10/2026** : accueil refait (héros validé, vrai produit dans un Mac et un iPhone, animations au défilement, FAQ honnête), tarifs, données structurées, CGU et pied de page corrigés. Le même jour, accueil porté au langage de la version 20 du canevas avec 16 photos Pexels, et affirmations fausses retirées à la source (contenus SEO, pied de page des PDF, image de partage, emails) | Confiance |
 
 ### Premiers pas
 
@@ -261,7 +265,7 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 | Écran « Par quoi commencer ? » et accès libre au tableau de bord | **Partiel** : fenêtre de bienvenue à 3 actions | Personne n'est bloqué ni forcé |
 | Devis d'essai envoyé à soi-même | **À construire** | Premier résultat même sans client |
 | Rappel « plus tard » au moment choisi | **À construire** | Récupère les inscrits pressés |
-| Tableau de bord d'un compte neuf (premiers pas, états vides expliqués) | **Partiel** : états vides seulement | Activation |
+| Tableau de bord d'un compte neuf (premiers pas, états vides expliqués) | **Construit le 02/10/2026** : tuiles « Pour commencer » (entreprise, premier client, premier devis, logo) à la place de graphiques vides | Activation |
 | Séquence de 5 emails déclenchés par les actions | **Partiel** : email de bienvenue seulement | Activation et passage au payant |
 | Logo personnalisé, avec aperçu sur un devis | **Existe** dans Paramètres › Préférences factures (import, couleur). La maquette le place dans Paramètres › Entreprise avec un aperçu en direct | Documents à l'image de l'artisan |
 
@@ -274,7 +278,7 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 | Relances réglables (avant échéance, J+7, J+15) et relance des devis non signés | **Partiel** : J+30 et J+45 fixes, factures seulement | Trésorerie |
 | Suivi d'ouverture des devis et factures | **À construire** | L'artisan sait quand relancer |
 | Devis transformé en facture en un clic | **Existe** ; la facture née d'un devis passe le mur de paiement à l'envoi (§ 12) | — |
-| Aperçu du document en direct pendant la saisie | **Partiel** : bouton « Aperçu PDF » | Moins d'erreurs |
+| Aperçu du document en direct pendant la saisie | **Construit le 02/10/2026** : aperçu papier en direct à côté du formulaire (facture, devis, bon de commande) et liste « Avant l'envoi » limitée aux contrôles réels ; le bouton « Aperçu PDF » reste | Moins d'erreurs |
 | Numéro de facture attribué à l'envoi (brouillons sans numéro) | **À construire** : numéro dès la création | Numérotation continue, conforme |
 
 ### Fonctions du bâtiment (les raisons de rester)
@@ -290,10 +294,10 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 
 | Apport | Aujourd'hui | Valeur |
 |---|---|---|
-| Tableau de bord : encaissé, à encaisser, en retard, prévision à 30 jours | **Partiel** : pas de prévision. Bug : une facture relancée passe au statut `overdue` et sort des montants « en attente » et « en retard » | Pilotage fiable |
+| Tableau de bord : encaissé, à encaisser, en retard, prévision à 30 jours | **Partiel** (refait le 02/10/2026) : facturé sur la période (mois, trimestre, année), à encaisser, en retard, à échoir sous 30 jours, « À faire » tiré des données. Le bug de la facture relancée est corrigé. Pas d'« encaissé » : la date de paiement (`paid_at`) n'est jamais enregistrée ; pas de prévision | Pilotage fiable |
 | Trésorerie | **À construire** | Anticiper les mois creux |
-| Liste des factures : recherche, vues enregistrées, actions groupées | **Partiel** : filtres par statut | Gain de temps au-delà de 50 factures |
-| Recherche globale ⌘K | **À construire** (composant présent, non branché) | Rapidité |
+| Liste des factures : recherche, vues enregistrées, actions groupées | **Partiel** : onglets à compteurs et recherche (02/10/2026) ; pas de vues enregistrées ni d'actions groupées | Gain de temps au-delà de 50 factures |
+| Recherche globale ⌘K | **Construit le 02/10/2026** : factures, devis, clients et actions, au clavier (`/api/search`) ; cloche « À surveiller » (retards, devis sans réponse, brouillons oubliés, `/api/attention`) | Rapidité |
 | Exports comptables | **Partiel** : FEC seulement | Le comptable reçoit ce qu'il attend |
 | Accès pour le comptable et l'équipe | **À construire** : un seul utilisateur | Prescription par les comptables |
 | Plusieurs entreprises par compte | **À construire** | Artisans qui ont plusieurs structures |
