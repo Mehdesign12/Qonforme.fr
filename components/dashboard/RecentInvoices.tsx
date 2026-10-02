@@ -82,7 +82,7 @@ export function RecentInvoices({ rows, mode }: { rows: RecentRow[]; mode: DashMo
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id}>
-                    <td>
+                    <td className="whitespace-nowrap">
                       <Link href={r.href} className="font-mono text-[13px] text-[var(--q-text-2)] hover:text-[var(--q-accent-strong)] hover:underline">
                         {r.number}
                       </Link>

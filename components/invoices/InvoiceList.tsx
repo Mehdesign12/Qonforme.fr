@@ -165,7 +165,8 @@ export function InvoiceList({
               </button>
             )
           })}
-          <Link href={creditNotesHref}>
+          {/* Onglet qui mène à la liste des avoirs : role tab, seul enfant admis dans un tablist */}
+          <Link href={creditNotesHref} role="tab" aria-selected={false}>
             Avoirs
             {creditNotesCount != null && <span className="q-count">{creditNotesCount}</span>}
           </Link>

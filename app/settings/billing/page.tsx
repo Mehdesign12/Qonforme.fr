@@ -12,9 +12,24 @@ import { createAdminClient } from '@/lib/supabase/server'
 import type { Subscription } from '@/lib/stripe/subscription'
 import { canIssueInvoices, mapStripeStatus } from '@/lib/stripe/access'
 import { getGuaranteeState } from '@/lib/stripe/guarantee'
+import { PageHeader } from '@/components/app/kit'
 import type Stripe from 'stripe'
 
 export const metadata: Metadata = { title: 'Abonnement — Qonforme' }
+
+function BillingReadError() {
+  return (
+    <div className="flex flex-col gap-5">
+      <PageHeader title="Abonnement" subtitle="Votre formule et vos factures d'abonnement" />
+      <div role="alert" className="q-banner q-banner-warn flex-col items-start gap-3 sm:flex-row sm:items-center">
+        <p className="flex-1">
+          Votre abonnement n&apos;a pas pu être lu pour le moment. Rien n&apos;a changé de votre côté : réessayez dans un instant.
+        </p>
+        <a href="/settings/billing" className="q-btn q-btn-secondary q-btn-sm">Réessayer</a>
+      </div>
+    </div>
+  )
+}
 export const dynamic = 'force-dynamic'
 
 async function applyStripeData(
@@ -141,10 +156,17 @@ export default async function BillingPage() {
   let identity: BillingIdentity | null = null
 
   if (user) {
-    const [{ data: sub }, { data: company }] = await Promise.all([
+    const [{ data: sub, error: subError }, { data: company }] = await Promise.all([
       supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('companies').select('name, address, zip_code, city, siren').eq('user_id', user.id).maybeSingle(),
     ])
+
+    // Erreur de lecture ≠ « pas de formule » (règle de CLAUDE.md) : on n'affiche
+    // jamais la version gratuite à un abonné parce que la base n'a pas répondu.
+    if (subError) {
+      console.error('[BillingPage] Lecture de l\'abonnement impossible:', subError)
+      return <BillingReadError />
+    }
 
     // Coordonnées reprises sur les factures d'abonnement (app/api/stripe/checkout)
     if (company) {

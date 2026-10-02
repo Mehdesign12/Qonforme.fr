@@ -323,7 +323,7 @@ export function QuoteListView({
                   const next = quoteNextStep(q, today)
                   return (
                     <tr key={q.id} className="cursor-pointer" onClick={() => router.push(q.href)}>
-                      <td className="font-mono text-[13px]">
+                      <td className="whitespace-nowrap font-mono text-[13px]">
                         <Link href={q.href} className="text-[var(--q-accent-strong)] hover:underline" onClick={(e) => e.stopPropagation()}>
                           {q.quote_number}
                         </Link>

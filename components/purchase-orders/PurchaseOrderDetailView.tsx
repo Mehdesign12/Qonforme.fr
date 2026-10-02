@@ -242,7 +242,8 @@ export function PurchaseOrderDetailView({
         <Kpi label="Statut" value={PURCHASE_ORDER_PILLS[s]?.label ?? s} sub={statusSub} tone="ink" />
       </KpiGrid>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+      {/* Deux colonnes dès 1280 px : à 1024 px, l'aperçu papier tombait à 280 px et les désignations s'écrivaient une lettre par ligne */}
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         {/* Colonne principale */}
         <div className="flex min-w-0 flex-col gap-4">
           <section aria-label="Aperçu du bon de commande" className="q-paper-bed hidden justify-center lg:flex print:flex print:border-0 print:bg-transparent print:!p-0">

@@ -204,43 +204,41 @@ export function CommandPalette({ open, onOpenChange, identity }: {
           </button>
         </div>
 
-        <div
-          ref={listRef}
-          id="q-palette-list"
-          role="listbox"
-          aria-label="Résultats"
-          className="max-h-[calc(100dvh-160px)] overflow-y-auto p-2 sm:max-h-[min(60vh,520px)]"
-        >
-          {groups.map((group) => (
-            <div key={group.label} role="group" aria-label={group.label} className="flex flex-col gap-0.5">
-              <p className="px-3 pb-1.5 pt-2.5 text-xs font-semibold text-[var(--q-text-4)]" aria-hidden>{group.label}</p>
-              {group.options.map((option) => {
-                index += 1
-                const i = index
-                const isActive = i === active
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    id={`q-palette-${option.id}`}
-                    role="option"
-                    aria-selected={isActive}
-                    data-index={i}
-                    onMouseMove={() => { if (!isActive) setActive(i) }}
-                    onClick={() => choose(option)}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left",
-                      isActive
-                        ? "bg-[var(--q-accent)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.2)]"
-                        : "text-[var(--q-ink)]",
-                    )}
-                  >
-                    <OptionBody option={option} active={isActive} query={term} />
-                  </button>
-                )
-              })}
-            </div>
-          ))}
+        {/* La liste (role listbox) ne contient que ses groupes d'options : les messages d'état et
+            l'annonce vocale restent à côté, dans la même zone de défilement. */}
+        <div ref={listRef} className="max-h-[calc(100dvh-160px)] overflow-y-auto p-2 sm:max-h-[min(60vh,520px)]">
+          <div id="q-palette-list" role="listbox" aria-label="Résultats">
+            {groups.map((group) => (
+              <div key={group.label} role="group" aria-label={group.label} className="flex flex-col gap-0.5">
+                <p className="px-3 pb-1.5 pt-2.5 text-xs font-semibold text-[var(--q-text-4)]" aria-hidden>{group.label}</p>
+                {group.options.map((option) => {
+                  index += 1
+                  const i = index
+                  const isActive = i === active
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      id={`q-palette-${option.id}`}
+                      role="option"
+                      aria-selected={isActive}
+                      data-index={i}
+                      onMouseMove={() => { if (!isActive) setActive(i) }}
+                      onClick={() => choose(option)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left",
+                        isActive
+                          ? "bg-[var(--q-accent)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.2)] dark:bg-[#2563EB]"
+                          : "text-[var(--q-ink)]",
+                      )}
+                    >
+                      <OptionBody option={option} active={isActive} query={term} />
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
 
           {searching && (
             <p className="px-3 py-3 text-[13px] text-[var(--q-text-4)]">Recherche dans vos documents…</p>
@@ -267,7 +265,8 @@ export function CommandPalette({ open, onOpenChange, identity }: {
 
 /** Contenu d'une ligne selon son type (action, client, facture, devis). */
 function OptionBody({ option, active, query }: { option: Option; active: boolean; query: string }) {
-  const meta = active ? "text-white/80" : "text-[var(--q-text-4)]"
+  // Méta sur fond bleu : blanc à 95 % (4,8:1 ; à 80 % le texte de 13 px tombait à 3,9:1)
+  const meta = active ? "text-white/95" : "text-[var(--q-text-4)]"
 
   if (option.kind === "action") {
     const Icon = option.icon
@@ -305,7 +304,7 @@ function OptionBody({ option, active, query }: { option: Option; active: boolean
   return (
     <>
       <span className="flex min-w-0 flex-1 flex-col gap-px sm:flex-row sm:items-center sm:gap-3">
-        <span className={cn("shrink-0 font-mono text-[13px] sm:min-w-[96px]", active ? "text-white/85" : "text-[var(--q-text-3)]")}>
+        <span className={cn("shrink-0 font-mono text-[13px] sm:min-w-[96px]", active ? "text-white/95" : "text-[var(--q-text-3)]")}>
           <Highlight text={hit.number} query={query} />
         </span>
         <span className="truncate text-sm">{hit.client ? <Highlight text={hit.client} query={query} /> : "Sans client"}</span>

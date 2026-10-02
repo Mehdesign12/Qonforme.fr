@@ -225,7 +225,7 @@ export function InvoiceDetailView({
 
       {/* ---- Téléphone : retour, numéro, menu ---- */}
       <div className="-mt-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 lg:hidden print:hidden">
-        <Link href={backHref} className="q-link inline-flex items-center gap-1 justify-self-start text-[15px]">
+        <Link href={backHref} className="q-link inline-flex min-h-11 items-center gap-1 justify-self-start text-[15px]">
           <ChevronLeft className="size-4" strokeWidth={2.25} aria-hidden />
           Factures
         </Link>
@@ -236,8 +236,9 @@ export function InvoiceDetailView({
       </div>
 
       {/* ---- Ordinateur : en-tête ---- */}
-      <header className="hidden grid-cols-[minmax(0,1fr)_auto] items-end gap-x-6 gap-y-4 lg:grid print:hidden">
-        <div className="flex min-w-0 flex-col gap-2">
+      {/* Titre d'au moins 420 px : sinon les actions passent dessous (à 1024 px, le titre tombait à un mot par ligne) */}
+      <header className="hidden flex-wrap items-end justify-between gap-x-6 gap-y-4 lg:flex print:hidden">
+        <div className="flex min-w-0 grow basis-[420px] flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2.5">
             <span className="font-mono text-sm text-[var(--q-text-3)]">{invoice.invoice_number}</span>
             <StatusPills invoice={invoice} lateDays={lateDays} />
@@ -262,7 +263,8 @@ export function InvoiceDetailView({
       {/* ---- Téléphone : montant ---- */}
       <section className="q-card flex flex-col gap-3.5 rounded-[22px] p-[18px] lg:hidden print:hidden">
         <div className="flex flex-col gap-1">
-          <span className="text-[13px] text-[var(--q-text-3)]">{clientName}{subject && ` · ${subject}`}</span>
+          {/* Titre de la page sur téléphone (celui de l'en-tête ordinateur est masqué) */}
+          <h1 className="text-[13px] font-normal text-[var(--q-text-3)]">{clientName}{subject && ` · ${subject}`}</h1>
           <span className="text-[13px] text-[var(--q-text-3)]">{open ? "Reste à encaisser" : "Total TTC"}</span>
           <span className="q-display text-[38px] leading-[1.05] tracking-[-0.04em] tabular-nums text-[var(--q-ink)]">
             {formatCurrency(invoice.total_ttc)}
@@ -324,7 +326,8 @@ export function InvoiceDetailView({
       </KpiGrid>
 
       {/* ---- Document + colonne ---- */}
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+      {/* Deux colonnes dès 1280 px : à 1024 px, l'aperçu papier tombait à 280 px et les désignations s'écrivaient une lettre par ligne */}
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <section aria-label="Document" className="q-paper-bed order-2 flex justify-center !p-3 sm:!p-6 lg:order-1 print:border-0 print:bg-transparent print:!p-0">
           <InvoicePaper invoice={invoice} company={company} settingsHref={settingsCompanyHref} />
         </section>

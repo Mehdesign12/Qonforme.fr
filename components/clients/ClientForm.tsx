@@ -279,7 +279,7 @@ export function ClientFormPage({
         {kindButtons("mobile")}
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-5">
+      <div className="grid items-start gap-4 lg:gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex min-w-0 flex-col gap-4">
           {/* Recherche Sirene */}
           <section

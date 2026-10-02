@@ -94,8 +94,8 @@ export interface QuoteDetailActions {
   onDelete: () => unknown
   /** Envoi (ou renvoi) par email ; true si le devis est parti. */
   onSend: () => Promise<boolean>
-  /** Accord ou refus du client ; true si le statut a changé. */
-  onSetStatus: (status: "accepted" | "rejected") => Promise<boolean>
+  /** Brouillon remis sans email (« sent »), accord ou refus du client ; true si le statut a changé. */
+  onSetStatus: (status: "sent" | "accepted" | "rejected") => Promise<boolean>
   onConvert: () => unknown
 }
 
@@ -154,7 +154,7 @@ export function QuoteDetailView({
     if (ok || demo) setModal(null)
     if (ok && !demo) setJustSent(clientName ?? "votre client")
   }
-  const setStatus = async (status: "accepted" | "rejected") => {
+  const setStatus = async (status: "sent" | "accepted" | "rejected") => {
     const ok = await actions.onSetStatus(status)
     if (ok || demo) setModal(null)
   }
@@ -367,7 +367,8 @@ export function QuoteDetailView({
         <Kpi label="Prochaine étape" value={nextKpi.value} sub={nextKpi.sub} tone="ink" />
       </KpiGrid>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+      {/* Deux colonnes dès 1280 px : à 1024 px, l'aperçu papier tombait à 280 px et les désignations s'écrivaient une lettre par ligne */}
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         {/* Colonne principale */}
         <div className="flex min-w-0 flex-col gap-4">
           <section aria-label="Aperçu du devis" className="q-paper-bed hidden justify-center lg:flex print:flex print:border-0 print:bg-transparent print:!p-0">
@@ -542,13 +543,23 @@ export function QuoteDetailView({
         compact={compact}
         title={s === "draft" ? "Envoyer le devis" : "Renvoyer le devis"}
         description={`${quote.quote_number} · ${formatCurrency(quote.total_ttc)} TTC`}
-        actions={[{
-          label: busy.send ? "Envoi…" : s === "draft" ? "Envoyer" : "Renvoyer",
-          icon: busy.send ? <Loader2 className="animate-spin" aria-hidden /> : <Send aria-hidden />,
-          variant: "primary",
-          onClick: send,
-          disabled: busy.send || !quote.client?.email,
-        }]}
+        actions={[
+          {
+            label: busy.send ? "Envoi…" : s === "draft" ? "Envoyer" : "Renvoyer",
+            icon: busy.send ? <Loader2 className="animate-spin" aria-hidden /> : <Send aria-hidden />,
+            variant: "primary",
+            onClick: send,
+            disabled: busy.send || !quote.client?.email,
+          },
+          // Devis remis en main propre (client sans email, par exemple) : seul moyen de le
+          // faire sortir du brouillon pour l'accepter puis le convertir en facture
+          ...(s === "draft" ? [{
+            label: "Marquer comme envoyé",
+            icon: busy.status ? <Loader2 className="animate-spin" aria-hidden /> : <Check aria-hidden />,
+            onClick: () => setStatus("sent"),
+            disabled: busy.status || busy.send,
+          }] : []),
+        ]}
       >
         <div className="q-inset flex flex-col gap-0.5 p-3.5">
           <span className="text-xs text-[var(--q-text-4)]">Destinataire</span>
@@ -567,6 +578,11 @@ export function QuoteDetailView({
             ? <>Le devis <strong className="font-semibold text-[var(--q-ink)]">{quote.quote_number}</strong> part par email avec son PDF en pièce jointe. Il passe au statut <strong className="font-semibold text-[var(--q-ink)]">Envoyé</strong> et ne se modifie plus.</>
             : <>Le devis <strong className="font-semibold text-[var(--q-ink)]">{quote.quote_number}</strong> est renvoyé par email avec son PDF, sans changer de statut.</>}
         </p>
+        {s === "draft" && (
+          <p className="text-[13px] leading-normal text-[var(--q-text-4)]">
+            Remis en main propre ? «&nbsp;Marquer comme envoyé&nbsp;» le passe au statut Envoyé sans email.
+          </p>
+        )}
         <p className="text-xs text-[var(--q-text-4)]">
           Objet : <span className="font-medium text-[var(--q-text-2)]">Devis {quote.quote_number} — {company?.name || "votre entreprise"}</span>
         </p>

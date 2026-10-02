@@ -371,7 +371,7 @@ export function ContentCta({
         )}
       </div>
       {links && links.length > 0 && (
-        <nav aria-label="Ressources" className={cn(WRAP, "mt-8")}>
+        <nav aria-label="Autres ressources" className={cn(WRAP, "mt-8")}>
           <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[14px]">
             {links.map((l) => (
               <li key={l.href}>

@@ -27,7 +27,7 @@ const nbsp = (text: string) => text.replace(/ ([?:;!€%])/g, '\u00A0$1')
 
 const FAQ = ([
   { question: "Faut-il une carte bancaire pour commencer ?", reponse: "Non. Les devis sont gratuits et illimités. La carte bancaire ou le prélèvement SEPA ne sont demandés qu'au moment d'envoyer votre première facture." },
-  { question: `Que comprend la formule ${essentiel.name} ?`, reponse: `${essentiel.features.join(', ')}. ${formatEuros(essentiel.monthlyPrice)} HT par mois, ou ${formatEuros(essentiel.yearlyPrice)} HT par an.` },
+  { question: `Que comprend la formule ${essentiel.name} ?`, reponse: `${essentiel.features.map((f, i) => (i === 0 ? f : f.charAt(0).toLowerCase() + f.slice(1))).join(', ')}. ${formatEuros(essentiel.monthlyPrice)} HT par mois, ou ${formatEuros(essentiel.yearlyPrice)} HT par an.` },
   { question: "Et si Qonforme ne me convient pas ?", reponse: `Vous êtes remboursé intégralement dans les ${GUARANTEE_DAYS} jours qui suivent votre premier paiement, sans avoir à vous justifier, directement depuis votre espace. Vos documents restent consultables et téléchargeables.` },
   { question: "Puis-je résilier à tout moment ?", reponse: "Oui, sans engagement. La résiliation se fait depuis Paramètres › Abonnement et prend effet à la fin de la période déjà payée. Vos factures restent consultables après résiliation." },
   { question: "Comment payer ?", reponse: "Par carte bancaire ou par prélèvement SEPA. Les prix sont hors taxes : la TVA à 20 % s'y ajoute." },

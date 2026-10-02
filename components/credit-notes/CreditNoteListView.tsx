@@ -231,7 +231,7 @@ export function CreditNoteListView({
               <tbody>
                 {visible.map((c) => (
                   <tr key={c.id} className="cursor-pointer" onClick={() => router.push(c.href)}>
-                    <td className="font-mono text-[13px]">
+                    <td className="whitespace-nowrap font-mono text-[13px]">
                       <Link href={c.href} className="text-[var(--q-accent-strong)] hover:underline" onClick={(e) => e.stopPropagation()}>
                         {c.credit_note_number}
                       </Link>
