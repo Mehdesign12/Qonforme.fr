@@ -1,15 +1,33 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react"
+/**
+ * Paramètres › Modèles de documents (planche « Paramètres — Modèles de
+ * documents ») : apparence (logo, couleur d'accent), numérotation, mentions et
+ * conditions, avec l'aperçu d'une facture à droite.
+ *
+ * Seuls les réglages qui existent sont proposés : pas de lien de paiement,
+ * de QR code, de mention de plateforme agréée ni de signature en ligne
+ * (non livrés, DECISIONS § 10).
+ *
+ * Enregistrement : PATCH /api/company réécrit toutes les colonnes de
+ * l'entreprise (un champ absent y devient vide). On renvoie donc la fiche
+ * complète, chargée au départ, avec les réglages modifiés.
+ *
+ * Même composant pour la démo (`mode="demo"`) : rien n'est lu ni enregistré.
+ */
+import { useEffect, useMemo, useRef, useState } from "react"
+import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
-import {
-  Loader2, Upload, Trash2, ImageIcon,
-  Info, CheckCircle2
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
+import { Info, Loader2, Palette } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { PageHeader } from "@/components/app/kit"
+import { cn } from "@/lib/utils"
+import type { ShellMode } from "@/components/layout/nav"
+import { settingsHref } from "@/components/settings/sections"
+import { DirtyHint, Field, MobileSaveBar, SaveButton, SettingsCard } from "@/components/settings/ui"
+import { LogoInline, useCompanyLogo } from "@/components/settings/LogoField"
+import { DocumentPreview, type PreviewCompany } from "@/components/settings/DocumentPreview"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -18,24 +36,34 @@ import { createClient } from "@/lib/supabase/client"
 interface InvoiceForm {
   legal_notice: string
   accent_color: string
+  invoice_prefix: string
+  payment_terms: string
 }
 
-/* Couleurs prédéfinies */
+export interface InvoiceSettingsDemo {
+  company: PreviewCompany
+  settings: InvoiceForm
+  logo_url: string | null
+  /** Numéros déjà attribués, pour calculer les prochains. */
+  invoiceNumbers: string[]
+  quoteNumbers: string[]
+}
+
+/* Couleurs prédéfinies (toute autre couleur reste possible : pastille « personnalisée ») */
 const PRESET_COLORS = [
-  { label: "Bleu Qonforme",  value: "#2563EB" },
-  { label: "Bleu marine",    value: "#1E3A5F" },
-  { label: "Vert forêt",     value: "#15803D" },
-  { label: "Violet",         value: "#7C3AED" },
-  { label: "Orange",         value: "#EA580C" },
-  { label: "Gris anthracite",value: "#374151" },
-  { label: "Rouge grenat",   value: "#B91C1C" },
-  { label: "Sarcelle",       value: "#0E7490" },
+  { label: "Bleu Qonforme",   value: "#2563EB" },
+  { label: "Encre",           value: "#0A1122" },
+  { label: "Bleu marine",     value: "#1E3A5F" },
+  { label: "Vert forêt",      value: "#15803D" },
+  { label: "Sarcelle",        value: "#0E7490" },
+  { label: "Gris anthracite", value: "#374151" },
+  { label: "Rouge grenat",    value: "#B91C1C" },
 ]
 
 /* Mentions légales suggérées selon le statut */
 const LEGAL_TEMPLATES = [
   {
-    label: "Auto-entrepreneur",
+    label: "Micro-entrepreneur",
     text: "Dispensé d'immatriculation au registre du commerce et des sociétés (RCS) et au répertoire des métiers (RM).\nTVA non applicable, art. 293 B du CGI.",
   },
   {
@@ -43,355 +71,323 @@ const LEGAL_TEMPLATES = [
     text: "En cas de retard de paiement, une pénalité égale à 3 fois le taux d'intérêt légal sera exigible (art. L. 441-10 C. com.).\nIndemnité forfaitaire pour frais de recouvrement : 40 € (art. D. 441-5 C. com.).",
   },
   {
-    label: "Artisan BTP",
+    label: "Artisan du bâtiment",
     text: "Artisan inscrit au répertoire des métiers.\nAssurance décennale : [Nom assureur], police n° [XXXXXXXX], valable pour les travaux réalisés en France.",
   },
 ]
+
+const EMPTY_COMPANY: PreviewCompany = {
+  name: "", address: "", zip_code: "", city: "", siren: "", siret: "", vat_number: "", iban: "",
+}
+
+const FORM_ID = "models-form"
+
+const demoToast = () =>
+  toast("Créez un compte pour enregistrer vos modèles", {
+    action: { label: "S'inscrire", onClick: () => { window.location.href = "/signup" } },
+  })
+
+/** Prochain numéro d'une série « PRÉFIXE-AAAA-NNN » (même calcul que lib/utils/document-numbering.ts). */
+function nextNumber(existing: string[], seriesPrefix: string): string {
+  let max = 0
+  for (const n of existing) {
+    if (!n?.startsWith(seriesPrefix)) continue
+    const seq = parseInt(n.split("-").pop() ?? "", 10)
+    if (!isNaN(seq) && seq > max) max = seq
+  }
+  return `${seriesPrefix}${String(max + 1).padStart(3, "0")}`
+}
 
 /* ------------------------------------------------------------------ */
 /* Composant                                                            */
 /* ------------------------------------------------------------------ */
 
-export function InvoiceSettingsForm() {
-  const [loading, setLoading]           = useState(true)
-  const [saving, setSaving]             = useState(false)
-  const [logoUrl, setLogoUrl]           = useState<string | null>(null)
-  const [logoUploading, setLogoUploading] = useState(false)
-  const [logoPreview, setLogoPreview]   = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: ShellMode; demo?: InvoiceSettingsDemo }) {
+  const demo = mode === "demo"
+  const [loading, setLoading]   = useState(!demo)
+  const [saving, setSaving]     = useState(false)
+  const [hasCompany, setHasCompany] = useState(demo)
+  const [preview, setPreview]   = useState<PreviewCompany>(demoData?.company ?? EMPTY_COMPANY)
+  const [loadedLogo, setLoadedLogo] = useState<string | null>(demoData?.logo_url ?? null)
+  const [invoiceNumbers, setInvoiceNumbers] = useState<string[]>(demoData?.invoiceNumbers ?? [])
+  const [quoteNumbers, setQuoteNumbers]     = useState<string[]>(demoData?.quoteNumbers ?? [])
+  // Fiche complète de l'entreprise, renvoyée telle quelle à l'enregistrement (voir l'en-tête)
+  const companyRef = useRef<Record<string, unknown> | null>(null)
+
+  const logo = useCompanyLogo({ mode, initialUrl: loadedLogo })
 
   const {
     register, handleSubmit, reset, watch, setValue,
-    formState: { isDirty }
+    formState: { isDirty },
   } = useForm<InvoiceForm>({
-    defaultValues: { legal_notice: "", accent_color: "#2563EB" },
+    defaultValues: demoData?.settings ?? { legal_notice: "", accent_color: "#2563EB", invoice_prefix: "F", payment_terms: "" },
   })
 
   const accentColor = watch("accent_color")
+  const prefix      = (watch("invoice_prefix") || "F").trim() || "F"
+  const legalNotice = watch("legal_notice")
+  const year        = new Date().getFullYear()
 
   /* Chargement des données existantes */
   useEffect(() => {
+    if (demo) return
     fetch("/api/company")
       .then(r => r.json())
       .then(json => {
-        if (json.company) {
+        const c = json.company
+        if (c) {
+          companyRef.current = c
+          setHasCompany(true)
           reset({
-            legal_notice: json.company.legal_notice ?? "",
-            accent_color: json.company.accent_color ?? "#2563EB",
+            legal_notice:   c.legal_notice   ?? "",
+            accent_color:   c.accent_color   ?? "#2563EB",
+            invoice_prefix: c.invoice_prefix ?? "F",
+            payment_terms:  c.payment_terms  ?? "",
           })
-          setLogoUrl(json.company.logo_url ?? null)
-          setLogoPreview(json.company.logo_url ?? null)
+          setLoadedLogo(c.logo_url ?? null)
+          setPreview({
+            name: c.name ?? "", address: c.address ?? "", zip_code: c.zip_code ?? "", city: c.city ?? "",
+            siren: c.siren ?? "", siret: c.siret ?? "", vat_number: c.vat_number ?? "", iban: c.iban ?? "",
+          })
         }
       })
+      .catch(() => toast.error("Impossible de charger vos réglages"))
       .finally(() => setLoading(false))
-  }, [reset])
 
-  /* Récupère le Bearer token de la session active */
-  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    // Numéros déjà attribués cette année, pour annoncer les prochains (lecture seule)
     const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.access_token) {
-      return { Authorization: `Bearer ${session.access_token}` }
-    }
-    return {}
-  }
+    supabase.from("invoices").select("invoice_number").like("invoice_number", `%-${year}-%`)
+      .then(({ data }) => setInvoiceNumbers((data ?? []).map(r => r.invoice_number as string)))
+    supabase.from("quotes").select("quote_number").like("quote_number", `D-${year}-%`)
+      .then(({ data }) => setQuoteNumbers((data ?? []).map(r => r.quote_number as string)))
+  }, [demo, reset, year])
 
-  /* Upload logo */
-  const uploadLogoFile = async (file: File) => {
-    // Prévisualisation locale immédiate
-    const reader = new FileReader()
-    reader.onload = ev => setLogoPreview(ev.target?.result as string)
-    reader.readAsDataURL(file)
+  const nextInvoice = useMemo(() => nextNumber(invoiceNumbers, `${prefix}-${year}-`), [invoiceNumbers, prefix, year])
+  const nextQuote   = useMemo(() => nextNumber(quoteNumbers, `D-${year}-`), [quoteNumbers, year])
 
-    setLogoUploading(true)
-    try {
-      const authHeaders = await getAuthHeaders()
-      const fd = new FormData()
-      fd.append("file", file)
-      const res = await fetch("/api/company/logo", {
-        method: "POST",
-        headers: authHeaders,
-        body: fd,
-      })
-      const json = await res.json()
-      if (!res.ok) { toast.error(json.error); setLogoPreview(logoUrl); return }
-      setLogoUrl(json.logo_url)
-      toast.success("Logo uploadé ✓")
-    } catch { toast.error("Erreur lors de l'upload") }
-    finally { setLogoUploading(false) }
-  }
-
-  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    await uploadLogoFile(file)
-  }
-
-  /* Suppression logo */
-  const deleteLogo = async () => {
-    if (!confirm("Supprimer le logo ?")) return
-    setLogoUploading(true)
-    try {
-      const authHeaders = await getAuthHeaders()
-      await fetch("/api/company/logo", { method: "DELETE", headers: authHeaders })
-      setLogoUrl(null)
-      setLogoPreview(null)
-      toast.success("Logo supprimé")
-    } catch { toast.error("Erreur lors de la suppression") }
-    finally { setLogoUploading(false) }
-  }
-
-  /* Sauvegarde mentions + couleur */
+  /* Enregistrement : couleur, mentions, préfixe, conditions */
   const onSubmit = async (data: InvoiceForm) => {
+    if (demo) { demoToast(); return }
+    if (!companyRef.current) { toast.error("Renseignez d'abord votre entreprise"); return }
     setSaving(true)
     try {
+      // Le logo a son propre endpoint : on ne renvoie pas une URL peut-être périmée
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { logo_url, ...company } = companyRef.current
+      const payload = {
+        ...company,
+        legal_notice:   data.legal_notice,
+        accent_color:   data.accent_color,
+        invoice_prefix: data.invoice_prefix.trim().toUpperCase() || "F",
+        payment_terms:  data.payment_terms,
+      }
       const res = await fetch("/api/company", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       })
       const json = await res.json()
-      if (!res.ok) { toast.error(json.error || "Erreur lors de la sauvegarde"); return }
-      reset(data)
-      toast.success("Paramètres sauvegardés ✓")
+      if (!res.ok) { toast.error(json.error || "Erreur lors de l'enregistrement"); return }
+      if (json.company) companyRef.current = json.company
+      reset({ ...data, invoice_prefix: payload.invoice_prefix })
+      toast.success("Modèles enregistrés")
     } catch { toast.error("Erreur réseau") }
     finally { setSaving(false) }
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
-    </div>
-  )
+  const isPreset = PRESET_COLORS.some(c => c.value.toLowerCase() === accentColor?.toLowerCase())
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <>
+      <PageHeader
+        title="Modèles de documents"
+        subtitle="Devis, factures, avoirs : un même style partout"
+        backHref={settingsHref("/settings", mode)}
+        backLabel="Paramètres"
+        actions={
+          <>
+            {isDirty && <DirtyHint className="hidden lg:inline-flex" />}
+            <SaveButton form={FORM_ID} saving={saving} disabled={loading || !isDirty || !hasCompany} />
+          </>
+        }
+      />
 
-      {/* ---- Logo ---- */}
-      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 shadow-sm space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Logo de l&apos;entreprise</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Affiché en haut à gauche de chaque facture. PNG, JPG ou SVG, max 2 Mo.</p>
+      {loading ? (
+        <div className="q-card flex items-center justify-center py-20">
+          <Loader2 className="size-6 animate-spin text-[var(--q-accent)]" aria-label="Chargement" />
         </div>
-
-        <div className="flex items-center gap-4">
-          {/* Zone de prévisualisation */}
-          <div
-            className="w-24 h-24 rounded-xl border-2 border-dashed border-[#E2E8F0] dark:border-[#1E3A5F] flex items-center justify-center bg-[#F8FAFC] dark:bg-[#162032] overflow-hidden shrink-0 cursor-pointer hover:border-[#2563EB] transition-colors"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {logoUploading ? (
-              <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
-            ) : logoPreview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoPreview} alt="Logo" className="w-full h-full object-contain p-2" />
-            ) : (
-              <div className="text-center">
-                <ImageIcon className="w-8 h-8 text-slate-200 mx-auto mb-1" />
-                <p className="text-xs text-slate-300">Cliquer</p>
+      ) : (
+        <form
+          id={FORM_ID}
+          onSubmit={handleSubmit(onSubmit)}
+          className="grid items-start gap-5 min-[1360px]:grid-cols-[minmax(0,1fr)_minmax(340px,440px)]"
+        >
+          {logo.input}
+          <div className="flex min-w-0 flex-col gap-4">
+            {!hasCompany && (
+              <div className="q-banner q-banner-warn" role="status">
+                <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+                <p>
+                  Renseignez d&apos;abord votre entreprise : vos modèles s&apos;enregistrent avec elle.{" "}
+                  <Link href={settingsHref("/settings/company", mode)} className="font-semibold underline">Compléter mon entreprise</Link>
+                </p>
               </div>
             )}
-          </div>
 
-          {/* Actions */}
-          <div className="space-y-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/svg+xml"
-              className="hidden"
-              onChange={handleLogoChange}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1.5 w-full"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={logoUploading}
-            >
-              <Upload className="w-3.5 h-3.5" />
-              {logoPreview ? "Changer le logo" : "Uploader un logo"}
-            </Button>
-            {logoPreview && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 w-full text-[#991B1B] hover:bg-[#FEE2E2]"
-                onClick={deleteLogo}
-                disabled={logoUploading}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Supprimer le logo
-              </Button>
-            )}
-          </div>
-        </div>
+            {/* ---- Apparence ---- */}
+            <SettingsCard id="apparence" title="Apparence">
+              <LogoInline logo={logo} disabled={!hasCompany} />
 
-
-      </div>
-
-      {/* ---- Couleur d'accentuation ---- */}
-      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 shadow-sm space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Couleur des factures</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Utilisée pour l&apos;en-tête, les totaux et les accents dans le PDF.</p>
-        </div>
-
-        {/* Presets */}
-        <div className="flex flex-wrap gap-2">
-          {PRESET_COLORS.map(c => (
-            <button
-              key={c.value}
-              type="button"
-              title={c.label}
-              onClick={() => setValue("accent_color", c.value, { shouldDirty: true })}
-              className={`w-8 h-8 rounded-lg border-2 transition-all ${
-                accentColor === c.value
-                  ? "border-[#0F172A] dark:border-[#E2E8F0] scale-110 shadow-md"
-                  : "border-transparent hover:border-[#94A3B8] hover:scale-105"
-              }`}
-              style={{ backgroundColor: c.value }}
-            />
-          ))}
-        </div>
-
-        {/* Couleur personnalisée */}
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-lg border border-[#E2E8F0] dark:border-[#1E3A5F] overflow-hidden cursor-pointer"
-            onClick={() => document.getElementById("color-picker")?.click()}
-          >
-            <input
-              id="color-picker"
-              type="color"
-              {...register("accent_color")}
-              className="w-14 h-14 -ml-2 -mt-2 cursor-pointer border-none outline-none"
-            />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-slate-600">Couleur personnalisée</p>
-            <p className="text-xs text-slate-400 font-mono">{accentColor}</p>
-          </div>
-          {/* Aperçu */}
-          <div
-            className="ml-auto px-4 py-1.5 rounded-lg text-white text-xs font-medium shrink-0"
-            style={{ backgroundColor: accentColor }}
-          >
-            Aperçu
-          </div>
-        </div>
-      </div>
-
-      {/* ---- Mentions légales ---- */}
-      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 shadow-sm space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Mentions légales</h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Affichées en bas de chaque facture. Obligatoires selon votre statut juridique.
-          </p>
-        </div>
-
-        {/* Templates suggérés */}
-        <div>
-          <p className="text-xs font-medium text-slate-500 mb-2">Modèles suggérés :</p>
-          <div className="flex flex-wrap gap-2">
-            {LEGAL_TEMPLATES.map(t => (
-              <button
-                key={t.label}
-                type="button"
-                onClick={() => setValue("legal_notice", t.text, { shouldDirty: true })}
-                className="px-3 py-1.5 rounded-full text-xs font-medium border border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032] text-slate-600 dark:text-[#E2E8F0] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors"
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <textarea
-          {...register("legal_notice")}
-          rows={5}
-          placeholder={`Ex : Dispensé d'immatriculation au RCS. TVA non applicable, art. 293 B du CGI.\n\nEn cas de retard de paiement, une pénalité de 3× le taux légal sera exigible.`}
-          className="w-full px-3 py-2.5 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-600 dark:bg-[#162032] dark:text-[#E2E8F0] font-sans"
-        />
-
-        {/* Exemples des mentions obligatoires */}
-        <div className="bg-[#EFF6FF] dark:bg-[#162032] border border-[#BFDBFE] dark:border-[#1E3A5F] rounded-lg p-3 space-y-1.5">
-          <div className="flex items-center gap-1.5">
-            <Info className="w-4 h-4 text-[#2563EB] shrink-0" />
-            <p className="text-xs font-medium text-[#1E40AF]">Mentions légales obligatoires (droit français)</p>
-          </div>
-          {[
-            "Pénalités de retard : taux et date d'exigibilité",
-            "Indemnité forfaitaire de recouvrement : 40 €",
-            "Conditions d'escompte (si applicable)",
-            "Pour auto-entrepreneurs : mention TVA art. 293 B",
-          ].map(item => (
-            <div key={item} className="flex items-start gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#3B82F6] shrink-0 mt-0.5" />
-              <p className="text-xs text-[#1E40AF]">{item}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ---- Aperçu facture (miniature) ---- */}
-      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0] mb-4">Aperçu de l&apos;en-tête</h2>
-        <div className="border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg overflow-hidden">
-          {/* Bande couleur */}
-          <div className="h-1.5" style={{ backgroundColor: accentColor }} />
-          <div className="p-4 flex justify-between items-start">
-            <div>
-              {logoPreview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoPreview} alt="Logo" className="h-12 object-contain mb-2" />
-              ) : (
-                <div className="h-12 w-32 bg-[#F1F5F9] rounded-md mb-2 flex items-center justify-center">
-                  <p className="text-xs text-slate-300">Votre logo</p>
+              <div className="flex flex-col gap-2 border-t border-[var(--q-line-soft)] pt-3.5">
+                <span className="q-label" id="accent-label">Couleur d&apos;accent</span>
+                <div role="radiogroup" aria-labelledby="accent-label" className="flex flex-wrap gap-2">
+                  {PRESET_COLORS.map(c => {
+                    const on = accentColor?.toLowerCase() === c.value.toLowerCase()
+                    return (
+                      <button
+                        key={c.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        aria-label={c.label}
+                        title={c.label}
+                        onClick={() => setValue("accent_color", c.value, { shouldDirty: true })}
+                        className={cn(
+                          "size-10 rounded-[11px] bg-[var(--q-surface)] p-[3px] transition-[border-color]",
+                          on ? "border-2 border-[var(--q-ink)]" : "border border-[var(--q-field)] hover:border-[var(--q-text-4)]",
+                        )}
+                      >
+                        <span className="block size-full rounded-[7px]" style={{ backgroundColor: c.value }} />
+                      </button>
+                    )
+                  })}
+                  {/* Couleur personnalisée */}
+                  <label
+                    title="Couleur personnalisée"
+                    className={cn(
+                      "relative grid size-10 cursor-pointer place-items-center overflow-hidden rounded-[11px] bg-[var(--q-surface)] p-[3px]",
+                      !isPreset ? "border-2 border-[var(--q-ink)]" : "border border-dashed border-[var(--q-field)] hover:border-[var(--q-text-4)]",
+                    )}
+                  >
+                    <span className="sr-only">Couleur personnalisée</span>
+                    {isPreset
+                      ? <Palette className="size-[18px] text-[var(--q-text-3)]" strokeWidth={1.75} aria-hidden />
+                      : <span className="block size-full rounded-[7px]" style={{ backgroundColor: accentColor }} />}
+                    <input
+                      type="color"
+                      {...register("accent_color")}
+                      className="absolute inset-0 size-full cursor-pointer opacity-0"
+                    />
+                  </label>
                 </div>
-              )}
-              <p className="text-sm font-bold text-[#0F172A] dark:text-[#E2E8F0]">Mon Entreprise</p>
-              <p className="text-xs text-slate-400">123456789 • Paris</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-slate-400">FACTURE</p>
-              <p className="text-sm font-bold font-mono" style={{ color: accentColor }}>F-2026-001</p>
-              <p className="text-xs text-slate-400 mt-1">01/06/2026</p>
-            </div>
-          </div>
-          <div className="px-4 pb-3 border-t border-[#F1F5F9] dark:border-[#162032] pt-2">
-            <div className="h-2" style={{ backgroundColor: accentColor, opacity: 0.15, borderRadius: 2 }} />
-            <div className="mt-1.5 space-y-1">
-              {[100, 80, 90].map((w, i) => (
-                <div key={i} className="h-1.5 bg-[#F1F5F9] rounded" style={{ width: `${w}%` }} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+                <p className="q-field-hint">
+                  Bande, numéro et total de vos PDF. Couleur choisie : <span className="font-mono">{accentColor}</span>
+                </p>
+              </div>
+            </SettingsCard>
 
-      <Separator />
+            {/* ---- Numérotation ---- */}
+            <SettingsCard id="numerotation" title="Numérotation">
+              <Field
+                label="Préfixe des factures"
+                htmlFor="invoice_prefix"
+                hint={<>Prochain numéro : <span className="font-mono text-[var(--q-text-3)]">{nextInvoice}</span></>}
+              >
+                <input
+                  id="invoice_prefix"
+                  className="q-input font-mono uppercase"
+                  placeholder="F"
+                  maxLength={5}
+                  {...register("invoice_prefix")}
+                />
+              </Field>
+              <div className="flex flex-col gap-1">
+                <span className="q-label">Devis</span>
+                <p className="text-[13px] text-[var(--q-text-4)]">
+                  Préfixe fixe. Prochain numéro : <span className="font-mono text-[var(--q-text-3)]">{nextQuote}</span>
+                </p>
+              </div>
+              <p className="text-[13px] leading-relaxed text-[var(--q-text-4)]">
+                Chaque série est continue et sans trou, comme l&apos;exige la réglementation. Le numéro d&apos;une
+                facture émise ne change jamais : un nouveau préfixe ouvre une nouvelle série à partir de la
+                prochaine facture.
+              </p>
+            </SettingsCard>
 
-      {/* ---- Actions ---- */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        {isDirty && (
-          <p className="text-xs text-[#D97706] flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 bg-[#D97706] rounded-full inline-block" />
-            Modifications non sauvegardées
-          </p>
-        )}
-        <Button
-          type="submit"
-          className="sm:ml-auto w-full sm:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2"
-          disabled={saving || !isDirty}
-        >
-          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-          {saving ? "Sauvegarde…" : "Sauvegarder les modifications"}
-        </Button>
-      </div>
-    </form>
+            {/* ---- Mentions et conditions ---- */}
+            <SettingsCard id="mentions" title="Mentions et conditions">
+              <Field
+                label="Mentions légales"
+                htmlFor="legal_notice"
+                hint="En bas de chaque facture (4 lignes au plus). Obligatoires selon votre statut."
+              >
+                <div className="mb-1 flex flex-wrap gap-1.5">
+                  {LEGAL_TEMPLATES.map(t => (
+                    <button
+                      key={t.label}
+                      type="button"
+                      onClick={() => setValue("legal_notice", t.text, { shouldDirty: true })}
+                      className="q-btn q-btn-secondary !h-8 !rounded-full !px-3 !text-[13px] !font-medium"
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  id="legal_notice"
+                  rows={4}
+                  {...register("legal_notice")}
+                  placeholder={"Ex : TVA non applicable, art. 293 B du CGI.\nEn cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera exigible."}
+                  className="q-input"
+                />
+              </Field>
+
+              <div className="q-inset flex flex-col gap-1.5 p-3.5">
+                <p className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--q-ink)]">
+                  <Info className="size-4 shrink-0 text-[var(--q-accent-strong)]" aria-hidden />
+                  Mentions obligatoires sur une facture entre professionnels
+                </p>
+                <ul className="flex flex-col gap-1 pl-[22px] text-[13px] text-[var(--q-text-3)]">
+                  <li className="list-disc">Pénalités de retard : taux et date d&apos;exigibilité</li>
+                  <li className="list-disc">Indemnité forfaitaire de recouvrement : 40 €</li>
+                  <li className="list-disc">Conditions d&apos;escompte (si applicable)</li>
+                  <li className="list-disc">Micro-entrepreneur : mention de l&apos;art. 293 B du CGI</li>
+                </ul>
+              </div>
+
+              <Field
+                label="Conditions de paiement"
+                htmlFor="payment_terms"
+                hint="Enregistrées avec votre entreprise. Elles ne sont pas encore reprises seules sur les factures : précisez-les dans les notes de la facture ou dans les mentions ci-dessus."
+              >
+                <textarea
+                  id="payment_terms"
+                  rows={3}
+                  {...register("payment_terms")}
+                  placeholder="Paiement par virement bancaire sous 30 jours."
+                  className="q-input"
+                />
+              </Field>
+            </SettingsCard>
+          </div>
+
+          {/* ---- Aperçu ---- */}
+          <aside aria-label="Aperçu" className="q-paper-bed flex flex-col gap-3 !rounded-[18px] !p-5 min-[1360px]:sticky min-[1360px]:top-[84px]">
+            <span className="text-xs font-semibold text-[var(--q-text-3)]">Aperçu d&apos;une facture (lignes d&apos;exemple)</span>
+            <DocumentPreview
+              accent={accentColor}
+              logo={logo.preview}
+              company={preview}
+              number={nextInvoice}
+              legalNotice={legalNotice ?? ""}
+            />
+          </aside>
+
+          <div className="min-[1360px]:col-span-2">
+            <MobileSaveBar show={isDirty} form={FORM_ID} saving={saving} />
+          </div>
+        </form>
+      )}
+    </>
   )
 }

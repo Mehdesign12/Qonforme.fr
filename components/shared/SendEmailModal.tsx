@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from "react"
-import { Mail, Loader2, X, Send, AlertCircle, CheckCircle2 } from "lucide-react"
+import { AlertCircle, Info, Mail, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner"
 
 interface SendEmailModalProps {
@@ -16,7 +17,10 @@ interface SendEmailModalProps {
   clientEmail:  string | null | undefined
   /** Nom du client */
   clientName:   string
-  /** Couleur accent */
+  /**
+   * @deprecated Accent unique du kit (bleu Qonforme) : la couleur n'est plus
+   * personnalisable ici. Conservé pour ne pas casser les appels existants.
+   */
   accentColor?: string
   /** Callback après envoi réussi (pour mettre à jour le statut localement) */
   onSent?:      () => void
@@ -24,9 +28,12 @@ interface SendEmailModalProps {
   disabled?:    boolean
 }
 
+/**
+ * Bouton « Envoyer par email » et sa fenêtre de confirmation (kit : voile
+ * sombre, fenêtre rayon 20, titre Bricolage, pied grisé).
+ */
 export default function SendEmailModal({
-  apiUrl, docNumber, docType, clientEmail, clientName,
-  accentColor = "#2563EB", onSent, disabled,
+  apiUrl, docNumber, docType, clientEmail, clientName, onSent, disabled,
 }: SendEmailModalProps) {
   const [open,    setOpen]    = useState(false)
   const [loading, setLoading] = useState(false)
@@ -54,123 +61,68 @@ export default function SendEmailModal({
     <>
       {/* Bouton déclencheur */}
       <Button
-        variant="default"
         size="sm"
-        className="gap-1.5"
         disabled={disabled || !clientEmail}
         title={!clientEmail ? "Le client n'a pas d'adresse email" : `Envoyer ${docLabel} par email`}
         onClick={() => setOpen(true)}
-        style={{ backgroundColor: accentColor, borderColor: accentColor }}
       >
-        <Mail className="w-4 h-4" />
+        <Mail />
         Envoyer par email
       </Button>
 
-      {/* Modale */}
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/40 md:backdrop-blur-sm"
-            onClick={() => !loading && setOpen(false)}
-          />
-
-          {/* Carte modale */}
-          <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${accentColor}15` }}>
-                  <Mail className="w-4 h-4" style={{ color: accentColor }} />
-                </div>
-                <h2 className="text-base font-semibold text-slate-900">
-                  Envoyer {docLabel}
-                </h2>
-              </div>
-              <button
-                onClick={() => !loading && setOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors text-slate-400"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Corps */}
-            <div className="px-6 py-5 space-y-4">
-
-              {/* Récapitulatif document */}
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                     style={{ backgroundColor: `${accentColor}15` }}>
-                  <Send className="w-4 h-4" style={{ color: accentColor }} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{docNumber}</p>
-                  <p className="text-xs text-slate-500 capitalize">{docType}</p>
-                </div>
-              </div>
-
-              {/* Destinataire */}
-              {clientEmail ? (
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Destinataire</p>
-                  <div className="flex items-center gap-2 p-3 bg-green-50 rounded-xl border border-green-200">
-                    <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">{clientName}</p>
-                      <p className="text-xs text-slate-500">{clientEmail}</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl border border-amber-200">
-                  <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-amber-700">
-                    Aucune adresse email associée à ce client. Ajoutez-en une dans la fiche client.
-                  </p>
-                </div>
-              )}
-
-              {/* Info envoi */}
-              {clientEmail && (
-                <div className="text-xs text-slate-500 leading-relaxed bg-slate-50 rounded-xl p-3 border border-slate-200">
-                  <p>Le PDF sera joint automatiquement à l&apos;email.</p>
-                  <p className="mt-1">Une copie sera envoyée à votre adresse email.</p>
-                  <p className="mt-1">Le statut du document passera à <strong>Envoyé</strong>.</p>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div
-              className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50"
-              style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))' }}
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setOpen(false)}
-                disabled={loading}
-              >
-                Annuler
-              </Button>
-              <Button
-                size="sm"
-                className="gap-1.5"
-                disabled={loading || !clientEmail}
-                onClick={handleSend}
-                style={{ backgroundColor: accentColor, borderColor: accentColor }}
-              >
-                {loading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours…</>
-                ) : (
-                  <><Send className="w-4 h-4" /> Envoyer</>
-                )}
-              </Button>
-            </div>
+      <Dialog open={open} onOpenChange={(o) => { if (!o && !loading) setOpen(false) }}>
+        <DialogContent showCloseButton={!loading} className="gap-0 overflow-hidden p-0 sm:max-w-[500px]">
+          {/* En-tête */}
+          <div className="flex flex-col gap-1 px-[22px] pr-14 pt-5">
+            <DialogTitle className="q-display text-[22px] leading-tight text-[var(--q-ink)]">
+              Envoyer {docLabel}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-[var(--q-text-4)]">
+              <span className="font-mono">{docNumber}</span> · {clientName}
+            </DialogDescription>
           </div>
-        </div>
-      )}
+
+          {/* Corps */}
+          <div className="flex flex-col gap-3.5 px-[22px] pb-5 pt-[18px]">
+            {clientEmail ? (
+              <div className="q-inset px-4 py-3.5 text-sm">
+                <span className="mb-1 block text-xs text-[var(--q-text-4)]">Destinataire</span>
+                <span className="block font-medium text-[var(--q-ink)]">{clientName}</span>
+                <span className="block text-[13px] text-[var(--q-text-3)]">{clientEmail}</span>
+              </div>
+            ) : (
+              <div className="q-banner q-banner-warn text-[13px] leading-normal">
+                <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+                <p>Aucune adresse email associée à ce client. Ajoutez-en une dans la fiche client.</p>
+              </div>
+            )}
+
+            {clientEmail && (
+              <div className="q-banner text-[13px] leading-normal">
+                <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+                <p>
+                  Le PDF est joint automatiquement à l&apos;email et une copie vous est adressée.
+                  {docType !== "avoir" && <> Le statut du document passera à <strong>Envoyé</strong>.</>}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Pied */}
+          <div
+            className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--q-line-soft)] bg-[var(--q-surface-2)] px-[22px] py-4"
+            style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))" }}
+          >
+            <Button variant="ghost" onClick={() => setOpen(false)} disabled={loading}>
+              Annuler
+            </Button>
+            <Button disabled={loading || !clientEmail} onClick={handleSend}>
+              <Send />
+              {loading ? "Envoi en cours…" : "Envoyer"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

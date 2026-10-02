@@ -1,341 +1,98 @@
-import { TrendingUp, TrendingDown, FileText, Clock, AlertTriangle, ArrowUpRight, ArrowDownRight, Zap, CheckCircle2 } from "lucide-react"
+/**
+ * Indicateurs du tableau de bord (réel et démo) :
+ * - ordinateur : quatre cartes (canevas « Tableau de bord ») ;
+ * - mobile : la carte « À encaisser » (canevas « Mobile — accueil »).
+ *
+ * Libellés fidèles à ce qui est calculé : « Facturé », pas « Encaissé »
+ * (date de paiement non enregistrée), « À échoir sous 30 jours », pas « Prévision ».
+ */
+import { Clock } from "lucide-react"
+import { Kpi } from "@/components/app/kit"
 import { formatCurrency } from "@/lib/utils/invoice"
-import { createClient } from "@/lib/supabase/server"
+import { cn } from "@/lib/utils"
+import { plural, type DashboardView } from "@/components/dashboard/model"
+import { KPI_GRID, SOLID } from "@/components/dashboard/ui"
 
-/* ── Cache 60s — les stats ne changent pas à chaque requête ─────────────── */
-export const revalidate = 60
+type Kpis = DashboardView["kpi"]
 
-/* ─────────────────────────────────────────────────────────────────────────
-   Micro sparkline SVG inline — aucune dépendance, rendu serveur
-───────────────────────────────────────────────────────────────────────── */
-function Sparkline({ values, color }: { values: number[]; color: string }) {
-  if (!values || values.length < 2) return null
-  const max = Math.max(...values, 1)
-  const w = 80, h = 28, pad = 2
-  const pts = values.map((v, i) => {
-    const x = pad + (i / (values.length - 1)) * (w - pad * 2)
-    const y = h - pad - ((v / max) * (h - pad * 2))
-    return `${x},${y}`
-  }).join(' ')
+function signedPct(pct: number): string {
+  return `${pct > 0 ? "+" : pct < 0 ? "−" : ""}${Math.abs(pct)}\u00a0%`
+}
+
+/** Sous-titre de « Facturé ce mois » : nombre de factures et comparaison au mois précédent. */
+function monthSub({ amount, count, prevAmount, prevMonthName, deltaPct }: Kpis["month"]): string {
+  if (amount > 0) {
+    const n = `${count}\u00a0${plural(count, "facture émise", "factures émises")}`
+    return deltaPct !== null ? `${n} · ${signedPct(deltaPct)} vs ${prevMonthName}` : n
+  }
+  if (prevAmount > 0) return `vs ${formatCurrency(prevAmount)} en ${prevMonthName}`
+  return "Aucune facture émise ce mois-ci"
+}
+
+function openSub({ count }: Kpis["open"]): string {
+  return count > 0 ? `${count}\u00a0${plural(count, "facture en cours", "factures en cours")}` : "Aucune facture en attente"
+}
+
+function dueSoonSub({ count, untilLabel }: Kpis["dueSoon"]): string {
+  return count > 0
+    ? `${count}\u00a0${plural(count, "facture", "factures")} d'ici le ${untilLabel}`
+    : `Aucune échéance d'ici le ${untilLabel}`
+}
+
+const clock = <Clock className="size-3.5" strokeWidth={2.25} aria-hidden />
+
+/** Cartes d'indicateurs (≥ 768 px). */
+export function DashboardStats({ kpi }: { kpi: Kpis }) {
+  const { late } = kpi
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible" aria-hidden>
-      <polyline
-        points={pts}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.7"
-      />
-      {/* Point final */}
-      {(() => {
-        const last = values[values.length - 1]
-        const x = w - pad
-        const y = h - pad - ((last / max) * (h - pad * 2))
-        return <circle cx={x} cy={y} r="2.5" fill={color} opacity="0.9" />
-      })()}
-    </svg>
+    <section aria-label="Indicateurs du mois" className={cn(KPI_GRID, "hidden md:grid")}>
+      <Kpi label="Facturé ce mois" value={formatCurrency(kpi.month.amount)} sub={monthSub(kpi.month)} />
+      <Kpi label="À encaisser" value={formatCurrency(kpi.open.amount)} sub={openSub(kpi.open)} />
+      {late.count > 0 ? (
+        <Kpi
+          tone="warn"
+          icon={clock}
+          label="En retard"
+          value={formatCurrency(late.amount)}
+          sub={`${late.count}\u00a0${plural(late.count, "facture", "factures")} · jusqu'à ${late.oldestDays}\u00a0j de retard`}
+        />
+      ) : (
+        <Kpi label="En retard" value={formatCurrency(0)} sub="Aucune facture en retard" />
+      )}
+      <Kpi label="À échoir sous 30 jours" value={formatCurrency(kpi.dueSoon.amount)} sub={dueSoonSub(kpi.dueSoon)} />
+    </section>
   )
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   Fetch stats
-───────────────────────────────────────────────────────────────────────── */
-async function getStats() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const now              = new Date()
-  const startOfMonth     = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0]
-  const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split("T")[0]
-  const endOfPrevMonth   = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split("T")[0]
-  const today            = now.toISOString().split("T")[0]
-
-  // Données des 6 derniers mois pour sparkline CA
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().split("T")[0]
-
-  const [
-    { data: currMonth },
-    { data: prevMonth },
-    { count: sentCount },
-    { data: pending },
-    { data: overdue },
-    { data: sixMonths },
-    { data: paidInvoices },
-  ] = await Promise.all([
-    supabase
-      .from("invoices")
-      .select("total_ttc")
-      .eq("user_id", user.id)
-      .in("status", ["sent", "accepted", "paid"])
-      .gte("issue_date", startOfMonth),
-
-    supabase
-      .from("invoices")
-      .select("total_ttc")
-      .eq("user_id", user.id)
-      .in("status", ["sent", "accepted", "paid"])
-      .gte("issue_date", startOfPrevMonth)
-      .lte("issue_date", endOfPrevMonth),
-
-    supabase
-      .from("invoices")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .neq("status", "draft")
-      .gte("issue_date", startOfMonth),
-
-    supabase
-      .from("invoices")
-      .select("total_ttc")
-      .eq("user_id", user.id)
-      .in("status", ["sent", "pending", "received"]),
-
-    supabase
-      .from("invoices")
-      .select("total_ttc")
-      .eq("user_id", user.id)
-      .in("status", ["sent", "pending"])
-      .lt("due_date", today),
-
-    supabase
-      .from("invoices")
-      .select("total_ttc, issue_date")
-      .eq("user_id", user.id)
-      .in("status", ["sent", "accepted", "paid"])
-      .gte("issue_date", sixMonthsAgo),
-
-    supabase
-      .from("invoices")
-      .select("total_ttc")
-      .eq("user_id", user.id)
-      .eq("status", "paid"),
-  ])
-
-  // Agréger par mois pour sparkline
-  const monthlyRevenue = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    const total = (sixMonths || [])
-      .filter(inv => inv.issue_date?.startsWith(key))
-      .reduce((s, inv) => s + (inv.total_ttc || 0), 0)
-    return total
-  })
-
-  const paidAmount    = paidInvoices?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0
-  const pendingAmount = pending?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0
-  const overdueAmount = overdue?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0
-  const totalInvoiced = paidAmount + pendingAmount + overdueAmount
-  const recoveryRate  = totalInvoiced > 0 ? Math.round((paidAmount / totalInvoiced) * 100) : null
-
-  return {
-    revenue_current_month:   currMonth?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0,
-    revenue_previous_month:  prevMonth?.reduce((s, i) => s + (i.total_ttc || 0), 0) || 0,
-    invoices_sent_count:     sentCount || 0,
-    invoices_pending_amount: pendingAmount,
-    invoices_overdue_amount: overdueAmount,
-    recovery_rate:           recoveryRate,
-    monthly_revenue:         monthlyRevenue,
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   KPI Card
-───────────────────────────────────────────────────────────────────────── */
-interface KpiCardProps {
-  icon:       React.ReactNode
-  iconBg:     string
-  label:      string
-  sub:        string
-  value:      React.ReactNode
-  badge?:     React.ReactNode
-  sparkline?: React.ReactNode
-  accent?:    boolean   // bordure colorée
-  alert?:     boolean   // état alerte rouge
-}
-
-function KpiCard({ icon, iconBg, label, sub, value, badge, sparkline, alert }: KpiCardProps) {
+/** Carte « À encaisser » de l'accueil mobile (< 768 px). */
+export function MobileHero({ kpi }: { kpi: Kpis }) {
+  const { open, late } = kpi
   return (
-    <div
-      className={`
-        relative overflow-hidden rounded-2xl border p-4 sm:p-5
-        hover:-translate-y-0.5
-        ${alert
-          ? 'bg-white dark:bg-[#1a1218] border-[#FECACA] dark:border-[#7f1d1d]/50 shadow-[0_2px_12px_rgba(239,68,68,0.08)]'
-          : 'bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F] shadow-[0_2px_12px_rgba(37,99,235,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.20)]'
-        }
-      `}
-      style={{ contain: 'layout style', transition: 'transform 0.15s ease, box-shadow 0.15s ease' }}
-    >
-      {/* Déco arrière-plan légère */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-4 -bottom-4 w-24 h-24 rounded-full"
-        style={{ background: alert
-          ? 'radial-gradient(circle, rgba(239,68,68,0.04) 0%, transparent 70%)'
-          : 'radial-gradient(circle, rgba(37,99,235,0.05) 0%, transparent 70%)'
-        }}
-      />
-
-      <div className="relative z-10">
-        <div className="flex items-start justify-between mb-3">
-          <div
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-            style={{ background: iconBg }}
-          >
-            {icon}
-          </div>
-          {badge}
-        </div>
-
-        <p className={`font-mono text-xl sm:text-2xl font-extrabold leading-none truncate mb-2 ${
-          alert ? 'text-[#EF4444]' : 'text-[#0F172A] dark:text-[#E2E8F0]'
-        }`}>
-          {value}
-        </p>
-
-        <div className="flex items-end justify-between gap-2">
-          <div>
-            <p className="text-[12px] font-semibold text-slate-500 dark:text-slate-400">{label}</p>
-            <p className="text-[11px] text-slate-300 dark:text-slate-600 mt-0.5">{sub}</p>
-          </div>
-          {sparkline && (
-            <div className="shrink-0 opacity-80">
-              {sparkline}
-            </div>
-          )}
-        </div>
+    <section aria-label="À encaisser" className={cn(SOLID, "flex flex-col gap-3.5 rounded-[22px] p-[18px] md:hidden")}>
+      <div className="flex flex-col gap-1">
+        <span className="text-[13px] text-[var(--q-text-3)]">À encaisser</span>
+        <span className="font-display text-[38px] font-semibold leading-[1.05] tracking-[-0.04em] text-[var(--q-ink)] tabular-nums">
+          {formatCurrency(open.amount)}
+        </span>
+        {late.count > 0 ? (
+          <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--q-warn)]">
+            <Clock className="size-[13px]" strokeWidth={2.25} aria-hidden />
+            dont {formatCurrency(late.amount)} en retard
+          </span>
+        ) : (
+          <span className="text-[13px] text-[var(--q-text-4)]">{openSub(open)} · aucun retard</span>
+        )}
       </div>
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Export
-───────────────────────────────────────────────────────────────────────── */
-export async function DashboardStats() {
-  const stats = await getStats()
-
-  const s = stats || {
-    revenue_current_month:   0,
-    revenue_previous_month:  0,
-    invoices_sent_count:     0,
-    invoices_pending_amount: 0,
-    invoices_overdue_amount: 0,
-    recovery_rate:           null as number | null,
-    monthly_revenue:         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  }
-
-  const revenueDiff    = s.revenue_current_month - s.revenue_previous_month
-  const revenuePercent = s.revenue_previous_month > 0
-    ? Math.round((revenueDiff / s.revenue_previous_month) * 100)
-    : null
-
-  const isUp       = revenuePercent !== null && revenuePercent >= 0
-  const hasOverdue = s.invoices_overdue_amount > 0
-
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-
-      {/* ── CA ce mois ── */}
-      <KpiCard
-        iconBg="linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)"
-        icon={isUp
-          ? <TrendingUp  className="w-4 h-4 text-[#2563EB]" />
-          : <TrendingDown className="w-4 h-4 text-[#2563EB]" />
-        }
-        value={formatCurrency(s.revenue_current_month)}
-        label="CA ce mois"
-        sub={revenuePercent !== null
-          ? `vs ${formatCurrency(s.revenue_previous_month)} le mois dernier`
-          : 'aucune donnée précédente'
-        }
-        badge={revenuePercent !== null ? (
-          <span className={`inline-flex items-center gap-0.5 text-[11px] font-bold rounded-full px-2 py-0.5 ${
-            isUp ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#FEE2E2] text-[#991B1B]'
-          }`}>
-            {isUp
-              ? <ArrowUpRight   className="w-3 h-3" />
-              : <ArrowDownRight className="w-3 h-3" />
-            }
-            {Math.abs(revenuePercent)}%
-          </span>
-        ) : undefined}
-        sparkline={
-          <Sparkline values={s.monthly_revenue} color="#2563EB" />
-        }
-      />
-
-      {/* ── Factures émises ── */}
-      <KpiCard
-        iconBg="linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%)"
-        icon={<FileText className="w-4 h-4 text-[#7C3AED]" />}
-        value={s.invoices_sent_count}
-        label="Factures émises"
-        sub="ce mois"
-        sparkline={
-          <Sparkline
-            values={[1, 2, 1, 3, s.invoices_sent_count > 0 ? s.invoices_sent_count : 0, s.invoices_sent_count]}
-            color="#7C3AED"
-          />
-        }
-      />
-
-      {/* ── En attente ── */}
-      <KpiCard
-        iconBg="linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)"
-        icon={<Clock className="w-4 h-4 text-[#D97706]" />}
-        value={formatCurrency(s.invoices_pending_amount)}
-        label="En attente"
-        sub="à encaisser"
-        badge={s.invoices_pending_amount > 0 ? (
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold rounded-full px-2 py-0.5 bg-[#FEF3C7] text-[#92400E]">
-            <Zap className="w-2.5 h-2.5" />
-            Action
-          </span>
-        ) : undefined}
-      />
-
-      {/* ── En retard ── */}
-      <KpiCard
-        iconBg={hasOverdue
-          ? 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)'
-          : 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)'
-        }
-        icon={<AlertTriangle className={`w-4 h-4 ${hasOverdue ? 'text-[#EF4444]' : 'text-[#10B981]'}`} />}
-        value={hasOverdue ? formatCurrency(s.invoices_overdue_amount) : "0 €"}
-        label="En retard"
-        sub={hasOverdue ? "à relancer d'urgence" : "Aucun retard 🎉"}
-        alert={hasOverdue}
-        badge={hasOverdue ? (
-          <span className="inline-flex items-center text-[11px] font-bold rounded-full px-2 py-0.5 bg-[#FEE2E2] text-[#991B1B]">
-            Urgent
-          </span>
-        ) : undefined}
-      />
-
-      {/* ── Taux de recouvrement ── */}
-      <KpiCard
-        iconBg="linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)"
-        icon={<CheckCircle2 className="w-4 h-4 text-[#10B981]" />}
-        value={s.recovery_rate !== null ? `${s.recovery_rate} %` : "—"}
-        label="Recouvrement"
-        sub="payé / facturé total"
-        badge={s.recovery_rate !== null ? (
-          <span className={`inline-flex items-center text-[11px] font-bold rounded-full px-2 py-0.5 ${
-            s.recovery_rate >= 80
-              ? 'bg-[#D1FAE5] text-[#065F46]'
-              : s.recovery_rate >= 50
-              ? 'bg-[#FEF3C7] text-[#92400E]'
-              : 'bg-[#FEE2E2] text-[#991B1B]'
-          }`}>
-            {s.recovery_rate >= 80 ? 'Excellent' : s.recovery_rate >= 50 ? 'Moyen' : 'Faible'}
-          </span>
-        ) : undefined}
-      />
-
-    </div>
+      <div className="grid grid-cols-2 gap-2.5 border-t border-[var(--q-line)] pt-3">
+        <span className="flex flex-col gap-0.5">
+          <span className="text-xs text-[var(--q-text-4)]">Facturé ce mois</span>
+          <span className="text-base font-semibold text-[var(--q-ink)] tabular-nums">{formatCurrency(kpi.month.amount)}</span>
+        </span>
+        <span className="flex flex-col gap-0.5">
+          <span className="text-xs text-[var(--q-text-4)]">À échoir sous 30 jours</span>
+          <span className="text-base font-semibold text-[var(--q-ink)] tabular-nums">{formatCurrency(kpi.dueSoon.amount)}</span>
+        </span>
+      </div>
+    </section>
   )
 }

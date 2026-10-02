@@ -5,9 +5,5 @@ export const metadata: Metadata = { title: "Nouvelle facture" }
 export const dynamic = "force-dynamic"
 
 export default function NewInvoicePage() {
-  return (
-    <div className="max-w-4xl animate-fade-in">
-      <NewInvoiceForm />
-    </div>
-  )
+  return <NewInvoiceForm />
 }

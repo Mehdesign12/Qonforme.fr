@@ -10,9 +10,5 @@ interface Props {
 
 export default async function ClientDetailPage({ params }: Props) {
   const { id } = await params
-  return (
-    <div className="max-w-4xl animate-fade-in">
-      <ClientDetail clientId={id} />
-    </div>
-  )
+  return <ClientDetail clientId={id} />
 }

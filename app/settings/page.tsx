@@ -1,37 +1,48 @@
 import type { Metadata } from "next"
-import Link from "next/link"
-import { ChevronRight, Building2, FileText, Wifi, CreditCard, Download } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
+import { PLANS, isPlanId, periodPrice, withVat } from "@/lib/stripe/plans"
+import { canIssueInvoices } from "@/lib/stripe/access"
+import { SettingsOverview, type OverviewCompany, type OverviewPlan } from "@/components/settings/SettingsOverview"
 
 export const metadata: Metadata = { title: "Paramètres" }
 export const dynamic = "force-dynamic"
 
-const settingsLinks = [
-  { href: "/settings/company", label: "Mon entreprise", desc: "Raison sociale, SIREN, adresse, IBAN", icon: Building2 },
-  { href: "/settings/invoices", label: "Préférences factures", desc: "Numérotation, mentions personnalisées, logo", icon: FileText },
-  { href: "/settings/ppf", label: "Connexion transmission", desc: "Configuration de la transmission automatique", icon: Wifi },
-{ href: "/settings/exports", label: "Exports comptables", desc: "FEC (Fichier des Écritures Comptables) pour l'expert-comptable", icon: Download },
-  { href: "/settings/billing", label: "Abonnement", desc: "Plan actuel, facturation, paiement", icon: CreditCard },
-]
+export default async function SettingsPage() {
+  let company: OverviewCompany | null = null
+  let plan: OverviewPlan | null = null
+  let email = ""
 
-export default function SettingsPage() {
-  return (
-    <div className="max-w-2xl space-y-3 animate-fade-in">
-      {settingsLinks.map(({ href, label, desc, icon: Icon }) => (
-        <Link
-          key={href}
-          href={href}
-          className="flex items-center gap-4 bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] px-5 py-4 hover:border-[#2563EB] hover:shadow-sm transition-all group"
-        >
-          <div className="w-10 h-10 rounded-lg bg-[#EFF6FF] flex items-center justify-center shrink-0">
-            <Icon className="w-5 h-5 text-[#2563EB]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-[#0F172A] dark:text-[#E2E8F0] text-sm">{label}</p>
-            <p className="text-xs text-slate-400 mt-0.5">{desc}</p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-[#2563EB] transition-colors" />
-        </Link>
-      ))}
-    </div>
-  )
+  // Non bloquant : une lecture en échec laisse la liste des rubriques utilisable.
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      email = user.email ?? ""
+      const [{ data: c }, { data: sub }] = await Promise.all([
+        supabase.from("companies").select("name, siren, city, vat_number, iban").eq("user_id", user.id).maybeSingle(),
+        supabase.from("subscriptions").select("plan, billing_period, status, current_period_end").eq("user_id", user.id).maybeSingle(),
+      ])
+      if (c) {
+        company = {
+          name: c.name ?? "", siren: c.siren ?? "", city: c.city ?? "",
+          vat_number: c.vat_number ?? "", iban: c.iban ?? "",
+        }
+      }
+      if (sub && canIssueInvoices(sub.status) && isPlanId(sub.plan)) {
+        const p = PLANS[sub.plan]
+        const period = sub.billing_period === "yearly" ? "yearly" : "monthly"
+        plan = {
+          name: p.name,
+          period,
+          amountTtc: withVat(periodPrice(p, period)),
+          renewsAt: sub.current_period_end ?? null,
+          pastDue: sub.status === "past_due",
+        }
+      }
+    }
+  } catch {
+    // Affichage sans données
+  }
+
+  return <SettingsOverview mode="app" company={company} plan={plan} email={email} />
 }

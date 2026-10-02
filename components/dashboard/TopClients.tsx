@@ -1,97 +1,47 @@
-import { createClient } from "@/lib/supabase/server"
-import { formatCurrency } from "@/lib/utils/invoice"
+/**
+ * Meilleurs clients par montant payé (réel et démo). Absente du canevas,
+ * conservée de l'ancien tableau de bord dans la colonne de droite ; masquée
+ * tant qu'aucune facture n'est payée.
+ */
 import Link from "next/link"
-import { Users } from "lucide-react"
+import { formatCurrency } from "@/lib/utils/invoice"
+import type { DashboardView } from "@/components/dashboard/model"
 
-export const revalidate = 60
-
-export async function TopClients() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data: invoices } = await supabase
-    .from("invoices")
-    .select("total_ttc, client_id, client:clients(id, name)")
-    .eq("user_id", user.id)
-    .eq("status", "paid")
-
-  if (!invoices?.length) return null
-
-  // Agréger par client
-  const byClient = new Map<string, { name: string; total: number; clientId: string }>()
-  for (const inv of invoices) {
-    const cid  = inv.client_id as string
-    const name = (inv.client as unknown as { id: string; name: string } | null)?.name ?? "Client inconnu"
-    const existing = byClient.get(cid)
-    if (existing) {
-      existing.total += inv.total_ttc || 0
-    } else {
-      byClient.set(cid, { name, total: inv.total_ttc || 0, clientId: cid })
-    }
-  }
-
-  const top5 = Array.from(byClient.values())
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 5)
-
-  if (!top5.length) return null
-
-  const max = top5[0].total
+export function TopClients({ clients }: { clients: DashboardView["topClients"] }) {
+  if (clients.length === 0) return null
+  const max = clients[0].total || 1
 
   return (
-    <div
-      className="rounded-2xl border border-white/60 dark:border-[#1E3A5F] p-4 sm:p-5"
-      style={{ background: 'var(--card-glass-bg)', boxShadow: 'var(--card-glass-shadow)' }}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">Top clients</h3>
-          <p className="text-[11px] text-slate-400 mt-0.5">par CA encaissé</p>
-        </div>
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EFF6FF]">
-          <Users className="w-4 h-4 text-[#2563EB]" />
-        </div>
+    <section aria-labelledby="dash-top" className="q-card p-5">
+      <div className="mb-4 flex items-baseline justify-between gap-3">
+        <h2 id="dash-top" className="q-h2">Meilleurs clients</h2>
+        <span className="text-xs text-[var(--q-text-4)]">par montant payé</span>
       </div>
-
-      <div className="space-y-3">
-        {top5.map((client, i) => (
-          <Link
-            key={client.clientId}
-            href={`/clients/${client.clientId}`}
-            className="flex items-center gap-3 group"
-          >
-            {/* Rang */}
-            <span className="w-5 text-[11px] font-bold text-slate-300 dark:text-slate-600 shrink-0 text-center">
-              {i + 1}
-            </span>
-
-            {/* Nom + barre */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-[13px] font-semibold text-[#0F172A] dark:text-[#E2E8F0] truncate group-hover:text-[#2563EB] transition-colors">
-                  {client.name}
-                </p>
-                <p className="text-[12px] font-mono font-bold text-[#0F172A] dark:text-[#E2E8F0] shrink-0 ml-2">
-                  {formatCurrency(client.total)}
-                </p>
+      <ol className="flex flex-col gap-3.5">
+        {clients.map((c, i) => (
+          <li key={c.key} className="flex items-center gap-3">
+            <span className="w-4 shrink-0 text-xs text-[var(--q-text-4)] tabular-nums">{i + 1}</span>
+            <div className="min-w-0 flex-1">
+              <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                {c.href ? (
+                  <Link href={c.href} className="truncate text-sm font-semibold text-[var(--q-ink)] hover:text-[var(--q-accent-strong)]">
+                    {c.name}
+                  </Link>
+                ) : (
+                  <span className="truncate text-sm font-semibold text-[var(--q-ink)]">{c.name}</span>
+                )}
+                <span className="shrink-0 text-[13px] font-semibold text-[var(--q-ink)] tabular-nums">{formatCurrency(c.total)}</span>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-[#F1F5F9] dark:bg-[#1E3A5F] overflow-hidden">
+              <div className="h-1.5 overflow-hidden rounded-full bg-[var(--q-line-soft)]">
                 <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${Math.round((client.total / max) * 100)}%`,
-                    background: i === 0
-                      ? 'linear-gradient(90deg, #2563EB, #60A5FA)'
-                      : 'linear-gradient(90deg, #60A5FA, #93C5FD)',
-                    opacity: 1 - i * 0.12,
-                  }}
+                  className="h-full rounded-full bg-[var(--q-accent-strong)]"
+                  style={{ width: `${Math.max(4, Math.round((c.total / max) * 100))}%` }}
                 />
               </div>
             </div>
-          </Link>
+          </li>
         ))}
-      </div>
-    </div>
+      </ol>
+    </section>
   )
 }
