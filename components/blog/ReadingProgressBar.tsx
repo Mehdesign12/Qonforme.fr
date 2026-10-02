@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react"
 
 /**
- * Thin reading progress bar fixed at the top of the page.
- * Uses requestAnimationFrame for smooth performance on mobile.
+ * Fine barre de progression de lecture, fixée en haut de la page.
+ * requestAnimationFrame pour rester fluide sur mobile ; accent bleu unique.
  */
 export default function ReadingProgressBar() {
   const [progress, setProgress] = useState(0)
@@ -28,11 +28,8 @@ export default function ReadingProgressBar() {
   }, [])
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[99] h-[3px] bg-transparent pointer-events-none">
-      <div
-        className="h-full bg-gradient-to-r from-[#2563EB] to-[#7C3AED] transition-[width] duration-150 ease-out"
-        style={{ width: `${progress}%` }}
-      />
+    <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-[101] h-[3px]">
+      <div className="h-full bg-q-accent transition-[width] duration-150 ease-out motion-reduce:transition-none" style={{ width: `${progress}%` }} />
     </div>
   )
 }
