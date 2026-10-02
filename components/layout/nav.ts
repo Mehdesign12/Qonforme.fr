@@ -63,7 +63,7 @@ export const CREATE_LINKS: CreateLink[] = [
   { key: "quote", label: "Nouveau devis", hint: "Client, prestations, envoi", href: "/quotes/new", demoHref: "/demo/quotes/new", icon: FileCheck2, shortcut: "D" },
   { key: "invoice", label: "Nouvelle facture", hint: "Directe, sans devis", href: "/invoices/new", demoHref: "/demo/invoices/new", icon: FileText, shortcut: "F" },
   { key: "client", label: "Nouveau client", hint: "Par SIREN ou à la main", href: "/clients/new", demoHref: "/demo/clients/new", icon: UserPlus, shortcut: "C" },
-  { key: "purchase-order", label: "Nouveau bon de commande", hint: "Facultatif, pour un client qui en demande", href: "/purchase-orders/new", icon: ShoppingCart, shortcut: "B" },
+  { key: "purchase-order", label: "Nouveau bon de commande", hint: "Facultatif, pour un client qui en demande", href: "/purchase-orders/new", demoHref: "/demo/purchase-orders/new", icon: ShoppingCart, shortcut: "B" },
 ]
 
 /** Chemin d'une entrée selon le mode. En démo, un écran absent renvoie vers l'inscription. */
