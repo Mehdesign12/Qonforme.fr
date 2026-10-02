@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
+import animate from "tailwindcss-animate";
 
 const config: Config = {
   darkMode: ["class"],
@@ -126,7 +128,17 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    animate,
+    // États posés par Base UI sur les fenêtres, menus et feuilles (data-open, data-closed…) :
+    // les primitives de components/ui les utilisent pour leurs animations d'ouverture.
+    plugin(({ addVariant }) => {
+      addVariant("data-open", "&[data-open]")
+      addVariant("data-closed", "&[data-closed]")
+      addVariant("data-starting-style", "&[data-starting-style]")
+      addVariant("data-ending-style", "&[data-ending-style]")
+    }),
+  ],
 };
 
 export default config;

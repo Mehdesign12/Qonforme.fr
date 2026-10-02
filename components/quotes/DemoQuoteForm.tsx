@@ -6,7 +6,7 @@
  */
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { DemoNotice, demoAction, DEMO_DOC_CLIENTS, DEMO_DOC_COMPANY, DEMO_DOC_PRODUCTS, demoLines } from "@/components/documents/demo"
-import { useDocumentForm } from "@/components/documents/useDocumentForm"
+import { useDocumentForm, usePreselectedClient } from "@/components/documents/useDocumentForm"
 import { isoDateIn } from "@/components/documents/model"
 
 export default function DemoQuoteForm() {
@@ -18,6 +18,7 @@ export default function DemoQuoteForm() {
     notes: "Devis valable 30 jours.\nAcompte de 30 % à la commande, solde à la fin des travaux.",
     lines: demoLines([["cloison", 12], ["doublage", 18], ["bandes", 30], ["deplacement", 1]]),
   }))
+  usePreselectedClient(doc, DEMO_DOC_CLIENTS)
 
   return (
     <DocumentEditor

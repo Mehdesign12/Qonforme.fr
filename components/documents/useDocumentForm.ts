@@ -106,16 +106,17 @@ function stripIds(form: DocForm) {
 /**
  * Présélectionne le client passé dans l'URL (« ?client=<id> ») : bouton
  * « Nouveau devis » d'une fiche client, retour après la création d'un client.
- * Appliqué une seule fois, quand la liste des clients est chargée et si
- * aucun client n'est encore choisi ; un identifiant inconnu est ignoré.
+ * Appliqué une seule fois, quand la liste des clients est chargée ; le
+ * paramètre l'emporte sur le client prérempli (démo). Un identifiant inconnu
+ * est ignoré.
  */
 export function usePreselectedClient(doc: DocumentFormApi, clients: { id: string }[], enabled = true) {
   const done = useRef(false)
-  const { form, setValue } = doc
+  const { setValue } = doc
   useEffect(() => {
     if (!enabled || done.current || clients.length === 0) return
     done.current = true
     const wanted = new URLSearchParams(window.location.search).get("client")
-    if (wanted && !form.client_id && clients.some((c) => c.id === wanted)) setValue("client_id", wanted)
-  }, [enabled, clients, form.client_id, setValue])
+    if (wanted && clients.some((c) => c.id === wanted)) setValue("client_id", wanted)
+  }, [enabled, clients, setValue])
 }
