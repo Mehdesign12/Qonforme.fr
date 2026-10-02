@@ -76,7 +76,7 @@ function HeroDevices() {
 
 function Hero() {
   return (
-    <section aria-labelledby="hero-title" className="relative bg-q-surface px-4 sm:px-6">
+    <section aria-labelledby="hero-title" className="relative bg-q-surface px-6">
       <div className="mx-auto flex max-w-[1200px] flex-col items-center pt-[120px] text-center sm:pt-[150px]">
         <a
           href="#reforme"

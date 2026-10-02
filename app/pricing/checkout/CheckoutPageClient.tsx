@@ -8,19 +8,21 @@ import {
   EmbeddedCheckoutProvider,
 } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
-import { Check, ArrowLeft, Shield, RefreshCw, ChevronDown, ChevronUp, Lock, Zap } from 'lucide-react'
+import { Check, ArrowLeft, ChevronDown, Clock, Lock, RefreshCw, ShieldCheck } from 'lucide-react'
 import { PLANS, formatEuros, withVat, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { trackEvent } from '@/lib/meta-pixel'
+import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from '@/lib/brand'
+import { cn } from '@/lib/utils'
 
-/* ─── Assets ─────────────────────────────────────────────────────────────── */
-const LOGO_LONG_BLANC = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20simple.png'
-const LOGO_LONG_BLEU  = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp'
-const PICTO_Q         = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp'
+/** « 10 € » avec une espace insécable avant le symbole. */
+const eur = (amount: number) => formatEuros(amount).replace(/ €$/, '\u00A0€')
 
 /* ─── Stripe singleton ───────────────────────────────────────────────────── */
 const stripeKey     = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''
-const stripePromise = stripeKey ? loadStripe(stripeKey) : null
+// Stripe.js bloqué (réseau, bloqueur de publicités) : null au lieu d'une
+// promesse rejetée, pour afficher un message plutôt qu'un panneau vide.
+const stripePromise = stripeKey ? loadStripe(stripeKey).catch(() => null) : null
 
 /* ─── Props ──────────────────────────────────────────────────────────────── */
 interface CheckoutPageClientProps {
@@ -36,25 +38,30 @@ interface CheckoutPageClientProps {
 export default function CheckoutPageClient({ planId, billingPeriod, next }: CheckoutPageClientProps) {
   const router = useRouter()
   const plan   = PLANS[planId]
-  const isPro  = planId === 'pro'
-
+  
   const price = billingPeriod === 'monthly'
     ? plan.monthlyPrice
     : plan.yearlyMonthlyEquivalent
-  const fmt = (n: number) => n % 1 === 0 ? `${n}` : n.toFixed(2).replace('.', ',')
   const destination = next ?? '/dashboard'
   const plansHref   = next ? `/signup/plan?next=${encodeURIComponent(next)}` : '/signup/plan'
   const chargeHt    = billingPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
   const chargeLine  = billingPeriod === 'monthly'
-    ? `${formatEuros(chargeHt)} HT par mois, soit ${formatEuros(withVat(chargeHt))} TTC`
-    : `${formatEuros(chargeHt)} HT par an, soit ${formatEuros(withVat(chargeHt))} TTC · 2 mois offerts`
+    ? `Soit ${eur(withVat(chargeHt))} TTC par mois`
+    : `Facturé ${eur(chargeHt)} HT par an · ${eur(withVat(chargeHt))} TTC`
 
   /* ── State ────────────────────────────────────────────────────────────── */
   const [fetchError,      setFetchError]      = useState<string | null>(null)
   const [isComplete,      setIsComplete]      = useState(false)
   const [summaryOpen,     setSummaryOpen]     = useState(false)
   const [isSlowActivation, setIsSlowActivation] = useState(false)
+  const [stripeUnavailable, setStripeUnavailable] = useState(false)
   const redirected = useRef(false)
+
+  useEffect(() => {
+    let active = true
+    stripePromise?.then((loaded) => { if (active && !loaded) setStripeUnavailable(true) })
+    return () => { active = false }
+  }, [])
 
   /* ── Handlers ─────────────────────────────────────────────────────────── */
   const handleComplete = useCallback(() => { setIsComplete(true) }, [])
@@ -143,446 +150,232 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
       }
       return data.clientSecret as string
     } catch {
-      setFetchError('Erreur réseau. Réessaie.')
+      setFetchError('Erreur réseau. Réessayez.')
       return ''
     }
   }, [planId, billingPeriod, next, destination, router])
 
-  /* ─────────────────────────────────────────────────────────────────────────
-     THÈME PAR PLAN
-     Artisan ('pro') → navy #0F172A · Essentiel ('starter') → blanc/bleu clair
-  ───────────────────────────────────────────────────────────────────────── */
-  const leftBg        = isPro ? 'bg-[#0F172A]'  : 'bg-white'
-  const textMain      = isPro ? 'text-white'     : 'text-[#0F172A]'
-  const textMuted     = isPro ? 'text-white/50'  : 'text-slate-500'
-  const textSub       = isPro ? 'text-white/40'  : 'text-slate-500'
-  const textFeature   = isPro ? 'text-white/80'  : 'text-[#1E293B]'
-  const planLabel     = isPro ? 'text-[#60A5FA]' : 'text-[#2563EB]'
-  const checkBg       = 'bg-[#D1FAE5]'
-  const checkIcon     = 'text-[#059669]'
-  const divider       = isPro ? 'bg-white/10'    : 'bg-[#E2E8F0]'
-  const shieldColor   = isPro ? 'text-white/30'  : 'text-slate-400'
-  const backBtn       = isPro
-    ? 'text-white/60 hover:text-white'
-    : 'text-slate-500 hover:text-[#2563EB]'
-  const desktopBorderRight = isPro ? '' : 'lg:border-r lg:border-[#E2E8F0]'
-
-  /* ─────────────────────────────────────────────────────────────────────────
-     THÈME MOBILE HEADER
-  ───────────────────────────────────────────────────────────────────────── */
-  const mobileHeaderBg     = isPro ? '#0F172A' : '#ffffff'
-  const mobileAccordionBg  = isPro ? 'rgba(255,255,255,0.04)' : '#F8FAFC'
-  const mobileBadgeBg      = isPro ? '#2563EB'  : '#EFF6FF'
-  const mobileBadgeText    = isPro ? '#ffffff'  : '#2563EB'
-
   /* ══════════════════════════════════════════════════════════════════════
-     RENDER
-     • Mobile  (<lg) : header compact sticky + accordéon + Stripe plein écran
-     • Desktop (≥lg) : colonne gauche 42% + colonne droite Stripe 58%
+     RENDU
+     • Mobile  (<lg) : en-tête compact + résumé repliable + Stripe plein écran
+     • Desktop (≥lg) : résumé à gauche (42 %) + Stripe à droite
+     Couleurs par jetons --q-* (thème sombre compris) ; aucun backdrop-filter.
   ══════════════════════════════════════════════════════════════════════ */
   return (
-    /* 100dvh = dynamic viewport height — gère correctement la barre Safari */
-    <div className="h-[100dvh] flex flex-col lg:flex-row overflow-hidden">
+    /* 100dvh = hauteur dynamique — gère correctement la barre Safari */
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-q-bg text-q-ink lg:flex-row">
 
-      {/* ╔══════════════════════════════════════════════════════════════════╗
-          ║  MOBILE ONLY — Header sticky compact                           ║
-          ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div
-        className="lg:hidden flex-shrink-0"
-        style={{ backgroundColor: mobileHeaderBg }}
-      >
-        {/* Déco Pro : tache lumineuse bleue */}
-        {isPro && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute top-0 right-0 w-[200px] h-[200px] rounded-full z-0"
-            style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%)' }}
-          />
-        )}
-        {/* Déco Essentiel : dégradé bleu très léger */}
-        {!isPro && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-[160px] z-0"
-            style={{ background: 'linear-gradient(180deg, #EFF6FF 0%, #ffffff 100%)' }}
-          />
-        )}
-
-        <div className="relative z-10">
-          {/* ── Ligne 1 : retour + logo ─────────────────────────────────── */}
-          <div
-            className="flex items-center justify-between px-5 pb-3"
-            style={{ paddingTop: 'max(14px, env(safe-area-inset-top, 14px))' }}
-          >
-            <button
-              onClick={() => router.push(plansHref)}
-              className={`flex items-center gap-1.5 text-sm font-medium ${backBtn} transition-colors`}
-              aria-label="Retour au choix de la formule"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Formules</span>
-            </button>
-
-            {/* Logo centré */}
-            <div className="absolute left-1/2 -translate-x-1/2">
-              {isPro ? (
-                <Image
-                  src={LOGO_LONG_BLANC}
-                  alt="Qonforme"
-                  width={110}
-                  height={26}
-                  className="h-[26px] w-auto"
-                  onError={(e) => {
-                    const img = e.currentTarget as HTMLImageElement
-                    img.src = LOGO_LONG_BLEU
-                    img.style.filter = 'brightness(0) invert(1)'
-                  }}
-                />
-              ) : (
-                <Image
-                  src={LOGO_LONG_BLEU}
-                  alt="Qonforme"
-                  width={110}
-                  height={26}
-                  className="h-[26px] w-auto"
-                  priority
-                />
-              )}
-            </div>
-
-            {/* Espace droit pour symétrie */}
-            <div className="w-[60px]" aria-hidden />
-          </div>
-
-          {/* ── Ligne 2 : résumé compact + toggle accordéon ─────────────── */}
+      {/* ── Mobile : en-tête compact ─────────────────────────────────────── */}
+      <div className="flex-shrink-0 border-b border-q-line bg-q-surface lg:hidden">
+        <div
+          className="relative flex items-center justify-between px-4 pb-2"
+          style={{ paddingTop: 'max(10px, env(safe-area-inset-top, 10px))' }}
+        >
           <button
-            onClick={() => setSummaryOpen(v => !v)}
-            className="w-full flex items-center justify-between px-5 py-3.5 transition-colors active:opacity-80"
-            style={{
-              backgroundColor: summaryOpen ? mobileAccordionBg : 'transparent',
-              borderTop: isPro ? '1px solid rgba(255,255,255,0.08)' : '1px solid #F1F5F9',
-            }}
-            aria-expanded={summaryOpen}
-            aria-label="Voir le résumé de la formule"
+            type="button"
+            onClick={() => router.push(plansHref)}
+            className="-ml-2 inline-flex min-h-[44px] items-center gap-1 rounded-lg px-2 text-[15px] font-medium text-q-accent-strong"
+            aria-label="Retour au choix de la formule"
           >
-            {/* Gauche : badge plan + prix + période */}
-            <div className="flex items-center gap-2.5">
-              <span
-                className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
-                style={{ backgroundColor: mobileBadgeBg, color: mobileBadgeText }}
-              >
-                {isPro && <Zap className="w-2.5 h-2.5" fill="currentColor" />}
-                {plan.name}
-              </span>
-              <div className="flex items-baseline gap-1">
-                <span className={`font-extrabold text-[24px] leading-none tabular-nums ${textMain}`}>
-                  {fmt(price)}€
-                </span>
-                <span className={`text-[11px] leading-none ${textSub}`}>/mois HT</span>
-              </div>
-              {billingPeriod === 'yearly' && (
-                <span className="text-[10px] font-semibold text-[#059669] bg-[#D1FAE5] px-1.5 py-0.5 rounded-full leading-none">
-                  2 mois offerts
-                </span>
-              )}
-            </div>
-
-            {/* Droite : chevron animé */}
-            <span
-              className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-                isPro ? 'bg-white/10' : 'bg-slate-100'
-              }`}
-            >
-              {summaryOpen
-                ? <ChevronUp  className={`w-3.5 h-3.5 ${isPro ? 'text-white/60' : 'text-slate-500'}`} />
-                : <ChevronDown className={`w-3.5 h-3.5 ${isPro ? 'text-white/60' : 'text-slate-500'}`} />
-              }
-            </span>
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Formules
           </button>
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <Logo className="h-5 w-auto" />
+          </div>
+          <span className="inline-flex items-center gap-1 text-xs text-q-text-4">
+            <Lock className="h-3.5 w-3.5" aria-hidden />
+            Sécurisé
+          </span>
+        </div>
 
-          {/* ── Accordéon : détail plan ──────────────────────────────────── */}
-          <div
-            className="overflow-hidden transition-all duration-200"
-            style={{
-              maxHeight: summaryOpen ? '600px' : '0px',
-              borderBottom: summaryOpen
-                ? isPro ? '1px solid rgba(255,255,255,0.08)' : '1px solid #F1F5F9'
-                : 'none',
-              backgroundColor: mobileAccordionBg,
-            }}
-          >
-            <div className="px-5 pt-3 pb-5">
-              {/* Description plan */}
-              <p className={`text-[13px] font-semibold mb-1 ${planLabel}`}>
-                {plan.name}
-              </p>
-              <p className={`text-[13px] ${textMuted} mb-3`}>
-                {plan.tagline}
-              </p>
-              {billingPeriod === 'yearly' && (
-                <p className={`text-[12px] ${textMuted} mb-3 flex items-center gap-1`}>
-                  <span className="text-[#059669] font-medium">2 mois offerts</span>
-                  <span>· {formatEuros(plan.yearlyPrice)} HT par an</span>
-                </p>
-              )}
+        {/* Résumé repliable */}
+        <button
+          type="button"
+          onClick={() => setSummaryOpen(v => !v)}
+          className="flex w-full items-center justify-between gap-3 border-t border-q-line-soft px-4 py-3 text-left"
+          aria-expanded={summaryOpen}
+          aria-controls="checkout-summary"
+        >
+          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span className="text-[15px] font-semibold text-q-ink">{plan.name}</span>
+            <span className="font-display text-[22px] font-semibold leading-none tracking-[-0.03em] tabular-nums text-q-ink-strong">
+              {eur(price)}
+            </span>
+            <span className="text-[13px] text-q-text-3">HT / mois</span>
+            {billingPeriod === 'yearly' && (
+              <span className="q-pill q-pill-ok">2 mois offerts</span>
+            )}
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-q-text-3">
+            {summaryOpen ? 'Masquer' : 'Détails'}
+            <ChevronDown className={cn('h-4 w-4 transition-transform', summaryOpen && 'rotate-180')} aria-hidden />
+          </span>
+        </button>
 
-              {/* Features (4 premières + compteur) */}
-              <ul className="flex flex-col gap-2.5 mb-4">
-                {plan.features.slice(0, 5).map(f => (
-                  <li key={f} className={`flex items-center gap-2.5 text-[13px] ${textFeature}`}>
-                    <span className={`shrink-0 w-[18px] h-[18px] rounded-full ${checkBg} flex items-center justify-center`}>
-                      <Check className={`w-2.5 h-2.5 ${checkIcon}`} strokeWidth={2.5} />
-                    </span>
-                    <span>{f}</span>
-                  </li>
-                ))}
-                {plan.features.length > 5 && (
-                  <li className={`text-[12px] ${textMuted} pl-[30px]`}>
-                    + {plan.features.length - 5} autres fonctionnalités incluses
-                  </li>
-                )}
-              </ul>
-
-              {/* Badge sécurité */}
-              <div
-                className="flex items-center gap-2 pt-3"
-                style={{ borderTop: isPro ? '1px solid rgba(255,255,255,0.08)' : '1px solid #F1F5F9' }}
-              >
-                <Lock className={`w-3 h-3 shrink-0 ${shieldColor}`} />
-                <p className={`text-[11px] ${shieldColor}`}>
-                  {`Satisfait ou remboursé ${GUARANTEE_DAYS} jours · Sans engagement`}
-                </p>
-              </div>
-            </div>
+        <div
+          id="checkout-summary"
+          className="overflow-hidden transition-[max-height] duration-200"
+          style={{ maxHeight: summaryOpen ? '640px' : '0px' }}
+        >
+          <div className="border-t border-q-line-soft bg-q-surface-2 px-4 pb-5 pt-4">
+            <p className="text-sm text-q-text-3">{plan.tagline}</p>
+            <p className="mt-1 text-[13px] tabular-nums text-q-text-4">{chargeLine}</p>
+            <FeatureList items={plan.features} className="mt-4" />
+            <UpcomingList items={plan.upcoming} />
+            <Assurance className="mt-4 border-t border-q-line-soft pt-4" />
           </div>
         </div>
       </div>
 
-      {/* ╔══════════════════════════════════════════════════════════════════╗
-          ║  DESKTOP ONLY — Colonne gauche 42%                             ║
-          ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className={`hidden lg:flex relative lg:w-[42%] lg:h-full lg:overflow-y-auto flex-col ${leftBg} ${textMain} lg:px-10 lg:pt-10 lg:pb-8 overflow-hidden ${desktopBorderRight}`}>
+      {/* ── Desktop : résumé de la formule ───────────────────────────────── */}
+      <aside className="hidden flex-col overflow-y-auto border-r border-q-line px-10 pb-8 pt-10 lg:flex lg:h-full lg:w-[42%] xl:px-14">
+        <button
+          type="button"
+          onClick={() => router.push(plansHref)}
+          className="-ml-2 mb-8 inline-flex min-h-[40px] items-center gap-1.5 self-start rounded-lg px-2 text-sm font-medium text-q-text-3 transition-colors hover:text-q-ink"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          Changer de formule
+        </button>
 
-        {/* Décos Pro */}
-        {isPro && (
-          <>
-            <div
-              aria-hidden
-              className="pointer-events-none select-none absolute -bottom-10 -left-10 z-0"
-              style={{ opacity: 0.06 }}
-            >
-              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" sizes="280px" loading="lazy" />
-            </div>
-            <div
-              aria-hidden
-              className="pointer-events-none select-none absolute -top-20 -right-20 z-0 w-[320px] h-[320px] rounded-full"
-              style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%)' }}
-            />
-          </>
-        )}
-        {/* Décos Essentiel */}
-        {!isPro && (
-          <>
-            <div
-              aria-hidden
-              className="pointer-events-none select-none absolute -bottom-10 -left-10 z-0"
-              style={{ opacity: 0.04 }}
-            >
-              <Image src={PICTO_Q} alt="" width={280} height={280} className="w-[280px]" sizes="280px" loading="lazy" />
-            </div>
-            <div
-              aria-hidden
-              className="pointer-events-none select-none absolute inset-0 z-0"
-              style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 20%, #ffffff 60%)' }}
-            />
-          </>
-        )}
+        <Logo className="mb-10 h-6 w-auto self-start" priority />
 
-        <div className="relative z-10 flex flex-col h-full">
-          {/* Retour */}
-          <button
-            onClick={() => router.push(plansHref)}
-            className={`flex items-center gap-1.5 text-sm ${backBtn} transition-colors mb-7 self-start`}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Changer de formule
-          </button>
+        <p className="q-eyebrow">Votre formule</p>
+        <h1 className="mt-2 font-display text-[36px] font-semibold leading-[1.06] tracking-[-0.03em] text-q-ink-strong xl:text-[40px]">
+          {plan.name}, <span className="q-serif">{plan.tagline.replace(/^Pour /, 'pour ').replace(/\.$/, '')}.</span>
+        </h1>
 
-          {/* Logo */}
-          <div className="mb-7">
-            {isPro ? (
-              <Image
-                src={LOGO_LONG_BLANC}
-                alt="Qonforme"
-                width={140}
-                height={34}
-                className="h-8 w-auto"
-                onError={(e) => {
-                  const img = e.currentTarget as HTMLImageElement
-                  img.src = LOGO_LONG_BLEU
-                  img.style.filter = 'brightness(0) invert(1)'
-                }}
-              />
-            ) : (
-              <Image
-                src={LOGO_LONG_BLEU}
-                alt="Qonforme"
-                width={140}
-                height={34}
-                className="h-8 w-auto"
-                priority
-              />
+        <div className="mt-8 rounded-[20px] border border-q-line bg-q-surface p-7">
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-display text-[52px] font-semibold leading-none tracking-[-0.04em] tabular-nums text-q-ink-strong">
+              {eur(price)}
+            </span>
+            <span className="text-sm text-q-text-3">HT / mois</span>
+            {billingPeriod === 'yearly' && (
+              <span className="q-pill q-pill-ok ml-1 self-center">2 mois offerts</span>
             )}
           </div>
+          <p className="mt-1.5 text-[13px] tabular-nums text-q-text-4">{chargeLine}</p>
 
-          {/* Plan name */}
-          <div className="mb-5">
-            <span className={`text-[11px] font-bold uppercase tracking-[0.12em] ${planLabel} block mb-1`}>
-              {plan.name}
-            </span>
-            <h1 className={`text-2xl lg:text-3xl font-bold leading-tight ${textMain}`}>
-              {plan.tagline}
-            </h1>
-          </div>
+          <div className="my-6 h-px bg-q-line-soft" />
 
-          {/* Prix */}
-          <div className="mb-6">
-            <div className="flex items-baseline gap-1.5">
-              <span className={`text-5xl lg:text-6xl font-extrabold font-mono leading-none tracking-tight ${textMain}`}>
-                {fmt(price)}€
-              </span>
-              <span className={`${textSub} text-sm`}>/mois HT</span>
-            </div>
-            <p className={`text-sm ${textMuted} mt-1.5`}>
-              {chargeLine}
-            </p>
-          </div>
-
-          {/* Séparateur */}
-          <div className={`h-px ${divider} mb-5`} />
-
-          {/* Features */}
-          <ul className="flex flex-col gap-3 flex-1">
-            {plan.features.map(f => (
-              <li key={f} className={`flex items-start gap-3 text-sm ${textFeature}`}>
-                <span className={`mt-[2px] w-[18px] h-[18px] rounded-full ${checkBg} flex items-center justify-center shrink-0`}>
-                  <Check className={`w-2.5 h-2.5 ${checkIcon}`} strokeWidth={2.5} />
-                </span>
-                {f}
-              </li>
-            ))}
-          </ul>
-
-          {/* Badge sécurité */}
-          <div className={`flex items-center gap-2 mt-5 pt-5 border-t ${divider}`}>
-            <Shield className={`w-3.5 h-3.5 ${shieldColor} shrink-0`} />
-            <p className={`text-xs ${shieldColor}`}>
-              {`Satisfait ou remboursé ${GUARANTEE_DAYS} jours · Sans engagement`}
-            </p>
-          </div>
+          <FeatureList items={plan.features} />
+          <UpcomingList items={plan.upcoming} />
         </div>
-      </div>
 
-      {/* ╔══════════════════════════════════════════════════════════════════╗
-          ║  STRIPE — plein écran mobile / colonne droite desktop           ║
-          ║  Note : safe-area-inset-bottom évite que le bouton Stripe       ║
-          ║  se cache derrière la barre iPhone home.                        ║
-          ╚══════════════════════════════════════════════════════════════════╝ */}
+        <Assurance className="mt-6" />
+      </aside>
+
+      {/* ── Stripe : plein écran mobile / colonne droite desktop ─────────────
+          safe-area-inset-bottom évite que le bouton Stripe se cache derrière
+          la barre d'accueil de l'iPhone. */}
       <div
-        className="flex-1 overflow-y-auto bg-white min-h-0"
+        className="min-h-0 flex-1 overflow-y-auto bg-q-surface"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        <div className="min-h-full flex flex-col justify-start lg:justify-center px-4 py-6 lg:px-10 lg:py-8">
+        <div className="flex min-h-full flex-col justify-start px-4 py-6 lg:justify-center lg:px-10 lg:py-8">
 
           {/* ── Pas de clé Stripe (dev local) ───────────────────────────── */}
           {!stripeKey ? (
-            <div className="max-w-md mx-auto w-full text-center py-12">
-              <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] flex items-center justify-center mx-auto mb-5">
-                <Shield className="w-6 h-6 text-[#2563EB]" />
+            <StateBlock
+              icon={<Lock className="h-6 w-6" aria-hidden />}
+              title="Formulaire de paiement"
+            >
+              <p className="text-sm text-q-text-3">Le formulaire Stripe s&apos;affiche ici en production.</p>
+              <p className="mt-2 text-xs leading-relaxed text-q-text-4">
+                Ajoutez <code className="rounded bg-q-sunken px-1.5 py-0.5 font-mono text-q-text-2">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code>{' '}
+                dans <code className="rounded bg-q-sunken px-1.5 py-0.5 font-mono text-q-text-2">.env.local</code> pour tester en local.
+              </p>
+            </StateBlock>
+
+          ) : stripeUnavailable ? (
+            /* ── Stripe.js n'a pas pu se charger ─────────────────────────── */
+            <StateBlock
+              tone="danger"
+              icon={<RefreshCw className="h-6 w-6" aria-hidden />}
+              title="Le paiement n'a pas pu s'afficher"
+            >
+              <p className="text-sm text-q-text-3" role="alert">
+                Le formulaire de paiement sécurisé ne s&apos;est pas chargé. Vérifiez votre connexion ou désactivez un éventuel bloqueur de publicités, puis réessayez.
+              </p>
+              <div className="mt-6 flex w-full flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="q-btn q-btn-primary q-btn-lg w-full max-w-[280px] lg:h-10 lg:rounded-[10px] lg:text-sm"
+                >
+                  <RefreshCw aria-hidden />
+                  Réessayer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push(plansHref)}
+                  className="q-btn q-btn-ghost w-full max-w-[280px]"
+                >
+                  Retour au choix de la formule
+                </button>
               </div>
-              <h3 className="text-[#0F172A] font-semibold text-base mb-2">
-                Formulaire de paiement
-              </h3>
-              <p className="text-sm text-slate-500 mb-2">
-                Le formulaire Stripe s&apos;affiche ici en production.
-              </p>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Ajoute{' '}
-                <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-                </code>{' '}
-                dans{' '}
-                <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                  .env.local
-                </code>{' '}
-                pour tester en local.
-              </p>
-            </div>
+            </StateBlock>
 
           ) : fetchError ? (
             /* ── Erreur API ─────────────────────────────────────────────── */
-            <div className="max-w-md mx-auto w-full text-center py-12">
-              <div className="w-14 h-14 rounded-2xl bg-[#FEE2E2] flex items-center justify-center mx-auto mb-5">
-                <RefreshCw className="w-6 h-6 text-[#EF4444]" />
+            <StateBlock
+              tone="danger"
+              icon={<RefreshCw className="h-6 w-6" aria-hidden />}
+              title="Le paiement n'a pas pu s'afficher"
+            >
+              <p className="text-sm text-q-text-3" role="alert">{fetchError}</p>
+              <div className="mt-6 flex w-full flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFetchError(null)}
+                  className="q-btn q-btn-primary q-btn-lg w-full max-w-[280px] lg:h-10 lg:rounded-[10px] lg:text-sm"
+                >
+                  <RefreshCw aria-hidden />
+                  Réessayer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push(plansHref)}
+                  className="q-btn q-btn-ghost w-full max-w-[280px]"
+                >
+                  Retour au choix de la formule
+                </button>
               </div>
-              <p className="text-base font-semibold text-[#EF4444] mb-2">
-                Une erreur est survenue
-              </p>
-              <p className="text-sm text-slate-500 mb-6">{fetchError}</p>
-              <button
-                onClick={() => setFetchError(null)}
-                className="inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-[#1D4ED8] transition-colors mb-3 w-full max-w-[240px]"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Réessayer
-              </button>
-              <br />
-              <button
-                onClick={() => router.push(plansHref)}
-                className="text-sm text-slate-400 hover:text-slate-600 underline transition-colors"
-              >
-                Retour au choix de la formule
-              </button>
-            </div>
+            </StateBlock>
 
           ) : isComplete ? (
             /* ── Confirmation paiement ──────────────────────────────────── */
-            <div className="max-w-md mx-auto w-full text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-[#D1FAE5] flex items-center justify-center mx-auto mb-5">
-                <Check className="w-8 h-8 text-[#059669]" strokeWidth={2.5} />
-              </div>
-              <h2 className="text-xl font-bold text-[#0F172A] mb-2">
-                Paiement confirmé !
-              </h2>
+            <StateBlock
+              tone="ok"
+              icon={<Check className="h-7 w-7" strokeWidth={2.5} aria-hidden />}
+              title="Paiement confirmé"
+            >
               {isSlowActivation ? (
                 <>
-                  <p className="text-sm text-slate-500 mb-2">
-                    Votre accès est en cours d&apos;activation…
-                  </p>
-                  <p className="text-xs text-slate-400 mb-6">
+                  <p className="text-sm text-q-text-3">Votre accès est en cours d&apos;activation…</p>
+                  <p className="mt-1 text-[13px] text-q-text-4">
                     Cela prend plus de temps que prévu. Vous pouvez accéder à votre espace dès maintenant.
                   </p>
                   <button
+                    type="button"
                     onClick={() => router.replace(destination)}
-                    className="inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-[#1D4ED8] transition-colors"
+                    className="q-btn q-btn-primary q-btn-lg mt-6 w-full max-w-[280px] lg:h-10 lg:rounded-[10px] lg:text-sm"
                   >
-                    {next ? 'Reprendre ma facture →' : 'Accéder à mon espace →'}
+                    {next ? 'Reprendre ma facture' : 'Accéder à mon espace'}
                   </button>
                 </>
               ) : (
-                <>
-                  <p className="text-sm text-slate-500 mb-6">
-                    Activation de votre accès en cours…
-                  </p>
-                  <div className="flex justify-center">
-                    <div className="w-5 h-5 border-[2.5px] border-[#2563EB] border-t-transparent rounded-full animate-spin" />
-                  </div>
-                </>
+                <p className="inline-flex items-center gap-2 text-sm text-q-text-3" role="status">
+                  <Clock className="h-4 w-4 text-q-accent" aria-hidden />
+                  Activation de votre accès en cours…
+                </p>
               )}
-            </div>
+            </StateBlock>
 
           ) : (
-            /* ── Formulaire Stripe Embedded ─────────────────────────────── */
+            /* ── Formulaire Stripe intégré ──────────────────────────────── */
             <div className="w-full">
               <EmbeddedCheckoutProvider
                 stripe={stripePromise}
@@ -596,6 +389,94 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
         </div>
       </div>
 
+    </div>
+  )
+}
+
+/* ─── Briques ────────────────────────────────────────────────────────────── */
+
+/** Logo long : bleu en thème clair, clair en thème sombre (CSS seul, sans resolvedTheme). */
+function Logo({ className, priority = false }: { className?: string; priority?: boolean }) {
+  return (
+    <>
+      <Image src={LOGO_LONG_BLUE} alt="Qonforme" width={120} height={24} sizes="120px" priority={priority} className={cn(className, 'dark:hidden')} />
+      <Image src={LOGO_LONG_LIGHT} alt="Qonforme" width={120} height={24} sizes="120px" className={cn(className, 'hidden dark:block')} />
+    </>
+  )
+}
+
+function FeatureList({ items, className }: { items: string[]; className?: string }) {
+  if (items.length === 0) return null
+  return (
+    <ul className={cn('flex flex-col gap-[11px] text-sm leading-snug text-q-text-2', className)}>
+      {items.map(f => (
+        <li key={f} className="flex gap-2.5">
+          <Check className="mt-px h-[18px] w-[18px] shrink-0 text-q-accent" strokeWidth={2.25} aria-hidden />
+          {f}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** Fonctions annoncées, pas encore livrées : toujours dites « à venir ». */
+function UpcomingList({ items }: { items: string[] }) {
+  if (items.length === 0) return null
+  return (
+    <div className="mt-5 border-t border-q-line-soft pt-4">
+      <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-q-text-4">À venir</p>
+      <ul className="flex flex-col gap-[11px] text-sm leading-snug text-q-text-3">
+        {items.map(f => (
+          <li key={f} className="flex gap-2.5">
+            <Clock className="mt-px h-[18px] w-[18px] shrink-0 text-q-text-4" strokeWidth={2} aria-hidden />
+            {f}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function Assurance({ className }: { className?: string }) {
+  return (
+    <ul className={cn('flex flex-col gap-2 text-[13px] text-q-text-3', className)}>
+      <li className="flex items-center gap-2">
+        <ShieldCheck className="h-4 w-4 shrink-0 text-q-ok" aria-hidden />
+        Satisfait ou remboursé {GUARANTEE_DAYS}&nbsp;jours · Sans engagement
+      </li>
+      <li className="flex items-center gap-2">
+        <Lock className="h-4 w-4 shrink-0 text-q-text-4" aria-hidden />
+        Carte bancaire ou prélèvement SEPA, paiement traité par Stripe
+      </li>
+    </ul>
+  )
+}
+
+function StateBlock({
+  icon,
+  title,
+  tone = 'accent',
+  children,
+}: {
+  icon: React.ReactNode
+  title: string
+  tone?: 'accent' | 'ok' | 'danger'
+  children: React.ReactNode
+}) {
+  return (
+    <div className="mx-auto flex w-full max-w-md flex-col items-center py-12 text-center">
+      <div
+        className={cn(
+          'mb-5 grid h-14 w-14 place-items-center rounded-2xl',
+          tone === 'ok' && 'bg-q-ok-bg text-q-ok',
+          tone === 'danger' && 'bg-q-danger-bg text-q-danger',
+          tone === 'accent' && 'bg-q-wash text-q-accent-strong',
+        )}
+      >
+        {icon}
+      </div>
+      <h2 className="mb-2 font-display text-xl font-semibold tracking-[-0.02em] text-q-ink-strong">{title}</h2>
+      {children}
     </div>
   )
 }

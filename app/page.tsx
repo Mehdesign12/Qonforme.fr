@@ -1,406 +1,543 @@
-"use client";
-
-import Link from "next/link";
-import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link"
+import Image from "next/image"
 import {
-  ArrowRight, ArrowRightLeft, BellRing, Check, ChevronDown, CircleDashed, ClipboardList,
-  Download, FileMinus, FileText, FolderOpen, Package, Palette, Play, ReceiptText,
-  RotateCcw, Send, Smartphone, Unlock, Users,
-} from "lucide-react";
-import { AnimatePresence, MotionConfig, motion, useInView, useScroll, useTransform } from "motion/react";
+  ArrowRight, ArrowRightLeft, BellRing, Check, ChevronDown, CircleCheck, CircleDashed, ClipboardList,
+  Download, Eye, FileMinus, FileText, FolderOpen, Package, Palette, Percent, ReceiptText, RotateCcw,
+  Send, ShieldCheck, Smartphone, Unlock, Users,
+} from "lucide-react"
 
-import { LandingHero } from "@/components/landing/LandingHero";
-import { MacBook, IPhone, SCREENS } from "@/components/landing/devices";
-import { Parallax, Reveal, RevealWords, ScrollLine } from "@/components/landing/motion";
-import Footer from "@/components/layout/Footer";
-import PricingSelector from "@/components/billing/PricingSelector";
-import { PLANS } from "@/lib/stripe/plans";
-import { GUARANTEE_DAYS } from "@/lib/stripe/access";
-import { PHOTOS, type LandingPhoto } from "@/lib/landing/photos";
-import { cn } from "@/lib/utils";
+import { LandingHero } from "@/components/landing/LandingHero"
+import { StorySection } from "@/components/landing/StorySection"
+import { MacBook, IPhone, SCREENS } from "@/components/landing/devices"
+import { Chip, CtaButtons, Floater, PanPhoto, PhotoBand, SectionTitle } from "@/components/landing/ui"
+import { StepCatalogue, StepCompany, StepQuote } from "@/components/landing/mini-ui"
+import { EXAMPLES } from "@/components/landing/examples"
+import Footer from "@/components/layout/Footer"
+import PricingSelector from "@/components/billing/PricingSelector"
+import { PLANS } from "@/lib/stripe/plans"
+import { GUARANTEE_DAYS } from "@/lib/stripe/access"
+import { PHOTOS, type LandingPhoto } from "@/lib/landing/photos"
+import { formatCurrency } from "@/lib/utils/invoice"
+import { cn } from "@/lib/utils"
 
 /*
- * Accueil — refonte du 02/10/2026.
+ * Accueil — canevas « Main » v20, porté le 02/10/2026.
  *
- * Règles (CLAUDE.md, DECISIONS-STRATEGIQUES.md § 2 et § 6) :
+ * Règles (CLAUDE.md, DECISIONS-STRATEGIQUES.md § 2, § 6 et § 10) :
  *  - aucun avis, chiffre, client ou certification inventés ; ce qui n'existe pas
- *    encore est dit « en préparation » ou « bientôt » ;
- *  - vouvoiement, fond blanc ou gris neutre, jamais de dégradé bleu ni de halo ;
- *  - icônes en trait fin, sans pastille ; pas de surtitre décoratif ;
+ *    encore est dit « en préparation » ou « bientôt ». Les sections du canevas
+ *    sur des fonctions non livrées (situations de travaux, retenue de garantie,
+ *    autoliquidation, réception, trésorerie, lien de paiement, signature en
+ *    ligne, transmission par plateforme agréée) ne sont pas reprises ;
+ *  - vouvoiement ; titres en deux voix (Bricolage, puis Instrument Serif
+ *    italique bleu) ; couleurs par jetons --q-* (thème sombre compris) ;
  *  - captures : le vrai produit (pages de démo, données d'exemple) ;
- *  - photos : illustrations d'artisans, jamais présentées comme des clients.
+ *  - photos : illustrations d'artisans (Pexels), jamais présentées comme des clients ;
+ *  - mouvement en CSS seul (classes lp-* de app/globals.css), sans
+ *    backdrop-filter, will-change ni animation infinie (règle iOS).
  */
 
-const BRICOLAGE = { fontFamily: "var(--font-bricolage)" } as const;
-const ICON = { strokeWidth: 1.25 } as const;
-const essentiel = PLANS.starter;
+const essentiel = PLANS.starter
+const artisan = PLANS.pro
+const { relance: RELANCE, payee: PAYEE, envoyee: ENVOYEE, devis: DEVIS } = EXAMPLES
+
+/** Montant en euros sans centimes, espace insécable avant le symbole. */
+const euros = (n: number) => `${n} €`
+
+const SECTION = "px-6 py-[clamp(88px,9vw,120px)]"
+const WRAP = "mx-auto w-full max-w-[1200px]"
 
 /* ─────────────────────────────────────────────────────────
-   Titre de section
+   Bandeau des métiers, sous le héros (glisse avec la page)
 ───────────────────────────────────────────────────────── */
-function SectionTitle({
-  title,
-  sub,
-  align = "center",
-  dark = false,
-  className,
-}: {
-  title: string;
-  sub?: string;
-  align?: "center" | "left";
-  dark?: boolean;
-  className?: string;
-}) {
+const MARQUEE = [
+  "Plaquistes", "Électriciens", "Plombiers", "Peintres", "Carreleurs", "Menuisiers",
+  "Couvreurs", "Maçons", "Chauffagistes", "Serruriers", "Paysagistes", "Façadiers",
+]
+
+function TradeMarquee() {
   return (
-    <div className={cn("flex max-w-[760px] flex-col gap-4", align === "center" && "mx-auto items-center text-center", className)}>
-      <RevealWords
-        text={title}
-        className={cn(
-          "text-[clamp(30px,4.2vw,50px)] font-semibold leading-[1.07] tracking-[-0.035em] [text-wrap:balance]",
-          dark ? "text-white" : "text-[#0A1122]",
-        )}
-        style={BRICOLAGE}
-      />
-      {sub && (
-        <Reveal delay={0.15}>
-          <p className={cn("text-[17px] leading-relaxed sm:text-[18px]", dark ? "text-[#AAB4C3]" : "text-[#475569]")}>{sub}</p>
-        </Reveal>
-      )}
-    </div>
-  );
+    <section aria-label="Métiers du bâtiment" className="lp-marquee lp-clip bg-q-surface pb-4 pt-2">
+      <div className="lp-marquee-track">
+        {[0, 1].map((copy) => (
+          <ul key={copy} aria-hidden={copy === 1 || undefined} className="flex shrink-0 items-center">
+            {MARQUEE.map((t) => (
+              <li key={t} className="flex items-center gap-3 whitespace-nowrap pr-3 font-display text-[clamp(18px,1.6vw,22px)] font-semibold tracking-[-0.02em] text-q-text-4">
+                {t}
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-q-field" />
+              </li>
+            ))}
+          </ul>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 /* ─────────────────────────────────────────────────────────
-   1 — La réforme, en deux dates
+   1 — La réforme, en deux dates, et où en est Qonforme
 ───────────────────────────────────────────────────────── */
 const REFORM = [
   {
     date: "1er sept. 2026",
-    title: "Recevoir",
-    text: "Depuis cette date, toute entreprise doit pouvoir recevoir des factures électroniques de ses fournisseurs.",
+    text: <>Toute entreprise doit pouvoir <strong className="font-semibold text-q-ink-strong">recevoir</strong> des factures électroniques de ses fournisseurs.</>,
+    pill: "En vigueur",
+    tone: "bg-q-ok-bg text-q-ok",
   },
   {
     date: "1er sept. 2027",
-    title: "Émettre",
-    text: "Les TPE et PME, donc la plupart des artisans, émettent à leur tour leurs factures entre entreprises en électronique, par une plateforme agréée.",
+    text: <>Les TPE et PME, donc la plupart des artisans, <strong className="font-semibold text-q-ink-strong">émettent</strong> à leur tour leurs factures entre entreprises en électronique, par une plateforme agréée.</>,
+    pill: "À préparer",
+    tone: "bg-q-info-bg text-q-info",
   },
-];
+]
 
 function ReformSection() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 75%", "end 60%"] });
-
   return (
-    <section id="reforme" className="bg-[#F6F7F9] py-24 sm:py-32">
-      <div className="mx-auto grid max-w-6xl gap-16 px-4 sm:px-5 lg:grid-cols-2 lg:gap-20">
-        <div>
-          <SectionTitle
-            align="left"
-            title="La facture électronique arrive dans le bâtiment."
-            sub="Deux dates à retenir. Le reste, c'est le travail de votre logiciel."
-          />
-          <Reveal delay={0.2} className="mt-10 rounded-[22px] border border-[#E6E9F0] bg-white p-6 sm:p-7">
-            <p className="text-[15px] font-semibold text-[#0A1122]">Où en est Qonforme</p>
-            <ul className="mt-4 flex flex-col gap-3.5 text-[15px] leading-relaxed text-[#334155]">
-              <li className="flex gap-3">
-                <Check className="mt-1 h-4 w-4 shrink-0 text-[#2563EB]" strokeWidth={1.75} />
+    <section id="reforme" className={cn("scroll-mt-16 bg-q-surface", SECTION)}>
+      <div className={WRAP}>
+        <SectionTitle
+          eyebrow="Ce que dit la loi"
+          title="Deux dates à retenir."
+          accent="Voici où en est Qonforme."
+          sub="La facture électronique arrive dans le bâtiment. Le calendrier est fixé ; votre logiciel suit."
+        />
+        <div className="lp-reveal lp-clip mt-10 grid grid-cols-1 divide-y divide-q-line rounded-[18px] border border-q-line bg-q-surface md:grid-cols-3 md:divide-x md:divide-y-0">
+          {REFORM.map((r) => (
+            <div key={r.date} className="flex flex-col gap-3 p-6 sm:p-7">
+              <p className="font-display text-[26px] font-semibold leading-tight tracking-[-0.03em] text-q-ink-strong">{r.date}</p>
+              <p className="text-[15px] leading-[1.6] text-q-text-3">{r.text}</p>
+              <span className={cn("mt-auto inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[12px] font-semibold", r.tone)}>{r.pill}</span>
+            </div>
+          ))}
+          <div className="flex flex-col gap-3 bg-q-surface-2 p-6 sm:p-7">
+            <p className="font-display text-[26px] font-semibold leading-tight tracking-[-0.03em] text-q-ink-strong">Où en est Qonforme</p>
+            <ul className="flex flex-col gap-2.5 text-[15px] leading-[1.55] text-q-text-3">
+              <li className="flex gap-2.5">
+                <Check className="mt-1 h-4 w-4 shrink-0 text-q-accent" strokeWidth={2} aria-hidden />
                 Devis et factures avec les mentions obligatoires, numérotés à la suite.
               </li>
-              <li className="flex gap-3">
-                <Check className="mt-1 h-4 w-4 shrink-0 text-[#2563EB]" strokeWidth={1.75} />
-                Une facture envoyée ne se modifie plus&nbsp;: une erreur se corrige par un avoir, comme la loi le demande.
+              <li className="flex gap-2.5">
+                <Check className="mt-1 h-4 w-4 shrink-0 text-q-accent" strokeWidth={2} aria-hidden />
+                Une facture envoyée ne se modifie plus&nbsp;: une erreur se corrige par un avoir.
               </li>
-              <li className="flex gap-3">
-                <CircleDashed className="mt-1 h-4 w-4 shrink-0 text-[#64748B]" strokeWidth={1.75} />
+              <li className="flex gap-2.5">
+                <CircleDashed className="mt-1 h-4 w-4 shrink-0 text-q-text-4" strokeWidth={2} aria-hidden />
                 <span>
                   Envoi et réception par une plateforme agréée, depuis Qonforme&nbsp;:{" "}
-                  <strong className="font-semibold text-[#0A1122]">en préparation</strong>.
+                  <strong className="font-semibold text-q-ink-strong">en préparation</strong>.
                 </span>
               </li>
             </ul>
-          </Reveal>
-        </div>
-
-        <div>
-        <div ref={ref} className="relative pl-12 sm:pl-16">
-          <span aria-hidden className="absolute bottom-3 left-[11px] top-3 w-px bg-[#DCE0E7] sm:left-[15px]" />
-          <ScrollLine progress={scrollYProgress} className="absolute bottom-3 left-[11px] top-3 w-px bg-[#2563EB] sm:left-[15px]" />
-          {REFORM.map((step, i) => (
-            <Reveal key={step.date} delay={i * 0.1} className={cn("relative", i < REFORM.length - 1 && "pb-16")}>
-              <span aria-hidden className="absolute -left-12 top-0.5 grid h-[23px] w-[23px] place-items-center rounded-full border border-[#DCE0E7] bg-white sm:-left-16 sm:h-[31px] sm:w-[31px]">
-                <span className="h-2 w-2 rounded-full bg-[#2563EB]" />
-              </span>
-              <p className="text-[15px] font-semibold text-[#2563EB]">{step.date}</p>
-              <h3 className="mt-2 text-[32px] font-semibold leading-tight tracking-[-0.03em] text-[#0A1122] sm:text-[40px]" style={BRICOLAGE}>
-                {step.title}
-              </h3>
-              <p className="mt-3 max-w-[440px] text-[16px] leading-relaxed text-[#475569] sm:text-[17px]">{step.text}</p>
-            </Reveal>
-          ))}
-        </div>
-          <p className="mt-12 pl-12 text-[13px] text-[#64748B] sm:pl-16">Calendrier officiel de la réforme, publié par l&apos;administration fiscale.</p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────
-   2 — Du devis au paiement (écran fixe qui change au défilement)
-───────────────────────────────────────────────────────── */
-const STORY = [
-  {
-    n: "01",
-    title: "Un devis propre, en quelques minutes",
-    text: "Votre entreprise se remplit avec votre numéro SIREN. Vos prestations vont dans un catalogue, puis dans vos devis en un clic, avec la TVA à 5,5, 10 ou 20 % ligne par ligne.",
-    screen: SCREENS.devis,
-    mobile: SCREENS.mobileDevis,
-  },
-  {
-    n: "02",
-    title: "Le devis accepté devient une facture",
-    text: "Un clic, et toutes les lignes passent sur la facture. Rien à ressaisir, et la numérotation se suit toute seule.",
-    screen: SCREENS.facture,
-    mobile: SCREENS.mobileFacture,
-  },
-  {
-    n: "03",
-    title: "Envoyée par email, relancée sans vous",
-    text: "La facture part en PDF à votre client, avec votre IBAN. Si elle reste impayée, Qonforme relance votre client 30 puis 45 jours après l'échéance.",
-    screen: SCREENS.factures,
-    mobile: SCREENS.mobileFactures,
-  },
-  {
-    n: "04",
-    title: "Vous savez où vous en êtes",
-    text: "Encaissé, en attente, en retard : votre tableau de bord vous le dit d'un coup d'œil. L'export FEC est prêt pour votre comptable.",
-    screen: SCREENS.tableauDeBord,
-    mobile: SCREENS.mobileTableauDeBord,
-  },
-];
-
-function StoryStep({ step, index, active, onActive }: { step: (typeof STORY)[number]; index: number; active: boolean; onActive: (i: number) => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { margin: "-45% 0px -45% 0px" });
-  useEffect(() => {
-    if (inView) onActive(index);
-  }, [inView, index, onActive]);
-
-  return (
-    <div ref={ref} className="flex flex-col justify-center py-12 lg:min-h-[80vh] lg:py-0">
-      <div className={cn("transition-opacity duration-500", active ? "opacity-100" : "lg:opacity-[.32]")}>
-        <p className="text-[15px] font-semibold text-[#2563EB]">{step.n}</p>
-        <h3 className="mt-3 text-[clamp(26px,3vw,38px)] font-semibold leading-[1.1] tracking-[-0.03em] text-[#0A1122] [text-wrap:balance]" style={BRICOLAGE}>
-          {step.title}
-        </h3>
-        <p className="mt-4 max-w-[460px] text-[17px] leading-relaxed text-[#475569]">{step.text}</p>
-      </div>
-      {/* Sur téléphone, la capture mobile du même écran : lisible à cette taille */}
-      <Reveal className="mx-auto mt-10 w-[64%] max-w-[300px] lg:hidden">
-        <IPhone screen={{ ...step.mobile, sizes: "64vw" }} />
-      </Reveal>
-    </div>
-  );
-}
-
-function StorySection() {
-  const [active, setActive] = useState(0);
-
-  return (
-    <section id="features" className="bg-white py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl px-4 sm:px-5">
-        <SectionTitle
-          title="Du premier devis au dernier paiement."
-          sub="Quatre étapes, un seul outil. Voici le vrai Qonforme, avec des données d'exemple."
-        />
-
-        <div className="mt-10 grid lg:mt-6 lg:grid-cols-[0.7fr_1.3fr] lg:gap-12">
-          <div>
-            {STORY.map((step, i) => (
-              <StoryStep key={step.n} step={step} index={i} active={active === i} onActive={setActive} />
-            ))}
-          </div>
-
-          {/* Écran fixe (ordinateur) : les captures se succèdent en fondu */}
-          <div className="hidden lg:block">
-            <div className="sticky top-0 flex h-screen items-center">
-              <div className="w-full">
-                <MacBook>
-                  {STORY.map((step, i) => (
-                    <motion.div
-                      key={step.n}
-                      className="absolute inset-0"
-                      initial={false}
-                      animate={{ opacity: active === i ? 1 : 0, scale: active === i ? 1 : 1.025 }}
-                      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      <Image
-                        src={step.screen.src}
-                        alt={step.screen.alt}
-                        width={step.screen.width}
-                        height={step.screen.height}
-                        sizes="(min-width: 1280px) 760px, 60vw"
-                        loading="lazy"
-                        className="h-full w-full object-cover object-top"
-                      />
-                    </motion.div>
-                  ))}
-                </MacBook>
-                <div className="mt-8 flex justify-center gap-2" aria-hidden>
-                  {STORY.map((step, i) => (
-                    <span key={step.n} className={cn("h-1.5 rounded-full transition-all duration-500", active === i ? "w-8 bg-[#2563EB]" : "w-1.5 bg-[#CBD2DC]")} />
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
+        <p className="mt-4 text-[12.5px] text-q-text-4">Calendrier officiel de la réforme, publié par l&apos;administration fiscale.</p>
       </div>
     </section>
-  );
+  )
 }
 
 /* ─────────────────────────────────────────────────────────
-   Photo pleine largeur avec effet de profondeur (si générée)
+   2 — Les trois profils (DECISIONS § 4)
 ───────────────────────────────────────────────────────── */
-function PhotoBand({ photo }: { photo: LandingPhoto }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
-
-  return (
-    <section ref={ref} className="relative h-[62vh] min-h-[380px] overflow-hidden bg-[#0A1122] sm:h-[78vh]">
-      <motion.div className="lp-motion absolute inset-[-10%_0]" style={{ y }}>
-        <Image src={photo.src} alt={photo.alt} fill sizes="100vw" loading="lazy" className="object-cover" />
-      </motion.div>
-      <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,17,34,0)_40%,rgba(10,17,34,.72)_100%)]" />
-      <div className="absolute inset-x-0 bottom-0 mx-auto max-w-6xl px-4 pb-12 sm:px-5 sm:pb-16">
-        <RevealWords
-          as="p"
-          text={"Pensé pour ceux qui travaillent sur les chantiers,\npas derrière un bureau."}
-          className="max-w-[820px] text-[clamp(26px,3.6vw,46px)] font-semibold leading-[1.1] tracking-[-0.03em] text-white"
-          style={BRICOLAGE}
-        />
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────
-   3 — Les trois profils (DECISIONS § 4)
-───────────────────────────────────────────────────────── */
-const PROFILES: { title: string; text: string; plan: string; soon?: boolean; photo: LandingPhoto | null }[] = [
+const PROFILES: {
+  kicker: string
+  title: string
+  items: string[]
+  /** Fonctions annoncées, pas encore livrées : affichées « à venir ». */
+  upcoming?: boolean
+  pill: string
+  pillTone: string
+  photo: LandingPhoto | null
+  position?: string
+}[] = [
   {
-    title: "Vous vous installez",
-    text: "Un devis et une facture professionnels dès votre premier chantier, avec les bonnes mentions. Gratuit tant que vous ne facturez pas.",
-    plan: "Version gratuite, puis Essentiel",
+    kicker: "Vous démarrez",
+    title: "Un devis professionnel dès votre premier chantier.",
+    items: [
+      "Votre entreprise remplie depuis son numéro SIREN",
+      "Vos prestations et vos prix dans un catalogue",
+      "Mentions prêtes à l'emploi : franchise de TVA, décennale",
+    ],
+    pill: "Devis gratuits",
+    pillTone: "bg-q-ok-bg text-q-ok",
     photo: PHOTOS.nouvelInstalle,
   },
   {
-    title: "Vous facturez encore sur Word ou Excel",
-    text: "Vos clients, vos prestations et vos documents au même endroit. Plus de numéro en double, plus de facture oubliée.",
-    plan: "Essentiel",
+    kicker: "Vous facturez chaque semaine",
+    title: "Être payé à l'heure, sans courir après personne.",
+    items: [
+      "Devis transformé en facture en un clic",
+      "Facture envoyée par email, avec votre IBAN",
+      "Relances automatiques 30 et 45 jours après l'échéance",
+    ],
+    pill: `${essentiel.name} · ${euros(essentiel.monthlyPrice)} HT/mois`,
+    pillTone: "bg-q-info-bg text-q-info",
     photo: PHOTOS.sansLogiciel,
+    position: "50% 0%",
   },
   {
-    title: "Votre entreprise grandit",
-    text: "Situations de travaux, retenue de garantie, autoliquidation et plusieurs utilisateurs arrivent avec la formule Artisan.",
-    plan: "Artisan",
-    soon: true,
+    kicker: "Votre entreprise grandit",
+    title: "Les chantiers longs, sans changer d'outil.",
+    items: artisan.upcoming,
+    upcoming: true,
+    pill: `${artisan.name} · bientôt`,
+    pillTone: "bg-q-ink-strong text-q-surface",
     photo: PHOTOS.entrepriseGrandit,
   },
-];
+]
 
 function ProfilesSection() {
   return (
-    <section className="bg-white py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl px-4 sm:px-5">
+    <section className={cn("bg-q-surface", SECTION)}>
+      <div className={WRAP}>
         <SectionTitle
-          title="Votre premier logiciel de facturation. Et le dernier."
-          sub="Qonforme suit votre entreprise, du premier chantier à la première embauche."
+          title="Votre premier logiciel de facturation."
+          accent="Et le dernier."
+          sub="Commencez simple. Quand votre entreprise grandit, vos clients, vos devis et votre historique vous suivent, sans rien ressaisir."
         />
-        <div className="mt-14 grid gap-5 md:grid-cols-3 md:gap-6">
+        <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
           {PROFILES.map((p, i) => (
-            <div key={p.title} className={cn(i === 1 && "md:translate-y-10")}>
-            <Reveal delay={i * 0.12} className="h-full">
-              <article className="group flex h-full flex-col overflow-hidden rounded-[26px] border border-[#E6E9F0] bg-white">
-                {p.photo && (
-                  <div className="relative aspect-[4/5] overflow-hidden bg-[#EEF0F3]">
-                    <Image
-                      src={p.photo.src}
-                      alt={p.photo.alt}
-                      fill
-                      sizes="(min-width: 768px) 33vw, 100vw"
-                      loading="lazy"
-                      className="object-cover transition-transform [transition-duration:1200ms] [transition-timing-function:cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.04]"
-                    />
-                  </div>
-                )}
-                <div className="flex flex-1 flex-col p-7">
-                  <p className="text-[15px] font-semibold text-[#2563EB]">0{i + 1}</p>
-                  <h3 className="mt-3 text-[24px] font-semibold leading-tight tracking-[-0.025em] text-[#0A1122]" style={BRICOLAGE}>
-                    {p.title}
-                  </h3>
-                  <p className="mt-3 flex-1 text-[16px] leading-relaxed text-[#475569]">{p.text}</p>
-                  <p className="mt-6 flex items-center gap-2 border-t border-[#EEF1F5] pt-5 text-[14px] font-medium text-[#0A1122]">
-                    {p.plan}
-                    {p.soon && <span className="rounded-full bg-[#F1F3F6] px-2 py-0.5 text-[12px] font-medium text-[#475569]">Bientôt</span>}
-                  </p>
+            <article
+              key={p.kicker}
+              className={cn("lp-reveal lp-card-scope lp-zoom-host lp-clip relative flex flex-col rounded-[22px] border border-q-line bg-q-surface", i === 1 && "lp-d1", i === 2 && "lp-d2")}
+            >
+              <span aria-hidden className="lp-fill absolute left-0 top-0 z-[1] h-[3px] bg-q-accent" style={{ width: `${((i + 1) / PROFILES.length) * 100}%` }} />
+              {p.photo && (
+                <div className="lp-clip relative aspect-[4/3] bg-q-sunken">
+                  <Image
+                    src={p.photo.src}
+                    alt={p.photo.alt}
+                    fill
+                    sizes="(min-width: 768px) 380px, 100vw"
+                    loading="lazy"
+                    className="lp-zoom object-cover"
+                    style={p.position ? { objectPosition: p.position } : undefined}
+                  />
                 </div>
-              </article>
-            </Reveal>
-            </div>
+              )}
+              <div className="flex flex-1 flex-col gap-3.5 p-6 sm:p-7">
+                <p className="flex items-center gap-2.5 text-[13px] font-semibold text-q-text-3">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-q-ink-strong text-[12px] text-q-surface">{i + 1}</span>
+                  {p.kicker}
+                </p>
+                <h3 className="font-display text-[21px] font-semibold leading-[1.2] tracking-[-0.025em] text-q-ink-strong [text-wrap:balance]">{p.title}</h3>
+                {p.upcoming && <p className="text-[13px] font-semibold text-q-text-4">À venir avec la formule {artisan.name}&nbsp;:</p>}
+                <ul className="flex flex-col gap-2.5 text-[15px] leading-[1.5] text-q-text-2">
+                  {p.items.map((item) => (
+                    <li key={item} className="flex gap-2.5">
+                      {p.upcoming ? (
+                        <CircleDashed className="mt-[3px] h-4 w-4 shrink-0 text-q-text-4" strokeWidth={2} aria-hidden />
+                      ) : (
+                        <Check className="mt-[3px] h-4 w-4 shrink-0 text-q-accent" strokeWidth={2} aria-hidden />
+                      )}
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-auto pt-2">
+                  <span className={cn("inline-flex items-center rounded-full px-3 py-1 text-[12.5px] font-semibold", p.pillTone)}>{p.pill}</span>
+                </p>
+              </div>
+            </article>
           ))}
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 /* ─────────────────────────────────────────────────────────
-   4 — Sur le téléphone (site installable, pas d'app native)
+   3 — Le devis, sur l'ordinateur
 ───────────────────────────────────────────────────────── */
-function MobileSection() {
+function QuoteSection() {
   return (
-    <section className="overflow-hidden bg-[#0A1122] py-24 sm:py-32">
-      <div className="mx-auto grid max-w-6xl items-center gap-16 px-4 sm:px-5 lg:grid-cols-2">
-        <div>
-          <SectionTitle
-            dark
-            align="left"
-            title="Sur le chantier aussi."
-            sub="Qonforme s'ouvre dans le navigateur de votre téléphone et s'ajoute à l'écran d'accueil comme une application. Rien à télécharger."
-          />
-          <ul className="mt-10 flex flex-col gap-4 text-[16px] text-[#D5DBE5]">
-            {[
-              "Le devis se fait devant le client",
-              "Vos factures et leurs statuts dans la poche",
-              "Le même compte sur l'ordinateur et le téléphone",
-            ].map((t, i) => (
-              <Reveal key={t} delay={0.1 + i * 0.08} as="li" className="flex items-center gap-3">
-                <Check className="h-4 w-4 shrink-0 text-[#60A5FA]" strokeWidth={1.75} />
-                {t}
-              </Reveal>
-            ))}
-          </ul>
-        </div>
-
-        <div className="relative mx-auto flex w-full max-w-[520px] items-start justify-center gap-[6%] pt-6">
-          <Parallax distance={110} className="w-[44%]">
-            <IPhone screen={{ ...SCREENS.mobileTableauDeBord, sizes: "(min-width: 1024px) 230px, 44vw" }} />
-          </Parallax>
-          <Parallax distance={-90} className="mt-[18%] w-[44%]">
-            <IPhone screen={{ ...SCREENS.mobileFactures, sizes: "(min-width: 1024px) 230px, 44vw" }} />
-          </Parallax>
+    <section className={cn("lp-clip bg-q-surface", SECTION)}>
+      <div className={WRAP}>
+        <SectionTitle
+          align="center"
+          title="Le devis se fait sur le chantier."
+          accent="La facture suit d'elle-même."
+          sub="Vos prestations sont prêtes dans le catalogue, la TVA se choisit ligne par ligne et l'aperçu PDF est à un clic. Une fois accepté, le devis devient facture en un clic."
+        />
+        <div className="relative mx-auto mt-12 max-w-[1040px] sm:mt-14">
+          <div className="lp-zoomin hidden sm:block">
+            <MacBook screen={{ ...SCREENS.devis, sizes: "(min-width: 1088px) 1040px, 92vw" }} />
+          </div>
+          <div className="lp-reveal mx-auto w-[min(300px,72%)] sm:hidden">
+            <IPhone screen={{ ...SCREENS.mobileDevis, sizes: "300px" }} />
+          </div>
+          {/* Puces : seulement quand elles tiennent hors de l'écran de l'ordinateur */}
+          <div aria-hidden className="absolute left-[-96px] top-[16%] z-[5] hidden xl:block">
+            <Chip icon={Package} label="Vos prestations" bob={1} />
+          </div>
+          <div aria-hidden className="absolute left-[-72px] top-[52%] z-[5] hidden xl:block">
+            <Chip icon={Percent} label="TVA par ligne" bob={2} />
+          </div>
+          <div aria-hidden className="absolute right-[-96px] top-[18%] z-[5] hidden xl:block">
+            <Chip icon={Eye} label="Aperçu PDF" bob={3} />
+          </div>
+          <div aria-hidden className="absolute right-[-64px] top-[58%] z-[5] hidden xl:block">
+            <Chip icon={ShieldCheck} label="Mention décennale" bob={1} />
+          </div>
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 /* ─────────────────────────────────────────────────────────
-   5 — Ce qui est inclus (uniquement ce qui existe)
+   4 — Manifeste : les mots s'encrent au défilement
+───────────────────────────────────────────────────────── */
+const MANIFESTO = "Vous êtes artisan, pas comptable. Vos devis partent du chantier, vos factures suivent et vos relances partent sans vous."
+const MANIFESTO_ACCENT = "Le soir, l'essentiel est déjà prêt."
+
+function ManifestoSection() {
+  const words = MANIFESTO.split(" ")
+  const accent = MANIFESTO_ACCENT.split(" ")
+  const total = words.length + accent.length
+  // Chaque mot s'encre sur 30 % de l'entrée à l'écran, décalé d'un cran sur le précédent.
+  const range = (i: number) => {
+    const a = Math.round((i / total) * 62)
+    return { "--lp-a": `${a}%`, "--lp-b": `${a + 30}%` } as React.CSSProperties
+  }
+  return (
+    <section className="bg-q-surface px-6 py-[clamp(88px,11vw,150px)]">
+      <p className="lp-ink-scope mx-auto max-w-[860px] text-center font-display text-[clamp(30px,4vw,48px)] font-semibold leading-[1.14] tracking-[-0.03em] text-q-ink-strong [text-wrap:balance]">
+        {words.map((w, i) => (
+          <span key={i}>
+            <span className="lp-w" style={range(i)}>{w}</span>{" "}
+          </span>
+        ))}
+        {accent.map((w, i) => (
+          <span key={`a${i}`}>
+            <span className="lp-wb text-q-accent" style={range(words.length + i)}>{w}</span>
+            {i < accent.length - 1 && " "}
+          </span>
+        ))}
+      </p>
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────
+   5 — Sur le téléphone (site installable, pas d'app native)
+───────────────────────────────────────────────────────── */
+const MOBILE_CHIPS = ["Devis sur place", "Facture en deux gestes", "Rien à télécharger"]
+
+function MobileSection() {
+  const photo = PHOTOS.atelierTelephone
+  return (
+    <section className={cn("q-on-ink lp-clip bg-[#0A1122]", SECTION)}>
+      <div className={cn(WRAP, "grid grid-cols-1 items-center gap-14 lg:grid-cols-2")}>
+        <div>
+          <SectionTitle
+            tone="dark"
+            title="Le chantier dans une main,"
+            accent="Qonforme dans l'autre."
+            sub="Un devis chiffré devant le client, une facture envoyée avant de remonter dans le camion. Qonforme s'ouvre dans le navigateur et s'ajoute à l'écran d'accueil de votre téléphone, sans passer par un store."
+          />
+          <ul className="lp-reveal mt-7 flex flex-wrap gap-2.5">
+            {MOBILE_CHIPS.map((c) => (
+              <li key={c} className="inline-flex h-9 items-center gap-2 rounded-full border border-white/15 bg-white/[.06] px-3.5 text-[13.5px] font-medium text-[#D5DBE5]">
+                <Check className="h-3.5 w-3.5 text-[#7FA6FF]" strokeWidth={2.25} aria-hidden />
+                {c}
+              </li>
+            ))}
+          </ul>
+          {photo && (
+            <div className="lp-reveal lp-clip relative mt-10 aspect-[16/10] max-w-[480px] rounded-[20px] bg-[#1B2333]">
+              <PanPhoto photo={photo} sizes="(min-width: 1024px) 480px, 90vw" />
+            </div>
+          )}
+        </div>
+
+        <div className="relative mx-auto flex w-full max-w-[560px] items-start justify-center gap-[4%]">
+          <div className="lp-drift-v mt-[26%] hidden w-[30%] sm:block">
+            <IPhone screen={{ ...SCREENS.mobileDevis, sizes: "(min-width: 1024px) 170px, 30vw" }} />
+          </div>
+          <div className="mt-[10%] w-[64%] sm:w-[34%]">
+            <IPhone screen={{ ...SCREENS.mobileFacture, sizes: "(min-width: 1024px) 190px, (min-width: 640px) 34vw, 64vw" }} />
+          </div>
+          <div className="lp-drift-v hidden w-[30%] sm:block">
+            <IPhone screen={{ ...SCREENS.mobileTableauDeBord, sizes: "(min-width: 1024px) 170px, 30vw" }} />
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────
+   6 — Payé à l'heure : envoi, relances, paiement
+   (relances du cron J+30 / J+45, bouton « Relancer » ; avec Essentiel)
+───────────────────────────────────────────────────────── */
+const PAID_STEPS = [
+  { tag: "Envoi", title: "La facture part par email", text: "En PDF, avec votre IBAN dans le message et la date d'échéance." },
+  { tag: "J+30", title: "Première relance, sans vous", text: "Un rappel part à votre client 30 jours après l'échéance." },
+  { tag: "J+45", title: "Seconde relance", text: "Si la facture n'est toujours pas réglée, 45 jours après l'échéance." },
+  { tag: "Payée", title: "Les relances s'arrêtent", text: "Dès que vous marquez la facture comme payée." },
+]
+
+function PaidSection() {
+  return (
+    <section className={cn("lp-clip bg-q-surface", SECTION)}>
+      <div className={cn(WRAP, "grid grid-cols-1 items-center gap-14 lg:grid-cols-2 lg:gap-20")}>
+        <div className="relative mx-auto w-full max-w-[460px] py-6">
+          <div aria-hidden className="absolute inset-x-0 bottom-0 top-[14%] rounded-[28px] border border-q-line bg-q-bg" />
+          <IPhone className="lp-reveal relative z-[2] mx-auto w-[min(260px,62%)]" screen={{ ...SCREENS.mobileFacture, sizes: "260px" }} />
+          <div aria-hidden className="absolute right-[-4%] top-[6%] z-[5] hidden sm:block">
+            <Floater icon={BellRing} tone="warn" title="Relance envoyée" sub={`${RELANCE.client.name} · ${RELANCE.invoice_number}`} bob={2} />
+          </div>
+          <div aria-hidden className="absolute bottom-[6%] left-[-6%] z-[5] hidden sm:block">
+            <Floater icon={CircleCheck} tone="ok" title={`Facture ${PAYEE.invoice_number} payée`} sub={`${PAYEE.client.name} · ${formatCurrency(PAYEE.total_ttc)}`} bob={3} />
+          </div>
+        </div>
+
+        <div>
+          <SectionTitle
+            title="Payé à l'heure,"
+            accent="sans relancer à la main."
+            sub="Chaque facture part par email avec votre IBAN. Si le virement tarde, Qonforme relance votre client à votre place."
+          />
+          <ol className="mt-8 border-b border-q-line">
+            {PAID_STEPS.map((s, i) => (
+              <li key={s.tag} className={cn("lp-reveal grid grid-cols-[64px_minmax(0,1fr)] gap-4 border-t border-q-line py-4 sm:grid-cols-[72px_minmax(0,1fr)]", i % 2 === 1 && "lp-d1")}>
+                <span className="pt-0.5 font-mono text-[13px] font-medium text-q-accent-strong">{s.tag}</span>
+                <span className="flex flex-col gap-1">
+                  <span className="text-[16px] font-semibold text-q-ink-strong">{s.title}</span>
+                  <span className="text-[14.5px] leading-[1.55] text-q-text-3">{s.text}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-5 text-[14px] leading-[1.6] text-q-text-4">
+            Besoin de relancer plus tôt&nbsp;? Le bouton «&nbsp;Relancer&nbsp;» de la facture envoie un rappel quand vous le décidez.
+            Envoi et relances avec la formule {essentiel.name}.
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────
+   7 — Galerie des métiers (deux rangées qui glissent en sens contraire)
+───────────────────────────────────────────────────────── */
+const GALLERY_TRADES: { photo: LandingPhoto | null; label: string; slug: string }[] = [
+  { photo: PHOTOS.plaquiste, label: "Plaquiste", slug: "plaquiste" },
+  { photo: PHOTOS.sansLogiciel, label: "Électricien", slug: "electricien" },
+  { photo: PHOTOS.plombier, label: "Plombier", slug: "plombier" },
+  { photo: PHOTOS.carreleur, label: "Carreleur", slug: "carreleur" },
+  { photo: PHOTOS.menuisier, label: "Menuisier", slug: "menuisier" },
+  { photo: PHOTOS.couvreur, label: "Couvreur", slug: "couvreur" },
+  { photo: PHOTOS.macon, label: "Maçon", slug: "macon" },
+  { photo: PHOTOS.chauffagiste, label: "Chauffagiste", slug: "chauffagiste" },
+]
+
+const GALLERY_SCENES: { photo: LandingPhoto | null; label: string }[] = [
+  { photo: PHOTOS.chezLeClient, label: "Chez le client" },
+  { photo: PHOTOS.nouvelInstalle, label: "À l'atelier" },
+  { photo: PHOTOS.entrepriseGrandit, label: "En équipe" },
+  { photo: PHOTOS.chantier, label: "En rénovation" },
+  { photo: PHOTOS.finDeJournee, label: "Départ du matin" },
+  { photo: PHOTOS.cheffeDeChantier, label: "Sur le chantier" },
+  { photo: PHOTOS.appelFinal, label: "Finitions" },
+]
+
+const TILE = "lp-clip relative block aspect-[4/5] w-[clamp(150px,15vw,208px)] shrink-0 rounded-[18px] bg-q-sunken"
+
+function TileLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="absolute bottom-3 left-3 rounded-full bg-q-surface px-2.5 py-1 text-[12.5px] font-semibold text-q-ink-strong shadow-[0_1px_2px_rgba(10,17,34,.08)]">
+      {children}
+    </span>
+  )
+}
+
+function TradesSection() {
+  return (
+    <section className="lp-clip bg-q-surface py-[clamp(88px,9vw,120px)]">
+      <div className={cn(WRAP, "px-6")}>
+        <SectionTitle
+          title="Plaquistes, électriciens, plombiers…"
+          accent="un seul logiciel pour tous."
+          sub="Vos prestations, vos unités et vos mentions. Le reste ne change pas : devis, factures, relances."
+        />
+      </div>
+      <div className="mt-12 flex flex-col gap-3">
+        <ul className="lp-rail-l flex w-max gap-3 pl-6">
+          {GALLERY_TRADES.map((t) =>
+            t.photo ? (
+              <li key={t.slug}>
+                <Link href={`/facturation/${t.slug}`} className={cn(TILE, "group focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent")}>
+                  <Image src={t.photo.src} alt={t.photo.alt} fill sizes="208px" loading="lazy" className="object-cover transition-transform duration-700 group-hover:scale-[1.04] motion-reduce:transition-none" />
+                  <TileLabel>{t.label}</TileLabel>
+                </Link>
+              </li>
+            ) : null,
+          )}
+        </ul>
+        <ul className="lp-rail-r flex w-max gap-3 pl-6" aria-label="Scènes de chantier">
+          {GALLERY_SCENES.map((s) =>
+            s.photo ? (
+              <li key={s.label} className={TILE}>
+                <Image src={s.photo.src} alt={s.photo.alt} fill sizes="208px" loading="lazy" className="object-cover" />
+                <TileLabel>{s.label}</TileLabel>
+              </li>
+            ) : null,
+          )}
+        </ul>
+      </div>
+      <p className={cn(WRAP, "mt-8 px-6")}>
+        <Link href="/facturation" className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-q-accent-strong hover:underline">
+          Tous les métiers <ArrowRight className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+        </Link>
+      </p>
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────
+   8 — Démarrage en trois étapes
+───────────────────────────────────────────────────────── */
+const STEPS = [
+  { title: "Votre SIREN", text: "Le nom, l'adresse et le numéro de TVA de votre entreprise se remplissent seuls.", ui: <StepCompany /> },
+  { title: "Vos prestations", text: "Votre catalogue, avec vos unités et vos prix, prêt pour tous vos devis.", ui: <StepCatalogue /> },
+  { title: "Votre premier devis", text: "Envoyé par email, gratuit, sans carte bancaire.", ui: <StepQuote /> },
+]
+
+function StepsSection() {
+  return (
+    <section className={cn("bg-q-surface", SECTION)}>
+      <div className={WRAP}>
+        <SectionTitle title="Trois étapes," accent="et votre premier devis est parti." />
+        <ol className="lp-steps-scope mt-12 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
+          {STEPS.map((s, i) => (
+            <li key={s.title} className={cn("lp-reveal flex min-w-0 flex-col", i === 1 && "lp-d1", i === 2 && "lp-d2")}>
+              <div className="flex items-center gap-3">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-q-ink-strong text-[14px] font-semibold text-q-surface">{i + 1}</span>
+                <span aria-hidden className="lp-line-x h-px flex-1 bg-q-accent" />
+              </div>
+              <h3 className="mt-5 text-[18px] font-semibold text-q-ink-strong">{s.title}</h3>
+              <p className="mt-1.5 text-[15px] leading-[1.55] text-q-text-3">{s.text}</p>
+              <div className="mt-5">{s.ui}</div>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-12 flex justify-center">
+          <Link href="/signup" className="lp-btn-p">
+            Créer mon premier devis
+            <ArrowRight className="lp-btn-arrow h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────
+   9 — Ce qui est inclus (uniquement ce qui existe)
 ───────────────────────────────────────────────────────── */
 const INCLUDED = [
   { icon: FileText, title: "Devis illimités", text: "Gratuits, même sans formule." },
@@ -415,51 +552,63 @@ const INCLUDED = [
   { icon: Download, title: "Export FEC", text: "Prêt pour votre comptable." },
   { icon: Palette, title: "Votre logo, votre couleur", text: "Sur chaque devis et facture." },
   { icon: Smartphone, title: "Sur téléphone", text: "Installable sur l'écran d'accueil." },
-];
+]
 
 function IncludedSection() {
   return (
-    <section className="bg-white py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl px-4 sm:px-5">
-        <SectionTitle title="Tout ce qu'il faut. Rien de superflu." />
-        <ul className="mt-14 grid grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-8 sm:gap-y-9 lg:grid-cols-4">
+    <section className={cn("border-t border-q-line bg-q-surface", SECTION)}>
+      <div className={WRAP}>
+        <SectionTitle title="Tout ce qu'il faut." accent="Rien de superflu." />
+        <ul className="mt-12 grid grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-8 lg:grid-cols-4">
           {INCLUDED.map((f, i) => (
-            <Reveal key={f.title} as="li" delay={(i % 4) * 0.06} y={18} className="flex flex-col gap-3 border-t border-[#E6E9F0] pt-5 sm:pt-6">
-              <f.icon className="h-6 w-6 text-[#0A1122]" {...ICON} />
-              <div>
-                <p className="text-[15px] font-semibold leading-snug text-[#0A1122] sm:text-[16px]">{f.title}</p>
-                <p className="mt-1 text-[14px] leading-relaxed text-[#64748B] sm:text-[15px]">{f.text}</p>
-              </div>
-            </Reveal>
+            <li key={f.title} className={cn("lp-reveal flex flex-col gap-3 border-t border-q-line pt-5", i % 4 === 1 && "lp-d1", i % 4 >= 2 && "lp-d2")}>
+              <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-q-wash text-q-accent-strong">
+                <f.icon className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
+              </span>
+              <span>
+                <span className="block text-[15px] font-semibold leading-snug text-q-ink-strong sm:text-[16px]">{f.title}</span>
+                <span className="mt-1 block text-[14px] leading-[1.55] text-q-text-3 sm:text-[15px]">{f.text}</span>
+              </span>
+            </li>
           ))}
         </ul>
       </div>
     </section>
-  );
+  )
 }
 
 /* ─────────────────────────────────────────────────────────
-   6 — Tarifs (grille partagée avec /pricing : lib/stripe/plans.ts)
+   10 — Tarifs (grille partagée avec /pricing : lib/stripe/plans.ts)
 ───────────────────────────────────────────────────────── */
 function PricingSection() {
   return (
-    <section id="pricing" className="bg-[#F6F7F9] py-24 sm:py-32">
-      <div className="mx-auto max-w-5xl px-4 sm:px-5">
+    <section id="pricing" className={cn("scroll-mt-16 border-y border-q-line bg-q-bg", SECTION)}>
+      <div className="mx-auto w-full max-w-[1080px]">
         <SectionTitle
-          title="Vos devis sont gratuits. Vous payez quand vous facturez."
-          sub="Commencez sans carte bancaire. La formule se choisit au moment d'envoyer votre première facture."
+          align="center"
+          title="Vos devis sont gratuits."
+          accent="Vous payez quand vous facturez."
+          sub={`Sans carte bancaire pour commencer. La formule se choisit au moment d'envoyer votre première facture, satisfait ou remboursé pendant ${GUARANTEE_DAYS} jours.`}
           className="mb-12"
         />
-        <Reveal delay={0.1}>
+        <div className="lp-reveal">
           <PricingSelector />
-        </Reveal>
+        </div>
+        <div className="mt-10 flex justify-center">
+          <Link href="/pricing" className="lp-btn-s">
+            <span className="lp-btn-s-ic" aria-hidden>
+              <ArrowRight className="h-[15px] w-[15px]" strokeWidth={2} />
+            </span>
+            Comparer les offres
+          </Link>
+        </div>
       </div>
     </section>
-  );
+  )
 }
 
 /* ─────────────────────────────────────────────────────────
-   7 — Engagements
+   11 — Engagements (à la place des avis du canevas : aucun avis inventé)
 ───────────────────────────────────────────────────────── */
 const COMMITMENTS = [
   {
@@ -477,29 +626,39 @@ const COMMITMENTS = [
     title: "Sans engagement",
     text: "La résiliation se fait depuis vos paramètres, sans frais, à tout moment.",
   },
-];
+]
 
 function CommitmentsSection() {
   return (
-    <section className="bg-white py-24 sm:py-28">
-      <div className="mx-auto max-w-6xl px-4 sm:px-5">
-        <SectionTitle title="Nos engagements." />
-        <div className="mt-14 grid gap-10 md:grid-cols-3">
+    <section className={cn("bg-q-surface", SECTION)}>
+      <div className={WRAP}>
+        <SectionTitle title="Nos engagements," accent="noir sur blanc." />
+        <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
           {COMMITMENTS.map((c, i) => (
-            <Reveal key={c.title} delay={i * 0.1} className="flex flex-col items-center gap-4 text-center">
-              <c.icon className="h-7 w-7 text-[#2563EB]" {...ICON} />
-              <h3 className="text-[20px] font-semibold tracking-[-0.02em] text-[#0A1122]" style={BRICOLAGE}>{c.title}</h3>
-              <p className="max-w-[320px] text-[15px] leading-relaxed text-[#475569]">{c.text}</p>
-            </Reveal>
+            <article
+              key={c.title}
+              className={cn(
+                "lp-reveal flex flex-col gap-3 rounded-[22px] border p-7",
+                i === 2 ? "q-on-ink border-[#0A1122] bg-[#0A1122]" : "border-q-line bg-q-surface",
+                i === 1 && "lp-d1",
+                i === 2 && "lp-d2",
+              )}
+            >
+              <span className={cn("grid h-10 w-10 place-items-center rounded-[12px]", i === 2 ? "bg-white/10 text-[#7FA6FF]" : "bg-q-wash text-q-accent-strong")}>
+                <c.icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+              </span>
+              <h3 className={cn("font-display text-[20px] font-semibold tracking-[-0.02em]", i === 2 ? "text-white" : "text-q-ink-strong")}>{c.title}</h3>
+              <p className={cn("text-[15px] leading-[1.6]", i === 2 ? "text-[#AFBDD3]" : "text-q-text-3")}>{c.text}</p>
+            </article>
           ))}
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 /* ─────────────────────────────────────────────────────────
-   8 — Questions fréquentes (reprises telles quelles dans le JSON-LD)
+   12 — Questions fréquentes (reprises telles quelles dans le JSON-LD)
 ───────────────────────────────────────────────────────── */
 const FAQ_ITEMS = [
   {
@@ -530,7 +689,7 @@ const FAQ_ITEMS = [
     q: "Faut-il installer une application ?",
     a: "Non. Qonforme fonctionne dans le navigateur, sur ordinateur comme sur téléphone. Sur téléphone, vous pouvez l'ajouter à l'écran d'accueil pour l'ouvrir comme une application.",
   },
-];
+]
 
 const FAQ_JSONLD = {
   "@context": "https://schema.org",
@@ -540,57 +699,35 @@ const FAQ_JSONLD = {
     name: item.q,
     acceptedAnswer: { "@type": "Answer", text: item.a },
   })),
-};
+}
+
+/** Typographie française à l'affichage : espace insécable avant « ? » et « : ». */
+const fr = (s: string) => s.replace(/ ([?:;!])/g, " $1")
 
 function FAQSection() {
-  const [open, setOpen] = useState<number | null>(0);
   return (
-    <section className="bg-[#F6F7F9] py-24 sm:py-32">
-      <div className="mx-auto max-w-3xl px-4 sm:px-5">
-        <SectionTitle title="Vos questions." className="mb-12" />
-        <div className="flex flex-col gap-3">
-          {FAQ_ITEMS.map((item, i) => {
-            const isOpen = open === i;
-            return (
-              <Reveal key={item.q} delay={Math.min(i, 4) * 0.05} y={14}>
-                <div className="rounded-[20px] border border-[#E6E9F0] bg-white">
-                  <button
-                    type="button"
-                    onClick={() => setOpen(isOpen ? null : i)}
-                    aria-expanded={isOpen}
-                    className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
-                  >
-                    <span className="text-[16px] font-semibold text-[#0A1122]">{item.q}</span>
-                    <ChevronDown
-                      className={cn("h-5 w-5 shrink-0 text-[#64748B] transition-transform duration-300", isOpen && "rotate-180")}
-                      strokeWidth={1.5}
-                    />
-                  </button>
-                  <AnimatePresence initial={false}>
-                    {isOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                        className="overflow-hidden"
-                      >
-                        <p className="px-6 pb-6 text-[15px] leading-relaxed text-[#475569]">{item.a}</p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </Reveal>
-            );
-          })}
+    <section className={cn("bg-q-surface", SECTION)}>
+      <div className="mx-auto w-full max-w-[800px]">
+        <SectionTitle title="Questions" accent="fréquentes" className="mb-10" />
+        <div className="lp-reveal border-b border-q-line">
+          {FAQ_ITEMS.map((item, i) => (
+            // <details> natif : s'ouvre au clavier et sans JavaScript ; la première réponse est ouverte.
+            <details key={item.q} open={i === 0} className="group border-t border-q-line">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-left [&::-webkit-details-marker]:hidden">
+                <span className="text-[16px] font-semibold text-q-ink-strong">{fr(item.q)}</span>
+                <ChevronDown className="h-[18px] w-[18px] shrink-0 text-q-text-4 transition-transform duration-300 group-open:rotate-180 motion-reduce:transition-none" strokeWidth={1.75} aria-hidden />
+              </summary>
+              <p className="max-w-[680px] pb-6 text-[15px] leading-[1.65] text-q-text-3">{fr(item.a)}</p>
+            </details>
+          ))}
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 /* ─────────────────────────────────────────────────────────
-   9 — Métiers et ressources (maillage interne pSEO)
+   13 — Métiers et ressources (maillage interne pSEO)
 ───────────────────────────────────────────────────────── */
 const TRADES = [
   { slug: "plombier", nom: "Plombier" },
@@ -604,137 +741,106 @@ const TRADES = [
   { slug: "chauffagiste", nom: "Chauffagiste" },
   { slug: "serrurier", nom: "Serrurier" },
   { slug: "paysagiste", nom: "Paysagiste" },
-];
+]
 
 const GUIDES = [
   { href: "/guide/premiere-facture", label: "Faire sa première facture" },
   { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires sur une facture" },
   { href: "/guide/facture-electronique-2026", label: "La facture électronique" },
   { href: "/guide", label: "Tous les guides" },
-];
+]
 
 const TEMPLATES = [
   { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
   { href: "/modele/facture-classique", label: "Modèle de facture" },
   { href: "/modele/facture-auto-entrepreneur", label: "Modèle de facture auto-entrepreneur" },
   { href: "/modele", label: "Tous les modèles" },
-];
+]
 
 const TOOLS = [
   { href: "/outils/calculateur-tva", label: "Calculateur de TVA" },
   { href: "/outils/verification-siret", label: "Vérification de SIRET" },
   { href: "/outils/generateur-devis-gratuit", label: "Générateur de devis" },
   { href: "/outils", label: "Tous les outils gratuits" },
-];
-
-function TradeChip({ slug, nom }: { slug: string; nom: string }) {
-  return (
-    <Link
-      href={`/facturation/${slug}`}
-      className="mx-1.5 inline-flex h-12 shrink-0 items-center rounded-full border border-[#E6E9F0] bg-white px-6 text-[15px] font-medium text-[#0A1122] transition-colors hover:border-[#2563EB]/40 hover:text-[#2563EB]"
-    >
-      {nom}
-    </Link>
-  );
-}
+]
 
 function ResourcesSection() {
   const columns = [
     { title: "Guides", links: GUIDES },
     { title: "Modèles gratuits", links: TEMPLATES },
     { title: "Outils gratuits", links: TOOLS },
-  ];
+  ]
   return (
-    <section className="bg-white py-24 sm:py-28">
-      <div className="mx-auto max-w-6xl px-4 sm:px-5">
-        <SectionTitle title="Pensé pour les métiers du bâtiment." />
-      </div>
-
-      <div className="lp-marquee mt-12 overflow-hidden">
-        <div className="lp-marquee-track">
-          {[0, 1].map((copy) => (
-            <div key={copy} className="flex" aria-hidden={copy === 1 || undefined}>
-              {TRADES.map((t) => (
-                copy === 0 ? <TradeChip key={t.slug} {...t} /> : (
-                  <span key={t.slug} className="mx-1.5 inline-flex h-12 shrink-0 items-center rounded-full border border-[#E6E9F0] bg-white px-6 text-[15px] font-medium text-[#0A1122]">
-                    {t.nom}
-                  </span>
-                )
-              ))}
+    <section className={cn("border-t border-q-line bg-q-bg", SECTION)}>
+      <div className={WRAP}>
+        <SectionTitle title="Pour aller plus loin," accent="gratuitement." />
+        <div className="mt-10">
+          <p className="text-[15px] font-semibold text-q-ink-strong">Facturation par métier</p>
+          <ul className="mt-4 flex flex-wrap gap-2">
+            {TRADES.map((t) => (
+              <li key={t.slug}>
+                <Link
+                  href={`/facturation/${t.slug}`}
+                  className="inline-flex h-10 items-center rounded-full border border-q-line bg-q-surface px-4 text-[14px] font-medium text-q-ink-strong transition-colors hover:border-q-wash-line hover:text-q-accent-strong"
+                >
+                  {t.nom}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link href="/facturation" className="inline-flex h-10 items-center gap-1.5 px-2 text-[14px] font-semibold text-q-accent-strong hover:underline">
+                Tous les métiers <ArrowRight className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+              </Link>
+            </li>
+          </ul>
+        </div>
+        <div className="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-3">
+          {columns.map((col) => (
+            <div key={col.title}>
+              <p className="text-[15px] font-semibold text-q-ink-strong">{col.title}</p>
+              <ul className="mt-4 flex flex-col gap-3">
+                {col.links.map((l) => (
+                  <li key={l.href}>
+                    <Link href={l.href} className="text-[15px] text-q-text-3 transition-colors hover:text-q-accent-strong">
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
       </div>
-      <p className="mt-6 text-center">
-        <Link href="/facturation" className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-[#2563EB] hover:underline">
-          Tous les métiers <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
-        </Link>
-      </p>
-
-      <div className="mx-auto mt-20 grid max-w-6xl gap-10 px-4 sm:grid-cols-3 sm:px-5">
-        {columns.map((col, i) => (
-          <Reveal key={col.title} delay={i * 0.08}>
-            <p className="text-[15px] font-semibold text-[#0A1122]">{col.title}</p>
-            <ul className="mt-4 flex flex-col gap-3">
-              {col.links.map((l) => (
-                <li key={l.href}>
-                  <Link href={l.href} className="text-[15px] text-[#475569] transition-colors hover:text-[#2563EB]">
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-        ))}
-      </div>
     </section>
-  );
+  )
 }
 
 /* ─────────────────────────────────────────────────────────
-   10 — Appel final (fond blanc, ou photo si générée)
+   14 — Appel final : texte sur fond clair, photo à droite
 ───────────────────────────────────────────────────────── */
 function FinalCta() {
-  const photo = PHOTOS.finDeJournee;
-  const buttons = (
-    <div className="mt-9 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row">
-      <Link href="/signup" className="lp-btn-p w-full max-w-[340px] sm:w-auto">
-        Créer mon premier devis
-        <ArrowRight className="lp-btn-arrow h-[18px] w-[18px]" strokeWidth={2} />
-      </Link>
-      <Link href="/demo" className="lp-btn-s w-full max-w-[340px] sm:w-auto">
-        <span className="lp-btn-s-ic">
-          <Play className="h-3 w-3 fill-current" strokeWidth={0} />
-        </span>
-        Voir la démo
-      </Link>
-    </div>
-  );
-
-  if (photo) {
-    return (
-      <section className="bg-white px-3 py-3 sm:px-5 sm:py-5">
-        <div className="relative isolate overflow-hidden rounded-[28px] bg-[#0A1122] px-5 py-28 text-center sm:py-36">
-          <Parallax distance={80} className="absolute inset-[-8%_0] -z-10">
-            <Image src={photo.src} alt={photo.alt} fill sizes="100vw" loading="lazy" className="object-cover opacity-55" />
-          </Parallax>
-          <div className="mx-auto flex max-w-[760px] flex-col items-center">
-            <SectionTitle dark title="Votre premier devis en quelques minutes." sub="Gratuit, sans carte bancaire. Vous ne payez qu'à votre première facture." />
-            {buttons}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
+  const photo = PHOTOS.appelFinal
   return (
-    <section className="border-t border-[#EEF1F5] bg-white py-24 sm:py-32">
-      <div className="mx-auto flex max-w-[760px] flex-col items-center px-4 text-center sm:px-5">
-        <SectionTitle title="Votre premier devis en quelques minutes." sub="Gratuit, sans carte bancaire. Vous ne payez qu'à votre première facture." />
-        <Reveal delay={0.2} className="w-full sm:w-auto">{buttons}</Reveal>
+    <section className="bg-q-surface px-6 py-[clamp(72px,8vw,104px)]">
+      <div className={cn(WRAP, "lp-reveal lp-clip grid grid-cols-1 rounded-[28px] border border-q-line md:grid-cols-2")}>
+        <div className="flex flex-col items-start bg-q-bg px-6 py-12 sm:px-12 sm:py-16">
+          <SectionTitle title="Votre premier devis" accent="en quelques minutes." sub="Gratuit, sans carte bancaire. Vous ne payez qu'à partir de votre première facture." />
+          <CtaButtons align="start" className="mt-9" />
+        </div>
+        {photo && (
+          <div className="relative min-h-[320px] bg-q-sunken">
+            <Image src={photo.src} alt={photo.alt} fill sizes="(min-width: 768px) 600px, 100vw" loading="lazy" className="object-cover" />
+            <div aria-hidden className="absolute left-4 top-4 z-[2] sm:left-5 sm:top-5">
+              <Floater icon={Check} tone="ok" title="Devis envoyé" sub={`${DEVIS.client.name} · ${formatCurrency(DEVIS.subtotal_ht)} HT`} bob={1} />
+            </div>
+            <div aria-hidden className="absolute bottom-4 right-4 z-[2] hidden sm:bottom-5 sm:right-5 sm:block">
+              <Floater icon={ShieldCheck} tone="info" title="Mentions obligatoires" sub="SIREN, TVA, durée de validité" bob={2} />
+            </div>
+          </div>
+        )}
       </div>
     </section>
-  );
+  )
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -742,17 +848,40 @@ function FinalCta() {
 ───────────────────────────────────────────────────────── */
 export default function HomePage() {
   return (
-    // reducedMotion="user" : avec « Réduire les animations », les déplacements
-    // deviennent instantanés et seuls les fondus restent (voir components/landing/motion.tsx).
-    <MotionConfig reducedMotion="user">
-    <div className="min-h-screen overflow-x-clip bg-white">
+    <div className="min-h-screen overflow-x-clip bg-q-surface">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSONLD) }} />
+      {/* Progression de la lecture (CSS seul, masquée sans support ou avec « Réduire les animations ») */}
+      <span aria-hidden className="lp-progress" />
       <LandingHero />
+      <TradeMarquee />
       <ReformSection />
-      <StorySection />
-      {PHOTOS.chantier && <PhotoBand photo={PHOTOS.chantier} />}
+      {PHOTOS.chantier && (
+        <PhotoBand
+          photo={PHOTOS.chantier}
+          label="Pour ceux qui facturent le soir"
+          title="Pour ceux qui facturent le soir,"
+          accent="après le chantier."
+          floater={<Floater icon={Send} tone="info" title={`Facture ${ENVOYEE.invoice_number} envoyée`} sub={`${ENVOYEE.client.name} · 21:47`} bob={1} />}
+        />
+      )}
       <ProfilesSection />
+      <QuoteSection />
+      <ManifestoSection />
       <MobileSection />
+      <StorySection />
+      <PaidSection />
+      {PHOTOS.finDeJournee && (
+        <PhotoBand
+          photo={PHOTOS.finDeJournee}
+          label="Le camion se range"
+          title="Le camion se range."
+          accent="Les relances partent sans vous."
+          stack
+          floater={<Floater icon={BellRing} tone="warn" title="Relance envoyée" sub={`${RELANCE.invoice_number} · ${formatCurrency(RELANCE.total_ttc)}`} bob={2} />}
+        />
+      )}
+      <TradesSection />
+      <StepsSection />
       <IncludedSection />
       <PricingSection />
       <CommitmentsSection />
@@ -761,6 +890,5 @@ export default function HomePage() {
       <FinalCta />
       <Footer showCta={false} />
     </div>
-    </MotionConfig>
-  );
+  )
 }
