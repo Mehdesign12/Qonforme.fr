@@ -40,7 +40,7 @@ export const NAV_MAIN: NavLink[] = [
 ]
 
 export const NAV_PILOTAGE: NavLink[] = [
-  { key: "exports", label: "Exports comptables", href: "/settings/exports", icon: Download, hint: "Fichier des écritures comptables" },
+  { key: "exports", label: "Exports comptables", href: "/settings/exports", demoHref: "/demo/settings/exports", icon: Download, hint: "Fichier des écritures comptables" },
 ]
 
 export const NAV_SETTINGS: NavLink = {
@@ -76,7 +76,7 @@ export function hrefFor(link: { href: string; demoHref?: string }, mode: ShellMo
 export function isActivePath(pathname: string, href: string): boolean {
   if (href === "/dashboard" || href === "/demo") return pathname === href
   if (href === "/settings" || href === "/demo/settings") {
-    return pathname.startsWith(href) && !pathname.startsWith("/settings/exports")
+    return pathname.startsWith(href) && !pathname.startsWith(href + "/exports")
   }
   return pathname === href || pathname.startsWith(href + "/")
 }
