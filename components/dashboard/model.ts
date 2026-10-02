@@ -13,6 +13,17 @@ import { canRemindInvoice } from "@/lib/utils/document-status"
 
 export type DashMode = "app" | "demo"
 
+/** Période du premier indicateur (contrôle segmenté « Ce mois / Trimestre / Année », paramètre `?periode=`). */
+export type DashPeriod = "mois" | "trimestre" | "annee"
+export const DASH_PERIODS: { key: DashPeriod; label: string; noun: string }[] = [
+  { key: "mois", label: "Ce mois", noun: "mois" },
+  { key: "trimestre", label: "Trimestre", noun: "trimestre" },
+  { key: "annee", label: "Année", noun: "année" },
+]
+export function parsePeriod(value: unknown): DashPeriod {
+  return value === "trimestre" || value === "annee" ? value : "mois"
+}
+
 /** Factures émises et non réglées. `overdue` est posé par chaque relance : il en fait partie. */
 export const OPEN_INVOICE_STATUSES = ["sent", "pending", "received", "accepted", "overdue"] as const
 /** Factures émises comptées dans « Facturé » (ni brouillon, ni annulée, ni rejetée, ni annulée par avoir). */
@@ -47,6 +58,7 @@ export interface DashQuote {
 
 export interface DashboardInput {
   mode: DashMode
+  period?: DashPeriod
   /** Aujourd'hui, AAAA-MM-JJ, heure de Paris. */
   today: string
   firstName: string
@@ -59,7 +71,7 @@ export interface DashboardInput {
   } | null
   /** Nombre total de factures et de devis (null si la lecture a échoué). */
   counts: { invoices: number | null; quotes: number | null }
-  /** Factures émises depuis le 1er du mois M-6 (graphique, indicateur du mois). */
+  /** Factures émises depuis le 1er du mois M-6 ou le 1er janvier si plus tôt (graphique, premier indicateur, voir issuedSince). */
   issued: { issue_date: string; total_ttc: number }[]
   /** Démo : historique mensuel fourni pour les mois passés (le mois en cours reste calculé). */
   monthlyHistory?: { month: string; value: number; count?: number }[]
@@ -121,6 +133,7 @@ export interface TodoItem {
 
 export interface DashboardView {
   mode: DashMode
+  period: DashPeriod
   today: string
   dateLong: string
   dateShort: string
@@ -129,6 +142,8 @@ export interface DashboardView {
   isNewAccount: boolean
   kpi: {
     month: { amount: number; count: number; prevAmount: number; prevMonthName: string; deltaPct: number | null }
+    /** Premier indicateur selon la période choisie (« Facturé ce mois | ce trimestre | cette année »). */
+    period: { label: string; amount: number; count: number; prevAmount: number; prevLabel: string | null; deltaPct: number | null }
     open: { amount: number; count: number }
     late: { amount: number; count: number; oldestDays: number }
     dueSoon: { amount: number; count: number; untilLabel: string }
@@ -188,6 +203,13 @@ export function monthKey(iso: string, delta = 0): string {
   const [y, m] = parts(iso)
   const d = new Date(Date.UTC(y, m - 1 + delta, 1))
   return d.toISOString().slice(0, 7)
+}
+
+/** Première date d'émission à lire : le 1er du mois M-6 (graphique) ou le 1er janvier si plus tôt (indicateur « Année »). */
+export function issuedSince(today: string): string {
+  const sixMonths = `${monthKey(today, -6)}-01`
+  const january = `${today.slice(0, 4)}-01-01`
+  return january < sixMonths ? january : sixMonths
 }
 
 /** « Jeudi 1er octobre 2026 » (ou sans l'année). */
@@ -250,15 +272,11 @@ export const plural = (n: number, one: string, many: string) => (n > 1 ? many : 
 /* Liens (réel ou démo)                                                */
 /* ------------------------------------------------------------------ */
 
-/** Chemin réel → chemin de la démo (les écrans absents de la démo mènent à leur rubrique). */
+/** Chemin réel → chemin de la démo (la démo n'a pas de page de modification : on ouvre la fiche). */
 export function demoPath(path: string): string {
   if (path === "/dashboard") return "/demo"
-  if (path.startsWith("/settings/ppf")) return "/demo/settings/ppf"
-  if (path.startsWith("/settings")) return "/demo/settings"
-  if (path.startsWith("/purchase-orders/new")) return "/signup"
   const edit = path.match(/^\/(invoices|quotes)\/([^/?]+)\/edit$/)
   if (edit) return `/demo/${edit[1]}/${edit[2]}`
-  if (/^\/clients\/(?!new)[^/?]+$/.test(path)) return "/demo/clients"
   return "/demo" + path
 }
 
@@ -278,30 +296,64 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
   const fmt = (n: number) =>
     new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2 }).format(n)
 
-  /* ── Graphique : 6 mois complets + le mois en cours ── */
+  /* ── Totaux mensuels facturés (historique fourni par la démo pour les mois passés) ── */
   const currentKey = monthKey(today)
   const prevKey = monthKey(today, -1)
+  const monthTotal = (key: string): { value: number; count: number | null } => {
+    const history = key === currentKey ? undefined : input.monthlyHistory?.find((h) => h.month === key)
+    if (history) return { value: history.value, count: history.count ?? null }
+    const ofMonth = input.issued.filter((inv) => inv.issue_date?.startsWith(key))
+    return { value: sum(ofMonth), count: ofMonth.length }
+  }
+  const totalOf = (keys: string[]) =>
+    keys.reduce(
+      (acc, k) => {
+        const t = monthTotal(k)
+        return { value: Math.round((acc.value + t.value) * 100) / 100, count: acc.count + (t.count ?? 0) }
+      },
+      { value: 0, count: 0 },
+    )
+
+  /* ── Graphique : 6 mois complets + le mois en cours ── */
   const chart: ChartMonth[] = Array.from({ length: 7 }, (_, i) => {
     const key = monthKey(today, i - 6)
     const labels = monthLabels(key)
-    const ofMonth = input.issued.filter((inv) => inv.issue_date?.startsWith(key))
-    const history = key === currentKey ? undefined : input.monthlyHistory?.find((h) => h.month === key)
+    const total = monthTotal(key)
     return {
       key,
       short: labels.short,
       long: labels.long,
-      value: history ? history.value : sum(ofMonth),
-      count: history ? history.count ?? null : ofMonth.length,
+      value: total.value,
+      count: total.count,
       current: key === currentKey,
       highlight: key === prevKey,
     }
   })
   const monthNow = chart[6]
   const monthPrev = chart[5]
-  const deltaPct =
-    monthNow.value > 0 && monthPrev.value > 0
-      ? Math.round(((monthNow.value - monthPrev.value) / monthPrev.value) * 100)
-      : null
+  const pct = (now: number, prev: number) => (now > 0 && prev > 0 ? Math.round(((now - prev) / prev) * 100) : null)
+  const deltaPct = pct(monthNow.value, monthPrev.value)
+
+  /* ── Premier indicateur selon la période (trimestre civil, année civile) ── */
+  const period = input.period ?? "mois"
+  const monthIndex = Number(today.slice(5, 7)) - 1
+  const monthsBack = (from: number, n: number) => Array.from({ length: n }, (_, i) => monthKey(today, from - i))
+  let periodKpi: DashboardView["kpi"]["period"]
+  if (period === "trimestre") {
+    const inQuarter = monthIndex % 3
+    const now = totalOf(monthsBack(0, inQuarter + 1))
+    const prev = totalOf(monthsBack(-inQuarter - 1, 3))
+    periodKpi = { label: "Facturé ce trimestre", amount: now.value, count: now.count, prevAmount: prev.value, prevLabel: "le trimestre précédent", deltaPct: pct(now.value, prev.value) }
+  } else if (period === "annee") {
+    const now = totalOf(monthsBack(0, monthIndex + 1))
+    // Pas de comparaison à l'année précédente : ses factures ne sont pas lues
+    periodKpi = { label: "Facturé cette année", amount: now.value, count: now.count, prevAmount: 0, prevLabel: null, deltaPct: null }
+  } else {
+    periodKpi = {
+      label: "Facturé ce mois", amount: monthNow.value, count: monthNow.count ?? 0,
+      prevAmount: monthPrev.value, prevLabel: monthLabels(prevKey).name, deltaPct,
+    }
+  }
 
   /* ── Factures en cours, en retard, à échoir ── */
   const open = input.open.filter((i) => isOpen(i.status))
@@ -349,7 +401,7 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
       icon: "list",
       title: `${rest} autre${rest > 1 ? "s" : ""} facture${rest > 1 ? "s" : ""} en retard`,
       meta: fmt(sum(late.slice(3))),
-      href: href("/invoices?status=overdue"),
+      href: href("/invoices?filtre=retard"),
       action: { kind: "link", label: "Voir" },
     })
   }
@@ -414,7 +466,7 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
       icon: "draft",
       title: `${input.drafts.length} factures en brouillon`,
       meta: `À vérifier puis envoyer · ${fmt(sum(input.drafts))}`,
-      href: href("/invoices"),
+      href: href("/invoices?filtre=brouillons"),
       action: { kind: "link", label: "Voir" },
     })
   }
@@ -433,14 +485,14 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
     .map((c) => ({ key: c.key, name: c.name, total: c.total, href: c.clientId ? href(`/clients/${c.clientId}`) : null }))
 
   /* ── Tuile « Relancer » (mobile) ── */
-  const remindHref =
-    late.length === 1 ? href(`/invoices/${late[0].id}`) : late.length > 1 ? href("/invoices?status=overdue") : href("/invoices")
+  const remindHref = late.length === 1 ? href(`/invoices/${late[0].id}`) : href("/invoices?filtre=retard")
 
   const company = input.company
   const isNewAccount = input.counts.invoices === 0 && input.counts.quotes === 0
 
   return {
     mode,
+    period,
     today,
     dateLong: formatLongDate(today),
     dateShort: formatLongDate(today, false),
@@ -455,6 +507,7 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
         prevMonthName: monthLabels(prevKey).name,
         deltaPct,
       },
+      period: periodKpi,
       open: { amount: openTotal, count: open.length },
       late: { amount: sum(late), count: late.length, oldestDays },
       dueSoon: { amount: sum(dueSoon), count: dueSoon.length, untilLabel: formatShortDate(limit30) },

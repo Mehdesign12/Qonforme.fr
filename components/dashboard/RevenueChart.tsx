@@ -70,7 +70,7 @@ export function RevenueChart({ chart, recoveryRate }: { chart: ChartMonth[]; rec
                       )}
                     >
                       {m.value > 0 ? formatCompactEuro(m.value) : "0\u00a0€"}
-                      {m.current && " à ce jour"}
+                      {m.current && <span className="max-sm:sr-only"> à ce jour</span>}
                     </span>
                   )}
                   <div

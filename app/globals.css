@@ -32,7 +32,8 @@
     --q-bg: #F6F8FB;            /* Fond */
     --q-surface: #FFFFFF;       /* Surface : cartes, barre latérale */
     --q-surface-2: #FAFBFD;     /* Surface en retrait : carte entreprise, encarts */
-    --q-sunken: #F1F4F8;        /* Contrôles segmentés, pastille brouillon */
+    --q-sunken: #F1F4F8;        /* Pastille brouillon, fonds en retrait */
+    --q-seg-bg: #E9EDF4;        /* Rail des contrôles segmentés (visible sur le fond #F6F8FB) */
     --q-hover: #F2F5FA;         /* Survol d'une entrée de menu */
     --q-row-hover: #F9FAFC;     /* Survol d'une ligne de tableau */
     --q-line: #E6E9F0;          /* Trait : bord des cartes */
@@ -111,6 +112,7 @@
     --q-surface: #0F172A;
     --q-surface-2: #111C31;
     --q-sunken: #16213A;
+    --q-seg-bg: #16213A;
     --q-hover: #17233B;
     --q-row-hover: #131F35;
     --q-line: #1E2A40;
@@ -811,7 +813,7 @@ html[data-standalone="true"] [role="button"] {
   .q-tag { display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 6px; border: 1px solid var(--q-line); font-size: 11px; font-weight: 600; color: var(--q-text-3); background: var(--q-surface); }
 
   /* Contrôle segmenté et onglets */
-  .q-seg { display: inline-flex; background: var(--q-sunken); border-radius: 10px; padding: 3px; gap: 2px; }
+  .q-seg { display: inline-flex; background: var(--q-seg-bg); border-radius: 10px; padding: 3px; gap: 2px; }
   .q-seg > button, .q-seg > a {
     height: 32px; padding: 0 12px; border: none; border-radius: 8px; background: transparent;
     font-size: 13px; font-weight: 600; color: var(--q-text-3); white-space: nowrap; cursor: pointer;

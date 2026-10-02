@@ -64,6 +64,13 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
     void markOnboardingSeen()
   }, [])
 
+  // Échap ferme la fenêtre, comme « Je ferai ça plus tard »
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   async function handleAction(href: string, id: string) {
     setLoading(id)
     onClose()

@@ -11,18 +11,27 @@
  * la transmission par plateforme agréée et le paiement partiel ne sont pas
  * livrés (DECISIONS-STRATEGIQUES.md § 10).
  */
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Archive, ChevronRight, FileText, Plus, RotateCcw, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
-import { DocStatusPill, EmptyState, PageHeader, SearchField } from "@/components/app/kit"
+import { DocStatusPill, EmptyState, Kpi, KpiGrid, PageHeader, SearchField } from "@/components/app/kit"
 import {
   type InvoiceListItem, OPEN_STATUSES, daysLate, isLate, isOpen, normalize, plural, shortDate, yearOf,
 } from "@/components/invoices/invoice-view"
 
 type TabKey = "all" | "open" | "late" | "draft" | "paid" | "archived"
+
+/** Valeurs de « ?filtre= » acceptées dans l'URL. */
+const FILTER_PARAM: Record<string, TabKey> = {
+  "a-encaisser": "open",
+  retard: "late",
+  brouillons: "draft",
+  payees: "paid",
+  archives: "archived",
+}
 
 const TABS: { key: TabKey; label: string; empty: string }[] = [
   { key: "all",      label: "Toutes",      empty: "Aucune facture" },
@@ -59,6 +68,15 @@ export function InvoiceList({
   const router = useRouter()
   const [tab, setTab] = useState<TabKey>("all")
   const [query, setQuery] = useState("")
+
+  // Onglet demandé par un lien (tableau de bord : « ?filtre=retard ») ; lu après le
+  // montage pour ne pas imposer de frontière Suspense à useSearchParams.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const wanted = params.get("archived") === "true" ? "archives" : params.get("filtre")
+    const fromUrl = wanted ? FILTER_PARAM[wanted] : undefined
+    if (fromUrl) setTab(fromUrl)
+  }, [])
 
   const year = yearOf(today)
 
@@ -130,9 +148,14 @@ export function InvoiceList({
       />
 
       <div className="flex flex-col gap-4">
-        {/* Onglets — ordinateur : soulignés, avec compteur */}
+        {/* Onglets — ordinateur : soulignés, avec compteur (réduits à « Factures · Avoirs » tant qu'il n'y a aucune facture) */}
         <div role="tablist" aria-label="Filtrer les factures" className="q-tabs hidden md:flex">
-          {TABS.map((t) => {
+          {noInvoiceYet ? (
+            <button type="button" role="tab" aria-selected>
+              Factures
+              {tabCount(0, true)}
+            </button>
+          ) : TABS.map((t) => {
             const active = tab === t.key
             return (
               <button key={t.key} type="button" role="tab" aria-selected={active} onClick={() => setTab(t.key)}>
@@ -149,7 +172,7 @@ export function InvoiceList({
         </div>
 
         {/* Recherche (au-dessus des pastilles sur mobile, sous les onglets sur ordinateur) */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={cn("flex flex-wrap items-center gap-2", noInvoiceYet && "hidden")}>
           <SearchField
             value={query}
             onChange={setQuery}
@@ -160,7 +183,7 @@ export function InvoiceList({
         </div>
 
         {/* Onglets — mobile : pastilles défilantes */}
-        <div role="tablist" aria-label="Filtrer les factures" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
+        <div role="tablist" aria-label="Filtrer les factures" className={cn("-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden", noInvoiceYet && "!hidden")}>
           {TABS.map((t) => {
             const active = tab === t.key
             const n = counts[t.key]
@@ -210,6 +233,13 @@ export function InvoiceList({
           />
         </section>
       ) : noInvoiceYet && tab !== "archived" ? (
+        <>
+        {/* Compte neuf : les indicateurs de suivi, à zéro (planche Factures-vide) */}
+        <KpiGrid className="lg:grid-cols-3">
+          <Kpi label="À encaisser" value={formatCurrency(0)} sub="Aucune facture en attente" />
+          <Kpi label="En retard" value="0" sub="Rien à relancer" />
+          <Kpi label="Brouillons" value="0" sub="Aucun brouillon en cours" className="col-span-2 lg:col-span-1" />
+        </KpiGrid>
         <section className="q-card">
           <EmptyState
             className="py-14"
@@ -227,6 +257,7 @@ export function InvoiceList({
             }
           />
         </section>
+        </>
       ) : rows.length === 0 ? (
         <section className="q-card">
           <EmptyState

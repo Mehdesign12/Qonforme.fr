@@ -175,6 +175,8 @@ function invoice(
 
 /** Du plus récent au plus ancien. */
 export const DEMO_INVOICES: DemoInvoice[] = [
+  invoice("F-2026-0146", "clos", "Ravalement intérieur · solde", "sent", "2026-10-01", "2026-10-31",
+    [line("1", "main-oeuvre", 38), line("2", "bandes", 64), line("3", "echafaudage", 2)], { sent_at: "2026-10-01", quote_number: "D-2026-029" }),
   invoice("F-2026-0145", "morel", "Reprise de plafond et finitions", "draft", "2026-10-01", "2026-10-31",
     [line("1", "lissage", 24), line("2", "bandes", 24), line("3", "deplacement", 1)]),
   invoice("F-2026-0144", "bati-ouest", "Résidence Les Tilleuls · lot 4", "draft", "2026-10-01", "2026-10-31",
@@ -258,6 +260,8 @@ export const DEMO_QUOTES: DemoQuote[] = [
     [line("1", "cloison", 24), line("2", "bandes", 24), line("3", "deplacement", 1)]),
   quote("D-2026-030", "sci-tilleuls", "Rénovation du hall", "accepted", "2026-08-28", "2026-09-27",
     [line("1", "faux-plafond", 64), line("2", "lissage", 64), line("3", "bandes", 128), line("4", "echafaudage", 4)], { converted_invoice_number: "F-2026-0141" }),
+  quote("D-2026-029", "clos", "Ravalement intérieur de la cage d'escalier", "accepted", "2026-08-20", "2026-09-19",
+    [line("1", "main-oeuvre", 64), line("2", "bandes", 64), line("3", "echafaudage", 2)], { converted_invoice_number: "F-2026-0135" }),
   quote("D-2026-028", "habitat-loire", "Extension maison individuelle · lot cloisons", "accepted", "2026-08-12", "2026-09-11",
     [line("1", "cloison", 54), line("2", "bandes", 54), line("3", "deplacement", 1)], { converted_invoice_number: "F-2026-0143" }),
   quote("D-2026-027", "arvel", "Lot cloisons et doublages", "accepted", "2026-07-28", "2026-08-27",

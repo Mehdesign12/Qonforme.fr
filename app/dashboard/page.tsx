@@ -6,12 +6,13 @@ import DashboardClient from '@/components/dashboard/DashboardClient'
 import { DashboardBody } from '@/components/dashboard/DashboardBody'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
 import { getDashboardView } from '@/components/dashboard/data'
-import { todayInParis, type DashboardInput } from '@/components/dashboard/model'
+import { parsePeriod, todayInParis, type DashPeriod, type DashboardInput } from '@/components/dashboard/model'
 
 export const metadata: Metadata = { title: 'Tableau de bord' }
 export const dynamic = 'force-dynamic'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: { periode?: string } }) {
+  const period = parsePeriod(searchParams?.periode)
   let userId: string | null = null
   let firstName = ''
   let company: DashboardInput['company'] = null
@@ -52,7 +53,7 @@ export default async function DashboardPage() {
 
   return (
     <Suspense fallback={<DashboardSkeleton />}>
-      <DashboardContent userId={userId} firstName={firstName} company={company} showWelcome={showWelcome} />
+      <DashboardContent userId={userId} firstName={firstName} company={company} showWelcome={showWelcome} period={period} />
     </Suspense>
   )
 }
@@ -63,14 +64,16 @@ async function DashboardContent({
   firstName,
   company,
   showWelcome,
+  period,
 }: {
   userId: string | null
   firstName: string
   company: DashboardInput['company']
   showWelcome: boolean
+  period: DashPeriod
 }) {
   const supabase = await createClient()
-  const view = await getDashboardView({ supabase, userId, firstName, company, today: todayInParis() })
+  const view = await getDashboardView({ supabase, userId, firstName, company, today: todayInParis(), period })
 
   return (
     <DashboardClient showWelcome={showWelcome} inline={view.isNewAccount}>
