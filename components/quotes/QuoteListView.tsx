@@ -9,8 +9,9 @@
  * réponse, acceptés et taux d'acceptation sur 90 jours.
  *
  * Pastilles : le kit compose `q-pill-${tone}` à la volée, que Tailwind ne voit
- * pas ; les noms complets cités ici (q-pill-danger, q-pill-neutral) gardent
- * ces classes dans la feuille de style générée.
+ * pas. Les noms complets cités sur la ligne suivante gardent ces classes dans
+ * la feuille de style générée (« Refusé » en rouge, « Brouillon » en gris) :
+ * q-pill-danger q-pill-neutral
  */
 import { useMemo, useState } from "react"
 import Link from "next/link"

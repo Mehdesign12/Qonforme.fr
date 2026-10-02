@@ -1,13 +1,13 @@
 "use client"
 
 /**
- * Fiche d'un devis (canevas « Devis-detail », « Devis-envoye »,
- * « Devis-detail-accepte », « Mobile-devis-D-2026-037 »).
+ * Fiche d'un devis (canevas « Devis-detail », « Devis-envoye »,
+ * « Devis-detail-accepte », « Mobile-devis-D-2026-037 »).
  *
  * Composant de présentation partagé par /quotes/[id] (API) et
  * /demo/quotes/[id] (lib/demo/data.ts). Les actions arrivent par `actions` :
  * la page réelle appelle les routes (statuts filtrés côté serveur par
- * lib/utils/document-status.ts), la démo affiche « Créez un compte… ».
+ * lib/utils/document-status.ts), la démo affiche « Créez un compte… ».
  *
  * Honnêteté (DECISIONS-STRATEGIQUES.md) : pas de signature en ligne, de suivi
  * d'ouverture, de relance automatique ni d'acompte, fonctions non livrées.
@@ -125,7 +125,7 @@ export function QuoteDetailView({
 }: {
   quote: QuoteDetailData
   company: QuoteDetailCompany | null
-  /** « Aujourd'hui » (AAAA-MM-JJ) : date du navigateur, ou date fixe de la démo. */
+  /** « Aujourd'hui » (AAAA-MM-JJ) : date du navigateur, ou date fixe de la démo. */
   today: string
   actions: QuoteDetailActions
   busy?: QuoteDetailBusy
@@ -148,7 +148,7 @@ export function QuoteDetailView({
   const closeModal = () => setModal(null)
   const openModal = (k: ModalKey) => () => setModal(k)
 
-  /* ── Actions communes (en-tête, barre mobile, feuille « Plus ») ── */
+  /* ── Actions communes (en-tête, barre mobile, feuille « Plus ») ── */
   const send = async () => {
     const ok = await actions.onSend()
     if (ok || demo) setModal(null)
@@ -243,13 +243,13 @@ export function QuoteDetailView({
     headerActions = [
       pdfBtn(), dupBtn(), printBtn,
       <Act key="resend" label="Renvoyer par email" icon={RefreshCw} onClick={openModal("send")} loading={busy.send} />,
-      <Act key="rej" label="Refusé ?" onClick={openModal("reject")} />,
+      <Act key="rej" label="Refusé ?" onClick={openModal("reject")} />,
       <Act key="acc" label="Marquer accepté" icon={Check} variant="primary" onClick={openModal("accept")} loading={busy.status} />,
     ]
   } else if (s === "sent") {
     headerActions = [
       pdfBtn(), printBtn,
-      <Act key="rej" label="Refusé ?" onClick={openModal("reject")} />,
+      <Act key="rej" label="Refusé ?" onClick={openModal("reject")} />,
       <Act key="acc" label="Marquer accepté" icon={Check} onClick={openModal("accept")} loading={busy.status} />,
       dupBtn("Renouveler le devis", true),
     ]
@@ -288,7 +288,7 @@ export function QuoteDetailView({
 
       {/* Bandeaux */}
       {justSent && (
-        <div role="status" className="q-banner q-banner-ok flex-wrap items-center">
+        <div role="status" className="q-banner q-banner-ok flex-wrap items-center print:hidden">
           <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden />
           <span className="min-w-[220px] flex-1 text-[15px] leading-snug">
             <strong className="font-semibold">Devis envoyé à {justSent}.</strong> Le PDF est joint à l&apos;email.
@@ -300,15 +300,19 @@ export function QuoteDetailView({
         </div>
       )}
       {s === "accepted" && !quote.converted && (
-        <div role="status" className="q-banner items-center">
+        <div role="status" className="q-banner flex-wrap items-center print:hidden">
           <CheckCircle2 className="size-5 shrink-0" aria-hidden />
-          <span className="flex-1 text-[15px] leading-snug">
-            <strong className="font-semibold">Devis accepté.</strong> Prochaine étape : le convertir en facture ({formatCurrency(quote.total_ttc)} TTC), à relire avant l&apos;envoi.
+          <span className="min-w-[220px] flex-1 text-[15px] leading-snug">
+            <strong className="font-semibold">Devis accepté.</strong> Prochaine étape : le convertir en facture ({formatCurrency(quote.total_ttc)} TTC), à relire avant l&apos;envoi.
+          </span>
+          {/* Sur mobile, la barre d'actions du bas porte déjà la conversion */}
+          <span className="hidden lg:inline-flex">
+            <Act label="Convertir en facture" icon={FileText} variant="primary" size="sm" onClick={openModal("convert")} loading={busy.convert} />
           </span>
         </div>
       )}
       {quote.converted && quote.converted_invoice && (
-        <div role="status" className="q-banner q-banner-ok flex-wrap items-center">
+        <div role="status" className="q-banner q-banner-ok flex-wrap items-center print:hidden">
           <CheckCircle2 className="size-5 shrink-0" aria-hidden />
           <span className="min-w-[220px] flex-1 text-[15px] leading-snug">
             <strong className="font-semibold">Devis converti en facture{invoiceNumber ? ` ${invoiceNumber}` : ""}.</strong> Elle se trouve dans vos factures.
@@ -317,16 +321,16 @@ export function QuoteDetailView({
         </div>
       )}
       {expired && (
-        <div role="status" className="q-banner q-banner-warn items-center">
+        <div role="status" className="q-banner q-banner-warn items-center print:hidden">
           <Clock className="size-5 shrink-0" aria-hidden />
           <span className="flex-1 text-[15px] leading-snug">
-            <strong className="font-semibold">Ce devis a expiré le {longDate(quote.valid_until)}.</strong> Un devis envoyé ne se modifie plus : dupliquez-le pour proposer une version à jour.
+            <strong className="font-semibold">Ce devis a expiré le {longDate(quote.valid_until)}.</strong> Un devis envoyé ne se modifie plus : dupliquez-le pour proposer une version à jour.
           </span>
         </div>
       )}
 
       {/* En-tête (ordinateur) */}
-      <div className="hidden flex-wrap items-end justify-between gap-4 lg:flex">
+      <div className="hidden flex-wrap items-end justify-between gap-4 lg:flex print:hidden">
         <div className="flex min-w-0 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2.5">
             <span className="font-mono text-sm text-[var(--q-text-3)]">{quote.quote_number}</span>
@@ -340,7 +344,7 @@ export function QuoteDetailView({
       </div>
 
       {/* Carte de tête (mobile) */}
-      <section className="q-card flex flex-col gap-3.5 rounded-[22px] p-[18px] lg:hidden" aria-label="Résumé du devis">
+      <section className="q-card flex flex-col gap-3.5 rounded-[22px] p-[18px] lg:hidden print:hidden" aria-label="Résumé du devis">
         <div className="flex flex-col gap-1">
           <h1 className="text-[13px] font-normal leading-snug text-[var(--q-text-3)]">{title}</h1>
           <span className="text-[13px] text-[var(--q-text-3)]">Montant TTC</span>
@@ -356,7 +360,7 @@ export function QuoteDetailView({
       </section>
 
       {/* Indicateurs (ordinateur) */}
-      <KpiGrid className="hidden lg:grid">
+      <KpiGrid className="hidden lg:grid print:hidden">
         <Kpi label="Total TTC" value={formatCurrency(quote.total_ttc)} sub={`${formatCurrency(quote.subtotal_ht)} HT · ${vatRatesLabel(quote.lines)}`} />
         <Kpi label="Date du devis" value={shortDate(quote.issue_date)} sub={plural(quote.lines.length, "prestation")} />
         <Kpi label="Validité" value={validityKpi.value} sub={validityKpi.sub} tone={s === "sent" && expired ? "warn" : "default"} />
@@ -366,18 +370,18 @@ export function QuoteDetailView({
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* Colonne principale */}
         <div className="flex min-w-0 flex-col gap-4">
-          <section aria-label="Aperçu du devis" className="q-paper-bed hidden justify-center lg:flex">
+          <section aria-label="Aperçu du devis" className="q-paper-bed hidden justify-center lg:flex print:flex print:border-0 print:bg-transparent print:!p-0">
             <QuotePaper quote={quote} company={company} companySettings={links.companySettings} />
           </section>
 
           {/* Suivi (mobile : avant les prestations, comme le canevas) */}
-          <section aria-label="Suivi du devis" className="q-card rounded-[22px] p-[18px] lg:hidden">
+          <section aria-label="Suivi du devis" className="q-card rounded-[22px] p-[18px] lg:hidden print:hidden">
             <h2 className="q-h2 mb-3.5">Suivi du devis</h2>
             <Timeline events={events} />
           </section>
 
           {/* Prestations (mobile) */}
-          <section aria-label="Prestations" className="flex flex-col gap-2 lg:hidden">
+          <section aria-label="Prestations" className="flex flex-col gap-2 lg:hidden print:hidden">
             <div className="flex items-baseline justify-between">
               <h2 className="q-h2">Prestations</h2>
               <span className="text-[13px] tabular-nums text-[var(--q-text-4)]">{quote.lines.length}</span>
@@ -405,7 +409,7 @@ export function QuoteDetailView({
           </section>
 
           {quote.notes && (
-            <section aria-label="Notes et conditions" className="q-card flex flex-col gap-2 p-[18px] lg:hidden">
+            <section aria-label="Notes et conditions" className="q-card flex flex-col gap-2 p-[18px] lg:hidden print:hidden">
               <h2 className="q-h2">Notes et conditions</h2>
               <p className="whitespace-pre-line text-sm leading-relaxed text-[var(--q-text-3)]">{quote.notes}</p>
             </section>
@@ -413,7 +417,7 @@ export function QuoteDetailView({
         </div>
 
         {/* Colonne de droite */}
-        <div className="flex min-w-0 flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4 print:hidden">
           <section aria-label="Suivi du devis" className="q-card hidden p-[18px] lg:block">
             <h2 className="q-h2 mb-3.5">Suivi du devis</h2>
             <Timeline events={events} />
@@ -429,15 +433,15 @@ export function QuoteDetailView({
                 : <StatusPill tone="neutral">À envoyer</StatusPill>}
             </div>
             <p className="text-[13px] leading-normal text-[var(--q-text-3)]">
-              {s === "draft" && "Une fois le devis envoyé, votre client donne son accord en vous retournant le devis daté et signé, avec la mention « Bon pour accord ». Vous le marquez alors comme accepté."}
-              {s === "sent" && "Votre client donne son accord en vous retournant le devis daté et signé, avec la mention « Bon pour accord ». Dès réception, marquez-le comme accepté."}
-              {s === "accepted" && "Accord enregistré. Conservez le devis signé par votre client avec vos documents : il vaut commande."}
+              {s === "draft" && "Une fois le devis envoyé, votre client donne son accord en vous retournant le devis daté et signé, avec la mention « Bon pour accord ». Vous le marquez alors comme accepté."}
+              {s === "sent" && "Votre client donne son accord en vous retournant le devis daté et signé, avec la mention « Bon pour accord ». Dès réception, marquez-le comme accepté."}
+              {s === "accepted" && "Accord enregistré. Conservez le devis signé par votre client avec vos documents : il vaut commande."}
               {s === "rejected" && "Le client a refusé ce devis. Dupliquez-le pour lui proposer une nouvelle version."}
             </p>
             {s === "sent" && (
               <div className="flex flex-wrap gap-2">
                 <Act label="Marquer accepté" icon={Check} variant="primary" size="sm" onClick={openModal("accept")} loading={busy.status} />
-                <Act label="Refusé ?" size="sm" onClick={openModal("reject")} />
+                <Act label="Refusé ?" size="sm" onClick={openModal("reject")} />
               </div>
             )}
             {s === "rejected" && (
@@ -452,8 +456,8 @@ export function QuoteDetailView({
               <h2 className="q-h2">Suite du devis</h2>
               <p className="text-[13px] leading-normal text-[var(--q-text-3)]">
                 {s === "accepted"
-                  ? "Créez la facture en un clic : elle reprend le client et les lignes du devis, en brouillon, pour que vous la relisiez avant de l'envoyer."
-                  : "Le client a donné son accord ? Convertissez directement le devis en facture brouillon : il passe alors en « Accepté »."}
+                  ? "Créez la facture en un clic : elle reprend le client et les lignes du devis, en brouillon, pour que vous la relisiez avant de l'envoyer."
+                  : "Le client a donné son accord ? Convertissez directement le devis en facture brouillon : il passe alors en « Accepté »."}
               </p>
               <div className="flex flex-wrap gap-2">
                 <Act label="Convertir en facture" icon={FileText} variant={s === "accepted" ? "primary" : "secondary"} size="sm" onClick={openModal("convert")} loading={busy.convert} />
@@ -553,7 +557,7 @@ export function QuoteDetailView({
             ? <span className="truncate font-mono text-[13px] text-[var(--q-text-3)]">{quote.client.email}</span>
             : (
               <span className="text-[13px] text-[var(--q-danger)]">
-                Aucune adresse email : ajoutez-en une dans la{" "}
+                Aucune adresse email : ajoutez-en une dans la{" "}
                 {quote.client?.href ? <Link href={quote.client.href} className="underline">fiche client</Link> : "fiche client"}.
               </span>
             )}
@@ -564,7 +568,7 @@ export function QuoteDetailView({
             : <>Le devis <strong className="font-semibold text-[var(--q-ink)]">{quote.quote_number}</strong> est renvoyé par email avec son PDF, sans changer de statut.</>}
         </p>
         <p className="text-xs text-[var(--q-text-4)]">
-          Objet : <span className="font-medium text-[var(--q-text-2)]">Devis {quote.quote_number} — {company?.name || "votre entreprise"}</span>
+          Objet : <span className="font-medium text-[var(--q-text-2)]">Devis {quote.quote_number} — {company?.name || "votre entreprise"}</span>
         </p>
       </QuoteModal>
 
@@ -573,14 +577,14 @@ export function QuoteDetailView({
         onOpenChange={(o) => !o && closeModal()}
         compact={compact}
         title="Marquer comme accepté"
-        description={`${clientName ?? "Le client"} vous a donné son accord ?`}
+        description={`${clientName ?? "Le client"} vous a donné son accord ?`}
         actions={[
           { label: "Oui, il est accepté", icon: busy.status ? <Loader2 className="animate-spin" aria-hidden /> : <Check aria-hidden />, variant: "primary", onClick: () => setStatus("accepted"), disabled: busy.status },
           { label: "Il a refusé", icon: <X aria-hidden />, variant: "danger", onClick: () => setStatus("rejected"), disabled: busy.status },
         ]}
       >
         <InfoNote>
-          Le devis passe en « Accepté » et vous pourrez le convertir en facture. Gardez le devis signé par votre client : il vaut commande.
+          Le devis passe en « Accepté » et vous pourrez le convertir en facture. Gardez le devis signé par votre client : il vaut commande.
         </InfoNote>
       </QuoteModal>
 
@@ -589,13 +593,13 @@ export function QuoteDetailView({
         onOpenChange={(o) => !o && closeModal()}
         compact={compact}
         title="Marquer comme refusé"
-        description="Le client vous a répondu que non ?"
+        description="Le client vous a répondu que non ?"
         actions={[
           { label: "Marquer comme refusé", icon: busy.status ? <Loader2 className="animate-spin" aria-hidden /> : <X aria-hidden />, variant: "danger", onClick: () => setStatus("rejected"), disabled: busy.status },
         ]}
       >
         <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
-          Le devis passe en « Refusé » et ne pourra plus être accepté. Vous pourrez le dupliquer pour proposer une nouvelle version.
+          Le devis passe en « Refusé » et ne pourra plus être accepté. Vous pourrez le dupliquer pour proposer une nouvelle version.
         </p>
       </QuoteModal>
 
@@ -611,7 +615,7 @@ export function QuoteDetailView({
       >
         <InfoNote>
           Une facture brouillon est créée avec le client et les lignes du devis. Vous la relisez avant de l&apos;envoyer.
-          {s === "sent" && " Le devis passe en « Accepté »."}
+          {s === "sent" && " Le devis passe en « Accepté »."}
         </InfoNote>
       </QuoteModal>
 
@@ -626,7 +630,7 @@ export function QuoteDetailView({
         ]}
       />
 
-      {/* Feuille « Plus d'actions » (mobile) */}
+      {/* Feuille « Plus d'actions » (mobile) */}
       <Sheet open={modal === "more"} onOpenChange={(o) => !o && closeModal()}>
         <SheetContent side="bottom" showCloseButton={false} className="max-h-[85dvh] gap-3 overflow-y-auto px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-2">
           <div className="q-sheet-grip" aria-hidden />
@@ -781,7 +785,7 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
             </span>
             <span className={cn("flex min-w-0 flex-col gap-0.5", !last && "pb-3.5")}>
               <span className="text-sm font-semibold text-[var(--q-ink)]">
-                <span className="sr-only">{e.state === "todo" ? "À venir : " : "Fait : "}</span>
+                <span className="sr-only">{e.state === "todo" ? "À venir : " : "Fait : "}</span>
                 {e.title}
               </span>
               {e.sub && <span className="break-words text-xs tabular-nums text-[var(--q-text-4)]">{e.sub}</span>}

@@ -15,16 +15,16 @@ import type { ShellIdentity } from "@/components/layout/shell"
 export function AppShellFrame({ identity, children }: { identity: ShellIdentity; children: React.ReactNode }) {
   return (
     <CrumbProvider>
-      <div className="flex h-[100dvh] overflow-hidden bg-[var(--q-bg)]">
+      <div className="flex h-[100dvh] overflow-hidden bg-[var(--q-bg)] print:block print:h-auto print:overflow-visible print:bg-white">
         <Sidebar identity={identity} />
         <div
-          className="relative flex min-w-0 flex-1 flex-col overflow-y-auto"
+          className="relative flex min-w-0 flex-1 flex-col overflow-y-auto print:block print:overflow-visible"
           style={{ background: "var(--dashboard-bg)", overscrollBehavior: "none" }}
         >
           <Header identity={identity} />
           <main
             id="contenu"
-            className="mx-auto flex w-full max-w-[1240px] flex-1 flex-col gap-5 px-4 pb-[calc(112px+env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] md:px-6 lg:pb-10 lg:pt-7"
+            className="mx-auto flex w-full max-w-[1240px] flex-1 flex-col gap-5 px-4 pb-[calc(112px+env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] md:px-6 lg:pb-10 lg:pt-7 print:max-w-none print:p-0"
           >
             {children}
           </main>

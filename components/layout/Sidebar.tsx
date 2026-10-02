@@ -158,7 +158,7 @@ export function Sidebar({ identity }: { identity: ShellIdentity }) {
   return (
     <aside
       aria-label="Navigation de l'application"
-      className="hidden w-[252px] shrink-0 flex-col gap-[18px] overflow-y-auto border-r border-[var(--q-line)] bg-[var(--q-surface)] px-3.5 py-[18px] lg:flex"
+      className="hidden w-[252px] shrink-0 print:!hidden flex-col gap-[18px] overflow-y-auto border-r border-[var(--q-line)] bg-[var(--q-surface)] px-3.5 py-[18px] lg:flex"
     >
       <div className="flex items-center justify-between px-1.5 py-1">
         <Link href={home} className="flex" aria-label="Qonforme, tableau de bord">
@@ -417,7 +417,7 @@ export function MobileBottomNav({ identity }: { identity: ShellIdentity }) {
     <>
       <nav
         aria-label="Navigation mobile"
-        className="q-float fixed inset-x-3 z-40 flex h-[68px] items-stretch rounded-3xl px-1 lg:hidden"
+        className="q-float fixed inset-x-3 z-40 flex h-[68px] items-stretch rounded-3xl px-1 lg:hidden print:hidden"
         style={{ bottom: "max(16px, env(safe-area-inset-bottom))" }}
       >
         {tabs.map((t) => <Tab key={t.link.key} {...t} />)}

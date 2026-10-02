@@ -40,7 +40,7 @@ export default function DemoQuoteDetailPage({ params }: { params: { id: string }
     total_vat: q.total_vat,
     total_ttc: q.total_ttc,
     notes: q.notes ?? null,
-    client: { ...q.client, href: "/demo/clients" },
+    client: { ...q.client, href: `/demo/clients/${q.client.id}` },
     converted: !!q.converted_invoice_number,
     converted_invoice: q.converted_invoice_number
       ? { number: q.converted_invoice_number, status: invoice?.status ?? null, href: `/demo/invoices/${q.converted_invoice_number.toLowerCase()}` }
