@@ -2,7 +2,7 @@
 
 > **Document vivant.** Il consigne ce qui a été décidé avec le fondateur et ce qui reste ouvert.
 >
-> **Dernière mise à jour :** 1er octobre 2026 (accès libre au tableau de bord, aucun contact humain promis, écrans épurés, inventaire de la refonte en section 10, chaîne des documents et signature en ligne en section 11).
+> **Dernière mise à jour :** 2 octobre 2026 (abonnement, paiements et retrait de l'app native en section 12 ; grille de prix tranchée). Le 1er octobre : accès libre au tableau de bord, aucun contact humain promis, écrans épurés, inventaire de la refonte en section 10, chaîne des documents et signature en ligne en section 11.
 >
 > **Il complète `STRATEGIE-CROISSANCE-2026-10.md` (l'analyse de départ).** En cas de contradiction, **ce document fait foi**. La section 9 liste ce qu'il remplace.
 
@@ -103,7 +103,7 @@
 ## 7. Questions ouvertes
 
 1. ~~Modèle d'accès~~ : **tranché le 01/10/2026**, « devis gratuits, factures payantes » (section 8).
-2. **Grille de prix.** Proposition actuelle : Essentiel 12 € HT, Artisan 24 € HT (10 € et 20 € par mois à l'année). Plus de mise en route accompagnée : aucun contact humain n'est proposé (§ 2). L'offre gratuite « Réception » est remise en question (section 8).
+2. ~~Grille de prix~~ : **tranchée le 02/10/2026**, Essentiel 12 € HT et Artisan 24 € HT (10 € et 20 € par mois à l'année), appliquée à tous : aucun abonné payant à reprendre (section 12).
 3. **Plateforme agréée partenaire** pour devenir « Solution compatible » : Super PDP, Iopole ou autre.
    - Coût réel pour un éditeur à confirmer.
    - Repère public chez Super PDP : vérification d'identité de l'entreprise à 2 € HT par entreprise, plus un coût par facture.
@@ -229,10 +229,10 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 
 | Apport | Aujourd'hui | Valeur |
 |---|---|---|
-| « Devis gratuits, factures payantes » : application ouverte sans abonnement, paiement à la première facture | **À construire** : paiement obligatoire avant tout usage, seule limite `canCreateInvoice` | Lève le principal frein pour un premier logiciel |
-| Grille Essentiel 12 € / Artisan 24 € HT (10 € et 20 € à l'année), satisfait ou remboursé 30 jours | **À décider** : aujourd'hui Starter 9 € (10 factures/mois) et Pro 19 € | Panier moyen plus haut, garantie qui rassure |
+| « Devis gratuits, factures payantes » : application ouverte sans abonnement, paiement à la première facture | **Construit le 02/10/2026** (§ 12) | Lève le principal frein pour un premier logiciel |
+| Grille Essentiel 12 € / Artisan 24 € HT (10 € et 20 € à l'année), satisfait ou remboursé 30 jours | **Construit le 02/10/2026** (§ 12). Artisan affiché « bientôt » tant que ses fonctions manquent | Panier moyen plus haut, garantie qui rassure |
 | Lien « Propulsé par Qonforme » cliquable, avec provenance | **Partiel** : texte seul dans les emails et les PDF | Bouche-à-oreille mesurable, sans démarchage |
-| Accueil et tarifs réécrits, sans faux avis ni promesse non tenue | **À construire** | Confiance. À noter : la FAQ tarifs affirme gérer l'autoliquidation, ce que le code ne fait pas |
+| Accueil et tarifs réécrits, sans faux avis ni promesse non tenue | **Partiel** : page tarifs, grille de l'accueil, données structurées et CGU corrigées le 02/10/2026 ; le reste de l'accueil attend la refonte | Confiance |
 
 ### Premiers pas
 
@@ -246,17 +246,17 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 | Rappel « plus tard » au moment choisi | **À construire** | Récupère les inscrits pressés |
 | Tableau de bord d'un compte neuf (premiers pas, états vides expliqués) | **Partiel** : états vides seulement | Activation |
 | Séquence de 5 emails déclenchés par les actions | **Partiel** : email de bienvenue seulement | Activation et passage au payant |
-| Logo personnalisé, avec aperçu sur un devis | **Existe** dans Paramètres › Préférences factures (import, photo depuis l'app, couleur). La maquette le place dans Paramètres › Entreprise avec un aperçu en direct | Documents à l'image de l'artisan |
+| Logo personnalisé, avec aperçu sur un devis | **Existe** dans Paramètres › Préférences factures (import, couleur). La maquette le place dans Paramètres › Entreprise avec un aperçu en direct | Documents à l'image de l'artisan |
 
 ### Devis, facture, paiement (le cœur)
 
 | Apport | Aujourd'hui | Valeur |
 |---|---|---|
 | Signature en ligne des devis et bons de commande (§ 11) | **À construire**, maquettée le 01/10/2026 : l'artisan change le statut à la main | Chantiers signés plus vite |
-| Lien de paiement par carte ou virement dans la facture, page de paiement du client | **À construire** : IBAN seulement | Payé plus vite, argument de vente fort |
+| Lien de paiement par virement dans la facture : page de règlement du client (IBAN, référence, « j'ai effectué le virement ») | **À construire** : IBAN seulement dans l'email. Pas de carte ni de prélèvement côté client (§ 12) | Payé plus vite |
 | Relances réglables (avant échéance, J+7, J+15) et relance des devis non signés | **Partiel** : J+30 et J+45 fixes, factures seulement | Trésorerie |
 | Suivi d'ouverture des devis et factures | **À construire** | L'artisan sait quand relancer |
-| Devis transformé en facture en un clic | **Existe** (ne vérifie pas la limite du plan) | — |
+| Devis transformé en facture en un clic | **Existe** ; la facture née d'un devis passe le mur de paiement à l'envoi (§ 12) | — |
 | Aperçu du document en direct pendant la saisie | **Partiel** : bouton « Aperçu PDF » | Moins d'erreurs |
 | Numéro de facture attribué à l'envoi (brouillons sans numéro) | **À construire** : numéro dès la création | Numérotation continue, conforme |
 
@@ -285,14 +285,14 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 
 | Apport | Aujourd'hui | Valeur |
 |---|---|---|
-| Application iOS (push, photo, partage) | **Existe** | — |
-| Parcours mobiles : devis sur le chantier, paiement de la première facture | **Partiel** : l'app charge le site | Le devis se fait là où se décide le chantier |
+| Site installable sur l'écran d'accueil (PWA) | **Existe**. L'app iOS native a été retirée le 02/10/2026 (§ 12) | — |
+| Parcours mobiles : devis sur le chantier, paiement de la première facture | **Partiel** : site responsive | Le devis se fait là où se décide le chantier |
 
 ### Ordre suggéré, à valider
 
 1. **Réception des factures fournisseurs et plateforme agréée.** C'est une obligation légale.
 2. **« Devis gratuits, factures payantes ».** Il faut aussi retirer de la page tarifs ce qui n'existe pas (autoliquidation, support prioritaire).
-3. **Acceptation du devis en ligne et lien de paiement.** C'est la plus grosse valeur perçue.
+3. **Signature du devis en ligne (Essentiel) et lien de paiement par virement.** C'est la plus grosse valeur perçue.
 4. **Mentions BTP automatiques et catalogue par métier.** C'est ce qui permet le premier devis en 2 minutes.
 5. **Relances réglables et correction du bug `overdue`.**
 6. **Situations, acomptes, retenue de garantie, autoliquidation.** C'est l'offre Artisan.
@@ -375,7 +375,7 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 - **Prochaine étape** proposée : l'acompte.
 
 **L'acompte :**
-- **Signature à distance :** le paiement est possible tout de suite. La page précise qu'il est remboursé en cas de rétractation.
+- **Signature à distance :** le règlement par virement est proposé tout de suite (IBAN et référence). La page précise qu'il est remboursé en cas de rétractation.
 - **Signature sur place chez le client (hors établissement) :** aucun paiement avant 7 jours (art. L221-10). Le lien d'acompte part tout seul à J+8, sauf réparation urgente demandée par le client.
 
 **Refus.** Le client choisit un motif (prix, délai, autre proposition, projet abandonné, autre) et peut ajouter un message. L'artisan est prévenu.
@@ -396,7 +396,7 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 - rétracté.
 
 **Côté artisan :**
-- **Partage :** envoi par email avec le lien, copie du lien, QR code, SMS ou WhatsApp (partage natif de l'application).
+- **Partage :** envoi par email avec le lien, copie du lien, QR code, SMS ou WhatsApp (feuille de partage du téléphone).
 - **Signature sur place :** l'artisan tend son téléphone ou sa tablette au client.
 - **Suivi :** envoyé, ouvert (combien de fois), signé.
 - **Actions :** relance automatique avant expiration, désactivation du lien, téléchargement du dossier de preuve.
@@ -436,3 +436,55 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
   - l'accord sur papier gardé en solution de secours.
 - **Réglages :** une section « Signature en ligne » dans Paramètres › Modèles de documents.
 - **Corrigé partout :** la mention « sous réserve de l'attestation du client » est remplacée par la certification à la signature.
+
+## 12. Abonnement, paiements et mobile (validé le 02/10/2026)
+
+### Décisions
+
+1. **Pas de Stripe Connect.** Qonforme n'encaisse pas pour le compte des artisans. Leurs clients les paient par virement sur leur propre IBAN. Le lien de paiement mène à une page de règlement : IBAN, BIC, montant, référence à copier, bouton « J'ai effectué le virement » qui prévient l'artisan. Pas de carte ni de prélèvement côté client, pas de frais de transaction.
+2. **Pas d'app native.** L'app iOS (Capacitor) est retirée du code. Le mobile passe par le site responsive, installable sur l'écran d'accueil (PWA). Raison : un abonnement vendu à un artisan seul relève de l'achat intégré d'Apple (règle 3.1.3(c)) ; l'autre voie (3.1.3(f)) interdit tout prix, bouton ou lien d'achat dans l'app, donc le mur de paiement à la première facture.
+3. **Grille appliquée à tous.** Aucun abonné payant à reprendre : pas d'ancien tarif à maintenir.
+   - Essentiel : 12 € HT par mois, ou 120 € HT par an (10 € par mois).
+   - Artisan : 24 € HT par mois, ou 240 € HT par an (20 € par mois). **Affiché « bientôt » et non vendu** tant que situations, retenue de garantie et autoliquidation n'existent pas : on ne vend pas ce qui n'existe pas (§ 2).
+4. **Signature en ligne des devis et bons de commande : formules Essentiel et Artisan.** Sans formule, le devis part par email avec le PDF et un lien de consultation ; l'artisan le marque accepté quand le client donne son accord (papier « Bon pour accord »).
+
+### Stripe : ce qui sert à l'abonnement seulement
+
+- **Comptes gratuits :** pas de client Stripe ni d'abonnement tant que l'artisan n'émet pas de facture.
+- **Mur de paiement côté serveur, à l'émission :** envoi d'une facture, passage hors brouillon, relance. Le brouillon reste gratuit ; son PDF porte le filigrane « BROUILLON » et n'embarque pas de Factur-X, pour qu'il ne circule pas comme une vraie facture.
+- **Après paiement,** retour sur la facture qui attendait, prête à partir.
+- **Moyens de paiement :** carte et prélèvement SEPA. Le prélèvement est confirmé en quelques jours ; l'accès est ouvert dès la fin du paiement et retiré si le prélèvement est rejeté.
+- **TVA :** prix hors taxes, TVA 20 % ajoutée par un taux Stripe. Sans ce taux configuré, le paiement est refusé plutôt que vendu sans TVA. **À confirmer :** que Qonforme SAS facture bien la TVA (n'est pas en franchise).
+- **Factures d'abonnement :** nom, adresse et SIREN de l'entreprise de l'artisan. Elles restent émises par Stripe pour l'instant. Avant septembre 2027, Qonforme devra émettre ses propres factures électroniques via la plateforme agréée.
+- **Garantie 30 jours en libre-service :** depuis Paramètres › Abonnement, sans contact humain. Remboursement par avoir Stripe, arrêt immédiat, une fois par compte.
+- **Impayé :** l'émission continue pendant que Stripe retente, avec un bandeau. Tentatives épuisées : retour à la version gratuite.
+- **Résiliation :** fin de période, sans remboursement au prorata (sauf garantie). Le compte revient en version gratuite et garde tous ses documents.
+- **Changement de période ou de formule :** au prorata, par le portail client Stripe.
+- **Conditions :** article 4 des CGU réécrit (formules, paiement, garantie, impayé, résiliation, accès aux documents).
+
+### Configuration à faire dans Stripe et Vercel
+
+1. Créer les deux prix Essentiel (12 € HT par mois et 120 € HT par an), récurrents, en tarification hors taxes.
+2. Créer le taux de TVA 20 % France, exclusif.
+3. Renseigner `STRIPE_PRICE_ESSENTIEL_MONTHLY`, `STRIPE_PRICE_ESSENTIEL_YEARLY` et `STRIPE_TAX_RATE_ID` dans Vercel.
+4. Activer le prélèvement SEPA dans le tableau de bord Stripe.
+5. Ajouter au webhook les événements `checkout.session.async_payment_succeeded` et `checkout.session.async_payment_failed`.
+6. Configurer le portail client : nouveaux prix, résiliation en fin de période.
+7. Appliquer la migration `20261002_subscriptions_server_write_only.sql`. Elle ferme la faille : un utilisateur pouvait s'écrire lui-même un abonnement actif.
+
+### Maquettes (canevas, version 18)
+
+- **Page de règlement du client :** virement seul (IBAN, BIC, montant, référence, déclaration du virement).
+- **Partout ailleurs :** plus de « payer en ligne en un clic », de carte ni de prélèvement côté client. Cela couvre les relances, les emails de facture, les réglages, les notifications, l'acompte après signature et l'accueil.
+- **Tarifs :** signature en ligne dans Essentiel, lien de paiement par virement.
+- **Compte gratuit :**
+  - devis envoyé en PDF avec un lien de consultation ;
+  - réglage « Signature en ligne » marqué « Avec Essentiel » ;
+  - onboarding et emails sans acceptation en ligne.
+- **Plus de notification sur le téléphone :** les alertes partent par email.
+
+### Reste ouvert
+
+- **Formule annuelle :** pas de remboursement au prorata après les 30 jours. C'est la pratique retenue par défaut, à confirmer.
+- **CGV distinctes des CGU :** à faire relire par un juriste.
+
