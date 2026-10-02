@@ -459,7 +459,8 @@ a,
   }
 }
 
-.blog-prose > :first-child {
+.blog-prose > :first-child,
+.blog-prose > :first-child > :first-child {
   margin-top: 0;
 }
 
@@ -724,6 +725,7 @@ html[data-standalone="true"] [role="button"] {
 .lp-btn-p:active { transform: translateY(0) scale(.985); background-color: #1D4ED8; box-shadow: inset 0 1px 2px rgba(10,17,34,.30), 0 1px 1px rgba(10,17,34,.10); transition-duration: .06s; }
 .lp-btn-s:active { transform: translateY(0) scale(.985); background-color: #F4F6F8; background-image: none; box-shadow: inset 0 1px 2px rgba(10,17,34,.10); transition-duration: .06s; }
 .lp-btn-p:focus-visible, .lp-btn-s:focus-visible { outline: 2px solid #2563EB; outline-offset: 3px; }
+.lp-btn-p:disabled, .lp-btn-s:disabled, .lp-btn-p[aria-disabled="true"], .lp-btn-s[aria-disabled="true"] { opacity: .6; pointer-events: none; transform: none; }
 /* Bouton secondaire en thème sombre : mêmes jetons que les cartes */
 .dark .lp-btn-s, .dark .lp-btn-s:hover, .dark .lp-btn-s:active { color: var(--q-ink); background-color: var(--q-surface); background-image: none; border-color: var(--q-line); box-shadow: none; }
 .dark .lp-btn-s-ic { background-color: var(--q-sunken); color: var(--q-ink); }

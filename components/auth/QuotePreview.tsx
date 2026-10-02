@@ -30,7 +30,7 @@ export default function QuotePreview() {
             <div className="leading-tight">
               <p className="text-[13px] font-semibold">{c.name}</p>
               <p className="mt-0.5 text-[11.5px] text-[#64748B]">
-                {c.city} · SIREN <span className="font-mono">{c.siren.replace(/(\d{3})(?=\d)/g, "$1 ")}</span>
+                {c.city} · SIREN {c.siren.replace(/(\d{3})(?=\d)/g, "$1\u00a0")}
               </p>
             </div>
           </div>
@@ -56,7 +56,7 @@ export default function QuotePreview() {
         {/* Lignes */}
         <table className="mt-6 w-full border-collapse text-[12px]">
           <thead>
-            <tr className="border-b border-[#E6E9F0] text-[11px] font-semibold text-[#64748B]">
+            <tr className="whitespace-nowrap border-b border-[#E6E9F0] text-[11px] font-semibold text-[#64748B]">
               <th className="pb-2 text-left font-semibold">Prestation</th>
               <th className="pb-2 pl-3 text-right font-semibold">Qté</th>
               <th className="pb-2 pl-3 text-right font-semibold">Prix HT</th>

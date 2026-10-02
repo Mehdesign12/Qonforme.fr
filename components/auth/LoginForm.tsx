@@ -76,7 +76,7 @@ export default function LoginForm() {
         id="password"
         label="Mot de passe"
         error={errors.password}
-        aside={<a href="/forgot-password" className="q-link text-[13px] !font-medium">Mot de passe oublié ?</a>}
+        aside={<a href="/forgot-password" className="q-link text-[13px] !font-medium">Mot de passe oublié ?</a>}
       >
         <PasswordInput
           id="password"

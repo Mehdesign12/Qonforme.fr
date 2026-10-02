@@ -81,7 +81,7 @@ export default function ForgotPasswordForm() {
         </div>
 
         <p className="mt-[22px] text-[13px] leading-[1.55] text-q-text-4">
-          Rien reçu au bout de quelques minutes ? Vérifiez vos courriers indésirables. Le lien reste valable une heure.
+          Rien reçu au bout de quelques minutes ? Vérifiez vos courriers indésirables. Le lien reste valable une heure.
         </p>
       </div>
     )
@@ -91,7 +91,7 @@ export default function ForgotPasswordForm() {
   return (
     <div className="flex flex-col">
       <BackToLogin />
-      <AuthTitle>Mot de passe <Serif>oublié</Serif> ?</AuthTitle>
+      <AuthTitle>Mot de passe <Serif>oublié</Serif> ?</AuthTitle>
       <AuthLead>
         Indiquez l’adresse de votre compte. Nous vous envoyons un lien pour en choisir un nouveau.
       </AuthLead>

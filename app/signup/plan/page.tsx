@@ -1,19 +1,17 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import Image from 'next/image'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import PricingSelector from '@/components/billing/PricingSelector'
 import { canIssueInvoices, safeNextPath } from '@/lib/stripe/access'
 import { recoverActiveSubscription } from '@/lib/stripe/recovery'
+import AuthLayout from '@/components/auth/AuthLayout'
+import { Serif } from '@/components/auth/AuthHeading'
 
 export const metadata: Metadata = {
   title: 'Choisir ma formule — Qonforme',
   robots: { index: false, follow: false },
 }
 export const dynamic = 'force-dynamic'
-
-const LOGO_LONG_BLEU = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp'
 
 /**
  * Choix de la formule, pour un compte connecté.
@@ -52,31 +50,28 @@ export default async function ChoosePlanPage({
 
   const backHref = next ?? (user ? '/dashboard' : '/')
 
+  const forInvoice = next?.startsWith('/invoices/') ?? false
+
   return (
-    <div className="min-h-[100dvh] bg-[#F8FAFC]">
-      <div
-        className="mx-auto w-full max-w-[1080px] px-4 sm:px-6 pb-12"
-        style={{ paddingTop: 'max(20px, env(safe-area-inset-top, 20px))' }}
-      >
-        <div className="flex justify-center mb-8">
-          <Link href={user ? '/dashboard' : '/'} aria-label="Qonforme">
-            <Image src={LOGO_LONG_BLEU} alt="Qonforme" width={180} height={44} className="h-8 lg:h-9 w-auto" sizes="180px" priority />
-          </Link>
-        </div>
-
-        <div className="text-center mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A]">
-            {next?.startsWith('/invoices/') ? 'Votre facture est prête.' : 'Choisissez votre formule'}
-          </h1>
-          <p className="mt-2 text-[15px] text-slate-500">
-            {next?.startsWith('/invoices/')
-              ? 'Choisissez votre formule pour l’envoyer. Vos devis restent gratuits.'
-              : 'Vos devis sont gratuits. La formule sert à émettre vos factures.'}
-          </p>
-        </div>
-
-        <PricingSelector isAuthenticated={!!user} backHref={backHref} next={next} showFree={!user} />
+    <AuthLayout
+      maxWidth="wide"
+      // Le lien « Retour » vers `backHref` est affiché par PricingSelector
+      bar={{ logoHref: user ? '/dashboard' : '/' }}
+    >
+      <div className="mx-auto mb-3 max-w-[640px] text-center">
+        <h1 className="q-display m-0 text-[30px] leading-[1.08] tracking-[-0.035em] text-q-ink-strong [text-wrap:balance] md:text-[42px]">
+          {forInvoice
+            ? <>Votre facture est <Serif>prête</Serif>.</>
+            : <>Choisissez votre <Serif>formule</Serif>.</>}
+        </h1>
+        <p className="mt-3 text-[16px] leading-[1.6] text-q-text-3 md:text-[17px]">
+          {forInvoice
+            ? 'Choisissez votre formule pour l’envoyer. Vos devis restent gratuits.'
+            : 'Vos devis sont gratuits. La formule sert à émettre vos factures.'}
+        </p>
       </div>
-    </div>
+
+      <PricingSelector isAuthenticated={!!user} backHref={backHref} next={next} showFree={!user} />
+    </AuthLayout>
   )
 }
