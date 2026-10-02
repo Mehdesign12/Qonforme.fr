@@ -14,8 +14,6 @@ import { ThemeColorSync } from "@/components/pwa/ThemeColorSync";
 import { StandaloneFlag } from "@/components/pwa/StandaloneFlag";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
-import { NativeAppInit } from "@/components/native/NativeAppInit";
-import { PrivacyScreen } from "@/components/native/PrivacyScreen";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -231,12 +229,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AutoDarkMode />
-          {/* PWA / app native — sans rendu visible sauf OfflineBanner et InstallPrompt */}
+          {/* PWA — sans rendu visible sauf OfflineBanner et InstallPrompt */}
           <ThemeColorSync />
           <StandaloneFlag />
           <ServiceWorkerRegister />
-          <NativeAppInit />
-          <PrivacyScreen />
           <PostHogProvider>
             <ReduxProvider>
               <OfflineBanner />

@@ -81,9 +81,9 @@ const cardStyle = { backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12
 ### Le bug
 iOS Safari/WKWebView zoome automatiquement toute la page quand un `<input>`,
 `<select>` ou `<textarea>` reçoit le focus si son `font-size` calculé est
-inférieur à 16px. Comportement natif iOS (pensé pour le web ouvert, pas pour
-une app), pas un bug du site — mais dans l'app native, l'utilisateur doit
-dézoomer manuellement à chaque champ, et le zoom persiste souvent après avoir
+inférieur à 16px. Comportement natif iOS, pas un bug du site — mais
+l'utilisateur doit dézoomer manuellement à chaque champ (surtout depuis la PWA
+installée sur l'écran d'accueil), et le zoom persiste souvent après avoir
 quitté le champ.
 
 ### La règle
@@ -322,33 +322,24 @@ sécurité, juste une perte de fonctionnalité).
 
 ---
 
-## 🚨 RÈGLE — Code natif : toujours un repli web
+## 🚨 RÈGLE — Pas d'app native : le mobile passe par le site et la PWA
 
-### Le principe
-Le même code React sert le site web et l'app iOS compilée. Aucun composant ne
-doit supposer la présence de la coquille native.
+### La décision (02/10/2026)
+L'app iOS native (coquille Capacitor, notifications push APNs, écrans natifs) a été
+**abandonnée et retirée du code**. Un abonnement vendu à un artisan seul relève de
+l'achat intégré d'Apple (règle 3.1.3(c) : *« Consumer, single user, or family sales
+must use in-app purchase »*). La seule autre voie (3.1.3(f)) interdit tout prix,
+bouton ou lien d'achat dans l'app, donc le mur de paiement à la première facture.
+Le mobile passe par le site responsive, installable sur l'écran d'accueil (PWA :
+`public/sw.js`, `public/manifest.json`, `components/pwa/`, `lib/pwa/`).
 
 ### La règle
-**Tout appel à un plugin Capacitor passe par `lib/native/`, jamais par un import
-direct dans un composant.**
+**Ne réintroduire ni Capacitor, ni plugin natif, ni dossier `ios/` sans nouvelle
+décision consignée dans `DECISIONS-STRATEGIQUES.md`.** Stripe Checkout et le
+portail client s'ouvrent normalement dans le navigateur.
 
-```tsx
-// ✅ Correct — fonctionne sur le web comme dans l'app
-import { hapticImpact } from '@/lib/native/feedback'
-import { shareContent } from '@/lib/native/share'
-
-// ❌ Incorrect — casse le web et alourdit le bundle
-import { Haptics } from '@capacitor/haptics'
-```
-
-Les helpers de `lib/native/` sont gardés par `isNativeApp()` et importent les
-plugins dynamiquement : le bundle web ne les embarque pas.
-
-**Stripe Checkout et tout lien externe doivent passer par `openExternalUrl()`** —
-un tunnel de paiement dans la WKWebView est refusé par Apple (règle 3.1), ne
-partage pas les cookies Safari et piège l'utilisateur sans retour possible.
-
-Détails complets dans `IOS-APP.md`.
+La table `push_tokens` (migration `20260818_create_push_tokens.sql`) n'est plus
+lue ni écrite. Elle peut être supprimée en base si elle a été créée.
 
 ---
 
@@ -466,3 +457,4 @@ Un nouveau statut ou un nouveau type de document s'ajoute dans la liste blanche
 | 2026-10-01 | Logo personnalisé dans les maquettes Paramètres › Entreprise (compte actif et compte neuf) : zone de dépôt, logo réellement affiché une fois importé, remplacer/retirer, aperçu en direct sur un devis ; tuile « Ajouter votre logo » sur le tableau de bord du compte neuf. Inventaire de la refonte comparé au code en ligne (section 10 de `DECISIONS-STRATEGIQUES.md`) : statut existe / partiel / à construire de chaque apport et ordre suggéré. Constats dans le code, non corrigés ici : une facture relancée passe au statut `overdue` et sort des montants « en attente » et « en retard » du tableau de bord ; la FAQ tarifs affirme gérer l'autoliquidation, absente du code | `DECISIONS-STRATEGIQUES.md` |
 | 2026-10-01 | Fix faille documents émis : un `PATCH { status: "draft" }` remettait une facture émise en brouillon (puis modifiable et supprimable). Liste blanche des changements de statut côté serveur pour factures, devis et bons de commande (`lib/utils/document-status.ts`) : jamais de retour au brouillon, `credited`/`cancelled` jamais posés à la main, contenu des devis et bons de commande figé hors brouillon (il ne l'était que dans l'interface), renvoi par email sans écraser un statut payé/accepté/crédité, relance refusée sur une facture brouillon/payée/créditée, conversion limitée aux devis envoyés ou acceptés, création toujours en brouillon. 23 tests. Cascade des documents et cahier des charges de la signature en ligne consignés (section 11 de `DECISIONS-STRATEGIQUES.md`), nouvelle règle dans `CLAUDE.md` | `lib/utils/document-status.ts`, `app/api/invoices/route.ts`, `app/api/invoices/[id]/{route,send/route,remind/route}.ts`, `app/api/quotes/[id]/{route,send/route,convert/route}.ts`, `app/api/purchase-orders/[id]/{route,send/route}.ts`, `__tests__/document-status.test.ts`, `DECISIONS-STRATEGIQUES.md`, `CLAUDE.md` |
 | 2026-10-01 | Maquettes de la signature en ligne (canevas de design, version 17 ; aucun code applicatif) : pages client sur ordinateur et téléphone pour le devis d'un particulier (certification du taux réduit de TVA, information et demande de démarrage anticipé pendant les 14 jours de rétractation, signature tracée ou tapée) et le bon de commande d'un professionnel (fonction, numéro de commande client, code de vérification par email au-delà de 5 000 € TTC), refus avec motif, confirmation avec acompte, PDF signé et certificat ; planche des états du lien (signé, expiré, remplacé, désactivé, rétractation, lien introuvable) ; signature sur place sur le téléphone de l'artisan avec les règles du hors établissement (aucun paiement avant 7 jours) ; huit emails ; côté artisan, panneau « Signature en ligne » et fenêtre de partage ajoutés aux 12 fiches devis et 5 bons de commande, réglages dans Paramètres › Modèles. Mention « sous réserve de l'attestation du client » (supprimée en 2025) remplacée sur toutes les planches | `DECISIONS-STRATEGIQUES.md` |
+| 2026-10-02 | Retrait de l'app iOS native, décidé avec le fondateur : un abonnement vendu à un artisan seul relève de l'achat intégré d'Apple (règle 3.1.3(c)), et l'autre voie (3.1.3(f)) interdit tout prix ou bouton d'achat dans l'app, donc le mur de paiement à la première facture. Supprimés : coquille Capacitor (`capacitor.config.ts`, `ios/`, `capacitor/`, `assets/`), `lib/native/`, `components/native/` (amorçage push, carrousel, écran de confidentialité), émetteur APNs et son branchement dans le cron de relances, route `/api/native/push-token`, capture photo du logo, dépendances `@capacitor/*`, variables `APNS_*`, `IOS-APP.md`. Conservé : la PWA (service worker, manifest, écrans de démarrage, invite d'installation). La table `push_tokens` n'est plus utilisée | `app/layout.tsx`, `app/api/cron/send-reminders/route.ts`, `components/layout/{Header,Sidebar}.tsx`, `components/pwa/InstallPrompt.tsx`, `components/settings/InvoiceSettingsForm.tsx`, `scripts/generate-pwa-assets.mjs`, `package.json`, `.env.example`, `CLAUDE.md` |

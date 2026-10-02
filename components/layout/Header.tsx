@@ -11,7 +11,6 @@ import { useState, useEffect, useMemo } from "react"
 import { ThemeToggle } from "@/components/layout/ThemeToggle"
 import { createClient } from "@/lib/supabase/client"
 import { purgePwaPageCache } from "@/lib/pwa/client"
-import { unregisterPushToken } from "@/lib/native/push"
 import { toast } from "sonner"
 import {
   DropdownMenu,
@@ -164,9 +163,6 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
   const isDark = mounted && theme === "dark"
 
   const handleLogout = async () => {
-    // Révoque le jeton push avant de perdre la session : sinon les relances du
-    // compte quitté continueraient d'arriver sur cet appareil.
-    await unregisterPushToken()
     await supabase.auth.signOut()
     // Vide le HTML retenu par le service worker : rien de la session précédente
     // ne doit pouvoir être resservi sur un appareil partagé.
