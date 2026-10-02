@@ -62,13 +62,17 @@ export default function ArticleView({ post, category, readingTime, keywords, hea
               <Breadcrumbs items={[{ label: "Accueil", href: "/" }, { label: "Blog", href: "/blog" }, { label: post.title }]} className="mb-6" />
               <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] text-q-text-4">
                 <CategoryBadge category={category} size="md" />
-                {post.published_at && (
-                  <time dateTime={post.published_at}>
-                    {new Date(post.published_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
-                  </time>
-                )}
-                <span aria-hidden>·</span>
-                <span>{readingTime} min de lecture</span>
+                <span className="whitespace-nowrap">
+                  {post.published_at && (
+                    <>
+                      <time dateTime={post.published_at}>
+                        {new Date(post.published_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                      </time>
+                      <span aria-hidden> · </span>
+                    </>
+                  )}
+                  {readingTime} min de lecture
+                </span>
               </div>
               <h1 className="font-display text-[clamp(30px,4vw,46px)] font-semibold leading-[1.08] tracking-[-0.03em] text-q-ink-strong [text-wrap:balance]">
                 {post.title}

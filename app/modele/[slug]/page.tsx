@@ -1,10 +1,10 @@
 import type { Metadata } from "next"
-import Image from "next/image"
 import { notFound } from "next/navigation"
 import { Check, FileText, Wand2 } from "lucide-react"
 import { MODELES, getModeleBySlug } from "@/lib/pseo/modeles"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
 import { fr } from "@/components/content/text"
+import ModelePaper from "@/components/content/ModelePaper"
 
 const TYPE_LABELS: Record<string, string> = {
   facture: "Facture",
@@ -99,19 +99,9 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
 
         <div className="px-4 sm:px-6">
           <div className={`${WRAP} grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-12`}>
-            {/* Aperçu : feuille sur fond grisé */}
+            {/* Aperçu : feuille schématique sur fond grisé */}
             <div className="q-paper-bed min-w-0 p-4 sm:p-8 lg:col-start-1 lg:row-start-1">
-              <div className="q-paper mx-auto max-w-[760px] overflow-hidden">
-                <Image
-                  src={`/api/preview?title=${encodeURIComponent(modele.titre)}&type=${encodeURIComponent(modele.type)}&items=${encodeURIComponent(modele.contenu.slice(0, 5).join("|"))}`}
-                  alt={`Aperçu du ${modele.titre}`}
-                  width={1000}
-                  height={600}
-                  className="h-auto w-full"
-                  sizes="(max-width: 1024px) 100vw, 760px"
-                  priority
-                />
-              </div>
+              <ModelePaper modele={modele} />
             </div>
 
             {/* Colonne : contenu du modèle et remplissage en ligne */}
