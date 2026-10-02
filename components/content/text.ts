@@ -22,7 +22,7 @@ export function fr(s: string): string {
 /** Phrase qui attribue à Qonforme une conformité ou un format non livrés. */
 const PRODUCT_CLAIM = /Qonforme[^.]*(format|Factur-X|certifi|EN 16931|archivage|nativement)|logiciel conforme comme Qonforme/i
 /** Promesse de conformité Factur-X collée en fin de description. */
-const FACTURX_TAGLINE = /^(Conforme|Factures? et devis conformes?) Factur-X 2026\.?$/i
+const FACTURX_TAGLINE = /^((Conforme|Factures? et devis conformes?) )?Factur-X 2026\.?$/i
 
 function sentences(text: string): string[] {
   return text.split(/(?<=[.!?])\s+/).filter(Boolean)
