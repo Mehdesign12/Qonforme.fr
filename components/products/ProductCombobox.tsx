@@ -253,7 +253,8 @@ export function ProductCombobox({
     if (!isMobile) calculateDropdownPosition()
     setOpen(true)
     setSearch("")
-    setTimeout(() => inputRef.current?.focus(), 60)
+    // Mobile : pas de clavier d'office, il cacherait la moitié de la feuille
+    if (!isMobile) setTimeout(() => inputRef.current?.focus(), 60)
   }
 
   const handleSelect = (product: ProductSuggestion) => {

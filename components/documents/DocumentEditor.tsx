@@ -120,7 +120,7 @@ export function DocumentEditor({
 
       {banners}
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_440px]">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px] min-[1400px]:grid-cols-[minmax(0,1fr)_460px]">
         {/* ── Colonne de saisie ── */}
         <div className="flex min-w-0 flex-col gap-4">
           <ClientCard
@@ -150,7 +150,7 @@ export function DocumentEditor({
         </div>
 
         {/* ── Aperçu et contrôles (à droite sur grand écran, dessous sinon) ── */}
-        <aside className="hidden min-w-0 flex-col gap-3 md:flex xl:sticky xl:top-[84px]" aria-label="Aperçu et contrôles">
+        <aside className="hidden min-w-0 flex-col gap-3 md:flex" aria-label="Aperçu et contrôles">
           <LivePreview kind={kind} doc={doc} number={number} client={client} company={company} action={previewButton} />
           <ReadyChecklist title={text.checklistTitle} checks={checks} />
           <div className="hidden flex-col items-stretch gap-1 xl:flex">
@@ -217,7 +217,8 @@ function ClientCard({
 }) {
   const { form, errors } = doc
   return (
-    <section className="q-card flex flex-col gap-3.5 p-4 md:p-5" aria-labelledby="doc-client-title">
+    // Mobile : intitulé au-dessus, le sélecteur fait carte (Mobile-devis-creation)
+    <section className="flex flex-col gap-2.5 md:q-card md:gap-3.5 md:p-5" aria-labelledby="doc-client-title">
       <div className="flex items-center justify-between gap-3">
         <h2 id="doc-client-title" className="q-h2">{kind === "quote" ? "Pour qui ?" : "Client"}</h2>
         {clients.length > 0 && (
@@ -305,46 +306,49 @@ function ConditionsCard({ kind, doc }: { kind: DocKind; doc: DocumentFormApi }) 
   }
 
   return (
-    <section className="q-card flex flex-col gap-3.5 p-4 md:p-5" aria-labelledby="doc-cond-title">
+    // Mobile : intitulé au-dessus de la carte ; ordinateur : une seule carte
+    <section className="flex flex-col gap-2.5 md:q-card md:gap-3.5 md:p-5" aria-labelledby="doc-cond-title">
       <h2 id="doc-cond-title" className="q-h2">Conditions</h2>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="doc-issue" className="q-label">Date d&apos;émission</label>
-          <input
-            id="doc-issue" type="date" className="q-input"
-            value={form.issue_date}
-            onChange={(e) => doc.setValue("issue_date", e.target.value)}
-            aria-invalid={errors.issue_date ? true : undefined}
-          />
-          {errors.issue_date && <p className="q-field-error">{errors.issue_date}</p>}
+      <div className="q-card flex flex-col gap-3.5 p-4 md:contents">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="doc-issue" className="q-label">Date d&apos;émission</label>
+            <input
+              id="doc-issue" type="date" className="q-input"
+              value={form.issue_date}
+              onChange={(e) => doc.setValue("issue_date", e.target.value)}
+              aria-invalid={errors.issue_date ? true : undefined}
+            />
+            {errors.issue_date && <p className="q-field-error">{errors.issue_date}</p>}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="doc-second" className="q-label">{text.secondDateLabel}</label>
+            <input
+              id="doc-second" type="date" className="q-input"
+              value={secondValue}
+              onChange={(e) => doc.setValue(secondKey, e.target.value)}
+              aria-invalid={errors[secondKey] ? true : undefined}
+              aria-describedby="doc-second-hint"
+            />
+            {errors[secondKey]
+              ? <p className="q-field-error">{errors[secondKey]}</p>
+              : hint && <p id="doc-second-hint" className={cn("q-field-hint", gap !== null && gap < 0 && "!text-[var(--q-warn)]")}>{hint}</p>}
+          </div>
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="doc-second" className="q-label">{text.secondDateLabel}</label>
-          <input
-            id="doc-second" type="date" className="q-input"
-            value={secondValue}
-            onChange={(e) => doc.setValue(secondKey, e.target.value)}
-            aria-invalid={errors[secondKey] ? true : undefined}
-            aria-describedby="doc-second-hint"
+          <label htmlFor="doc-notes" className="q-label">
+            {kind === "invoice" ? "Notes et conditions de paiement" : "Notes et conditions"}
+          </label>
+          <textarea
+            id="doc-notes"
+            rows={4}
+            className="q-input"
+            placeholder={text.notesPlaceholder}
+            value={form.notes}
+            onChange={(e) => doc.setValue("notes", e.target.value)}
           />
-          {errors[secondKey]
-            ? <p className="q-field-error">{errors[secondKey]}</p>
-            : hint && <p id="doc-second-hint" className={cn("q-field-hint", gap !== null && gap < 0 && "!text-[var(--q-warn)]")}>{hint}</p>}
+          <p className="q-field-hint">Imprimées sous les totaux : les trois premières lignes.</p>
         </div>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="doc-notes" className="q-label">
-          {kind === "invoice" ? "Notes et conditions de paiement" : "Notes et conditions"}
-        </label>
-        <textarea
-          id="doc-notes"
-          rows={4}
-          className="q-input"
-          placeholder={text.notesPlaceholder}
-          value={form.notes}
-          onChange={(e) => doc.setValue("notes", e.target.value)}
-        />
-        <p className="q-field-hint">Imprimées sous les totaux : les trois premières lignes.</p>
       </div>
     </section>
   )

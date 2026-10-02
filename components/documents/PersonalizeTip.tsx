@@ -24,8 +24,13 @@ export function PersonalizeTip({
       <span className="min-w-0 flex-1">
         <span className="block font-semibold text-[var(--q-ink)]">Personnalisez vos factures</span>
         <span className="hidden text-[13px] text-[var(--q-text-3)] sm:block">{text}</span>
+        {/* Mobile : lien sous le titre, pour ne pas serrer le texte contre un bouton */}
+        <Link href={href} className="q-link mt-0.5 inline-flex items-center gap-1 text-[13px] sm:hidden">
+          {cta}
+          <ArrowRight className="size-3.5" aria-hidden />
+        </Link>
       </span>
-      <Link href={href} className="q-btn q-btn-secondary q-btn-sm shrink-0">
+      <Link href={href} className="q-btn q-btn-secondary q-btn-sm hidden shrink-0 sm:inline-flex">
         {cta}
         <ArrowRight aria-hidden />
       </Link>

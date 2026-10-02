@@ -59,8 +59,8 @@ export function LivePreview({
 
       <div className="q-paper flex flex-col gap-4 p-5 text-[11.5px] leading-snug md:p-7">
         {/* En-tête : émetteur à gauche, document à droite */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2.5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-start gap-2.5">
             {logo ? (
               <Image src={logo} alt="" width={40} height={40} sizes="40px" className="size-10 shrink-0 rounded-[9px] object-contain" />
             ) : (
@@ -69,17 +69,16 @@ export function LivePreview({
               </span>
             )}
             <span className="flex min-w-0 flex-col">
-              <strong className="truncate text-[12.5px] font-semibold">{companyName}</strong>
+              <strong className="text-[12.5px] font-semibold">{companyName}</strong>
               {companyAddress && <span className="text-[#64748B]">{companyAddress}</span>}
               {company?.siren && <span className="font-mono text-[10.5px] text-[#64748B]">SIREN {formatSiren(company.siren)}</span>}
             </span>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
-            <strong className="text-[15px] font-semibold tracking-[-0.01em]">{text.paperTitle}</strong>
-            <span className="font-mono text-[10.5px] text-[#475569]">
-              {number || "N° à l'enregistrement"}
-              {form.issue_date && <> · {formatDayFr(form.issue_date)}</>}
-            </span>
+          <div className="flex max-w-[48%] shrink-0 flex-col items-end gap-0.5 text-right">
+            <strong className="text-[15px] font-semibold leading-tight tracking-[-0.01em]">{text.paperTitle}</strong>
+            {/* Numéro attribué par le serveur à l'enregistrement : jamais deviné ici */}
+            <span className="font-mono text-[10.5px] text-[#475569]">{number || "N° à l'enregistrement"}</span>
+            {form.issue_date && <span className="font-mono text-[10.5px] text-[#475569]">{formatDayFr(form.issue_date)}</span>}
           </div>
         </div>
 
