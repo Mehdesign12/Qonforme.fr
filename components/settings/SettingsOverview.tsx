@@ -117,7 +117,7 @@ export function SettingsOverview({
           tone="warn"
           title="Plateforme agréée"
           sub="Transmission en préparation · guide de dépôt"
-          aside={<StatusPill tone="warn">En préparation</StatusPill>}
+          aside={<StatusPill tone="warn" className="hidden sm:inline-flex">En préparation</StatusPill>}
         />
       </Group>
 

@@ -34,6 +34,7 @@ import type { Subscription } from '@/lib/stripe/subscription'
 import { formatCurrency } from '@/lib/utils/invoice'
 import { PageHeader, StatusPill } from '@/components/app/kit'
 import type { ShellMode } from '@/components/layout/nav'
+import { formatSiren } from '@/components/layout/shell'
 import { settingsHref } from '@/components/settings/sections'
 import { SettingsCard } from '@/components/settings/ui'
 
@@ -382,7 +383,7 @@ function IdentityCard({ identity, future }: { identity: BillingIdentity; future?
       <div className="flex flex-col gap-1 text-sm text-[var(--q-text-3)]">
         <span className="font-semibold text-[var(--q-ink)]">{identity.name || 'Votre entreprise'}</span>
         {identity.address && <span>{identity.address}</span>}
-        {identity.siren && <span>SIREN <span className="font-mono">{identity.siren}</span></span>}
+        {identity.siren && <span>SIREN <span className="font-mono">{formatSiren(identity.siren) ?? identity.siren}</span></span>}
         {identity.email && <span>E-mail du compte : {identity.email}</span>}
       </div>
       <p className="text-xs text-[var(--q-text-4)]">
