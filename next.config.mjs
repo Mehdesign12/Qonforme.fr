@@ -12,6 +12,16 @@ const nextConfig = {
     ],
   },
 
+  async redirects() {
+    return [
+      // Pages comparatifs retirées le 02/10/2026 : elles nommaient des
+      // concurrents, ce que les décisions du fondateur interdisent dans tout
+      // contenu public (CLAUDE.md). Redirection permanente pour les liens indexés.
+      { source: '/comparatif', destination: '/pricing', permanent: true },
+      { source: '/comparatif/:slug*', destination: '/pricing', permanent: true },
+    ]
+  },
+
   async headers() {
     return [
       {

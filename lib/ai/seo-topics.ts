@@ -383,11 +383,6 @@ export const SEO_TOPICS: Topic[] = [
     keywords: ["glossaire facturation", "vocabulaire facture", "termes facturation", "lexique comptabilité"],
     category: "guide",
   },
-  {
-    topic: "Qonforme vs Henrri : quel logiciel de facturation choisir en 2026 ?",
-    keywords: ["Qonforme vs Henrri", "alternative Henrri", "comparatif Henrri Qonforme", "Henrri Factur-X"],
-    category: "comparatif",
-  },
 
   // ── Round 11 — Cas d'usage & approfondissements ──────────────────────
   {
@@ -406,11 +401,6 @@ export const SEO_TOPICS: Topic[] = [
     category: "guide",
   },
   {
-    topic: "Qonforme vs Pennylane : comparatif complet pour TPE et artisans",
-    keywords: ["Qonforme vs Pennylane", "alternative Pennylane", "Pennylane prix", "comparatif Pennylane"],
-    category: "comparatif",
-  },
-  {
     topic: "Comment un électricien gère sa facturation avec Qonforme : étude de cas",
     keywords: ["témoignage électricien", "facturation électricien logiciel", "cas usage artisan", "retour expérience"],
     category: "cas-usage",
@@ -419,11 +409,6 @@ export const SEO_TOPICS: Topic[] = [
     topic: "La retenue de garantie dans le BTP : fonctionnement et facturation",
     keywords: ["retenue garantie BTP", "5% retenue garantie", "facturation retenue", "libération garantie"],
     category: "guide",
-  },
-  {
-    topic: "Qonforme vs Tiime : quel logiciel pour les indépendants en 2026 ?",
-    keywords: ["Qonforme vs Tiime", "alternative Tiime", "Tiime facturation avis", "comparatif indépendant"],
-    category: "comparatif",
   },
   {
     topic: "Auto-entrepreneur : comment gérer la TVA quand on dépasse les seuils",

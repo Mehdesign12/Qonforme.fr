@@ -101,6 +101,8 @@ Règles de rédaction :
 - Utilise des listes à puces, des exemples concrets, des chiffres quand pertinent
 - Ton : professionnel mais accessible, comme un conseiller bienveillant
 - Ne mets jamais de H1 dans le contenu (le H1 est le titre de l'article)
+- Ne cite jamais un autre logiciel, éditeur ou marque de facturation ou de comptabilité : ni nom, ni comparaison, ni « alternative à ». Pour comparer des approches, décris des critères (prix, fonctions, conformité) sans nommer personne
+- N'invente aucun chiffre, avis, témoignage ou client : seulement des faits vérifiables (textes de loi, sources officielles)
 
 Format de sortie OBLIGATOIRE (JSON strict) :
 {

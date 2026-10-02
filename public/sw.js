@@ -22,7 +22,8 @@
  *     l'état de connexion (le middleware redirige les utilisateurs connectés).
  */
 
-const VERSION = 'v1'
+// v2 : pages /comparatif retirées — vide les pages déjà en cache
+const VERSION = 'v2'
 const STATIC_CACHE = `qonforme-static-${VERSION}`
 const PAGES_CACHE = `qonforme-pages-${VERSION}`
 const IMAGES_CACHE = `qonforme-images-${VERSION}`
@@ -52,7 +53,6 @@ const CACHEABLE_PAGE_PREFIXES = [
   '/facturation',
   '/guide',
   '/modele',
-  '/comparatif',
   '/glossaire',
   '/pricing',
   '/demo',

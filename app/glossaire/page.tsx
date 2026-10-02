@@ -64,7 +64,6 @@ export default function GlossaireIndexPage() {
           <div className="mt-12 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
             <Link href="/facturation" className="hover:text-white">Facturation par metier</Link>
             <Link href="/guide" className="hover:text-white">Guides pratiques</Link>
-            <Link href="/comparatif" className="hover:text-white">Comparatifs</Link>
           </div>
         </div>
       </section>

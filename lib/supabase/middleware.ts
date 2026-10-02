@@ -18,7 +18,6 @@ export async function updateSession(request: NextRequest) {
     '/facturation',
     '/guide',
     '/modele',
-    '/comparatif',
     '/glossaire',
     '/pricing',
     '/demo',
