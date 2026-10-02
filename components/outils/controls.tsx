@@ -231,3 +231,78 @@ export function ResetButton({ onClick, label = "Réinitialiser", className }: { 
     </button>
   )
 }
+
+/* ─────────────────────────────────────────────────────────
+   Liste à cocher par catégorie (vérificateurs)
+───────────────────────────────────────────────────────── */
+export interface CheckItem {
+  id: string
+  label: string
+  category: string
+  help?: string
+  /** Pastille à droite (« Obligatoire », « Optionnel »). */
+  tag?: string
+  /** Poids du critère, en points. */
+  weight?: number
+}
+
+export function Checklist({
+  groups,
+  checked,
+  onToggle,
+  footer,
+}: {
+  groups: [string, CheckItem[]][]
+  checked: Record<string, boolean>
+  onToggle: (id: string) => void
+  footer?: ReactNode
+}) {
+  return (
+    <div className="q-card overflow-hidden">
+      {groups.map(([cat, items], ci) => (
+        <div key={cat} className={cn(ci > 0 && "border-t border-q-line")}>
+          <p className="bg-q-surface-2 px-4 py-2.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-q-text-4 sm:px-5">{cat}</p>
+          <ul className="q-list border-t border-q-line-soft">
+            {items.map((m) => {
+              const on = !!checked[m.id]
+              return (
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={on}
+                    onClick={() => onToggle(m.id)}
+                    className="flex min-h-[52px] w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-q-row-hover focus-visible:bg-q-hover focus-visible:outline-none sm:px-5"
+                  >
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "grid h-5 w-5 shrink-0 place-items-center rounded-md border transition-colors",
+                        on ? "border-q-accent bg-q-accent text-white" : "border-q-field bg-q-surface",
+                      )}
+                    >
+                      {on && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[14px] font-medium leading-[1.45] text-q-ink sm:text-[15px]">{m.label}</span>
+                      {m.help && <span className="mt-0.5 block text-[12px] text-q-text-4">{m.help}</span>}
+                    </span>
+                    {m.tag && <span className={cn("q-tag shrink-0", m.tag === "Obligatoire" && !on && "border-[var(--q-warn-line)] text-q-warn")}>{m.tag}</span>}
+                    {m.weight !== undefined && (
+                      <span className="flex shrink-0 gap-0.5" title={`Poids : ${m.weight}`} aria-label={`Poids ${m.weight}`}>
+                        {Array.from({ length: m.weight }).map((_, i) => (
+                          <span key={i} className={cn("h-1.5 w-1.5 rounded-full", on ? "bg-q-accent" : "bg-q-field")} />
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ))}
+      {footer && <div className="flex justify-center border-t border-q-line px-4 py-3 sm:px-5">{footer}</div>}
+    </div>
+  )
+}

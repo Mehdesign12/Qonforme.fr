@@ -3,7 +3,7 @@ import { Check, FileText } from "lucide-react"
 import { PHOTOS, type LandingPhoto } from "@/lib/landing/photos"
 import type { Metier } from "@/lib/pseo/metiers"
 import { SectionHeading } from "./ui"
-import { deliveredFeatures, fr } from "./text"
+import { fr } from "./text"
 
 /**
  * Blocs des pages « Facturation par métier » (/facturation/[slug] et sa
@@ -37,9 +37,9 @@ export function tradeHeroPhoto(slug: string): React.ReactNode | undefined {
   )
 }
 
-/** Fonctions utiles au métier, limitées à celles que le produit livre vraiment. */
+/** Fonctions utiles au métier (lib/pseo/metiers.ts ne liste que des fonctions livrées). */
 export function MetierFeatures({ metier, limit }: { metier: Metier; limit?: number }) {
-  const features = deliveredFeatures(metier.features).slice(0, limit)
+  const features = metier.features.slice(0, limit)
   if (features.length === 0) return null
   return (
     <section aria-labelledby="fonctions" className="px-4 pt-6 sm:px-6">

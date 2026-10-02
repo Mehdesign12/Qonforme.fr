@@ -20,6 +20,9 @@ const GENERATOR: Record<string, { href: string; title: string } | undefined> = {
   devis: { href: "/outils/generateur-devis-gratuit", title: "Générateur de devis gratuit" },
 }
 
+/** Modèles que le générateur ne sait pas produire (tableau d'avancement, document non numéroté). */
+const NO_GENERATOR = new Set(["facture-situation", "facture-proforma"])
+
 export function generateStaticParams() {
   return MODELES.map(m => ({ slug: m.slug }))
 }
@@ -80,7 +83,7 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
     },
   ]
 
-  const generator = GENERATOR[modele.type]
+  const generator = NO_GENERATOR.has(modele.slug) ? undefined : GENERATOR[modele.type]
 
   return (
     <>
@@ -178,7 +181,7 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
                   links={[
                     ...MODELES.filter((m) => m.slug !== modele.slug)
                       .slice(0, 5)
-                      .map((m) => ({ href: `/modele/${m.slug}`, label: m.titre.replace("Modele de ", "").replace("Modele d'", "").replace("Modèle de ", "").replace("Modèle d'", "").replace(" gratuit", "") })),
+                      .map((m) => ({ href: `/modele/${m.slug}`, label: m.titre.replace(/^Modèle d(e |')/, "").replace(" gratuit", "") })),
                     { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires" },
                   ]}
                 />

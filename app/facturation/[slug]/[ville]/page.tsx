@@ -6,7 +6,7 @@ import { METIERS, getMetierBySlug } from "@/lib/pseo/metiers"
 import { VILLES, getVilleBySlug } from "@/lib/pseo/villes"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, FaqList, SectionHeading, WRAP } from "@/components/content/ui"
 import { MetierFeatures, MetierObligations, tradeHeroPhoto } from "@/components/content/metier"
-import { lcFirst, withoutClaims } from "@/components/content/text"
+import { lcFirst } from "@/components/content/text"
 
 export function generateStaticParams() {
   const params: { slug: string; ville: string }[] = []
@@ -58,8 +58,8 @@ export default async function MetierVillePage({ params }: { params: Promise<{ sl
   // Métiers proches dans la même ville
   const metiersProchesVille = metier.metiersProches.slice(0, 4)
 
-  // Réponses sans autopromotion invérifiable, identiques à l'écran et dans le JSON-LD
-  const faq = metier.faq.map((f) => ({ question: f.question, answer: withoutClaims(f.reponse) })).filter((f) => f.answer).slice(0, 3)
+  // Mêmes réponses à l'écran et dans le JSON-LD
+  const faq = metier.faq.slice(0, 3).map((f) => ({ question: f.question, answer: f.reponse }))
 
   const jsonLd = [
     {

@@ -1,26 +1,24 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { ArrowRight, ArrowLeft, ClipboardList, ChevronRight, Plus, Trash2, Download, Loader2 } from "lucide-react"
-import { motion, AnimatePresence } from "motion/react"
-import Footer from "@/components/layout/Footer"
-import { PublicHeader } from "@/components/layout/PublicHeader"
+import { ArrowRight, ArrowLeft, ClipboardList, Download, Loader2, Info } from "lucide-react"
 import { trackEvent } from "@/lib/meta-pixel"
 import { OutilsHero } from "@/components/outils/OutilsHero"
-
-interface Ligne { id: string; description: string; quantite: number; prixHT: number; tauxTVA: number }
-function newLigne(): Ligne { return { id: crypto.randomUUID(), description: "", quantite: 1, prixHT: 0, tauxTVA: 20 } }
-function fmtEur(n: number) { return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n) }
+import { Callout, Field, JsonLd, PanelTitle, Prose, ToolArea, ToolCta, ToolFaq, ToolGuide, ToolLinks, ToolShell, faqJsonLd, toolJsonLd } from "@/components/outils/kit"
+import { DocPaper, LineItemsEditor, PartySummary, Stepper, TotalsBox, newLigne, type Ligne } from "@/components/outils/doc-generator"
 
 const STEPS = [
-  { id: 0, label: "Émetteur", short: "Vous" },
-  { id: 1, label: "Client", short: "Client" },
-  { id: 2, label: "Lignes", short: "Lignes" },
-  { id: 3, label: "Aperçu", short: "Aperçu" },
+  { label: "Émetteur" },
+  { label: "Client" },
+  { label: "Lignes" },
+  { label: "Aperçu" },
 ]
 
-const inputClass = "w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-[14px] font-medium text-[#0F172A] placeholder-slate-300 outline-none transition-all focus:border-[#2563EB] focus:bg-white focus:ring-2 focus:ring-blue-100"
+const FAQ = [
+  { q: "Un devis est-il obligatoire ?", a: "Oui dans certains secteurs (BTP > 150 €, dépannage, déménagement). Dans les autres cas, il est fortement recommandé." },
+  { q: "Quelle est la durée de validité d'un devis ?", a: "Il n'y a pas de durée légale. En pratique, 30 jours est le standard. Précisez-la toujours sur le devis." },
+  { q: "Un devis signé engage-t-il le client ?", a: "Oui, un devis signé avec la mention « Bon pour accord » a valeur de contrat." },
+]
 
 export default function GenerateurDevisPage() {
   const [loading, setLoading] = useState(false)
@@ -39,6 +37,7 @@ export default function GenerateurDevisPage() {
   const subtotalHT = lignes.reduce((s, l) => s + l.quantite * l.prixHT, 0)
   const totalTVA = lignes.reduce((s, l) => s + l.quantite * l.prixHT * (l.tauxTVA / 100), 0)
   const totalTTC = subtotalHT + totalTVA
+  const totals = { ht: subtotalHT, tva: totalTVA, ttc: totalTTC }
   const canGenerate = emetteur.nom.trim() && client.nom.trim() && lignes.some((l) => l.description.trim() && l.prixHT > 0)
 
   const handleGenerate = async () => {
@@ -55,150 +54,170 @@ export default function GenerateurDevisPage() {
     } catch { alert("Erreur lors de la génération.") } finally { setLoading(false) }
   }
 
+  const paper = (
+    <DocPaper
+      kind="Devis"
+      numero={numero}
+      numeroPlaceholder="D-2026-001"
+      date={date}
+      dateLabel="Établi le"
+      date2={validite}
+      date2Label="Valable jusqu'au"
+      emetteur={emetteur}
+      client={client}
+      lignes={lignes}
+      totals={totals}
+      notes={notes}
+    />
+  )
+
   return (
-    <>
-      <PublicHeader />
-      <OutilsHero icon={<ClipboardList className="h-8 w-8" />} iconBg="bg-indigo-50 text-indigo-600" title={<>Générateur de <span className="text-[#2563EB]">devis gratuit</span></>} subtitle="Créez un devis professionnel en PDF. Remplissez, téléchargez. Gratuit, sans inscription." badge="PDF gratuit" />
+    <ToolShell>
+      <OutilsHero
+        crumb="Générateur de devis"
+        icon={<ClipboardList />}
+        badge="PDF gratuit"
+        title="Générateur de devis"
+        accent="gratuit, en PDF."
+        subtitle="Créez un devis professionnel en PDF. Remplissez, téléchargez. Gratuit, sans inscription."
+      />
 
-      <main className="bg-[#F8FAFC] pb-20 sm:pb-16">
-        <section className="mx-auto max-w-3xl px-5 -mt-4">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50 overflow-hidden">
-            {/* Progress */}
-            <div className="border-b border-slate-100 px-5 py-4 sm:px-8">
-              <div className="flex items-center justify-between">
-                {STEPS.map((s, i) => (
-                  <button key={s.id} onClick={() => setStep(i)} className={`flex flex-col items-center gap-1 transition-all ${step === i ? "scale-105" : "opacity-50"}`}>
-                    <span className={`flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold transition-all ${step === i ? "bg-[#2563EB] text-white shadow-md shadow-blue-200" : step > i ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400"}`}>{step > i ? "✓" : i + 1}</span>
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${step === i ? "text-[#2563EB]" : "text-slate-400"}`}><span className="hidden sm:inline">{s.label}</span><span className="sm:hidden">{s.short}</span></span>
+      <ToolArea width="lg">
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="q-card overflow-hidden">
+            <Stepper steps={STEPS} current={step} onSelect={setStep} />
+
+            <div className="min-h-[320px] p-5 sm:p-7">
+              {step === 0 && (
+                <div>
+                  <PanelTitle>Vos informations</PanelTitle>
+                  <div className="flex flex-col gap-4">
+                    <Field label="Nom / Raison sociale *" htmlFor="d-em-nom">
+                      <input id="d-em-nom" className="q-input" value={emetteur.nom} onChange={(e) => setEmetteur((p) => ({ ...p, nom: e.target.value }))} placeholder="Ma Société SAS" />
+                    </Field>
+                    <Field label="Adresse" htmlFor="d-em-adresse">
+                      <input id="d-em-adresse" className="q-input" value={emetteur.adresse} onChange={(e) => setEmetteur((p) => ({ ...p, adresse: e.target.value }))} placeholder="12 rue de la Paix, 75001 Paris" />
+                    </Field>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="SIRET" htmlFor="d-em-siret">
+                        <input id="d-em-siret" className="q-input font-mono" value={emetteur.siret} onChange={(e) => setEmetteur((p) => ({ ...p, siret: e.target.value }))} placeholder="123 456 789 00012" />
+                      </Field>
+                      <Field label="Email" htmlFor="d-em-email">
+                        <input id="d-em-email" className="q-input" type="email" value={emetteur.email} onChange={(e) => setEmetteur((p) => ({ ...p, email: e.target.value }))} placeholder="contact@email.fr" />
+                      </Field>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {step === 1 && (
+                <div>
+                  <PanelTitle>Informations client</PanelTitle>
+                  <div className="flex flex-col gap-4">
+                    <Field label="Nom / Raison sociale *" htmlFor="d-cl-nom">
+                      <input id="d-cl-nom" className="q-input" value={client.nom} onChange={(e) => setClient((p) => ({ ...p, nom: e.target.value }))} placeholder="Client SARL" />
+                    </Field>
+                    <Field label="Adresse" htmlFor="d-cl-adresse">
+                      <input id="d-cl-adresse" className="q-input" value={client.adresse} onChange={(e) => setClient((p) => ({ ...p, adresse: e.target.value }))} placeholder="5 avenue des Champs-Élysées" />
+                    </Field>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <Field label="N° devis" htmlFor="d-numero">
+                        <input id="d-numero" className="q-input font-mono" value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="D-2026-001" />
+                      </Field>
+                      <Field label="Date" htmlFor="d-date">
+                        <input id="d-date" className="q-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                      </Field>
+                      <Field label="Validité" htmlFor="d-validite">
+                        <input id="d-validite" className="q-input" type="date" value={validite} onChange={(e) => setValidite(e.target.value)} />
+                      </Field>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {step === 2 && (
+                <div>
+                  <PanelTitle>Lignes du devis *</PanelTitle>
+                  <LineItemsEditor
+                    lignes={lignes}
+                    onUpdate={updateLigne}
+                    onRemove={removeLigne}
+                    onAdd={() => setLignes((p) => [...p, newLigne()])}
+                    rates={[20, 10, 5.5, 0]}
+                  />
+                  <Field label="Notes" htmlFor="d-notes" className="mt-5">
+                    <input id="d-notes" className="q-input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Conditions particulières..." />
+                  </Field>
+                </div>
+              )}
+              {step === 3 && (
+                <div>
+                  <PanelTitle>Récapitulatif</PanelTitle>
+                  <div className="flex flex-col gap-3">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <PartySummary label="Émetteur" party={emetteur} />
+                      <PartySummary label="Client" party={client} />
+                    </div>
+                    {/* Aperçu papier : sur mobile ici, sur grand écran dans la colonne de droite */}
+                    <div className="lg:hidden">{paper}</div>
+                    <TotalsBox totals={totals} />
+                    {!canGenerate && (
+                      <Callout tone="neutral" icon={Info}>
+                        Renseignez votre nom, celui du client et au moins une ligne avec un prix pour télécharger le PDF.
+                      </Callout>
+                    )}
+                  </div>
+                  <button type="button" onClick={handleGenerate} disabled={!canGenerate || loading} className="lp-btn-p mt-5 w-full">
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Download className="h-5 w-5" aria-hidden />} Télécharger le PDF
                   </button>
-                ))}
-              </div>
-              <div className="mt-3 h-1 rounded-full bg-slate-100 overflow-hidden"><motion.div animate={{ width: `${((step + 1) / 4) * 100}%` }} className="h-full rounded-full bg-gradient-to-r from-[#2563EB] to-[#7C3AED]" transition={{ duration: 0.3 }} /></div>
+                </div>
+              )}
             </div>
 
-            <div className="p-5 sm:p-8 min-h-[320px]">
-              <AnimatePresence mode="wait">
-                {step === 0 && (
-                  <motion.div key="s0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-                    <h2 className="text-[16px] font-bold text-[#0F172A] mb-4">Vos informations</h2>
-                    <div className="space-y-3">
-                      <div><label className="text-[12px] font-bold text-slate-500">Nom / Raison sociale *</label><input className={inputClass} value={emetteur.nom} onChange={(e) => setEmetteur((p) => ({ ...p, nom: e.target.value }))} placeholder="Ma Société SAS" /></div>
-                      <div><label className="text-[12px] font-bold text-slate-500">Adresse</label><input className={inputClass} value={emetteur.adresse} onChange={(e) => setEmetteur((p) => ({ ...p, adresse: e.target.value }))} placeholder="12 rue de la Paix, 75001 Paris" /></div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div><label className="text-[12px] font-bold text-slate-500">SIRET</label><input className={inputClass} value={emetteur.siret} onChange={(e) => setEmetteur((p) => ({ ...p, siret: e.target.value }))} placeholder="123 456 789 00012" /></div>
-                        <div><label className="text-[12px] font-bold text-slate-500">Email</label><input className={inputClass} type="email" value={emetteur.email} onChange={(e) => setEmetteur((p) => ({ ...p, email: e.target.value }))} placeholder="contact@email.fr" /></div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-                {step === 1 && (
-                  <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-                    <h2 className="text-[16px] font-bold text-[#0F172A] mb-4">Informations client</h2>
-                    <div className="space-y-3">
-                      <div><label className="text-[12px] font-bold text-slate-500">Nom / Raison sociale *</label><input className={inputClass} value={client.nom} onChange={(e) => setClient((p) => ({ ...p, nom: e.target.value }))} placeholder="Client SARL" /></div>
-                      <div><label className="text-[12px] font-bold text-slate-500">Adresse</label><input className={inputClass} value={client.adresse} onChange={(e) => setClient((p) => ({ ...p, adresse: e.target.value }))} placeholder="5 avenue des Champs-Élysées" /></div>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <div><label className="text-[12px] font-bold text-slate-500">N° devis</label><input className={inputClass} value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="D-2026-001" /></div>
-                        <div><label className="text-[12px] font-bold text-slate-500">Date</label><input className={inputClass} type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-                        <div><label className="text-[12px] font-bold text-slate-500">Validité</label><input className={inputClass} type="date" value={validite} onChange={(e) => setValidite(e.target.value)} /></div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-                {step === 2 && (
-                  <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-                    <h2 className="text-[16px] font-bold text-[#0F172A] mb-4">Lignes du devis *</h2>
-                    <div className="space-y-3">
-                      {lignes.map((l, i) => (
-                        <div key={l.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
-                          <div className="flex items-center justify-between mb-2"><span className="text-[11px] font-bold text-slate-400">Ligne {i + 1}</span><button onClick={() => removeLigne(l.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button></div>
-                          <input className={`${inputClass} mb-2`} placeholder="Description" value={l.description} onChange={(e) => updateLigne(l.id, "description", e.target.value)} />
-                          <div className="grid grid-cols-3 gap-2">
-                            <div><label className="text-[10px] font-bold text-slate-400">Qté</label><input className={inputClass} type="number" inputMode="decimal" min={0} value={l.quantite || ""} onChange={(e) => updateLigne(l.id, "quantite", parseFloat(e.target.value) || 0)} /></div>
-                            <div><label className="text-[10px] font-bold text-slate-400">Prix HT</label><input className={inputClass} type="number" inputMode="decimal" min={0} step={0.01} value={l.prixHT || ""} onChange={(e) => updateLigne(l.id, "prixHT", parseFloat(e.target.value) || 0)} /></div>
-                            <div><label className="text-[10px] font-bold text-slate-400">TVA</label><select className={inputClass} value={l.tauxTVA} onChange={(e) => updateLigne(l.id, "tauxTVA", parseFloat(e.target.value))}><option value={20}>20%</option><option value={10}>10%</option><option value={5.5}>5,5%</option><option value={0}>0%</option></select></div>
-                          </div>
-                          {l.prixHT > 0 && <p className="mt-2 text-right text-[12px] font-semibold text-slate-500">= {fmtEur(l.quantite * l.prixHT)} HT</p>}
-                        </div>
-                      ))}
-                    </div>
-                    <button onClick={() => setLignes((p) => [...p, newLigne()])} className="mt-3 flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold text-[#2563EB] hover:bg-[#EFF6FF] transition-colors"><Plus className="h-4 w-4" /> Ajouter une ligne</button>
-                    <div className="mt-4"><label className="text-[12px] font-bold text-slate-500">Notes</label><input className={inputClass} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Conditions particulières..." /></div>
-                  </motion.div>
-                )}
-                {step === 3 && (
-                  <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-                    <h2 className="text-[16px] font-bold text-[#0F172A] mb-4">Récapitulatif</h2>
-                    <div className="space-y-3">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Émetteur</p><p className="text-[14px] font-bold text-[#0F172A]">{emetteur.nom || "—"}</p></div>
-                        <div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Client</p><p className="text-[14px] font-bold text-[#0F172A]">{client.nom || "—"}</p></div>
-                      </div>
-                      <div className="rounded-xl border border-slate-100 overflow-hidden">
-                        {lignes.filter((l) => l.description).map((l, i) => (<div key={l.id} className={`flex items-center justify-between px-4 py-2.5 text-[13px] ${i % 2 === 0 ? "bg-slate-50/50" : "bg-white"}`}><span className="text-slate-700">{l.description}</span><span className="font-semibold">{fmtEur(l.quantite * l.prixHT)}</span></div>))}
-                      </div>
-                      <div className="rounded-xl bg-gradient-to-br from-[#EFF6FF] to-[#F5F3FF] p-4">
-                        <div className="flex justify-between text-[14px] mb-1"><span className="text-slate-500">Sous-total HT</span><span className="font-semibold">{fmtEur(subtotalHT)}</span></div>
-                        <div className="flex justify-between text-[14px] mb-1"><span className="text-slate-500">TVA</span><span className="font-semibold">{fmtEur(totalTVA)}</span></div>
-                        <div className="h-px bg-slate-200/40 my-2" />
-                        <div className="flex justify-between text-[18px]"><span className="font-bold text-[#0F172A]">Total TTC</span><span className="font-extrabold text-[#2563EB]">{fmtEur(totalTTC)}</span></div>
-                      </div>
-                    </div>
-                    <button onClick={handleGenerate} disabled={!canGenerate || loading} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2563EB] py-4 text-[15px] font-bold text-white hover:bg-[#1D4ED8] transition-all disabled:opacity-50 active:scale-[0.98]">
-                      {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />} Télécharger le PDF
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <div className="border-t border-slate-100 px-5 py-4 sm:px-8 flex items-center justify-between">
-              <button onClick={() => step > 0 ? setStep(step - 1) : undefined} disabled={step === 0} className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-30"><ArrowLeft className="h-3.5 w-3.5" /> Précédent</button>
-              {step < 3 && <button onClick={() => setStep(step + 1)} className="flex items-center gap-1.5 rounded-xl bg-[#2563EB] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-[#1D4ED8] transition-colors">Suivant <ArrowRight className="h-3.5 w-3.5" /></button>}
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-8 rounded-2xl border border-[#BFDBFE] bg-gradient-to-r from-[#EFF6FF] to-[#F5F3FF] p-6 text-center">
-            <p className="text-[15px] font-bold text-[#0F172A]">Convertissez vos devis en facture en 1 clic</p>
-            <p className="mt-1 text-[13px] text-slate-500">Avec Qonforme, un devis accepté se transforme en facture Factur-X conforme automatiquement.</p>
-            <Link href="/signup" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8] transition-colors">Essayer gratuitement <ArrowRight className="h-4 w-4" /></Link>
-          </motion.div>
-        </section>
-
-        <section className="mt-16 border-t border-slate-200 bg-white px-5 py-16">
-          <div className="mx-auto max-w-3xl">
-            <h2 className="text-xl font-bold text-[#0F172A] mb-6">Comment créer un devis conforme ?</h2>
-            <div className="space-y-4 text-[15px] leading-relaxed text-slate-600">
-              <p>Un devis doit contenir : l&apos;identité de l&apos;émetteur et du client, la date, un numéro unique, la description détaillée des prestations, les prix unitaires HT, le montant total HT et TTC, la durée de validité, et les conditions de paiement.</p>
-              <p>Un devis signé par le client a <strong>valeur contractuelle</strong> et engage les deux parties.</p>
-            </div>
-            <div className="mt-12">
-              <h2 className="text-xl font-bold text-[#0F172A] mb-6">Questions fréquentes</h2>
-              <div className="space-y-3">
-                {[
-                  { q: "Un devis est-il obligatoire ?", a: "Oui dans certains secteurs (BTP > 150 €, dépannage, déménagement). Dans les autres cas, il est fortement recommandé." },
-                  { q: "Quelle est la durée de validité d'un devis ?", a: "Il n'y a pas de durée légale. En pratique, 30 jours est le standard. Précisez-la toujours sur le devis." },
-                  { q: "Un devis signé engage-t-il le client ?", a: "Oui, un devis signé avec la mention « Bon pour accord » a valeur de contrat." },
-                ].map((item) => (
-                  <details key={item.q} className="group rounded-xl border border-slate-200 bg-slate-50/50"><summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-[15px] font-semibold text-[#0F172A] list-none">{item.q}<ChevronRight className="h-4 w-4 text-slate-400 transition-transform group-open:rotate-90" /></summary><p className="px-5 pb-4 text-[14px] leading-relaxed text-slate-600">{item.a}</p></details>
-                ))}
-              </div>
-            </div>
-            <div className="mt-12 rounded-xl bg-slate-50 p-6">
-              <h3 className="text-[14px] font-bold text-slate-500 mb-3">Outils complémentaires</h3>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {[{ href: "/outils/generateur-facture-gratuite", label: "Générateur de facture gratuit" }, { href: "/outils/calculateur-tva", label: "Calculateur TVA HT/TTC" }, { href: "/outils/verificateur-mentions-facture", label: "Vérificateur mentions facture" }, { href: "/outils/verification-siret", label: "Vérificateur SIREN/SIRET" }].map((l) => (
-                  <Link key={l.href} href={l.href} className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-[14px] font-medium text-[#0F172A] hover:bg-white transition-colors"><span className="text-[#2563EB]">→</span> {l.label}</Link>
-                ))}
-              </div>
+            <div className="flex items-center justify-between gap-3 border-t border-q-line-soft px-5 py-4 sm:px-7">
+              <button type="button" onClick={() => (step > 0 ? setStep(step - 1) : undefined)} disabled={step === 0} className="q-btn q-btn-ghost">
+                <ArrowLeft aria-hidden /> Précédent
+              </button>
+              {step < 3 && (
+                <button type="button" onClick={() => setStep(step + 1)} className="q-btn q-btn-primary q-btn-lg sm:!h-10 sm:!rounded-[10px] sm:!text-[14px]">
+                  Suivant <ArrowRight aria-hidden />
+                </button>
+              )}
             </div>
           </div>
-        </section>
 
-        <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Générateur de devis gratuit en ligne", url: "https://qonforme.fr/outils/generateur-devis-gratuit", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
-      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Un devis est-il obligatoire ?","acceptedAnswer":{"@type":"Answer","text":"Oui dans certains secteurs (BTP > 150 €, dépannage). Sinon, fortement recommandé."}},{"@type":"Question","name":"Quelle est la durée de validité d'un devis ?","acceptedAnswer":{"@type":"Answer","text":"Pas de durée légale. En pratique, 30 jours est le standard."}},{"@type":"Question","name":"Un devis signé engage-t-il le client ?","acceptedAnswer":{"@type":"Answer","text":"Oui, un devis signé avec « Bon pour accord » a valeur de contrat."}}]}) }} />
-      </main>
-      <Footer />
-    </>
+          <aside className="hidden lg:sticky lg:top-24 lg:block" aria-label="Aperçu en direct">
+            <p className="mb-2 text-[13px] font-semibold text-q-text-3">Aperçu en direct</p>
+            {paper}
+          </aside>
+        </div>
+
+        <ToolCta
+          title="Un devis accepté devient une facture en un clic"
+          text="Dans Qonforme, les devis sont gratuits et illimités, s'envoient par email avec leur PDF, et un devis accepté se convertit en facture sans tout ressaisir."
+        />
+      </ToolArea>
+
+      <ToolGuide title="Comment créer" accent="un devis conforme ?">
+        <Prose>
+          <p>
+            Un devis doit contenir : l&apos;identité de l&apos;émetteur et du client, la date, un numéro unique, la description détaillée des prestations, les prix unitaires HT, le montant total HT et TTC, la durée de validité, et les conditions de paiement.
+          </p>
+          <p>Un devis signé par le client a <strong>valeur contractuelle</strong> et engage les deux parties.</p>
+        </Prose>
+
+        <ToolFaq items={FAQ} />
+
+        <ToolLinks
+          links={[
+            { href: "/outils/generateur-facture-gratuite", label: "Générateur de facture gratuit" },
+            { href: "/outils/calculateur-tva", label: "Calculateur TVA HT/TTC" },
+            { href: "/outils/verificateur-mentions-facture", label: "Vérificateur mentions facture" },
+            { href: "/outils/verification-siret", label: "Vérificateur SIREN/SIRET" },
+          ]}
+        />
+      </ToolGuide>
+
+      <JsonLd data={toolJsonLd("Générateur de devis gratuit en ligne", "/outils/generateur-devis-gratuit")} />
+      <JsonLd data={faqJsonLd(FAQ)} />
+    </ToolShell>
   )
 }

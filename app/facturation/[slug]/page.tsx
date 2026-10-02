@@ -5,7 +5,7 @@ import { Briefcase } from "lucide-react"
 import { METIERS, getMetierBySlug } from "@/lib/pseo/metiers"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, FaqList, SectionHeading, WRAP } from "@/components/content/ui"
 import { MetierFeatures, MetierObligations, tradeHeroPhoto } from "@/components/content/metier"
-import { lcFirst, withoutClaims } from "@/components/content/text"
+import { lcFirst } from "@/components/content/text"
 
 export function generateStaticParams() {
   return METIERS.map(m => ({ slug: m.slug }))
@@ -17,12 +17,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!metier) return {}
   return {
     title: `${metier.titre} | Qonforme`,
-    description: withoutClaims(metier.description),
+    description: metier.description,
     keywords: metier.motsCles,
     alternates: { canonical: `/facturation/${metier.slug}` },
     openGraph: {
       title: metier.titre,
-      description: withoutClaims(metier.description),
+      description: metier.description,
       url: `https://qonforme.fr/facturation/${metier.slug}`,
       images: [{ url: `/api/og?title=${encodeURIComponent(metier.titre)}&subtitle=${encodeURIComponent(`Factures et devis pour ${metier.nom}`)}`, width: 1200, height: 630 }],
     },
@@ -34,8 +34,8 @@ export default async function MetierPage({ params }: { params: Promise<{ slug: s
   const metier = getMetierBySlug(slug)
   if (!metier) notFound()
 
-  // Réponses sans autopromotion invérifiable, identiques à l'écran et dans le JSON-LD
-  const faq = metier.faq.map((f) => ({ question: f.question, answer: withoutClaims(f.reponse) })).filter((f) => f.answer)
+  // Mêmes réponses à l'écran et dans le JSON-LD
+  const faq = metier.faq.map((f) => ({ question: f.question, answer: f.reponse }))
 
   const jsonLd = [
     {
@@ -71,7 +71,7 @@ export default async function MetierPage({ params }: { params: Promise<{ slug: s
           eyebrow={<><Briefcase className="h-3.5 w-3.5" aria-hidden />Facturation par métier</>}
           title="Logiciel de facturation"
           accent={`pour ${lcFirst(metier.nom)}`}
-          sub={withoutClaims(metier.description)}
+          sub={metier.description}
           media={tradeHeroPhoto(metier.slug)}
         >
           <CtaButtons align="start" className="mt-8" />

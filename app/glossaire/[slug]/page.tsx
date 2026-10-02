@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { ArrowRight, Library } from "lucide-react"
 import { GLOSSAIRE, getTermeBySlug } from "@/lib/pseo/glossaire"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, SectionHeading } from "@/components/content/ui"
-import { fr, resolveContentLink, withoutClaims } from "@/components/content/text"
+import { fr, resolveContentLink } from "@/components/content/text"
 
 export function generateStaticParams() {
   return GLOSSAIRE.map(t => ({ slug: t.slug }))
@@ -51,9 +51,8 @@ export default async function TermePage({ params }: { params: Promise<{ slug: st
     },
   ]
 
-  // Textes sans autopromotion invérifiable ; liens internes résolus en libellés lisibles
-  const explication = withoutClaims(terme.explication)
-  const exemple = withoutClaims(terme.exemple)
+  // Liens internes résolus en libellés lisibles
+  const { explication, exemple } = terme
   const liens = terme.liens.map(resolveContentLink).filter((l): l is NonNullable<typeof l> => l !== null)
 
   return (
