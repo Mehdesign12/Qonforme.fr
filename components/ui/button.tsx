@@ -16,7 +16,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[var(--q-accent)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.25),0_4px_12px_-4px_rgba(37,99,235,.6)] hover:bg-[#1D4ED8]",
+          // Sombre : même bleu qu'en clair (blanc sur #3B82F6 = 3,7:1, sous le seuil AA)
+          "bg-[var(--q-accent)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.25),0_4px_12px_-4px_rgba(37,99,235,.6)] hover:bg-[#1D4ED8] dark:bg-[#2563EB] dark:hover:bg-[#1D4ED8]",
         outline:
           "border-[var(--q-field)] bg-[var(--q-surface)] text-[var(--q-ink)] shadow-[0_1px_2px_rgba(10,17,34,.05)] hover:bg-[var(--q-sunken)] aria-expanded:bg-[var(--q-sunken)]",
         secondary:

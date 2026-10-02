@@ -1,6 +1,5 @@
 import { getImageProps } from "next/image"
 import { BellRing, Check, ChevronRight, CircleCheck, FileCheck2 } from "lucide-react"
-import { PublicHeader } from "@/components/layout/PublicHeader"
 import { MacBook, IPhone, SCREENS } from "@/components/landing/devices"
 import { CtaButtons, Floater } from "@/components/landing/ui"
 import { EXAMPLES } from "@/components/landing/examples"
@@ -128,11 +127,7 @@ function Hero() {
   )
 }
 
+/** Héros de l'accueil. L'en-tête du site est rendu par la page, hors du <main>. */
 export function LandingHero() {
-  return (
-    <>
-      <PublicHeader isLandingPage />
-      <Hero />
-    </>
-  )
+  return <Hero />
 }

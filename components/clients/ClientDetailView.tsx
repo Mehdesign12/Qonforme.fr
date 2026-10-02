@@ -218,7 +218,7 @@ export function ClientDetailView({
       </div>
 
       {/* ── Indicateurs ordinateur ───────────────────────────────────── */}
-      <div className="hidden grid-cols-4 gap-3 lg:grid">
+      <div className="hidden grid-cols-2 gap-3 lg:grid xl:grid-cols-4">
         <Kpi label="À encaisser" value={formatCurrency(metrics.due)} sub={dueSub} className="!gap-1.5 !rounded-[14px] !p-4" />
         <Kpi label={`Chiffre d'affaires ${year}`} value={formatCurrency(metrics.billedYear)} sub="TTC facturé, avoirs déduits" className="!gap-1.5 !rounded-[14px] !p-4" />
         <Kpi label="Encaissé" value={formatCurrency(metrics.paid)} sub={plural(metrics.paidCount, "facture payée", "factures payées")} className="!gap-1.5 !rounded-[14px] !p-4" />
@@ -233,10 +233,10 @@ export function ClientDetailView({
         />
       </div>
 
-      {/* ── Corps : documents à gauche, coordonnées à droite ─────────── */}
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:grid-rows-[auto_1fr] lg:gap-5">
+      {/* ── Corps : documents à gauche, coordonnées à droite (dès 1280 px ; à 1024 px la colonne des documents était trop étroite) ── */}
+      <div className="grid items-start gap-4 lg:gap-5 xl:grid-cols-[minmax(0,1fr)_380px] xl:grid-rows-[auto_1fr]">
         {/* Documents */}
-        <section aria-label="Documents" className="order-2 flex min-w-0 flex-col gap-3 lg:order-none lg:col-start-1 lg:row-span-2 lg:row-start-1">
+        <section aria-label="Documents" className="order-2 flex min-w-0 flex-col gap-3 lg:order-none xl:col-start-1 xl:row-span-2 xl:row-start-1">
           <div className="flex items-baseline justify-between lg:hidden">
             <h2 className="q-h2">Documents</h2>
             <span className="text-[13px] tabular-nums text-[var(--q-text-4)]">{docs.length}</span>
@@ -316,7 +316,7 @@ export function ClientDetailView({
         </section>
 
         {/* Coordonnées */}
-        <section aria-label="Coordonnées" className="order-1 flex min-w-0 flex-col gap-2 lg:order-none lg:col-start-2 lg:row-start-1">
+        <section aria-label="Coordonnées" className="order-1 flex min-w-0 flex-col gap-2 lg:order-none xl:col-start-2 xl:row-start-1">
           <div className="flex items-center justify-between lg:hidden">
             <h2 className="q-h2">Coordonnées</h2>
             <button type="button" onClick={() => setEditOpen(true)} className="q-btn q-btn-ghost q-btn-sm !text-[var(--q-accent-strong)]">Modifier</button>
@@ -396,7 +396,7 @@ export function ClientDetailView({
 
         {/* Archivage */}
         {onArchive && (
-          <section aria-label="Archivage" className="q-card order-3 flex flex-col gap-2.5 p-[18px] lg:order-none lg:col-start-2 lg:row-start-2 lg:self-start">
+          <section aria-label="Archivage" className="q-card order-3 flex flex-col gap-2.5 p-[18px] lg:order-none xl:col-start-2 xl:row-start-2 xl:self-start">
             <h2 className="q-h2">Archivage</h2>
             {client.is_archived ? (
               <p className="text-sm leading-relaxed text-[var(--q-text-3)]">

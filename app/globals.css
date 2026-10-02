@@ -43,7 +43,7 @@
     --q-ink-strong: #0A1122;    /* Encre */
     --q-text-2: #334155;        /* Texte secondaire, menus */
     --q-text-3: #475569;        /* Ardoise : libellés */
-    --q-text-4: #64748B;        /* Méta, légendes */
+    --q-text-4: #5F6F86;        /* Méta, légendes (≥ 4,5:1 sur le fond, au lieu de #64748B du canevas) */
     --q-placeholder: #94A3B8;
     --q-accent: #2563EB;        /* Bleu Qonforme : accent unique */
     --q-accent-strong: #1D4ED8; /* Bleu profond */
@@ -871,6 +871,9 @@ html[data-standalone="true"] [role="button"] {
     box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 4px 12px -4px rgba(37,99,235,.6);
   }
   .q-btn-primary:hover { background: #1D4ED8; color: #FFFFFF; }
+  /* Thème sombre : même bleu qu'en clair (blanc sur #3B82F6 = 3,7:1, sous le seuil AA de 4,5:1) */
+  .dark .q-btn-primary { background: #2563EB; }
+  .dark .q-btn-primary:hover { background: #1D4ED8; }
   .q-btn-secondary {
     background: var(--q-surface); color: var(--q-ink); border-color: var(--q-field);
     box-shadow: 0 1px 2px rgba(10,17,34,.05);
@@ -958,8 +961,9 @@ html[data-standalone="true"] [role="button"] {
   .q-progress { height: 8px; border-radius: 999px; background: var(--q-line-soft); overflow: hidden; }
   .q-progress > span { display: block; height: 100%; border-radius: 999px; background: var(--q-accent); }
 
-  /* Tableaux */
-  .q-table { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--q-ink); }
+  /* Tableaux. position: relative retient les libellés sr-only (en position absolue) dans le
+     conteneur overflow-x-auto : sans cela ils en sortaient et la page défilait en largeur. */
+  .q-table { position: relative; width: 100%; border-collapse: collapse; font-size: 14px; color: var(--q-ink); }
   .q-table th {
     text-align: left; font-size: 12px; font-weight: 500; color: var(--q-text-4); white-space: nowrap;
     padding: 10px 12px; border-top: 1px solid var(--q-line-soft); border-bottom: 1px solid var(--q-line-soft);

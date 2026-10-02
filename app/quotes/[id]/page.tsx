@@ -102,7 +102,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
   /* ── Actions ── */
 
   // Les changements de statut sont vérifiés par la route (lib/utils/document-status.ts)
-  const changeStatus = async (newStatus: "accepted" | "rejected"): Promise<boolean> => {
+  const changeStatus = async (newStatus: "sent" | "accepted" | "rejected"): Promise<boolean> => {
     if (!quote) return false
     setFlag("status", true)
     try {

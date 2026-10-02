@@ -315,7 +315,7 @@ export function PurchaseOrderListView({
                   const late = p.status === "sent" && !!p.delivery_date && p.delivery_date < today
                   return (
                     <tr key={p.id} className="cursor-pointer" onClick={() => router.push(p.href)}>
-                      <td className="font-mono text-[13px]">
+                      <td className="whitespace-nowrap font-mono text-[13px]">
                         <Link href={p.href} className="text-[var(--q-accent-strong)] hover:underline" onClick={(e) => e.stopPropagation()}>
                           {p.po_number}
                         </Link>

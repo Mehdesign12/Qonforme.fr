@@ -83,7 +83,7 @@ function NavItem({ link, mode, pathname, onNavigate }: { link: NavLink; mode: Sh
 /** Carte de l'entreprise (initiales, raison sociale, SIREN) — mène aux réglages de l'entreprise. */
 function CompanyCard({ identity, onNavigate }: { identity: ShellIdentity; onNavigate?: () => void }) {
   const siren = formatSiren(identity.siren)
-  const href = identity.mode === "demo" ? "/demo/settings" : "/settings/company"
+  const href = identity.mode === "demo" ? "/demo/settings/company" : "/settings/company"
   const name = identity.companyName || "Votre entreprise"
   return (
     <Link
@@ -302,7 +302,7 @@ function PlusSheet({ open, onOpenChange, identity, onBug, onContact }: {
         <SheetTitle className="px-1 pb-1 pt-4 font-display text-[30px] font-semibold tracking-[-0.03em] text-[var(--q-ink)]">Plus</SheetTitle>
         <SheetDescription className="sr-only">Toutes les rubriques et votre compte.</SheetDescription>
 
-        <Link href={mode === "demo" ? "/demo/settings" : "/settings/company"} onClick={close} className="q-card mt-3 flex items-center gap-3 p-4 text-[var(--q-ink)]">
+        <Link href={mode === "demo" ? "/demo/settings/company" : "/settings/company"} onClick={close} className="q-card mt-3 flex items-center gap-3 p-4 text-[var(--q-ink)]">
           <Initials name={name} ink className="!size-11 !rounded-xl !text-sm" />
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-base font-semibold">{name}</span>
@@ -349,7 +349,9 @@ function PlusSheet({ open, onOpenChange, identity, onBug, onContact }: {
             </>
           ) : (
             <>
-              <SheetRow href="/demo/settings" onClick={close} icon={Building2} label="Paramètres" hint="Entreprise, modèles" />
+              <SheetRow href="/demo/settings/company" onClick={close} icon={Building2} label="Entreprise" hint="Coordonnées, SIREN, logo" />
+              <SheetRow href="/demo/settings/invoices" onClick={close} icon={FileCog} label="Modèles de documents" hint="Mentions, couleurs, conditions" />
+              <SheetRow href="/demo/settings/billing" onClick={close} icon={CreditCard} label="Abonnement" hint={identity.planName ? `Formule ${identity.planName}` : "Version gratuite"} />
               <SheetRow href="/" onClick={close} icon={House} label="Retour à l'accueil" />
             </>
           )}

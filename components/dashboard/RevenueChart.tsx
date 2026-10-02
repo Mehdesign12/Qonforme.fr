@@ -126,26 +126,29 @@ export function RevenueChart({ chart, recoveryRate }: { chart: ChartMonth[]; rec
         ))}
       </div>
 
-      {/* Données pour les lecteurs d'écran */}
-      <table className="sr-only">
-        <caption>Montant facturé par mois</caption>
-        <thead>
-          <tr>
-            <th scope="col">Mois</th>
-            <th scope="col">Facturé TTC</th>
-            <th scope="col">Factures émises</th>
-          </tr>
-        </thead>
-        <tbody>
-          {chart.map((m) => (
-            <tr key={m.key}>
-              <th scope="row">{m.long}{m.current ? " (en cours)" : ""}</th>
-              <td>{formatCurrency(m.value)}</td>
-              <td>{m.count ?? "—"}</td>
+      {/* Données pour les lecteurs d'écran. Le tableau est enveloppé : un <table>
+          ignore la largeur de 1 px de sr-only et faisait défiler la page en largeur sur mobile. */}
+      <div className="sr-only">
+        <table>
+          <caption>Montant facturé par mois</caption>
+          <thead>
+            <tr>
+              <th scope="col">Mois</th>
+              <th scope="col">Facturé TTC</th>
+              <th scope="col">Factures émises</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {chart.map((m) => (
+              <tr key={m.key}>
+                <th scope="row">{m.long}{m.current ? " (en cours)" : ""}</th>
+                <td>{formatCurrency(m.value)}</td>
+                <td>{m.count ?? "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   )
 }

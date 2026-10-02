@@ -7,6 +7,7 @@ import {
 } from "lucide-react"
 
 import { LandingHero } from "@/components/landing/LandingHero"
+import { PublicHeader } from "@/components/layout/PublicHeader"
 import { StorySection } from "@/components/landing/StorySection"
 import { MacBook, IPhone, SCREENS } from "@/components/landing/devices"
 import { Chip, CtaButtons, Floater, PanPhoto, PhotoBand, SectionTitle } from "@/components/landing/ui"
@@ -852,42 +853,45 @@ export default function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSONLD) }} />
       {/* Progression de la lecture (CSS seul, masquée sans support ou avec « Réduire les animations ») */}
       <span aria-hidden className="lp-progress" />
-      <LandingHero />
-      <TradeMarquee />
-      <ReformSection />
-      {PHOTOS.chantier && (
-        <PhotoBand
-          photo={PHOTOS.chantier}
-          label="Pour ceux qui facturent le soir"
-          title="Pour ceux qui facturent le soir,"
-          accent="après le chantier."
-          floater={<Floater icon={Send} tone="info" title={`Facture ${ENVOYEE.invoice_number} envoyée`} sub={`${ENVOYEE.client.name} · 21:47`} bob={1} />}
-        />
-      )}
-      <ProfilesSection />
-      <QuoteSection />
-      <ManifestoSection />
-      <MobileSection />
-      <StorySection />
-      <PaidSection />
-      {PHOTOS.finDeJournee && (
-        <PhotoBand
-          photo={PHOTOS.finDeJournee}
-          label="Le camion se range"
-          title="Le camion se range."
-          accent="Les relances partent sans vous."
-          stack
-          floater={<Floater icon={BellRing} tone="warn" title="Relance envoyée" sub={`${RELANCE.invoice_number} · ${formatCurrency(RELANCE.total_ttc)}`} bob={2} />}
-        />
-      )}
-      <TradesSection />
-      <StepsSection />
-      <IncludedSection />
-      <PricingSection />
-      <CommitmentsSection />
-      <FAQSection />
-      <ResourcesSection />
-      <FinalCta />
+      <PublicHeader isLandingPage />
+      <main>
+        <LandingHero />
+        <TradeMarquee />
+        <ReformSection />
+        {PHOTOS.chantier && (
+          <PhotoBand
+            photo={PHOTOS.chantier}
+            label="Pour ceux qui facturent le soir"
+            title="Pour ceux qui facturent le soir,"
+            accent="après le chantier."
+            floater={<Floater icon={Send} tone="info" title={`Facture ${ENVOYEE.invoice_number} envoyée`} sub={`${ENVOYEE.client.name} · 21:47`} bob={1} />}
+          />
+        )}
+        <ProfilesSection />
+        <QuoteSection />
+        <ManifestoSection />
+        <MobileSection />
+        <StorySection />
+        <PaidSection />
+        {PHOTOS.finDeJournee && (
+          <PhotoBand
+            photo={PHOTOS.finDeJournee}
+            label="Le camion se range"
+            title="Le camion se range."
+            accent="Les relances partent sans vous."
+            stack
+            floater={<Floater icon={BellRing} tone="warn" title="Relance envoyée" sub={`${RELANCE.invoice_number} · ${formatCurrency(RELANCE.total_ttc)}`} bob={2} />}
+          />
+        )}
+        <TradesSection />
+        <StepsSection />
+        <IncludedSection />
+        <PricingSection />
+        <CommitmentsSection />
+        <FAQSection />
+        <ResourcesSection />
+        <FinalCta />
+      </main>
       <Footer showCta={false} />
     </div>
   )

@@ -105,7 +105,7 @@ function AccountMenu({ identity }: { identity: ShellIdentity }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={10} className="w-[272px]">
           <div className="mb-1 flex items-center gap-3 rounded-[10px] bg-[var(--q-surface-2)] p-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--q-accent)] text-[13px] font-semibold text-white">
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--q-accent)] text-[13px] font-semibold text-white dark:bg-[#2563EB]">
               {initialsOf(name)}
             </span>
             <span className="flex min-w-0 flex-col">
@@ -118,20 +118,18 @@ function AccountMenu({ identity }: { identity: ShellIdentity }) {
               </span>
             </span>
           </div>
-          <DropdownMenuItem onClick={() => router.push(demo ? "/demo/settings" : "/settings/company")}>
+          <DropdownMenuItem onClick={() => router.push(demo ? "/demo/settings/company" : "/settings/company")}>
             <Building2 aria-hidden />
             Entreprise
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push(demo ? "/demo/settings" : "/settings/invoices")}>
+          <DropdownMenuItem onClick={() => router.push(demo ? "/demo/settings/invoices" : "/settings/invoices")}>
             <FileCog aria-hidden />
             Modèles de documents
           </DropdownMenuItem>
-          {!demo && (
-            <DropdownMenuItem onClick={() => router.push("/settings/billing")}>
-              <CreditCard aria-hidden />
-              Abonnement
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem onClick={() => router.push(demo ? "/demo/settings/billing" : "/settings/billing")}>
+            <CreditCard aria-hidden />
+            Abonnement
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
             {isDark ? <Sun aria-hidden /> : <Moon aria-hidden />}
             {isDark ? "Thème clair" : "Thème sombre"}
@@ -202,8 +200,9 @@ export function Header({ identity }: { identity: ShellIdentity }) {
 
   return (
     <>
+      {/* shrink-0 : dans la colonne flex qui défile, la barre se tassait à 40 px dès que la page dépassait l'écran */}
       <header
-        className="q-float sticky top-3 z-30 mx-6 mt-3 hidden h-14 items-center gap-3 rounded-[14px] pl-4 pr-2.5 lg:flex print:!hidden"
+        className="q-float sticky top-3 z-30 mx-6 mt-3 hidden h-14 shrink-0 items-center gap-3 rounded-[14px] pl-4 pr-2.5 lg:flex print:!hidden"
         style={{ isolation: "isolate" }}
       >
         <nav aria-label="Fil d'Ariane" className="flex min-w-0 shrink-0 items-center gap-2 text-sm">

@@ -479,7 +479,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         <span className="h-4 w-28 rounded bg-[var(--q-sunken)]" />
         <span className="h-8 w-72 max-w-full rounded-lg bg-[var(--q-sunken)]" />
       </div>
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="q-paper-bed h-[420px]" />
         <div className="q-card h-[240px]" />
       </div>

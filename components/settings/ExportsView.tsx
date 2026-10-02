@@ -58,7 +58,7 @@ export function ExportsView({
           <ContentCard />
         </>
       ) : (
-        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)]">
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)]">
           <FecExportSection mode={mode} siren={siren} sirenMissing={sirenMissing} />
           <div className="flex flex-col gap-4">
             <ContentCard />
@@ -77,7 +77,7 @@ export function ExportsView({
 
 function ContentCard() {
   return (
-    <SettingsCard id="contenu" title="Contenu du fichier">
+    <SettingsCard id="contenu-fichier" title="Contenu du fichier">
       <ul className="flex flex-col gap-2.5">
         {CONTENT.map((item) => (
           <li key={item} className="flex items-start gap-2.5 text-sm text-[var(--q-text-2)]">

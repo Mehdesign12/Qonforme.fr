@@ -6,6 +6,7 @@
  * même rendu. Les styles vivent dans app/globals.css (classes q-*) et passent
  * par les jetons --q-*, thème sombre compris.
  */
+import { Children } from "react"
 import Link from "next/link"
 import { Check, Clock, Send, X, Undo2, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -40,7 +41,8 @@ export function PageHeader({
     <div className={cn("flex flex-wrap items-end justify-between gap-4", className)}>
       <div className="flex min-w-0 flex-col gap-1">
         {backHref && (
-          <Link href={backHref} className="q-link mb-1 inline-flex items-center gap-1 text-[15px] lg:hidden">
+          // Cible tactile de 44 px ; les marges négatives gardent la place qu'occupait le lien (23 px + mb-1)
+          <Link href={backHref} className="q-link -mb-1.5 -mt-2.5 inline-flex min-h-11 items-center gap-1 text-[15px] lg:hidden">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
             {backLabel ?? "Retour"}
           </Link>
@@ -134,9 +136,14 @@ export function Kpi({
   )
 }
 
-/** Grille d'indicateurs : 2 colonnes sur mobile, jusqu'à 4 sur ordinateur. */
+/**
+ * Grille d'indicateurs : 2 colonnes sur mobile, jusqu'à 4 sur ordinateur. Quatre indicateurs
+ * restent sur 2 colonnes jusqu'à 1280 px : à 1024 px, à côté de la barre latérale, une carte
+ * sur quatre ne fait que 170 px et les montants en débordaient.
+ */
 export function KpiGrid({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("grid grid-cols-2 gap-3 lg:grid-cols-4", className)}>{children}</div>
+  const four = Children.toArray(children).length >= 4
+  return <div className={cn("grid grid-cols-2 gap-3", four ? "xl:grid-cols-4" : "lg:grid-cols-4", className)}>{children}</div>
 }
 
 /* ------------------------------------------------------------------ */
