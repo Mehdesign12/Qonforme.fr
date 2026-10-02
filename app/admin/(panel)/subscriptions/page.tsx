@@ -117,8 +117,8 @@ export default async function AdminSubscriptionsPage({
           className="h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         >
           <option value="">Tous les plans</option>
-          <option value="starter">Starter</option>
-          <option value="pro">Pro</option>
+          <option value="starter">Essentiel</option>
+          <option value="pro">Artisan</option>
         </select>
         <button type="submit" className="h-9 px-4 text-sm font-medium rounded-lg bg-[#2563EB] text-white hover:bg-[#1d4ed8] transition-colors">
           Filtrer

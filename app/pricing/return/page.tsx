@@ -7,15 +7,19 @@
  *
  * Cette page :
  *   1. Vérifie le statut de la session Stripe
- *   2. Si le paiement est validé (session.status === 'complete'), active l'abonnement en DB
+ *   2. Si le paiement est terminé (session.status === 'complete'), active la formule en base
  *      — de façon idempotente, donc sans risque de doublon avec le webhook
- *   3. Redirige vers /dashboard ou /pricing selon le résultat
+ *   3. Renvoie vers `next` (la facture à envoyer) ou le tableau de bord
+ *
+ * `redirect()` lève une exception interne de Next.js : il est appelé hors du
+ * try/catch, sinon le catch l'intercepte et renvoie à tort vers le choix de formule.
  */
 import { redirect } from 'next/navigation'
 import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe/client'
 import { upsertSubscription } from '@/lib/stripe/subscription'
-import { getPlanByPriceId, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { getPlanByPriceId, isPlanId, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { mapStripeStatus, safeNextPath } from '@/lib/stripe/access'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,80 +33,73 @@ function getPeriodEnd(sub: Stripe.Subscription): Date | null {
 }
 
 interface ReturnPageProps {
-  searchParams: Promise<{ session_id?: string }>
+  searchParams: Promise<{ session_id?: string; next?: string }>
 }
 
 export default async function PricingReturnPage({ searchParams }: ReturnPageProps) {
-  const { session_id } = await searchParams
+  const { session_id, next } = await searchParams
+  const target = safeNextPath(next) ?? '/dashboard'
+  const backToPlans = `/signup/plan${safeNextPath(next) ? `?next=${encodeURIComponent(target)}` : ''}`
 
-  if (!session_id) {
-    redirect('/signup/plan')
-  }
+  if (!session_id) redirect(backToPlans)
+
+  let destination = backToPlans
 
   try {
     const session = await stripe.checkout.sessions.retrieve(session_id)
 
-    if (session.status !== 'complete') {
-      // Session encore ouverte ou expirée → retour pricing
-      redirect('/signup/plan')
-    }
+    if (session.status === 'complete') {
+      // Le paiement est terminé : l'artisan repart vers sa facture, même si
+      // l'activation ci-dessous échoue (le webhook l'activera de son côté).
+      destination = target
 
-    // ── Paiement confirmé — activer l'abonnement en DB ──────────────────────
-    // Sert de filet de sécurité si le webhook Stripe n'a pas encore tiré (ou a échoué).
-    // upsertSubscription est idempotent : si le webhook a déjà activé l'abonnement, pas de doublon.
-    const subscriptionId = session.subscription as string | null
-    const customerId     = session.customer as string
+      const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id
+      const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id
 
-    if (subscriptionId) {
-      try {
-        const stripeSub = await stripe.subscriptions.retrieve(subscriptionId)
-        const priceId   = stripeSub.items.data[0]?.price.id
+      if (subscriptionId && customerId) {
+        try {
+          const stripeSub = await stripe.subscriptions.retrieve(subscriptionId)
+          const priceId = stripeSub.items.data[0]?.price.id
 
-        if (priceId) {
-          // Résoudre le plan : metadata.plan en source principale, getPlanByPriceId en fallback
-          const metaPlan   = (session.metadata?.plan ?? stripeSub.metadata?.plan) as PlanId | undefined
-          const metaPeriod = (session.metadata?.billing_period ?? stripeSub.metadata?.billing_period) as BillingPeriod | undefined
-          const planInfo   = getPlanByPriceId(priceId)
+          if (priceId) {
+            const metaPlan = session.metadata?.plan ?? stripeSub.metadata?.plan
+            const metaPeriod = session.metadata?.billing_period ?? stripeSub.metadata?.billing_period
+            const planInfo = getPlanByPriceId(priceId)
 
-          const resolvedPlan: PlanId | undefined = planInfo?.plan ?? metaPlan
-          const resolvedPeriod: BillingPeriod    = planInfo?.period ?? metaPeriod ?? 'monthly'
+            const resolvedPlan: PlanId | undefined = planInfo?.plan ?? (isPlanId(metaPlan) ? metaPlan : undefined)
+            const resolvedPeriod: BillingPeriod = planInfo?.period ?? (metaPeriod === 'yearly' ? 'yearly' : 'monthly')
 
-          // Résoudre le user_id (même stratégie en 3 niveaux que le webhook)
-          const userId =
-            (session.client_reference_id ?? undefined) ||
-            (session.metadata?.user_id as string | undefined) ||
-            stripeSub.metadata?.user_id
+            // user_id : même stratégie en 3 niveaux que le webhook
+            const userId =
+              session.client_reference_id ||
+              session.metadata?.user_id ||
+              stripeSub.metadata?.user_id
 
-          if (resolvedPlan && userId && (['starter', 'pro'] as const).includes(resolvedPlan)) {
-            await upsertSubscription({
-              userId,
-              stripeCustomerId:      customerId,
-              stripeSubscriptionId:  subscriptionId,
-              stripePriceId:         priceId,
-              plan:                  resolvedPlan,
-              billingPeriod:         resolvedPeriod,
-              status:                'active',
-              currentPeriodEnd:      getPeriodEnd(stripeSub),
-            })
-            console.log(`[/pricing/return] Abonnement activé pour user ${userId} — plan ${resolvedPlan} (${resolvedPeriod})`)
-          } else {
-            // Plan ou user_id introuvable — le webhook devrait couvrir ce cas
-            console.warn(`[/pricing/return] Plan ou user_id introuvable — session ${session_id} — activation via webhook attendue`)
+            if (resolvedPlan && userId) {
+              await upsertSubscription({
+                userId,
+                stripeCustomerId: customerId,
+                stripeSubscriptionId: subscriptionId,
+                stripePriceId: priceId,
+                plan: resolvedPlan,
+                billingPeriod: resolvedPeriod,
+                status: mapStripeStatus(stripeSub.status),
+                currentPeriodEnd: getPeriodEnd(stripeSub),
+              })
+              console.log(`[/pricing/return] Formule ${resolvedPlan} (${resolvedPeriod}) activée pour user ${userId}`)
+            } else {
+              console.warn(`[/pricing/return] Formule ou user_id introuvable — session ${session_id} — activation via webhook attendue`)
+            }
           }
+        } catch (activationErr) {
+          console.error('[/pricing/return] Erreur lors de l\'activation de la formule:', activationErr)
         }
-      } catch (activationErr) {
-        // L'activation a échoué, mais le paiement est confirmé.
-        // Le webhook activera l'abonnement de son côté.
-        // On redirige quand même vers /dashboard : l'utilisateur a payé.
-        console.error('[/pricing/return] Erreur lors de l\'activation de l\'abonnement:', activationErr)
       }
     }
-
-    // Paiement réussi → dashboard (le middleware laissera passer si upsert a réussi)
-    redirect('/dashboard')
   } catch (err) {
-    // Erreur Stripe (session_id invalide, réseau) → retour pricing
+    // session_id invalide, réseau → retour au choix de formule
     console.error('[/pricing/return] Erreur récupération session Stripe:', err)
-    redirect('/signup/plan')
   }
+
+  redirect(destination)
 }

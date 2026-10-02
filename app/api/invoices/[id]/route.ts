@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { canTransition, isContentLocked, transitionError } from "@/lib/utils/document-status"
+import { requireIssuingAccess } from "@/lib/stripe/subscription"
 
 interface Params {
   params: Promise<{ id: string }>
@@ -66,6 +67,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         { error: transitionError("invoice", current.status, body.status) },
         { status: 403 }
       )
+    }
+
+    // Sortir du brouillon, c'est émettre la facture (« Marquer comme envoyée ») :
+    // même mur de paiement que l'envoi par email.
+    if (current.status === "draft" && body.status !== undefined && body.status !== "draft") {
+      const blocked = await requireIssuingAccess(supabase, user.id)
+      if (blocked) return blocked
     }
   }
 

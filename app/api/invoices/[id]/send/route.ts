@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { statusAfterSend } from "@/lib/utils/document-status"
+import { requireIssuingAccess } from "@/lib/stripe/subscription"
 import { sendEmail } from "@/lib/email/resend"
 import { buildInvoiceEmail } from "@/lib/email/templates/invoice"
 import { generateInvoicePdf } from "@/lib/pdf/invoice"
@@ -15,6 +16,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+
+    // Envoyer une facture demande une formule active (devis gratuits, factures payantes)
+    const blocked = await requireIssuingAccess(supabase, user.id)
+    if (blocked) return blocked
 
     const { id } = await params
     console.log(`[invoice-send] Début envoi facture ${id} par user ${user.id}`)

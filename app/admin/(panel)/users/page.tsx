@@ -129,8 +129,8 @@ export default async function AdminUsersPage({
           className="h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         >
           <option value="">Tous les plans</option>
-          <option value="starter">Starter</option>
-          <option value="pro">Pro</option>
+          <option value="starter">Essentiel</option>
+          <option value="pro">Artisan</option>
           <option value="none">Sans plan</option>
         </select>
         <select

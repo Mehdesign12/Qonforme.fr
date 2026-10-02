@@ -20,6 +20,11 @@ export async function GET(request: NextRequest, { params }: Params) {
       .single()
     if (invErr || !invoice) return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
 
+    // Le XML Factur-X est la facture électronique elle-même : rien pour un brouillon
+    if (invoice.status === "draft") {
+      return NextResponse.json({ error: "Émettez d'abord la facture : un brouillon n'a pas de fichier Factur-X." }, { status: 422 })
+    }
+
     const { data: company } = await supabase
       .from("companies")
       .select("name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice")

@@ -1,6 +1,9 @@
+import { NextResponse } from 'next/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { PlanId, BillingPeriod } from './plans'
+import { canIssueInvoices, SUBSCRIPTION_REQUIRED, type SubscriptionStatus } from './access'
 
 export interface Subscription {
   id: string
@@ -10,7 +13,7 @@ export interface Subscription {
   stripe_price_id: string | null
   plan: PlanId
   billing_period: BillingPeriod
-  status: 'active' | 'past_due' | 'canceled' | 'incomplete'
+  status: SubscriptionStatus
   current_period_end: string | null
   canceled_at: string | null
   created_at: string
@@ -144,60 +147,42 @@ export async function updateSubscriptionStatus(
 }
 
 /**
- * Vérifie si l'utilisateur a un accès actif (abonnement active)
+ * Mur de paiement côté serveur : à appeler dans toute route qui émet une
+ * facture (envoi, passage hors brouillon) ou qui relance un client.
+ *
+ * Renvoie une réponse 402 `SUBSCRIPTION_REQUIRED` si le compte n'a pas de
+ * formule active, sinon `null`. Masquer un bouton ne protège rien : c'est la
+ * route qui refuse.
+ *
+ * Erreur de lecture (réseau, timeout) : 503 plutôt qu'un faux « sans formule »,
+ * qui afficherait le mur de paiement à un abonné (même piège que le middleware,
+ * voir CLAUDE.md).
  */
-export function isSubscriptionActive(sub: Subscription | null): boolean {
-  if (!sub) return false
-  return sub.status === 'active'
-}
-
-/**
- * Vérifie si la création de facture est autorisée
- * Retourne true si autorisé, false si bloqué (limite starter atteinte)
- */
-export async function canCreateInvoice(userId: string, sub: Subscription | null): Promise<{
-  allowed: boolean
-  reason?: string
-  invoicesThisMonth?: number
-  limit?: number
-}> {
-  if (!sub || sub.status !== 'active') {
-    return { allowed: false, reason: 'no_active_subscription' }
-  }
-
-  // Plan Pro : aucune restriction
-  if (sub.plan === 'pro') {
-    return { allowed: true }
-  }
-
-  // Plan Starter : max 10 factures/mois
-  const supabase = createAdminClient()
-  const startOfMonth = new Date()
-  startOfMonth.setDate(1)
-  startOfMonth.setHours(0, 0, 0, 0)
-
-  const { count, error } = await supabase
-    .from('invoices')
-    .select('id', { count: 'exact', head: true })
+export async function requireIssuingAccess(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<NextResponse | null> {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('status')
     .eq('user_id', userId)
-    .gte('created_at', startOfMonth.toISOString())
+    .maybeSingle()
 
   if (error) {
-    console.error('[canCreateInvoice] Erreur count:', error)
-    return { allowed: true } // fail open pour ne pas bloquer l'utilisateur sur erreur technique
+    console.error('[requireIssuingAccess] Lecture abonnement impossible:', error)
+    return NextResponse.json(
+      { error: 'Vérification de votre formule impossible pour le moment. Réessayez dans un instant.' },
+      { status: 503 }
+    )
   }
 
-  const invoicesThisMonth = count ?? 0
-  const limit = 10
+  if (canIssueInvoices(data?.status)) return null
 
-  if (invoicesThisMonth >= limit) {
-    return {
-      allowed: false,
-      reason: 'starter_limit_reached',
-      invoicesThisMonth,
-      limit,
-    }
-  }
-
-  return { allowed: true, invoicesThisMonth, limit }
+  return NextResponse.json(
+    {
+      error: 'Choisissez une formule pour envoyer vos factures. Vos devis restent gratuits.',
+      code: SUBSCRIPTION_REQUIRED,
+    },
+    { status: 402 }
+  )
 }

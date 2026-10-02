@@ -69,7 +69,7 @@ export default function ComparatifIndexPage() {
       <section className="bg-[#0F172A] text-white">
         <div className="max-w-5xl mx-auto px-4 py-16 text-center">
           <h2 className="text-2xl font-bold mb-4">Convaincu ?</h2>
-          <p className="text-slate-300 mb-8 max-w-xl mx-auto">Essayez Qonforme gratuitement. Conforme Factur-X 2026, a partir de 9 €/mois.</p>
+          <p className="text-slate-300 mb-8 max-w-xl mx-auto">Vos devis sont gratuits. Vous payez quand vous facturez, à partir de 10 € HT/mois.</p>
           <Link href="/signup" className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8] shadow-lg">
             Commencer gratuitement <ArrowRight className="w-4 h-4" />
           </Link>

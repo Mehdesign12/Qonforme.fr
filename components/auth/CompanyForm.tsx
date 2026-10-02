@@ -126,7 +126,7 @@ export default function CompanyForm() {
       }
       toast.success("Profil entreprise enregistré !")
       trackEvent("CompleteRegistration", { currency: "EUR", value: 0 })
-      router.push("/signup/plan")
+      router.push("/dashboard")
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur lors de la sauvegarde"
       toast.error(msg)

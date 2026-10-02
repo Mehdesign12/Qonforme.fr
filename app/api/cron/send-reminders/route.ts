@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/resend"
 import { buildReminderEmail } from "@/lib/email/templates/reminder"
+import { canIssueInvoices } from "@/lib/stripe/access"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -89,10 +90,28 @@ export async function GET(request: NextRequest) {
     return result
   }
 
+  // ── Formule active : les relances automatiques font partie des formules payantes.
+  //    Un compte gratuit ou résilié garde ses factures, mais n'est plus relancé.
+  const issuingCache = new Map<string, boolean>()
+
+  async function canRemind(userId: string): Promise<boolean> {
+    if (issuingCache.has(userId)) return issuingCache.get(userId)!
+    const { data, error } = await admin
+      .from("subscriptions")
+      .select("status")
+      .eq("user_id", userId)
+      .maybeSingle()
+    // Erreur de lecture : on s'abstient (la relance repartira au prochain passage)
+    const allowed = !error && canIssueInvoices(data?.status)
+    issuingCache.set(userId, allowed)
+    return allowed
+  }
+
   // ── Traitement des relances 1 ──────────────────────────────────────────────
   for (const invoice of r1Invoices ?? []) {
     const clientEmail = invoice.client?.email
     if (!clientEmail) { results.reminder_1.skipped++; continue }
+    if (!(await canRemind(invoice.user_id))) { results.reminder_1.skipped++; continue }
 
     try {
       const company     = await getCompany(invoice.user_id)
@@ -141,6 +160,7 @@ export async function GET(request: NextRequest) {
   for (const invoice of r2Invoices ?? []) {
     const clientEmail = invoice.client?.email
     if (!clientEmail) { results.reminder_2.skipped++; continue }
+    if (!(await canRemind(invoice.user_id))) { results.reminder_2.skipped++; continue }
 
     try {
       const company     = await getCompany(invoice.user_id)

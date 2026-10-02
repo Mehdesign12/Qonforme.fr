@@ -1,448 +1,301 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
-  CheckCircle2,
   AlertCircle,
-  XCircle,
-  Clock,
-  Loader2,
-  ExternalLink,
-  Zap,
-  Crown,
-  CreditCard,
+  CalendarClock,
   Check,
-  ArrowUpRight,
-  Calendar,
-  RefreshCw,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  Loader2,
+  ShieldCheck,
 } from 'lucide-react'
-import { PLANS } from '@/lib/stripe/plans'
+import { PLANS, FREE_FEATURES, formatEuros, withVat } from '@/lib/stripe/plans'
+import { canIssueInvoices, GUARANTEE_DAYS } from '@/lib/stripe/access'
 import type { Subscription } from '@/lib/stripe/subscription'
 
-const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
+export type GuaranteeInfo =
+  | { eligible: true; endsAt: string; amountPaid: number }
+  | { eligible: false; reason: 'used' | 'expired' | 'no_payment' | 'processing'; endsAt: string | null }
 
 interface BillingPageClientProps {
   subscription: Subscription | null
-  invoicesThisMonth: number
+  guarantee: GuaranteeInfo | null
+  cancelAtPeriodEnd: boolean
 }
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-const STATUS_CONFIG = {
-  active: {
-    icon: CheckCircle2,
-    label: 'Actif',
-    color: 'text-[#10B981]',
-    bg: 'bg-[#D1FAE5]',
-    border: 'border-[#6EE7B7]',
-  },
-  past_due: {
-    icon: AlertCircle,
-    label: 'Paiement en échec',
-    color: 'text-[#D97706]',
-    bg: 'bg-[#FEF3C7]',
-    border: 'border-[#FCD34D]',
-  },
-  canceled: {
-    icon: XCircle,
-    label: 'Annulé',
-    color: 'text-[#EF4444]',
-    bg: 'bg-[#FEE2E2]',
-    border: 'border-[#FCA5A5]',
-  },
-  incomplete: {
-    icon: Clock,
-    label: 'En attente',
-    color: 'text-[#6B7280]',
-    bg: 'bg-[#F1F5F9]',
-    border: 'border-[#CBD5E1]',
-  },
-}
+const card = 'bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-6'
+const btnPrimary = 'inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-5 text-sm font-semibold text-white hover:bg-[#1D4ED8] transition-colors disabled:opacity-60'
+const btnSecondary = 'inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] px-5 text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0] hover:border-[#94A3B8] transition-colors disabled:opacity-60'
 
-export default function BillingPageClient({
-  subscription,
-  invoicesThisMonth,
-}: BillingPageClientProps) {
-  const [loadingPortal, setLoadingPortal] = useState<'manage' | 'upgrade' | null>(null)
+/**
+ * Paramètres › Abonnement.
+ *
+ * Trois cas : version gratuite (jamais abonné, résilié, paiement abandonné),
+ * formule active, formule en impayé (délai de grâce : l'émission continue).
+ * Le remboursement « satisfait ou remboursé » se fait ici, sans contact humain.
+ */
+export default function BillingPageClient({ subscription, guarantee, cancelAtPeriodEnd }: BillingPageClientProps) {
+  const router = useRouter()
+  const [loadingPortal, setLoadingPortal] = useState(false)
   const [portalError, setPortalError] = useState<string | null>(null)
 
-  const plan = subscription?.plan ? PLANS[subscription.plan as keyof typeof PLANS] : null
-  const statusKey =
-    subscription?.status && STATUS_CONFIG[subscription.status as keyof typeof STATUS_CONFIG]
-      ? (subscription.status as keyof typeof STATUS_CONFIG)
-      : 'incomplete'
-  const statusConfig = STATUS_CONFIG[statusKey]
-  const StatusIcon = statusConfig.icon
-
-  async function openPortal(action: 'manage' | 'upgrade') {
-    setLoadingPortal(action)
+  async function openPortal() {
+    setLoadingPortal(true)
     setPortalError(null)
     try {
       const res = await fetch('/api/stripe/portal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action: 'manage' }),
       })
       const data = await res.json()
       if (!res.ok) {
-        setPortalError(data.error ?? "Erreur lors de l'ouverture du portail")
-        setLoadingPortal(null)
+        setPortalError(data.error ?? "L'espace de paiement n'a pas pu s'ouvrir.")
+        setLoadingPortal(false)
         return
       }
       window.location.href = data.url
     } catch {
-      setPortalError('Erreur réseau. Réessaie.')
-      setLoadingPortal(null)
+      setPortalError('Erreur réseau. Réessayez.')
+      setLoadingPortal(false)
     }
   }
 
-  // ── Pas d'abonnement du tout ─────────────────────────────────────────────
-  if (!subscription) {
+  const essentiel = PLANS.starter
+  const active = canIssueInvoices(subscription?.status)
+
+  // ── Version gratuite ────────────────────────────────────────────────────
+  if (!subscription || !active) {
+    const ended = subscription?.status === 'canceled'
     return (
-      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-8 text-center max-w-md mx-auto">
-        <div className="w-14 h-14 rounded-full bg-[#EFF6FF] flex items-center justify-center mx-auto mb-4">
-          <CreditCard className="w-7 h-7 text-[#2563EB]" />
+      <div className="space-y-5 max-w-2xl">
+        {ended && (
+          <div className="rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032] px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+            Votre formule {subscription?.plan ? PLANS[subscription.plan]?.name : ''} est terminée
+            {subscription?.canceled_at ? <> depuis le {formatDate(subscription.canceled_at)}</> : null}.
+            Vos factures restent consultables et téléchargeables.
+          </div>
+        )}
+
+        <div className={card}>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Version gratuite</h2>
+              <p className="text-sm text-slate-500 mt-1">Devis illimités, sans carte bancaire.</p>
+            </div>
+            <span className="rounded-full bg-[#F1F5F9] dark:bg-[#162032] px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300">0 €</span>
+          </div>
+          <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+            {FREE_FEATURES.map((f) => (
+              <li key={f} className="flex items-start gap-2 text-sm text-[#334155] dark:text-slate-300">
+                <Check className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" aria-hidden />
+                {f}
+              </li>
+            ))}
+          </ul>
         </div>
-        <h2 className="text-lg font-semibold text-[#0F172A] dark:text-[#E2E8F0] mb-2">Aucun abonnement actif</h2>
-        <p className="text-sm text-slate-500 mb-6">
-          Choisis un plan pour accéder à toutes les fonctionnalités de Qonforme.
-        </p>
-        <button
-          onClick={() => (window.location.href = '/signup/plan')}
-          className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
-        >
-          <Zap className="w-4 h-4" />
-          Choisir un plan
-        </button>
+
+        <div className={`${card} border-[#2563EB] dark:border-[#2563EB]`}>
+          <h2 className="text-base font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Pour envoyer vos factures : {essentiel.name}</h2>
+          <p className="text-sm text-slate-500 mt-1">
+            {formatEuros(essentiel.monthlyPrice)} HT par mois, ou {formatEuros(essentiel.yearlyMonthlyEquivalent)} HT par mois à l&apos;année
+            ({formatEuros(essentiel.yearlyPrice)} HT, soit {formatEuros(withVat(essentiel.yearlyPrice))} TTC).
+          </p>
+          <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+            {essentiel.features.map((f) => (
+              <li key={f} className="flex items-start gap-2 text-sm text-[#334155] dark:text-slate-300">
+                <Check className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" aria-hidden />
+                {f}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
+            <Link href="/signup/plan" className={btnPrimary}>Choisir {essentiel.name}</Link>
+            <span className="text-xs text-slate-500">Satisfait ou remboursé {GUARANTEE_DAYS} jours · Sans engagement</span>
+          </div>
+        </div>
       </div>
     )
   }
 
-  const isStarter = subscription.plan === 'starter'
-  const isPro = subscription.plan === 'pro'
-  const invoiceLimit = plan?.invoiceLimit ?? null
-  const invoicePercent = invoiceLimit
-    ? Math.min(100, Math.round((invoicesThisMonth / invoiceLimit) * 100))
-    : 0
-  const isNearLimit = invoiceLimit !== null && invoicesThisMonth >= invoiceLimit * 0.8
-
-  // Features du plan courant ; features Pro exclusives
-  const currentFeatures = plan?.features ?? []
-  const proFeatures = PLANS.pro.features
-  const proExclusiveFeatures = proFeatures.filter((f) => !currentFeatures.includes(f))
-
-  // Prix affiché
-  const displayPrice = plan
-    ? subscription.billing_period === 'monthly'
-      ? `${plan.monthlyPrice} €/mois HT`
-      : `${plan.yearlyPrice} €/an HT`
-    : null
+  // ── Formule en cours ────────────────────────────────────────────────────
+  const plan = PLANS[subscription.plan]
+  const monthly = subscription.billing_period === 'monthly'
+  const chargeHt = plan ? (monthly ? plan.monthlyPrice : plan.yearlyPrice) : null
+  const pastDue = subscription.status === 'past_due'
 
   return (
     <div className="space-y-5 max-w-2xl">
-
-      {/* ── Alerte si abonnement inactif ──────────────────────────────────── */}
-      {statusKey === 'past_due' && (
-        <div className="bg-[#FEF3C7] border border-[#FCD34D] rounded-xl px-4 py-3 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-[#D97706] shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-[#92400E]">
-              Paiement en échec — Mets à jour ta carte bancaire pour rétablir l&apos;accès
+      {pastDue && (
+        <div role="alert" className="rounded-xl border border-[#FCD34D] bg-[#FEF3C7] px-4 py-3 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-[#D97706] shrink-0 mt-0.5" aria-hidden />
+          <div className="text-sm text-[#92400E]">
+            <p className="font-semibold">Le dernier paiement n&apos;est pas passé.</p>
+            <p className="mt-0.5">
+              Une nouvelle tentative aura lieu automatiquement. Mettez à jour votre moyen de paiement pour que
+              votre formule continue. Vos factures restent accessibles.
             </p>
-            <button
-              onClick={() => openPortal('manage')}
-              className="text-sm font-semibold text-[#92400E] underline mt-1"
-            >
-              Mettre à jour mes informations de paiement →
+            <button type="button" onClick={openPortal} className="mt-2 font-semibold underline min-h-[44px]">
+              Mettre à jour mon moyen de paiement
             </button>
           </div>
         </div>
       )}
 
-      {statusKey === 'canceled' && (
-        <div className="bg-[#FEE2E2] border border-[#FCA5A5] rounded-xl px-4 py-3 flex items-start gap-3">
-          <XCircle className="w-5 h-5 text-[#EF4444] shrink-0 mt-0.5" />
+      <div className={card}>
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-[#991B1B]">
-              Abonnement annulé — Renouvelle ton abonnement pour retrouver l&apos;accès
+            <h2 className="text-base font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Formule {plan?.name ?? ''}</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              {monthly ? 'Paiement mensuel' : 'Paiement annuel'}
+              {chargeHt !== null && (
+                <> · <span className="font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatEuros(chargeHt)} HT</span> {monthly ? 'par mois' : 'par an'} ({formatEuros(withVat(chargeHt))} TTC)</>
+              )}
             </p>
-            <button
-              onClick={() => (window.location.href = '/signup/plan')}
-              className="text-sm font-semibold text-[#991B1B] underline mt-1"
-            >
-              Voir les plans →
-            </button>
           </div>
-        </div>
-      )}
-
-      {/* ── Carte plan actuel ─────────────────────────────────────────────── */}
-      <div className={`relative overflow-hidden bg-white dark:bg-[#0F1E35] rounded-xl border-2 p-6 ${isPro ? 'border-[#2563EB]' : 'border-[#E2E8F0] dark:border-[#1E3A5F]'}`}>
-        {/* Q filigrane en fond de la card plan actif */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-8 -bottom-8 select-none"
-          style={{ opacity: 0.06, zIndex: 0 }}
-        >
-          <Image src={PICTO_Q} alt="" width={180} height={180} className="w-[160px]" sizes="160px" loading="lazy" />
-        </div>
-
-        {/* En-tête plan */}
-        <div className="flex items-start justify-between gap-4 mb-5">
-          <div className="flex items-center gap-3">
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-              isStarter ? 'bg-[#EFF6FF]' : 'bg-gradient-to-br from-[#1D4ED8] to-[#7C3AED]'
-            }`}>
-              {isStarter
-                ? <Zap className="w-5 h-5 text-[#2563EB]" />
-                : <Crown className="w-5 h-5 text-white" />
-              }
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-[#0F172A] dark:text-[#E2E8F0]">
-                Plan {plan?.name ?? subscription.plan}
-              </h2>
-              <p className="text-sm text-slate-500">
-                {subscription.billing_period === 'monthly' ? 'Facturation mensuelle' : 'Facturation annuelle'}
-                {displayPrice && (
-                  <>
-                    {' · '}
-                    <span className="font-semibold text-[#0F172A]">{displayPrice}</span>
-                  </>
-                )}
-              </p>
-            </div>
-          </div>
-
-          {/* Badge statut */}
-          <span
-            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}
-          >
-            <StatusIcon className="w-3.5 h-3.5" />
-            {statusConfig.label}
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+            pastDue ? 'border-[#FCD34D] bg-[#FEF3C7] text-[#92400E]' : 'border-[#6EE7B7] bg-[#D1FAE5] text-[#065F46]'
+          }`}>
+            {pastDue ? <AlertCircle className="w-3.5 h-3.5" aria-hidden /> : <CheckCircle2 className="w-3.5 h-3.5" aria-hidden />}
+            {pastDue ? 'Paiement en attente' : 'Active'}
           </span>
         </div>
 
-        {/* Dates */}
-        {subscription.current_period_end && statusKey !== 'canceled' && (
-          <div className="flex items-center gap-2 text-sm text-slate-500 mb-5 pb-5 border-b border-[#F1F5F9]">
-            <Calendar className="w-4 h-4 shrink-0 text-slate-400" />
+        {subscription.current_period_end && (
+          <p className="mt-4 flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <CalendarClock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" aria-hidden />
             <span>
-              {statusKey === 'active' ? 'Prochain renouvellement le' : 'Valable jusqu&apos;au'}{' '}
-              <span className="font-semibold text-[#0F172A]">
-                {formatDate(subscription.current_period_end)}
-              </span>
+              {cancelAtPeriodEnd
+                ? <>Résiliation programmée : la formule reste active jusqu&apos;au <strong className="font-semibold">{formatDate(subscription.current_period_end)}</strong>.</>
+                : <>Prochain paiement le <strong className="font-semibold">{formatDate(subscription.current_period_end)}</strong>.</>}
             </span>
-          </div>
+          </p>
         )}
 
-        {subscription.canceled_at && (
-          <div className="flex items-center gap-2 text-sm text-[#EF4444] mb-5 pb-5 border-b border-[#F1F5F9]">
-            <XCircle className="w-4 h-4 shrink-0" />
-            <span>
-              Annulé le{' '}
-              <span className="font-semibold">{formatDate(subscription.canceled_at)}</span>
-            </span>
-          </div>
+        {plan && plan.features.length > 0 && (
+          <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+            {plan.features.map((f) => (
+              <li key={f} className="flex items-start gap-2 text-sm text-[#334155] dark:text-slate-300">
+                <Check className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" aria-hidden />
+                {f}
+              </li>
+            ))}
+          </ul>
         )}
 
-        {/* Compteur factures Starter */}
-        {isStarter && invoiceLimit !== null && (
-          <div className="mb-5 p-4 bg-[#F8FAFC] dark:bg-[#162032] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F]">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-[#0F172A]">Factures ce mois-ci</p>
-              <p className={`text-sm font-bold ${invoicePercent >= 80 ? 'text-[#D97706]' : 'text-[#0F172A]'}`}>
-                {invoicesThisMonth} / {invoiceLimit}
-              </p>
-            </div>
-            <div className="w-full bg-[#E2E8F0] rounded-full h-2">
-              <div
-                className={`h-2 rounded-full transition-all ${
-                  invoicePercent >= 100
-                    ? 'bg-[#EF4444]'
-                    : invoicePercent >= 80
-                    ? 'bg-[#D97706]'
-                    : 'bg-[#2563EB]'
-                }`}
-                style={{ width: `${invoicePercent}%` }}
-              />
-            </div>
-            {isNearLimit && invoicesThisMonth < invoiceLimit && (
-              <p className="text-xs text-[#D97706] mt-2">
-                Tu approches de ta limite mensuelle.{' '}
-                <button onClick={() => openPortal('upgrade')} className="underline font-semibold">
-                  Passer au Pro pour des factures illimitées
-                </button>
-              </p>
-            )}
-            {invoicesThisMonth >= invoiceLimit && (
-              <p className="text-xs text-[#EF4444] mt-2">
-                Limite atteinte — les nouvelles factures sont bloquées.{' '}
-                <button onClick={() => openPortal('upgrade')} className="underline font-semibold">
-                  Passer au Pro
-                </button>
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Features du plan actuel */}
-        {currentFeatures.length > 0 && (
-          <div className="mb-5">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-              Inclus dans ton plan
-            </p>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
-              {currentFeatures.map((feature) => (
-                <li key={feature} className="flex items-start gap-2 text-sm text-[#374151]">
-                  <Check className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Bouton portail Stripe */}
-        <button
-          onClick={() => openPortal('manage')}
-          disabled={loadingPortal !== null}
-          className="w-full border border-[#E2E8F0] dark:border-[#1E3A5F] hover:border-[#2563EB] hover:bg-[#EFF6FF] dark:hover:bg-[#1E3A5F] text-[#0F172A] dark:text-[#E2E8F0] font-medium py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {loadingPortal === 'manage' ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Ouverture…
-            </>
-          ) : (
-            <>
-              <ExternalLink className="w-4 h-4" />
-              Gérer mon abonnement
-            </>
-          )}
-        </button>
-
-        {portalError && (
-          <p className="text-xs text-[#EF4444] mt-2 text-center">{portalError}</p>
-        )}
-
-        <p className="text-xs text-slate-400 text-center mt-3">
-          Changement de CB, annulation, historique de facturation — via le portail sécurisé Stripe
-        </p>
+        <div className="mt-6 flex flex-col gap-2">
+          <button type="button" onClick={openPortal} disabled={loadingPortal} className={btnSecondary}>
+            {loadingPortal ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <ExternalLink className="w-4 h-4" aria-hidden />}
+            {loadingPortal ? 'Ouverture…' : 'Gérer mon abonnement'}
+          </button>
+          {portalError && <p className="text-xs text-[#DC2626] text-center">{portalError}</p>}
+          <p className="text-xs text-slate-500 text-center">
+            Moyen de paiement, factures d&apos;abonnement, passage à l&apos;année, résiliation.
+          </p>
+        </div>
       </div>
 
-      {/* ── Bloc upgrade Pro — visible pour tous les Starter ──────────────── */}
-      {isStarter && statusKey !== 'canceled' && (
-        <div className="bg-gradient-to-br from-[#1E3A8A] to-[#1D4ED8] rounded-xl p-6 text-white">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Crown className="w-5 h-5 text-yellow-300" />
-                <span className="text-sm font-bold text-yellow-300 uppercase tracking-wide">
-                  Passez au Plan Pro
-                </span>
-              </div>
-              <h3 className="text-lg font-bold">Déverrouillez tout Qonforme</h3>
-              <p className="text-sm text-blue-200 mt-1">
-                Factures illimitées, relances automatiques, tableau de bord CA complet.
-              </p>
-            </div>
-            <div className="text-right shrink-0 ml-4">
-              <p className="text-2xl font-bold">19 €</p>
-              <p className="text-xs text-blue-200">/mois HT</p>
-            </div>
-          </div>
+      {guarantee && <GuaranteeCard guarantee={guarantee} onDone={() => router.refresh()} />}
+    </div>
+  )
+}
 
-          {/* Ce que Pro ajoute par rapport à Starter */}
-          {proExclusiveFeatures.length > 0 && (
-            <div className="mb-5">
-              <p className="text-xs font-semibold text-blue-300 uppercase tracking-wide mb-2">
-                Uniquement en Pro
-              </p>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-4">
-                {proExclusiveFeatures.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-sm text-white font-medium">
-                    <Check className="w-4 h-4 shrink-0 mt-0.5 text-yellow-300" />
-                    {feature}
-                    <span className="ml-1 text-[10px] font-bold bg-yellow-300 text-yellow-900 px-1.5 py-0.5 rounded-full leading-none self-center whitespace-nowrap">
-                      NEW
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+/** Garantie « satisfait ou remboursé » : remboursement en deux temps, sans contact humain. */
+function GuaranteeCard({ guarantee, onDone }: { guarantee: GuaranteeInfo; onDone: () => void }) {
+  const [confirming, setConfirming] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [refunded, setRefunded] = useState<number | null>(null)
 
-          {/* Toutes les features Pro */}
-          <div className="mb-5">
-            <p className="text-xs font-semibold text-blue-300 uppercase tracking-wide mb-2">
-              Tout ce qui est inclus
-            </p>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-4">
-              {proFeatures.map((feature) => {
-                const isNew = !currentFeatures.includes(feature)
-                return (
-                  <li
-                    key={feature}
-                    className={`flex items-start gap-2 text-sm ${isNew ? 'text-white font-medium' : 'text-blue-200'}`}
-                  >
-                    <Check
-                      className={`w-4 h-4 shrink-0 mt-0.5 ${isNew ? 'text-yellow-300' : 'text-blue-300'}`}
-                    />
-                    {feature}
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
+  if (!guarantee.eligible) {
+    if (guarantee.reason !== 'processing') return null
+    return (
+      <div className={`${card} flex items-start gap-3`}>
+        <Clock className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" aria-hidden />
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          Votre premier prélèvement est en cours de confirmation par votre banque (quelques jours ouvrés).
+          La garantie « satisfait ou remboursé » de {GUARANTEE_DAYS} jours démarrera à sa confirmation.
+        </p>
+      </div>
+    )
+  }
 
-          <button
-            onClick={() => openPortal('upgrade')}
-            disabled={loadingPortal !== null}
-            className="w-full bg-white text-[#1D4ED8] hover:bg-blue-50 font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-60"
-          >
-            {loadingPortal === 'upgrade' ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Ouverture…
-              </>
-            ) : (
-              <>
-                <ArrowUpRight className="w-4 h-4" />
-                Passer au Pro maintenant
-              </>
-            )}
-          </button>
+  async function refund() {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/stripe/guarantee', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error ?? 'Le remboursement n’a pas pu aboutir.')
+        setLoading(false)
+        return
+      }
+      setRefunded(data.refunded ?? 0)
+      onDone()
+    } catch {
+      setError('Erreur réseau. Réessayez.')
+      setLoading(false)
+    }
+  }
 
-          <p className="text-xs text-blue-300 text-center mt-3">
-            Changement immédiat · Au prorata · Sans engagement
+  if (refunded !== null) {
+    return (
+      <div className={`${card} flex items-start gap-3`} role="status">
+        <CheckCircle2 className="w-5 h-5 text-[#059669] shrink-0 mt-0.5" aria-hidden />
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          Remboursement de {formatEuros(refunded / 100)} lancé. Il apparaît sur votre compte sous quelques jours ouvrés.
+          Votre compte repasse en version gratuite ; vos factures restent consultables.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className={card}>
+      <div className="flex items-start gap-3">
+        <ShieldCheck className="w-5 h-5 text-[#059669] shrink-0 mt-0.5" aria-hidden />
+        <div>
+          <h2 className="text-base font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Satisfait ou remboursé</h2>
+          <p className="text-sm text-slate-500 mt-1">
+            Jusqu&apos;au {formatDate(guarantee.endsAt)}, vous pouvez être remboursé intégralement
+            ({formatEuros(guarantee.amountPaid / 100)}), sans avoir à vous justifier.
           </p>
         </div>
-      )}
+      </div>
 
-      {/* ── Message de rechargement si données manquantes ─────────────────── */}
-      {!plan && subscription && (
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 flex items-center gap-3">
-          <RefreshCw className="w-4 h-4 text-slate-400 shrink-0" />
-          <p className="text-sm text-slate-500">
-            Synchronisation en cours…{' '}
-            <button
-              onClick={() => window.location.reload()}
-              className="underline text-[#2563EB] font-medium"
-            >
-              Recharger la page
+      {!confirming ? (
+        <button type="button" onClick={() => setConfirming(true)} className={`${btnSecondary} mt-4 w-full`}>
+          Être remboursé et arrêter ma formule
+        </button>
+      ) : (
+        <div className="mt-4 rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032] p-4">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Votre formule s&apos;arrête tout de suite et votre compte repasse en version gratuite. Les factures
+            déjà envoyées restent émises et consultables ; vous ne pourrez plus en envoyer de nouvelles.
+          </p>
+          <div className="mt-3 flex flex-col sm:flex-row gap-2">
+            <button type="button" onClick={refund} disabled={loading} className={`${btnPrimary} bg-[#DC2626] hover:bg-[#B91C1C]`}>
+              {loading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden />}
+              Confirmer le remboursement
             </button>
-          </p>
+            <button type="button" onClick={() => setConfirming(false)} disabled={loading} className={btnSecondary}>
+              Garder ma formule
+            </button>
+          </div>
         </div>
       )}
+
+      {error && <p className="mt-3 text-sm text-[#DC2626]" role="alert">{error}</p>}
     </div>
   )
 }

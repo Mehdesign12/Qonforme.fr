@@ -12,7 +12,7 @@ export default function CGUPage() {
     <LegalLayout
       title="Conditions Générales d'Utilisation"
       subtitle="Merci de lire attentivement ces conditions avant d'utiliser Qonforme."
-      lastUpdated="15 mars 2026"
+      lastUpdated="2 octobre 2026"
     >
       <h2>Article 1 — Objet</h2>
       <p>
@@ -28,7 +28,7 @@ export default function CGUPage() {
       </p>
       <ul>
         <li>Créer, éditer et envoyer des factures, devis, bons de commande et avoirs</li>
-        <li>Générer des fichiers Factur-X (PDF/A-3 + XML) conformes à la norme EN 16931</li>
+        <li>Générer des factures PDF accompagnées de leurs données structurées Factur-X</li>
         <li>Gérer un portefeuille de clients et un catalogue de produits</li>
         <li>Suivre les encaissements et relancer automatiquement les factures impayées</li>
         <li>Exporter les données comptables au format FEC</li>
@@ -58,26 +58,53 @@ export default function CGUPage() {
         sans délai à <strong>contact@qonforme.fr</strong>.
       </p>
 
-      <h2>Article 4 — Plans tarifaires et facturation</h2>
-      <h3>4.1 Plans disponibles</h3>
-      <p>
-        Le Service est proposé sous deux formules payantes (hors taxes) :
-      </p>
+      <h2>Article 4 — Formules, tarifs et facturation</h2>
+      <h3>4.1 Formules</h3>
       <ul>
-        <li><strong>Plan Starter</strong> — 9 €/mois ou 90 €/an (soit 7,50 €/mois) : 10 factures par mois, devis et BdC illimités</li>
-        <li><strong>Plan Pro</strong> — 19 €/mois ou 190 €/an (soit 15,83 €/mois) : factures illimitées, toutes fonctionnalités</li>
+        <li>
+          <strong>Version gratuite</strong>, sans limite de durée ni carte bancaire : devis illimités, gestion des clients
+          et du catalogue, préparation de factures en brouillon, consultation et téléchargement des documents.
+        </li>
+        <li>
+          <strong>Formule Essentiel</strong> — 12 € HT par mois, ou 120 € HT par an : émission et envoi des factures et
+          des avoirs, relances des factures impayées, export comptable.
+        </li>
+        <li>
+          <strong>Formule Artisan</strong> — 24 € HT par mois, ou 240 € HT par an : proposée lorsque ses fonctionnalités
+          propres (situations de travaux, retenue de garantie, autoliquidation) seront disponibles.
+        </li>
       </ul>
-      <p>Il n&apos;existe pas d&apos;offre gratuite permanente. L&apos;accès est actif dès réception du paiement.</p>
+      <p>Les prix s&apos;entendent hors taxes ; la TVA au taux en vigueur (20 %) s&apos;y ajoute.</p>
       <h3>4.2 Paiement</h3>
       <p>
-        Le paiement est traité par Stripe Inc. L&apos;Utilisateur est débité à la souscription puis automatiquement à chaque
-        échéance (mensuelle ou annuelle). Toutes les transactions sont sécurisées (TLS, PCI-DSS).
+        Le paiement est traité par Stripe, par carte bancaire ou par prélèvement SEPA. L&apos;Utilisateur est débité à la
+        souscription, puis automatiquement à chaque échéance (mensuelle ou annuelle). Les factures d&apos;abonnement sont
+        disponibles depuis <strong>Paramètres → Abonnement</strong>.
       </p>
-      <h3>4.3 Résiliation</h3>
+      <h3>4.3 Garantie satisfait ou remboursé</h3>
       <p>
-        L&apos;Utilisateur peut résilier son abonnement à tout moment depuis <strong>Paramètres → Abonnement</strong>.
-        L&apos;accès aux fonctionnalités payantes reste actif jusqu&apos;à la fin de la période en cours, sans remboursement proratisé
-        sauf disposition légale contraire.
+        Dans les 30 jours qui suivent son premier paiement, l&apos;Utilisateur peut obtenir le remboursement intégral des
+        sommes versées, sans avoir à se justifier, depuis <strong>Paramètres → Abonnement</strong>. La garantie
+        s&apos;applique une seule fois par compte. Le remboursement met fin immédiatement à la formule : le compte repasse en
+        version gratuite. Les factures déjà émises par l&apos;Utilisateur restent émises.
+      </p>
+      <h3>4.4 Défaut de paiement</h3>
+      <p>
+        En cas d&apos;échec d&apos;un paiement, de nouvelles tentatives ont lieu automatiquement et l&apos;Utilisateur conserve
+        l&apos;usage de sa formule pendant ce délai. À défaut de régularisation, la formule prend fin et le compte repasse en
+        version gratuite.
+      </p>
+      <h3>4.5 Résiliation et changement de formule</h3>
+      <p>
+        L&apos;Utilisateur peut résilier à tout moment depuis <strong>Paramètres → Abonnement</strong>, sans engagement. La
+        résiliation prend effet à la fin de la période déjà payée, sans remboursement au prorata, sauf application de la
+        garantie de l&apos;article 4.3 ou disposition légale contraire. Le passage d&apos;une période mensuelle à une période
+        annuelle, ou d&apos;une formule à une autre, est calculé au prorata.
+      </p>
+      <h3>4.6 Accès aux documents après la fin d&apos;une formule</h3>
+      <p>
+        À la fin d&apos;une formule, pour quelque raison que ce soit, l&apos;Utilisateur conserve l&apos;accès en consultation et en
+        téléchargement à l&apos;ensemble des documents émis, ainsi qu&apos;à l&apos;export comptable.
       </p>
 
       <h2>Article 5 — Obligations de l&apos;Utilisateur</h2>

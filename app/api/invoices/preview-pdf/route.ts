@@ -7,8 +7,8 @@ import { getNextDocumentNumber } from "@/lib/utils/document-numbering"
 //
 // Avant ce fix, le bouton "Aperçu PDF" du formulaire appelait POST /api/invoices
 // (la route de création réelle) : chaque aperçu créait un vrai brouillon avec un
-// numéro de facture définitif, consommait un slot du quota mensuel du plan
-// Starter, et laissait un brouillon orphelin dès que l'utilisateur ajustait sa
+// numéro de facture définitif, consommait un slot de l'ancien quota mensuel,
+// et laissait un brouillon orphelin dès que l'utilisateur ajustait sa
 // facture et cliquait "Envoyer" depuis un formulaire vierge. Cette route ne fait
 // qu'un GET (numérotation) + une génération PDF en mémoire, sans aucune écriture.
 export async function POST(request: NextRequest) {
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
         client,
       },
       company,
+      watermark: "APERÇU",
     })
 
     return new Response(buffer.buffer as ArrayBuffer, {

@@ -57,7 +57,7 @@ export default function AdminQuickPlanToggle({ userId, currentPlan, billingPerio
             : 'bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#3B82F6]'
         }`}>
           {confirmedNewPlan
-            ? `✓ ${confirmedNewPlan === 'pro' ? 'Pro' : 'Starter'}`
+            ? `✓ ${confirmedNewPlan === 'pro' ? 'Artisan' : 'Essentiel'}`
             : (
               <>
                 {currentPlan}
@@ -68,7 +68,7 @@ export default function AdminQuickPlanToggle({ userId, currentPlan, billingPerio
         </span>
         <button
           onClick={() => { setError(null); setOpen(true) }}
-          title={`Passer en ${newPlan === 'pro' ? 'Pro' : 'Starter'}`}
+          title={`Passer en ${newPlan === 'pro' ? 'Artisan' : 'Essentiel'}`}
           className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-[#2563EB] hover:bg-[#EFF6FF] dark:hover:bg-[#1E3A5F] dark:hover:text-[#3B82F6] transition-all"
         >
           <ArrowLeftRight className="w-3 h-3" />
@@ -115,7 +115,7 @@ export default function AdminQuickPlanToggle({ userId, currentPlan, billingPerio
             {isDowngrade && (
               <div className="flex items-start gap-2 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2 mb-4">
                 <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
-                <span>Limite 10 factures/mois dès maintenant</span>
+                <span>Fonctions propres à Artisan retirées dès maintenant</span>
               </div>
             )}
 

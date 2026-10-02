@@ -1,478 +1,232 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Check, Loader2, ShieldCheck, Clock, Award, ArrowLeft, Play } from 'lucide-react'
-import { PLANS, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { ArrowLeft, Check, Clock, ShieldCheck } from 'lucide-react'
+import {
+  PLANS,
+  FREE_FEATURES,
+  formatEuros,
+  withVat,
+  type BillingPeriod,
+} from '@/lib/stripe/plans'
+import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { trackEvent } from '@/lib/meta-pixel'
 
-/* ─── Data ───────────────────────────────────────────────────────────────── */
-const STARTER_SET   = new Set(PLANS.starter.features)
-const PRO_EXCLUSIVE = PLANS.pro.features.filter(f => !STARTER_SET.has(f))
-const PRO_SHARED    = PLANS.pro.features.filter(f => STARTER_SET.has(f))
-
-const BADGES = [
-  { icon: ShieldCheck, label: 'Paiement sécurisé Stripe' },
-  { icon: Clock,       label: 'Résiliation à tout moment' },
-  { icon: Award,       label: 'Conforme PPF · DGFiP' },
-]
-
-/* ─── CheckItem ─────────────────────────────────────────────────────────── */
-function CheckItem({
-  label,
-  dim  = false,
-  dark = false,
+/**
+ * Grille des formules — page Tarifs (visiteur) et choix de formule (connecté).
+ *
+ * Trois colonnes : Devis (gratuit), Essentiel, Artisan. Artisan reste affiché
+ * « bientôt disponible » tant que ses fonctions ne sont pas livrées
+ * (PLANS.pro.available) : on ne vend pas ce qui n'existe pas.
+ */
+export default function PricingSelector({
+  isAuthenticated = false,
+  backHref,
+  next = null,
+  showFree = true,
 }: {
-  label: string
-  dim?:  boolean
-  dark?: boolean
+  isAuthenticated?: boolean
+  /** Colonne « Devis » gratuite — masquée pour un compte qui l'a déjà et vient choisir sa formule. */
+  showFree?: boolean
+  /** Lien « retour » affiché au-dessus de la grille (absent sur la page Tarifs). */
+  backHref?: string
+  /** Chemin interne où revenir après le paiement (ex. la facture à envoyer). */
+  next?: string | null
 }) {
+  const [period, setPeriod] = useState<BillingPeriod>('yearly')
+  const essentiel = PLANS.starter
+  const artisan = PLANS.pro
+
+  const checkoutHref = (plan: 'starter' | 'pro') => {
+    const params = new URLSearchParams({ plan, period })
+    if (next) params.set('next', next)
+    return `/pricing/checkout?${params.toString()}`
+  }
+
+  const onChoose = () => {
+    trackEvent('InitiateCheckout', {
+      currency: 'EUR',
+      value: period === 'monthly' ? essentiel.monthlyPrice : essentiel.yearlyPrice,
+      content_name: essentiel.name,
+      content_ids: [essentiel.id],
+      num_items: 1,
+    })
+  }
+
   return (
-    <li className={`flex items-start gap-3 text-sm leading-snug ${
-      dark
-        ? dim ? 'text-white/40' : 'text-white/85'
-        : 'text-[#0F172A]'
-    }`}>
-      <span className="mt-[3px] shrink-0 w-[18px] h-[18px] rounded-full flex items-center justify-center bg-[#D1FAE5]">
-        <Check className="w-2.5 h-2.5 text-[#059669]" />
-      </span>
-      {label}
-    </li>
+    <div className="w-full flex flex-col gap-8">
+      {backHref && (
+        <Link
+          href={backHref}
+          className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-[#0F172A] transition-colors w-fit min-h-[44px]"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Retour
+        </Link>
+      )}
+
+      {/* Mensuel / annuel */}
+      <div className="flex justify-center">
+        <div role="radiogroup" aria-label="Période de facturation" className="inline-flex items-center gap-1 rounded-full border border-[#E2E8F0] bg-white p-1">
+          {(['monthly', 'yearly'] as BillingPeriod[]).map((p) => (
+            <button
+              key={p}
+              type="button"
+              role="radio"
+              aria-checked={period === p}
+              onClick={() => setPeriod(p)}
+              className={`inline-flex items-center gap-2 h-10 px-5 rounded-full text-sm font-semibold transition-colors ${
+                period === p ? 'bg-[#0F172A] text-white' : 'text-slate-500 hover:text-[#0F172A]'
+              }`}
+            >
+              {p === 'monthly' ? 'Mensuel' : 'Annuel'}
+              {p === 'yearly' && (
+                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${period === p ? 'bg-white/15 text-white' : 'bg-[#D1FAE5] text-[#065F46]'}`}>
+                  2 mois offerts
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className={`grid grid-cols-1 gap-4 lg:gap-5 items-stretch ${showFree ? 'lg:grid-cols-3' : 'lg:grid-cols-2 w-full max-w-3xl mx-auto'}`}>
+        {/* ── Devis : gratuit ─────────────────────────────────────────── */}
+        {showFree && (
+        <section aria-labelledby="plan-devis" className="flex flex-col rounded-2xl border border-[#E2E8F0] bg-white p-6">
+          <h2 id="plan-devis" className="text-lg font-semibold text-[#0F172A]">Devis</h2>
+          <p className="text-sm text-slate-500 mt-1">Pour démarrer et décrocher vos chantiers.</p>
+          <p className="mt-5 flex items-baseline gap-1.5">
+            <span className="text-4xl font-bold tracking-tight text-[#0F172A]">0 €</span>
+            <span className="text-sm text-slate-500">pour toujours</span>
+          </p>
+          <p className="text-[13px] text-slate-500 mt-1">Sans carte bancaire</p>
+          <Link
+            href={isAuthenticated ? '/quotes/new' : '/signup'}
+            className="mt-5 inline-flex h-11 items-center justify-center rounded-xl border border-[#CBD5E1] bg-white text-sm font-semibold text-[#0F172A] hover:border-[#94A3B8] transition-colors"
+          >
+            {isAuthenticated ? 'Faire un devis' : 'Créer mon premier devis'}
+          </Link>
+          <FeatureList items={FREE_FEATURES} />
+        </section>
+        )}
+
+        {/* ── Essentiel ──────────────────────────────────────────────── */}
+        <section aria-labelledby="plan-essentiel" className="relative flex flex-col rounded-2xl border-2 border-[#2563EB] bg-white p-6 shadow-[0_12px_32px_-20px_rgba(37,99,235,0.45)]">
+          <span className="absolute -top-3 left-6 rounded-full bg-[#2563EB] px-2.5 py-1 text-[11px] font-bold text-white">Conseillé</span>
+          <h2 id="plan-essentiel" className="text-lg font-semibold text-[#0F172A]">{essentiel.name}</h2>
+          <p className="text-sm text-slate-500 mt-1">{essentiel.tagline}</p>
+          <PriceBlock monthly={essentiel.monthlyPrice} yearly={essentiel.yearlyPrice} perMonthYearly={essentiel.yearlyMonthlyEquivalent} period={period} />
+          {isAuthenticated ? (
+            <Link
+              href={checkoutHref('starter')}
+              onClick={onChoose}
+              className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-[#2563EB] text-sm font-semibold text-white hover:bg-[#1D4ED8] transition-colors"
+            >
+              Choisir {essentiel.name}
+            </Link>
+          ) : (
+            <Link
+              href="/signup"
+              className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-[#2563EB] text-sm font-semibold text-white hover:bg-[#1D4ED8] transition-colors"
+            >
+              Commencer gratuitement
+            </Link>
+          )}
+          <p className="text-[12px] text-slate-500 mt-2 text-center">
+            {isAuthenticated ? 'Carte bancaire ou prélèvement SEPA' : 'La formule se choisit à votre première facture'}
+          </p>
+          <FeatureList items={essentiel.features} />
+          <UpcomingList items={essentiel.upcoming} />
+        </section>
+
+        {/* ── Artisan : bientôt ──────────────────────────────────────── */}
+        <section aria-labelledby="plan-artisan" className="flex flex-col rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-6">
+          <div className="flex items-center gap-2">
+            <h2 id="plan-artisan" className="text-lg font-semibold text-[#0F172A]">{artisan.name}</h2>
+            <span className="rounded-full bg-[#E2E8F0] px-2 py-0.5 text-[11px] font-semibold text-slate-600">Bientôt</span>
+          </div>
+          <p className="text-sm text-slate-500 mt-1">{artisan.tagline}</p>
+          <PriceBlock monthly={artisan.monthlyPrice} yearly={artisan.yearlyPrice} perMonthYearly={artisan.yearlyMonthlyEquivalent} period={period} muted />
+          <button
+            type="button"
+            disabled
+            className="mt-5 inline-flex h-11 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-sm font-semibold text-slate-400 cursor-not-allowed"
+          >
+            Bientôt disponible
+          </button>
+          <p className="text-[12px] text-slate-500 mt-2 text-center">Tout {essentiel.name}, plus :</p>
+          <UpcomingList items={artisan.upcoming} title="En préparation" />
+        </section>
+      </div>
+
+      <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] text-slate-500">
+        <span className="inline-flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-[#059669]" />Satisfait ou remboursé {GUARANTEE_DAYS} jours</span>
+        <span>Sans engagement</span>
+        <span>Prix hors taxes, TVA 20 % en sus</span>
+        <span>Vos factures restent consultables après résiliation</span>
+      </div>
+    </div>
   )
 }
 
-/* ─── PricingSelector ───────────────────────────────────────────────────── */
-export default function PricingSelector({
-  backHref = '/',
-  isAuthenticated = false,
+function PriceBlock({
+  monthly,
+  yearly,
+  perMonthYearly,
+  period,
+  muted = false,
 }: {
-  backHref?: string
-  isAuthenticated?: boolean
+  monthly: number
+  yearly: number
+  perMonthYearly: number
+  period: BillingPeriod
+  muted?: boolean
 }) {
-  const router = useRouter()
-
-  const [period,     setPeriod]     = useState<BillingPeriod>('monthly')
-  const [activePlan, setActivePlan] = useState<PlanId>('pro')   // Pro mis en avant par défaut
-  const [loading,    setLoading]    = useState<PlanId | null>(null)
-
-  function select(planId: PlanId) {
-    if (loading) return
-    setLoading(planId)
-    const p = PLANS[planId]
-    trackEvent('InitiateCheckout', {
-      currency: 'EUR',
-      value: period === 'monthly' ? p.monthlyPrice : p.yearlyMonthlyEquivalent,
-      content_name: p.name,
-      content_ids: [planId],
-      num_items: 1,
-    })
-    if (isAuthenticated) {
-      router.push(`/pricing/checkout?plan=${planId}&period=${period}`)
-    } else {
-      // Visiteur non connecté → inscription d'abord, plan mémorisé en query param
-      router.push(`/signup?plan=${planId}&period=${period}`)
-    }
-  }
-
-  const sPrice = period === 'monthly' ? PLANS.starter.monthlyPrice            : PLANS.starter.yearlyMonthlyEquivalent
-  const pPrice = period === 'monthly' ? PLANS.pro.monthlyPrice                : PLANS.pro.yearlyMonthlyEquivalent
-  const fmt    = (n: number) => n % 1 === 0 ? `${n}` : n.toFixed(2)
-
-  const isPro = activePlan === 'pro'
-
-  /* ── Prix & features du plan actif ────────────────────────────────────── */
-  const activePrice    = isPro ? pPrice : sPrice
-  const activeFeatures = isPro
-    ? { exclusive: PRO_EXCLUSIVE, shared: PRO_SHARED }
-    : { exclusive: PLANS.starter.features, shared: [] }
-
-  /* ══════════════════════════════════════════════════════════════════════════
-     RENDER
-  ══════════════════════════════════════════════════════════════════════════ */
+  const perMonth = period === 'monthly' ? monthly : perMonthYearly
   return (
     <>
-      {/* ════════════════════════════════════════════════════════════════════
-          LAYOUT DESKTOP (≥ 1024 px) — grille 2 colonnes, inchangée
-      ════════════════════════════════════════════════════════════════════ */}
-      <div className="hidden lg:grid lg:grid-cols-[300px_1fr] gap-12 items-start w-full">
-
-        {/* Gauche */}
-        <div className="flex flex-col gap-7">
-          {/* Bouton retour */}
-          <Link
-            href={backHref}
-            className="inline-flex items-center gap-2 text-[13px] font-medium text-slate-500 hover:text-[#0F172A] transition-colors w-fit group"
-          >
-            <span className="w-7 h-7 rounded-lg bg-white/80 border border-[#E2E8F0] flex items-center justify-center shadow-sm group-hover:bg-white group-hover:border-[#CBD5E1] transition-all">
-              <ArrowLeft className="w-3.5 h-3.5" />
-            </span>
-            {backHref === '/' ? 'Retour à l\'accueil' : 'Mon espace'}
-          </Link>
-
-          <div>
-            <h1 className="text-[28px] font-bold text-[#0F172A] leading-tight tracking-tight mb-2">
-              Choisis ton plan
-            </h1>
-            <p className="text-[15px] text-slate-500 leading-relaxed">
-              Factur-X certifié EN 16931 inclus dans les deux plans.<br />
-              Résiliation à tout moment, sans engagement.
-            </p>
-          </div>
-
-          {/* Toggle mensuel / annuel */}
-          <div className="flex flex-col gap-3">
-            <div className="inline-flex items-center gap-1 bg-white/70 backdrop-blur-sm border border-[#E2E8F0] rounded-full p-1 w-fit">
-              {(['monthly', 'yearly'] as BillingPeriod[]).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
-                    period === p
-                      ? 'bg-[#0F172A] text-white shadow-sm'
-                      : 'text-slate-500 hover:text-[#0F172A]'
-                  }`}
-                >
-                  {p === 'monthly' ? 'Mensuel' : 'Annuel'}
-                  {p === 'yearly' && (
-                    <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46]">
-                      −16 %
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-            {period === 'yearly' && (
-              <p className="text-[13px] text-[#10B981] font-semibold">
-                2 mois offerts · économise jusqu&apos;à 38 €/an
-              </p>
-            )}
-          </div>
-
-          {/* Badges réassurance */}
-          <div className="flex flex-col gap-3">
-            {BADGES.map(({ icon: Icon, label }) => (
-              <div key={label} className="flex items-center gap-3 text-[13px] text-slate-600">
-                <span className="w-8 h-8 rounded-xl bg-white/80 border border-[#E2E8F0] flex items-center justify-center shrink-0 shadow-sm">
-                  <Icon className="w-4 h-4 text-[#2563EB]" />
-                </span>
-                {label}
-              </div>
-            ))}
-          </div>
-
-          <p className="text-[13px] text-slate-400">
-            Une question ?{' '}
-            <Link href="/#contact" className="text-[#2563EB] hover:underline font-medium">
-              Contacte-nous
-            </Link>{' '}
-            — réponse sous 24h.
-          </p>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/demo"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] text-[13px] font-semibold hover:bg-[#DBEAFE] hover:border-[#BFDBFE] transition-all"
-            >
-              <Play className="w-3 h-3 fill-[#2563EB]" />
-              Tester la démo
-            </Link>
-            <Link
-              href="/blog"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/60 border border-[#E2E8F0] text-slate-600 text-[13px] font-medium hover:bg-white hover:border-[#CBD5E1] transition-all"
-            >
-              Lire le blog
-            </Link>
-          </div>
-        </div>
-
-        {/* Droite — 2 cards */}
-        <div className="grid grid-cols-2 gap-5 items-start">
-
-          {/* Card Starter */}
-          <div className="flex flex-col rounded-2xl bg-white/80 backdrop-blur-md border border-[#E2E8F0] shadow-[0_4px_24px_rgba(0,0,0,0.06)] p-7 hover:shadow-[0_8px_32px_rgba(37,99,235,0.10)] transition-shadow duration-200">
-            <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#2563EB] mb-1">Starter</span>
-            <p className="text-[13px] text-slate-400 mb-6">Pour démarrer et tester</p>
-            <div className="flex items-baseline gap-1 mb-1">
-              <span className="text-[42px] font-extrabold text-[#0F172A] leading-none font-mono tracking-tight">
-                {fmt(sPrice)}€
-              </span>
-              <span className="text-slate-400 text-sm">/mois HT</span>
-            </div>
-            {period === 'yearly'
-              ? <p className="text-xs text-slate-400 mb-6">Facturé {PLANS.starter.yearlyPrice} €/an</p>
-              : <div className="mb-6" />
-            }
-            <button
-              onClick={() => select('starter')}
-              disabled={loading !== null}
-              className="w-full h-11 rounded-xl border-2 border-[#0F172A] bg-[#0F172A] hover:bg-[#1E293B] active:scale-[0.98] text-white text-sm font-bold transition-all flex items-center justify-center gap-2 mb-7 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading === 'starter' ? <><Loader2 className="w-4 h-4 animate-spin" />Chargement…</> : 'Commencer avec Starter'}
-            </button>
-            <div className="h-px bg-[#F1F5F9] mb-6" />
-            <ul className="flex flex-col gap-3">
-              {PLANS.starter.features.map(f => <CheckItem key={f} label={f} />)}
-            </ul>
-          </div>
-
-          {/* Card Pro */}
-          <div className="relative flex flex-col rounded-2xl bg-[#0F172A] shadow-[0_8px_48px_rgba(37,99,235,0.22)] p-7 overflow-hidden">
-            <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px]"
-              style={{ background: 'linear-gradient(90deg, transparent 5%, #2563EB 40%, #3B82F6 60%, transparent 95%)' }}
-            />
-            <div className="mb-4">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-white bg-[#2563EB] px-3 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />
-                Recommandé
-              </span>
-            </div>
-            <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#60A5FA] mb-1">Pro</span>
-            <p className="text-[13px] text-slate-400 mb-6">Pour les pros sans limites</p>
-            <div className="flex items-baseline gap-1 mb-1">
-              <span className="text-[42px] font-extrabold text-white leading-none font-mono tracking-tight">
-                {fmt(pPrice)}€
-              </span>
-              <span className="text-slate-400 text-sm">/mois HT</span>
-            </div>
-            {period === 'yearly'
-              ? <p className="text-xs text-slate-500 mb-6">Facturé {PLANS.pro.yearlyPrice} €/an</p>
-              : <div className="mb-6" />
-            }
-            <button
-              onClick={() => select('pro')}
-              disabled={loading !== null}
-              className="w-full h-11 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-sm font-bold transition-all flex items-center justify-center gap-2 mb-7 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_16px_rgba(37,99,235,0.45)]"
-            >
-              {loading === 'pro' ? <><Loader2 className="w-4 h-4 animate-spin" />Chargement…</> : 'Commencer avec Pro'}
-            </button>
-            <div className="h-px bg-white/10 mb-5" />
-            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 mb-3">Tout Starter, plus…</p>
-            <ul className="flex flex-col gap-3 mb-5">
-              {PRO_EXCLUSIVE.map(f => <CheckItem key={f} label={f} dark />)}
-            </ul>
-            <ul className="flex flex-col gap-2.5">
-              {PRO_SHARED.map(f => <CheckItem key={f} label={f} dark dim />)}
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* ════════════════════════════════════════════════════════════════════
-          LAYOUT MOBILE (< 1024 px) — tab switcher + CTA sticky
-          Architecture :
-          • Header sticky : toggle Mensuel/Annuel + tabs Starter/Pro
-          • Contenu scrollable : prix + features du plan actif
-          • Footer sticky : bouton CTA + badges réassurance compacts
-      ════════════════════════════════════════════════════════════════════ */}
-      <div className="lg:hidden flex flex-col min-h-[calc(100dvh-140px)]">
-
-        {/* ── Bouton retour mobile ──────────────────────────────────────── */}
-        <div className="mb-4">
-          <Link
-            href={backHref}
-            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-500 active:text-[#0F172A] transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            {backHref === '/' ? 'Retour' : 'Mon espace'}
-          </Link>
-        </div>
-
-        {/* ── Titre + sous-titre ────────────────────────────────────────── */}
-        <div className="text-center mb-5">
-          <h1 className="text-[22px] font-bold text-[#0F172A] leading-tight tracking-tight mb-1">
-            Choisis ton plan
-          </h1>
-          <p className="text-[14px] text-slate-500 leading-snug">
-            Factur-X EN 16931 inclus · Résiliation à tout moment
-          </p>
-        </div>
-
-        {/* ── Toggle Mensuel / Annuel ───────────────────────────────────── */}
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="inline-flex items-center gap-0.5 bg-white/70 backdrop-blur-sm border border-[#E2E8F0] rounded-full p-1">
-            {(['monthly', 'yearly'] as BillingPeriod[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all flex items-center gap-1.5 ${
-                  period === p
-                    ? 'bg-[#0F172A] text-white shadow-sm'
-                    : 'text-slate-500'
-                }`}
-              >
-                {p === 'monthly' ? 'Mensuel' : 'Annuel'}
-                {p === 'yearly' && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#D1FAE5] text-[#065F46]">
-                    −16 %
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-          {period === 'yearly' && (
-            <span className="text-[12px] text-[#10B981] font-semibold">2 mois offerts</span>
-          )}
-        </div>
-
-        {/* ── Tabs Starter / Pro ────────────────────────────────────────── */}
-        <div className="flex rounded-2xl bg-white/60 backdrop-blur-sm border border-[#E2E8F0] p-1 mb-5">
-          {(['starter', 'pro'] as PlanId[]).map((planId) => {
-            const isActive = activePlan === planId
-            const isPlanPro = planId === 'pro'
-            return (
-              <button
-                key={planId}
-                onClick={() => setActivePlan(planId)}
-                className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  isActive
-                    ? isPlanPro
-                      ? 'bg-[#0F172A] text-white shadow-sm'
-                      : 'bg-white text-[#0F172A] shadow-sm border border-[#E2E8F0]'
-                    : 'text-slate-400'
-                }`}
-              >
-                {isPlanPro && isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] inline-block" />
-                )}
-                {planId === 'starter' ? 'Starter' : 'Pro'}
-                {isPlanPro && !isActive && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#EFF6FF] text-[#2563EB]">
-                    Recommandé
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* ── Contenu du plan actif (scrollable) ───────────────────────── */}
-        <div className={`flex-1 rounded-2xl p-6 mb-4 ${
-          isPro
-            ? 'bg-[#0F172A] relative overflow-hidden'
-            : 'bg-white/80 backdrop-blur-md border border-[#E2E8F0] shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
-        }`}>
-
-          {/* Trait lumineux Pro */}
-          {isPro && (
-            <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px]"
-              style={{ background: 'linear-gradient(90deg, transparent 5%, #2563EB 40%, #3B82F6 60%, transparent 95%)' }}
-            />
-          )}
-
-          {/* Badge Recommandé (Pro seulement) */}
-          {isPro && (
-            <div className="mb-3">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-white bg-[#2563EB] px-2.5 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />
-                Recommandé
-              </span>
-            </div>
-          )}
-
-          {/* Plan name */}
-          <span className={`text-[11px] font-bold uppercase tracking-[0.12em] block mb-0.5 ${
-            isPro ? 'text-[#60A5FA]' : 'text-[#2563EB]'
-          }`}>
-            {isPro ? 'Pro' : 'Starter'}
-          </span>
-          <p className={`text-[13px] mb-5 ${isPro ? 'text-white/50' : 'text-slate-400'}`}>
-            {isPro ? 'Pour les pros sans limites' : 'Pour démarrer et tester'}
-          </p>
-
-          {/* Prix */}
-          <div className="flex items-baseline gap-1.5 mb-1">
-            <span className={`text-[48px] font-extrabold font-mono leading-none tracking-tight ${
-              isPro ? 'text-white' : 'text-[#0F172A]'
-            }`}>
-              {fmt(activePrice)}€
-            </span>
-            <span className={`text-sm ${isPro ? 'text-white/40' : 'text-slate-400'}`}>/mois HT</span>
-          </div>
-          {period === 'yearly' && (
-            <p className={`text-xs mb-5 ${isPro ? 'text-white/40' : 'text-slate-400'}`}>
-              Facturé {isPro ? PLANS.pro.yearlyPrice : PLANS.starter.yearlyPrice} €/an · 2 mois offerts
-            </p>
-          )}
-          {period === 'monthly' && <div className="mb-5" />}
-
-          {/* Séparateur */}
-          <div className={`h-px mb-5 ${isPro ? 'bg-white/10' : 'bg-[#F1F5F9]'}`} />
-
-          {/* Features */}
-          {isPro ? (
-            <>
-              <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white/30 mb-3">
-                Tout Starter, plus…
-              </p>
-              <ul className="flex flex-col gap-3 mb-4">
-                {activeFeatures.exclusive.map(f => <CheckItem key={f} label={f} dark />)}
-              </ul>
-              <ul className="flex flex-col gap-2.5">
-                {activeFeatures.shared.map(f => <CheckItem key={f} label={f} dark dim />)}
-              </ul>
-            </>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {activeFeatures.exclusive.map(f => <CheckItem key={f} label={f} />)}
-            </ul>
-          )}
-        </div>
-
-        {/* ── CTA sticky (bas de page) ──────────────────────────────────── */}
-        <div className="sticky bottom-0 left-0 right-0 z-20 pb-[env(safe-area-inset-bottom,16px)] pt-3"
-          style={{ background: 'linear-gradient(to top, rgba(239,246,255,0.98) 70%, transparent)' }}
-        >
-          {/* Bouton principal */}
-          <button
-            onClick={() => select(activePlan)}
-            disabled={loading !== null}
-            className={`w-full h-14 rounded-2xl text-[15px] font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-              isPro
-                ? 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-[0_4px_20px_rgba(37,99,235,0.40)]'
-                : 'bg-[#0F172A] hover:bg-[#1E293B] text-white'
-            }`}
-          >
-            {loading === activePlan
-              ? <><Loader2 className="w-5 h-5 animate-spin" />Chargement…</>
-              : `Commencer avec ${isPro ? 'Pro' : 'Starter'}`
-            }
-          </button>
-
-          {/* Badges réassurance condensés */}
-          <div className="flex items-center justify-center gap-4 mt-3">
-            {BADGES.map(({ icon: Icon, label }) => (
-              <div key={label} className="flex items-center gap-1 text-[11px] text-slate-400">
-                <Icon className="w-3 h-3 text-[#2563EB] shrink-0" />
-                <span className="hidden xs:inline">{label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Lien support */}
-          <p className="text-center text-[12px] text-slate-400 mt-2">
-            Une question ?{' '}
-            <Link href="/#contact" className="text-[#2563EB] font-medium">
-              Contacte-nous
-            </Link>
-          </p>
-          <div className="flex items-center justify-center gap-3 mt-2">
-            <Link
-              href="/demo"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] text-[12px] font-semibold active:bg-[#DBEAFE] transition-all"
-            >
-              <Play className="w-2.5 h-2.5 fill-[#2563EB]" />
-              Démo
-            </Link>
-            <Link
-              href="/blog"
-              className="inline-flex items-center px-3.5 py-1.5 rounded-lg bg-white/60 border border-[#E2E8F0] text-slate-600 text-[12px] font-medium active:bg-white transition-all"
-            >
-              Blog
-            </Link>
-          </div>
-        </div>
-      </div>
+      <p className="mt-5 flex items-baseline gap-1.5">
+        <span className={`text-4xl font-bold tracking-tight ${muted ? 'text-slate-500' : 'text-[#0F172A]'}`}>{formatEuros(perMonth)}</span>
+        <span className="text-sm text-slate-500">HT / mois</span>
+      </p>
+      <p className="text-[13px] text-slate-500 mt-1">
+        {period === 'monthly'
+          ? `soit ${formatEuros(withVat(monthly))} TTC par mois`
+          : `${formatEuros(yearly)} HT par an, soit ${formatEuros(withVat(yearly))} TTC`}
+      </p>
     </>
+  )
+}
+
+function FeatureList({ items }: { items: string[] }) {
+  if (items.length === 0) return null
+  return (
+    <ul className="mt-6 flex flex-col gap-2.5">
+      {items.map((item) => (
+        <li key={item} className="flex items-start gap-2.5 text-sm text-[#0F172A] leading-snug">
+          <Check className="w-4 h-4 mt-0.5 shrink-0 text-[#059669]" aria-hidden />
+          {item}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function UpcomingList({ items, title = 'À venir' }: { items: string[]; title?: string }) {
+  if (items.length === 0) return null
+  return (
+    <div className="mt-5 border-t border-[#E2E8F0] pt-4">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2.5">{title}</p>
+      <ul className="flex flex-col gap-2.5">
+        {items.map((item) => (
+          <li key={item} className="flex items-start gap-2.5 text-sm text-slate-500 leading-snug">
+            <Clock className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" aria-hidden />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

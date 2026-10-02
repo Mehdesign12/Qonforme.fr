@@ -17,6 +17,7 @@ import {
   INVOICE_STATUS_LABELS, INVOICE_STATUS_STYLES
 } from "@/lib/utils/invoice"
 import { InvoiceStatus } from "@/types"
+import { PaywallDialog, isSubscriptionRequired } from "@/components/billing/PaywallDialog"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -352,6 +353,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [showSendModal, setShowSendModal]       = useState(false)
   const [sendLoading, setSendLoading]           = useState(false)
   const [remindLoading, setRemindLoading]       = useState(false)
+  // Mur de paiement : ouvert quand l'émission est refusée faute de formule (402)
+  const [paywall, setPaywall]                   = useState<null | "send" | "remind">(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -364,6 +367,16 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     }).finally(() => setLoading(false))
   }, [invoiceId])
 
+  // Retour du paiement (?send=1) : la formule est active, on rouvre l'envoi
+  // de la facture qui attendait, puis on nettoie l'URL.
+  useEffect(() => {
+    if (!invoice || typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("send") !== "1") return
+    router.replace(`/invoices/${invoiceId}`)
+    if (invoice.status === "draft" && invoice.client?.email) setShowSendModal(true)
+  }, [invoice?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const changeStatus = async (newStatus: InvoiceStatus) => {
     if (!invoice) return
     setStatusLoading(true)
@@ -374,6 +387,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         body: JSON.stringify({ status: newStatus }),
       })
       const json = await res.json()
+      if (isSubscriptionRequired(res.status, json)) { setPaywall("send"); return }
       if (!res.ok) { toast.error(json.error); return }
       setInvoice(json.invoice)
       toast.success(`Statut mis à jour : ${STATUS_LABELS[newStatus] ?? newStatus}`)
@@ -390,7 +404,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       const blob = await res.blob()
       const url  = URL.createObjectURL(blob)
       const a    = document.createElement("a")
-      a.href = url; a.download = `${invoice.invoice_number}.pdf`
+      a.href = url; a.download = `${invoice.status === "draft" ? "brouillon-" : ""}${invoice.invoice_number}.pdf`
       document.body.appendChild(a); a.click()
       document.body.removeChild(a); URL.revokeObjectURL(url)
       toast.success("PDF téléchargé !")
@@ -451,6 +465,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     try {
       const res = await fetch(`/api/invoices/${invoiceId}/send`, { method: "POST" })
       const json = await res.json()
+      if (isSubscriptionRequired(res.status, json)) { setShowSendModal(false); setPaywall("send"); return }
       if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return }
       setInvoice({ ...invoice, status: "sent" as InvoiceStatus })
       toast.success(`Facture envoyée à ${json.sentTo}`)
@@ -471,6 +486,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     try {
       const res = await fetch(`/api/invoices/${invoiceId}/remind`, { method: "POST" })
       const json = await res.json()
+      if (isSubscriptionRequired(res.status, json)) { setPaywall("remind"); return }
       if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi de la relance"); return }
       setInvoice(json.invoice)
       toast.success(`Relance ${json.reminderNumber} envoyée à ${json.sentTo}`)
@@ -502,6 +518,14 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
   return (
     <>
+      <PaywallDialog
+        open={paywall !== null}
+        onOpenChange={(o) => { if (!o) setPaywall(null) }}
+        invoiceId={invoice.id}
+        invoiceNumber={invoice.invoice_number}
+        reason={paywall ?? "send"}
+      />
+
       {/* Modal envoi email */}
       {showSendModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 md:backdrop-blur-sm">
@@ -763,7 +787,16 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         )}
 
         {/* ---- Corps facture ---- */}
-        <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] shadow-sm overflow-hidden">
+        <div className="relative bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] shadow-sm overflow-hidden">
+          {/* Brouillon : filigrane visible à l'écran et à l'impression — un brouillon
+              imprimé ne doit pas pouvoir circuler comme une facture émise */}
+          {invoice.status === "draft" && (
+            <div aria-hidden className="pointer-events-none select-none absolute inset-0 z-10 flex items-center justify-center overflow-hidden">
+              <span className="-rotate-[30deg] text-[64px] sm:text-[96px] font-extrabold tracking-[0.2em] text-[#DC2626]/10 dark:text-[#F87171]/10">
+                BROUILLON
+              </span>
+            </div>
+          )}
 
           <div className="p-4 sm:p-8 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">

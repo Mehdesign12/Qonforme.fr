@@ -1,158 +1,81 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import PricingSelector from '@/components/billing/PricingSelector'
-import StepIndicator from '@/components/auth/StepIndicator'
 import Image from 'next/image'
 import Link from 'next/link'
-import { stripe } from '@/lib/stripe/client'
-import { upsertSubscription } from '@/lib/stripe/subscription'
-import { getPlanByPriceId, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { createClient } from '@/lib/supabase/server'
+import PricingSelector from '@/components/billing/PricingSelector'
+import { canIssueInvoices, safeNextPath } from '@/lib/stripe/access'
+import { recoverActiveSubscription } from '@/lib/stripe/recovery'
 
 export const metadata: Metadata = {
-  title: 'Choisir un plan — Qonforme',
+  title: 'Choisir ma formule — Qonforme',
   robots: { index: false, follow: false },
 }
 export const dynamic = 'force-dynamic'
 
 const LOGO_LONG_BLEU = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp'
-const PICTO_Q        = 'https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp'
 
-const STEPS = [
-  { label: 'Ton compte' },
-  { label: 'Ton entreprise' },
-  { label: 'Ton plan' },
-]
+/**
+ * Choix de la formule, pour un compte connecté.
+ * On y arrive depuis le mur de paiement d'une facture (`next` = la facture),
+ * depuis Paramètres › Abonnement ou depuis la page Tarifs. Ce n'est plus une
+ * étape de l'inscription : les devis sont gratuits, la formule se choisit à la
+ * première facture.
+ */
+export default async function ChoosePlanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>
+}) {
+  const { next: rawNext } = await searchParams
+  const next = safeNextPath(rawNext)
 
-export default async function SignupPlanPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // backHref : pour un utilisateur connecté, /settings/billing est exempt de
-  // la vérification d'abonnement → évite la boucle /signup/plan ↔ /dashboard
-  let backHref = '/'
-
+  let alreadyActive = false
   if (user) {
-    backHref = '/settings/billing'
-
     const { data: sub } = await supabase
       .from('subscriptions')
-      .select('status, stripe_customer_id, stripe_subscription_id')
+      .select('status, stripe_customer_id')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (sub?.status === 'active') {
-      redirect('/dashboard')
-    }
-
-    // ── Recovery automatique ────────────────────────────────────────────────
-    // Si l'abonnement est "incomplete" (webhook non reçu ou erreur réseau) mais
-    // que l'utilisateur a un stripe_customer_id, on interroge Stripe directement
-    // pour trouver un abonnement actif et récupérer l'accès sans intervention.
-    if (sub?.stripe_customer_id) {
-      try {
-        const stripeCustomerSubs = await stripe.subscriptions.list({
-          customer: sub.stripe_customer_id,
-          status: 'active',
-          limit: 1,
-        })
-
-        if (stripeCustomerSubs.data.length > 0) {
-          const stripeSub = stripeCustomerSubs.data[0]
-          const priceId = stripeSub.items.data[0]?.price.id
-
-          if (priceId) {
-            const planInfo = getPlanByPriceId(priceId)
-            const metaPlan = stripeSub.metadata?.plan
-            const resolvedPlan: PlanId | undefined =
-              planInfo?.plan ??
-              (metaPlan === 'starter' || metaPlan === 'pro' ? (metaPlan as PlanId) : undefined)
-            const resolvedPeriod: BillingPeriod =
-              planInfo?.period ??
-              (stripeSub.metadata?.billing_period === 'yearly' ? 'yearly' : 'monthly')
-
-            if (resolvedPlan) {
-              const item = stripeSub.items?.data?.[0]
-              const ts = item
-                ? (item as unknown as { current_period_end?: number }).current_period_end
-                : null
-              const currentPeriodEnd = ts ? new Date(ts * 1000) : null
-
-              await upsertSubscription({
-                userId:               user.id,
-                stripeCustomerId:     sub.stripe_customer_id!,
-                stripeSubscriptionId: stripeSub.id,
-                stripePriceId:        priceId,
-                plan:                 resolvedPlan,
-                billingPeriod:        resolvedPeriod,
-                status:               'active',
-                currentPeriodEnd,
-              })
-
-              console.log(`[signup/plan] Recovery OK — user ${user.id} → plan ${resolvedPlan}`)
-              redirect('/dashboard')
-            }
-          }
-        }
-      } catch (err) {
-        console.error('[signup/plan] Recovery check failed:', err)
-      }
+    alreadyActive = canIssueInvoices(sub?.status)
+    if (!alreadyActive && sub?.stripe_customer_id) {
+      alreadyActive = await recoverActiveSubscription(user.id, sub.stripe_customer_id)
     }
   }
 
-  return (
-    <div className="relative min-h-[100dvh] flex flex-col overflow-x-hidden">
-      {/* Fond dégradé */}
-      <div aria-hidden className="pointer-events-none select-none fixed inset-0 z-0"
-        style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 30%, #EEF2FF 60%, #F0F9FF 85%, #F8FAFC 100%)' }}
-      />
-      <div aria-hidden className="pointer-events-none select-none fixed -top-32 -left-32 z-0 w-[480px] h-[480px] rounded-full"
-        style={{ background: 'radial-gradient(circle at center, rgba(37,99,235,0.13) 0%, rgba(37,99,235,0.04) 55%, transparent 75%)' }}
-      />
-      <div aria-hidden className="pointer-events-none select-none fixed -bottom-24 -right-24 z-0 w-[420px] h-[420px] rounded-full"
-        style={{ background: 'radial-gradient(circle at center, rgba(99,102,241,0.10) 0%, rgba(37,99,235,0.04) 50%, transparent 72%)' }}
-      />
-      <div aria-hidden className="pointer-events-none select-none fixed inset-0 z-0 hidden sm:block"
-        style={{
-          backgroundImage: 'radial-gradient(circle, rgba(37,99,235,0.08) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-          maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)',
-        }}
-      />
-      <div aria-hidden className="pointer-events-none select-none fixed inset-0 z-0 flex items-center justify-center" style={{ opacity: 0.045 }}>
-        <Image
-          src={PICTO_Q}
-          alt=""
-          width={900}
-          height={900}
-          className="w-[340px] sm:w-[560px] lg:w-[900px]"
-          sizes="(min-width: 1024px) 900px, (min-width: 640px) 560px, 340px"
-          priority
-        />
-      </div>
+  // Hors de tout try/catch : redirect() lève une exception interne de Next.js
+  if (alreadyActive) redirect(next ?? '/settings/billing')
 
-      {/* Header : logo + stepper */}
+  const backHref = next ?? (user ? '/dashboard' : '/')
+
+  return (
+    <div className="min-h-[100dvh] bg-[#F8FAFC]">
       <div
-        className="relative z-10 flex flex-col items-center px-4"
+        className="mx-auto w-full max-w-[1080px] px-4 sm:px-6 pb-12"
         style={{ paddingTop: 'max(20px, env(safe-area-inset-top, 20px))' }}
       >
-        <Link href={backHref} aria-label={backHref === '/' ? "Retour à l'accueil" : 'Mon espace'} className="mb-5 lg:mb-7">
-          <Image
-            src={LOGO_LONG_BLEU}
-            alt="Qonforme"
-            width={180}
-            height={44}
-            className="h-8 lg:h-10 w-auto drop-shadow-sm"
-            sizes="180px"
-            priority
-          />
-        </Link>
-        <StepIndicator steps={STEPS} current={2} />
-      </div>
+        <div className="flex justify-center mb-8">
+          <Link href={user ? '/dashboard' : '/'} aria-label="Qonforme">
+            <Image src={LOGO_LONG_BLEU} alt="Qonforme" width={180} height={44} className="h-8 lg:h-9 w-auto" sizes="180px" priority />
+          </Link>
+        </div>
 
-      {/* Contenu */}
-      <div className="relative z-10 flex-1 w-full max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-6 pb-4 lg:pb-12">
-        <PricingSelector isAuthenticated backHref={backHref} />
+        <div className="text-center mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A]">
+            {next?.startsWith('/invoices/') ? 'Votre facture est prête.' : 'Choisissez votre formule'}
+          </h1>
+          <p className="mt-2 text-[15px] text-slate-500">
+            {next?.startsWith('/invoices/')
+              ? 'Choisissez votre formule pour l’envoyer. Vos devis restent gratuits.'
+              : 'Vos devis sont gratuits. La formule sert à émettre vos factures.'}
+          </p>
+        </div>
+
+        <PricingSelector isAuthenticated={!!user} backHref={backHref} next={next} showFree={!user} />
       </div>
     </div>
   )

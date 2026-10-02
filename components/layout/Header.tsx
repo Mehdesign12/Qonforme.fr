@@ -19,7 +19,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import type { PlanId } from "@/lib/stripe/plans"
 
 /* ------------------------------------------------------------------ */
 /* Titres de pages                                                      */
@@ -111,8 +110,8 @@ const MOBILE_PILL: React.CSSProperties = {
 /* Badge plan                                                           */
 /* ------------------------------------------------------------------ */
 
-function PlanBadge({ plan }: { plan: PlanId }) {
-  if (plan === "pro") {
+function PlanBadge({ label, active }: { label: string; active: boolean }) {
+  if (active) {
     return (
       <span
         className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full"
@@ -122,13 +121,13 @@ function PlanBadge({ plan }: { plan: PlanId }) {
           border: "1px solid rgba(37,99,235,0.20)",
         }}
       >
-        Pro ✦
+        {label}
       </span>
     )
   }
   return (
     <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600">
-      Starter
+      {label}
     </span>
   )
 }
@@ -141,14 +140,15 @@ interface HeaderProps {
   firstName?: string
   lastName?:  string
   email?:     string
-  plan?:      PlanId | null
+  /** Nom de la formule active (« Essentiel »), ou null pour la version gratuite. */
+  planName?:  string | null
 }
 
 /* ------------------------------------------------------------------ */
 /* Composant                                                            */
 /* ------------------------------------------------------------------ */
 
-export function Header({ firstName = "", lastName = "", email = "", plan = null }: HeaderProps) {
+export function Header({ firstName = "", lastName = "", email = "", planName = null }: HeaderProps) {
   const pathname = usePathname()
   const router   = useRouter()
   const title    = getTitle(pathname)
@@ -239,7 +239,7 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
                   {email}
                 </p>
               )}
-              {plan && <div className="mt-1.5"><PlanBadge plan={plan} /></div>}
+              <div className="mt-1.5"><PlanBadge label={planName ?? "Version gratuite"} active={Boolean(planName)} /></div>
             </div>
           </div>
         </div>

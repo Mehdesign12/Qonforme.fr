@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import type { PlanId, BillingPeriod } from '@/lib/stripe/plans'
-import { PLANS } from '@/lib/stripe/plans'
+import { PLANS, isPlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { safeNextPath } from '@/lib/stripe/access'
 import CheckoutPageClient from './CheckoutPageClient'
 
 export const dynamic = 'force-dynamic'
@@ -10,6 +10,7 @@ interface CheckoutPageProps {
   searchParams: Promise<{
     plan?: string
     period?: string
+    next?: string
   }>
 }
 
@@ -17,35 +18,31 @@ export async function generateMetadata({
   searchParams,
 }: CheckoutPageProps): Promise<Metadata> {
   const { plan } = await searchParams
-  const planData = plan && plan in PLANS ? PLANS[plan as PlanId] : null
+  const planData = isPlanId(plan) ? PLANS[plan] : null
   return {
     title: planData
-      ? `Finaliser mon abonnement ${planData.name} — Qonforme`
-      : 'Finaliser mon abonnement — Qonforme',
+      ? `Choisir la formule ${planData.name} — Qonforme`
+      : 'Choisir ma formule — Qonforme',
+    robots: { index: false, follow: false },
   }
 }
 
 export default async function CheckoutPage({ searchParams }: CheckoutPageProps) {
-  const { plan, period } = await searchParams
+  const { plan, period, next: rawNext } = await searchParams
+  const next = safeNextPath(rawNext)
 
-  // Validation stricte des paramètres
-  const validPlans: PlanId[] = ['starter', 'pro']
-  const validPeriods: BillingPeriod[] = ['monthly', 'yearly']
+  const billingPeriod: BillingPeriod | null = period === 'monthly' || period === 'yearly' ? period : null
 
-  const planId = validPlans.includes(plan as PlanId) ? (plan as PlanId) : null
-  const billingPeriod = validPeriods.includes(period as BillingPeriod)
-    ? (period as BillingPeriod)
-    : null
-
-  // Paramètres invalides → retour au choix de plan
-  if (!planId || !billingPeriod) {
-    redirect('/signup/plan')
+  // Formule inconnue, pas encore disponible ou période invalide → retour au choix
+  if (!isPlanId(plan) || !PLANS[plan].available || !billingPeriod) {
+    redirect(next ? `/signup/plan?next=${encodeURIComponent(next)}` : '/signup/plan')
   }
 
   return (
     <CheckoutPageClient
-      planId={planId}
+      planId={plan}
       billingPeriod={billingPeriod}
+      next={next}
     />
   )
 }

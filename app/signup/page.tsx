@@ -17,7 +17,6 @@ export const dynamic = "force-dynamic"
 const STEPS = [
   { label: "Ton compte" },
   { label: "Ton entreprise" },
-  { label: "Ton plan" },
 ]
 
 export default function SignupPage() {

@@ -9,6 +9,8 @@
  * - Ton "tu", chaleureux, cohérent avec le reste du site
  * - HTML inline-styles pour compatibilité maximale (Gmail, Outlook, Apple Mail…)
  */
+import { PLANS, FREE_FEATURES, formatEuros } from "@/lib/stripe/plans"
+import { GUARANTEE_DAYS } from "@/lib/stripe/access"
 
 const ACCENT = "#2563EB"
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.qonforme.fr"
@@ -117,7 +119,7 @@ export function buildWelcomeEmail({
                 Bienvenue, ${firstName}&nbsp;!
               </h2>
               <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.65;">
-                Ton compte est actif. Tu peux dès maintenant créer des factures, devis, bons de commande et avoirs — tous conformes à la réglementation française de facturation électronique 2026.
+                Ton compte est actif. Tes devis sont gratuits et illimités, et tu peux préparer tes factures dès maintenant. Tu choisis une formule seulement au moment d'envoyer ta première facture.
               </p>
 
               <!-- CTA principal -->
@@ -155,15 +157,12 @@ export function buildWelcomeEmail({
                 <tr>
                   <td style="padding:20px 24px;">
                     <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:${ACCENT};text-transform:uppercase;letter-spacing:0.08em;">
-                      Ce qui est inclus dans ton plan
+                      Gratuit, sans carte bancaire
                     </p>
                     <table cellpadding="0" cellspacing="0" width="100%">
                       ${[
-                        "Factur-X EN 16931 certifié — généré automatiquement en 1 clic",
-                        "Devis, bons de commande et avoirs inclus",
-                        "Guide de transmission Chorus Pro pas-à-pas",
-                        "Archivage légal 10 ans inclus",
-                        "Envoi des documents par email avec PDF joint",
+                        ...FREE_FEATURES,
+                        `Pour envoyer tes factures : formule ${PLANS.starter.name}, ${formatEuros(PLANS.starter.monthlyPrice)} HT par mois, satisfait ou remboursé ${GUARANTEE_DAYS} jours`,
                       ]
                         .map(
                           (item) => `
