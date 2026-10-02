@@ -101,6 +101,13 @@
   - Le bloc d'appel à l'action en bas de l'accueil est aligné : fond blanc (ou photo d'artisan quand elle existe), boutons en pilule.
   - **Titre de l'accueil en ligne :** « La facturation des pros du bâtiment, simple dès le premier devis. » Le titre validé (« conforme de bout en bout ») reviendra quand la transmission par plateforme agréée sera livrée : d'ici là, ce serait une promesse non tenue.
   - **Photos :** des illustrations d'artisans au travail, jamais présentées comme des clients (ni nom, ni citation, ni écran lisible).
+    - Sur le canevas (version 19), photos de la banque d'images Pexels : usage commercial gratuit, sans attribution. Sa licence interdit de laisser croire que les personnes photographiées recommandent le produit, ce qui rejoint notre règle.
+    - Sources : pexels.com/photo/6474471, 8447842, 17842832, 8961032, 5493653.
+  - **Accueil du canevas (version 19, 02/10/2026) :**
+    - tableau de bord dans un ordinateur et accueil mobile dans un téléphone, cadres dessinés en CSS ;
+    - photos dans les trois profils, bande photo, signature du devis sur téléphone ;
+    - appel final sur fond clair avec photo ;
+    - animations au défilement en CSS seul, désactivées par « Réduire les animations ».
 
 ## 7. Questions ouvertes
 
