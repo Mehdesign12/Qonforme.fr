@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
-import { useDocumentForm } from "@/components/documents/useDocumentForm"
+import { useDocumentForm, usePreselectedClient } from "@/components/documents/useDocumentForm"
 import { isoDateIn, lineFromSaved, newLine, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -57,6 +57,7 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
     }
   })
   const { form, computed } = doc
+  usePreselectedClient(doc, clients, !initial)
 
   useEffect(() => {
     fetch("/api/clients")
