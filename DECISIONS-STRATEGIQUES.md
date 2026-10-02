@@ -487,4 +487,4 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 
 - **Formule annuelle :** pas de remboursement au prorata après les 30 jours. C'est la pratique retenue par défaut, à confirmer.
 - **CGV distinctes des CGU :** à faire relire par un juriste.
-
+- **Mentions légales :** il manque le SIREN, l'adresse du siège et le numéro de TVA de Qonforme SAS. Ils sont obligatoires sur le site comme sur les factures d'abonnement.
