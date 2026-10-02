@@ -1,134 +1,94 @@
-"use client"
-
-import Image from "next/image"
-import { motion } from "motion/react"
+import Link from "next/link"
+import { Check, ChevronRight } from "lucide-react"
 import type { ReactNode } from "react"
-
-const PICTO_Q_URL =
-  "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
+import { cn } from "@/lib/utils"
 
 interface OutilsHeroProps {
-  icon: ReactNode
-  iconBg?: string
-  title: ReactNode
-  subtitle: string
+  /** Pictogramme de l'outil, dans la pastille au-dessus du titre. */
+  icon?: ReactNode
+  /** Texte de la pastille (« Barèmes 2026 », « Données INSEE »…). */
   badge?: string
+  /** Première voix du titre (Bricolage Grotesque). */
+  title: ReactNode
+  /** Seconde voix, à la ligne, en Instrument Serif italique bleu. */
+  accent?: ReactNode
+  subtitle: ReactNode
+  /** Nom de l'outil dans le fil d'Ariane (absent sur le hub). */
+  crumb?: string
+  /** Engagements vrais sous le chapeau. */
+  checks?: string[]
+  children?: ReactNode
+  className?: string
 }
 
+const DEFAULT_CHECKS = ["Gratuit", "Sans inscription", "Rien n'est enregistré"]
+
 /**
- * Hero partagé pour toutes les pages /outils.
- * Gradient signature Qonforme + picto Q en filigrane.
+ * En-tête partagé du hub et des 12 outils, d'après le héros du canevas
+ * « Main » : pastille, titre en deux voix centré, chapeau, engagements cochés.
+ * Fond clair avec le halo bleu du canevas (--q-glow), sans dégradé multicolore.
  */
-export function OutilsHero({ icon, iconBg = "bg-blue-50 text-[#2563EB]", title, subtitle, badge }: OutilsHeroProps) {
+export function OutilsHero({ icon, badge, title, accent, subtitle, crumb, checks = DEFAULT_CHECKS, children, className }: OutilsHeroProps) {
   return (
-    <div
-      className="relative w-full overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(125deg, #EFF6FF 0%, #EEF2FF 20%, #F5F3FF 35%, #E0F2FE 50%, #EFF6FF 65%, #F0FDF4 80%, #EEF2FF 100%)",
-      }}
+    <header
+      className={cn("relative px-4 pb-8 pt-[104px] sm:px-6 sm:pb-12 sm:pt-[136px]", className)}
+      style={{ backgroundImage: "var(--q-glow)" }}
     >
-      {/* Lueurs radiales */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 hidden md:block"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 50% at 20% -10%, rgba(37,99,235,0.08) 0%, transparent 55%), " +
-            "radial-gradient(ellipse 40% 40% at 80% 0%, rgba(124,58,237,0.06) 0%, transparent 50%)",
-        }}
-      />
-
-      {/* Picto Q filigrane — mobile centré */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center md:hidden"
-        style={{ opacity: 0.05 }}
-      >
-        <Image
-          src={PICTO_Q_URL}
-          alt=""
-          width={240}
-          height={240}
-          className="w-[200px] select-none"
-          sizes="200px"
-          loading="lazy"
-        />
-      </div>
-
-      {/* Picto Q filigrane — desktop droite */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-10 top-0 z-[1] hidden md:block"
-        style={{ opacity: 0.04 }}
-      >
-        <Image
-          src={PICTO_Q_URL}
-          alt=""
-          width={350}
-          height={350}
-          className="w-[300px] select-none"
-          sizes="300px"
-          loading="lazy"
-        />
-      </div>
-
-      {/* Contenu */}
-      <div className="relative z-10 mx-auto max-w-3xl px-5 pb-10 pt-24 text-center sm:pb-14 sm:pt-28">
-        {/* Badge */}
-        {badge && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="mb-4"
-          >
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#BFDBFE] bg-white/70 px-3 py-1 text-[12px] font-semibold text-[#2563EB]">
-              {badge}
-            </span>
-          </motion.div>
+      <div className="mx-auto flex w-full max-w-[880px] flex-col items-center text-center">
+        {crumb && (
+          <nav aria-label="Fil d'Ariane" className="mb-6">
+            <ol className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[13px] text-q-text-4">
+              <li>
+                <Link href="/outils" className="rounded transition-colors hover:text-q-accent-strong">
+                  Outils gratuits
+                </Link>
+              </li>
+              <li aria-hidden>
+                <ChevronRight className="h-3.5 w-3.5 text-q-placeholder" />
+              </li>
+              <li aria-current="page" className="font-medium text-q-text-2">
+                {crumb}
+              </li>
+            </ol>
+          </nav>
         )}
 
-        {/* Icone */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl shadow-sm ${iconBg}`}
-        >
-          {icon}
-        </motion.div>
+        {(icon || badge) && (
+          <p className="mb-5 inline-flex h-9 items-center gap-2 rounded-full border border-q-line bg-q-surface py-1 pl-1 pr-3.5 text-[13px] font-medium text-q-text-2 shadow-[var(--q-shadow-card)]">
+            {icon && (
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-q-wash text-q-accent-strong [&_svg]:h-[15px] [&_svg]:w-[15px]" aria-hidden>
+                {icon}
+              </span>
+            )}
+            {badge}
+          </p>
+        )}
 
-        {/* Titre */}
-        <motion.h1
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="text-[1.7rem] font-extrabold leading-tight tracking-[-0.02em] text-[#0F172A] sm:text-[2.1rem] lg:text-[2.4rem]"
-          style={{ fontFamily: "var(--font-bricolage)" }}
-        >
+        <h1 className="font-display text-[clamp(34px,5vw,58px)] font-semibold leading-[1.04] tracking-[-0.035em] text-q-ink-strong [text-wrap:balance]">
           {title}
-        </motion.h1>
+          {accent && (
+            <>
+              <br />
+              <span className="q-serif">{accent}</span>
+            </>
+          )}
+        </h1>
 
-        {/* Sous-titre */}
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.16, duration: 0.5 }}
-          className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-slate-500 sm:text-base"
-        >
-          {subtitle}
-        </motion.p>
+        <p className="mt-5 max-w-[640px] text-[17px] leading-[1.6] text-q-text-3 sm:text-[18px]">{subtitle}</p>
+
+        {children}
+
+        {checks.length > 0 && (
+          <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[14px] text-q-text-3">
+            {checks.map((c) => (
+              <li key={c} className="inline-flex items-center gap-1.5">
+                <Check className="h-4 w-4 text-q-accent" strokeWidth={2.25} aria-hidden />
+                {c}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-
-      {/* Fade bas */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-20"
-        style={{
-          background: "linear-gradient(to bottom, transparent 0%, #F8FAFC 100%)",
-        }}
-      />
-    </div>
+    </header>
   )
 }
