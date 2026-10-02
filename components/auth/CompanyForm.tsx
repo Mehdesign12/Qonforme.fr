@@ -3,21 +3,14 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Loader2, Search } from "lucide-react"
+import { Check, Loader2, Search } from "lucide-react"
 import { isValidSiren, sirenToVAT } from "@/lib/utils/invoice"
 import { trackEvent } from "@/lib/meta-pixel"
+import { AUTH_INPUT, AuthSubmit, Field } from "@/components/auth/fields"
+import { cn } from "@/lib/utils"
 
-/* ─── classes communes ──────────────────────────────────────────────────── */
-// text-base (16px) sur mobile : sous ce seuil, iOS Safari/WKWebView zoome
-// automatiquement la page au focus d'un champ. md:text-sm garde la densité
-// desktop existante. Filet de sécurité global aussi dans globals.css.
-const inputBase =
-  "w-full h-11 rounded-[10px] border border-[#E2E8F0] bg-white px-3.5 text-base md:text-sm text-[#0F172A] placeholder:text-slate-400 outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 disabled:opacity-50"
-const inputError =
-  "border-red-400 focus:border-red-400 focus:ring-red-400/10"
-const labelCls  = "block text-[13px] font-semibold text-[#0F172A] mb-1.5"
-const btnPrimary =
-  "w-full h-11 rounded-[10px] bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+/** Carte de section (canevas « Onb-2-Entreprise ») : rayon 18, ombre portée douce. */
+const CARD = "q-card !rounded-[18px] p-5 sm:p-6 shadow-[0_1px_2px_rgba(10,17,34,.04),0_12px_32px_-24px_rgba(10,17,34,.18)]"
 
 type Fields = {
   siren: string
@@ -67,7 +60,7 @@ export default function CompanyForm() {
 
   const searchSiren = async () => {
     const siren = fields.siren.trim()
-    if (!siren || siren.length !== 9) { toast.error("Entre un SIREN valide à 9 chiffres"); return }
+    if (!siren || siren.length !== 9) { toast.error("Saisissez un SIREN valide à 9 chiffres"); return }
     if (!isValidSiren(siren)) { toast.error("SIREN invalide (algorithme de Luhn)"); return }
     setSirenLoading(true)
     try {
@@ -90,9 +83,9 @@ export default function CompanyForm() {
         if (data.city)     delete n.city
         return n
       })
-      toast.success("Entreprise trouvée et formulaire pré-rempli !")
+      toast.success("Entreprise trouvée : formulaire pré-rempli.")
     } catch {
-      toast.error("Entreprise non trouvée. Remplis manuellement.")
+      toast.error("Entreprise introuvable. Remplissez les champs à la main.")
     } finally {
       setSirenLoading(false)
     }
@@ -124,7 +117,7 @@ export default function CompanyForm() {
         const err = await res.json().catch(() => ({}))
         throw new Error(err?.error || "Erreur inconnue")
       }
-      toast.success("Profil entreprise enregistré !")
+      toast.success("Entreprise enregistrée.")
       trackEvent("CompleteRegistration", { currency: "EUR", value: 0 })
       router.push("/dashboard")
     } catch (err: unknown) {
@@ -135,143 +128,117 @@ export default function CompanyForm() {
     }
   }
 
+  /** Contrôle de la clé de Luhn dès que les 9 chiffres sont saisis (indication seulement). */
+  const sirenDigits = fields.siren.trim()
+  const sirenChecked = /^\d{9}$/.test(sirenDigits)
+  const sirenOk = sirenChecked && isValidSiren(sirenDigits)
+
+  const input = (key: keyof Fields, extra?: string) => ({
+    id: key,
+    className: cn(AUTH_INPUT, extra),
+    "aria-invalid": errors[key] ? true : undefined,
+    "aria-describedby": errors[key] ? `${key}-error` : undefined,
+    value: fields[key],
+    onChange: set(key),
+    disabled: loading,
+  })
+
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+    <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
 
-      {/* SIREN */}
-      <div>
-        <label htmlFor="siren" className={labelCls}>Numéro SIREN</label>
-        <div className="flex gap-2">
-          <input
-            id="siren"
-            placeholder="123456789"
-            maxLength={9}
-            autoComplete="off"
-            inputMode="numeric"
-            className={`${inputBase} font-mono flex-1 ${errors.siren ? inputError : ""}`}
-            value={fields.siren}
-            onChange={set("siren")}
-            disabled={loading}
-          />
-          <button
-            type="button"
-            onClick={searchSiren}
-            disabled={sirenLoading || loading}
-            title="Rechercher par SIREN (INSEE)"
-            className="h-11 w-11 shrink-0 rounded-[10px] border border-[#E2E8F0] bg-white hover:bg-[#EFF6FF] hover:border-[#2563EB] transition-all flex items-center justify-center text-slate-400 hover:text-[#2563EB] disabled:opacity-50"
-          >
-            {sirenLoading
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : <Search className="w-4 h-4" />
-            }
-          </button>
+      {/* ── Identité : SIREN puis ce que le répertoire Sirene remplit ── */}
+      <section className={cn(CARD, "flex flex-col gap-[18px]")} aria-labelledby="company-identity">
+        <h2 id="company-identity" className="sr-only">Identité de l’entreprise</h2>
+
+        <Field
+          id="siren"
+          label="Numéro SIREN"
+          error={errors.siren}
+          hint={
+            sirenOk
+              ? <span className="q-field-ok"><Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden /> SIREN valide. « Rechercher » remplit le nom et l’adresse.</span>
+              : sirenChecked
+                ? <span className="text-q-danger">Ce numéro ne correspond à aucun SIREN : vérifiez les 9 chiffres.</span>
+                : "Les 9 chiffres de votre avis de situation Sirene. « Rechercher » remplit le reste depuis l’INSEE."
+          }
+        >
+          <div className="flex gap-2">
+            <div className="relative min-w-0 flex-1">
+              <input
+                {...input("siren", "font-mono tracking-[0.04em] !pr-11")}
+                placeholder="948211375"
+                maxLength={9}
+                autoComplete="off"
+                inputMode="numeric"
+              />
+              {sirenOk && (
+                <Check className="pointer-events-none absolute right-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-q-ok" strokeWidth={2.25} aria-hidden />
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={searchSiren}
+              disabled={sirenLoading || loading}
+              className="q-btn q-btn-secondary !h-12 shrink-0 !rounded-xl !px-4"
+            >
+              {sirenLoading
+                ? <Loader2 className="animate-spin" aria-hidden />
+                : <Search aria-hidden />
+              }
+              <span className="hidden sm:inline">Rechercher</span>
+              <span className="sr-only sm:hidden">Rechercher par SIREN (INSEE)</span>
+            </button>
+          </div>
+        </Field>
+
+        <div className="h-px bg-q-line-soft" aria-hidden />
+
+        <Field id="name" label="Raison sociale" error={errors.name}>
+          <input {...input("name")} placeholder="Garnier Plâtrerie Isolation" autoComplete="organization" />
+        </Field>
+
+        <Field id="address" label="Adresse" error={errors.address}>
+          <input {...input("address")} placeholder="14 rue des Lices" autoComplete="street-address" />
+        </Field>
+
+        <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3">
+          <Field id="zip_code" label="Code postal" error={errors.zip_code}>
+            <input {...input("zip_code")} placeholder="49100" maxLength={5} inputMode="numeric" autoComplete="postal-code" />
+          </Field>
+          <Field id="city" label="Ville" error={errors.city}>
+            <input {...input("city")} placeholder="Angers" autoComplete="address-level2" />
+          </Field>
         </div>
-        {errors.siren && <p className="text-xs text-red-500 mt-1.5">{errors.siren}</p>}
-        <p className="text-xs text-slate-400 mt-1.5">
-          Clique sur l&apos;icône 🔍 pour pré-remplir automatiquement depuis l&apos;INSEE
-        </p>
-      </div>
+      </section>
 
-      {/* Raison sociale */}
-      <div>
-        <label htmlFor="name" className={labelCls}>Raison sociale</label>
-        <input
-          id="name"
-          placeholder="Mon Entreprise SARL"
-          autoComplete="organization"
-          className={`${inputBase} ${errors.name ? inputError : ""}`}
-          value={fields.name}
-          onChange={set("name")}
-          disabled={loading}
-        />
-        {errors.name && <p className="text-xs text-red-500 mt-1.5">{errors.name}</p>}
-      </div>
-
-      {/* Adresse */}
-      <div>
-        <label htmlFor="address" className={labelCls}>Adresse</label>
-        <input
-          id="address"
-          placeholder="12 rue de la Paix"
-          autoComplete="street-address"
-          className={`${inputBase} ${errors.address ? inputError : ""}`}
-          value={fields.address}
-          onChange={set("address")}
-          disabled={loading}
-        />
-        {errors.address && <p className="text-xs text-red-500 mt-1.5">{errors.address}</p>}
-      </div>
-
-      {/* Code postal + Ville */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* ── TVA et paiement ── */}
+      <section className={cn(CARD, "flex flex-col gap-[18px]")} aria-labelledby="company-payment">
         <div>
-          <label htmlFor="zip_code" className={labelCls}>Code postal</label>
-          <input
-            id="zip_code"
-            placeholder="75001"
-            maxLength={5}
-            inputMode="numeric"
-            autoComplete="postal-code"
-            className={`${inputBase} font-mono ${errors.zip_code ? inputError : ""}`}
-            value={fields.zip_code}
-            onChange={set("zip_code")}
-            disabled={loading}
-          />
-          {errors.zip_code && <p className="text-xs text-red-500 mt-1.5">{errors.zip_code}</p>}
+          <h2 id="company-payment" className="m-0 text-[17px] font-semibold text-q-ink">TVA et paiement</h2>
+          <p className="mt-1 text-[14px] text-q-text-3">Repris sur vos devis et vos factures. Modifiables ensuite dans les paramètres.</p>
         </div>
-        <div>
-          <label htmlFor="city" className={labelCls}>Ville</label>
-          <input
-            id="city"
-            placeholder="Paris"
-            autoComplete="address-level2"
-            className={`${inputBase} ${errors.city ? inputError : ""}`}
-            value={fields.city}
-            onChange={set("city")}
-            disabled={loading}
-          />
-          {errors.city && <p className="text-xs text-red-500 mt-1.5">{errors.city}</p>}
-        </div>
-      </div>
 
-      {/* TVA */}
-      <div>
-        <label htmlFor="vat_number" className={labelCls}>
-          N° de TVA intracommunautaire{" "}
-          <span className="text-slate-400 font-normal">(optionnel)</span>
-        </label>
-        <input
+        <Field
           id="vat_number"
-          placeholder="FR12345678901"
-          autoComplete="off"
-          className={`${inputBase} font-mono`}
-          value={fields.vat_number}
-          onChange={set("vat_number")}
-          disabled={loading}
-        />
-      </div>
+          label={<>N° de TVA intracommunautaire <span className="font-normal text-q-text-4">(facultatif)</span></>}
+        >
+          <input {...input("vat_number", "font-mono")} placeholder="FR32948211375" autoComplete="off" />
+        </Field>
 
-      {/* IBAN */}
-      <div>
-        <label htmlFor="iban" className={labelCls}>
-          IBAN{" "}
-          <span className="text-slate-400 font-normal">(pour les mentions de paiement)</span>
-        </label>
-        <input
+        <Field
           id="iban"
-          placeholder="FR76 3000 1007 9412 3456 7890 185"
-          autoComplete="off"
-          className={`${inputBase} font-mono text-[13px]`}
-          value={fields.iban}
-          onChange={set("iban")}
-          disabled={loading}
-        />
-      </div>
+          label={<>IBAN <span className="font-normal text-q-text-4">(facultatif)</span></>}
+          hint="Affiché sur vos factures pour que vos clients vous paient par virement."
+        >
+          <input {...input("iban", "font-mono")} placeholder="FR76 3000 1007 9412 3456 7890 185" autoComplete="off" />
+        </Field>
+      </section>
 
-      <button type="submit" className={`${btnPrimary} mt-2`} disabled={loading}>
-        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-        {loading ? "Enregistrement…" : "Accéder à mon espace →"}
-      </button>
+      <div className="flex justify-end pt-1">
+        <AuthSubmit loading={loading} loadingLabel="Enregistrement…" className="sm:w-auto">
+          Accéder à mon espace
+        </AuthSubmit>
+      </div>
     </form>
   )
 }

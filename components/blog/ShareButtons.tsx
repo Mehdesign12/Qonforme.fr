@@ -26,8 +26,8 @@ function XIcon({ className }: { className?: string }) {
 }
 
 /**
- * Share buttons: LinkedIn, X/Twitter, copy link.
- * Desktop: compact vertical sidebar sticky. Mobile: horizontal bar fixed bottom.
+ * Boutons de partage : LinkedIn, X, copie du lien.
+ * Ordinateur : colonne verticale collée au défilement. Mobile : barre fixée en bas.
  */
 export default function ShareButtons({ title, slug }: Props) {
   const [copied, setCopied] = useState(false)
@@ -63,21 +63,24 @@ export default function ShareButtons({ title, slug }: Props) {
       label: "LinkedIn",
       href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
       icon: <LinkedInIcon className="w-3.5 h-3.5" />,
-      hoverClass: "hover:bg-[#0077B5] hover:text-white hover:border-[#0077B5]",
     },
     {
       label: "X",
       href: `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`,
       icon: <XIcon className="w-3.5 h-3.5" />,
-      hoverClass: "hover:bg-[#0F172A] hover:text-white hover:border-[#0F172A]",
     },
   ]
 
+  // Accent unique : survol bleu pour tous les réseaux (pas de couleurs de marque)
+  const base = "flex items-center justify-center rounded-full border transition-colors duration-200"
+  const idle = "border-q-line bg-q-surface text-q-text-3 hover:border-q-accent hover:bg-q-accent hover:text-white"
+  const done = "border-transparent bg-q-ok-bg text-q-ok"
+
   return (
     <>
-      {/* Desktop — compact vertical sidebar sticky */}
-      <aside className="hidden lg:flex flex-col items-center gap-1.5 sticky top-24">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">
+      {/* Ordinateur : colonne compacte, collée au défilement */}
+      <aside className="sticky top-28 hidden flex-col items-center gap-2 lg:flex">
+        <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-q-text-4">
           Partager
         </p>
         {buttons.map((btn) => (
@@ -87,28 +90,25 @@ export default function ShareButtons({ title, slug }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Partager sur ${btn.label}`}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all duration-200 ${btn.hoverClass}`}
+            className={`${base} ${idle} h-9 w-9`}
           >
             {btn.icon}
           </a>
         ))}
         <button
+          type="button"
           onClick={copyLink}
-          aria-label="Copier le lien"
-          className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-all duration-200 ${
-            copied
-              ? "bg-emerald-50 border-emerald-200 text-emerald-600"
-              : "border-slate-200 bg-white text-slate-500 hover:bg-[#2563EB] hover:text-white hover:border-[#2563EB]"
-          }`}
+          aria-label={copied ? "Lien copié" : "Copier le lien"}
+          className={`${base} ${copied ? done : idle} h-9 w-9`}
         >
           {copied ? <Check className="w-3.5 h-3.5" /> : <Link2 className="w-3.5 h-3.5" />}
         </button>
       </aside>
 
-      {/* Mobile — fixed bottom bar */}
-      <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden border-t border-slate-200 bg-white/95 safe-area-bottom">
-        <div className="flex items-center justify-center gap-3 h-12 px-4">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mr-1">Partager</span>
+      {/* Mobile : barre fixée en bas (fond opaque, sans backdrop-filter : règle iOS) */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-q-line bg-q-surface safe-area-bottom lg:hidden">
+        <div className="flex h-14 items-center justify-center gap-3 px-4">
+          <span className="mr-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-q-text-4">Partager</span>
           {buttons.map((btn) => (
             <a
               key={btn.label}
@@ -116,19 +116,16 @@ export default function ShareButtons({ title, slug }: Props) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Partager sur ${btn.label}`}
-              className={`w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all duration-200 ${btn.hoverClass}`}
+              className={`${base} ${idle} h-10 w-10`}
             >
               {btn.icon}
             </a>
           ))}
           <button
+            type="button"
             onClick={copyLink}
-            aria-label="Copier le lien"
-            className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-all duration-200 ${
-              copied
-                ? "bg-emerald-50 border-emerald-200 text-emerald-600"
-                : "border-slate-200 bg-white text-slate-500 hover:bg-[#2563EB] hover:text-white hover:border-[#2563EB]"
-            }`}
+            aria-label={copied ? "Lien copié" : "Copier le lien"}
+            className={`${base} ${copied ? done : idle} h-10 w-10`}
           >
             {copied ? <Check className="w-3.5 h-3.5" /> : <Link2 className="w-3.5 h-3.5" />}
           </button>

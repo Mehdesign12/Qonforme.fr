@@ -1,13 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import Image from "next/image"
 import { createAdminClient } from "@/lib/supabase/server"
-import { FileText } from "lucide-react"
+import { BookOpen, Briefcase, FileText, Library } from "lucide-react"
 import { getReadingTime, getCategoryFromPrompt } from "@/lib/blog-utils"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
 import CategoryFilter from "@/components/blog/CategoryFilter"
-import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
-import Footer from "@/components/layout/Footer"
+import { ContentCta, ContentHero, ContentPage, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
 
 export const metadata: Metadata = {
   title: "Blog — Qonforme",
@@ -30,7 +28,12 @@ async function getPosts() {
   return data ?? []
 }
 
-const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Picto%20Q.webp"
+const RESOURCES = [
+  { href: "/guide", title: "Guides pratiques", text: "Mentions obligatoires, TVA, délais de paiement, avoirs : les règles expliquées simplement.", icon: <BookOpen /> },
+  { href: "/modele", title: "Modèles gratuits", text: "Factures, devis, avoirs et bons de commande, avec les mentions à ne pas oublier.", icon: <FileText /> },
+  { href: "/facturation", title: "Facturation par métier", text: "Les obligations propres à votre métier, du plombier au couvreur.", icon: <Briefcase /> },
+  { href: "/glossaire", title: "Glossaire", text: "Acompte, avoir, Factur-X, autoliquidation : les définitions des termes clés.", icon: <Library /> },
+]
 
 interface EnrichedPost {
   slug: string
@@ -47,7 +50,7 @@ interface EnrichedPost {
 export default async function BlogPage() {
   const rawPosts = await getPosts()
 
-  // Enrich posts with category and reading time
+  // Catégorie et temps de lecture de chaque article
   const posts: EnrichedPost[] = rawPosts.map((p) => ({
     ...p,
     category: getCategoryFromPrompt(p.ai_prompt),
@@ -55,52 +58,56 @@ export default async function BlogPage() {
   }))
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
-      <PublicHeaderWrapper />
-
-      {/* Hero section — pt-24 compense le header fixed */}
-      <section className="relative overflow-hidden pt-24 pb-12 sm:pt-28 sm:pb-16">
-        <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none" style={{ opacity: 0.03 }}>
-          <Image src={PICTO_Q} alt="" width={500} height={500} className="w-[500px]" sizes="500px" loading="lazy" />
-        </div>
-        <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6 text-center">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#0F172A]" style={{ fontFamily: "var(--font-bricolage)" }}>
-            Le blog <span className="text-[#2563EB]">Qonforme</span>
-          </h1>
-          <p className="mt-3 text-[15px] sm:text-base text-slate-500 max-w-xl mx-auto">
-            Guides pratiques, décryptages réglementaires et conseils pour maîtriser la facturation électronique.
-          </p>
-        </div>
-      </section>
+    <ContentPage>
+      <ContentHero
+        eyebrow="Le blog"
+        title="Facturer sans détour,"
+        accent="chantier après chantier."
+        sub="Guides pratiques, décryptages de la réforme et conseils concrets pour vos devis, vos factures et vos relances."
+      />
 
       {/* Articles */}
-      <section className="mx-auto max-w-5xl px-4 sm:px-6 pb-20 flex-1">
-        {posts.length === 0 ? (
-          <div className="text-center py-16">
-            <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-            <p className="text-lg font-semibold text-[#0F172A]">Bientôt disponible</p>
-            <p className="mt-1 text-sm text-slate-500">Nos premiers articles arrivent très vite. Revenez bientôt !</p>
-          </div>
-        ) : (
-          <CategoryFilter posts={posts} />
-        )}
+      <section aria-label="Articles" className="px-4 pb-6 sm:px-6">
+        <div className={WRAP}>
+          {posts.length === 0 ? (
+            <div className="q-card q-empty">
+              <span className="q-empty-icon">
+                <FileText className="h-6 w-6" aria-hidden />
+              </span>
+              <p className="font-display text-[20px] font-semibold tracking-[-0.02em] text-q-ink-strong">Bientôt disponible</p>
+              <p className="max-w-[420px] text-[15px] text-q-text-3">
+                Les premiers articles arrivent. En attendant, nos guides pratiques répondent aux questions les plus courantes.
+              </p>
+              <Link href="/guide" className="q-btn q-btn-secondary mt-2">
+                Voir les guides pratiques
+              </Link>
+            </div>
+          ) : (
+            <CategoryFilter posts={posts} />
+          )}
+        </div>
       </section>
 
       {/* Maillage pSEO */}
-      <section className="mx-auto max-w-5xl px-4 sm:px-6 pb-16">
-        <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-6">
-          <p className="text-sm font-bold text-[#0F172A] uppercase tracking-wide mb-4">Ressources complémentaires</p>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/facturation" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#0F172A] hover:border-[#2563EB]/30 hover:text-[#2563EB] transition-all">Facturation par métier</Link>
-            <Link href="/guide" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#0F172A] hover:border-[#2563EB]/30 hover:text-[#2563EB] transition-all">Guides pratiques</Link>
-            <Link href="/modele" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#0F172A] hover:border-[#2563EB]/30 hover:text-[#2563EB] transition-all">Modèles gratuits</Link>
-            <Link href="/guide/facture-electronique-2026" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#0F172A] hover:border-[#2563EB]/30 hover:text-[#2563EB] transition-all">Facture électronique 2026</Link>
+      <section className="px-4 pt-14 sm:px-6 sm:pt-20">
+        <div className={WRAP}>
+          <SectionHeading title="Pour aller" accent="plus loin." className="mb-8" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {RESOURCES.map((r) => (
+              <LinkCard key={r.href} href={r.href} title={r.title} text={r.text} icon={r.icon} cta="Découvrir" as="h3" />
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <Footer />
-    </div>
+      <ContentCta
+        links={[
+          { href: "/guide/facture-electronique-2026", label: "Facture électronique 2026" },
+          { href: "/outils", label: "Outils gratuits" },
+          { href: "/pricing", label: "Tarifs" },
+          { href: "/demo", label: "Démo" },
+        ]}
+      />
+    </ContentPage>
   )
 }

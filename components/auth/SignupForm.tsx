@@ -3,21 +3,9 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Loader2, Eye, EyeOff } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { trackEvent } from "@/lib/meta-pixel"
-
-/* ─── classes communes ──────────────────────────────────────────────────── */
-// text-base (16px) sur mobile : sous ce seuil, iOS Safari/WKWebView zoome
-// automatiquement la page au focus d'un champ. md:text-sm garde la densité
-// desktop existante. Filet de sécurité global aussi dans globals.css.
-const inputBase =
-  "w-full h-11 rounded-[10px] border border-[#E2E8F0] bg-white px-3.5 text-base md:text-sm text-[#0F172A] placeholder:text-slate-400 outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 disabled:opacity-50"
-const inputError =
-  "border-red-400 focus:border-red-400 focus:ring-red-400/10"
-const labelCls  = "block text-[13px] font-semibold text-[#0F172A] mb-1.5"
-const btnPrimary =
-  "w-full h-11 rounded-[10px] bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+import { AUTH_INPUT, AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
 
 function validate(fields: {
   first_name: string; last_name: string
@@ -29,7 +17,7 @@ function validate(fields: {
   if (!fields.last_name || fields.last_name.trim().length < 2)
     errs.last_name = "Nom requis (2 caractères min.)"
   if (!fields.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email))
-    errs.email = "Email invalide"
+    errs.email = "Adresse email invalide"
   if (!fields.password || fields.password.length < 8)
     errs.password = "8 caractères minimum"
   if (!fields.confirm_password)
@@ -45,8 +33,6 @@ export default function SignupForm() {
 
   const [loading, setLoading] = useState(false)
   const [errors, setErrors]   = useState<Record<string, string>>({})
-  const [showPwd, setShowPwd] = useState(false)
-  const [showCfm, setShowCfm] = useState(false)
 
   const [fields, setFields] = useState({
     first_name: "",
@@ -103,7 +89,7 @@ export default function SignupForm() {
         return
       }
 
-      toast.success("Compte créé ! Complète ton profil entreprise.")
+      toast.success("Compte créé. Il reste votre entreprise.")
       trackEvent("Lead", { currency: "EUR", value: 0 })
       router.push("/signup/company")
     } catch {
@@ -113,118 +99,90 @@ export default function SignupForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+    <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-4" noValidate>
 
       {/* Prénom + Nom */}
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="first_name" className={labelCls}>Prénom</label>
+        <Field id="first_name" label="Prénom" error={errors.first_name}>
           <input
             id="first_name"
-            placeholder="Jean"
+            placeholder="Thomas"
             autoComplete="given-name"
-            className={`${inputBase} ${errors.first_name ? inputError : ""}`}
+            className={AUTH_INPUT}
+            aria-invalid={errors.first_name ? true : undefined}
+            aria-describedby={errors.first_name ? "first_name-error" : undefined}
             value={fields.first_name}
             onChange={set("first_name")}
             disabled={loading}
           />
-          {errors.first_name && <p className="text-xs text-red-500 mt-1.5">{errors.first_name}</p>}
-        </div>
-        <div>
-          <label htmlFor="last_name" className={labelCls}>Nom</label>
+        </Field>
+        <Field id="last_name" label="Nom" error={errors.last_name}>
           <input
             id="last_name"
-            placeholder="Dupont"
+            placeholder="Garnier"
             autoComplete="family-name"
-            className={`${inputBase} ${errors.last_name ? inputError : ""}`}
+            className={AUTH_INPUT}
+            aria-invalid={errors.last_name ? true : undefined}
+            aria-describedby={errors.last_name ? "last_name-error" : undefined}
             value={fields.last_name}
             onChange={set("last_name")}
             disabled={loading}
           />
-          {errors.last_name && <p className="text-xs text-red-500 mt-1.5">{errors.last_name}</p>}
-        </div>
+        </Field>
       </div>
 
       {/* Email */}
-      <div>
-        <label htmlFor="email" className={labelCls}>Email professionnel</label>
+      <Field id="email" label="Adresse email" error={errors.email}>
         <input
           id="email"
           type="email"
-          placeholder="jean@monentreprise.fr"
+          placeholder="vous@exemple.fr"
           autoComplete="email"
-          className={`${inputBase} ${errors.email ? inputError : ""}`}
+          inputMode="email"
+          className={AUTH_INPUT}
+          aria-invalid={errors.email ? true : undefined}
+          aria-describedby={errors.email ? "email-error" : undefined}
           value={fields.email}
           onChange={set("email")}
           disabled={loading}
         />
-        {errors.email && <p className="text-xs text-red-500 mt-1.5">{errors.email}</p>}
-      </div>
+      </Field>
 
       {/* Mot de passe */}
-      <div>
-        <label htmlFor="password" className={labelCls}>Mot de passe</label>
-        <div className="relative">
-          <input
-            id="password"
-            type={showPwd ? "text" : "password"}
-            placeholder="8 caractères minimum"
-            autoComplete="new-password"
-            className={`${inputBase} pr-11 ${errors.password ? inputError : ""}`}
-            value={fields.password}
-            onChange={set("password")}
-            disabled={loading}
-          />
-          <button
-            type="button" tabIndex={-1}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-            onClick={() => setShowPwd(v => !v)}
-            aria-label={showPwd ? "Masquer" : "Afficher"}
-          >
-            {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-        </div>
-        {errors.password && <p className="text-xs text-red-500 mt-1.5">{errors.password}</p>}
-      </div>
+      <Field id="password" label="Mot de passe" error={errors.password} hint="8 caractères minimum">
+        <PasswordInput
+          id="password"
+          autoComplete="new-password"
+          error={errors.password}
+          value={fields.password}
+          onChange={set("password")}
+          disabled={loading}
+        />
+      </Field>
 
       {/* Confirmation */}
-      <div>
-        <label htmlFor="confirm_password" className={labelCls}>Confirmer le mot de passe</label>
-        <div className="relative">
-          <input
-            id="confirm_password"
-            type={showCfm ? "text" : "password"}
-            placeholder="••••••••"
-            autoComplete="new-password"
-            className={`${inputBase} pr-11 ${errors.confirm_password ? inputError : ""}`}
-            value={fields.confirm_password}
-            onChange={set("confirm_password")}
-            disabled={loading}
-          />
-          <button
-            type="button" tabIndex={-1}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-            onClick={() => setShowCfm(v => !v)}
-            aria-label={showCfm ? "Masquer" : "Afficher"}
-          >
-            {showCfm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-        </div>
-        {errors.confirm_password && <p className="text-xs text-red-500 mt-1.5">{errors.confirm_password}</p>}
-      </div>
+      <Field id="confirm_password" label="Confirmer le mot de passe" error={errors.confirm_password}>
+        <PasswordInput
+          id="confirm_password"
+          autoComplete="new-password"
+          error={errors.confirm_password}
+          value={fields.confirm_password}
+          onChange={set("confirm_password")}
+          disabled={loading}
+        />
+      </Field>
 
       {/* CTA */}
-      <button type="submit" className={btnPrimary} disabled={loading}>
-        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-        {loading ? "Création en cours…" : "Créer mon compte →"}
-      </button>
+      <AuthSubmit loading={loading} loadingLabel="Création en cours…" className="mt-1.5">
+        Créer mon compte
+      </AuthSubmit>
 
       {/* CGU */}
-      <p className="text-xs text-slate-400 text-center leading-relaxed">
-        En créant un compte, tu acceptes nos{" "}
-        <a href="/cgu" className="underline hover:text-slate-600">CGU</a>{" "}
-        et notre{" "}
-        <a href="/confidentialite" className="underline hover:text-slate-600">politique de confidentialité</a>.
+      <p className="mt-2 text-[13px] leading-[1.55] text-q-text-4">
+        En créant un compte, vous acceptez les{" "}
+        <a href="/cgu" className="q-link !font-medium">conditions d’utilisation</a>{" "}
+        et la{" "}
+        <a href="/confidentialite" className="q-link !font-medium">politique de confidentialité</a>.
       </p>
     </form>
   )

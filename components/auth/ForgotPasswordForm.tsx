@@ -3,23 +3,19 @@
 import { useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Loader2, ArrowLeft, Mail, CheckCircle2 } from "lucide-react"
+import { ChevronLeft, MailCheck } from "lucide-react"
+import { AUTH_INPUT, AuthSubmit, Field } from "@/components/auth/fields"
+import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
 
-/* ─── classes communes ──────────────────────────────────────────────────── */
-// text-base (16px) sur mobile : sous ce seuil, iOS Safari/WKWebView zoome
-// automatiquement la page au focus d'un champ. md:text-[15px] garde la
-// densité desktop existante. Filet de sécurité global aussi dans globals.css.
-const inputBase =
-  "w-full h-12 rounded-xl border border-[#E2E8F0] bg-white/90 px-4 text-base md:text-[15px] text-[#0F172A] placeholder:text-slate-400 outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 disabled:opacity-50 [-webkit-appearance:none]"
-const inputError =
-  "border-red-400 focus:border-red-400 focus:ring-red-400/10"
-const labelCls  = "block text-[13px] font-semibold text-[#0F172A] mb-1.5"
-const btnPrimary =
-  "w-full h-12 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-[15px] font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_2px_12px_rgba(37,99,235,0.25)] touch-manipulation"
-const btnSecondary =
-  "w-full h-12 rounded-xl border border-[#E2E8F0] bg-white hover:bg-[#F8FAFC] active:scale-[0.98] text-[#0F172A] text-[15px] font-medium transition-all flex items-center justify-center gap-2 touch-manipulation"
-const btnGhost =
-  "w-full h-12 rounded-xl text-slate-500 hover:text-[#0F172A] text-[15px] font-medium transition-all flex items-center justify-center gap-2 hover:bg-white/60 touch-manipulation"
+/** Lien « ‹ Retour à la connexion » au-dessus du titre (canevas « Connexion »). */
+function BackToLogin() {
+  return (
+    <Link href="/login" className="q-link mb-[18px] inline-flex items-center gap-1 self-start text-[14px] !font-medium">
+      <ChevronLeft className="h-4 w-4" aria-hidden />
+      Retour à la connexion
+    </Link>
+  )
+}
 
 export default function ForgotPasswordForm() {
   const [email, setEmail]         = useState("")
@@ -46,12 +42,12 @@ export default function ForgotPasswordForm() {
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       })
       if (!res.ok) {
-        toast.error("Une erreur est survenue. Réessaie dans quelques instants.")
+        toast.error("Une erreur est survenue. Réessayez dans quelques instants.")
         return
       }
       setSubmitted(true)
     } catch {
-      toast.error("Erreur réseau. Vérifie ta connexion et réessaie.")
+      toast.error("Erreur réseau. Vérifiez votre connexion et réessayez.")
     } finally {
       setLoading(false)
     }
@@ -60,83 +56,68 @@ export default function ForgotPasswordForm() {
   /* ── État : email envoyé ────────────────────────────────────────────────── */
   if (submitted) {
     return (
-      <div className="text-center space-y-5">
-        {/* Icône succès */}
-        <div className="flex justify-center">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#D1FAE5] flex items-center justify-center">
-            <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-[#10B981]" />
-          </div>
-        </div>
+      <div className="flex flex-col">
+        <span className="mb-[22px] grid h-14 w-14 place-items-center rounded-2xl bg-q-wash text-q-accent-strong">
+          <MailCheck className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+        </span>
+        <AuthTitle>Regardez votre <Serif>boîte mail</Serif>.</AuthTitle>
+        <AuthLead>
+          Si un compte existe pour{" "}
+          <span className="font-semibold text-q-ink [overflow-wrap:anywhere]">{email}</span>,
+          un lien de réinitialisation vient de lui être envoyé.
+        </AuthLead>
 
-        <div>
-          <h2 className="text-[17px] font-bold text-[#0F172A]">Vérifie ta boîte mail</h2>
-          <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-            Si un compte existe pour{" "}
-            <span className="font-semibold text-[#0F172A]">{email}</span>,
-            tu recevras un lien de réinitialisation dans quelques minutes.
-          </p>
-          <p className="text-xs text-slate-400 mt-2">
-            Pense à vérifier tes spams si tu ne le vois pas.
-          </p>
-        </div>
-
-        <div className="space-y-2.5 pt-1">
+        <div className="mt-8 flex flex-col gap-3">
+          <Link href="/login" className="lp-btn-p w-full touch-manipulation">
+            Retour à la connexion
+          </Link>
           <button
             type="button"
-            className={btnSecondary}
+            className="lp-btn-s w-full !px-6 touch-manipulation"
             onClick={() => { setSubmitted(false); setEmail("") }}
           >
-            <Mail className="w-4 h-4" />
             Utiliser une autre adresse
           </button>
-          <Link href="/login" className="block">
-            <button type="button" className={btnGhost}>
-              <ArrowLeft className="w-4 h-4" />
-              Retour à la connexion
-            </button>
-          </Link>
         </div>
+
+        <p className="mt-[22px] text-[13px] leading-[1.55] text-q-text-4">
+          Rien reçu au bout de quelques minutes ? Vérifiez vos courriers indésirables. Le lien reste valable une heure.
+        </p>
       </div>
     )
   }
 
   /* ── Formulaire ─────────────────────────────────────────────────────────── */
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <div>
-        <label htmlFor="email" className={labelCls}>Adresse email</label>
-        <input
-          id="email"
-          type="email"
-          placeholder="jean@exemple.fr"
-          autoComplete="email"
-          autoFocus
-          inputMode="email"
-          className={`${inputBase} ${error ? inputError : ""}`}
-          value={email}
-          onChange={e => { setEmail(e.target.value); if (error) setError(null) }}
-          disabled={loading}
-        />
-        {error && <p className="text-xs text-red-500 mt-1.5">{error}</p>}
-      </div>
+    <div className="flex flex-col">
+      <BackToLogin />
+      <AuthTitle>Mot de passe <Serif>oublié</Serif> ?</AuthTitle>
+      <AuthLead>
+        Indiquez l’adresse de votre compte. Nous vous envoyons un lien pour en choisir un nouveau.
+      </AuthLead>
 
-      <button type="submit" className={btnPrimary} disabled={loading}>
-        {loading ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Envoi en cours…
-          </>
-        ) : (
-          "Envoyer le lien de réinitialisation"
-        )}
-      </button>
+      <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-4" noValidate>
+        <Field id="email" label="Adresse email" error={error ?? undefined}>
+          <input
+            id="email"
+            type="email"
+            placeholder="vous@exemple.fr"
+            autoComplete="email"
+            autoFocus
+            inputMode="email"
+            className={AUTH_INPUT}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? "email-error" : undefined}
+            value={email}
+            onChange={e => { setEmail(e.target.value); if (error) setError(null) }}
+            disabled={loading}
+          />
+        </Field>
 
-      <Link href="/login" className="block">
-        <button type="button" className={`${btnGhost} mt-1`}>
-          <ArrowLeft className="w-4 h-4" />
-          Retour à la connexion
-        </button>
-      </Link>
-    </form>
+        <AuthSubmit loading={loading} loadingLabel="Envoi en cours…" className="mt-1.5">
+          Envoyer le lien
+        </AuthSubmit>
+      </form>
+    </div>
   )
 }

@@ -2,161 +2,62 @@
 
 export const dynamic = "force-dynamic"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Loader2, RotateCcw, FileX } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { formatCurrency, formatDate } from "@/lib/utils/invoice"
+import { useCallback, useEffect, useState } from "react"
+import { CreditNoteListView, type CreditNoteListItem } from "@/components/credit-notes/CreditNoteListView"
+import { todayISO } from "@/components/quotes/QuoteListHelpers"
 
-interface CreditNote {
+interface ApiCreditNote {
   id: string
   credit_note_number: string
   issue_date: string
   total_ttc: number
   reason: string
   client: { name: string } | null
-  original_invoice: { invoice_number: string } | null
+  original_invoice: { id: string; invoice_number: string } | null
 }
 
 export default function CreditNotesPage() {
-  const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
+  const [today] = useState(todayISO)
+  const [items, setItems] = useState<CreditNoteListItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetch("/api/credit-notes")
-      .then(r => r.json())
-      .then(json => {
-        if (json.credit_notes) setCreditNotes(json.credit_notes)
-      })
-      .finally(() => setLoading(false))
+  const fetchCreditNotes = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/credit-notes")
+      const json = await res.json()
+      if (!res.ok || !Array.isArray(json.credit_notes)) throw new Error(json.error ?? "Erreur de chargement")
+      setItems((json.credit_notes as ApiCreditNote[]).map((c) => ({
+        id: c.id,
+        credit_note_number: c.credit_note_number,
+        issue_date: c.issue_date,
+        total_ttc: Number(c.total_ttc) || 0,
+        reason: c.reason,
+        client_name: c.client?.name ?? null,
+        invoice_number: c.original_invoice?.invoice_number ?? null,
+        invoice_href: c.original_invoice ? `/invoices/${c.original_invoice.id}` : null,
+        href: `/credit-notes/${c.id}`,
+      })))
+    } catch {
+      setError("Vérifiez votre connexion, puis réessayez.")
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
+  useEffect(() => { fetchCreditNotes() }, [fetchCreditNotes])
+
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[#0F172A] dark:text-[#E2E8F0]">Avoirs</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Avoirs émis sur vos factures</p>
-        </div>
-      </div>
-
-      {/* Rappel légal */}
-      <div className="bg-[#FFF7ED] border border-[#FED7AA] rounded-xl px-4 py-3 flex items-start gap-3">
-        <RotateCcw className="w-4 h-4 text-[#C2410C] shrink-0 mt-0.5" />
-        <p className="text-xs text-[#9A3412]">
-          En droit français, une facture émise ne peut pas être supprimée ni modifiée.
-          Un avoir est le seul moyen légal de corriger ou annuler une facture.
-          Les avoirs sont numérotés automatiquement au format <strong>AV-AAAA-NNN</strong>.
-        </p>
-      </div>
-
-      {/* Table */}
-      <div className="rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] overflow-hidden shadow-sm" style={{ background: 'var(--card-glass-bg)' }}>
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
-          </div>
-        ) : creditNotes.length === 0 ? (
-          <div className="py-16 text-center">
-            <FileX className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-            <p className="text-sm font-medium text-slate-600 mb-1">Aucun avoir émis</p>
-            <p className="text-xs text-slate-400 mb-4">
-              Les avoirs apparaissent ici lorsque vous en émettez depuis une facture.
-            </p>
-            <Link href="/invoices">
-              <Button size="sm" variant="outline">Voir les factures</Button>
-            </Link>
-          </div>
-        ) : (
-          <>
-            {/* ── Mobile : cards ── */}
-            <div className="sm:hidden divide-y divide-[#F1F5F9] dark:divide-[#162032]">
-              {creditNotes.map((cn) => (
-                <a
-                  key={cn.id}
-                  href={`/credit-notes/${cn.id}`}
-                  className="flex items-center justify-between px-4 py-3.5 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] transition-colors"
-                >
-                  <div className="min-w-0">
-                    <span className="font-mono text-sm font-medium text-[#C2410C]">{cn.credit_note_number}</span>
-                    <p className="text-xs text-slate-400 mt-0.5 truncate">{cn.client?.name || "—"}</p>
-                    {cn.original_invoice && (
-                      <p className="text-xs font-mono text-slate-400 mt-0.5">sur {cn.original_invoice.invoice_number}</p>
-                    )}
-                  </div>
-                  <div className="text-right ml-3 shrink-0">
-                    <p className="font-mono text-sm font-semibold text-[#C2410C]">-{formatCurrency(cn.total_ttc)}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{formatDate(cn.issue_date)}</p>
-                  </div>
-                </a>
-              ))}
-            </div>
-
-            {/* ── Desktop : table ── */}
-            <table className="hidden sm:table w-full">
-            <thead>
-              <tr className="border-b border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032]/40">
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">N° avoir</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">Facture originale</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden sm:table-cell">Client</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden md:table-cell">Date</th>
-                <th className="text-left text-xs font-medium text-slate-400 px-5 py-3 hidden lg:table-cell">Motif</th>
-                <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Montant</th>
-                <th className="text-right text-xs font-medium text-slate-400 px-5 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {creditNotes.map((cn) => (
-                <tr
-                  key={cn.id}
-                  className="border-b border-[#F1F5F9] dark:border-[#162032] hover:bg-[#F8FAFC] dark:hover:bg-[#162032]/60 transition-colors last:border-0"
-                >
-                  <td className="px-5 py-4">
-                    <Link
-                      href={`/credit-notes/${cn.id}`}
-                      className="font-mono text-sm text-[#C2410C] hover:underline font-medium"
-                    >
-                      {cn.credit_note_number}
-                    </Link>
-                  </td>
-                  <td className="px-5 py-4">
-                    {cn.original_invoice ? (
-                      <span className="font-mono text-sm text-[#2563EB] font-medium">
-                        {cn.original_invoice.invoice_number}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-slate-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-[#0F172A] dark:text-[#E2E8F0] font-medium hidden sm:table-cell">
-                    {cn.client?.name || "—"}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-slate-500 hidden md:table-cell">
-                    {formatDate(cn.issue_date)}
-                  </td>
-                  <td className="px-5 py-4 hidden lg:table-cell">
-                    <span className="text-xs text-slate-500 bg-[#F1F5F9] px-2 py-0.5 rounded-full">
-                      {cn.reason}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-right font-mono text-sm font-semibold text-[#C2410C]">
-                    -{formatCurrency(cn.total_ttc)}
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <Link href={`/credit-notes/${cn.id}`}>
-                      <Button size="sm" variant="outline" className="text-xs h-7">
-                        Voir
-                      </Button>
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </>
-        )}
-      </div>
-    </div>
+    <CreditNoteListView
+      items={items}
+      loading={loading}
+      error={error}
+      onRetry={fetchCreditNotes}
+      today={today}
+      invoicesHref="/invoices"
+      newInvoiceHref="/invoices/new"
+    />
   )
 }

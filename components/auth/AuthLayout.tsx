@@ -1,14 +1,31 @@
-import Image from "next/image"
-import Link from "next/link"
+import AuthLogo from "@/components/auth/AuthLogo"
+import StepIndicator from "@/components/auth/StepIndicator"
+import { cn } from "@/lib/utils"
 
-// ✅ URLs correctes (vérifiées sur la landing page)
-const LOGO_LONG_BLEU = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20long%20bleu.webp"
-const PICTO_Q        = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
-
+/**
+ * Coque des pages d'accès (connexion, inscription, mot de passe, entreprise,
+ * formule), au design du canevas :
+ *  - par défaut (« Connexion », « Onb-1-Inscription ») : colonne blanche avec
+ *    le logo et le formulaire, `aside` à droite sur fond #F6F8FB (≥ lg) ;
+ *    sans `aside`, une seule colonne centrée ;
+ *  - avec `bar` (« Onb-2-Entreprise », « Onb-7-Bienvenue ») : barre blanche en
+ *    haut (logo, étapes, lien à droite), contenu centré sur le fond.
+ * Ni backdrop-filter ni will-change (règle iOS de CLAUDE.md) ; couleurs par
+ * les jetons --q-*, thème sombre compris.
+ */
 interface AuthLayoutProps {
   children: React.ReactNode
-  /** largeur de la carte centrale (défaut max-w-md = 448 px) */
-  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl"
+  /** Colonne de droite, affichée à partir de 1024 px. */
+  aside?: React.ReactNode
+  /** Barre du haut : étapes de l'inscription et lien à droite. */
+  bar?: {
+    steps?: { label: string }[]
+    current?: number
+    right?: React.ReactNode
+    logoHref?: string
+  }
+  /** Largeur de la colonne de contenu (défaut md = 448 px, 400 px avec `aside`). */
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "wide"
 }
 
 const widthMap = {
@@ -16,125 +33,84 @@ const widthMap = {
   md:  "max-w-md",
   lg:  "max-w-lg",
   xl:  "max-w-xl",
-  "2xl": "max-w-2xl",
+  "2xl": "max-w-[680px]",
+  wide: "max-w-[1080px]",
 }
 
-export default function AuthLayout({ children, maxWidth = "md" }: AuthLayoutProps) {
+/** Encoches et barre d'accueil iOS/Android (dvh = hauteur dynamique de Safari). */
+const SAFE_AREA: React.CSSProperties = {
+  minHeight: "100dvh",
+  paddingTop: "env(safe-area-inset-top)",
+  paddingBottom: "env(safe-area-inset-bottom)",
+  paddingLeft: "env(safe-area-inset-left)",
+  paddingRight: "env(safe-area-inset-right)",
+}
+
+/** Halo bleu discret en haut de page (fond mobile du canevas « Mobile-connexion »). */
+function Glow({ className }: { className?: string }) {
   return (
-    /* ── Viewport complet avec support safe-area iOS/Android ───────────── */
     <div
-      className="relative flex flex-col items-center justify-center overflow-x-hidden"
-      style={{
-        minHeight: "100dvh",           /* dvh = dynamic viewport height (iOS Safari) */
-        paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: "env(safe-area-inset-bottom)",
-        paddingLeft: "env(safe-area-inset-left)",
-        paddingRight: "env(safe-area-inset-right)",
-      }}
+      aria-hidden
+      className={cn("pointer-events-none absolute inset-x-0 top-0 h-[420px]", className)}
+      style={{ background: "var(--q-glow)" }}
+    />
+  )
+}
+
+export default function AuthLayout({ children, aside, bar, maxWidth = "md" }: AuthLayoutProps) {
+  /* ── Barre du haut + contenu centré ─────────────────────────────────── */
+  if (bar) {
+    return (
+      <div className="relative flex flex-col bg-q-bg" style={SAFE_AREA}>
+        <header className="relative z-10 grid grid-cols-[1fr_auto] items-center gap-4 border-b border-q-line-soft bg-q-surface px-4 py-3.5 sm:px-[clamp(16px,3vw,32px)] md:grid-cols-[1fr_auto_1fr] md:py-4">
+          <div className="justify-self-start">
+            <AuthLogo height={19} href={bar.logoHref} />
+          </div>
+          {bar.steps && (
+            <div className="justify-self-end md:justify-self-center">
+              <StepIndicator steps={bar.steps} current={bar.current ?? 0} />
+            </div>
+          )}
+          {bar.right && <div className="col-span-2 justify-self-end md:col-span-1">{bar.right}</div>}
+        </header>
+        <Glow className="top-[60px] hidden md:block" />
+        <main className={cn("relative mx-auto flex w-full flex-1 flex-col gap-5 px-4 pb-16 pt-8 sm:px-5 md:pt-14", widthMap[maxWidth])}>
+          {children}
+        </main>
+      </div>
+    )
+  }
+
+  /* ── Colonne du formulaire (+ colonne de droite) ────────────────────── */
+  return (
+    <div
+      className={cn("relative bg-q-bg", aside && "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]")}
+      style={SAFE_AREA}
     >
-
-      {/* ── Fond dégradé bleu statique ─────────────────────────────────── */}
       <div
-        aria-hidden
-        className="pointer-events-none select-none absolute inset-0 z-0"
-        style={{
-          background:
-            "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 30%, #EEF2FF 60%, #F0F9FF 85%, #F8FAFC 100%)",
-        }}
-      />
-
-      {/* ── Tache lumineuse bleue haut-gauche ──────────────────────────── */}
-      <div
-        aria-hidden
-        className="pointer-events-none select-none absolute -top-32 -left-32 z-0 w-[480px] h-[480px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle at center, rgba(37,99,235,0.13) 0%, rgba(37,99,235,0.04) 55%, transparent 75%)",
-        }}
-      />
-
-      {/* ── Tache lumineuse bleue bas-droite ───────────────────────────── */}
-      <div
-        aria-hidden
-        className="pointer-events-none select-none absolute -bottom-24 -right-24 z-0 w-[420px] h-[420px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle at center, rgba(99,102,241,0.10) 0%, rgba(37,99,235,0.04) 50%, transparent 72%)",
-        }}
-      />
-
-      {/* ── Grille de points décorative (subtile) ──────────────────────── */}
-      <div
-        aria-hidden
-        className="pointer-events-none select-none absolute inset-0 z-0"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle, rgba(37,99,235,0.08) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
-          maskImage:
-            "radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)",
-        }}
-      />
-
-      {/* ── Picto Q filigrane — centré en fond, très grand ─────────────── */}
-      <div
-        aria-hidden
-        className="pointer-events-none select-none absolute inset-0 z-0 flex items-center justify-center"
-        style={{ opacity: 0.055 }}
+        className={cn(
+          "relative flex min-h-[100dvh] flex-col px-4 pb-10 pt-6 sm:px-8 lg:pb-8 lg:pt-7",
+          aside && "lg:bg-q-surface lg:px-[clamp(20px,5vw,72px)]",
+        )}
       >
-        <Image
-          src={PICTO_Q}
-          alt=""
-          width={700}
-          height={700}
-          className="w-[380px] sm:w-[520px] lg:w-[700px]"
-          sizes="(min-width: 1024px) 700px, (min-width: 640px) 520px, 380px"
-          priority
-        />
-      </div>
-
-      {/* ── Picto Q supplémentaire — coin bas-droite desktop ───────────── */}
-      <div
-        aria-hidden
-        className="pointer-events-none select-none hidden lg:block absolute right-[-60px] bottom-[-60px] z-0"
-        style={{ opacity: 0.07 }}
-      >
-        <Image
-          src={PICTO_Q}
-          alt=""
-          width={320}
-          height={320}
-          className="w-[280px]"
-          sizes="280px"
-          loading="lazy"
-        />
-      </div>
-
-      {/* ── Contenu principal ────────────────────────────────────────────── */}
-      <div
-        className={`relative z-10 w-full ${widthMap[maxWidth]}`}
-        style={{ padding: "clamp(16px, 4vw, 40px) clamp(16px, 5vw, 32px)" }}
-      >
-
-        {/* Logo */}
-        <div className="flex justify-center mb-6 sm:mb-8">
-          <Link href="/" className="block" aria-label="Retour à l'accueil">
-            <Image
-              src={LOGO_LONG_BLEU}
-              alt="Qonforme"
-              width={180}
-              height={44}
-              className="h-9 sm:h-10 w-auto drop-shadow-sm"
-              sizes="180px"
-              priority
-            />
-          </Link>
+        <Glow className={aside ? "lg:hidden" : undefined} />
+        <div className={cn("relative", !aside && "flex justify-center sm:justify-start")}>
+          <AuthLogo height={20} />
         </div>
-
-        {children}
+        <main
+          className={cn(
+            "relative mx-auto flex w-full flex-1 flex-col pt-9 sm:justify-center sm:py-12",
+            aside ? "max-w-[400px]" : widthMap[maxWidth],
+          )}
+        >
+          {children}
+        </main>
       </div>
+      {aside && (
+        <aside className="hidden items-center justify-center border-l border-q-line bg-q-bg px-[clamp(24px,4vw,64px)] py-14 lg:flex">
+          {aside}
+        </aside>
+      )}
     </div>
   )
 }

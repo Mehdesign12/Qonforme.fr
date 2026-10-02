@@ -1,3 +1,6 @@
+import { Check } from "lucide-react"
+import { cn } from "@/lib/utils"
+
 interface Step {
   label: string
 }
@@ -8,67 +11,49 @@ interface StepIndicatorProps {
   current: number
 }
 
+/**
+ * Étapes de l'inscription (canevas « Onb-2-Entreprise ») : faites en bleu avec
+ * une coche, active en encre, à venir cerclées. Sur mobile, seul le libellé de
+ * l'étape active reste affiché.
+ */
 export default function StepIndicator({ steps, current }: StepIndicatorProps) {
   return (
-    /*
-     * overflow-hidden évite que le StepIndicator déborde sur les petits écrans.
-     * w-full + max-w garantissent qu'il reste centré sans déborder.
-     */
-    <div className="w-full max-w-xs sm:max-w-sm mx-auto overflow-hidden mb-6 lg:mb-7">
-      <div className="flex items-center justify-center">
-        {steps.map((step, i) => {
-          const isDone   = i < current
-          const isActive = i === current
-
-          return (
-            <div key={i} className="flex items-center min-w-0">
-              {/* Cercle + label */}
-              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                {/* Cercle */}
-                <div
-                  className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[11px] sm:text-xs font-bold shrink-0 transition-colors ${
-                    isDone
-                      ? 'bg-[#10B981] text-white'
-                      : isActive
-                        ? 'bg-[#2563EB] text-white ring-2 sm:ring-4 ring-[#DBEAFE]'
-                        : 'bg-[#F1F5F9] text-slate-400'
-                  }`}
-                >
-                  {isDone ? (
-                    <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" viewBox="0 0 14 14" fill="none">
-                      <path d="M2.5 7L5.5 10L11.5 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  ) : (
-                    i + 1
-                  )}
-                </div>
-
-                {/* Label — masqué si ni actif ni terminé, pour gagner de la place */}
-                <span
-                  className={`text-[12px] sm:text-sm font-medium whitespace-nowrap transition-colors truncate max-w-[64px] sm:max-w-none ${
-                    isDone
-                      ? 'text-slate-400 line-through'
-                      : isActive
-                        ? 'text-[#0F172A]'
-                        : 'text-slate-400 hidden sm:inline'
-                  }`}
-                >
-                  {step.label}
-                </span>
-              </div>
-
-              {/* Connecteur */}
-              {i < steps.length - 1 && (
-                <div
-                  className={`w-5 sm:w-8 h-px mx-2 sm:mx-3 shrink-0 transition-colors ${
-                    isDone ? 'bg-[#10B981]' : 'bg-[#E2E8F0]'
-                  }`}
-                />
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
+    <ol className="m-0 flex list-none items-center gap-2.5 p-0" aria-label="Étapes de l'inscription">
+      {steps.map((step, i) => {
+        const isDone   = i < current
+        const isActive = i === current
+        return (
+          <li key={step.label} className="flex items-center gap-2.5" aria-current={isActive ? "step" : undefined}>
+            {i > 0 && (
+              <span
+                aria-hidden
+                className={cn("h-[1.5px] w-5 rounded-sm sm:w-7", i <= current ? "bg-q-accent" : "bg-q-field")}
+              />
+            )}
+            <span className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "grid h-6 w-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold",
+                  isDone && "bg-q-accent text-white",
+                  isActive && "bg-q-ink-strong text-q-surface shadow-[0_0_0_4px_var(--q-line-soft)]",
+                  !isDone && !isActive && "border-[1.5px] border-q-field text-q-text-4",
+                )}
+              >
+                {isDone ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden /> : i + 1}
+              </span>
+              <span
+                className={cn(
+                  "whitespace-nowrap text-[13px]",
+                  isActive ? "font-semibold text-q-ink" : "hidden font-medium text-q-text-3 sm:inline",
+                )}
+              >
+                {step.label}
+                {isDone && <span className="sr-only"> (terminée)</span>}
+              </span>
+            </span>
+          </li>
+        )
+      })}
+    </ol>
   )
 }

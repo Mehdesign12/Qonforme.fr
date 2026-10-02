@@ -3,20 +3,11 @@
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { Loader2, Eye, EyeOff, CheckCircle2, XCircle, KeyRound, ArrowRight } from "lucide-react"
+import { Check, CircleCheck, Link2Off, Loader2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-
-/* ─── styles ───────────────────────────────────────────────────────────────── */
-// text-base (16px) sur mobile : sous ce seuil, iOS Safari/WKWebView zoome
-// automatiquement la page au focus d'un champ. md:text-[15px] garde la
-// densité desktop existante. Filet de sécurité global aussi dans globals.css.
-const inputBase =
-  "w-full h-12 rounded-xl border border-[#E2E8F0] bg-white/90 px-4 text-base md:text-[15px] text-[#0F172A] placeholder:text-slate-400 outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 disabled:opacity-50 [-webkit-appearance:none]"
-const inputError =
-  "border-red-400 focus:border-red-400 focus:ring-red-400/10"
-const labelCls = "block text-[13px] font-semibold text-[#0F172A] mb-1.5"
-const btnPrimary =
-  "w-full h-12 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_2px_12px_rgba(37,99,235,0.25)] touch-manipulation"
+import { AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
+import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
+import { cn } from "@/lib/utils"
 
 type Status = "verifying" | "idle" | "loading" | "success" | "invalid"
 
@@ -34,8 +25,6 @@ export default function ResetPasswordForm() {
 
   const [password, setPassword]         = useState("")
   const [confirm, setConfirm]           = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirm, setShowConfirm]   = useState(false)
   const [errors, setErrors]             = useState<{ password?: string; confirm?: string }>({})
   const [status, setStatus]             = useState<Status>("verifying")
 
@@ -105,7 +94,7 @@ export default function ResetPasswordForm() {
     else if (RULES.some(r => !r.test(password)))
       errs.password = "Le mot de passe ne respecte pas les règles"
     if (!confirm)
-      errs.confirm = "Confirme ton mot de passe"
+      errs.confirm = "Confirmez votre mot de passe"
     else if (confirm !== password)
       errs.confirm = "Les mots de passe ne correspondent pas"
     setErrors(errs)
@@ -123,7 +112,7 @@ export default function ResetPasswordForm() {
         // Tentative de refreshSession si la session semble absente
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
         if (refreshError || !refreshData.session) {
-          toast.error("Session expirée. Demande un nouveau lien de réinitialisation.")
+          toast.error("Session expirée. Demandez un nouveau lien de réinitialisation.")
           setStatus("invalid")
           return
         }
@@ -138,13 +127,13 @@ export default function ResetPasswordForm() {
           setStatus("idle")
         } else if (error.status === 422) {
           // 422 = session invalide / token expiré — demander un nouveau lien
-          toast.error("Le lien a expiré. Demande un nouveau lien de réinitialisation.")
+          toast.error("Le lien a expiré. Demandez un nouveau lien de réinitialisation.")
           setStatus("invalid")
         } else if (error.status === 401) {
-          toast.error("Session expirée. Demande un nouveau lien.")
+          toast.error("Session expirée. Demandez un nouveau lien.")
           setStatus("invalid")
         } else {
-          toast.error("Une erreur est survenue. Demande un nouveau lien.")
+          toast.error("Une erreur est survenue. Demandez un nouveau lien.")
           setStatus("idle")
         }
         return
@@ -153,7 +142,7 @@ export default function ResetPasswordForm() {
       await supabase.auth.signOut()
       setStatus("success")
     } catch {
-      toast.error("Erreur réseau. Vérifie ta connexion et réessaie.")
+      toast.error("Erreur réseau. Vérifiez votre connexion et réessayez.")
       setStatus("idle")
     }
   }
@@ -162,190 +151,142 @@ export default function ResetPasswordForm() {
 
   if (status === "verifying") {
     return (
-      <div className="flex flex-col items-center gap-4 py-10">
-        <div className="w-12 h-12 rounded-full border-2 border-[#2563EB] border-t-transparent animate-spin" />
-        <p className="text-sm text-slate-500">Vérification du lien…</p>
+      <div className="flex flex-col">
+        <AuthTitle>Un nouveau <Serif>mot de passe</Serif>.</AuthTitle>
+        <div className="mt-10 flex items-center gap-3 text-[14px] text-q-text-3" role="status">
+          <Loader2 className="h-5 w-5 animate-spin text-q-accent" aria-hidden />
+          Vérification du lien…
+        </div>
       </div>
     )
   }
 
   if (status === "invalid") {
     return (
-      <div className="text-center space-y-5 py-2">
-        <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#FEE2E2] flex items-center justify-center">
-            <XCircle className="w-8 h-8 text-[#EF4444]" />
-          </div>
-        </div>
-        <div>
-          <h2 className="text-[17px] font-bold text-[#0F172A]">Lien invalide ou expiré</h2>
-          <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-            Ce lien de réinitialisation n&apos;est plus valide.<br />
-            Les liens expirent après <strong>1 heure</strong>.
-          </p>
-        </div>
-        <button
-          type="button"
-          className={btnPrimary}
-          onClick={() => router.push("/forgot-password")}
-        >
+      <div className="flex flex-col">
+        <span className="mb-[22px] grid h-14 w-14 place-items-center rounded-2xl bg-q-danger-bg text-q-danger">
+          <Link2Off className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+        </span>
+        <AuthTitle>Ce lien n’est plus <Serif>valable</Serif>.</AuthTitle>
+        <AuthLead>
+          Les liens de réinitialisation expirent au bout d’une heure et ne servent qu’une fois.
+          Demandez-en un nouveau.
+        </AuthLead>
+        <AuthSubmit type="button" className="mt-8" onClick={() => router.push("/forgot-password")}>
           Demander un nouveau lien
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        </AuthSubmit>
       </div>
     )
   }
 
   if (status === "success") {
     return (
-      <div className="text-center space-y-5 py-2">
-        <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#D1FAE5] flex items-center justify-center">
-            <CheckCircle2 className="w-8 h-8 text-[#10B981]" />
-          </div>
-        </div>
-        <div>
-          <h2 className="text-[17px] font-bold text-[#0F172A]">Mot de passe mis à jour !</h2>
-          <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-            Ton mot de passe a été modifié avec succès.<br />
-            Tu peux maintenant te connecter.
-          </p>
-        </div>
-        <button
-          type="button"
-          className={btnPrimary}
-          onClick={() => router.push("/login")}
-        >
+      <div className="flex flex-col">
+        <span className="mb-[22px] grid h-14 w-14 place-items-center rounded-2xl bg-q-ok-bg text-q-ok">
+          <CircleCheck className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+        </span>
+        <AuthTitle>Mot de passe <Serif>modifié</Serif>.</AuthTitle>
+        <AuthLead>Votre nouveau mot de passe est enregistré. Vous pouvez vous connecter.</AuthLead>
+        <AuthSubmit type="button" className="mt-8" onClick={() => router.push("/login")}>
           Se connecter
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        </AuthSubmit>
       </div>
     )
   }
 
   /* ── Formulaire ────────────────────────────────────────────────────────── */
   const allRulesPassed = RULES.every(r => r.test(password))
+  const passedCount    = RULES.filter(r => r.test(password)).length
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5" noValidate>
+    <div className="flex flex-col">
+      <AuthTitle>Un nouveau <Serif>mot de passe</Serif>.</AuthTitle>
+      <AuthLead>Choisissez un mot de passe sûr, que vous n’utilisez nulle part ailleurs.</AuthLead>
 
-      {/* Nouveau mot de passe */}
-      <div>
-        <label htmlFor="password" className={labelCls}>Nouveau mot de passe</label>
-        <div className="relative">
-          <input
-            id="password"
-            type={showPassword ? "text" : "password"}
-            placeholder="••••••••"
-            autoComplete="new-password"
-            autoFocus
-            inputMode="text"
-            className={`${inputBase} pr-12 ${errors.password ? inputError : ""}`}
-            value={password}
-            onChange={e => {
-              setPassword(e.target.value)
-              if (errors.password) setErrors(p => ({ ...p, password: undefined }))
-            }}
-            disabled={status === "loading"}
-          />
-          <button
-            type="button" tabIndex={-1}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors rounded-lg touch-manipulation"
-            onClick={() => setShowPassword(v => !v)}
-            aria-label={showPassword ? "Masquer" : "Afficher"}
-          >
-            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
+      <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-4" noValidate>
+
+        {/* Nouveau mot de passe */}
+        <div>
+          <Field id="password" label="Nouveau mot de passe" error={errors.password}>
+            <PasswordInput
+              id="password"
+              autoComplete="new-password"
+              autoFocus
+              error={errors.password}
+              value={password}
+              onChange={e => {
+                setPassword(e.target.value)
+                if (errors.password) setErrors(p => ({ ...p, password: undefined }))
+              }}
+              disabled={status === "loading"}
+            />
+          </Field>
+
+          {/* Barre de force */}
+          {password.length > 0 && (
+            <div className="mt-2.5 flex gap-1" aria-hidden>
+              {RULES.map((rule, i) => (
+                <div
+                  key={rule.id}
+                  className="h-1 flex-1 rounded-full transition-colors duration-300"
+                  style={{
+                    background: i < passedCount
+                      ? allRulesPassed ? "var(--q-ok)" : "var(--q-warn)"
+                      : "var(--q-line)",
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Règles de sécurité */}
+          {password.length > 0 && !allRulesPassed && (
+            <ul className="q-inset mt-3 flex flex-col gap-1.5 p-3">
+              {RULES.map(rule => {
+                const ok = rule.test(password)
+                return (
+                  <li key={rule.id} className={cn("flex items-center gap-2 text-[13px] font-medium", ok ? "text-q-ok" : "text-q-text-4")}>
+                    {ok
+                      ? <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
+                      : <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-q-field" aria-hidden />
+                    }
+                    {rule.label}
+                    <span className="sr-only">{ok ? " : respecté" : " : à respecter"}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </div>
-        {errors.password && <p className="text-xs text-red-500 mt-1.5">{errors.password}</p>}
 
-        {/* Règles de sécurité */}
-        {password.length > 0 && !allRulesPassed && (
-          <ul className="mt-3 space-y-1.5 bg-[#F8FAFC] rounded-xl p-3 border border-[#E2E8F0]">
-            {RULES.map(rule => {
-              const ok = rule.test(password)
-              return (
-                <li key={rule.id} className={`flex items-center gap-2 text-xs font-medium ${ok ? "text-[#10B981]" : "text-slate-400"}`}>
-                  {ok
-                    ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                    : <div className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0" />
-                  }
-                  {rule.label}
-                </li>
-              )
-            })}
-          </ul>
-        )}
+        {/* Confirmation */}
+        <div>
+          <Field id="confirm" label="Confirmer le mot de passe" error={errors.confirm}>
+            <PasswordInput
+              id="confirm"
+              autoComplete="new-password"
+              error={errors.confirm}
+              value={confirm}
+              onChange={e => {
+                setConfirm(e.target.value)
+                if (errors.confirm) setErrors(p => ({ ...p, confirm: undefined }))
+              }}
+              disabled={status === "loading"}
+            />
+          </Field>
 
-        {/* Barre de force */}
-        {password.length > 0 && (
-          <div className="mt-2.5 flex gap-1">
-            {RULES.map((rule, i) => (
-              <div
-                key={i}
-                className="h-1 flex-1 rounded-full transition-all duration-300"
-                style={{
-                  background: rule.test(password)
-                    ? i < 2 ? "#F97316" : i < 3 ? "#EAB308" : "#10B981"
-                    : "#E2E8F0"
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Confirmation */}
-      <div>
-        <label htmlFor="confirm" className={labelCls}>Confirmer le mot de passe</label>
-        <div className="relative">
-          <input
-            id="confirm"
-            type={showConfirm ? "text" : "password"}
-            placeholder="••••••••"
-            autoComplete="new-password"
-            inputMode="text"
-            className={`${inputBase} pr-12 ${errors.confirm ? inputError : ""}`}
-            value={confirm}
-            onChange={e => {
-              setConfirm(e.target.value)
-              if (errors.confirm) setErrors(p => ({ ...p, confirm: undefined }))
-            }}
-            disabled={status === "loading"}
-          />
-          <button
-            type="button" tabIndex={-1}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors rounded-lg touch-manipulation"
-            onClick={() => setShowConfirm(v => !v)}
-            aria-label={showConfirm ? "Masquer" : "Afficher"}
-          >
-            {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
+          {/* Indicateur de correspondance */}
+          {confirm.length > 0 && !errors.confirm && (
+            confirm === password
+              ? <p className="q-field-ok mt-1.5"><Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden /> Les mots de passe correspondent</p>
+              : <p className="q-field-hint mt-1.5">Les mots de passe ne correspondent pas encore</p>
+          )}
         </div>
-        {errors.confirm && <p className="text-xs text-red-500 mt-1.5">{errors.confirm}</p>}
 
-        {/* Indicateur match */}
-        {confirm.length > 0 && (
-          <p className={`text-xs mt-1.5 flex items-center gap-1.5 font-medium ${confirm === password ? "text-[#10B981]" : "text-slate-400"}`}>
-            {confirm === password
-              ? <><CheckCircle2 className="w-3.5 h-3.5" /> Les mots de passe correspondent</>
-              : <><div className="w-3.5 h-3.5 rounded-full border border-slate-300" /> Les mots de passe ne correspondent pas encore</>
-            }
-          </p>
-        )}
-      </div>
-
-      <button
-        type="submit"
-        className={btnPrimary}
-        disabled={status === "loading"}
-      >
-        {status === "loading" ? (
-          <><Loader2 className="w-4 h-4 animate-spin" /> Mise à jour…</>
-        ) : (
-          <><KeyRound className="w-4 h-4" /> Enregistrer le nouveau mot de passe</>
-        )}
-      </button>
-    </form>
+        <AuthSubmit loading={status === "loading"} loadingLabel="Mise à jour…" className="mt-1.5">
+          Enregistrer le mot de passe
+        </AuthSubmit>
+      </form>
+    </div>
   )
 }
