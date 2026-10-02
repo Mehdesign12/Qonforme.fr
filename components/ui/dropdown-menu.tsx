@@ -41,7 +41,7 @@ function DropdownMenuContent({
       >
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
-          className={cn("z-50 max-h-(--available-height) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-[14px] p-1.5 duration-150 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:overflow-hidden data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+          className={cn("z-50 max-h-(--available-height) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-[14px] border border-[var(--q-line)] bg-[var(--q-surface)] p-1.5 text-[var(--q-text-2)] shadow-[var(--q-shadow-pop)] duration-150 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:overflow-hidden data-closed:fade-out-0 data-closed:zoom-out-95", className )}
           {...props}
         />
       </MenuPrimitive.Positioner>
@@ -88,7 +88,7 @@ function DropdownMenuItem({
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "group/dropdown-menu-item relative flex cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-[13px] font-medium outline-hidden select-none transition-colors duration-100 focus:bg-blue-50 focus:text-blue-700 dark:focus:bg-blue-950/40 dark:focus:text-blue-300 not-data-[variant=destructive]:focus:**:text-inherit data-inset:pl-7 data-[variant=destructive]:text-red-500 data-[variant=destructive]:focus:bg-red-50 data-[variant=destructive]:focus:text-red-600 dark:data-[variant=destructive]:focus:bg-red-950/30 dark:data-[variant=destructive]:focus:text-red-400 data-disabled:pointer-events-none data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "group/dropdown-menu-item relative flex min-h-[38px] cursor-pointer items-center gap-2.5 rounded-[9px] px-2.5 py-2 text-sm font-medium text-[var(--q-text-2)] outline-hidden select-none transition-colors duration-100 focus:bg-[var(--q-hover)] focus:text-[var(--q-ink)] not-data-[variant=destructive]:focus:**:text-inherit data-inset:pl-7 data-[variant=destructive]:text-[var(--q-danger)] data-[variant=destructive]:focus:bg-[var(--q-danger-bg)] data-[variant=destructive]:focus:text-[var(--q-danger)] data-disabled:pointer-events-none data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}

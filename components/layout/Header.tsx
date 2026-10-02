@@ -1,411 +1,244 @@
 'use client'
 
-import {
-  Bell, Plus, FileText, FileCheck2, ShoppingCart,
-  Building2, CreditCard, Sun, Moon, LogOut,
-} from "lucide-react"
+/**
+ * Barre supérieure flottante (ordinateur, ≥ 1024 px) — canevas « Tableau de bord » :
+ * fil d'Ariane, recherche ⌘K, menu « Nouveau », notifications, menu du compte.
+ *
+ * Verre liquide clair sur ordinateur seulement (.q-float) ; sur mobile la barre
+ * n'est pas rendue (titre dans la page, navigation en bas). Partagée avec la
+ * démo : DemoHeader.tsx la rend en mode « demo ».
+ */
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
-import { useState, useEffect, useMemo } from "react"
-import { ThemeToggle } from "@/components/layout/ThemeToggle"
-import { createClient } from "@/lib/supabase/client"
-import { purgePwaPageCache } from "@/lib/pwa/client"
-import { toast } from "sonner"
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
+  Plus, ChevronDown, Search, Building2, FileCog, CreditCard, Sun, Moon,
+  LogOut, Bug, MessageSquare, ArrowRight,
+} from "lucide-react"
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { BugReportModal, ContactModal } from "@/components/layout/SupportModals"
+import { CommandPalette } from "@/components/layout/CommandPalette"
+import { NotificationsButton } from "@/components/layout/NotificationsButton"
+import { useCrumbLabel } from "@/components/layout/crumb"
+import { CREATE_LINKS, OPEN_SEARCH_EVENT, crumbsFor, hrefFor } from "@/components/layout/nav"
+import { type ShellIdentity, fullNameOf } from "@/components/layout/shell"
+import { useLogout } from "@/components/layout/useLogout"
+import { initialsOf } from "@/components/app/kit"
 
 /* ------------------------------------------------------------------ */
-/* Titres de pages                                                      */
+/* Menu « Nouveau »                                                    */
 /* ------------------------------------------------------------------ */
 
-const PAGE_TITLES: Record<string, string> = {
-  "/dashboard":              "Tableau de bord",
-  "/invoices":               "Factures",
-  "/invoices/new":           "Nouvelle facture",
-  "/quotes":                 "Devis",
-  "/quotes/new":             "Nouveau devis",
-  "/clients":                "Clients",
-  "/clients/new":            "Nouveau client",
-  "/products":               "Catalogue produits",
-  "/purchase-orders":        "Bons de commande",
-  "/purchase-orders/new":    "Nouveau bon de commande",
-  "/settings":               "Paramètres",
-  "/settings/company":       "Mon entreprise",
-  "/settings/billing":       "Abonnement",
-  "/settings/ppf":           "Connexion PPF",
-  "/settings/invoices":      "Préférences factures",
-  "/settings/notifications": "Notifications",
-  "/credit-notes":           "Avoirs",
-}
-
-const PREFIX_TITLES: { prefix: string; title: string }[] = [
-  { prefix: "/purchase-orders/", title: "Bons de commande" },
-  { prefix: "/invoices/",        title: "Factures"         },
-  { prefix: "/quotes/",          title: "Devis"            },
-  { prefix: "/clients/",         title: "Clients"          },
-  { prefix: "/credit-notes/",    title: "Avoirs"           },
-]
-
-function getTitle(pathname: string): string {
-  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]
-  for (const { prefix, title } of PREFIX_TITLES) {
-    if (pathname.startsWith(prefix)) return title
-  }
-  return "Qonforme"
-}
-
-/* ------------------------------------------------------------------ */
-/* CTA contextuels par route                                            */
-/* ------------------------------------------------------------------ */
-
-interface CtaConfig {
-  href:  string
-  label: string
-  icon:  React.ElementType
-}
-
-const PAGE_CTA: Record<string, CtaConfig> = {
-  "/invoices":        { href: "/invoices/new",        label: "Nouvelle facture", icon: FileText     },
-  "/quotes":          { href: "/quotes/new",           label: "Nouveau devis",    icon: FileCheck2   },
-  "/clients":         { href: "/clients/new",          label: "Nouveau client",   icon: Plus         },
-  "/purchase-orders": { href: "/purchase-orders/new",  label: "Nouveau BdC",      icon: ShoppingCart },
-  "/products":        { href: "/products",             label: "Nouveau produit",  icon: Plus         },
-}
-
-/* ------------------------------------------------------------------ */
-/* Initiales                                                            */
-/* ------------------------------------------------------------------ */
-
-function getInitials(firstName: string, lastName: string): string {
-  const f = firstName.trim()
-  const l = lastName.trim()
-  if (f && l) return (f[0] + l[0]).toUpperCase()
-  if (f)      return f.slice(0, 2).toUpperCase()
-  if (l)      return l.slice(0, 2).toUpperCase()
-  return "?"
-}
-
-/* ------------------------------------------------------------------ */
-/* Styles pilules                                                       */
-/* ------------------------------------------------------------------ */
-
-const PILL_BG     = "var(--glass-bg)"
-const PILL_BORDER = "1px solid var(--glass-border-color)"
-const PILL_SHADOW = "var(--glass-shadow)"
-
-/* Mobile : fond solide (pas de backdrop-filter — CLAUDE.md) */
-const MOBILE_PILL: React.CSSProperties = {
-  background: "var(--glass-bg)",
-  border:     "1px solid var(--glass-border-color)",
-  boxShadow:  "0 1px 3px rgba(15,23,42,0.04)",
-}
-
-/* ------------------------------------------------------------------ */
-/* Badge plan                                                           */
-/* ------------------------------------------------------------------ */
-
-function PlanBadge({ label, active }: { label: string; active: boolean }) {
-  if (active) {
-    return (
-      <span
-        className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full"
-        style={{
-          background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)",
-          color: "#2563EB",
-          border: "1px solid rgba(37,99,235,0.20)",
+function CreateMenu({ identity }: { identity: ShellIdentity }) {
+  const router = useRouter()
+  const mode = identity.mode
+  const go = (href: string) => router.push(href)
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="q-btn q-btn-primary !h-[38px] gap-2 !pl-3.5 !pr-3" aria-label="Nouveau document">
+        <Plus strokeWidth={2.25} aria-hidden />
+        Nouveau
+        <ChevronDown className="!size-3.5 opacity-80" aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-[300px]"
+        onKeyDown={(e: React.KeyboardEvent) => {
+          // Raccourcis affichés dans le menu (D, F, C, B), actifs tant qu'il est ouvert
+          if (e.metaKey || e.ctrlKey || e.altKey) return
+          const hit = CREATE_LINKS.find((c) => c.shortcut.toLowerCase() === e.key.toLowerCase())
+          if (hit) {
+            e.preventDefault()
+            go(hrefFor(hit, mode))
+          }
         }}
       >
-        {label}
-      </span>
-    )
-  }
-  return (
-    <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600">
-      {label}
-    </span>
+        {CREATE_LINKS.map((c) => {
+          const Icon = c.icon
+          return (
+            <DropdownMenuItem key={c.key} onClick={() => go(hrefFor(c, mode))} className="gap-3 py-2">
+              <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+                <Icon className="!size-4" aria-hidden />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-px">
+                <span className="text-sm font-semibold text-[var(--q-ink)]">{c.label}</span>
+                <span className="truncate text-xs font-normal text-[var(--q-text-4)]">{c.hint}</span>
+              </span>
+              <kbd className="q-kbd">{c.shortcut}</kbd>
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
 /* ------------------------------------------------------------------ */
-/* Props                                                                */
+/* Menu du compte                                                      */
 /* ------------------------------------------------------------------ */
 
-interface HeaderProps {
-  firstName?: string
-  lastName?:  string
-  email?:     string
-  /** Nom de la formule active (« Essentiel »), ou null pour la version gratuite. */
-  planName?:  string | null
-}
-
-/* ------------------------------------------------------------------ */
-/* Composant                                                            */
-/* ------------------------------------------------------------------ */
-
-export function Header({ firstName = "", lastName = "", email = "", planName = null }: HeaderProps) {
-  const pathname = usePathname()
-  const router   = useRouter()
-  const title    = getTitle(pathname)
-  const cta      = PAGE_CTA[pathname]
-  const initials = getInitials(firstName, lastName)
-  const supabase = useMemo(() => createClient(), [])
-
-  const { theme, setTheme } = useTheme()
+function AccountMenu({ identity }: { identity: ShellIdentity }) {
+  const router = useRouter()
+  const logout = useLogout()
+  const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
-
-  const isDark = mounted && theme === "dark"
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    // Vide le HTML retenu par le service worker : rien de la session précédente
-    // ne doit pouvoir être resservi sur un appareil partagé.
-    purgePwaPageCache()
-    toast.success("À bientôt !")
-    router.push("/login")
-    router.refresh()
-  }
-
-  const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Mon compte"
-
-  const avatarStyle: React.CSSProperties = {
-    background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
-    color:      "#2563EB",
-    border:     "1.5px solid rgba(37,99,235,0.20)",
-  }
-
-  /* ── Dropdown profil — avec ou sans toggle thème ── */
-  const dropdownBg     = isDark ? "#0F1E35" : "#ffffff"
-  const dropdownBorder = isDark ? "#1E3A5F" : "#E8EEF8"
-  const dropdownShadow = isDark
-    ? "0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.25)"
-    : "0 8px 32px rgba(15,23,42,0.12), 0 2px 8px rgba(15,23,42,0.06)"
-
-  function renderDropdown(withThemeToggle: boolean) {
-    return (
-      <DropdownMenuContent
-        align="end"
-        sideOffset={10}
-        style={{
-          minWidth: "260px",
-          background: dropdownBg,
-          border: `1px solid ${dropdownBorder}`,
-          boxShadow: dropdownShadow,
-          borderRadius: "14px",
-          padding: "6px",
-        }}
-      >
-        {/* En-tête profil */}
-        <div
-          style={{
-            background: isDark
-              ? "linear-gradient(135deg, #162032 0%, #1a2a45 100%)"
-              : "linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%)",
-            border: `1px solid ${isDark ? "#1E3A5F" : "#DBEAFE"}`,
-            borderRadius: "10px",
-            padding: "12px",
-            marginBottom: "4px",
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0"
-              style={{
-                background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
-                color: "#ffffff",
-                boxShadow: "0 2px 8px rgba(37,99,235,0.35)",
-              }}
-            >
-              {initials}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p
-                className="text-[13px] font-bold truncate leading-tight"
-                style={{ color: isDark ? "#E2E8F0" : "#0F172A" }}
-              >
-                {fullName}
-              </p>
-              {email && (
-                <p
-                  className="text-[11px] truncate leading-tight mt-0.5"
-                  style={{ color: isDark ? "#94A3B8" : "#64748B" }}
-                >
-                  {email}
-                </p>
-              )}
-              <div className="mt-1.5"><PlanBadge label={planName ?? "Version gratuite"} active={Boolean(planName)} /></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Section paramètres */}
-        <div style={{ padding: "2px 0" }}>
-          <DropdownMenuItem onClick={() => router.push("/settings/company")}>
-            <Building2 className="w-4 h-4 shrink-0" />
-            Mon entreprise
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/settings/invoices")}>
-            <FileText className="w-4 h-4 shrink-0" />
-            Préférences factures
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/settings/billing")}>
-            <CreditCard className="w-4 h-4 shrink-0" />
-            Mon abonnement
-          </DropdownMenuItem>
-        </div>
-
-        {withThemeToggle && (
-          <>
-            <DropdownMenuSeparator style={{ background: dropdownBorder, margin: "4px 0" }} />
-            <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
-              {isDark
-                ? <Sun className="w-4 h-4 shrink-0" />
-                : <Moon className="w-4 h-4 shrink-0" />}
-              {isDark ? "Mode clair" : "Mode sombre"}
-            </DropdownMenuItem>
-          </>
-        )}
-
-        <DropdownMenuSeparator style={{ background: dropdownBorder, margin: "4px 0" }} />
-
-        {/* Déconnexion */}
-        <DropdownMenuItem variant="destructive" onClick={handleLogout}>
-          <LogOut className="w-4 h-4 shrink-0" />
-          Se déconnecter
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    )
-  }
+  const isDark = mounted && resolvedTheme === "dark"
+  const [bugOpen, setBugOpen] = useState(false)
+  const [contactOpen, setContactOpen] = useState(false)
+  const name = fullNameOf(identity)
+  const demo = identity.mode === "demo"
 
   return (
     <>
-      {/* ════════════════════════════════════════════════════════════════
-          MOBILE header (< lg) — pilules solides, pas de backdrop-filter,
-          pas de toggle thème (crash GPU iOS Safari — cf. CLAUDE.md)
-          ════════════════════════════════════════════════════════════════ */}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="grid size-8 place-items-center rounded-full bg-[var(--q-sunken)] text-xs font-semibold text-[var(--q-ink)] outline-none ring-offset-2 focus-visible:shadow-[0_0_0_4px_var(--q-focus)]"
+          aria-label="Menu du compte"
+          title={name}
+        >
+          {initialsOf(name)}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" sideOffset={10} className="w-[272px]">
+          <div className="mb-1 flex items-center gap-3 rounded-[10px] bg-[var(--q-surface-2)] p-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--q-accent)] text-[13px] font-semibold text-white">
+              {initialsOf(name)}
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-[13px] font-semibold text-[var(--q-ink)]">{name}</span>
+              {identity.email && <span className="truncate text-xs text-[var(--q-text-4)]">{identity.email}</span>}
+              <span className="mt-1">
+                <span className={identity.planName ? "q-pill q-pill-info !h-5 !text-[11px]" : "q-pill !h-5 !text-[11px]"}>
+                  {identity.planName ?? "Version gratuite"}
+                </span>
+              </span>
+            </span>
+          </div>
+          <DropdownMenuItem onClick={() => router.push(demo ? "/demo/settings" : "/settings/company")}>
+            <Building2 aria-hidden />
+            Entreprise
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push(demo ? "/demo/settings" : "/settings/invoices")}>
+            <FileCog aria-hidden />
+            Modèles de documents
+          </DropdownMenuItem>
+          {!demo && (
+            <DropdownMenuItem onClick={() => router.push("/settings/billing")}>
+              <CreditCard aria-hidden />
+              Abonnement
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
+            {isDark ? <Sun aria-hidden /> : <Moon aria-hidden />}
+            {isDark ? "Thème clair" : "Thème sombre"}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-[var(--q-line-soft)]" />
+          {demo ? (
+            <DropdownMenuItem onClick={() => router.push("/signup")}>
+              <ArrowRight aria-hidden />
+              Créer mon compte
+            </DropdownMenuItem>
+          ) : (
+            <>
+              <DropdownMenuItem onClick={() => setBugOpen(true)}>
+                <Bug aria-hidden />
+                Signaler un problème
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setContactOpen(true)}>
+                <MessageSquare aria-hidden />
+                Nous écrire
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-[var(--q-line-soft)]" />
+              <DropdownMenuItem variant="destructive" onClick={logout}>
+                <LogOut aria-hidden />
+                Se déconnecter
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {!demo && (
+        <>
+          <BugReportModal open={bugOpen} onOpenChange={setBugOpen} />
+          <ContactModal open={contactOpen} onOpenChange={setContactOpen} />
+        </>
+      )}
+    </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Barre supérieure                                                    */
+/* ------------------------------------------------------------------ */
+
+export function Header({ identity }: { identity: ShellIdentity }) {
+  const pathname = usePathname()
+  const crumbs = crumbsFor(pathname)
+  const pageLabel = useCrumbLabel()
+  const current = crumbs.current ?? pageLabel ?? (pathname.endsWith("/edit") ? "Modifier" : "Détail")
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  // ⌘K / Ctrl+K ouvre la recherche partout dans l'application
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault()
+        setSearchOpen((v) => !v)
+      }
+    }
+    // La feuille « Plus » (mobile) ouvre la même recherche
+    const onOpen = () => setSearchOpen(true)
+    window.addEventListener("keydown", onKey)
+    window.addEventListener(OPEN_SEARCH_EVENT, onOpen)
+    return () => {
+      window.removeEventListener("keydown", onKey)
+      window.removeEventListener(OPEN_SEARCH_EVENT, onOpen)
+    }
+  }, [])
+
+  return (
+    <>
       <header
-        className="lg:hidden flex items-center justify-between gap-2 px-3 shrink-0 z-20"
-        style={{
-          paddingTop:    'max(12px, env(safe-area-inset-top, 12px))',
-          paddingBottom: '10px',
-          minHeight:     '54px',
-        }}
+        className="q-float sticky top-3 z-30 mx-6 mt-3 hidden h-14 items-center gap-3 rounded-[14px] pl-4 pr-2.5 lg:flex"
+        style={{ isolation: "isolate" }}
       >
-        {/* Gauche : pilule titre */}
-        <div className="flex items-center gap-2 min-w-0">
-          <div
-            className="flex items-center rounded-full px-3.5 py-1.5 min-w-0"
-            style={MOBILE_PILL}
-          >
-            <h1 className="text-[15px] font-semibold truncate text-[#0F172A] dark:text-[#E2E8F0]">
-              {title}
-            </h1>
-          </div>
-        </div>
-
-        {/* Droite : CTA + pilule [cloche + avatar] */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {cta && (
-            <Link href={cta.href}>
-              <button
-                className="w-9 h-9 flex items-center justify-center rounded-full touch-manipulation text-[#2563EB]"
-                style={MOBILE_PILL}
-                aria-label={cta.label}
-              >
-                <Plus className="w-[18px] h-[18px]" />
-              </button>
-            </Link>
+        <nav aria-label="Fil d'Ariane" className="flex min-w-0 shrink-0 items-center gap-2 text-sm">
+          {crumbs.parent && (
+            <>
+              <Link href={crumbs.parent.href} className="text-[var(--q-text-4)] transition-colors hover:text-[var(--q-ink)]">
+                {crumbs.parent.label}
+              </Link>
+              <span className="text-[var(--q-placeholder)]" aria-hidden>/</span>
+            </>
           )}
-          <div
-            className="flex items-center gap-0.5 rounded-full px-1 py-0.5"
-            style={MOBILE_PILL}
-          >
-            <button
-              className="w-8 h-8 flex items-center justify-center rounded-full touch-manipulation text-slate-400 dark:text-slate-500"
-              aria-label="Notifications"
-            >
-              <Bell className="w-[17px] h-[17px]" />
-            </button>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500 touch-manipulation"
-                style={avatarStyle}
-                title={fullName}
-              >
-                {initials}
-              </DropdownMenuTrigger>
-              {renderDropdown(false)}
-            </DropdownMenu>
-          </div>
+          <span className="max-w-[260px] truncate font-semibold text-[var(--q-ink)]" aria-current="page">{current}</span>
+          {identity.mode === "demo" && (
+            <span className="q-tag !border-[var(--q-warn-line)] !bg-[var(--q-warn-bg)] !text-[var(--q-warn)]">Démo</span>
+          )}
+        </nav>
+
+        <button
+          type="button"
+          onClick={() => setSearchOpen(true)}
+          className="mx-auto flex h-[38px] min-w-0 max-w-[460px] flex-1 items-center gap-2.5 rounded-[10px] border border-[rgba(15,23,42,.08)] bg-white/70 px-3 dark:bg-white/5 text-sm text-[var(--q-text-4)] transition-colors hover:border-[var(--q-field)] dark:border-[var(--q-line)]"
+          aria-label="Rechercher (⌘K)"
+        >
+          <Search className="size-4 shrink-0" aria-hidden />
+          <span className="flex-1 truncate text-left">Rechercher une facture, un client, une action…</span>
+          <kbd className="q-kbd">⌘K</kbd>
+        </button>
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          <CreateMenu identity={identity} />
+          <NotificationsButton identity={identity} />
+          <AccountMenu identity={identity} />
         </div>
       </header>
-
-      {/* ════════════════════════════════════════════════════════════════
-          DESKTOP header (≥ lg) — pilules flottent sur le gradient
-          ════════════════════════════════════════════════════════════════ */}
-      <header className="hidden lg:flex h-[60px] px-5 items-center justify-between shrink-0 gap-3 relative z-20">
-
-        {/* Gauche : pilule titre */}
-        <div className="flex items-center gap-2 min-w-0">
-          <div
-            className="header-pill-glass flex items-center rounded-full px-4 py-2 min-w-0"
-            style={{ background: PILL_BG, border: PILL_BORDER, boxShadow: PILL_SHADOW }}
-          >
-            <h1 className="text-[14px] font-semibold text-[#0F172A] dark:text-[#E2E8F0] truncate max-w-xs">
-              {title}
-            </h1>
-          </div>
-        </div>
-
-        {/* Droite : CTA + pilule [toggle + cloche + avatar] */}
-        <div className="flex items-center gap-2 shrink-0">
-          {cta && (
-            <Link href={cta.href}>
-              <button
-                className="inline-flex items-center gap-1.5 rounded-full text-white text-[13px] font-bold px-3.5 py-2 whitespace-nowrap"
-                style={{
-                  background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
-                  boxShadow:  "0 2px 10px rgba(37,99,235,0.30)",
-                }}
-              >
-                <Plus className="w-3.5 h-3.5 shrink-0" />
-                {cta.label}
-              </button>
-            </Link>
-          )}
-
-          <div
-            className="header-pill-glass flex items-center gap-0.5 rounded-full px-1.5 py-1"
-            style={{ background: PILL_BG, border: PILL_BORDER, boxShadow: PILL_SHADOW }}
-          >
-            <ThemeToggle />
-            <div className="w-px h-4 bg-slate-200/80 dark:bg-slate-700/80 mx-0.5" />
-            <button
-              className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400"
-              aria-label="Notifications"
-            >
-              <Bell className="w-[17px] h-[17px]" />
-            </button>
-            <div className="w-px h-4 bg-slate-200/80 dark:bg-slate-700/80 mx-0.5" />
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
-                style={avatarStyle}
-                title={fullName}
-              >
-                {initials}
-              </DropdownMenuTrigger>
-              {renderDropdown(true)}
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
+      <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} identity={identity} />
     </>
   )
 }

@@ -3,10 +3,8 @@
 import { useState } from 'react'
 import { Bug, MessageSquare, CheckCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -19,47 +17,12 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
 /* ------------------------------------------------------------------ */
-/* Shared trigger button style (matches Sidebar nav items)             */
-/* ------------------------------------------------------------------ */
-
-function SidebarButton({
-  icon: Icon,
-  label,
-  collapsed,
-  onClick,
-}: {
-  icon: React.ElementType
-  label: string
-  collapsed: boolean
-  onClick?: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={collapsed ? label : undefined}
-      className={cn(
-        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium',
-        'text-slate-500 dark:text-slate-400',
-        'hover:bg-[#F8FAFC] dark:hover:bg-[#162032]',
-        'hover:text-[#0F172A] dark:hover:text-[#E2E8F0]',
-        'transition-colors duration-100 w-full',
-        collapsed && 'justify-center px-2',
-      )}
-    >
-      <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
-      {!collapsed && <span>{label}</span>}
-    </button>
-  )
-}
-
-/* ------------------------------------------------------------------ */
 /* Shared form label                                                    */
 /* ------------------------------------------------------------------ */
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className="block text-sm font-medium text-foreground mb-1">
+    <label className="mb-1.5 block text-[13px] font-semibold text-[var(--q-ink)]">
       {children}
     </label>
   )
@@ -72,8 +35,8 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 function SuccessState({ message, onReset }: { message: string; onReset: () => void }) {
   return (
     <div className="flex flex-col items-center gap-3 py-6 text-center">
-      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30">
-        <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[var(--q-ok-bg)]">
+        <CheckCircle className="w-6 h-6 text-[var(--q-ok)]" />
       </div>
       <p className="text-sm text-muted-foreground max-w-[280px]">{message}</p>
       <DialogClose render={
@@ -89,8 +52,8 @@ function SuccessState({ message, onReset }: { message: string; onReset: () => vo
 /* BugReportModal                                                       */
 /* ------------------------------------------------------------------ */
 
-export function BugReportModal({ collapsed }: { collapsed: boolean }) {
-  const [open, setOpen]           = useState(false)
+/** Fenêtre « Signaler un problème », ouverte depuis la barre latérale, le menu du compte ou la feuille « Plus ». */
+export function BugReportModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [title, setTitle]         = useState('')
   const [description, setDesc]    = useState('')
   const [page, setPage]           = useState('')
@@ -105,7 +68,7 @@ export function BugReportModal({ collapsed }: { collapsed: boolean }) {
   }
 
   const handleOpenChange = (val: boolean) => {
-    setOpen(val)
+    onOpenChange(val)
     if (!val) setTimeout(reset, 200)
   }
 
@@ -124,7 +87,7 @@ export function BugReportModal({ collapsed }: { collapsed: boolean }) {
         throw new Error(data?.error ?? 'Erreur lors de l\'envoi')
       }
       setSuccess(true)
-      toast.success('Bug signalé — merci pour votre retour !')
+      toast.success('Problème signalé, merci pour votre retour.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Impossible d\'envoyer le rapport.')
     } finally {
@@ -134,26 +97,23 @@ export function BugReportModal({ collapsed }: { collapsed: boolean }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={
-        <SidebarButton icon={Bug} label="Rapporter un bug" collapsed={collapsed} />
-      } />
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 shrink-0">
-              <Bug className="w-4 h-4 text-red-600 dark:text-red-400" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--q-danger-bg)] shrink-0">
+              <Bug className="w-4 h-4 text-[var(--q-danger)]" />
             </div>
-            <DialogTitle className="text-base font-semibold">Rapporter un bug</DialogTitle>
+            <DialogTitle className="text-base font-semibold">Signaler un problème</DialogTitle>
           </div>
           <DialogDescription>
-            Décrivez le problème rencontré et nous le corrigerons rapidement.
+            Décrivez ce qui s’est passé et sur quelle page.
           </DialogDescription>
         </DialogHeader>
 
         {success ? (
           <SuccessState
-            message="Votre signalement a bien été reçu. Nous analysons le problème et reviendrons vers vous si nécessaire."
+            message="Votre signalement a bien été reçu. Merci, il nous aide à corriger le problème."
             onReset={reset}
           />
         ) : (
@@ -210,8 +170,8 @@ export function BugReportModal({ collapsed }: { collapsed: boolean }) {
 /* ContactModal                                                         */
 /* ------------------------------------------------------------------ */
 
-export function ContactModal({ collapsed }: { collapsed: boolean }) {
-  const [open, setOpen]           = useState(false)
+/** Fenêtre « Nous écrire » (formulaire, réponse par email, sans promesse de délai). */
+export function ContactModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [name, setName]           = useState('')
   const [email, setEmail]         = useState('')
   const [message, setMessage]     = useState('')
@@ -226,7 +186,7 @@ export function ContactModal({ collapsed }: { collapsed: boolean }) {
   }
 
   const handleOpenChange = (val: boolean) => {
-    setOpen(val)
+    onOpenChange(val)
     if (!val) setTimeout(reset, 200)
   }
 
@@ -245,7 +205,7 @@ export function ContactModal({ collapsed }: { collapsed: boolean }) {
         throw new Error(data?.error ?? 'Erreur lors de l\'envoi')
       }
       setSuccess(true)
-      toast.success('Message envoyé — nous vous répondrons sous 24 h !')
+      toast.success('Message envoyé, merci.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Impossible d\'envoyer le message.')
     } finally {
@@ -255,26 +215,23 @@ export function ContactModal({ collapsed }: { collapsed: boolean }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={
-        <SidebarButton icon={MessageSquare} label="Nous contacter" collapsed={collapsed} />
-      } />
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 shrink-0">
-              <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--q-wash)] shrink-0">
+              <MessageSquare className="w-4 h-4 text-[var(--q-accent-strong)]" />
             </div>
-            <DialogTitle className="text-base font-semibold">Nous contacter</DialogTitle>
+            <DialogTitle className="text-base font-semibold">Nous écrire</DialogTitle>
           </div>
           <DialogDescription>
-            Une question ? Une suggestion ? Nous vous répondons sous 24 h.
+            Une question, une suggestion ? Écrivez-nous, la réponse arrive par email.
           </DialogDescription>
         </DialogHeader>
 
         {success ? (
           <SuccessState
-            message="Votre message a bien été envoyé. Nous vous répondrons dans les plus brefs délais."
+            message="Votre message a bien été envoyé. La réponse arrivera à l’adresse indiquée."
             onReset={reset}
           />
         ) : (

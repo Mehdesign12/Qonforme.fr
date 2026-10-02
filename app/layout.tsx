@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, DM_Mono, Bricolage_Grotesque } from "next/font/google";
+import { DM_Sans, DM_Mono, Bricolage_Grotesque, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { ReduxProvider } from "@/components/shared/ReduxProvider";
 import { Toaster } from "@/components/ui/sonner";
@@ -33,6 +33,15 @@ const bricolageGrotesque = Bricolage_Grotesque({
   variable: "--font-bricolage",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
+/* Seconde voix des titres publics (« titres en deux voix », DECISIONS § 6) : un mot en italique. */
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-serif-accent",
+  subsets: ["latin"],
+  weight: "400",
+  style: "italic",
   display: "swap",
 });
 
@@ -123,7 +132,7 @@ export default function RootLayout({
          * au-dessus d'un header clair. <ThemeColorSync /> la bascule en sombre
          * quand l'utilisateur change de thème.
          */}
-        <meta name="theme-color" content="#F8FAFC" />
+        <meta name="theme-color" content="#F6F8FB" />
         {/* Empêche le zoom auto sur les inputs iOS */}
         <meta
           name="viewport"
@@ -198,7 +207,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${dmSans.variable} ${dmMono.variable} ${bricolageGrotesque.variable} font-sans antialiased bg-background text-foreground`}
+        className={`${dmSans.variable} ${dmMono.variable} ${bricolageGrotesque.variable} ${instrumentSerif.variable} font-sans antialiased bg-background text-foreground`}
       >
         {/* Meta Pixel — noscript fallback */}
         <noscript>
