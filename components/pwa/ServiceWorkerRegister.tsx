@@ -26,10 +26,15 @@ export function ServiceWorkerRegister() {
     }
 
     let reloading = false
+    // Aucun worker aux commandes au chargement = toute première visite. Le worker qui
+    // s'installe prend alors la main (clients.claim) sans rien changer à la page :
+    // recharger couperait les préchargements et effacerait une saisie en cours.
+    const hadController = Boolean(navigator.serviceWorker.controller)
 
-    // Le nouveau worker a pris la main : on recharge pour servir la version à jour.
+    // Un nouveau worker a remplacé l'ancien (mise à jour acceptée) : on recharge pour
+    // servir la version à jour.
     const onControllerChange = () => {
-      if (reloading) return
+      if (!hadController || reloading) return
       reloading = true
       window.location.reload()
     }
