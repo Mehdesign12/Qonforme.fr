@@ -35,8 +35,9 @@ export function ContentPage({
     <div className="flex min-h-screen flex-col overflow-x-clip bg-q-bg">
       <PublicHeaderWrapper />
       <main className="flex-1">{children}</main>
+      {/* L'appel final vient de ContentCta (photo, titre propre à la page) : pas celui du pied de page */}
       <div className={cn(bottomBarSpace && "mb-[calc(56px+env(safe-area-inset-bottom))] lg:mb-0")}>
-        <Footer />
+        <Footer showCta={false} />
       </div>
     </div>
   )

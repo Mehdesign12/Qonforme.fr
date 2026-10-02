@@ -5,8 +5,6 @@ import CategoryBadge from "./CategoryBadge"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
 import { cn } from "@/lib/utils"
 
-export const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Picto%20Q.webp"
-
 export interface ArticleCardPost {
   slug: string
   title: string
@@ -31,11 +29,13 @@ export function shortDate(iso: string) {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
 }
 
-/** Couverture absente : lavis bleu et picto Q, sans dégradé. */
+/** Couverture absente : lavis bleu et Q de la marque, sans dégradé ni image distante. */
 export function CoverFallback({ size = 56 }: { size?: number }) {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-q-wash">
-      <Image src={PICTO_Q} alt="" width={size} height={size} className="opacity-40" style={{ width: size, height: size }} sizes={`${size}px`} />
+    <div aria-hidden className="flex h-full w-full items-center justify-center bg-q-wash">
+      <span className="font-display font-semibold leading-none tracking-[-0.04em] text-q-accent opacity-30" style={{ fontSize: size }}>
+        Q
+      </span>
     </div>
   )
 }
