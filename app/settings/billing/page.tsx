@@ -1,30 +1,16 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import BillingPageClient from '@/components/billing/BillingPageClient'
+import BillingPageClient, { type GuaranteeInfo } from '@/components/billing/BillingPageClient'
 import { stripe } from '@/lib/stripe/client'
 import { getPlanByPriceId, PLANS } from '@/lib/stripe/plans'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { Subscription } from '@/lib/stripe/subscription'
+import { canIssueInvoices, mapStripeStatus } from '@/lib/stripe/access'
+import { getGuaranteeState } from '@/lib/stripe/guarantee'
 import type Stripe from 'stripe'
 
 export const metadata: Metadata = { title: 'Abonnement — Qonforme' }
 export const dynamic = 'force-dynamic'
-
-function mapStripeStatus(s: string): Subscription['status'] {
-  switch (s) {
-    case 'active':
-    case 'trialing':
-      return 'active'
-    case 'past_due':
-    case 'unpaid':
-      return 'past_due'
-    case 'canceled':
-    case 'incomplete_expired':
-      return 'canceled'
-    default:
-      return 'incomplete'
-  }
-}
 
 async function applyStripeData(
   sub: Subscription,
@@ -133,41 +119,47 @@ export default async function BillingPage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   let subscription: Subscription | null = null
-  let invoicesThisMonth = 0
+  let guarantee: GuaranteeInfo | null = null
+  let cancelAtPeriodEnd = false
 
   if (user) {
     const { data: sub } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (sub) {
       const enriched = sub as Subscription
       const planIsUnknown = !enriched.plan || !(enriched.plan in PLANS)
       const statusStale = enriched.status === 'incomplete' || !enriched.status
-      // Sync aussi si current_period_end est absent ou si stripe_subscription_id manque
+      // Synchro aussi si current_period_end ou stripe_subscription_id manquent
       const missingDetails = !enriched.current_period_end || !enriched.stripe_subscription_id
 
-      if (planIsUnknown || statusStale || missingDetails) {
+      if (enriched.stripe_customer_id && (planIsUnknown || statusStale || missingDetails)) {
         subscription = await syncFromStripe(enriched, user.id, user.email)
       } else {
         subscription = enriched
       }
     }
 
-    // Compter les factures du mois courant
-    const startOfMonth = new Date()
-    startOfMonth.setDate(1)
-    startOfMonth.setHours(0, 0, 0, 0)
-
-    const { count } = await supabase
-      .from('invoices')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('created_at', startOfMonth.toISOString())
-
-    invoicesThisMonth = count ?? 0
+    // Formule en cours : garantie et résiliation programmée lues chez Stripe
+    if (subscription?.stripe_customer_id && canIssueInvoices(subscription.status)) {
+      try {
+        const state = await getGuaranteeState(subscription.stripe_customer_id)
+        guarantee = state.eligible
+          ? { eligible: true, endsAt: state.endsAt.toISOString(), amountPaid: state.amountPaid }
+          : { eligible: false, reason: state.reason, endsAt: state.endsAt?.toISOString() ?? null }
+      } catch (err) {
+        console.error('[BillingPage] Lecture de la garantie impossible:', err)
+      }
+      if (subscription.stripe_subscription_id) {
+        try {
+          const stripeSub = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id)
+          cancelAtPeriodEnd = Boolean(stripeSub.cancel_at_period_end || stripeSub.cancel_at)
+        } catch { /* sans incidence : la page s'affiche quand même */ }
+      }
+    }
   }
 
   return (
@@ -175,13 +167,14 @@ export default async function BillingPage() {
       <div>
         <h1 className="text-xl font-bold text-[#0F172A] dark:text-[#E2E8F0]">Abonnement</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Gérez votre plan, vos informations de paiement et votre facturation.
+          Votre formule, votre moyen de paiement et vos factures d&apos;abonnement.
         </p>
       </div>
 
       <BillingPageClient
         subscription={subscription}
-        invoicesThisMonth={invoicesThisMonth}
+        guarantee={guarantee}
+        cancelAtPeriodEnd={cancelAtPeriodEnd}
       />
     </div>
   )

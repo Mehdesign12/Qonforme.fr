@@ -14,8 +14,6 @@ import { ThemeColorSync } from "@/components/pwa/ThemeColorSync";
 import { StandaloneFlag } from "@/components/pwa/StandaloneFlag";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
-import { NativeAppInit } from "@/components/native/NativeAppInit";
-import { PrivacyScreen } from "@/components/native/PrivacyScreen";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -167,41 +165,30 @@ export default function RootLayout({
                   description: "Logiciel de facturation electronique pour artisans et TPE. Factures Factur-X conformes a la reforme 2026.",
                   screenshot: "https://qonforme.fr/og-image.png",
                   featureList: "Factur-X EN 16931, Devis, Factures, Avoirs, Relances automatiques, Export FEC, Envoi par email",
-                  aggregateRating: {
-                    "@type": "AggregateRating",
-                    ratingValue: "4.8",
-                    ratingCount: "47",
-                    bestRating: "5",
-                    worstRating: "1",
-                  },
+                  // Aucune note ni nombre d'avis : Qonforme n'a pas d'avis vérifiables
+                  // à publier (règle « aucune affirmation invérifiable », CLAUDE.md).
                   offers: [
                     {
                       "@type": "Offer",
-                      name: "Starter",
-                      price: "9",
+                      name: "Devis",
+                      price: "0",
                       priceCurrency: "EUR",
-                      priceSpecification: {
-                        "@type": "UnitPriceSpecification",
-                        price: "9",
-                        priceCurrency: "EUR",
-                        unitText: "MONTH",
-                      },
-                      description:
-                        "10 factures/mois, devis illimites, Factur-X EN 16931, archivage 10 ans.",
+                      description: "Devis illimites, sans carte bancaire.",
                     },
                     {
                       "@type": "Offer",
-                      name: "Pro",
-                      price: "19",
+                      name: "Essentiel",
+                      price: "12",
                       priceCurrency: "EUR",
                       priceSpecification: {
                         "@type": "UnitPriceSpecification",
-                        price: "19",
+                        price: "12",
                         priceCurrency: "EUR",
                         unitText: "MONTH",
+                        valueAddedTaxIncluded: false,
                       },
                       description:
-                        "Factures illimitees, relances automatiques, tableau de bord CA, support prioritaire.",
+                        "Factures et avoirs illimites, envoi par email, relances automatiques, export FEC. 10 EUR HT par mois a l'annee.",
                     },
                   ],
                 },
@@ -231,12 +218,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AutoDarkMode />
-          {/* PWA / app native — sans rendu visible sauf OfflineBanner et InstallPrompt */}
+          {/* PWA — sans rendu visible sauf OfflineBanner et InstallPrompt */}
           <ThemeColorSync />
           <StandaloneFlag />
           <ServiceWorkerRegister />
-          <NativeAppInit />
-          <PrivacyScreen />
           <PostHogProvider>
             <ReduxProvider>
               <OfflineBanner />

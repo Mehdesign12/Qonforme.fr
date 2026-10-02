@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { calculateLineTotals, calculateInvoiceTotals, formatCurrency, VAT_RATES } from "@/lib/utils/invoice"
 import { ProductCombobox, type ProductSuggestion } from "@/components/products/ProductCombobox"
+import { PaywallDialog, isSubscriptionRequired } from "@/components/billing/PaywallDialog"
 
 type VatRate = 0 | 5.5 | 10 | 20
 
@@ -40,6 +41,7 @@ function newLine(): Line {
 
 export default function EditInvoicePage() {
   const router = useRouter()
+  const [showPaywall, setShowPaywall] = useState(false)
   const { id } = useParams<{ id: string }>()
 
   const [invoiceNumber, setInvoiceNumber] = useState("")
@@ -162,9 +164,9 @@ export default function EditInvoicePage() {
         due_date:   form.due_date,
         notes:      form.notes || null,
         lines:      enrichedLines,
-        status:     action === "send" ? "sent" : "draft",
       }
 
+      // 1. Enregistrer le brouillon
       const res  = await fetch(`/api/invoices/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -173,7 +175,22 @@ export default function EditInvoicePage() {
       const json = await res.json()
       if (!res.ok) { toast.error(json.error || "Erreur lors de la sauvegarde"); return }
 
-      toast.success(action === "send" ? "Facture envoyée !" : "Brouillon sauvegardé !")
+      // 2. « Envoyer » envoie vraiment l'email (et émet la facture) — avant, le
+      //    statut passait à « envoyée » sans qu'aucun email ne parte.
+      if (action === "send") {
+        const sendRes  = await fetch(`/api/invoices/${id}/send`, { method: "POST" })
+        const sendJson = await sendRes.json()
+        if (isSubscriptionRequired(sendRes.status, sendJson)) { setShowPaywall(true); return }
+        if (!sendRes.ok) {
+          toast.error(sendJson.error ?? "Brouillon enregistré, mais l'envoi par email a échoué")
+          router.push(`/invoices/${id}`)
+          router.refresh()
+          return
+        }
+        toast.success(`Facture envoyée à ${sendJson.sentTo}`)
+      } else {
+        toast.success("Brouillon sauvegardé !")
+      }
       router.push(`/invoices/${id}`)
       router.refresh()
     } catch {
@@ -191,6 +208,17 @@ export default function EditInvoicePage() {
 
   return (
     <div className="max-w-4xl space-y-6 animate-fade-in">
+      <PaywallDialog
+        open={showPaywall}
+        onOpenChange={(open) => {
+          if (open) return
+          setShowPaywall(false)
+          toast.success("Brouillon enregistré")
+          router.push(`/invoices/${id}`)
+        }}
+        invoiceId={id}
+        invoiceNumber={invoiceNumber || undefined}
+      />
 
       {/* Header */}
       <div className="flex items-center gap-3">

@@ -9,7 +9,8 @@ import {
 } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { Check, ArrowLeft, Shield, RefreshCw, ChevronDown, ChevronUp, Lock, Zap } from 'lucide-react'
-import { PLANS, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { PLANS, formatEuros, withVat, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { trackEvent } from '@/lib/meta-pixel'
 
 /* ─── Assets ─────────────────────────────────────────────────────────────── */
@@ -25,12 +26,14 @@ const stripePromise = stripeKey ? loadStripe(stripeKey) : null
 interface CheckoutPageClientProps {
   planId:        PlanId
   billingPeriod: BillingPeriod
+  /** Chemin interne où revenir une fois la formule active (ex. la facture à envoyer). */
+  next:          string | null
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
    COMPONENT
 ══════════════════════════════════════════════════════════════════════════ */
-export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPageClientProps) {
+export default function CheckoutPageClient({ planId, billingPeriod, next }: CheckoutPageClientProps) {
   const router = useRouter()
   const plan   = PLANS[planId]
   const isPro  = planId === 'pro'
@@ -38,7 +41,13 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
   const price = billingPeriod === 'monthly'
     ? plan.monthlyPrice
     : plan.yearlyMonthlyEquivalent
-  const fmt = (n: number) => n % 1 === 0 ? `${n}` : n.toFixed(2)
+  const fmt = (n: number) => n % 1 === 0 ? `${n}` : n.toFixed(2).replace('.', ',')
+  const destination = next ?? '/dashboard'
+  const plansHref   = next ? `/signup/plan?next=${encodeURIComponent(next)}` : '/signup/plan'
+  const chargeHt    = billingPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
+  const chargeLine  = billingPeriod === 'monthly'
+    ? `${formatEuros(chargeHt)} HT par mois, soit ${formatEuros(withVat(chargeHt))} TTC`
+    : `${formatEuros(chargeHt)} HT par an, soit ${formatEuros(withVat(chargeHt))} TTC · 2 mois offerts`
 
   /* ── State ────────────────────────────────────────────────────────────── */
   const [fetchError,      setFetchError]      = useState<string | null>(null)
@@ -70,7 +79,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
         content_ids: [planId],
         num_items: 1,
       })
-      router.replace('/dashboard')
+      router.replace(destination)
     }
 
     let slowTimer: ReturnType<typeof setInterval> | null = null
@@ -112,7 +121,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
     }
 
     setTimeout(poll, FAST_INTERVAL)
-  }, [isComplete, router])
+  }, [isComplete, router]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchClientSecret = useCallback(async () => {
     setFetchError(null)
@@ -120,9 +129,14 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
       const res  = await fetch('/api/stripe/checkout', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ planId, billingPeriod }),
+        body:    JSON.stringify({ planId, billingPeriod, next }),
       })
       const data = await res.json()
+      // Formule déjà active : rien à payer, on reprend là où l'artisan en était
+      if (res.ok && data.alreadySubscribed) {
+        router.replace(data.next ?? destination)
+        return ''
+      }
       if (!res.ok || !data.clientSecret) {
         setFetchError(data.error ?? 'Impossible de charger le formulaire.')
         return ''
@@ -132,11 +146,11 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
       setFetchError('Erreur réseau. Réessaie.')
       return ''
     }
-  }, [planId, billingPeriod])
+  }, [planId, billingPeriod, next, destination, router])
 
   /* ─────────────────────────────────────────────────────────────────────────
      THÈME PAR PLAN
-     Pro   → navy #0F172A · Starter → blanc/bleu clair
+     Artisan ('pro') → navy #0F172A · Essentiel ('starter') → blanc/bleu clair
   ───────────────────────────────────────────────────────────────────────── */
   const leftBg        = isPro ? 'bg-[#0F172A]'  : 'bg-white'
   const textMain      = isPro ? 'text-white'     : 'text-[#0F172A]'
@@ -185,7 +199,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
             style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%)' }}
           />
         )}
-        {/* Déco Starter : dégradé bleu très léger */}
+        {/* Déco Essentiel : dégradé bleu très léger */}
         {!isPro && (
           <div
             aria-hidden
@@ -201,12 +215,12 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
             style={{ paddingTop: 'max(14px, env(safe-area-inset-top, 14px))' }}
           >
             <button
-              onClick={() => router.push('/signup/plan')}
+              onClick={() => router.push(plansHref)}
               className={`flex items-center gap-1.5 text-sm font-medium ${backBtn} transition-colors`}
-              aria-label="Retour au choix du plan"
+              aria-label="Retour au choix de la formule"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Plans</span>
+              <span>Formules</span>
             </button>
 
             {/* Logo centré */}
@@ -249,7 +263,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               borderTop: isPro ? '1px solid rgba(255,255,255,0.08)' : '1px solid #F1F5F9',
             }}
             aria-expanded={summaryOpen}
-            aria-label="Voir le résumé du plan"
+            aria-label="Voir le résumé de la formule"
           >
             {/* Gauche : badge plan + prix + période */}
             <div className="flex items-center gap-2.5">
@@ -258,7 +272,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
                 style={{ backgroundColor: mobileBadgeBg, color: mobileBadgeText }}
               >
                 {isPro && <Zap className="w-2.5 h-2.5" fill="currentColor" />}
-                {isPro ? 'Pro' : 'Starter'}
+                {plan.name}
               </span>
               <div className="flex items-baseline gap-1">
                 <span className={`font-extrabold text-[24px] leading-none tabular-nums ${textMain}`}>
@@ -268,7 +282,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               </div>
               {billingPeriod === 'yearly' && (
                 <span className="text-[10px] font-semibold text-[#059669] bg-[#D1FAE5] px-1.5 py-0.5 rounded-full leading-none">
-                  −16%
+                  2 mois offerts
                 </span>
               )}
             </div>
@@ -303,12 +317,12 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
                 {plan.name}
               </p>
               <p className={`text-[13px] ${textMuted} mb-3`}>
-                {plan.description}
+                {plan.tagline}
               </p>
               {billingPeriod === 'yearly' && (
                 <p className={`text-[12px] ${textMuted} mb-3 flex items-center gap-1`}>
                   <span className="text-[#059669] font-medium">2 mois offerts</span>
-                  <span>· Facturé {plan.yearlyPrice} €/an</span>
+                  <span>· {formatEuros(plan.yearlyPrice)} HT par an</span>
                 </p>
               )}
 
@@ -336,7 +350,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               >
                 <Lock className={`w-3 h-3 shrink-0 ${shieldColor}`} />
                 <p className={`text-[11px] ${shieldColor}`}>
-                  Paiement sécurisé par Stripe · Résiliation à tout moment
+                  {`Satisfait ou remboursé ${GUARANTEE_DAYS} jours · Sans engagement`}
                 </p>
               </div>
             </div>
@@ -366,7 +380,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
             />
           </>
         )}
-        {/* Décos Starter */}
+        {/* Décos Essentiel */}
         {!isPro && (
           <>
             <div
@@ -387,11 +401,11 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
         <div className="relative z-10 flex flex-col h-full">
           {/* Retour */}
           <button
-            onClick={() => router.push('/signup/plan')}
+            onClick={() => router.push(plansHref)}
             className={`flex items-center gap-1.5 text-sm ${backBtn} transition-colors mb-7 self-start`}
           >
             <ArrowLeft className="w-4 h-4" />
-            Changer de plan
+            Changer de formule
           </button>
 
           {/* Logo */}
@@ -427,7 +441,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               {plan.name}
             </span>
             <h1 className={`text-2xl lg:text-3xl font-bold leading-tight ${textMain}`}>
-              {plan.description}
+              {plan.tagline}
             </h1>
           </div>
 
@@ -439,11 +453,9 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               </span>
               <span className={`${textSub} text-sm`}>/mois HT</span>
             </div>
-            {billingPeriod === 'yearly' && (
-              <p className={`text-sm ${textMuted} mt-1.5`}>
-                Facturé {plan.yearlyPrice} €/an · 2 mois offerts
-              </p>
-            )}
+            <p className={`text-sm ${textMuted} mt-1.5`}>
+              {chargeLine}
+            </p>
           </div>
 
           {/* Séparateur */}
@@ -465,7 +477,7 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
           <div className={`flex items-center gap-2 mt-5 pt-5 border-t ${divider}`}>
             <Shield className={`w-3.5 h-3.5 ${shieldColor} shrink-0`} />
             <p className={`text-xs ${shieldColor}`}>
-              Paiement sécurisé par Stripe · Résiliation à tout moment
+              {`Satisfait ou remboursé ${GUARANTEE_DAYS} jours · Sans engagement`}
             </p>
           </div>
         </div>
@@ -526,10 +538,10 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
               </button>
               <br />
               <button
-                onClick={() => router.push('/signup/plan')}
+                onClick={() => router.push(plansHref)}
                 className="text-sm text-slate-400 hover:text-slate-600 underline transition-colors"
               >
-                Retour au choix du plan
+                Retour au choix de la formule
               </button>
             </div>
 
@@ -551,10 +563,10 @@ export default function CheckoutPageClient({ planId, billingPeriod }: CheckoutPa
                     Cela prend plus de temps que prévu. Vous pouvez accéder à votre espace dès maintenant.
                   </p>
                   <button
-                    onClick={() => router.replace('/dashboard')}
+                    onClick={() => router.replace(destination)}
                     className="inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-[#1D4ED8] transition-colors"
                   >
-                    Accéder à mon espace →
+                    {next ? 'Reprendre ma facture →' : 'Accéder à mon espace →'}
                   </button>
                 </>
               ) : (

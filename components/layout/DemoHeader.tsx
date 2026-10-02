@@ -168,7 +168,7 @@ export function DemoHeader() {
                     border: "1px solid rgba(37,99,235,0.20)",
                   }}
                 >
-                  Pro ✦
+                  Essentiel
                 </span>
               </div>
             </div>

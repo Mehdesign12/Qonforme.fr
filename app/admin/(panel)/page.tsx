@@ -12,6 +12,7 @@ import {
   Clock,
 } from 'lucide-react'
 import MrrChart from '@/components/admin/MrrChart'
+import { PLANS } from '@/lib/stripe/plans'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin — Vue d\'ensemble' }
@@ -149,10 +150,10 @@ async function getOverviewData() {
   const starter  = subs.filter(s => s.status === 'active' && s.plan === 'starter').length
   const pro      = subs.filter(s => s.status === 'active' && s.plan === 'pro').length
 
-  // Calcul MRR (prix en € hardcodés depuis lib/stripe/plans.ts)
+  // Calcul MRR en € HT, depuis la grille de lib/stripe/plans.ts
   const MRR_MAP: Record<string, Record<string, number>> = {
-    starter: { monthly: 9, yearly: 90 / 12 },
-    pro:     { monthly: 19, yearly: 190 / 12 },
+    starter: { monthly: PLANS.starter.monthlyPrice, yearly: PLANS.starter.yearlyPrice / 12 },
+    pro:     { monthly: PLANS.pro.monthlyPrice,     yearly: PLANS.pro.yearlyPrice / 12 },
   }
   const mrr = subs
     .filter(s => s.status === 'active')
@@ -304,11 +305,11 @@ export default async function AdminOverviewPage() {
         <div className="rounded-2xl border p-4 bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Plans actifs</p>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-foreground">Starter</span>
+            <span className="text-sm text-foreground">Essentiel</span>
             <span className="font-mono font-bold text-[#0F172A] dark:text-[#E2E8F0]">{d.starter}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-foreground">Pro</span>
+            <span className="text-sm text-foreground">Artisan</span>
             <span className="font-mono font-bold text-[#0F172A] dark:text-[#E2E8F0]">{d.pro}</span>
           </div>
         </div>

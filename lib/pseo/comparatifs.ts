@@ -22,8 +22,8 @@ export interface Comparatif {
 
 // Qonforme (référence)
 export const QONFORME_FEATURES = {
-  prix: "9 €/mois",
-  prixDetail: "A partir de 9 €/mois sans engagement. Plan Pro a 19 €/mois.",
+  prix: "Devis gratuits, factures 12 € HT/mois",
+  prixDetail: "Devis gratuits et illimites. Formule Essentiel a 12 € HT/mois, ou 10 € HT/mois a l'annee, sans engagement.",
   facturX: true,
   factureElectronique: true,
   exportFec: true,
@@ -176,7 +176,7 @@ export const COMPARATIFS: Comparatif[] = [
       "Bonne gestion des frais professionnels",
     ],
     pointsFaibles: [
-      "Plus cher que Qonforme (14,90 € vs 9 €/mois)",
+      "Plus cher que Qonforme (14,90 € vs 12 € HT/mois)",
       "Pas de format Factur-X : non conforme 2026",
       "Oriente freelance uniquement, pas adapte aux artisans",
     ],

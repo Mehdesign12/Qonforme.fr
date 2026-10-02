@@ -81,9 +81,9 @@ const cardStyle = { backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12
 ### Le bug
 iOS Safari/WKWebView zoome automatiquement toute la page quand un `<input>`,
 `<select>` ou `<textarea>` reçoit le focus si son `font-size` calculé est
-inférieur à 16px. Comportement natif iOS (pensé pour le web ouvert, pas pour
-une app), pas un bug du site — mais dans l'app native, l'utilisateur doit
-dézoomer manuellement à chaque champ, et le zoom persiste souvent après avoir
+inférieur à 16px. Comportement natif iOS, pas un bug du site — mais
+l'utilisateur doit dézoomer manuellement à chaque champ (surtout depuis la PWA
+installée sur l'écran d'accueil), et le zoom persiste souvent après avoir
 quitté le champ.
 
 ### La règle
@@ -140,31 +140,59 @@ const { resolvedTheme } = useTheme()
 
 ---
 
-## 🚨 RÈGLE — Middleware : distinguer erreur réseau et "pas de données"
+## 🚨 RÈGLE — Lecture de l'abonnement : distinguer erreur réseau et "pas de données"
 
 ### Le bug
-Dans le middleware Supabase, une requête `.single()` qui échoue (timeout, réseau)
-retourne `data: null` — identique à "aucune ligne trouvée". Sans distinction,
-une erreur réseau sur mobile lent redirige l'utilisateur vers `/pricing` à tort.
+Une requête Supabase qui échoue (timeout, réseau) retourne `data: null` —
+identique à "aucune ligne trouvée". Sans distinction, une erreur réseau sur
+mobile lent faisait passer un abonné pour un compte sans formule (autrefois :
+redirection à tort vers `/pricing` par le middleware).
 
 ### La règle
-**Toujours vérifier le code d'erreur Supabase avant de rediriger.**
+**Toujours traiter l'erreur avant de conclure « pas de formule ».** Le middleware
+ne lit plus l'abonnement (voir la règle « Mur de paiement » ci-dessous) ; la
+lecture se fait dans `requireIssuingAccess()`, qui répond 503 sur erreur.
 
 ```typescript
-// ✅ Correct
-const { data: sub, error } = await supabase.from('subscriptions')...single()
+// ✅ Correct — lib/stripe/subscription.ts
+const { data, error } = await supabase.from('subscriptions').select('status').eq('user_id', id).maybeSingle()
+if (error) return NextResponse.json({ error: '…réessayez…' }, { status: 503 })
+if (!canIssueInvoices(data?.status)) return NextResponse.json({ code: SUBSCRIPTION_REQUIRED }, { status: 402 })
 
-if (error && error.code !== 'PGRST116') {
-  // PGRST116 = no rows found (légitime)
-  // Autre erreur = problème réseau/technique → laisser passer
-  return supabaseResponse
-}
-if (!sub) { /* redirect to /pricing */ }
-
-// ❌ Incorrect — redirige aussi sur erreur réseau
-const { data: sub } = await supabase.from('subscriptions')...single()
-if (!sub) { /* redirect to /pricing */ }
+// ❌ Incorrect — une erreur réseau affiche le mur de paiement à un abonné
+const { data } = await supabase.from('subscriptions')...single()
+if (!data) return paywall()
 ```
+
+---
+
+## 🚨 RÈGLE — Mur de paiement : à l'émission, côté serveur
+
+### Le modèle (« devis gratuits, factures payantes »)
+Un compte sans formule (jamais abonné, résilié, paiement abandonné) a accès à
+toute l'application : devis, clients, catalogue, factures en brouillon,
+consultation, téléchargement et export de ses documents émis. **Seule
+l'émission demande une formule** : envoyer une facture, la faire sortir du
+brouillon (« Marquer comme envoyée »), relancer un client.
+
+### La règle
+- **Toute route qui émet appelle `requireIssuingAccess()`** (`lib/stripe/subscription.ts`) :
+  `POST /api/invoices/[id]/send`, `PATCH /api/invoices/[id]` hors brouillon,
+  `POST /api/invoices/[id]/remind`. Le cron des relances saute les comptes sans formule.
+  Elle répond 402 `SUBSCRIPTION_REQUIRED` ; l'interface ouvre alors `PaywallDialog`.
+- **Un brouillon ne sort jamais comme une facture** : PDF filigrané « BROUILLON »
+  (« APERÇU » pour l'aperçu), sans XML Factur-X ; pas de Factur-X pour un brouillon ;
+  filigrane aussi sur la fiche à l'écran et à l'impression.
+- **Jamais de coupure d'accès aux documents** : ni le middleware ni une page ne
+  redirigent un compte sans formule. `past_due` garde l'émission (délai de grâce
+  pendant les nouvelles tentatives de Stripe).
+- **Les prix ne s'écrivent qu'une fois**, dans `lib/stripe/plans.ts` (identifiants
+  internes `starter` = Essentiel, `pro` = Artisan, imposés par la contrainte CHECK).
+  Une formule dont les fonctions ne sont pas livrées reste `available: false` et
+  ne se vend pas.
+- **La table `subscriptions` ne s'écrit que côté serveur** (clé service_role) :
+  migration `20261002_subscriptions_server_write_only.sql`.
+- **Après paiement, retour par `safeNextPath()`** : jamais une URL fournie telle quelle.
 
 ---
 
@@ -245,14 +273,14 @@ causer des problèmes de performance sur mobile.
 ```
 / login /signup → publics
 /dashboard /invoices /quotes /clients /settings /products /credit-notes /purchase-orders → protégés
-/settings/billing → protégé mais exempt de vérification d'abonnement
+/signup/plan → choix de la formule (compte connecté, ou visiteur renvoyé vers l'inscription)
 /pricing → public (même pour utilisateurs connectés)
 ```
 
 Le middleware vérifie dans l'ordre :
 1. Route publique → passe
 2. Route protégée sans utilisateur → redirect `/login`
-3. Route protégée avec utilisateur → vérifie abonnement → redirect `/pricing` ou `/settings/billing`
+3. Route protégée avec utilisateur → passe, **sans vérifier l'abonnement** (mur de paiement à l'émission, voir plus haut)
 
 ---
 
@@ -322,33 +350,24 @@ sécurité, juste une perte de fonctionnalité).
 
 ---
 
-## 🚨 RÈGLE — Code natif : toujours un repli web
+## 🚨 RÈGLE — Pas d'app native : le mobile passe par le site et la PWA
 
-### Le principe
-Le même code React sert le site web et l'app iOS compilée. Aucun composant ne
-doit supposer la présence de la coquille native.
+### La décision (02/10/2026)
+L'app iOS native (coquille Capacitor, notifications push APNs, écrans natifs) a été
+**abandonnée et retirée du code**. Un abonnement vendu à un artisan seul relève de
+l'achat intégré d'Apple (règle 3.1.3(c) : *« Consumer, single user, or family sales
+must use in-app purchase »*). La seule autre voie (3.1.3(f)) interdit tout prix,
+bouton ou lien d'achat dans l'app, donc le mur de paiement à la première facture.
+Le mobile passe par le site responsive, installable sur l'écran d'accueil (PWA :
+`public/sw.js`, `public/manifest.json`, `components/pwa/`, `lib/pwa/`).
 
 ### La règle
-**Tout appel à un plugin Capacitor passe par `lib/native/`, jamais par un import
-direct dans un composant.**
+**Ne réintroduire ni Capacitor, ni plugin natif, ni dossier `ios/` sans nouvelle
+décision consignée dans `DECISIONS-STRATEGIQUES.md`.** Stripe Checkout et le
+portail client s'ouvrent normalement dans le navigateur.
 
-```tsx
-// ✅ Correct — fonctionne sur le web comme dans l'app
-import { hapticImpact } from '@/lib/native/feedback'
-import { shareContent } from '@/lib/native/share'
-
-// ❌ Incorrect — casse le web et alourdit le bundle
-import { Haptics } from '@capacitor/haptics'
-```
-
-Les helpers de `lib/native/` sont gardés par `isNativeApp()` et importent les
-plugins dynamiquement : le bundle web ne les embarque pas.
-
-**Stripe Checkout et tout lien externe doivent passer par `openExternalUrl()`** —
-un tunnel de paiement dans la WKWebView est refusé par Apple (règle 3.1), ne
-partage pas les cookies Safari et piège l'utilisateur sans retour possible.
-
-Détails complets dans `IOS-APP.md`.
+La table `push_tokens` (migration `20260818_create_push_tokens.sql`) n'est plus
+lue ni écrite. Elle peut être supprimée en base si elle a été créée.
 
 ---
 
@@ -396,6 +415,7 @@ Un nouveau statut ou un nouveau type de document s'ajoute dans la liste blanche
 - **Aucun démarchage :** ni appels ni emails à froid. Le moteur de prospection (`lib/outreach`, `lib/scraping`) reste désactivé.
 - **Aucune affirmation invérifiable :** pas de faux avis, faux chiffres, fausse homologation ou certification.
 - **Chaîne des documents :** le devis signé vaut commande ; le bon de commande est facultatif, jamais une étape obligatoire. Signature en ligne et règles d'immutabilité : section 11 de `DECISIONS-STRATEGIQUES.md`.
+- **Paiements (02/10/2026) :** Stripe sert uniquement à l'abonnement Qonforme (carte ou prélèvement SEPA, TVA 20 %). Pas de Stripe Connect : les clients de l'artisan le paient par virement sur son propre IBAN. Pas d'app native : le mobile passe par le site et la PWA. Détails : section 12 de `DECISIONS-STRATEGIQUES.md`.
 - **Aucune promesse de contact humain :** pas d'appel, de visio, de rendez-vous, de « un humain vous répond » ni d'email signé du fondateur. Ce service n'existe pas. Les emails partent au nom de Qonforme.
 
 ---
@@ -466,3 +486,5 @@ Un nouveau statut ou un nouveau type de document s'ajoute dans la liste blanche
 | 2026-10-01 | Logo personnalisé dans les maquettes Paramètres › Entreprise (compte actif et compte neuf) : zone de dépôt, logo réellement affiché une fois importé, remplacer/retirer, aperçu en direct sur un devis ; tuile « Ajouter votre logo » sur le tableau de bord du compte neuf. Inventaire de la refonte comparé au code en ligne (section 10 de `DECISIONS-STRATEGIQUES.md`) : statut existe / partiel / à construire de chaque apport et ordre suggéré. Constats dans le code, non corrigés ici : une facture relancée passe au statut `overdue` et sort des montants « en attente » et « en retard » du tableau de bord ; la FAQ tarifs affirme gérer l'autoliquidation, absente du code | `DECISIONS-STRATEGIQUES.md` |
 | 2026-10-01 | Fix faille documents émis : un `PATCH { status: "draft" }` remettait une facture émise en brouillon (puis modifiable et supprimable). Liste blanche des changements de statut côté serveur pour factures, devis et bons de commande (`lib/utils/document-status.ts`) : jamais de retour au brouillon, `credited`/`cancelled` jamais posés à la main, contenu des devis et bons de commande figé hors brouillon (il ne l'était que dans l'interface), renvoi par email sans écraser un statut payé/accepté/crédité, relance refusée sur une facture brouillon/payée/créditée, conversion limitée aux devis envoyés ou acceptés, création toujours en brouillon. 23 tests. Cascade des documents et cahier des charges de la signature en ligne consignés (section 11 de `DECISIONS-STRATEGIQUES.md`), nouvelle règle dans `CLAUDE.md` | `lib/utils/document-status.ts`, `app/api/invoices/route.ts`, `app/api/invoices/[id]/{route,send/route,remind/route}.ts`, `app/api/quotes/[id]/{route,send/route,convert/route}.ts`, `app/api/purchase-orders/[id]/{route,send/route}.ts`, `__tests__/document-status.test.ts`, `DECISIONS-STRATEGIQUES.md`, `CLAUDE.md` |
 | 2026-10-01 | Maquettes de la signature en ligne (canevas de design, version 17 ; aucun code applicatif) : pages client sur ordinateur et téléphone pour le devis d'un particulier (certification du taux réduit de TVA, information et demande de démarrage anticipé pendant les 14 jours de rétractation, signature tracée ou tapée) et le bon de commande d'un professionnel (fonction, numéro de commande client, code de vérification par email au-delà de 5 000 € TTC), refus avec motif, confirmation avec acompte, PDF signé et certificat ; planche des états du lien (signé, expiré, remplacé, désactivé, rétractation, lien introuvable) ; signature sur place sur le téléphone de l'artisan avec les règles du hors établissement (aucun paiement avant 7 jours) ; huit emails ; côté artisan, panneau « Signature en ligne » et fenêtre de partage ajoutés aux 12 fiches devis et 5 bons de commande, réglages dans Paramètres › Modèles. Mention « sous réserve de l'attestation du client » (supprimée en 2025) remplacée sur toutes les planches | `DECISIONS-STRATEGIQUES.md` |
+| 2026-10-02 | Retrait de l'app iOS native, décidé avec le fondateur : un abonnement vendu à un artisan seul relève de l'achat intégré d'Apple (règle 3.1.3(c)), et l'autre voie (3.1.3(f)) interdit tout prix ou bouton d'achat dans l'app, donc le mur de paiement à la première facture. Supprimés : coquille Capacitor (`capacitor.config.ts`, `ios/`, `capacitor/`, `assets/`), `lib/native/`, `components/native/` (amorçage push, carrousel, écran de confidentialité), émetteur APNs et son branchement dans le cron de relances, route `/api/native/push-token`, capture photo du logo, dépendances `@capacitor/*`, variables `APNS_*`, `IOS-APP.md`. Conservé : la PWA (service worker, manifest, écrans de démarrage, invite d'installation). La table `push_tokens` n'est plus utilisée | `app/layout.tsx`, `app/api/cron/send-reminders/route.ts`, `components/layout/{Header,Sidebar}.tsx`, `components/pwa/InstallPrompt.tsx`, `components/settings/InvoiceSettingsForm.tsx`, `scripts/generate-pwa-assets.mjs`, `package.json`, `.env.example`, `CLAUDE.md` |
+| 2026-10-02 | Abonnement refait pour « devis gratuits, factures payantes », grille validée : Essentiel 12 € HT/mois ou 120 € HT/an ; Artisan 24 € HT affiché « bientôt » et non vendu tant que ses fonctions manquent. Comptes gratuits : le middleware ne vérifie plus l'abonnement, plus d'étape « plan » à l'inscription, accès aux documents conservé après résiliation ou impayé (délai de grâce). Mur de paiement côté serveur à l'émission (`requireIssuingAccess` : envoi, sortie du brouillon, relance, cron des relances), fenêtre « Votre facture est prête », puis retour sur la facture après paiement (`?send=1`, chemin filtré par `safeNextPath`). PDF de brouillon et d'aperçu filigranés et sans XML, Factur-X refusé pour un brouillon, filigrane à l'écran et à l'impression. Paiement : carte et prélèvement SEPA, TVA 20 % par taux Stripe obligatoire, nom, adresse et SIREN de l'entreprise sur les factures Stripe, webhooks des prélèvements différés. Garantie 30 jours en libre-service (avoir Stripe, arrêt immédiat, une fois par compte). Bugs corrigés : réactivation après paiement jamais appliquée (`invoice.subscription` absent de l'API 2025), `redirect()` intercepté par un try/catch (page de retour, récupération d'abonnement), « Envoyer » depuis la page de modification qui ne partait pas par email. Faille fermée : la RLS laissait un utilisateur s'écrire un abonnement actif depuis son navigateur (migration à appliquer). Retirés : fausse note 4,8/5 (47 avis) des données structurées, promesses fausses de la page Tarifs. CGU article 4 réécrit. 22 tests | `lib/stripe/{access,plans,subscription,guarantee,recovery}.ts`, `app/api/stripe/{checkout,guarantee}/route.ts`, `app/api/webhooks/stripe/route.ts`, `app/api/invoices/**`, `app/api/cron/send-reminders/route.ts`, `lib/supabase/middleware.ts`, `lib/pdf/invoice.ts`, `components/billing/{PricingSelector,PaywallDialog,BillingPageClient}.tsx`, `components/invoices/{InvoiceDetail,NewInvoiceForm}.tsx`, `app/{pricing,signup/plan,settings/billing}/**`, `app/layout.tsx`, `app/page.tsx`, `app/cgu/page.tsx`, `supabase/migrations/20261002_subscriptions_server_write_only.sql`, `__tests__/subscription-access.test.ts` |

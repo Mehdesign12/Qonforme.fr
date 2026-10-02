@@ -40,6 +40,12 @@ export async function PATCH(
 
   const billingPeriod = (sub.billing_period ?? 'monthly') as 'monthly' | 'yearly'
   const newPriceId = PLANS[newPlan as PlanId].stripePriceIds[billingPeriod]
+  if (!newPriceId && (sub.stripe_subscription_id || sub.stripe_customer_id)) {
+    return NextResponse.json(
+      { error: `Prix Stripe non configuré pour la formule ${PLANS[newPlan as PlanId].name} (${billingPeriod})` },
+      { status: 400 }
+    )
+  }
 
   // ── Résoudre la subscription Stripe ────────────────────────────────────
   // Cas 1 : stripe_subscription_id présent en DB → utilisation directe

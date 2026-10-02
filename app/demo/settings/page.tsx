@@ -8,7 +8,7 @@ const settingsLinks = [
   { href: "/demo/settings", label: "Mon entreprise", desc: "Raison sociale, SIREN, adresse, IBAN", icon: Building2 },
   { href: "/demo/settings", label: "Préférences factures", desc: "Numérotation, mentions personnalisées, logo", icon: FileText },
   { href: "/demo/settings", label: "Notifications", desc: "Emails de confirmation, alertes de retard", icon: Bell },
-  { href: "/demo/settings", label: "Abonnement", desc: "Plan Pro actif · Renouvellement le 07/04/2026", icon: CreditCard },
+  { href: "/demo/settings", label: "Abonnement", desc: "Formule Essentiel active · Prochain paiement le 07/04/2026", icon: CreditCard },
 ]
 
 export default function DemoSettingsPage() {

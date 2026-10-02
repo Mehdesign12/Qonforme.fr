@@ -35,13 +35,15 @@ export async function GET(request: NextRequest, { params }: Params) {
       .eq("user_id", user.id)
       .single()
 
-    const buffer = await generateInvoicePdf({ invoice, company })
+    // Une facture pas encore émise sort filigranée « BROUILLON », sans XML Factur-X
+    const isDraft = invoice.status === "draft"
+    const buffer = await generateInvoicePdf({ invoice, company, watermark: isDraft ? "BROUILLON" : undefined })
 
     return new Response(buffer.buffer as ArrayBuffer, {
       status: 200,
       headers: {
         "Content-Type":        "application/pdf",
-        "Content-Disposition": `attachment; filename="${invoice.invoice_number}.pdf"`,
+        "Content-Disposition": `attachment; filename="${isDraft ? "brouillon-" : ""}${invoice.invoice_number}.pdf"`,
         "Cache-Control":       "no-store",
         "X-Facturx-Profile":   "EN 16931",
       },

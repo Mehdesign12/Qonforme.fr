@@ -140,7 +140,7 @@ export default function DemoDashboardPage() {
           </div>
           <div>
             <p className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0] group-hover:text-[#2563EB] transition-colors">Prêt à démarrer ?</p>
-            <p className="text-[12px] text-slate-400">Voir les tarifs — à partir de 9 €/mois</p>
+            <p className="text-[12px] text-slate-400">Voir les tarifs — devis gratuits</p>
           </div>
         </Link>
         <Link href="/blog" className="group flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35] p-5 hover:border-[#2563EB]/30 hover:shadow-md transition-all">

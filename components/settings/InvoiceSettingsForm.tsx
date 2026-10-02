@@ -5,13 +5,11 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import {
   Loader2, Upload, Trash2, ImageIcon,
-  Info, CheckCircle2, Camera
+  Info, CheckCircle2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { createClient } from "@/lib/supabase/client"
-import { capturePhoto } from "@/lib/native/camera"
-import { isNativeApp } from "@/lib/native/platform"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -98,7 +96,7 @@ export function InvoiceSettingsForm() {
     return {}
   }
 
-  /* Upload logo — partagé entre le <input type=file> et la capture caméra native */
+  /* Upload logo */
   const uploadLogoFile = async (file: File) => {
     // Prévisualisation locale immédiate
     const reader = new FileReader()
@@ -126,13 +124,6 @@ export function InvoiceSettingsForm() {
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    await uploadLogoFile(file)
-  }
-
-  /* Capture caméra native — même flux d'upload que le choix de fichier. */
-  const handleCameraCapture = async () => {
-    const file = await capturePhoto("logo.jpg")
-    if (!file) return // annulé, ou capture impossible — déjà logué dans capturePhoto()
     await uploadLogoFile(file)
   }
 
@@ -222,19 +213,6 @@ export function InvoiceSettingsForm() {
               <Upload className="w-3.5 h-3.5" />
               {logoPreview ? "Changer le logo" : "Uploader un logo"}
             </Button>
-            {isNativeApp() && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-1.5 w-full"
-                onClick={handleCameraCapture}
-                disabled={logoUploading}
-              >
-                <Camera className="w-3.5 h-3.5" />
-                Prendre une photo
-              </Button>
-            )}
             {logoPreview && (
               <Button
                 type="button"

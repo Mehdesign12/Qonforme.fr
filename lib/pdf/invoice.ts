@@ -3,7 +3,7 @@
  * Génération PDF Factur-X pour les factures.
  * Réutilisé par la route GET /api/invoices/[id]/pdf ET par la route POST /send.
  */
-import { PDFDocument, rgb, PageSizes } from "pdf-lib"
+import { PDFDocument, rgb, PageSizes, degrees } from "pdf-lib"
 import fontkit from "@pdf-lib/fontkit"
 import { generateFacturXml } from "@/lib/facturx/xml"
 import type { FxInvoice } from "@/lib/facturx/xml"
@@ -78,11 +78,19 @@ export interface InvoicePdfInput {
     accent_color?: string
     logo_url?: string
   } | null
+  /**
+   * Filigrane d'un document qui n'est pas une facture émise : « BROUILLON »
+   * (facture pas encore émise) ou « APERÇU ». Sans lui, le PDF d'un brouillon
+   * pourrait circuler comme une vraie facture, numéro compris, et contourner le
+   * mur de paiement. Un PDF filigrané n'embarque pas non plus de XML Factur-X.
+   * Jamais passé par la route d'envoi : envoyer, c'est émettre.
+   */
+  watermark?: "BROUILLON" | "APERÇU"
 }
 
 // ── Générateur principal ─────────────────────────────────────────────────────
 
-export async function generateInvoicePdf({ invoice, company }: InvoicePdfInput): Promise<Uint8Array> {
+export async function generateInvoicePdf({ invoice, company, watermark }: InvoicePdfInput): Promise<Uint8Array> {
   // XML Factur-X
   const fxData: FxInvoice = {
     invoice_number: invoice.invoice_number,
@@ -339,22 +347,45 @@ export async function generateInvoicePdf({ invoice, company }: InvoicePdfInput):
   draw(`${company?.name ?? "Qonforme"} — ${invoice.invoice_number}`, mL, 20, { size: 7, color: grayLight })
   draw("Factur-X EN 16931 — Généré par Qonforme", mR, 20, { size: 7, color: accent, align: "right" })
 
+  // Filigrane (brouillon, aperçu) — dessiné en dernier pour rester au-dessus du contenu
+  if (watermark) {
+    const size = 92
+    const tw   = fontBold.widthOfTextAtSize(watermark, size)
+    const angle = 35 * Math.PI / 180
+    page.drawText(watermark, {
+      x: width / 2 - (tw / 2) * Math.cos(angle) + (size / 3) * Math.sin(angle),
+      y: height / 2 - (tw / 2) * Math.sin(angle) - (size / 3) * Math.cos(angle),
+      size,
+      font: fontBold,
+      color: rgb(0.86, 0.15, 0.15),
+      opacity: 0.14,
+      rotate: degrees(35),
+    })
+    const notice = watermark === "BROUILLON"
+      ? "Brouillon : ce document n'est pas une facture émise."
+      : "Aperçu : ce document n'est pas une facture émise."
+    const nw = fontBold.widthOfTextAtSize(notice, 9)
+    page.drawText(notice, { x: (width - nw) / 2, y: height - 24, size: 9, font: fontBold, color: rgb(0.73, 0.11, 0.11) })
+  }
+
   // Métadonnées
-  doc.setTitle(`Facture ${invoice.invoice_number}`)
+  doc.setTitle(watermark ? `${watermark === "BROUILLON" ? "Brouillon" : "Aperçu"} — facture ${invoice.invoice_number}` : `Facture ${invoice.invoice_number}`)
   doc.setAuthor(company?.name ?? "Qonforme")
   doc.setSubject(`Facture electronique Factur-X — ${invoice.invoice_number}`)
   doc.setProducer("Qonforme — pdf-lib + Factur-X")
   doc.setCreator("Qonforme Factur-X Generator")
   doc.setKeywords(["facture", "factur-x", "EN 16931", invoice.invoice_number])
 
-  // Attacher XML Factur-X
-  const xmlBytes = new TextEncoder().encode(xmlContent)
-  await doc.attach(xmlBytes, "factur-x.xml", {
-    mimeType:         "application/xml",
-    description:      "Factur-X EN 16931",
-    creationDate:     new Date(),
-    modificationDate: new Date(),
-  })
+  // Attacher XML Factur-X — jamais sur un brouillon ou un aperçu
+  if (!watermark) {
+    const xmlBytes = new TextEncoder().encode(xmlContent)
+    await doc.attach(xmlBytes, "factur-x.xml", {
+      mimeType:         "application/xml",
+      description:      "Factur-X EN 16931",
+      creationDate:     new Date(),
+      modificationDate: new Date(),
+    })
+  }
 
   const pdfBytes = await doc.save()
   return pdfBytes

@@ -1,10 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe/client'
-import { PLANS, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { PLANS, isPlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { getSubscriptionByUserId } from '@/lib/stripe/subscription'
+import { canIssueInvoices, safeNextPath, GUARANTEE_DAYS } from '@/lib/stripe/access'
 
+/**
+ * POST /api/stripe/checkout — ouvre le paiement d'une formule (Checkout intégré).
+ *
+ * Appelé depuis la page de choix de formule ou depuis le mur de paiement qui
+ * s'affiche à l'envoi de la première facture. `next` ramène l'artisan à cette
+ * facture une fois le paiement confirmé.
+ *
+ * Moyens de paiement : carte et prélèvement SEPA. Le prélèvement met quelques
+ * jours ouvrés à être confirmé ; l'accès est ouvert dès la fin du paiement
+ * (l'abonnement est actif chez Stripe) et retiré si le prélèvement est rejeté
+ * (webhook : checkout.session.async_payment_failed, invoice.payment_failed).
+ *
+ * TVA : les prix sont hors taxes, le taux Stripe STRIPE_TAX_RATE_ID (20 %) est
+ * ajouté à l'abonnement. Sans lui, on refuse de vendre plutôt que de facturer
+ * sans TVA un prix annoncé hors taxes.
+ */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -14,111 +32,136 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { planId, billingPeriod } = body as { planId: PlanId; billingPeriod: BillingPeriod }
+    const body = await request.json().catch(() => ({}))
+    const planId: unknown = body?.planId
+    const billingPeriod: unknown = body?.billingPeriod
+    const next = safeNextPath(body?.next)
 
-    if (!planId || !['starter', 'pro'].includes(planId)) {
-      return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
+    if (!isPlanId(planId)) {
+      return NextResponse.json({ error: 'Formule invalide' }, { status: 400 })
     }
-    if (!billingPeriod || !['monthly', 'yearly'].includes(billingPeriod)) {
+    if (billingPeriod !== 'monthly' && billingPeriod !== 'yearly') {
       return NextResponse.json({ error: 'Période de facturation invalide' }, { status: 400 })
     }
 
     const plan = PLANS[planId]
-    const priceId = plan.stripePriceIds[billingPeriod]
+    if (!plan.available) {
+      return NextResponse.json({ error: `La formule ${plan.name} n'est pas encore disponible.` }, { status: 400 })
+    }
 
-    if (!priceId) {
+    const priceId = plan.stripePriceIds[billingPeriod as BillingPeriod]
+    const taxRateId = process.env.STRIPE_TAX_RATE_ID ?? ''
+
+    if (!priceId || !taxRateId) {
+      console.error('[checkout] Configuration Stripe incomplète', {
+        priceId: Boolean(priceId),
+        taxRateId: Boolean(taxRateId),
+      })
       return NextResponse.json(
-        { error: "Prix Stripe non configuré. Vérifie les variables d'environnement." },
+        { error: 'Le paiement est momentanément indisponible. Réessayez plus tard.' },
         { status: 500 }
       )
+    }
+
+    // Déjà abonné : on n'ouvre pas un second abonnement, on renvoie vers la suite
+    const existingSub = await getSubscriptionByUserId(user.id)
+    if (existingSub && canIssueInvoices(existingSub.status) && existingSub.stripe_subscription_id) {
+      return NextResponse.json({ alreadySubscribed: true, next: next ?? '/settings/billing' })
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://qonforme.fr'
     const admin = createAdminClient()
 
-    // ── Récupérer ou créer le customer Stripe ───────────────────────────────
-    let stripeCustomerId: string
+    // ── Coordonnées de facturation : celles de l'entreprise de l'artisan ─────
+    // Elles apparaissent sur les factures d'abonnement émises par Stripe,
+    // SIREN compris (mention obligatoire de la réforme de la facturation).
+    const { data: company } = await supabase
+      .from('companies')
+      .select('name, email, siren, address, zip_code, city')
+      .eq('user_id', user.id)
+      .maybeSingle()
 
-    const existingSub = await getSubscriptionByUserId(user.id)
-    if (existingSub?.stripe_customer_id) {
-      stripeCustomerId = existingSub.stripe_customer_id
-    } else {
-      // Vérifier si un customer existe déjà dans Stripe pour cet email (évite les doublons)
-      let existingCustomerId: string | null = null
-      if (user.email) {
-        const existing = await stripe.customers.list({ email: user.email, limit: 1 })
-        if (existing.data.length > 0) {
-          existingCustomerId = existing.data[0].id
-          // S'assurer que les métadonnées contiennent le user_id
-          await stripe.customers.update(existingCustomerId, {
-            metadata: { user_id: user.id, supabase_user_id: user.id },
-          })
-        }
-      }
-
-      if (existingCustomerId) {
-        stripeCustomerId = existingCustomerId
-      } else {
-        const { data: company } = await supabase
-          .from('companies')
-          .select('name, email')
-          .eq('user_id', user.id)
-          .single()
-
-        const customer = await stripe.customers.create({
-          email: user.email ?? company?.email ?? undefined,
-          name: company?.name ?? undefined,
-          metadata: {
-            user_id: user.id,
-            supabase_user_id: user.id,
-          },
-        })
-        stripeCustomerId = customer.id
-      }
-
-      // ✅ CRITIQUE : sauvegarder stripe_customer_id en DB DÈS MAINTENANT
-      // Même avant le paiement, ça permet à la page billing de retrouver le customer
-      const { data: existingRow } = await admin
-        .from('subscriptions')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (existingRow) {
-        await admin
-          .from('subscriptions')
-          .update({
-            stripe_customer_id: stripeCustomerId,
-            plan: planId,
-            billing_period: billingPeriod,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user.id)
-      } else {
-        // Créer la ligne avec statut 'incomplete' — sera mise à jour par le webhook
-        await admin
-          .from('subscriptions')
-          .insert({
-            user_id: user.id,
-            stripe_customer_id: stripeCustomerId,
-            plan: planId,
-            billing_period: billingPeriod,
-            status: 'incomplete',
-          })
-      }
-
-      console.log(`[checkout] stripe_customer_id ${stripeCustomerId} sauvegardé pour user ${user.id}`)
+    const customerDetails: Stripe.CustomerUpdateParams = {
+      name: company?.name || undefined,
+      preferred_locales: ['fr'],
+      metadata: { user_id: user.id, supabase_user_id: user.id },
+      ...(company?.address && company?.zip_code && company?.city
+        ? { address: { line1: company.address, postal_code: company.zip_code, city: company.city, country: 'FR' } }
+        : {}),
+      ...(company?.siren
+        ? { invoice_settings: { custom_fields: [{ name: 'SIREN', value: String(company.siren) }] } }
+        : {}),
     }
 
-    // ── Créer la Checkout Session en mode embedded ──────────────────────────
-    // Les params sont extraits pour pouvoir réessayer en cas de customer ID périmé
-    const sessionConfig = {
-      ui_mode: 'embedded' as const,
-      mode: 'subscription' as const,
-      payment_method_types: ['card'] as ['card'],
+    // ── Récupérer ou créer le customer Stripe ───────────────────────────────
+    let stripeCustomerId: string | null = existingSub?.stripe_customer_id ?? null
+
+    if (!stripeCustomerId && user.email) {
+      // Évite les doublons : un customer peut exister pour cet email
+      const existing = await stripe.customers.list({ email: user.email, limit: 1 })
+      stripeCustomerId = existing.data[0]?.id ?? null
+    }
+
+    const createCustomer = async () => {
+      const customer = await stripe.customers.create({
+        ...(customerDetails as Stripe.CustomerCreateParams),
+        email: user.email ?? company?.email ?? undefined,
+      })
+      return customer.id
+    }
+
+    if (stripeCustomerId) {
+      try {
+        await stripe.customers.update(stripeCustomerId, customerDetails)
+      } catch (err: unknown) {
+        // Customer supprimé ou d'un autre mode (test/production) : on en recrée un
+        const e = err as { code?: string; statusCode?: number }
+        if (e?.code === 'resource_missing' || e?.statusCode === 404) {
+          console.warn(`[checkout] Customer Stripe ${stripeCustomerId} invalide → création d'un nouveau`)
+          stripeCustomerId = await createCustomer()
+        } else {
+          throw err
+        }
+      }
+    } else {
+      stripeCustomerId = await createCustomer()
+    }
+
+    // Enregistré tout de suite : la page Abonnement retrouve le customer même
+    // si le paiement n'aboutit pas. Statut 'incomplete' tant que Stripe n'a pas
+    // confirmé — un compte sans formule reste un compte gratuit.
+    if (existingSub) {
+      await admin
+        .from('subscriptions')
+        .update({
+          stripe_customer_id: stripeCustomerId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+    } else {
+      await admin
+        .from('subscriptions')
+        .insert({
+          user_id: user.id,
+          stripe_customer_id: stripeCustomerId,
+          plan: planId,
+          billing_period: billingPeriod,
+          status: 'incomplete',
+        })
+    }
+
+    const returnParams = new URLSearchParams({ session_id: '{CHECKOUT_SESSION_ID}' })
+    if (next) returnParams.set('next', next)
+    // URLSearchParams encode les accolades : Stripe attend le littéral {CHECKOUT_SESSION_ID}
+    const returnQuery = returnParams.toString().replace('%7BCHECKOUT_SESSION_ID%7D', '{CHECKOUT_SESSION_ID}')
+
+    const session = await stripe.checkout.sessions.create({
+      customer: stripeCustomerId,
+      ui_mode: 'embedded',
+      mode: 'subscription',
+      payment_method_types: ['card', 'sepa_debit'],
       line_items: [{ price: priceId, quantity: 1 }],
-      // Triple filet pour récupérer user_id dans le webhook
+      // Triple filet pour retrouver le user_id dans le webhook
       client_reference_id: user.id,
       metadata: {
         user_id: user.id,
@@ -126,62 +169,31 @@ export async function POST(request: NextRequest) {
         billing_period: billingPeriod,
       },
       subscription_data: {
+        default_tax_rates: [taxRateId],
         metadata: {
           user_id: user.id,
           plan: planId,
           billing_period: billingPeriod,
         },
       },
-      // return_url = fallback Stripe si onComplete client ne se déclenche pas (ex: Safari mobile)
-      // {CHECKOUT_SESSION_ID} est remplacé automatiquement par Stripe avec l'ID réel de la session.
-      // /pricing/return lit cet ID, vérifie le statut, active l'abonnement en DB si nécessaire,
-      // puis redirige vers /dashboard — indépendamment du webhook.
-      return_url: `${appUrl}/pricing/return?session_id={CHECKOUT_SESSION_ID}`,
-      locale: 'fr' as const,
+      // Filet si onComplete ne se déclenche pas côté navigateur (Safari mobile) :
+      // /pricing/return vérifie la session, active la formule, puis renvoie vers `next`.
+      return_url: `${appUrl}/pricing/return?${returnQuery}`,
+      locale: 'fr',
       allow_promotion_codes: false,
-      // Produit digital : on ne collecte pas l'adresse
-      billing_address_collection: 'auto' as const,
-    }
+      billing_address_collection: 'auto',
+      custom_text: {
+        submit: {
+          message: `Satisfait ou remboursé pendant ${GUARANTEE_DAYS} jours après votre premier paiement. Sans engagement : résiliable à tout moment depuis votre espace.`,
+        },
+      },
+    })
 
-    let session
-    try {
-      session = await stripe.checkout.sessions.create({
-        customer: stripeCustomerId,
-        ...sessionConfig,
-      })
-    } catch (stripeErr: unknown) {
-      // Si le customer ID est invalide (ex : ID test-mode en production, customer supprimé)
-      // → on crée un nouveau customer et on réessaie
-      const e = stripeErr as { code?: string; statusCode?: number }
-      if (e?.code === 'resource_missing' || e?.statusCode === 404) {
-        console.warn(`[checkout] Customer Stripe ${stripeCustomerId} invalide → création d'un nouveau customer`)
-        const newCustomer = await stripe.customers.create({
-          email: user.email ?? undefined,
-          metadata: { user_id: user.id, supabase_user_id: user.id },
-        })
-        stripeCustomerId = newCustomer.id
-        await admin
-          .from('subscriptions')
-          .update({
-            stripe_customer_id: stripeCustomerId,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user.id)
-        session = await stripe.checkout.sessions.create({
-          customer: stripeCustomerId,
-          ...sessionConfig,
-        })
-      } else {
-        throw stripeErr
-      }
-    }
-
-    // Retourner le client_secret (pas l'URL) pour l'Embedded Checkout
     return NextResponse.json({ clientSecret: session.client_secret })
   } catch (err) {
     console.error('[/api/stripe/checkout] Erreur:', err)
     return NextResponse.json(
-      { error: 'Erreur serveur lors de la création du checkout' },
+      { error: 'Erreur serveur lors de la création du paiement' },
       { status: 500 }
     )
   }

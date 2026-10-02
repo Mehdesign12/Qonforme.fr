@@ -724,6 +724,8 @@ CRON_SECRET=
 | 2026-10-01 | Logo personnalisé dans les maquettes Paramètres › Entreprise (compte actif et compte neuf) : zone de dépôt, logo réellement affiché une fois importé, remplacer/retirer, aperçu en direct sur un devis ; tuile « Ajouter votre logo » sur le tableau de bord du compte neuf. Inventaire de la refonte comparé au code en ligne (section 10 de `DECISIONS-STRATEGIQUES.md`) : statut existe / partiel / à construire de chaque apport et ordre suggéré. Constats dans le code, non corrigés ici : une facture relancée passe au statut `overdue` et sort des montants « en attente » et « en retard » du tableau de bord ; la FAQ tarifs affirme gérer l'autoliquidation, absente du code | `DECISIONS-STRATEGIQUES.md` |
 | 2026-10-01 | Fix faille documents émis : un `PATCH { status: "draft" }` remettait une facture émise en brouillon (puis modifiable et supprimable). Liste blanche des changements de statut côté serveur pour factures, devis et bons de commande (`lib/utils/document-status.ts`) : jamais de retour au brouillon, `credited`/`cancelled` jamais posés à la main, contenu des devis et bons de commande figé hors brouillon (il ne l'était que dans l'interface), renvoi par email sans écraser un statut payé/accepté/crédité, relance refusée sur une facture brouillon/payée/créditée, conversion limitée aux devis envoyés ou acceptés, création toujours en brouillon. 23 tests. Cascade des documents et cahier des charges de la signature en ligne consignés (section 11 de `DECISIONS-STRATEGIQUES.md`), nouvelle règle dans `CLAUDE.md` | `lib/utils/document-status.ts`, `app/api/invoices/route.ts`, `app/api/invoices/[id]/{route,send/route,remind/route}.ts`, `app/api/quotes/[id]/{route,send/route,convert/route}.ts`, `app/api/purchase-orders/[id]/{route,send/route}.ts`, `__tests__/document-status.test.ts`, `DECISIONS-STRATEGIQUES.md`, `CLAUDE.md` |
 | 2026-10-01 | Maquettes de la signature en ligne (canevas de design, version 17 ; aucun code applicatif) : pages client sur ordinateur et téléphone pour le devis d'un particulier (certification du taux réduit de TVA, information et demande de démarrage anticipé pendant les 14 jours de rétractation, signature tracée ou tapée) et le bon de commande d'un professionnel (fonction, numéro de commande client, code de vérification par email au-delà de 5 000 € TTC), refus avec motif, confirmation avec acompte, PDF signé et certificat ; planche des états du lien (signé, expiré, remplacé, désactivé, rétractation, lien introuvable) ; signature sur place sur le téléphone de l'artisan avec les règles du hors établissement (aucun paiement avant 7 jours) ; huit emails ; côté artisan, panneau « Signature en ligne » et fenêtre de partage ajoutés aux 12 fiches devis et 5 bons de commande, réglages dans Paramètres › Modèles. Mention « sous réserve de l'attestation du client » (supprimée en 2025) remplacée sur toutes les planches | `DECISIONS-STRATEGIQUES.md` |
+| 2026-10-02 | Retrait de l'app iOS native, décidé avec le fondateur : un abonnement vendu à un artisan seul relève de l'achat intégré d'Apple (règle 3.1.3(c)), et l'autre voie (3.1.3(f)) interdit tout prix ou bouton d'achat dans l'app, donc le mur de paiement à la première facture. Supprimés : coquille Capacitor (`capacitor.config.ts`, `ios/`, `capacitor/`, `assets/`), `lib/native/`, `components/native/` (amorçage push, carrousel, écran de confidentialité), émetteur APNs et son branchement dans le cron de relances, route `/api/native/push-token`, capture photo du logo, dépendances `@capacitor/*`, variables `APNS_*`, `IOS-APP.md`. Conservé : la PWA (service worker, manifest, écrans de démarrage, invite d'installation). La table `push_tokens` n'est plus utilisée | `app/layout.tsx`, `app/api/cron/send-reminders/route.ts`, `components/layout/{Header,Sidebar}.tsx`, `components/pwa/InstallPrompt.tsx`, `components/settings/InvoiceSettingsForm.tsx`, `scripts/generate-pwa-assets.mjs`, `package.json`, `.env.example`, `CLAUDE.md` |
+| 2026-10-02 | Abonnement refait pour « devis gratuits, factures payantes », grille validée : Essentiel 12 € HT/mois ou 120 € HT/an ; Artisan 24 € HT affiché « bientôt » et non vendu tant que ses fonctions manquent. Comptes gratuits : le middleware ne vérifie plus l'abonnement, plus d'étape « plan » à l'inscription, accès aux documents conservé après résiliation ou impayé (délai de grâce). Mur de paiement côté serveur à l'émission (`requireIssuingAccess` : envoi, sortie du brouillon, relance, cron des relances), fenêtre « Votre facture est prête », puis retour sur la facture après paiement (`?send=1`, chemin filtré par `safeNextPath`). PDF de brouillon et d'aperçu filigranés et sans XML, Factur-X refusé pour un brouillon, filigrane à l'écran et à l'impression. Paiement : carte et prélèvement SEPA, TVA 20 % par taux Stripe obligatoire, nom, adresse et SIREN de l'entreprise sur les factures Stripe, webhooks des prélèvements différés. Garantie 30 jours en libre-service (avoir Stripe, arrêt immédiat, une fois par compte). Bugs corrigés : réactivation après paiement jamais appliquée (`invoice.subscription` absent de l'API 2025), `redirect()` intercepté par un try/catch (page de retour, récupération d'abonnement), « Envoyer » depuis la page de modification qui ne partait pas par email. Faille fermée : la RLS laissait un utilisateur s'écrire un abonnement actif depuis son navigateur (migration à appliquer). Retirés : fausse note 4,8/5 (47 avis) des données structurées, promesses fausses de la page Tarifs. CGU article 4 réécrit. 22 tests | `lib/stripe/{access,plans,subscription,guarantee,recovery}.ts`, `app/api/stripe/{checkout,guarantee}/route.ts`, `app/api/webhooks/stripe/route.ts`, `app/api/invoices/**`, `app/api/cron/send-reminders/route.ts`, `lib/supabase/middleware.ts`, `lib/pdf/invoice.ts`, `components/billing/{PricingSelector,PaywallDialog,BillingPageClient}.tsx`, `components/invoices/{InvoiceDetail,NewInvoiceForm}.tsx`, `app/{pricing,signup/plan,settings/billing}/**`, `app/layout.tsx`, `app/page.tsx`, `app/cgu/page.tsx`, `supabase/migrations/20261002_subscriptions_server_write_only.sql`, `__tests__/subscription-access.test.ts` |
 
 ---
 
@@ -1002,57 +1004,11 @@ CRON_SECRET=
 
 ---
 
-## 📱 App mobile iOS & Android — Plan (Capacitor)
+## 📱 App mobile — abandonnée au profit de la PWA (02/10/2026)
 
-> Option retenue : **Capacitor en mode Remote URL** — wrapper natif autour de `https://qonforme.fr`.
-> L'app charge le site Vercel dans une WebView plein écran. Mises à jour instantanées, 0 rebuild natif.
-
-### Prérequis
-- Compte Apple Developer (99 €/an) — https://developer.apple.com
-- Compte Google Play Console (25 € one-time) — https://play.google.com/console
-- Un Mac avec Xcode pour le build iOS
-- Android Studio (Mac ou PC) pour le build Android
-
-### Étapes
-
-#### M1. Setup Capacitor
-- [ ] `npm install @capacitor/core @capacitor/cli`
-- [ ] `npx cap init "Qonforme" "fr.qonforme.app"`
-- [ ] `npx cap add ios && npx cap add android`
-- [ ] Configurer `capacitor.config.ts` : `server.url = "https://qonforme.fr"`
-
-#### M2. Assets
-- [ ] Icône 1024x1024 (App Store + Play Store)
-- [ ] Splash screen 2732x2732
-- [ ] Screenshots pour les fiches stores (iPhone 6.7", iPad, Android)
-
-#### M3. Build iOS
-- [ ] `npx cap open ios` → Xcode
-- [ ] Signer avec le certificat Apple Developer
-- [ ] Tester simulateur + appareil réel
-- [ ] Soumettre à l'App Store (review : 1-3 jours)
-
-#### M4. Build Android
-- [ ] `npx cap open android` → Android Studio
-- [ ] Générer l'AAB signé
-- [ ] Soumettre au Play Store (review : quelques heures)
-
-#### M5. Optionnel — Fonctionnalités natives
-- [ ] Notifications push (Firebase + APNs)
-- [ ] Scanner de documents (caméra)
-- [ ] Deep links (`qonforme.fr/*` → ouvre l'app)
-
-### Coûts
-| Poste | Coût |
-|-------|------|
-| Apple Developer | 99 €/an |
-| Google Play | 25 € (one-time) |
-| Capacitor | Gratuit (open-source) |
-| **Total année 1** | **~125 €** |
-
-### Maintenance
-- Mises à jour du site sur Vercel → l'app se met à jour automatiquement
-- Republication stores uniquement si changement d'icône, splash screen ou permissions natives
+L'app native iOS (Capacitor) a été retirée du code. Le mobile passe par le site
+responsive, installable sur l'écran d'accueil (PWA). Raison et règle : `CLAUDE.md`,
+section « Pas d'app native ».
 
 ---
 

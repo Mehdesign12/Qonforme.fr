@@ -15,6 +15,7 @@ import { motion, AnimatePresence, useInView, useScroll, useTransform, useMotionV
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { LandingHero } from "@/components/landing/LandingHero";
 import Footer from "@/components/layout/Footer";
+import PricingSelector from "@/components/billing/PricingSelector";
 
 
 const PICTO_Q =
@@ -782,11 +783,9 @@ function TestimonialsSection() {
 }
 
 /* ─────────────────────────────────────────────────────────
-   SECTION PRICING — toggle mensuel/annuel + cards améliorées
+   SECTION PRICING — grille partagée avec /pricing (PricingSelector)
 ───────────────────────────────────────────────────────── */
 function PricingSection() {
-  const [annual, setAnnual] = useState(false);
-
   return (
     <section id="pricing" className="relative overflow-hidden py-20 sm:py-24" style={{ background: "linear-gradient(135deg, #EFF6FF 0%, #F5F3FF 40%, #E0F2FE 70%, #EFF6FF 100%)" }}>
       {/* Q filigrane background */}
@@ -797,151 +796,17 @@ function PricingSection() {
         <FadeIn className="text-center mb-8 flex flex-col items-center gap-3">
           <SectionPill label="TARIFS" />
           <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-[#0F172A] sm:text-4xl" style={{ fontFamily: "var(--font-bricolage)" }}>
-            Un prix fixe.{" "}
-            <span className="text-[#2563EB]">Aucune surprise.</span>
+            Vos devis sont gratuits.{" "}
+            <span className="text-[#2563EB]">Vous payez quand vous facturez.</span>
           </h2>
           <p className="text-slate-500 max-w-md">
-            Tout ce qu&apos;il faut pour être conforme. Sans engagement, résiliable en 1 clic.
+            Commencez sans carte bancaire. La formule se choisit au moment d&apos;envoyer votre première facture.
           </p>
-
-          {/* Toggle mensuel / annuel — plus gros */}
-          <div className="mt-3 flex items-center gap-1 rounded-full border border-[#E2E8F0] bg-[#F8FAFC] p-1">
-            <button
-              onClick={() => setAnnual(false)}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition-all ${!annual ? "bg-[#2563EB] text-white shadow-sm" : "text-slate-500 hover:text-[#0F172A]"}`}
-            >
-              Mensuel
-            </button>
-            <button
-              onClick={() => setAnnual(true)}
-              className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all ${annual ? "bg-[#2563EB] text-white shadow-sm" : "text-slate-500 hover:text-[#0F172A]"}`}
-            >
-              Annuel
-              <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${annual ? "bg-white/20 text-white" : "bg-[#D1FAE5] text-[#065F46]"}`}>-16%</span>
-            </button>
-          </div>
         </FadeIn>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl mx-auto">
-          {/* ── Card Starter ── */}
-          <FadeIn delay={0.15} x={-10} className="bg-white rounded-2xl p-6 sm:p-7 border border-[#E2E8F0] shadow-sm flex flex-col">
-            <span className="w-fit rounded-full bg-[#F1F5F9] px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[#64748B] mb-4">Starter</span>
-
-            {/* Prix + CTA groupés */}
-            <div className="flex items-baseline gap-1 mb-1">
-              {annual && <span className="text-lg font-bold text-slate-300 line-through font-mono mr-1">9€</span>}
-              <span className="text-4xl font-extrabold text-[#0F172A] font-mono">{annual ? "7,50€" : "9€"}</span>
-              <span className="text-slate-400 text-sm">/mois HT</span>
-            </div>
-            {annual && <p className="text-[12px] text-[#059669] font-medium mb-3">Soit 90€/an HT — tu économises 18€</p>}
-            <p className="text-[13px] text-slate-400 mb-4">{!annual ? "Facturé mensuellement" : "Facturé 90€ par an"}</p>
-
-            <Link href="/signup">
-              <button className="w-full rounded-xl border border-[#E2E8F0] bg-white py-3 text-sm font-semibold text-[#0F172A] transition-colors hover:bg-[#F8FAFC] active:scale-[0.98]">
-                Choisir Starter →
-              </button>
-            </Link>
-
-            <div className="h-px bg-[#E2E8F0] my-5" />
-
-            {/* Features incluses */}
-            <ul className="space-y-3">
-              {[
-                "10 factures/mois",
-                "Devis & bons de commande illimités",
-                "Guide transmission Chorus Pro",
-                "Support 48h",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
-                  <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 shrink-0" />{item}
-                </li>
-              ))}
-            </ul>
-
-            {/* Features absentes */}
-            <div className="h-px bg-[#E2E8F0] my-4" />
-            <ul className="space-y-3 flex-1">
-              {[
-                "Factures illimitées",
-                "Tableau de bord CA & encours",
-                "Relances automatiques",
-                "Support 24h prioritaire",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm text-slate-400">
-                  <XCircle className="w-4 h-4 text-slate-300 mt-0.5 shrink-0" />{item}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 text-center text-[12px] text-slate-400">Idéal pour démarrer</p>
-          </FadeIn>
-
-          {/* ── Card Pro — dominant ── */}
-          <FadeIn delay={0.2} x={10} className="relative overflow-hidden rounded-2xl p-6 sm:p-7 flex flex-col md:scale-[1.03] md:origin-top" style={{ background: "#0F172A", border: "1px solid rgba(37,99,235,0.3)", boxShadow: "0 0 60px rgba(37,99,235,0.18)" }}>
-            {/* Q filigrane */}
-            <div aria-hidden className="pointer-events-none absolute -bottom-6 -right-6 select-none" style={{ opacity: 0.06, zIndex: 0 }}>
-              <Image src={PICTO_Q} alt="" width={160} height={160} className="w-[160px]" sizes="160px" loading="lazy" />
-            </div>
-            <div className="relative z-10 flex flex-col flex-1">
-              <div className="flex items-center justify-between mb-4">
-                <span className="rounded-full bg-[#F1F5F9]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">Pro</span>
-                <span className="rounded-lg bg-[#2563EB] px-3 py-1 text-[11px] font-bold text-white">Recommandé</span>
-              </div>
-
-              {/* Prix + CTA groupés */}
-              <div className="flex items-baseline gap-1 mb-1">
-                {annual && <span className="text-lg font-bold text-slate-500 line-through font-mono mr-1">19€</span>}
-                <span className="text-4xl font-extrabold text-white font-mono">{annual ? "15,83€" : "19€"}</span>
-                <span className="text-slate-400 text-sm">/mois HT</span>
-              </div>
-              {annual && <p className="text-[12px] text-[#34D399] font-medium mb-3">Soit 190€/an HT — tu économises 38€</p>}
-              <p className="text-[13px] text-slate-500 mb-4">{!annual ? "Facturé mensuellement" : "Facturé 190€ par an"}</p>
-
-              <Link href="/signup">
-                <button className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-[#0F172A] transition-colors hover:bg-slate-100 active:scale-[0.98]">
-                  Choisir Pro →
-                </button>
-              </Link>
-
-              <div className="h-px bg-white/10 my-5" />
-
-              {/* Features différenciantes */}
-              <ul className="space-y-3 flex-1">
-                {[
-                  "Factures illimitées",
-                  "Devis & bons de commande illimités",
-                  "Guide multiplateforme (Chorus Pro, IOPOLE, 137 PA)",
-                  "Tableau de bord CA & encours",
-                  "Relances automatiques J+30/J+45",
-                  "Support 24h prioritaire",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm text-slate-300">
-                    <CheckCircle2 className="w-4 h-4 text-[#10B981] mt-0.5 shrink-0" />{item}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-4 text-center text-[12px] text-[#60A5FA]">Le choix de 8 artisans sur 10</p>
-            </div>
-          </FadeIn>
-        </div>
-
-        {/* ── Inclus dans tous les plans ── */}
-        <FadeIn delay={0.3} className="mt-10 max-w-3xl mx-auto">
-          <p className="text-center text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-5">Inclus dans tous les plans</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {[
-              { icon: <FileText className="h-4 w-4" />, label: "Factur-X EN 16931 certifié" },
-              { icon: <Send className="h-4 w-4" />, label: "Envoi email avec PDF" },
-              { icon: <Archive className="h-4 w-4" />, label: "Archivage légal 10 ans" },
-              { icon: <Zap className="h-4 w-4" />, label: "Avoirs en 1 clic" },
-              { icon: <Shield className="h-4 w-4" />, label: "Catalogue produits" },
-              { icon: <Users className="h-4 w-4" />, label: "Gestion clients" },
-            ].map((f) => (
-              <div key={f.label} className="flex items-center gap-2.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#EFF6FF] text-[#2563EB]">{f.icon}</span>
-                <span className="text-[12px] sm:text-[13px] font-medium text-[#0F172A]">{f.label}</span>
-              </div>
-            ))}
-          </div>
+        {/* Même grille que /pricing : une seule source pour les prix (lib/stripe/plans.ts) */}
+        <FadeIn delay={0.15}>
+          <PricingSelector />
         </FadeIn>
 
         {/* Ancrage prix — comparaison coût */}
@@ -977,8 +842,8 @@ function PricingSection() {
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0" />
               <p className="text-sm text-[#0F172A]">
-                <strong className="font-bold">Qonforme : à partir de 9&nbsp;€/mois</strong>
-                <span className="text-slate-500"> — tout inclus, sans engagement.</span>
+                <strong className="font-bold">Qonforme : devis gratuits, factures dès 10&nbsp;€&nbsp;HT/mois</strong>
+                <span className="text-slate-500"> — sans engagement.</span>
               </p>
             </div>
           </div>
@@ -1009,7 +874,7 @@ function UrgencyBannerSection() {
               Devenir conforme maintenant →
             </button>
           </Link>
-          <p className="text-[12px] text-slate-500">Opérationnel en 5 minutes · 9&nbsp;€/mois · Résiliable à tout moment</p>
+          <p className="text-[12px] text-slate-500">Devis gratuits · factures dès 10&nbsp;€&nbsp;HT/mois · sans engagement</p>
           <div className="mt-4 flex items-center gap-4 text-[13px]">
             <Link href="/pricing" className="text-slate-400 hover:text-white transition-colors underline underline-offset-2">Voir les tarifs</Link>
             <span className="text-slate-600">·</span>
@@ -1470,7 +1335,7 @@ export default function HomePage() {
             <Link href="/pricing" className="group flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-[#F8FAFC] p-5 text-center hover:border-[#2563EB]/30 hover:shadow-md transition-all">
               <Shield className="h-5 w-5 text-[#2563EB]" />
               <span className="text-[14px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Tarifs</span>
-              <span className="text-[12px] text-slate-400">À partir de 9&nbsp;€/mois · sans engagement</span>
+              <span className="text-[12px] text-slate-400">Devis gratuits · sans engagement</span>
             </Link>
           </div>
         </div>

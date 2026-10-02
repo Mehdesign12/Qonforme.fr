@@ -7,6 +7,7 @@ import { Plus, Trash2, Loader2, Eye, Send, ChevronRight, Sparkles, X, ArrowRight
 import Link from "next/link"
 import { calculateLineTotals, calculateInvoiceTotals, formatCurrency, VAT_RATES } from "@/lib/utils/invoice"
 import { ProductCombobox, type ProductSuggestion } from "@/components/products/ProductCombobox"
+import { PaywallDialog, isSubscriptionRequired } from "@/components/billing/PaywallDialog"
 
 type VatRate = 0 | 5.5 | 10 | 20
 type Line = {
@@ -39,6 +40,8 @@ const labelCls = "text-[12px] font-semibold text-slate-500 uppercase tracking-wi
 
 export default function NewInvoiceForm() {
   const router = useRouter()
+  // Facture créée en brouillon mais pas envoyée faute de formule : mur de paiement
+  const [paywallInvoice, setPaywallInvoice] = useState<{ id: string; number: string } | null>(null)
   const [loading,        setLoading]        = useState(false)
   const [saving,         setSaving]         = useState(false)
   const [previewing,     setPreviewing]     = useState(false)
@@ -136,8 +139,8 @@ export default function NewInvoiceForm() {
         total_ttc:     computedLines[i].totalTTC,
       }))
       // Aperçu pur : ne crée aucune facture (pas d'écriture en base, pas de
-      // numéro consommé, pas de slot de quota Starter utilisé) — contrairement
-      // à l'ancien comportement qui appelait POST /api/invoices comme "Envoyer".
+      // numéro consommé) — contrairement à l'ancien comportement qui appelait
+      // POST /api/invoices comme "Envoyer". Le PDF est filigrané « APERÇU ».
       const res = await fetch("/api/invoices/preview-pdf", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -188,14 +191,7 @@ export default function NewInvoiceForm() {
       })
       const json = await res.json()
       if (!res.ok) {
-        if (res.status === 402 && json.code === "STARTER_LIMIT_REACHED") {
-          toast.error(`Limite Starter atteinte (${json.invoicesThisMonth}/${json.limit} ce mois). Passez au plan Pro.`, {
-            duration: 8000,
-            action: { label: "Passer au Pro", onClick: () => window.location.href = "/settings/billing" },
-          })
-        } else {
-          toast.error(json.error || "Erreur lors de la sauvegarde")
-        }
+        toast.error(json.error || "Erreur lors de la sauvegarde")
         return
       }
 
@@ -203,6 +199,11 @@ export default function NewInvoiceForm() {
       if (action === "send" && json.invoice?.id) {
         const sendRes = await fetch(`/api/invoices/${json.invoice.id}/send`, { method: "POST" })
         const sendJson = await sendRes.json()
+        // Pas de formule : la facture reste un brouillon, le mur de paiement s'ouvre
+        if (isSubscriptionRequired(sendRes.status, sendJson)) {
+          setPaywallInvoice({ id: json.invoice.id, number: json.invoice.invoice_number })
+          return
+        }
         if (!sendRes.ok) {
           toast.error(sendJson.error ?? "Facture créée mais l'envoi par email a échoué")
           router.push(`/invoices/${json.invoice.id}`)
@@ -226,6 +227,20 @@ export default function NewInvoiceForm() {
 
   return (
     <div className="space-y-4 pb-8">
+      {paywallInvoice && (
+        <PaywallDialog
+          open
+          onOpenChange={(open) => {
+            if (open) return
+            // « Pas maintenant » : le brouillon est enregistré, on y emmène l'artisan
+            // (renvoyer le formulaire créerait un second brouillon)
+            toast.success("Brouillon enregistré")
+            router.push(`/invoices/${paywallInvoice.id}`)
+          }}
+          invoiceId={paywallInvoice.id}
+          invoiceNumber={paywallInvoice.number}
+        />
+      )}
 
       {/* ── Tip identité — bannière horizontale ── */}
       {showTip && (
