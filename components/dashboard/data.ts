@@ -7,8 +7,8 @@
  */
 import type { createClient } from "@/lib/supabase/server"
 import {
-  ISSUED_INVOICE_STATUSES, OPEN_INVOICE_STATUSES, buildDashboardView, monthKey,
-  type DashInvoice, type DashQuote, type DashboardInput, type DashboardView,
+  ISSUED_INVOICE_STATUSES, OPEN_INVOICE_STATUSES, buildDashboardView, issuedSince,
+  type DashInvoice, type DashPeriod, type DashQuote, type DashboardInput, type DashboardView,
 } from "@/components/dashboard/model"
 
 type ClientJoin = { name?: string | null; city?: string | null; email?: string | null } | null
@@ -45,15 +45,18 @@ export async function getDashboardView({
   firstName,
   company,
   today,
+  period,
 }: {
   supabase: Awaited<ReturnType<typeof createClient>>
   userId: string | null
   firstName: string
   company: DashboardInput["company"]
   today: string
+  period: DashPeriod
 }): Promise<DashboardView> {
   const empty: DashboardInput = {
     mode: "app",
+    period,
     today,
     firstName,
     company,
@@ -68,7 +71,7 @@ export async function getDashboardView({
   }
   if (!userId) return buildDashboardView(empty)
 
-  const since = `${monthKey(today, -6)}-01`
+  const since = issuedSince(today)
 
   try {
     const [issued, open, paid, drafts, recent, quotes, invoiceCount, quoteCount, clients] = await Promise.all([

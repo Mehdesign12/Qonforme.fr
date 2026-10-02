@@ -221,6 +221,7 @@ export function InvoiceDetailView({
   return (
     <div className="flex flex-col gap-5">
       <SetCrumb label={invoice.invoice_number} />
+      <style>{PRINT_CSS}</style>
 
       {/* ---- Téléphone : retour, numéro, menu ---- */}
       <div className="-mt-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 lg:hidden print:hidden">
@@ -235,7 +236,7 @@ export function InvoiceDetailView({
       </div>
 
       {/* ---- Ordinateur : en-tête ---- */}
-      <header className="hidden flex-wrap items-end justify-between gap-4 lg:flex print:hidden">
+      <header className="hidden grid-cols-[minmax(0,1fr)_auto] items-end gap-x-6 gap-y-4 lg:grid print:hidden">
         <div className="flex min-w-0 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2.5">
             <span className="font-mono text-sm text-[var(--q-text-3)]">{invoice.invoice_number}</span>
@@ -250,7 +251,7 @@ export function InvoiceDetailView({
             {longDate(invoice.issue_date)} · échéance le {longDate(invoice.due_date, yearOf(invoice.due_date) !== yearOf(invoice.issue_date))}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <ActionButton action={pdf} run={run} />
           {secondaries.map((a) => <ActionButton key={a.key} action={a} run={run} />)}
           {primary && <ActionButton action={primary} run={run} primary />}
@@ -307,11 +308,7 @@ export function InvoiceDetailView({
         </Banner>
       )}
       {draft && (
-        <Banner
-          icon={Pencil}
-          title="Ce brouillon n’est pas encore une facture"
-          action={edit && primary !== edit ? <ActionButton action={edit} run={run} size="sm" /> : undefined}
-        >
+        <Banner icon={Pencil} title="Ce brouillon n’est pas encore une facture">
           {clientEmail
             ? "Modifiez-le librement, puis envoyez-le à votre client par email pour l’émettre."
             : <>Le client n&apos;a pas d&apos;adresse email : ajoutez-la {clientHref ? <Link href={clientHref} className="q-link">dans sa fiche</Link> : "dans sa fiche"} pour envoyer la facture.</>}
@@ -333,7 +330,7 @@ export function InvoiceDetailView({
         </section>
 
         <div className="order-1 flex min-w-0 flex-col gap-4 lg:order-2 print:hidden">
-          <Panel title="Historique" bodyClassName="px-5 pb-5 pt-2">
+          <Panel title="Historique" className="order-2 lg:order-1" bodyClassName="px-5 pb-5 pt-2">
             <Timeline invoice={invoice} today={today} year={year} />
             {(status === "sent" || status === "overdue") && clientEmail && !invoice.reminder_2_sent_at && (
               <p className="q-field-hint mt-3 border-t border-[var(--q-line-soft)] pt-3">
@@ -342,7 +339,7 @@ export function InvoiceDetailView({
             )}
           </Panel>
 
-          <Panel title="Paiement" bodyClassName="flex flex-col gap-3.5 px-5 pb-5 pt-2">
+          <Panel title="Paiement" className="order-1 lg:order-2" bodyClassName="flex flex-col gap-3.5 px-5 pb-5 pt-2">
             <dl className="flex flex-col gap-2.5 text-sm">
               <Row label="État"><PaymentState status={status} lateDays={lateDays} /></Row>
               <Row label="Montant TTC"><span className="font-semibold tabular-nums">{formatCurrency(invoice.total_ttc)}</span></Row>
@@ -380,7 +377,7 @@ export function InvoiceDetailView({
           </Panel>
 
           {invoice.client && (
-            <Panel title="Liés" bodyClassName="q-list pb-1">
+            <Panel title="Liés" className="order-3" bodyClassName="q-list pb-1">
               <RelatedRow
                 href={clientHref ?? null}
                 icon={<Initials name={invoice.client.name} />}
@@ -424,10 +421,27 @@ export function InvoiceDetailView({
 /* Sous-composants                                                      */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Impression : seule la feuille de la facture sort. La coque tient dans
+ * l'écran (hauteur fixe, défilement interne) : sans ce déblocage, l'impression
+ * serait coupée à la première page et embarquerait barre latérale et en-tête.
+ * Navigateur sans :has() : la règle est ignorée en bloc, l'impression reste
+ * celle de la page entière.
+ */
+const PRINT_CSS = `@media print {
+  body *:not(:has([data-invoice-print])):not([data-invoice-print]):not([data-invoice-print] *) { display: none !important; }
+  :has([data-invoice-print]) {
+    display: block !important; position: static !important; height: auto !important; min-height: 0 !important;
+    max-height: none !important; overflow: visible !important; margin: 0 !important; padding: 0 !important;
+    border: 0 !important; box-shadow: none !important; background: none !important;
+  }
+  [data-invoice-print] { -webkit-print-color-adjust: exact; print-color-adjust: exact; max-width: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; }
+}`
+
 /** Libellés courts pour la barre du téléphone. */
 const SHORT_LABELS: Record<string, string> = {
-  "Marquer comme payée": "Payée",
-  "Marquer comme acceptée": "Acceptée",
+  "Marquer comme payée": "Marquer payée",
+  "Marquer comme acceptée": "Marquer acceptée",
   "Créer un avoir": "Avoir",
 }
 

@@ -9,7 +9,7 @@ import {
 } from "@/lib/demo/data"
 import {
   ISSUED_INVOICE_STATUSES, OPEN_INVOICE_STATUSES, buildDashboardView,
-  type DashInvoice, type DashboardView,
+  type DashInvoice, type DashPeriod, type DashboardView,
 } from "@/components/dashboard/model"
 
 /**
@@ -40,9 +40,10 @@ function toDash(inv: DemoInvoice): DashInvoice {
 
 const has = (list: readonly string[], status: string) => list.includes(status)
 
-export function buildDemoDashboardView(): DashboardView {
+export function buildDemoDashboardView(period: DashPeriod = "mois"): DashboardView {
   return buildDashboardView({
     mode: "demo",
+    period,
     today: DEMO_TODAY,
     firstName: DEMO_COMPANY.owner.split(" ")[0],
     company: {

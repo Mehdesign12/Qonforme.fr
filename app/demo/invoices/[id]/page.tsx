@@ -75,7 +75,7 @@ export default function DemoInvoiceDetailPage() {
       company={COMPANY}
       today={DEMO_TODAY}
       backHref="/demo/invoices"
-      clientHref="/demo/clients"
+      clientHref={`/demo/clients/${data.client.id}`}
       quote={data.quote_number ? { number: data.quote_number, href: `/demo/quotes/${data.quote_number.toLowerCase()}` } : null}
       creditNotesHref="/demo/credit-notes"
       settingsCompanyHref="/demo/settings"

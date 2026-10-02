@@ -3,11 +3,12 @@ import Link from "next/link"
 import { ArrowRight, BookOpen } from "lucide-react"
 import { DashboardBody } from "@/components/dashboard/DashboardBody"
 import { buildDemoDashboardView } from "@/components/dashboard/demo-data"
+import { parsePeriod } from "@/components/dashboard/model"
 import { MetaPixelEvent } from "@/components/shared/MetaPixelEvent"
 
 export const metadata: Metadata = {
   title: "Démo interactive — Qonforme",
-  description: "Explorez la démo de Qonforme : devis, factures, clients et bons de commande d'un artisan du bâtiment, avec des données d'exemple, sans inscription.",
+  description: "Explorez la démo de Qonforme : devis, factures, clients et bons de commande d'un artisan du bâtiment, avec des données d'exemple, et sans inscription.",
   alternates: { canonical: "/demo" },
   openGraph: {
     images: [{ url: "/api/og?title=D%C3%A9mo%20interactive&subtitle=Devis%2C%20factures%20et%20clients%20d%27un%20artisan%20%E2%80%94%20sans%20inscription", width: 1200, height: 630 }],
@@ -21,8 +22,8 @@ const CROSS_LINKS = [
 ]
 
 /** Démo : même tableau de bord que /dashboard (DashboardBody), données fictives de lib/demo/data.ts. */
-export default function DemoDashboardPage() {
-  const view = buildDemoDashboardView()
+export default function DemoDashboardPage({ searchParams }: { searchParams: { periode?: string } }) {
+  const view = buildDemoDashboardView(parsePeriod(searchParams?.periode))
 
   return (
     <>

@@ -40,6 +40,7 @@ export function InvoicePaper({
 
   return (
     <article
+      data-invoice-print=""
       aria-label={`Aperçu de la facture ${invoice.invoice_number}`}
       className="q-paper relative mx-auto flex w-full max-w-[640px] flex-col gap-6 overflow-hidden px-5 py-6 text-[12px] leading-[1.55] text-[#0F172A] sm:px-9 sm:py-9"
     >
