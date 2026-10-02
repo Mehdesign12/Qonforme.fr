@@ -51,6 +51,8 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const outilsButtonRef = useRef<HTMLButtonElement>(null)
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** Ouvert par le survol : le clic qui suit (souris, ou tap sur tablette) le garde ouvert au lieu de le refermer. */
+  const openedByHover = useRef(false)
   const menuId = useId()
   const outilsId = useId()
 
@@ -100,10 +102,22 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
 
   const openOutils = () => {
     if (hoverTimer.current) clearTimeout(hoverTimer.current)
+    if (!outilsOpen) openedByHover.current = true
     setOutilsOpen(true)
   }
+  const toggleOutils = () => {
+    if (openedByHover.current) {
+      openedByHover.current = false
+      setOutilsOpen(true)
+    } else {
+      setOutilsOpen((v) => !v)
+    }
+  }
   const closeOutilsSoon = () => {
-    hoverTimer.current = setTimeout(() => setOutilsOpen(false), 180)
+    hoverTimer.current = setTimeout(() => {
+      openedByHover.current = false
+      setOutilsOpen(false)
+    }, 180)
   }
 
   const prefix = isLandingPage ? "" : "/"
@@ -129,7 +143,7 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
       <nav
         ref={navRef}
         aria-label="Navigation principale"
-        className="pointer-events-auto relative mx-auto flex max-w-[1200px] items-center justify-between gap-2 rounded-full border border-q-line bg-q-surface py-2 pl-3.5 pr-2 transition-shadow duration-300 sm:pl-5 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-4"
+        className="pointer-events-auto relative mx-auto flex max-w-[1200px] items-center justify-between gap-2 rounded-full border border-q-line bg-q-surface py-2 pl-3.5 pr-2 transition-shadow duration-300 sm:pl-5 lg:gap-4 xl:grid xl:grid-cols-[1fr_auto_1fr]"
         style={{ boxShadow: scrolled || menuOpen ? SHADOW_SCROLLED : SHADOW_REST }}
       >
         {/* Logo (et retour de rubrique sur grand écran) */}
@@ -172,7 +186,7 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
               aria-expanded={outilsOpen}
               aria-controls={outilsId}
               aria-current={outilsCurrent}
-              onClick={() => setOutilsOpen((v) => !v)}
+              onClick={toggleOutils}
               className={NAV_LINK}
             >
               Outils gratuits
@@ -231,9 +245,13 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
         </div>
 
         {/* Actions */}
-        <div className="flex min-w-0 items-center gap-1.5 justify-self-end">
+        <div className="flex shrink-0 items-center gap-1.5 justify-self-end">
           <Link href="/login" className={cn(NAV_LINK, "hidden md:inline-flex")}>Se connecter</Link>
-          <Link href="/signup" className={cn(CTA, "max-[374px]:!hidden")}>Créer mon compte</Link>
+          {/* Libellé court du canevas (« Commencer ») sur les petits téléphones ; sous 360 px, l'appel passe dans le menu */}
+          <Link href="/signup" className={cn(CTA, "max-[359px]:!hidden")}>
+            <span className="max-[374px]:hidden">Créer mon compte</span>
+            <span className="hidden max-[374px]:inline">Commencer</span>
+          </Link>
           <button
             ref={menuButtonRef}
             type="button"
@@ -319,7 +337,7 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
             <div className="mt-1 border-t border-q-line-soft pt-1.5 md:hidden">
               <Link href="/login" onClick={closeMenu} className={cn(MENU_LINK, "font-semibold text-q-ink")}>Se connecter</Link>
             </div>
-            <div className="hidden p-1.5 pt-2 max-[374px]:block">
+            <div className="hidden p-1.5 pt-2 max-[359px]:block">
               <Link href="/signup" onClick={closeMenu} className="lp-btn-p !h-12 w-full !px-4 !text-[15px]">Créer mon compte</Link>
             </div>
           </div>

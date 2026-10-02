@@ -121,13 +121,14 @@ export default function FecExportSection({ sirenMissing, siren, mode = 'app' }: 
       {/* Période */}
       <div className="flex flex-col gap-2">
         <span className="q-label" id="periode-label">Période</span>
-        <div className="q-seg self-start" role="group" aria-labelledby="periode-label">
+        <div className="q-seg flex w-full sm:inline-flex sm:w-auto sm:self-start" role="group" aria-labelledby="periode-label">
           {[
             { label: 'Année en cours',   year: currentYear },
             { label: 'Année précédente', year: prevYear    },
           ].map(({ label, year }) => (
-            <button key={year} type="button" aria-pressed={isYear(year)} onClick={() => setYear(year)}>
-              {label} ({year})
+            <button key={year} type="button" aria-pressed={isYear(year)} onClick={() => setYear(year)} className="flex-1 sm:flex-none">
+              <span className="sm:hidden">Année {year}</span>
+              <span className="hidden sm:inline">{label} ({year})</span>
             </button>
           ))}
         </div>
