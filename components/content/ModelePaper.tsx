@@ -20,9 +20,18 @@ function Bar({ w, h = 8, className = "" }: { w: string; h?: number; className?: 
   return <span aria-hidden className={`block rounded-full bg-[#E6E9F0] ${className}`} style={{ width: w, height: h }} />
 }
 
+/**
+ * Modèles qui ne portent pas l'intitulé ni le numéro de leur type : la facture
+ * proforma n'est pas une facture et n'entre pas dans la numérotation.
+ */
+const DOC_BY_SLUG: Record<string, { label: string; prefix: string }> = {
+  "facture-proforma": { label: "Proforma", prefix: "PRO" },
+}
+
 export default function ModelePaper({ modele }: { modele: Modele }) {
-  const doc = DOC[modele.type] ?? DOC.facture
+  const doc = DOC_BY_SLUG[modele.slug] ?? DOC[modele.type] ?? DOC.facture
   const isLetter = modele.type === "relance"
+  const isReference = isLetter || modele.slug in DOC_BY_SLUG
 
   return (
     <figure className="q-paper mx-auto w-full max-w-[620px] p-6 text-[#0F172A] sm:p-10" aria-label={`Aperçu schématique : ${modele.titre}`}>
@@ -39,7 +48,7 @@ export default function ModelePaper({ modele }: { modele: Modele }) {
         <div className="flex flex-col items-end gap-1.5 text-right">
           <p className="font-display text-[22px] font-semibold uppercase leading-none tracking-[-0.01em] text-[#2563EB] sm:text-[26px]">{doc.label}</p>
           <p className="font-mono text-[12px] text-[#64748B]">
-            {isLetter ? "Réf. " : "N° "}
+            {isReference ? "Réf. " : "N° "}
             {doc.prefix}-2026-001
           </p>
         </div>

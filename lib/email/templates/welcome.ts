@@ -6,7 +6,9 @@
  * - Preheader distinct du sujet (visible dans la boîte de réception avant ouverture)
  * - Un seul CTA principal — pas de dispersion
  * - 3 étapes d'onboarding intégrées dans l'email
- * - Ton "tu", chaleureux, cohérent avec le reste du site
+ * - Vouvoiement, comme le reste du site
+ * - Uniquement ce que le produit fait aujourd'hui (CLAUDE.md) : ni « conforme
+ *   EN 16931 », ni délai de réponse promis, ni contact humain
  * - HTML inline-styles pour compatibilité maximale (Gmail, Outlook, Apple Mail…)
  */
 import { PLANS, FREE_FEATURES, formatEuros } from "@/lib/stripe/plans"
@@ -22,29 +24,29 @@ export function buildWelcomeEmail({
 }): { subject: string; html: string } {
   const subject = `Bienvenue sur Qonforme, ${firstName} 👋`
 
-  const preheader = `Ton espace est prêt — 5 minutes suffisent pour créer ta première facture conforme EN 16931.`
+  const preheader = `Votre espace est prêt : vos devis sont gratuits et illimités.`
 
   const steps = [
     {
       n: "1",
-      title: "Renseigne les infos de ton entreprise",
-      desc: "Nom, adresse, SIREN, TVA. Ces données apparaîtront sur toutes tes factures.",
+      title: "Renseignez votre entreprise",
+      desc: "Nom, adresse, SIREN, TVA. Ces informations figureront sur tous vos devis et vos factures.",
       href: `${APP_URL}/settings/company`,
       cta: "Configurer mon entreprise →",
     },
     {
       n: "2",
-      title: "Ajoute ton premier client",
-      desc: "Recherche par SIREN pour préremplir automatiquement les coordonnées.",
+      title: "Ajoutez votre premier client",
+      desc: "Saisissez son numéro SIREN : ses coordonnées se remplissent seules.",
       href: `${APP_URL}/clients`,
       cta: "Ajouter un client →",
     },
     {
       n: "3",
-      title: "Crée ta première facture",
-      desc: "Sélectionne le client, renseigne la prestation. Ton Factur-X EN 16931 est généré en 1 clic.",
-      href: `${APP_URL}/invoices/new`,
-      cta: "Créer une facture →",
+      title: "Faites votre premier devis",
+      desc: "Choisissez le client, ajoutez vos prestations, envoyez le devis par email. Une fois accepté, il devient une facture sans rien ressaisir.",
+      href: `${APP_URL}/quotes/new`,
+      cta: "Créer un devis →",
     },
   ]
 
@@ -105,7 +107,7 @@ export function buildWelcomeEmail({
                 Qonforme
               </h1>
               <p style="margin:0;color:rgba(255,255,255,0.75);font-size:13px;font-weight:400;">
-                Facturation électronique conforme à la réglementation 2026
+                Le logiciel de devis et de facturation des artisans du bâtiment
               </p>
             </td>
           </tr>
@@ -119,7 +121,7 @@ export function buildWelcomeEmail({
                 Bienvenue, ${firstName}&nbsp;!
               </h2>
               <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.65;">
-                Ton compte est actif. Tes devis sont gratuits et illimités, et tu peux préparer tes factures dès maintenant. Tu choisis une formule seulement au moment d'envoyer ta première facture.
+                Votre compte est actif. Vos devis sont gratuits et illimités, et vous pouvez préparer vos factures dès maintenant. Vous choisissez une formule seulement au moment d'envoyer votre première facture.
               </p>
 
               <!-- CTA principal -->
@@ -142,7 +144,7 @@ export function buildWelcomeEmail({
                 Pour bien démarrer — 3 étapes (5 min)
               </h3>
               <p style="margin:0 0 16px;font-size:13px;color:#94A3B8;">
-                Suis ces étapes dans l'ordre pour être opérationnel en quelques minutes.
+                Suivez ces étapes dans l'ordre pour être opérationnel en quelques minutes.
               </p>
               <table cellpadding="0" cellspacing="0" width="100%">
                 ${stepsHtml}
@@ -162,7 +164,7 @@ export function buildWelcomeEmail({
                     <table cellpadding="0" cellspacing="0" width="100%">
                       ${[
                         ...FREE_FEATURES,
-                        `Pour envoyer tes factures : formule ${PLANS.starter.name}, ${formatEuros(PLANS.starter.monthlyPrice)} HT par mois, satisfait ou remboursé ${GUARANTEE_DAYS} jours`,
+                        `Pour envoyer vos factures : formule ${PLANS.starter.name}, ${formatEuros(PLANS.starter.monthlyPrice)} HT par mois, satisfait ou remboursé ${GUARANTEE_DAYS} jours`,
                       ]
                         .map(
                           (item) => `
@@ -187,9 +189,8 @@ export function buildWelcomeEmail({
 
               <!-- Note finale -->
               <p style="margin:28px 0 0;font-size:13px;color:#94A3B8;line-height:1.6;">
-                Une question ? Réponds directement à cet email ou écris-nous à
+                Une question ? Écrivez à
                 <a href="mailto:contact@qonforme.fr" style="color:${ACCENT};text-decoration:none;">contact@qonforme.fr</a>.
-                On répond sous 24h.
               </p>
 
             </td>
@@ -199,10 +200,10 @@ export function buildWelcomeEmail({
           <tr>
             <td style="background-color:#F8FAFC;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 12px 12px;padding:20px 40px;text-align:center;">
               <p style="margin:0;font-size:12px;color:#94A3B8;">
-                <strong style="color:#64748B;">Qonforme</strong> — facturation électronique conforme à la réglementation française 2026.
+                <strong style="color:#64748B;">Qonforme</strong> — le logiciel de devis et de facturation des artisans du bâtiment.
               </p>
               <p style="margin:6px 0 0;font-size:11px;color:#CBD5E1;">
-                Tu peux résilier à tout moment depuis les paramètres de ton compte.
+                Une formule se résilie à tout moment, depuis Paramètres › Abonnement.
               </p>
             </td>
           </tr>

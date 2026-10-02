@@ -135,7 +135,7 @@ Mots-clés SEO à intégrer : ${keywords.join(", ")}
 
 ANGLE ÉDITORIAL OBLIGATOIRE : ${angle.instruction}
 
-Contexte : Qonforme est un logiciel français de facturation électronique conforme Factur-X / EN 16931, conçu pour les artisans et TPE. Le logiciel permet de créer des factures, devis, avoirs et bons de commande conformes à la réforme 2026.${recentContext}`
+Contexte produit (à respecter strictement : ne promets rien d'autre) : Qonforme est un logiciel français de devis et de facturation pour les artisans du bâtiment. Il permet aujourd'hui : devis gratuits et illimités ; factures aux mentions obligatoires, avec un taux de TVA par ligne (0, 5,5, 10 ou 20 %) ; conversion d'un devis en facture ; avoirs ; bons de commande ; envoi par email avec le PDF ; relances par email, dont des relances automatiques 30 et 45 jours après l'échéance avec la formule Essentiel ; catalogue de prestations ; recherche des clients par SIREN ; export FEC ; site installable sur téléphone. Les factures PDF sont accompagnées d'un fichier XML Factur-X. L'envoi et la réception par une plateforme agréée sont en préparation : n'écris jamais que Qonforme transmet les factures électroniques, ni qu'il est certifié, homologué ou conforme à la norme EN 16931. Ne présente jamais comme disponibles l'autoliquidation, les situations de travaux, les factures d'acompte, la retenue de garantie, les factures récurrentes, la signature en ligne, le lien de paiement, le suivi d'ouverture des emails ni l'accès comptable ou équipe. Vouvoie le lecteur. Ne promets aucun contact humain (appel, rendez-vous, support).${recentContext}`
 
   const response = await fetch(
     `${GEMINI_API_URL}/models/${TEXT_MODEL}:generateContent?key=${apiKey}`,

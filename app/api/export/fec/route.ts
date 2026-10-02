@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     if (!company?.siren) {
       return NextResponse.json(
         {
-          error: 'SIREN manquant. Renseigne ton SIREN dans les paramètres de ton entreprise avant d\'exporter le FEC.',
+          error: 'SIREN manquant. Renseignez votre SIREN dans les paramètres de votre entreprise avant d\'exporter le FEC.',
           code: 'SIREN_MISSING',
         },
         { status: 400 },

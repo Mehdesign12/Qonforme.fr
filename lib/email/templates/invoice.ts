@@ -73,7 +73,7 @@ export function buildInvoiceEmail(d: InvoiceEmailData): { subject: string; html:
     </div>` : ""}
 
     <p style="margin:28px 0 0;font-size:13px;color:#64748B;line-height:1.6;">
-      La facture est jointe à cet email en format PDF (Factur-X EN 16931).
+      La facture est jointe à cet email au format PDF, avec ses données Factur-X.
     </p>
 
     <p style="margin:20px 0 0;font-size:14px;color:#475569;">
