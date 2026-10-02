@@ -156,10 +156,10 @@ export default function CompanyForm() {
           error={errors.siren}
           hint={
             sirenOk
-              ? <span className="q-field-ok"><Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden /> SIREN valide. « Rechercher » remplit le nom et l’adresse.</span>
+              ? <span className="q-field-ok"><Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden /> SIREN valide. « Rechercher » remplit le nom et l’adresse.</span>
               : sirenChecked
-                ? <span className="text-q-danger">Ce numéro ne correspond à aucun SIREN : vérifiez les 9 chiffres.</span>
-                : "Les 9 chiffres de votre avis de situation Sirene. « Rechercher » remplit le reste depuis l’INSEE."
+                ? <span className="text-q-danger">Ce numéro ne correspond à aucun SIREN : vérifiez les 9 chiffres.</span>
+                : "Les 9 chiffres de votre avis de situation Sirene. « Rechercher » remplit le reste depuis l’INSEE."
           }
         >
           <div className="flex gap-2">

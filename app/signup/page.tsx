@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic"
 export default function SignupPage() {
   return (
     <AuthLayout aside={<QuotePreview />}>
-      <AuthTitle>Votre premier <Serif>devis</Serif>, en quelques minutes.</AuthTitle>
+      <AuthTitle>Votre premier <Serif>devis</Serif>, sans attendre.</AuthTitle>
       <AuthLead>
         Devis gratuits et illimités. Vous ne choisissez une formule qu’à l’envoi de votre première facture.
       </AuthLead>
@@ -26,7 +26,7 @@ export default function SignupPage() {
       <SignupForm />
 
       <p className="mt-6 text-[14px] text-q-text-3">
-        Déjà un compte ?{" "}
+        Déjà un compte ?{" "}
         <Link href="/login" className="q-link">Se connecter</Link>
       </p>
     </AuthLayout>

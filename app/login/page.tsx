@@ -24,8 +24,8 @@ export default function LoginPage() {
       <LoginForm />
 
       <p className="mt-7 text-[14px] text-q-text-3">
-        Pas encore de compte ?{" "}
-        <Link href="/signup" className="q-link">Créer un compte gratuitement</Link>
+        Pas encore de compte ?{" "}
+        <Link href="/signup" className="q-link">Créer un compte<span className="hidden sm:inline"> gratuitement</span></Link>
       </p>
     </AuthLayout>
   )

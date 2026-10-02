@@ -20,7 +20,7 @@ export default function SignupCompanyPage() {
           Votre <Serif>entreprise</Serif>
         </h1>
         <p className="mt-2 text-[16px] leading-[1.6] text-q-text-3 md:text-[17px]">
-          Votre SIREN suffit : nous retrouvons le nom et l’adresse. Ces informations figurent sur vos devis et vos factures.
+          Votre SIREN suffit : nous retrouvons le nom et l’adresse. Ces informations figurent sur vos devis et vos factures.
         </p>
       </div>
       <CompanyForm />
