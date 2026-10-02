@@ -41,8 +41,9 @@ const cardStyle = {
   // ❌ NE PAS AJOUTER : backdropFilter: 'blur(12px)' — inutile ET crashe iOS
 }
 
-// ✅ Correct — header pill
-// Utiliser la classe .header-pill-glass (CSS gère mobile/desktop)
+// ✅ Correct — surface flottante (barre supérieure, barre du bas)
+// Utiliser la classe .q-float (globals.css) : verre liquide sur ordinateur,
+// verre solide opaque sous 768 px. Voile de fenêtre : .q-veil (même principe).
 
 // ❌ Incorrect — backdrop-filter sans restriction mobile
 const cardStyle = { backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }
@@ -51,11 +52,10 @@ const cardStyle = { backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12
 
 #### Pattern layout (wrappers autour du header)
 ```tsx
-// ✅ Correct — isolation CSS sans GPU
-<div style={{ isolation: "isolate", contain: "layout style" }}>
-  <HeaderServer />
-</div>
-<main style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))", overscrollBehavior: "none" }}>
+// ✅ Correct — coque commune (components/layout/AppShell.tsx) : la barre
+// supérieure collante porte elle-même isolation: isolate, sans transform
+<header className="q-float sticky top-3 …" style={{ isolation: "isolate" }}>
+<div className="… overflow-y-auto" style={{ overscrollBehavior: "none" }}>
 
 // ❌ Incorrect — willChange crée des couches GPU qui amplifient le crash
 <div style={{ isolation: "isolate", willChange: "transform", transform: "translateZ(0)" }}>
@@ -225,6 +225,14 @@ Cela inclut :
 | `app/dashboard/layout.tsx` | `app/demo/layout.tsx` |
 | `app/{section}/page.tsx` | `app/demo/{section}/page.tsx` |
 | `components/{section}/*.tsx` | `components/demo/*.tsx` |
+
+### Depuis le 02/10/2026 : mêmes composants
+La coque (`AppShellFrame`, `Sidebar`, `Header`, `MobileBottomNav`) et les vues des
+pages (`InvoiceList`, `InvoiceDetailView`, `QuoteListView`, `DocumentEditor`,
+`DashboardBody`, `CatalogueView`…) sont partagées : la page réelle les alimente par
+l'API, la page démo par `lib/demo/data.ts`. `DemoSidebar.tsx` et `DemoHeader.tsx`
+rendent les composants réels en mode « demo ». **Modifier la vue partagée, jamais
+recopier une page pour la démo.**
 
 ### Ce qui reste spécifique à la démo
 - Données fictives (mock data hardcodé, pas de Supabase)
