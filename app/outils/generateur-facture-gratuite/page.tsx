@@ -1,34 +1,24 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { ArrowRight, ArrowLeft, FileText, ChevronRight, Plus, Trash2, Download, Loader2, RotateCcw, User, Users, List, Eye } from "lucide-react"
-import { motion, AnimatePresence } from "motion/react"
-import Footer from "@/components/layout/Footer"
-import { PublicHeader } from "@/components/layout/PublicHeader"
+import { ArrowRight, ArrowLeft, FileText, Download, Loader2, RotateCcw, Info } from "lucide-react"
 import { trackEvent } from "@/lib/meta-pixel"
 import { OutilsHero } from "@/components/outils/OutilsHero"
-
-interface Ligne {
-  id: string; description: string; quantite: number; prixHT: number; tauxTVA: number
-}
-
-function newLigne(): Ligne {
-  return { id: crypto.randomUUID(), description: "", quantite: 1, prixHT: 0, tauxTVA: 20 }
-}
-
-function fmtEur(n: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n)
-}
+import { Callout, Field, JsonLd, PanelTitle, Prose, ToolArea, ToolCta, ToolFaq, ToolGuide, ToolLinks, ToolShell, faqJsonLd, toolJsonLd } from "@/components/outils/kit"
+import { DocPaper, LineItemsEditor, PartySummary, Stepper, TotalsBox, newLigne, type Ligne } from "@/components/outils/doc-generator"
 
 const STEPS = [
-  { id: 0, label: "Émetteur", icon: User, short: "Vous" },
-  { id: 1, label: "Client", icon: Users, short: "Client" },
-  { id: 2, label: "Lignes", icon: List, short: "Lignes" },
-  { id: 3, label: "Aperçu", icon: Eye, short: "Aperçu" },
+  { label: "Émetteur" },
+  { label: "Client" },
+  { label: "Lignes" },
+  { label: "Aperçu" },
 ]
 
-const inputClass = "w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-[14px] font-medium text-[#0F172A] placeholder-slate-300 outline-none transition-all focus:border-[#2563EB] focus:bg-white focus:ring-2 focus:ring-blue-100"
+const FAQ = [
+  { q: "Cette facture est-elle une facture électronique ?", a: "Non, c'est un PDF simple. Il convient tant que la facturation électronique ne vous est pas imposée : toute entreprise doit pouvoir en recevoir depuis le 1er septembre 2026, et les TPE et PME devront en émettre à partir du 1er septembre 2027, par une plateforme agréée." },
+  { q: "Mes données sont-elles sauvegardées ?", a: "Non, aucune donnée n'est stockée. Le PDF est généré puis téléchargé." },
+  { q: "Combien de factures puis-je générer ?", a: "Autant que vous voulez, gratuitement." },
+]
 
 export default function GenerateurFacturePage() {
   const [loading, setLoading] = useState(false)
@@ -50,6 +40,7 @@ export default function GenerateurFacturePage() {
   const subtotalHT = lignes.reduce((s, l) => s + l.quantite * l.prixHT, 0)
   const totalTVA = lignes.reduce((s, l) => s + l.quantite * l.prixHT * (l.tauxTVA / 100), 0)
   const totalTTC = subtotalHT + totalTVA
+  const totals = { ht: subtotalHT, tva: totalTVA, ttc: totalTTC }
   const canGenerate = emetteur.nom.trim() && client.nom.trim() && lignes.some((l) => l.description.trim() && l.prixHT > 0)
 
   const handleGenerate = async () => {
@@ -75,319 +66,205 @@ export default function GenerateurFacturePage() {
     setLignes([newLigne()]); setNumero(""); setMentionTVA(""); setNotes(""); setStep(0)
   }
 
-  return (
-    <>
-      <PublicHeader />
+  const paper = (
+    <DocPaper
+      kind="Facture"
+      numero={numero}
+      numeroPlaceholder="F-2026-001"
+      date={date}
+      dateLabel="Émise le"
+      date2={echeance}
+      date2Label="Échéance"
+      emetteur={emetteur}
+      client={client}
+      lignes={lignes}
+      totals={totals}
+      mention={mentionTVA}
+      notes={notes}
+    />
+  )
 
+  return (
+    <ToolShell>
       <OutilsHero
-        icon={<FileText className="h-8 w-8" />}
-        iconBg="bg-amber-50 text-amber-600"
-        title={<>Générateur de <span className="text-[#2563EB]">facture gratuit</span></>}
-        subtitle="Remplissez le formulaire et téléchargez votre facture en PDF. Gratuit, sans inscription, aucune donnée stockée."
+        crumb="Générateur de facture"
+        icon={<FileText />}
         badge="PDF gratuit"
+        title="Générateur de facture"
+        accent="gratuit, en PDF."
+        subtitle="Remplissez le formulaire et téléchargez votre facture en PDF. Gratuit, sans inscription, aucune donnée stockée."
       />
 
-      <main className="bg-[#F8FAFC] pb-20 sm:pb-16">
-        <section className="mx-auto max-w-3xl px-5 -mt-4">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50 overflow-hidden"
-          >
-            {/* Progress bar */}
-            <div className="border-b border-slate-100 px-5 py-4 sm:px-8">
-              <div className="flex items-center justify-between">
-                {STEPS.map((s, i) => (
+      <ToolArea width="lg">
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="q-card overflow-hidden">
+            <Stepper steps={STEPS} current={step} onSelect={setStep} />
+
+            <div className="min-h-[320px] p-5 sm:p-7">
+              {/* Étape 1 — Émetteur */}
+              {step === 0 && (
+                <div>
+                  <PanelTitle>Vos informations</PanelTitle>
+                  <div className="flex flex-col gap-4">
+                    <Field label="Nom / Raison sociale *" htmlFor="f-em-nom">
+                      <input id="f-em-nom" className="q-input" value={emetteur.nom} onChange={(e) => setEmetteur((p) => ({ ...p, nom: e.target.value }))} placeholder="Ma Société SAS" />
+                    </Field>
+                    <Field label="Adresse" htmlFor="f-em-adresse">
+                      <input id="f-em-adresse" className="q-input" value={emetteur.adresse} onChange={(e) => setEmetteur((p) => ({ ...p, adresse: e.target.value }))} placeholder="12 rue de la Paix, 75001 Paris" />
+                    </Field>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="SIRET" htmlFor="f-em-siret">
+                        <input id="f-em-siret" className="q-input font-mono" value={emetteur.siret} onChange={(e) => setEmetteur((p) => ({ ...p, siret: e.target.value }))} placeholder="123 456 789 00012" />
+                      </Field>
+                      <Field label="Email" htmlFor="f-em-email">
+                        <input id="f-em-email" className="q-input" type="email" value={emetteur.email} onChange={(e) => setEmetteur((p) => ({ ...p, email: e.target.value }))} placeholder="contact@email.fr" />
+                      </Field>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Étape 2 — Client */}
+              {step === 1 && (
+                <div>
+                  <PanelTitle>Informations client</PanelTitle>
+                  <div className="flex flex-col gap-4">
+                    <Field label="Nom / Raison sociale *" htmlFor="f-cl-nom">
+                      <input id="f-cl-nom" className="q-input" value={client.nom} onChange={(e) => setClient((p) => ({ ...p, nom: e.target.value }))} placeholder="Client SARL" />
+                    </Field>
+                    <Field label="Adresse" htmlFor="f-cl-adresse">
+                      <input id="f-cl-adresse" className="q-input" value={client.adresse} onChange={(e) => setClient((p) => ({ ...p, adresse: e.target.value }))} placeholder="5 avenue des Champs-Élysées, 75008 Paris" />
+                    </Field>
+                    <Field label="SIRET" htmlFor="f-cl-siret">
+                      <input id="f-cl-siret" className="q-input font-mono" value={client.siret} onChange={(e) => setClient((p) => ({ ...p, siret: e.target.value }))} placeholder="987 654 321 00034" />
+                    </Field>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <Field label="N° facture" htmlFor="f-numero">
+                        <input id="f-numero" className="q-input font-mono" value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="F-2026-001" />
+                      </Field>
+                      <Field label="Émission" htmlFor="f-date">
+                        <input id="f-date" className="q-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                      </Field>
+                      <Field label="Échéance" htmlFor="f-echeance">
+                        <input id="f-echeance" className="q-input" type="date" value={echeance} onChange={(e) => setEcheance(e.target.value)} />
+                      </Field>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Étape 3 — Lignes */}
+              {step === 2 && (
+                <div>
+                  <PanelTitle>Lignes de facturation *</PanelTitle>
+                  <LineItemsEditor
+                    lignes={lignes}
+                    onUpdate={updateLigne}
+                    onRemove={removeLigne}
+                    onAdd={() => setLignes((prev) => [...prev, newLigne()])}
+                    rates={[20, 10, 5.5, 2.1, 0]}
+                  />
+                  <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                    <Field label="Mention TVA" htmlFor="f-mention">
+                      <input id="f-mention" className="q-input" value={mentionTVA} onChange={(e) => setMentionTVA(e.target.value)} placeholder="TVA non applicable, art. 293 B" />
+                    </Field>
+                    <Field label="Notes" htmlFor="f-notes">
+                      <input id="f-notes" className="q-input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Merci pour votre confiance" />
+                    </Field>
+                  </div>
+                </div>
+              )}
+
+              {/* Étape 4 — Aperçu */}
+              {step === 3 && (
+                <div>
+                  <PanelTitle>Récapitulatif</PanelTitle>
+                  <div className="flex flex-col gap-3">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <PartySummary label="Émetteur" party={emetteur} />
+                      <PartySummary label="Client" party={client} />
+                    </div>
+                    {/* Aperçu papier : sur mobile ici, sur grand écran dans la colonne de droite */}
+                    <div className="lg:hidden">{paper}</div>
+                    <TotalsBox totals={totals} />
+                    {!canGenerate && (
+                      <Callout tone="neutral" icon={Info}>
+                        Renseignez votre nom, celui du client et au moins une ligne avec un prix pour télécharger le PDF.
+                      </Callout>
+                    )}
+                  </div>
+
                   <button
-                    key={s.id}
-                    onClick={() => setStep(i)}
-                    className={`flex flex-col items-center gap-1 transition-all ${step === i ? "scale-105" : "opacity-50"}`}
+                    type="button"
+                    onClick={handleGenerate}
+                    disabled={!canGenerate || loading}
+                    className="lp-btn-p mt-5 w-full"
                   >
-                    <span className={`flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold transition-all ${
-                      step === i ? "bg-[#2563EB] text-white shadow-md shadow-blue-200" : step > i ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400"
-                    }`}>
-                      {step > i ? "✓" : i + 1}
-                    </span>
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${step === i ? "text-[#2563EB]" : "text-slate-400"}`}>
-                      <span className="hidden sm:inline">{s.label}</span>
-                      <span className="sm:hidden">{s.short}</span>
-                    </span>
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Download className="h-5 w-5" aria-hidden />}
+                    Télécharger le PDF
                   </button>
-                ))}
-              </div>
-              {/* Progress line */}
-              <div className="mt-3 h-1 rounded-full bg-slate-100 overflow-hidden">
-                <motion.div
-                  animate={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
-                  className="h-full rounded-full bg-gradient-to-r from-[#2563EB] to-[#7C3AED]"
-                  transition={{ duration: 0.3 }}
-                />
-              </div>
+                </div>
+              )}
             </div>
 
-            {/* Steps content */}
-            <div className="p-5 sm:p-8 min-h-[320px]">
-              <AnimatePresence mode="wait">
-                {/* Step 0 — Émetteur */}
-                {step === 0 && (
-                  <motion.div key="step0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-                    <h2 className="text-[16px] font-bold text-[#0F172A] mb-4">Vos informations</h2>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-[12px] font-bold text-slate-500">Nom / Raison sociale *</label>
-                        <input className={inputClass} value={emetteur.nom} onChange={(e) => setEmetteur((p) => ({ ...p, nom: e.target.value }))} placeholder="Ma Société SAS" />
-                      </div>
-                      <div>
-                        <label className="text-[12px] font-bold text-slate-500">Adresse</label>
-                        <input className={inputClass} value={emetteur.adresse} onChange={(e) => setEmetteur((p) => ({ ...p, adresse: e.target.value }))} placeholder="12 rue de la Paix, 75001 Paris" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[12px] font-bold text-slate-500">SIRET</label>
-                          <input className={inputClass} value={emetteur.siret} onChange={(e) => setEmetteur((p) => ({ ...p, siret: e.target.value }))} placeholder="123 456 789 00012" />
-                        </div>
-                        <div>
-                          <label className="text-[12px] font-bold text-slate-500">Email</label>
-                          <input className={inputClass} type="email" value={emetteur.email} onChange={(e) => setEmetteur((p) => ({ ...p, email: e.target.value }))} placeholder="contact@email.fr" />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Step 1 — Client */}
-                {step === 1 && (
-                  <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-                    <h2 className="text-[16px] font-bold text-[#0F172A] mb-4">Informations client</h2>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-[12px] font-bold text-slate-500">Nom / Raison sociale *</label>
-                        <input className={inputClass} value={client.nom} onChange={(e) => setClient((p) => ({ ...p, nom: e.target.value }))} placeholder="Client SARL" />
-                      </div>
-                      <div>
-                        <label className="text-[12px] font-bold text-slate-500">Adresse</label>
-                        <input className={inputClass} value={client.adresse} onChange={(e) => setClient((p) => ({ ...p, adresse: e.target.value }))} placeholder="5 avenue des Champs-Élysées, 75008 Paris" />
-                      </div>
-                      <div>
-                        <label className="text-[12px] font-bold text-slate-500">SIRET</label>
-                        <input className={inputClass} value={client.siret} onChange={(e) => setClient((p) => ({ ...p, siret: e.target.value }))} placeholder="987 654 321 00034" />
-                      </div>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <div>
-                          <label className="text-[12px] font-bold text-slate-500">N° facture</label>
-                          <input className={inputClass} value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="F-2026-001" />
-                        </div>
-                        <div>
-                          <label className="text-[12px] font-bold text-slate-500">Émission</label>
-                          <input className={inputClass} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="text-[12px] font-bold text-slate-500">Échéance</label>
-                          <input className={inputClass} type="date" value={echeance} onChange={(e) => setEcheance(e.target.value)} />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Step 2 — Lignes */}
-                {step === 2 && (
-                  <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-                    <h2 className="text-[16px] font-bold text-[#0F172A] mb-4">Lignes de facturation *</h2>
-                    <div className="space-y-3">
-                      {lignes.map((l, i) => (
-                        <div key={l.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-bold text-slate-400">Ligne {i + 1}</span>
-                            <button onClick={() => removeLigne(l.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
-                          </div>
-                          <input className={`${inputClass} mb-2`} placeholder="Description" value={l.description} onChange={(e) => updateLigne(l.id, "description", e.target.value)} />
-                          <div className="grid grid-cols-3 gap-2">
-                            <div>
-                              <label className="text-[10px] font-bold text-slate-400">Qté</label>
-                              <input className={inputClass} type="number" inputMode="decimal" min={0} value={l.quantite || ""} onChange={(e) => updateLigne(l.id, "quantite", parseFloat(e.target.value) || 0)} />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-bold text-slate-400">Prix HT</label>
-                              <input className={inputClass} type="number" inputMode="decimal" min={0} step={0.01} value={l.prixHT || ""} onChange={(e) => updateLigne(l.id, "prixHT", parseFloat(e.target.value) || 0)} />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-bold text-slate-400">TVA</label>
-                              <select className={inputClass} value={l.tauxTVA} onChange={(e) => updateLigne(l.id, "tauxTVA", parseFloat(e.target.value))}>
-                                <option value={20}>20%</option><option value={10}>10%</option><option value={5.5}>5,5%</option><option value={2.1}>2,1%</option><option value={0}>0%</option>
-                              </select>
-                            </div>
-                          </div>
-                          {l.prixHT > 0 && (
-                            <p className="mt-2 text-right text-[12px] font-semibold text-slate-500">= {fmtEur(l.quantite * l.prixHT)} HT</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <button onClick={() => setLignes((prev) => [...prev, newLigne()])} className="mt-3 flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold text-[#2563EB] hover:bg-[#EFF6FF] transition-colors">
-                      <Plus className="h-4 w-4" /> Ajouter une ligne
-                    </button>
-
-                    {/* Options */}
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="text-[12px] font-bold text-slate-500">Mention TVA</label>
-                        <input className={inputClass} value={mentionTVA} onChange={(e) => setMentionTVA(e.target.value)} placeholder="TVA non applicable, art. 293 B" />
-                      </div>
-                      <div>
-                        <label className="text-[12px] font-bold text-slate-500">Notes</label>
-                        <input className={inputClass} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Merci pour votre confiance" />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Step 3 — Aperçu */}
-                {step === 3 && (
-                  <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
-                    <h2 className="text-[16px] font-bold text-[#0F172A] mb-4">Récapitulatif</h2>
-
-                    <div className="space-y-3">
-                      {/* Émetteur & Client */}
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-xl bg-slate-50 p-3">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Émetteur</p>
-                          <p className="text-[14px] font-bold text-[#0F172A]">{emetteur.nom || "—"}</p>
-                          {emetteur.adresse && <p className="text-[12px] text-slate-500">{emetteur.adresse}</p>}
-                        </div>
-                        <div className="rounded-xl bg-slate-50 p-3">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Client</p>
-                          <p className="text-[14px] font-bold text-[#0F172A]">{client.nom || "—"}</p>
-                          {client.adresse && <p className="text-[12px] text-slate-500">{client.adresse}</p>}
-                        </div>
-                      </div>
-
-                      {/* Lignes */}
-                      <div className="rounded-xl border border-slate-100 overflow-hidden">
-                        {lignes.filter((l) => l.description).map((l, i) => (
-                          <div key={l.id} className={`flex items-center justify-between px-4 py-2.5 text-[13px] ${i % 2 === 0 ? "bg-slate-50/50" : "bg-white"}`}>
-                            <span className="text-slate-700">{l.description}</span>
-                            <span className="font-semibold">{fmtEur(l.quantite * l.prixHT)}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Totaux */}
-                      <div className="rounded-xl bg-gradient-to-br from-[#EFF6FF] to-[#F5F3FF] p-4">
-                        <div className="flex justify-between text-[14px] mb-1">
-                          <span className="text-slate-500">Sous-total HT</span>
-                          <span className="font-semibold">{fmtEur(subtotalHT)}</span>
-                        </div>
-                        <div className="flex justify-between text-[14px] mb-1">
-                          <span className="text-slate-500">TVA</span>
-                          <span className="font-semibold">{fmtEur(totalTVA)}</span>
-                        </div>
-                        <div className="h-px bg-slate-200/40 my-2" />
-                        <div className="flex justify-between text-[18px]">
-                          <span className="font-bold text-[#0F172A]">Total TTC</span>
-                          <span className="font-extrabold text-[#2563EB]">{fmtEur(totalTTC)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Generate button */}
-                    <button
-                      onClick={handleGenerate}
-                      disabled={!canGenerate || loading}
-                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2563EB] py-4 text-[15px] font-bold text-white hover:bg-[#1D4ED8] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
-                    >
-                      {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
-                      Télécharger le PDF
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Navigation buttons */}
-            <div className="border-t border-slate-100 px-5 py-4 sm:px-8 flex items-center justify-between">
-              <button
-                onClick={() => step > 0 ? setStep(step - 1) : handleReset()}
-                className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-slate-500 hover:bg-slate-50 transition-colors"
-              >
-                {step > 0 ? <><ArrowLeft className="h-3.5 w-3.5" /> Précédent</> : <><RotateCcw className="h-3.5 w-3.5" /> Réinitialiser</>}
+            {/* Navigation entre les étapes */}
+            <div className="flex items-center justify-between gap-3 border-t border-q-line-soft px-5 py-4 sm:px-7">
+              <button type="button" onClick={() => (step > 0 ? setStep(step - 1) : handleReset())} className="q-btn q-btn-ghost">
+                {step > 0 ? <><ArrowLeft aria-hidden /> Précédent</> : <><RotateCcw aria-hidden /> Réinitialiser</>}
               </button>
-
               {step < 3 && (
-                <button
-                  onClick={() => setStep(step + 1)}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#2563EB] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-[#1D4ED8] transition-colors"
-                >
-                  Suivant <ArrowRight className="h-3.5 w-3.5" />
+                <button type="button" onClick={() => setStep(step + 1)} className="q-btn q-btn-primary q-btn-lg sm:!h-10 sm:!rounded-[10px] sm:!text-[14px]">
+                  Suivant <ArrowRight aria-hidden />
                 </button>
               )}
             </div>
-          </motion.div>
-
-          {/* CTA */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }} className="mt-8 rounded-2xl border border-[#BFDBFE] bg-gradient-to-r from-[#EFF6FF] to-[#F5F3FF] p-6 text-center">
-            <p className="text-[15px] font-bold text-[#0F172A]">Cette facture n&apos;est pas conforme Factur-X 2026</p>
-            <p className="mt-1 text-[13px] text-slate-500">Qonforme génère automatiquement le format Factur-X EN 16931, avec archivage légal 10 ans.</p>
-            <Link href="/signup" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#2563EB] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8] transition-colors">
-              Passer au Factur-X conforme <ArrowRight className="h-4 w-4" />
-            </Link>
-          </motion.div>
-        </section>
-
-        {/* SEO */}
-        <section className="mt-16 border-t border-slate-200 bg-white px-5 py-16">
-          <div className="mx-auto max-w-3xl">
-            <h2 className="text-xl font-bold text-[#0F172A] mb-6">Créer une facture conforme en France</h2>
-            <div className="space-y-4 text-[15px] leading-relaxed text-slate-600">
-              <p>Une facture doit contenir des <strong>mentions obligatoires</strong> :</p>
-              <ul className="list-disc pl-6 space-y-2">
-                <li><strong>Identité émetteur</strong> — nom, SIRET, adresse, TVA</li>
-                <li><strong>Identité client</strong> — nom, adresse</li>
-                <li><strong>Numéro</strong> — unique, chronologique</li>
-                <li><strong>Dates</strong> — émission + échéance</li>
-                <li><strong>Montants</strong> — HT, TVA, TTC</li>
-                <li><strong>Conditions paiement</strong> — pénalités retard + indemnité 40 €</li>
-              </ul>
-              <h3 className="text-lg font-bold text-[#0F172A] pt-4">2026 : ce qui change</h3>
-              <p>La facturation électronique au format <strong>Factur-X</strong> devient obligatoire. Ce générateur produit un PDF basique — pas le format Factur-X.</p>
-            </div>
-            <div className="mt-12">
-              <h2 className="text-xl font-bold text-[#0F172A] mb-6">Questions fréquentes</h2>
-              <div className="space-y-3">
-                {[
-                  { q: "Cette facture est-elle conforme 2026 ?", a: "Non, c'est un PDF basique. Pour la conformité 2026, utilisez le format Factur-X généré par Qonforme." },
-                  { q: "Mes données sont-elles sauvegardées ?", a: "Non, aucune donnée n'est stockée. Le PDF est généré puis téléchargé." },
-                  { q: "Combien de factures puis-je générer ?", a: "Autant que vous voulez, 100% gratuit." },
-                ].map((item) => (
-                  <details key={item.q} className="group rounded-xl border border-slate-200 bg-slate-50/50">
-                    <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-[15px] font-semibold text-[#0F172A] list-none">{item.q}<ChevronRight className="h-4 w-4 text-slate-400 transition-transform group-open:rotate-90" /></summary>
-                    <p className="px-5 pb-4 text-[14px] leading-relaxed text-slate-600">{item.a}</p>
-                  </details>
-                ))}
-              </div>
-            </div>
-            <div className="mt-12 rounded-xl bg-slate-50 p-6">
-              <h3 className="text-[14px] font-bold text-slate-500 mb-3">Outils complémentaires</h3>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {[
-                  { href: "/outils/calculateur-tva", label: "Calculateur TVA HT/TTC" },
-                  { href: "/outils/generateur-devis-gratuit", label: "Générateur de devis gratuit" },
-                  { href: "/outils/verificateur-mentions-facture", label: "Vérificateur mentions facture" },
-                  { href: "/outils/verification-siret", label: "Vérificateur SIREN/SIRET" },
-                ].map((l) => (
-                  <Link key={l.href} href={l.href} className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-[14px] font-medium text-[#0F172A] hover:bg-white transition-colors"><span className="text-[#2563EB]">→</span> {l.label}</Link>
-                ))}
-              </div>
-            </div>
           </div>
-        </section>
 
-        <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebApplication", name: "Générateur de facture gratuit en ligne", url: "https://qonforme.fr/outils/generateur-facture-gratuite", applicationCategory: "BusinessApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" }, author: { "@type": "Organization", name: "Qonforme" } }) }} />
-      <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Cette facture est-elle conforme 2026 ?","acceptedAnswer":{"@type":"Answer","text":"Non, c'est un PDF basique. Pour la conformité 2026, utilisez le format Factur-X."}},{"@type":"Question","name":"Mes données sont-elles sauvegardées ?","acceptedAnswer":{"@type":"Answer","text":"Non, aucune donnée n'est stockée. Le PDF est généré puis téléchargé."}},{"@type":"Question","name":"Combien de factures puis-je générer ?","acceptedAnswer":{"@type":"Answer","text":"Autant que vous voulez, 100% gratuit."}}]}) }} />
-      </main>
+          {/* Aperçu en direct (grand écran) */}
+          <aside className="hidden lg:sticky lg:top-24 lg:block" aria-label="Aperçu en direct">
+            <p className="mb-2 text-[13px] font-semibold text-q-text-3">Aperçu en direct</p>
+            {paper}
+          </aside>
+        </div>
 
-      <Footer />
-    </>
+        <ToolCta
+          title="Ce PDF n'est pas une facture électronique"
+          text="Avec Qonforme, vos factures PDF partent avec leurs données Factur-X, se créent en un clic depuis un devis accepté et sont numérotées à la suite. La transmission par plateforme agréée est en préparation."
+          cta="Créer mon compte"
+        />
+      </ToolArea>
+
+      <ToolGuide title="Créer une facture" accent="conforme en France.">
+        <Prose>
+          <p>Une facture doit contenir des <strong>mentions obligatoires</strong> :</p>
+          <ul>
+            <li><strong>Identité émetteur</strong> : nom, SIRET, adresse, TVA</li>
+            <li><strong>Identité client</strong> : nom, adresse</li>
+            <li><strong>Numéro</strong> : unique, chronologique</li>
+            <li><strong>Dates</strong> : émission et échéance</li>
+            <li><strong>Montants</strong> : HT, TVA, TTC</li>
+            <li><strong>Conditions de paiement</strong> : pénalités de retard et indemnité de 40 €</li>
+          </ul>
+          <h3>2026-2027 : ce qui change</h3>
+          <p>
+            Depuis le 1er septembre 2026, toute entreprise doit pouvoir recevoir des factures électroniques. À partir du 1er septembre 2027, les TPE et PME doivent aussi émettre leurs factures entre entreprises en électronique (Factur-X, UBL ou CII), par une plateforme agréée. Ce générateur produit un PDF simple, pas une facture électronique.
+          </p>
+        </Prose>
+
+        <ToolFaq items={FAQ} />
+
+        <ToolLinks
+          links={[
+            { href: "/outils/calculateur-tva", label: "Calculateur TVA HT/TTC" },
+            { href: "/outils/generateur-devis-gratuit", label: "Générateur de devis gratuit" },
+            { href: "/outils/verificateur-mentions-facture", label: "Vérificateur mentions facture" },
+            { href: "/outils/verification-siret", label: "Vérificateur SIREN/SIRET" },
+          ]}
+        />
+      </ToolGuide>
+
+      <JsonLd data={toolJsonLd("Générateur de facture gratuit en ligne", "/outils/generateur-facture-gratuite")} />
+      <JsonLd data={faqJsonLd(FAQ)} />
+    </ToolShell>
   )
 }

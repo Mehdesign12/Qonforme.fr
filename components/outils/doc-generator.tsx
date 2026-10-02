@@ -45,7 +45,7 @@ export function Stepper({
   current,
   onSelect,
 }: {
-  steps: { label: string; short: string }[]
+  steps: { label: string }[]
   current: number
   onSelect: (i: number) => void
 }) {
@@ -56,12 +56,12 @@ export function Stepper({
           const done = i < current
           const active = i === current
           return (
-            <li key={s.label} className="flex min-w-0 flex-1 items-center gap-2">
+            <li key={s.label} className={cn("flex items-center gap-2", i < steps.length - 1 && "flex-auto")}>
               <button
                 type="button"
                 onClick={() => onSelect(i)}
                 aria-current={active ? "step" : undefined}
-                className="flex min-h-[44px] min-w-0 items-center gap-2 rounded-lg pr-1 text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)]"
+                className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-lg pr-1 text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)]"
               >
                 <span
                   className={cn(
@@ -73,12 +73,12 @@ export function Stepper({
                 >
                   {done ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden /> : i + 1}
                 </span>
-                <span className={cn("truncate text-[13px] font-semibold sm:text-[14px]", active ? "text-q-ink" : "text-q-text-4")}>
-                  <span className="hidden sm:inline">{s.label}</span>
-                  <span className="sm:hidden">{s.short}</span>
+                {/* Sur mobile, seul le libellé de l'étape courante s'affiche */}
+                <span className={cn("whitespace-nowrap text-[13px] font-semibold sm:text-[14px]", active ? "text-q-ink" : "sr-only text-q-text-4 sm:not-sr-only")}>
+                  {s.label}
                 </span>
               </button>
-              {i < steps.length - 1 && <span aria-hidden className={cn("h-px min-w-3 flex-1", done ? "bg-q-accent" : "bg-q-line")} />}
+              {i < steps.length - 1 && <span aria-hidden className={cn("h-px min-w-[16px] flex-1", done ? "bg-q-accent" : "bg-q-line")} />}
             </li>
           )
         })}

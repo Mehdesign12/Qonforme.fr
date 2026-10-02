@@ -1,5 +1,5 @@
 /**
- * Blog utility functions: reading time, category derivation, category colors.
+ * Blog utility functions: reading time, category derivation, category labels.
  */
 
 import { SEO_TOPICS } from "@/lib/ai/seo-topics"
@@ -46,27 +46,22 @@ export function getCategoryFromPrompt(aiPrompt: string | null): TopicCategory {
 
 // ── Category display config ─────────────────────────────────────────────────
 
-export interface CategoryConfig {
-  label: string
-  color: string       // text color
-  bg: string          // background color
-  border: string      // border color
+/**
+ * Libellé affiché de chaque catégorie. Une seule couleur pour toutes les
+ * pastilles (accent du canevas, voir components/blog/CategoryBadge.tsx).
+ */
+export const CATEGORY_CONFIG: Record<TopicCategory, { label: string }> = {
+  "réglementation": { label: "Réglementation" },
+  "tutoriel":       { label: "Tutoriel" },
+  "guide":          { label: "Guide" },
+  "actualité":      { label: "Actualité" },
+  "comparatif":     { label: "Comparatif" },
+  "pratique":       { label: "Pratique" },
+  "gestion":        { label: "Gestion" },
+  "comptabilité":   { label: "Comptabilité" },
+  "digital":        { label: "Digital" },
+  "cas-usage":      { label: "Cas d'usage" },
 }
-
-export const CATEGORY_CONFIG: Record<TopicCategory, CategoryConfig> = {
-  "réglementation": { label: "Réglementation", color: "text-red-700", bg: "bg-red-50", border: "border-red-200" },
-  "tutoriel":       { label: "Tutoriel",       color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200" },
-  "guide":          { label: "Guide",          color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
-  "actualité":      { label: "Actualité",      color: "text-orange-700", bg: "bg-orange-50", border: "border-orange-200" },
-  "comparatif":     { label: "Comparatif",     color: "text-purple-700", bg: "bg-purple-50", border: "border-purple-200" },
-  "pratique":       { label: "Pratique",        color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200" },
-  "gestion":        { label: "Gestion",        color: "text-teal-700", bg: "bg-teal-50", border: "border-teal-200" },
-  "comptabilité":   { label: "Comptabilité",   color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200" },
-  "digital":        { label: "Digital",        color: "text-cyan-700", bg: "bg-cyan-50", border: "border-cyan-200" },
-  "cas-usage":      { label: "Cas d'usage",    color: "text-pink-700", bg: "bg-pink-50", border: "border-pink-200" },
-}
-
-export const ALL_CATEGORIES = Object.keys(CATEGORY_CONFIG) as TopicCategory[]
 
 // ── FAQ extraction for JSON-LD ──────────────────────────────────────────────
 

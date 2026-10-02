@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Check, ChevronRight } from "lucide-react"
 import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"
+import { frSpaces } from "./kit"
 
 interface OutilsHeroProps {
   /** Pictogramme de l'outil, dans la pastille au-dessus du titre. */
@@ -65,16 +66,16 @@ export function OutilsHero({ icon, badge, title, accent, subtitle, crumb, checks
         )}
 
         <h1 className="font-display text-[clamp(34px,5vw,58px)] font-semibold leading-[1.04] tracking-[-0.035em] text-q-ink-strong [text-wrap:balance]">
-          {title}
+          {typeof title === "string" ? frSpaces(title) : title}
           {accent && (
             <>
               <br />
-              <span className="q-serif">{accent}</span>
+              <span className="q-serif">{typeof accent === "string" ? frSpaces(accent) : accent}</span>
             </>
           )}
         </h1>
 
-        <p className="mt-5 max-w-[640px] text-[17px] leading-[1.6] text-q-text-3 sm:text-[18px]">{subtitle}</p>
+        <p className="mt-5 max-w-[640px] text-[17px] leading-[1.6] text-q-text-3 sm:text-[18px]">{typeof subtitle === "string" ? frSpaces(subtitle) : subtitle}</p>
 
         {children}
 

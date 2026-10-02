@@ -5,8 +5,8 @@ export const runtime = "edge";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const title = searchParams.get("title") || "Facturation électronique simplifiée";
-  const subtitle = searchParams.get("subtitle") || "Conforme Factur-X EN 16931 — Pour artisans et TPE";
+  const title = searchParams.get("title") || "La facturation des pros du bâtiment";
+  const subtitle = searchParams.get("subtitle") || "Devis gratuits et illimités — Vous payez quand vous facturez";
 
   return new ImageResponse(
     (
@@ -144,7 +144,7 @@ export async function GET(req: NextRequest) {
             }}
           />
           <span style={{ fontSize: "14px", color: "#94A3B8" }}>
-            qonforme.fr — Conforme PPF · DGFiP
+            qonforme.fr — Devis et factures des artisans
           </span>
         </div>
       </div>

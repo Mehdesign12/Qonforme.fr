@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { ArrowRight, BookOpen } from "lucide-react"
 import { GUIDES, getGuideBySlug } from "@/lib/pseo/guides"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, FaqList, SectionHeading, WRAP } from "@/components/content/ui"
-import { fr, withoutClaims } from "@/components/content/text"
+import { fr } from "@/components/content/text"
 
 export function generateStaticParams() {
   return GUIDES.map(g => ({ slug: g.slug }))
@@ -45,9 +45,8 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
 
   const isHowTo = HOWTO_SLUGS.has(guide.slug)
 
-  // Textes sans autopromotion invérifiable, identiques à l'écran et dans le JSON-LD
-  const sections = guide.sections.map((s) => ({ titre: s.titre, contenu: withoutClaims(s.contenu) })).filter((s) => s.contenu)
-  const faq = guide.faq.map((f) => ({ question: f.question, reponse: withoutClaims(f.reponse) })).filter((f) => f.reponse)
+  // Mêmes textes à l'écran et dans le JSON-LD
+  const { sections, faq } = guide
 
   const jsonLd = [
     {

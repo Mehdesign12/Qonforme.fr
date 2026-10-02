@@ -168,7 +168,7 @@ export function ResultBox({
         </p>
       )}
       {sub && <p className="mt-1.5 text-[13px] text-q-text-4">{sub}</p>}
-      {children && <dl className={cn("flex flex-col gap-2.5", (label || value !== undefined) && "mt-5 border-t border-q-line pt-4")}>{children}</dl>}
+      {children && <div className={cn("flex flex-col gap-2.5", (label || value !== undefined) && "mt-5 border-t border-q-line pt-4")}>{children}</div>}
       {footer && <div className="mt-4 flex flex-wrap items-center justify-end gap-2">{footer}</div>}
     </div>
   )
@@ -189,12 +189,12 @@ export function ResultRow({
   divider?: boolean
 }) {
   return (
-    <div className={cn("flex items-baseline justify-between gap-4", divider && "mt-1 border-t border-q-line pt-3")}>
+    <dl className={cn("flex items-baseline justify-between gap-4", divider && "mt-1 border-t border-q-line pt-3")}>
       <dt className={cn("min-w-0 text-[15px]", strong ? "font-semibold text-q-ink" : "text-q-text-3")}>{label}</dt>
       <dd className={cn("shrink-0 text-right tabular-nums", strong ? "text-[17px] font-semibold" : "text-[15px] font-medium", TONE_TEXT[tone])}>
         {value}
       </dd>
-    </div>
+    </dl>
   )
 }
 
@@ -312,10 +312,10 @@ export function ToolCta({
   className?: string
 }) {
   return (
-    <aside className={cn("q-card flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6", className)}>
+    <aside className={cn("q-card flex flex-col items-start gap-4 p-5 sm:p-6", className)}>
       <div className="min-w-0">
-        <p className="text-[16px] font-semibold text-q-ink">{title}</p>
-        <p className="mt-1 text-[14px] leading-[1.55] text-q-text-3">{text}</p>
+        <p className="text-[16px] font-semibold text-q-ink">{typeof title === "string" ? frSpaces(title) : title}</p>
+        <p className="mt-1 text-[14px] leading-[1.55] text-q-text-3">{typeof text === "string" ? frSpaces(text) : text}</p>
       </div>
       <Link href={href} className="lp-btn-p !h-11 shrink-0 !gap-2 !px-5 !text-[15px]">
         {cta}
@@ -341,11 +341,11 @@ export function ToolGuide({
     <section className="mt-16 border-t border-q-line bg-q-surface px-4 py-14 sm:mt-20 sm:px-6 sm:py-20">
       <div className="mx-auto w-full max-w-[760px]">
         <h2 className="font-display text-[clamp(26px,3vw,36px)] font-semibold leading-[1.1] tracking-[-0.03em] text-q-ink-strong [text-wrap:balance]">
-          {title}
+          {typeof title === "string" ? frSpaces(title) : title}
           {accent && (
             <>
               {" "}
-              <span className="q-serif">{accent}</span>
+              <span className="q-serif">{typeof accent === "string" ? frSpaces(accent) : accent}</span>
             </>
           )}
         </h2>
@@ -483,4 +483,48 @@ export function faqJsonLd(items: { q: string; a: string }[]) {
     "@type": "FAQPage",
     mainEntity: items.map((i) => ({ "@type": "Question", name: frSpaces(i.q), acceptedAnswer: { "@type": "Answer", text: frSpaces(i.a) } })),
   }
+}
+
+/* ─────────────────────────────────────────────────────────
+   Hub : carte d'outil (grande pour les essentiels, compacte sinon)
+───────────────────────────────────────────────────────── */
+export function ToolCard({
+  href,
+  title,
+  desc,
+  icon: Icon,
+  size = "md",
+  as: Tag = "h3",
+}: {
+  href: string
+  title: string
+  desc: string
+  icon: LucideIcon
+  size?: "lg" | "md"
+  as?: "h2" | "h3"
+}) {
+  const lg = size === "lg"
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "group flex h-full flex-col rounded-[20px] border border-q-line bg-q-surface shadow-[var(--q-shadow-card)] transition-[border-color,box-shadow,transform] duration-200",
+        "hover:-translate-y-0.5 hover:border-q-wash-line hover:shadow-[0_18px_36px_-22px_rgba(10,17,34,.35)] motion-reduce:hover:translate-y-0",
+        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent",
+        lg ? "p-5 sm:p-7" : "p-5",
+      )}
+    >
+      <span className={cn("grid shrink-0 place-items-center rounded-xl bg-q-wash text-q-accent-strong", lg ? "mb-4 h-11 w-11 sm:mb-6" : "mb-4 h-10 w-10")}>
+        <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+      </span>
+      <Tag className={cn("font-display font-semibold tracking-[-0.02em] text-q-ink-strong transition-colors group-hover:text-q-accent-strong", lg ? "text-[21px] leading-[1.2]" : "text-[17px] leading-[1.25]")}>
+        {title}
+      </Tag>
+      <p className={cn("mt-2 flex-1 leading-[1.55] text-q-text-3", lg ? "text-[15px]" : "text-[14px]")}>{frSpaces(desc)}</p>
+      <span className={cn("inline-flex items-center gap-1.5 font-semibold text-q-accent-strong", lg ? "mt-4 text-[15px] sm:mt-6" : "mt-4 text-[14px]")}>
+        Utiliser l&apos;outil
+        <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+      </span>
+    </Link>
+  )
 }

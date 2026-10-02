@@ -24,7 +24,6 @@ export async function updateSession(request: NextRequest) {
     '/outils',
     '/api/webhooks/stripe',
     '/api/og',
-    '/api/preview',
     '/api/cron',
     '/api/outils',
   ]

@@ -892,7 +892,7 @@ CRON_SECRET=
 - [x] Total : 11 modèles (8 + 3), nouveau type "relance"
 
 #### P10. Aperçu visuel des modèles — ✅ Fait
-- [x] Route `/api/preview` (edge, ImageResponse 1000x600) — preview stylisé par type (facture/devis/avoir/relance)
+- [x] Route `/api/preview` (edge, ImageResponse 1000x600) — preview stylisé par type (facture/devis/avoir/relance) — supprimée le 02/10/2026 : aucune page ne l'appelait
 - [x] Image preview affichée sur chaque page `/modele/[slug]` avec contenu dynamique
 - [x] Impact : conversion + temps sur page amélioré
 

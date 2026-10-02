@@ -4,7 +4,6 @@ import Image from "next/image"
 import { ArrowRight, Wrench, Briefcase, Heart, Scissors, Car, KeyRound } from "lucide-react"
 import { METIERS } from "@/lib/pseo/metiers"
 import { ContentCta, ContentHero, ContentPage, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
-import { withoutClaims } from "@/components/content/text"
 import { TRADE_PHOTOS } from "@/components/content/metier"
 
 export const metadata: Metadata = {
@@ -128,7 +127,7 @@ export default function FacturationIndexPage() {
                 {cat.slugs.map((slug) => {
                   const m = metiersBySlug[slug]
                   if (!m) return null
-                  return <LinkCard key={slug} href={`/facturation/${slug}`} title={m.nom} text={withoutClaims(m.description)} cta="Voir le métier" as="h3" />
+                  return <LinkCard key={slug} href={`/facturation/${slug}`} title={m.nom} text={m.description} cta="Voir le métier" as="h3" />
                 })}
               </div>
             </div>
