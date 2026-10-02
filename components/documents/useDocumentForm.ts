@@ -5,7 +5,7 @@
  * Mêmes règles qu'avant la refonte : lignes contrôlées, totaux recalculés à
  * chaque frappe, erreur d'un champ effacée dès qu'il est modifié.
  */
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ProductSuggestion } from "@/components/products/ProductCombobox"
 import {
   computeLines, computeTotals, lineFromProduct, newLine, validateDoc,
@@ -101,4 +101,21 @@ export type DocumentFormApi = ReturnType<typeof useDocumentForm>
 
 function stripIds(form: DocForm) {
   return { ...form, lines: form.lines.map(({ description, quantity, unit_price_ht, vat_rate }) => ({ description, quantity, unit_price_ht, vat_rate })) }
+}
+
+/**
+ * Présélectionne le client passé dans l'URL (« ?client=<id> ») : bouton
+ * « Nouveau devis » d'une fiche client, retour après la création d'un client.
+ * Appliqué une seule fois, quand la liste des clients est chargée et si
+ * aucun client n'est encore choisi ; un identifiant inconnu est ignoré.
+ */
+export function usePreselectedClient(doc: DocumentFormApi, clients: { id: string }[], enabled = true) {
+  const done = useRef(false)
+  const { form, setValue } = doc
+  useEffect(() => {
+    if (!enabled || done.current || clients.length === 0) return
+    done.current = true
+    const wanted = new URLSearchParams(window.location.search).get("client")
+    if (wanted && !form.client_id && clients.some((c) => c.id === wanted)) setValue("client_id", wanted)
+  }, [enabled, clients, form.client_id, setValue])
 }

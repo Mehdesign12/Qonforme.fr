@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
-import { useDocumentForm } from "@/components/documents/useDocumentForm"
+import { useDocumentForm, usePreselectedClient } from "@/components/documents/useDocumentForm"
 import { isoDateIn, newLine, toPayloadLines, type DocClient, type DocCompany } from "@/components/documents/model"
 
 export default function NewQuoteForm() {
@@ -22,6 +22,7 @@ export default function NewQuoteForm() {
     delivery_date: "", reference: "", notes: "", lines: [newLine()],
   }))
   const { form, computed } = doc
+  usePreselectedClient(doc, clients)
 
   useEffect(() => {
     fetch("/api/clients")
