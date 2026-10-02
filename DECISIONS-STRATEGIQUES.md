@@ -2,7 +2,7 @@
 
 > **Document vivant.** Il consigne ce qui a été décidé avec le fondateur et ce qui reste ouvert.
 >
-> **Dernière mise à jour :** 2 octobre 2026 (abonnement, paiements et retrait de l'app native en section 12 ; grille de prix tranchée). Le 1er octobre : accès libre au tableau de bord, aucun contact humain promis, écrans épurés, inventaire de la refonte en section 10, chaîne des documents et signature en ligne en section 11.
+> **Dernière mise à jour :** 2 octobre 2026 (abonnement, paiements et retrait de l'app native en section 12 ; grille de prix tranchée ; accueil refait, section 6). Le 1er octobre : accès libre au tableau de bord, aucun contact humain promis, écrans épurés, inventaire de la refonte en section 10, chaîne des documents et signature en ligne en section 11.
 >
 > **Il complète `STRATEGIE-CROISSANCE-2026-10.md` (l'analyse de départ).** En cas de contradiction, **ce document fait foi**. La section 9 liste ce qu'il remplace.
 
@@ -98,7 +98,9 @@
 - **Canevas de référence :** https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG (environ 190 planches au 01/10/2026).
   - Le héros « Clair sobre » de l'accueil est **validé**.
   - Les autres écrans sont à relire.
-  - Le bloc d'appel à l'action en bas de l'accueil a encore l'ancien fond bleu : il faut l'aligner.
+  - Le bloc d'appel à l'action en bas de l'accueil est aligné : fond blanc (ou photo d'artisan quand elle existe), boutons en pilule.
+  - **Titre de l'accueil en ligne :** « La facturation des pros du bâtiment, simple dès le premier devis. » Le titre validé (« conforme de bout en bout ») reviendra quand la transmission par plateforme agréée sera livrée : d'ici là, ce serait une promesse non tenue.
+  - **Photos :** des illustrations d'artisans au travail, jamais présentées comme des clients (ni nom, ni citation, ni écran lisible).
 
 ## 7. Questions ouvertes
 
@@ -232,7 +234,7 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 | « Devis gratuits, factures payantes » : application ouverte sans abonnement, paiement à la première facture | **Construit le 02/10/2026** (§ 12) | Lève le principal frein pour un premier logiciel |
 | Grille Essentiel 12 € / Artisan 24 € HT (10 € et 20 € à l'année), satisfait ou remboursé 30 jours | **Construit le 02/10/2026** (§ 12). Artisan affiché « bientôt » tant que ses fonctions manquent | Panier moyen plus haut, garantie qui rassure |
 | Lien « Propulsé par Qonforme » cliquable, avec provenance | **Partiel** : texte seul dans les emails et les PDF | Bouche-à-oreille mesurable, sans démarchage |
-| Accueil et tarifs réécrits, sans faux avis ni promesse non tenue | **Partiel** : page tarifs, grille de l'accueil, données structurées et CGU corrigées le 02/10/2026 ; le reste de l'accueil attend la refonte | Confiance |
+| Accueil et tarifs réécrits, sans faux avis ni promesse non tenue | **Construit le 02/10/2026** : accueil refait (héros validé, vrai produit dans un Mac et un iPhone, animations au défilement, FAQ honnête), tarifs, données structurées, CGU et pied de page corrigés. Photos d'artisans en attente d'une clé de génération d'images | Confiance |
 
 ### Premiers pas
 
