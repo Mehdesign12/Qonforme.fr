@@ -383,7 +383,7 @@ function IdentityCard({ identity, future }: { identity: BillingIdentity; future?
         <span className="font-semibold text-[var(--q-ink)]">{identity.name || 'Votre entreprise'}</span>
         {identity.address && <span>{identity.address}</span>}
         {identity.siren && <span>SIREN <span className="font-mono">{identity.siren}</span></span>}
-        {identity.email && <span>Compte : {identity.email}</span>}
+        {identity.email && <span>E-mail du compte : {identity.email}</span>}
       </div>
       <p className="text-xs text-[var(--q-text-4)]">
         {future

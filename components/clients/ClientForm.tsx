@@ -312,7 +312,7 @@ export function ClientFormPage({
                       autoComplete="off"
                       placeholder="9 ou 14 chiffres"
                       aria-describedby="client-lookup-status"
-                      className={cn(INPUT, "font-mono")}
+                      className={cn(INPUT, "font-mono placeholder:font-sans")}
                     />
                   </div>
                   <button
@@ -362,8 +362,8 @@ export function ClientFormPage({
             })}
             {isPro && (
               <div className="grid gap-3.5 md:grid-cols-2 md:gap-3">
-                {field("siren", "SIREN", { inputMode: "numeric", maxLength: 9, autoComplete: "off", placeholder: "9 chiffres", className: "font-mono" })}
-                {field("vat_number", "N° TVA intracommunautaire", { autoComplete: "off", placeholder: "FR00123456789", className: "font-mono" })}
+                {field("siren", "SIREN", { inputMode: "numeric", maxLength: 9, autoComplete: "off", placeholder: "9 chiffres", className: "font-mono placeholder:font-sans" })}
+                {field("vat_number", "N° TVA intracommunautaire", { autoComplete: "off", placeholder: "FR00123456789", className: "font-mono placeholder:font-sans" })}
               </div>
             )}
           </section>
@@ -417,7 +417,7 @@ export function ClientFormPage({
       </div>
 
       {/* Barre d'enregistrement mobile, au-dessus de la barre de navigation */}
-      <div aria-hidden className="h-[60px] md:hidden" />
+      <div aria-hidden className="h-[84px] md:hidden" />
       <div className="fixed inset-x-3 bottom-[calc(96px+env(safe-area-inset-bottom))] z-30 rounded-3xl border border-[var(--q-line)] bg-[var(--q-surface)] p-3 shadow-[var(--q-shadow-float)] md:hidden">
         <button type="submit" className="q-btn q-btn-primary q-btn-xl w-full" disabled={submitting}>
           {submitting ? <Loader2 className="animate-spin" aria-hidden /> : <Check strokeWidth={2.5} aria-hidden />}

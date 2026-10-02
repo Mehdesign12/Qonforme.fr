@@ -25,6 +25,9 @@ const MENU_LINK =
 /** Bouton principal en pilule (.lp-btn-p), ramené à 40 px dans la barre (44 px sur mobile). */
 const CTA = "lp-btn-p !h-11 !gap-2 !px-3.5 !text-sm lg:!h-10 lg:!px-[18px]"
 
+/** Guide de la réforme (page publique stable, aussi liée depuis le pied de page). */
+const REFORME_HREF = "/guide/facture-electronique-2026"
+
 const SHADOW_REST = "0 1px 2px rgba(10,17,34,.04), 0 10px 28px -20px rgba(10,17,34,.20)"
 const SHADOW_SCROLLED = "0 1px 2px rgba(10,17,34,.05), 0 14px 34px -18px rgba(10,17,34,.28)"
 
@@ -107,9 +110,12 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
   const isActive = (base: string) => pathname === base || pathname.startsWith(`${base}/`)
   const current = (base: string) => (isActive(base) ? ("page" as const) : undefined)
 
+  // Libellés du canevas (Produit, Tarifs, Réforme 2027, Outils gratuits), vers
+  // des destinations qui existent ; Blog et Démo restent accessibles.
   const leading = [
-    { label: "Fonctionnalités", href: `${prefix}#features`, current: undefined },
+    { label: "Produit", href: `${prefix}#features`, current: undefined },
     { label: "Tarifs", href: isLandingPage ? "#pricing" : "/pricing", current: current("/pricing") },
+    { label: "Réforme 2027", href: REFORME_HREF, current: current(REFORME_HREF) },
   ]
   const trailing = [
     { label: "Blog", href: "/blog", current: current("/blog") },

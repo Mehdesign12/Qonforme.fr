@@ -37,7 +37,6 @@ export function ClientsListView({
   newHref,
   detailHref,
   editHref,
-  onEdit,
   onArchive,
   error,
   onRetry,
@@ -50,8 +49,6 @@ export function ClientsListView({
   newHref: string
   detailHref: (id: string) => string
   editHref?: (id: string) => string
-  /** Remplace le lien de modification (démo). */
-  onEdit?: (row: ClientRow) => void
   /** Archive le client ; renvoie true si c'est fait. */
   onArchive: (row: ClientRow) => Promise<boolean> | boolean
   error?: string | null
@@ -208,11 +205,7 @@ export function ClientsListView({
   const shownDue = visible.reduce((s, r) => s + (r.metrics?.due ?? 0), 0)
 
   const editAction = (r: ClientRow) =>
-    onEdit ? (
-      <Button variant="ghost" size="icon-sm" onClick={() => onEdit(r)} aria-label={`Modifier ${r.name}`}>
-        <Pencil aria-hidden />
-      </Button>
-    ) : editHref ? (
+    editHref ? (
       <Link href={editHref(r.id)} className="q-btn q-btn-ghost q-btn-sm q-btn-icon" aria-label={`Modifier ${r.name}`}>
         <Pencil aria-hidden />
       </Link>
@@ -244,11 +237,11 @@ export function ClientsListView({
         <Kpi
           tone={noSiren.length > 0 ? "warn" : "default"}
           icon={noSiren.length > 0 ? <CircleAlert className="size-3.5" strokeWidth={2.25} aria-hidden /> : undefined}
-          label="Sans SIREN"
+          label="À compléter"
           value={plural(noSiren.length, "client")}
           sub={noSiren.length > 0 ? (
             <button type="button" onClick={() => setTab("nosiren")} className="q-link text-[13px]">
-              Voir ces clients
+              Voir les clients sans SIREN
             </button>
           ) : "Tous vos clients ont un SIREN"}
         />
@@ -370,7 +363,7 @@ export function ClientsListView({
                       <td className="!py-2.5">
                         {r.siren
                           ? <span className="font-mono text-[13px] text-[var(--q-text-2)]">{formatSirenDisplay(r.siren)}</span>
-                          : <StatusPill tone="warn" icon={<CircleAlert strokeWidth={2.5} aria-hidden />}>Sans SIREN</StatusPill>}
+                          : <StatusPill tone="warn" icon={<CircleAlert strokeWidth={2.5} aria-hidden />}>SIREN à compléter</StatusPill>}
                       </td>
                       <td className="w-px whitespace-nowrap !py-2.5 text-right">
                         <span className="inline-flex items-center gap-0.5">

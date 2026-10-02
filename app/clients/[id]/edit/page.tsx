@@ -7,6 +7,7 @@ import { useRouter, useParams } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { ClientFormPage, type ClientFormValues, type ClientPayload } from "@/components/clients/ClientForm"
+import { SetCrumb } from "@/components/layout/crumb"
 
 export default function EditClientPage() {
   const router = useRouter()
@@ -71,17 +72,20 @@ export default function EditClientPage() {
   }
 
   return (
-    <ClientFormPage
-      mode="edit"
-      initial={loaded.values}
-      country={loaded.country}
-      title="Modifier le client"
-      subtitle={loaded.name}
-      backHref={`/clients/${id}`}
-      backLabel={loaded.name}
-      cancelHref={`/clients/${id}`}
-      submitLabel="Enregistrer"
-      onSubmit={save}
-    />
+    <>
+      <SetCrumb label={loaded.name} />
+      <ClientFormPage
+        mode="edit"
+        initial={loaded.values}
+        country={loaded.country}
+        title="Modifier le client"
+        subtitle={loaded.name}
+        backHref={`/clients/${id}`}
+        backLabel={loaded.name}
+        cancelHref={`/clients/${id}`}
+        submitLabel="Enregistrer"
+        onSubmit={save}
+      />
+    </>
   )
 }

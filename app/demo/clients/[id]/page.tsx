@@ -46,7 +46,12 @@ export default function DemoClientDetailPage() {
         docs={data.docs}
         metrics={data.metrics}
         year={DEMO_YEAR}
-        links={{ list: "/demo/clients", newQuote: "/demo/quotes/new", newInvoice: "/demo/invoices/new" }}
+        links={{
+          list: "/demo/clients",
+          newQuote: "/demo/quotes/new",
+          newInvoice: "/demo/invoices/new",
+          edit: `/demo/clients/${data.client.id}/edit`,
+        }}
         onSave={() => { demoCta("Créez un compte pour modifier vos clients"); return true }}
         onArchive={() => { demoCta("Créez un compte pour archiver vos clients") }}
         onContact={() => demoCta("Démo : les coordonnées sont fictives. Créez un compte pour contacter vos clients")}
