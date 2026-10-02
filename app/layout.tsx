@@ -39,11 +39,11 @@ const bricolageGrotesque = Bricolage_Grotesque({
 export const metadata: Metadata = {
   metadataBase: new URL("https://qonforme.fr"),
   title: {
-    default: "Qonforme — Logiciel de facturation électronique 2026",
+    default: "Qonforme — Logiciel de facturation des artisans du bâtiment",
     template: "%s | Qonforme",
   },
   description:
-    "Qonforme, le logiciel de facturation en ligne pour artisans et TPE. Créez et transmettez vos factures électroniques conformes Factur-X 2026 en quelques clics.",
+    "Le logiciel de devis et de facturation des artisans du bâtiment : devis gratuits et illimités, factures aux mentions obligatoires, relances automatiques.",
   keywords: ["logiciel de facturation", "logiciel facturation en ligne", "facturation électronique", "facture", "artisan", "TPE", "Factur-X", "PPF"],
   alternates: {
     canonical: "/",
@@ -63,18 +63,18 @@ export const metadata: Metadata = {
 
   /* ── Open Graph ── */
   openGraph: {
-    title:       "Qonforme — Logiciel de facturation électronique 2026",
-    description: "Le logiciel de facturation conforme pour artisans et TPE",
+    title:       "Qonforme — Logiciel de facturation des artisans du bâtiment",
+    description: "Devis gratuits et illimités. Vous payez quand vous facturez.",
     url:         "https://qonforme.fr",
     siteName:    "Qonforme",
     locale:      "fr_FR",
     type:        "website",
     images: [
       {
-        url:    "/api/og?title=Facturation%20%C3%A9lectronique%20simplifi%C3%A9e&subtitle=Conforme%20Factur-X%20EN%2016931%20%E2%80%94%20Pour%20artisans%20et%20TPE",
+        url:    "/api/og?title=La%20facturation%20des%20pros%20du%20b%C3%A2timent&subtitle=Devis%20gratuits%20et%20illimit%C3%A9s%20%E2%80%94%20Vous%20payez%20quand%20vous%20facturez",
         width:  1200,
         height: 630,
-        alt:    "Qonforme — Facturation électronique",
+        alt:    "Qonforme — La facturation des pros du bâtiment",
       },
     ],
   },
@@ -82,9 +82,9 @@ export const metadata: Metadata = {
   /* ── Twitter Card ── */
   twitter: {
     card:        "summary_large_image",
-    title:       "Qonforme — Logiciel de facturation électronique 2026",
-    description: "Le logiciel de facturation conforme pour artisans et TPE",
-    images:      ["/api/og?title=Facturation%20%C3%A9lectronique%20simplifi%C3%A9e&subtitle=Conforme%20Factur-X%20EN%2016931%20%E2%80%94%20Pour%20artisans%20et%20TPE"],
+    title:       "Qonforme — Logiciel de facturation des artisans du bâtiment",
+    description: "Devis gratuits et illimités. Vous payez quand vous facturez.",
+    images:      ["/api/og?title=La%20facturation%20des%20pros%20du%20b%C3%A2timent&subtitle=Devis%20gratuits%20et%20illimit%C3%A9s%20%E2%80%94%20Vous%20payez%20quand%20vous%20facturez"],
   },
 
   /* ── Google Search Console ── */
@@ -147,7 +147,7 @@ export default function RootLayout({
                   url: "https://qonforme.fr",
                   logo: "https://qonforme.fr/og-image.png",
                   description:
-                    "Qonforme, le logiciel de facturation électronique pour artisans et TPE, conforme à la réglementation française 2026.",
+                    "Qonforme, le logiciel de devis et de facturation des artisans du bâtiment.",
                   contactPoint: {
                     "@type": "ContactPoint",
                     contactType: "Customer Service",
@@ -162,9 +162,9 @@ export default function RootLayout({
                   url: "https://qonforme.fr",
                   applicationCategory: "BusinessApplication",
                   operatingSystem: "Web",
-                  description: "Logiciel de facturation electronique pour artisans et TPE. Factures Factur-X conformes a la reforme 2026.",
+                  description: "Logiciel de devis et de facturation pour les artisans du batiment. Devis gratuits et illimites.",
                   screenshot: "https://qonforme.fr/og-image.png",
-                  featureList: "Factur-X EN 16931, Devis, Factures, Avoirs, Relances automatiques, Export FEC, Envoi par email",
+                  featureList: "Devis, Factures, Avoirs, Bons de commande, Relances automatiques, Export FEC, Envoi par email",
                   // Aucune note ni nombre d'avis : Qonforme n'a pas d'avis vérifiables
                   // à publier (règle « aucune affirmation invérifiable », CLAUDE.md).
                   offers: [
