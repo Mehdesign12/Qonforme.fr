@@ -1,119 +1,151 @@
-'use client'
+/**
+ * Graphique « Facturé » (canevas « Tableau de bord », carte « Encaissements ») :
+ * six mois complets et le mois en cours, en barres CSS rendues côté serveur
+ * (plus de Recharts ni de chargement différé).
+ *
+ * Montre le montant facturé par mois, seule donnée vraie disponible : la date
+ * de paiement n'est pas enregistrée, donc pas d'« encaissé » ni de prévision
+ * hachurée. Le dernier mois complet est mis en avant ; le mois en cours est
+ * plus clair. Survol : bulle de détail ; lecteurs d'écran : tableau masqué.
+ */
+import { formatCurrency } from "@/lib/utils/invoice"
+import { cn } from "@/lib/utils"
+import { formatCompactEuro, niceScale, plural, type ChartMonth } from "@/components/dashboard/model"
 
-import {
-  XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, BarChart, Bar,
-} from 'recharts'
+const GRID_LINES = [0, 50, 100, 150]
 
-/* ─────────────────────────────────────────────────────────────────────────
-   Types
-───────────────────────────────────────────────────────────────────────── */
-interface MonthData {
-  month: string   // "Jan", "Fév", …
-  value: number
-}
+export function RevenueChart({ chart, recoveryRate }: { chart: ChartMonth[]; recoveryRate: number | null }) {
+  const max = Math.max(0, ...chart.map((m) => m.value))
+  const { top, ticks } = niceScale(max)
 
-interface RevenueChartProps {
-  data:         MonthData[]
-  currentMonth: number  // index 0-based du mois courant dans data
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Tooltip personnalisé
-───────────────────────────────────────────────────────────────────────── */
-function CustomTooltip({ active, payload, label }: {
-  active?:  boolean
-  payload?: { value: number }[]
-  label?:   string
-}) {
-  if (!active || !payload?.length) return null
   return (
-    <div
-      className="rounded-xl border border-white/60 px-3 py-2 text-xs shadow-lg"
-      style={{
-        background: 'var(--card-glass-bg)',
-        boxShadow:  '0 4px 16px rgba(15,23,42,0.10)',
-      }}
-    >
-      <p className="font-semibold text-[#0F172A] dark:text-[#E2E8F0] mb-0.5">{label}</p>
-      <p className="text-[#2563EB] font-bold">
-        {payload[0].value.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €
-      </p>
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Component
-───────────────────────────────────────────────────────────────────────── */
-export function RevenueChart({ data, currentMonth }: RevenueChartProps) {
-  return (
-    <div
-      className="rounded-2xl border border-white/60 dark:border-[#1E3A5F] p-4 sm:p-5 overflow-hidden"
-      style={{
-        background: 'var(--card-glass-bg)',
-        boxShadow:  'var(--card-glass-shadow)',
-      }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">Chiffre d&apos;affaires</h3>
-          <p className="text-[11px] text-slate-400 mt-0.5">12 derniers mois</p>
+    <section aria-labelledby="dash-chart-title" className="q-card p-5">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h2 id="dash-chart-title" className="q-h2">Facturé</h2>
+          <p className="text-xs text-[var(--q-text-4)]">
+            Factures émises, montants TTC par mois
+            {recoveryRate !== null && <> · {recoveryRate}&nbsp;% du montant émis déjà réglé</>}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
-          <span className="text-[11px] text-slate-400">CA facturé</span>
+        <div className="flex items-center gap-4 text-[13px] text-[var(--q-text-2)]" aria-hidden>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-3 rounded-[3px] bg-[var(--q-accent-strong)]" />
+            Facturé
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-3 rounded-[3px] bg-[var(--q-accent-strong)] opacity-40" />
+            Mois en cours
+          </span>
         </div>
       </div>
 
-      {/* Chart */}
-      <ResponsiveContainer width="100%" height={160}>
-        <BarChart data={data} barSize={16} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-          <defs>
-            <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor="#2563EB" stopOpacity={1}   />
-              <stop offset="100%" stopColor="#60A5FA" stopOpacity={0.7} />
-            </linearGradient>
-            <linearGradient id="barGradientActive" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor="#1D4ED8" stopOpacity={1}   />
-              <stop offset="100%" stopColor="#2563EB" stopOpacity={0.9} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="#E2E8F0"
-            vertical={false}
-            strokeWidth={0.8}
-          />
-          <XAxis
-            dataKey="month"
-            axisLine={false}
-            tickLine={false}
-            tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 500 }}
-            dy={6}
-          />
-          <YAxis
-            axisLine={false}
-            tickLine={false}
-            tick={{ fontSize: 10, fill: '#CBD5E1' }}
-            tickFormatter={(v) => v === 0 ? '0' : `${Math.round(v / 1000)}k`}
-          />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(37,99,235,0.04)', radius: 6 }} />
-          <Bar dataKey="value" radius={[6, 6, 2, 2]}>
-            {data.map((_, i) => (
-              <Cell
-                key={`cell-${i}`}
-                fill={i === currentMonth
-                  ? 'url(#barGradientActive)'
-                  : 'url(#barGradient)'
-                }
-                opacity={i === currentMonth ? 1 : 0.55}
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+      <div className="relative mt-5 flex gap-3" aria-hidden>
+        {/* Axe des montants */}
+        <div className="flex h-[200px] w-11 shrink-0 -translate-y-[7px] flex-col justify-between text-right text-xs text-[var(--q-text-4)] tabular-nums">
+          {ticks.map((t) => (
+            <span key={t}>{formatCompactEuro(t)}</span>
+          ))}
+        </div>
+
+        {/* Zone de tracé */}
+        <div className="relative h-[200px] min-w-0 flex-1">
+          {GRID_LINES.map((y) => (
+            <div key={y} className="absolute inset-x-0 border-t border-dashed border-[var(--q-line-soft)]" style={{ top: y }} />
+          ))}
+          <div className="absolute inset-x-0 bottom-0 border-t border-[var(--q-field)]" />
+
+          <div className="absolute inset-0 grid grid-cols-7 items-end gap-0.5">
+            {chart.map((m, i) => {
+              const pct = top > 0 ? (m.value / top) * 100 : 0
+              // Montant affiché : dernier mois complet, et mois en cours (même à zéro)
+              const showValue = (m.highlight && m.value > 0) || m.current
+              return (
+                <div key={m.key} className="group relative flex h-full flex-col items-center justify-end">
+                  {showValue && (
+                    <span
+                      className={cn(
+                        "mb-1.5 whitespace-nowrap text-xs tabular-nums",
+                        m.current ? "text-[var(--q-text-4)]" : "font-semibold text-[var(--q-ink)]",
+                      )}
+                    >
+                      {m.value > 0 ? formatCompactEuro(m.value) : "0\u00a0€"}
+                      {m.current && " à ce jour"}
+                    </span>
+                  )}
+                  <div
+                    className={cn(
+                      "w-[44%] rounded-t bg-[var(--q-accent-strong)] transition-[filter] duration-150 group-hover:brightness-110",
+                      m.current && "opacity-40",
+                    )}
+                    style={{
+                      height: `${pct}%`,
+                      minHeight: m.value > 0 ? 2 : 0,
+                      boxShadow: m.highlight && m.value > 0 ? "0 0 0 2px var(--q-surface), 0 0 0 4px rgba(29,78,216,.25)" : undefined,
+                    }}
+                  />
+                  {/* Bulle de détail au survol (verre sur ordinateur, opaque sous 768 px) */}
+                  <div
+                    className={cn(
+                      "q-float pointer-events-none absolute -top-1.5 z-10 hidden w-[200px] flex-col gap-1 rounded-xl px-3 py-2.5 text-xs group-hover:flex",
+                      i <= 1 ? "left-0" : i >= 5 ? "right-0" : "left-1/2 -translate-x-1/2",
+                    )}
+                  >
+                    <span className="font-semibold text-[var(--q-ink)]">
+                      {m.long}
+                      {m.current && " (en cours)"}
+                    </span>
+                    <span className="flex justify-between gap-3 text-[var(--q-text-2)] tabular-nums">
+                      <span>Facturé</span>
+                      <span className="font-semibold text-[var(--q-ink)]">{formatCurrency(m.value)}</span>
+                    </span>
+                    {m.count !== null && (
+                      <span className="flex justify-between gap-3 text-[var(--q-text-2)] tabular-nums">
+                        <span>{plural(m.count, "Facture émise", "Factures émises")}</span>
+                        <span className="font-semibold text-[var(--q-ink)]">{m.count}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {max === 0 && (
+            <p className="absolute inset-0 grid place-items-center text-sm text-[var(--q-text-4)]">
+              Aucune facture émise sur ces mois.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Mois */}
+      <div className="ml-14 mt-2 grid grid-cols-7 gap-0.5 text-center text-xs text-[var(--q-text-4)]" aria-hidden>
+        {chart.map((m) => (
+          <span key={m.key} className={cn(m.highlight && "font-semibold text-[var(--q-ink)]")}>{m.short}</span>
+        ))}
+      </div>
+
+      {/* Données pour les lecteurs d'écran */}
+      <table className="sr-only">
+        <caption>Montant facturé par mois</caption>
+        <thead>
+          <tr>
+            <th scope="col">Mois</th>
+            <th scope="col">Facturé TTC</th>
+            <th scope="col">Factures émises</th>
+          </tr>
+        </thead>
+        <tbody>
+          {chart.map((m) => (
+            <tr key={m.key}>
+              <th scope="row">{m.long}{m.current ? " (en cours)" : ""}</th>
+              <td>{formatCurrency(m.value)}</td>
+              <td>{m.count ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   )
 }

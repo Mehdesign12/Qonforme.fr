@@ -300,16 +300,27 @@ a,
  *
  * ⚠️  NE PAS SUPPRIMER CETTE RÈGLE sans avoir lu CLAUDE.md.
  */
-/* ── Typographie pages légales (CGU, mentions légales) ─────────────────── */
+/* ── Typographie pages légales (CGU, mentions légales, confidentialité) ──
+ * Canevas : titres en Bricolage, texte DM Sans 15 px, couleurs par jetons
+ * --q-* (thème sombre compris). Les h2 reçoivent un id (sommaire) : la marge
+ * de défilement laisse la place à l'en-tête fixe. */
+.legal-content {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--q-text-3);
+  overflow-wrap: break-word;
+}
 .legal-content h2 {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #0F172A;
-  margin-top: 2rem;
-  margin-bottom: 0.75rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #E2E8F0;
-  letter-spacing: -0.01em;
+  font-family: var(--font-bricolage), system-ui, sans-serif;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--q-ink);
+  margin: 40px 0 12px;
+  padding-top: 32px;
+  border-top: 1px solid var(--q-line-soft);
+  scroll-margin-top: 104px;
 }
 .legal-content h2:first-child {
   margin-top: 0;
@@ -317,39 +328,59 @@ a,
   border-top: none;
 }
 .legal-content h3 {
-  font-size: 0.9375rem;
+  font-size: 16px;
   font-weight: 600;
-  color: #1E293B;
-  margin-top: 1.25rem;
-  margin-bottom: 0.5rem;
+  line-height: 1.35;
+  color: var(--q-ink);
+  margin: 24px 0 8px;
 }
 .legal-content p {
-  font-size: 0.875rem;
-  color: #475569;
-  line-height: 1.7;
-  margin-bottom: 0.75rem;
+  margin: 0 0 12px;
 }
 .legal-content ul {
-  margin: 0.5rem 0 0.75rem 1.25rem;
-  list-style-type: disc;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 16px;
+  padding: 0;
+  list-style: none;
 }
 .legal-content li {
-  font-size: 0.875rem;
-  color: #475569;
-  line-height: 1.7;
-  margin-bottom: 0.25rem;
+  position: relative;
+  padding-left: 20px;
+}
+.legal-content li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: calc(0.85em - 3px);
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--q-accent);
+  opacity: 0.6;
 }
 .legal-content a {
-  color: #2563EB;
-  text-decoration: none;
+  color: var(--q-accent-strong);
   font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--q-wash-line);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s ease;
 }
 .legal-content a:hover {
-  text-decoration: underline;
+  text-decoration-color: currentColor;
 }
 .legal-content strong {
-  color: #0F172A;
+  color: var(--q-ink);
   font-weight: 600;
+}
+@media (max-width: 767px) {
+  .legal-content h2 {
+    font-size: 19px;
+    margin-top: 32px;
+    padding-top: 24px;
+  }
 }
 
 @media (max-width: 767px) {

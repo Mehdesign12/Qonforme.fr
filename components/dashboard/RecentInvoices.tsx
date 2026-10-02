@@ -1,260 +1,110 @@
+/**
+ * « Dernières factures » (réel et démo) : tableau sur ordinateur (canevas
+ * « Tableau de bord »), liste sur mobile (canevas « Mobile — accueil »).
+ *
+ * Une seule colonne de statut : le canevas montre aussi « Paiement partiel »
+ * et « Transmission », qui n'existent pas dans l'application (DECISIONS § 10).
+ */
 import Link from "next/link"
-import { formatCurrency, formatDate, INVOICE_STATUS_LABELS } from "@/lib/utils/invoice"
-import { InvoiceStatus } from "@/types"
-import { createClient } from "@/lib/supabase/server"
-import { FileText, Plus, ArrowRight, Calendar } from "lucide-react"
+import { FileText } from "lucide-react"
+import { formatCurrency } from "@/lib/utils/invoice"
+import { cn } from "@/lib/utils"
+import { formatShortDate, hrefFor, type DashMode, type RecentRow } from "@/components/dashboard/model"
+import { InvoicePill, ListHeading } from "@/components/dashboard/ui"
 
-/* ── Cache 30s — données récentes mais pas temps-réel ──────────────────── */
-export const revalidate = 30
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Status styles
-───────────────────────────────────────────────────────────────────────── */
-const STATUS_STYLE: Record<InvoiceStatus, { bg: string; text: string; dot: string }> = {
-  draft:     { bg: "#F1F5F9", text: "#475569", dot: "#94A3B8" },
-  sent:      { bg: "#DBEAFE", text: "#1E40AF", dot: "#3B82F6" },
-  pending:   { bg: "#FEF3C7", text: "#92400E", dot: "#D97706" },
-  received:  { bg: "#EDE9FE", text: "#5B21B6", dot: "#8B5CF6" },
-  accepted:  { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
-  rejected:  { bg: "#FEE2E2", text: "#991B1B", dot: "#EF4444" },
-  paid:      { bg: "#D1FAE5", text: "#065F46", dot: "#10B981" },
-  overdue:   { bg: "#FEE2E2", text: "#991B1B", dot: "#EF4444" },
-  cancelled: { bg: "#F1F5F9", text: "#64748B", dot: "#94A3B8" },
-  credited:  { bg: "#FFF7ED", text: "#C2410C", dot: "#F97316" },
-}
-
-function StatusBadge({ status }: { status: InvoiceStatus }) {
-  const s = STATUS_STYLE[status] || STATUS_STYLE.draft
+function Empty({ newHref }: { newHref: string }) {
   return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold"
-      style={{ backgroundColor: s.bg, color: s.text }}
-    >
-      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: s.dot }} />
-      {INVOICE_STATUS_LABELS[status]}
-    </span>
-  )
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Avatar initiales client
-───────────────────────────────────────────────────────────────────────── */
-const AVATAR_COLORS = [
-  ['#EFF6FF', '#2563EB'],
-  ['#F5F3FF', '#7C3AED'],
-  ['#ECFEFF', '#0891B2'],
-  ['#ECFDF5', '#059669'],
-  ['#FFF7ED', '#EA580C'],
-]
-
-function ClientAvatar({ name, index }: { name: string; index: number }) {
-  const [bg, text] = AVATAR_COLORS[index % AVATAR_COLORS.length]
-  const initials = name
-    .split(' ')
-    .slice(0, 2)
-    .map(w => w[0]?.toUpperCase() || '')
-    .join('')
-  return (
-    <div
-      className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold shrink-0"
-      style={{ background: bg, color: text }}
-    >
-      {initials || '?'}
+    <div className="flex flex-col items-center gap-3 px-5 py-12 text-center">
+      <FileText className="size-8 text-[var(--q-placeholder)]" strokeWidth={1.25} aria-hidden />
+      <p className="text-[15px] text-[var(--q-text-3)]">Vos factures apparaîtront ici.</p>
+      <Link href={newHref} className="q-btn q-btn-secondary">Créer une facture</Link>
     </div>
   )
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   Composant principal
-───────────────────────────────────────────────────────────────────────── */
-export async function RecentInvoices() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) return null
-
-  const { data: invoices } = await supabase
-    .from("invoices")
-    .select(`id, invoice_number, status, issue_date, due_date, total_ttc, client:clients(name)`)
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(5)
-
-  /* ── Empty state ── */
-  if (!invoices || invoices.length === 0) {
-    return (
-      <div
-        className="rounded-2xl border border-white/60 dark:border-[#1E3A5F]/50 overflow-hidden"
-        style={{
-          background: 'var(--card-glass-bg)',
-          boxShadow:  'var(--card-glass-shadow)',
-        }}
-      >
-        <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)' }}
-          >
-            <FileText className="w-6 h-6 text-[#2563EB]" />
-          </div>
-          <p className="text-[15px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-1">
-            Aucune facture pour l&apos;instant
-          </p>
-          <p className="text-[13px] text-slate-400 mb-5 max-w-xs">
-            Créez votre première facture — elle sera transmise automatiquement à vos clients.
-          </p>
-          <Link href="/invoices/new">
-            <button className="inline-flex items-center gap-2 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] text-white text-[13px] font-bold px-4 py-2.5 transition-colors shadow-sm">
-              <Plus className="w-3.5 h-3.5" />
-              Créer une facture
-            </button>
-          </Link>
-        </div>
-      </div>
-    )
-  }
+export function RecentInvoices({ rows, mode }: { rows: RecentRow[]; mode: DashMode }) {
+  const allHref = hrefFor(mode, "/invoices")
+  const newHref = hrefFor(mode, "/invoices/new")
 
   return (
-    <div
-      className="rounded-2xl border border-white/60 dark:border-[#1E3A5F]/50 overflow-hidden"
-      style={{
-        background: 'var(--card-glass-bg)',
-        boxShadow:  'var(--card-glass-shadow)',
-      }}
-    >
-      {/* ── En-tête ── */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#F1F5F9] dark:border-[#162032]">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-[#EFF6FF] dark:bg-[#1E3A5F] flex items-center justify-center">
-            <FileText className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#60A5FA]" />
-          </div>
-          <h3 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">Dernières factures</h3>
-        </div>
-        <Link
-          href="/invoices"
-          className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] transition-colors"
-        >
-          Tout voir
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-
-      {/* ── Vue mobile : cards ── */}
-      <div className="sm:hidden divide-y divide-[#F8FAFC] dark:divide-[#162032]">
-        {invoices.map((inv, i) => {
-          const client = (inv.client as unknown as { name: string } | null)
-          const st     = (inv.status as InvoiceStatus)
-          const s      = STATUS_STYLE[st] || STATUS_STYLE.draft
-          return (
-            <Link
-              key={inv.id}
-              href={`/invoices/${inv.id}`}
-              className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] active:bg-[#EFF6FF] dark:active:bg-[#1E3A5F] transition-colors"
-            >
-              <ClientAvatar name={client?.name || '?'} index={i} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-mono text-[12px] font-bold text-[#2563EB]">{inv.invoice_number}</p>
-                  <span
-                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
-                    style={{ backgroundColor: s.bg, color: s.text }}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.dot }} />
-                    {INVOICE_STATUS_LABELS[st]}
-                  </span>
-                </div>
-                <p className="text-[12px] text-slate-500 truncate mt-0.5">
-                  {client?.name || <span className="text-slate-300 italic">Client inconnu</span>}
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="font-mono text-[13px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">
-                  {formatCurrency(inv.total_ttc)}
-                </p>
-                <p className="text-[10px] text-slate-300 mt-0.5">{formatDate(inv.issue_date)}</p>
-              </div>
-            </Link>
-          )
-        })}
-      </div>
-
-      {/* ── Vue desktop : table ── */}
-      <table className="hidden sm:table w-full">
-        <thead>
-          <tr className="border-b border-[#F8FAFC] dark:border-[#162032] bg-[#FAFBFC]/60 dark:bg-[#162032]/40">
-            <th className="text-left text-[10px] font-bold uppercase tracking-[0.08em] text-slate-300 px-5 py-3">
-              N° facture
-            </th>
-            <th className="text-left text-[10px] font-bold uppercase tracking-[0.08em] text-slate-300 px-5 py-3">
-              Client
-            </th>
-            <th className="text-left text-[10px] font-bold uppercase tracking-[0.08em] text-slate-300 px-5 py-3 hidden md:table-cell">
-              Date
-            </th>
-            <th className="text-right text-[10px] font-bold uppercase tracking-[0.08em] text-slate-300 px-5 py-3">
-              Montant TTC
-            </th>
-            <th className="text-left text-[10px] font-bold uppercase tracking-[0.08em] text-slate-300 px-5 py-3">
-              Statut
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {invoices.map((inv, i) => {
-            const client = (inv.client as unknown as { name: string } | null)
-            const st     = (inv.status as InvoiceStatus)
-            return (
-              <tr
-                key={inv.id}
-                className="border-b border-[#F8FAFC] dark:border-[#162032] hover:bg-[#F8FAFC]/60 dark:hover:bg-[#162032]/60 transition-colors last:border-0 group"
+    <>
+      {/* Mobile : liste */}
+      <section aria-labelledby="dash-recent-m" className="flex flex-col gap-2 md:hidden">
+        <ListHeading
+          id="dash-recent-m"
+          title="Dernières factures"
+          aside={rows.length > 0 && <Link href={allHref} className="q-link text-[13px]">Tout voir</Link>}
+        />
+        <div className="q-card q-list overflow-hidden rounded-[18px]">
+          {rows.length === 0 ? (
+            <Empty newHref={newHref} />
+          ) : (
+            rows.map((r) => (
+              <Link
+                key={r.id}
+                href={r.href}
+                className="flex min-h-[60px] items-center gap-3 px-3.5 py-2.5 transition-colors active:bg-[var(--q-row-hover)]"
               >
-                <td className="px-5 py-3.5">
-                  <Link
-                    href={`/invoices/${inv.id}`}
-                    className="font-mono text-[13px] font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline"
-                  >
-                    {inv.invoice_number}
-                  </Link>
-                </td>
-                <td className="px-5 py-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <ClientAvatar name={client?.name || '?'} index={i} />
-                    <span className="text-[13px] font-medium text-[#0F172A] dark:text-[#E2E8F0] truncate">
-                      {client?.name || <span className="text-slate-300 italic text-[12px]">—</span>}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-5 py-3.5 hidden md:table-cell">
-                  <div className="flex items-center gap-1.5 text-[12px] text-slate-400">
-                    <Calendar className="w-3 h-3 shrink-0" />
-                    {formatDate(inv.issue_date)}
-                  </div>
-                </td>
-                <td className="px-5 py-3.5 text-right font-mono text-[13px] font-bold text-[#0F172A] dark:text-[#E2E8F0]">
-                  {formatCurrency(inv.total_ttc)}
-                </td>
-                <td className="px-5 py-3.5">
-                  <StatusBadge status={st} />
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="truncate text-[15px] font-semibold text-[var(--q-ink)]">{r.clientName ?? "Client inconnu"}</span>
+                  <span className="font-mono text-xs text-[var(--q-text-4)]">{r.number}</span>
+                </span>
+                <span className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="text-[15px] font-semibold text-[var(--q-ink)] tabular-nums">{formatCurrency(r.total)}</span>
+                  <InvoicePill status={r.status} lateDays={r.lateDays} compact />
+                </span>
+              </Link>
+            ))
+          )}
+        </div>
+      </section>
 
-      {/* Footer */}
-      <div className="px-5 py-3 border-t border-[#F8FAFC] dark:border-[#162032] flex items-center justify-between bg-[#FAFBFC]/40 dark:bg-[#162032]/30">
-        <Link
-          href="/invoices"
-          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] transition-colors"
-        >
-          Voir toutes les factures
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-        <span className="text-[11px] text-slate-300 font-medium">
-          {invoices.length} récente{invoices.length > 1 ? "s" : ""}
-        </span>
-      </div>
-    </div>
+      {/* Ordinateur : tableau */}
+      <section aria-labelledby="dash-recent" className="q-card hidden overflow-hidden md:block">
+        <div className="flex items-center justify-between gap-3 px-5 py-4">
+          <h2 id="dash-recent" className="q-h2">Dernières factures</h2>
+          {rows.length > 0 && <Link href={allHref} className="q-link text-[13px]">Tout voir</Link>}
+        </div>
+        {rows.length === 0 ? (
+          <Empty newHref={newHref} />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="q-table min-w-[640px]">
+              <thead>
+                <tr>
+                  <th scope="col">Numéro</th>
+                  <th scope="col">Client</th>
+                  <th scope="col">Échéance</th>
+                  <th scope="col" className="is-num">Montant TTC</th>
+                  <th scope="col">Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.id}>
+                    <td>
+                      <Link href={r.href} className="font-mono text-[13px] text-[var(--q-text-2)] hover:text-[var(--q-accent-strong)] hover:underline">
+                        {r.number}
+                      </Link>
+                    </td>
+                    <td>
+                      <span className="block font-semibold">{r.clientName ?? "Client inconnu"}</span>
+                      {r.clientCity && <span className="text-xs text-[var(--q-text-4)]">{r.clientCity}</span>}
+                    </td>
+                    <td className={cn("whitespace-nowrap", r.lateDays ? "font-semibold text-[var(--q-warn)]" : "text-[var(--q-text-2)]")}>
+                      {r.dueDate ? formatShortDate(r.dueDate) : "—"}
+                    </td>
+                    <td className="is-num whitespace-nowrap font-semibold">{formatCurrency(r.total)}</td>
+                    <td>
+                      <InvoicePill status={r.status} lateDays={r.lateDays} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </>
   )
 }

@@ -1,23 +1,24 @@
 'use client'
 
+/**
+ * Fiche facture réelle : chargement, actions (API) et fenêtres (envoi, avoir,
+ * mur de paiement). L'affichage est InvoiceDetailView, partagé avec la démo.
+ */
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
-import {
-  ArrowLeft, Loader2, Send, CheckCircle2, XCircle,
-  Printer, Pencil, Trash2, Download, FileCode,
-  Clock, AlertTriangle, CreditCard, RotateCcw, X, FileX, Archive, ArchiveX, Bell
-} from "lucide-react"
+import { FileText, Info, RotateCcw, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
-import {
-  formatCurrency, formatDate,
-  INVOICE_STATUS_LABELS, INVOICE_STATUS_STYLES
-} from "@/lib/utils/invoice"
+import { cn } from "@/lib/utils"
+import { formatCurrency, INVOICE_STATUS_LABELS } from "@/lib/utils/invoice"
 import { InvoiceStatus } from "@/types"
 import { PaywallDialog, isSubscriptionRequired } from "@/components/billing/PaywallDialog"
+import { EmptyState } from "@/components/app/kit"
+import { InvoiceDetailView } from "@/components/invoices/InvoiceDetailView"
+import { type CompanyView, todayISO } from "@/components/invoices/invoice-view"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -49,6 +50,8 @@ interface Invoice {
   pdf_url: string | null
   ppf_status: string | null
   created_at: string
+  sent_at?: string | null
+  paid_at?: string | null
   reminder_1_sent_at: string | null
   reminder_2_sent_at: string | null
   client: {
@@ -67,19 +70,6 @@ interface Invoice {
 /* Helpers                                                              */
 /* ------------------------------------------------------------------ */
 
-const STATUS_BADGE: Record<string, string> = {
-  draft:     "bg-[#F1F5F9] text-[#475569] border-[#CBD5E1]",
-  sent:      "bg-[#DBEAFE] text-[#1E40AF] border-[#93C5FD]",
-  pending:   "bg-[#FEF3C7] text-[#92400E] border-[#FCD34D]",
-  received:  "bg-[#EDE9FE] text-[#5B21B6] border-[#C4B5FD]",
-  accepted:  "bg-[#D1FAE5] text-[#065F46] border-[#6EE7B7]",
-  rejected:  "bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]",
-  paid:      "bg-[#D1FAE5] text-[#065F46] border-[#6EE7B7]",
-  overdue:   "bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]",
-  cancelled: "bg-[#F1F5F9] text-[#64748B] border-[#CBD5E1]",
-  credited:  "bg-[#FFF7ED] text-[#C2410C] border-[#FED7AA]",
-}
-
 const STATUS_LABELS: Record<string, string> = {
   ...INVOICE_STATUS_LABELS,
   cancelled: "Annulée",
@@ -95,43 +85,48 @@ const CREDIT_REASONS = [
   "Autre",
 ]
 
-/* Transitions autorisées */
-const NEXT_ACTIONS: Partial<Record<string, { label: string; status: InvoiceStatus; icon: React.ElementType; variant: "default" | "outline" }[]>> = {
-  draft: [
-    { label: "Marquer comme envoyée", status: "sent", icon: Send, variant: "default" },
-  ],
-  sent: [
-    { label: "Marquer comme payée",   status: "paid",    icon: CreditCard,   variant: "default" },
-    { label: "Marquer en retard",      status: "overdue", icon: AlertTriangle, variant: "outline" },
-  ],
-  pending: [
-    { label: "Marquer comme payée",   status: "paid",    icon: CreditCard, variant: "default" },
-  ],
-  received: [
-    { label: "Marquer comme acceptée", status: "accepted", icon: CheckCircle2, variant: "default" },
-    { label: "Marquer comme rejetée",  status: "rejected", icon: XCircle,      variant: "outline" },
-  ],
-  accepted: [
-    { label: "Marquer comme payée",   status: "paid",    icon: CreditCard, variant: "default" },
-  ],
-  overdue: [
-    { label: "Marquer comme payée",   status: "paid",    icon: CreditCard, variant: "default" },
-  ],
+/**
+ * Les routes PATCH et relance renvoient le client sans son adresse : on garde
+ * les champs déjà chargés pour que l'aperçu ne perde pas ses coordonnées.
+ */
+function mergeInvoice(prev: Invoice | null, next: Invoice): Invoice {
+  if (!prev?.client || !next.client) return { ...next, client: next.client ?? prev?.client ?? null }
+  return { ...next, client: { ...prev.client, ...next.client } }
 }
 
-/* Statuts éligibles à un avoir (tout sauf draft, cancelled, credited) */
-const CAN_CREDIT = ["sent", "pending", "received", "accepted", "rejected", "paid", "overdue"]
+/* En-tête et pied communs des fenêtres (canevas : titre Bricolage 22 px, pied grisé) */
+function DialogHead({ title, sub }: { title: string; sub: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1 px-[22px] pr-14 pt-5">
+      <DialogTitle className="q-display text-[22px] leading-tight text-[var(--q-ink)]">{title}</DialogTitle>
+      <DialogDescription className="text-sm text-[var(--q-text-4)]">{sub}</DialogDescription>
+    </div>
+  )
+}
+
+function DialogFoot({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--q-line-soft)] bg-[var(--q-surface-2)] px-[22px] py-4"
+      style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))" }}
+    >
+      {children}
+    </div>
+  )
+}
 
 /* ------------------------------------------------------------------ */
-/* Composant Modal Avoir                                                */
+/* Fenêtre Avoir                                                        */
 /* ------------------------------------------------------------------ */
 
 function CreditNoteModal({
   invoice,
+  open,
   onClose,
   onSuccess,
 }: {
   invoice: Invoice
+  open: boolean
   onClose: () => void
   onSuccess: (creditNoteId: string) => void
 }) {
@@ -179,53 +174,39 @@ function CreditNoteModal({
     finally { setLoading(false) }
   }
 
+  const option = (selected: boolean) => cn(
+    "rounded-[10px] border text-left transition-colors",
+    selected
+      ? "border-[var(--q-accent)] bg-[var(--q-wash)] text-[var(--q-accent-strong)]"
+      : "border-[var(--q-field)] bg-[var(--q-surface)] text-[var(--q-text-2)] hover:bg-[var(--q-sunken)]",
+  )
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 md:backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#0F1E35] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(o) => { if (!o && !loading) onClose() }}>
+      <DialogContent showCloseButton={!loading} className="max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto p-0 sm:max-w-[540px]">
+        <DialogHead title="Créer un avoir" sub={<>Sur la facture <span className="font-mono">{invoice.invoice_number}</span>{invoice.client ? ` · ${invoice.client.name}` : ""}</>} />
 
-        {/* Header modal */}
-        <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#FFF7ED] flex items-center justify-center">
-              <RotateCcw className="w-4 h-4 text-[#C2410C]" />
-            </div>
-            <div>
-              <h2 className="font-bold text-[#0F172A] dark:text-[#E2E8F0] text-sm">Émettre un avoir</h2>
-              <p className="text-xs text-slate-400">sur la facture {invoice.invoice_number}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F1F5F9] transition-colors">
-            <X className="w-4 h-4 text-slate-400" />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-5">
-
+        <div className="flex flex-col gap-5 px-[22px] pb-5 pt-[18px]">
           {/* Rappel légal */}
-          <div className="bg-[#FFF7ED] border border-[#FED7AA] rounded-xl p-3 flex gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-[#C2410C] shrink-0 mt-0.5" />
-            <p className="text-xs text-[#9A3412]">
-              En droit français, une facture émise ne peut pas être supprimée ni modifiée.
-              L&apos;avoir est le seul moyen légal d&apos;annuler tout ou partie de cette facture.
+          <div className="q-banner text-[13px] leading-normal">
+            <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <p>
+              Une facture émise ne peut être ni supprimée ni modifiée. L&apos;avoir est le seul moyen
+              légal d&apos;annuler tout ou partie de cette facture.
             </p>
           </div>
 
           {/* Motif */}
-          <div>
-            <label className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0] block mb-2">
-              Motif de l&apos;avoir <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-2 gap-2 mb-2">
+          <fieldset className="flex flex-col gap-2">
+            <legend className="q-label mb-2">Motif de l&apos;avoir <span className="text-[var(--q-danger)]">*</span></legend>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {CREDIT_REASONS.map(r => (
                 <button
                   key={r}
                   type="button"
+                  aria-pressed={reason === r}
                   onClick={() => { setReason(r); setReasonError("") }}
-                  className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all text-left ${
-                    reason === r
-                      ? "bg-[#FFF7ED] border-[#FB923C] text-[#C2410C]"
-                      : "bg-white dark:bg-[#162032] border-[#E2E8F0] dark:border-[#1E3A5F] text-slate-600 dark:text-[#E2E8F0] hover:border-[#FB923C]"
-                  }`}
+                  className={cn(option(reason === r), "min-h-[42px] px-3 py-2 text-sm font-medium")}
                 >
                   {r}
                 </button>
@@ -234,18 +215,19 @@ function CreditNoteModal({
             {reason === "Autre" && (
               <input
                 type="text"
-                placeholder="Précisez le motif..."
+                aria-label="Précisez le motif"
+                placeholder="Précisez le motif…"
                 value={customReason}
                 onChange={e => setCustomReason(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FB923C] dark:bg-[#162032] dark:border-[#1E3A5F] dark:text-[#E2E8F0]"
+                className="q-input"
               />
             )}
-            {reasonError && <p className="text-xs text-red-500 mt-1">{reasonError}</p>}
-          </div>
+            {reasonError && <p className="q-field-error">{reasonError}</p>}
+          </fieldset>
 
           {/* Type d'avoir */}
-          <div>
-            <label className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0] block mb-2">Type d&apos;avoir</label>
+          <fieldset className="flex flex-col gap-2">
+            <legend className="q-label mb-2">Type d&apos;avoir</legend>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { value: "total",   label: "Avoir total",   desc: "Annule toute la facture" },
@@ -254,44 +236,39 @@ function CreditNoteModal({
                 <button
                   key={opt.value}
                   type="button"
+                  aria-pressed={creditType === opt.value}
                   onClick={() => setCreditType(opt.value as "total" | "partial")}
-                  className={`p-3 rounded-xl border text-left transition-all ${
-                    creditType === opt.value
-                      ? "bg-[#FFF7ED] border-[#FB923C]"
-                      : "bg-white dark:bg-[#162032] border-[#E2E8F0] dark:border-[#1E3A5F] hover:border-[#FB923C]"
-                  }`}
+                  className={cn(option(creditType === opt.value), "p-3")}
                 >
-                  <p className={`text-xs font-semibold ${creditType === opt.value ? "text-[#C2410C]" : "text-[#0F172A] dark:text-[#E2E8F0]"}`}>
-                    {opt.label}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-0.5">{opt.desc}</p>
+                  <span className="block text-sm font-semibold">{opt.label}</span>
+                  <span className="mt-0.5 block text-xs text-[var(--q-text-4)]">{opt.desc}</span>
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {/* Sélection lignes (avoir partiel) */}
           {creditType === "partial" && (
-            <div className="border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-xl overflow-hidden">
-              <div className="bg-[#F8FAFC] dark:bg-[#162032]/40 px-4 py-2.5 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
-                <p className="text-xs font-medium text-slate-500">Lignes à créditer</p>
-              </div>
-              <div className="divide-y divide-[#F1F5F9] dark:divide-[#162032]">
+            <div className="overflow-hidden rounded-xl border border-[var(--q-line)]">
+              <p className="border-b border-[var(--q-line-soft)] bg-[var(--q-surface-2)] px-4 py-2.5 text-xs font-medium text-[var(--q-text-4)]">
+                Lignes à créditer
+              </p>
+              <div className="q-list">
                 {invoice.lines.map((line, i) => (
-                  <label key={i} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[#F8FAFC] dark:hover:bg-[#162032]/60">
+                  <label key={i} className="flex cursor-pointer items-center gap-3 px-4 py-3 hover:bg-[var(--q-row-hover)]">
                     <input
                       type="checkbox"
                       checked={selectedLines[i]}
                       onChange={() => toggleLine(i)}
-                      className="w-4 h-4 rounded accent-[#C2410C]"
+                      className="size-4 shrink-0 accent-[var(--q-accent)]"
                     />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#0F172A] dark:text-[#E2E8F0] truncate">{line.description}</p>
-                      <p className="text-xs text-slate-400">{line.quantity} × {formatCurrency(line.unit_price_ht)} HT</p>
-                    </div>
-                    <p className="text-sm font-mono font-semibold text-[#C2410C] shrink-0">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm text-[var(--q-ink)]">{line.description}</span>
+                      <span className="block text-xs tabular-nums text-[var(--q-text-4)]">{line.quantity} × {formatCurrency(line.unit_price_ht)} HT</span>
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-[var(--q-ink)]">
                       {formatCurrency(line.total_ttc)}
-                    </p>
+                    </span>
                   </label>
                 ))}
               </div>
@@ -299,39 +276,33 @@ function CreditNoteModal({
           )}
 
           {/* Récapitulatif montant */}
-          <div className="bg-[#F8FAFC] dark:bg-[#162032] rounded-xl p-4 flex items-center justify-between">
+          <div className="q-inset flex items-center justify-between gap-4 p-4">
             <div>
-              <p className="text-xs text-slate-400">Montant de l&apos;avoir</p>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-[13px] font-semibold text-[var(--q-ink)]">Montant de l&apos;avoir</p>
+              <p className="mt-0.5 text-xs text-[var(--q-text-4)]">
                 {creditType === "total"
-                  ? "Avoir total — annule la facture intégralement"
+                  ? "Avoir total : annule la facture intégralement"
                   : `${selectedLinesData.length} ligne${selectedLinesData.length > 1 ? "s" : ""} sélectionnée${selectedLinesData.length > 1 ? "s" : ""}`
                 }
               </p>
             </div>
-            <p className="text-xl font-bold text-[#C2410C] font-mono">
+            <p className="text-xl font-semibold tabular-nums text-[var(--q-ink)]">
               {formatCurrency(totalAvoir)}
             </p>
           </div>
         </div>
 
-        {/* Footer modal */}
-        <div className="flex items-center justify-end gap-3 px-6 pb-6" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))' }}>
-          <Button variant="outline" onClick={onClose} disabled={loading} size="sm">
+        <DialogFoot>
+          <Button variant="ghost" onClick={onClose} disabled={loading}>
             Annuler
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={loading || !finalReason.trim()}
-            size="sm"
-            className="bg-[#C2410C] hover:bg-[#9A3412] text-white gap-1.5"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+          <Button onClick={handleSubmit} disabled={loading || !finalReason.trim()}>
+            <RotateCcw />
             {loading ? "Émission…" : "Émettre l'avoir"}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFoot>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -342,8 +313,10 @@ function CreditNoteModal({
 export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const router = useRouter()
   const [invoice, setInvoice]           = useState<Invoice | null>(null)
-  const [company, setCompany]           = useState<{ name: string; address?: string | null; zip_code?: string | null; city?: string | null; siret?: string | null; siren?: string | null; vat_number?: string | null } | null>(null)
+  const [company, setCompany]           = useState<CompanyView | null>(null)
+  const [quote, setQuote]               = useState<{ id: string; quote_number: string } | null>(null)
   const [loading, setLoading]           = useState(true)
+  const [today, setToday]               = useState<string | null>(null)
   const [statusLoading, setStatusLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [pdfLoading, setPdfLoading]     = useState(false)
@@ -357,14 +330,18 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [paywall, setPaywall]                   = useState<null | "send" | "remind">(null)
 
   useEffect(() => {
+    setToday(todayISO())
     const supabase = createClient()
     Promise.all([
       fetch(`/api/invoices/${invoiceId}`).then(r => r.json()),
-      supabase.from("companies").select("name,address,zip_code,city,siret,siren,vat_number").single(),
+      supabase.from("companies").select("name,address,zip_code,city,siret,siren,vat_number,iban,legal_notice").single(),
     ]).then(([json, { data: comp }]) => {
       if (json.invoice) setInvoice(json.invoice)
       if (comp) setCompany(comp)
     }).finally(() => setLoading(false))
+    // Devis d'origine (conversion devis → facture), simple lien : rien n'est affiché en cas d'erreur
+    supabase.from("quotes").select("id,quote_number").eq("converted_invoice_id", invoiceId).maybeSingle()
+      .then(({ data }) => { if (data) setQuote(data) }, () => {})
   }, [invoiceId])
 
   // Retour du paiement (?send=1) : la formule est active, on rouvre l'envoi
@@ -389,7 +366,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       const json = await res.json()
       if (isSubscriptionRequired(res.status, json)) { setPaywall("send"); return }
       if (!res.ok) { toast.error(json.error); return }
-      setInvoice(json.invoice)
+      setInvoice(prev => mergeInvoice(prev, json.invoice))
       toast.success(`Statut mis à jour : ${STATUS_LABELS[newStatus] ?? newStatus}`)
     } catch { toast.error("Erreur réseau") }
     finally { setStatusLoading(false) }
@@ -407,7 +384,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       a.href = url; a.download = `${invoice.status === "draft" ? "brouillon-" : ""}${invoice.invoice_number}.pdf`
       document.body.appendChild(a); a.click()
       document.body.removeChild(a); URL.revokeObjectURL(url)
-      toast.success("PDF téléchargé !")
+      toast.success("PDF téléchargé")
     } catch { toast.error("Erreur lors du téléchargement") }
     finally { setPdfLoading(false) }
   }
@@ -424,7 +401,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       a.href = url; a.download = `${invoice.invoice_number}-facturx.xml`
       document.body.appendChild(a); a.click()
       document.body.removeChild(a); URL.revokeObjectURL(url)
-      toast.success("Factur-X téléchargé !")
+      toast.success("XML Factur-X téléchargé")
     } catch { toast.error("Erreur lors du téléchargement") }
     finally { setFxLoading(false) }
   }
@@ -467,7 +444,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       const json = await res.json()
       if (isSubscriptionRequired(res.status, json)) { setShowSendModal(false); setPaywall("send"); return }
       if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return }
-      setInvoice({ ...invoice, status: "sent" as InvoiceStatus })
+      setInvoice({ ...invoice, status: "sent" as InvoiceStatus, sent_at: new Date().toISOString() })
       toast.success(`Facture envoyée à ${json.sentTo}`)
       setShowSendModal(false)
     } catch { toast.error("Erreur réseau") }
@@ -488,33 +465,37 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       const json = await res.json()
       if (isSubscriptionRequired(res.status, json)) { setPaywall("remind"); return }
       if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi de la relance"); return }
-      setInvoice(json.invoice)
+      setInvoice(prev => mergeInvoice(prev, json.invoice))
       toast.success(`Relance ${json.reminderNumber} envoyée à ${json.sentTo}`)
     } catch { toast.error("Erreur réseau") }
     finally { setRemindLoading(false) }
   }
 
   /* Render states */
-  if (loading) return (
-    <div className="flex items-center justify-center py-24">
-      <Loader2 className="w-8 h-8 text-[#2563EB] animate-spin" />
+  if (loading || !today) return (
+    <div className="flex flex-col gap-5" aria-busy="true">
+      <span className="sr-only">Chargement de la facture…</span>
+      <div className="flex flex-col gap-2">
+        <span className="h-4 w-28 rounded bg-[var(--q-sunken)]" />
+        <span className="h-8 w-72 max-w-full rounded-lg bg-[var(--q-sunken)]" />
+      </div>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="q-paper-bed h-[420px]" />
+        <div className="q-card h-[240px]" />
+      </div>
     </div>
   )
 
   if (!invoice) return (
-    <div className="py-16 text-center space-y-3">
-      <p className="text-slate-500">Facture introuvable</p>
-      <Link href="/invoices" className="text-[#2563EB] text-sm hover:underline">← Retour aux factures</Link>
-    </div>
+    <section className="q-card">
+      <EmptyState
+        icon={<FileText className="size-5" aria-hidden />}
+        title="Facture introuvable"
+        text="Elle a peut-être été supprimée, ou le lien est incomplet."
+        action={<Link href="/invoices" className="q-btn q-btn-secondary">Retour aux factures</Link>}
+      />
+    </section>
   )
-
-  const actions    = NEXT_ACTIONS[invoice.status] ?? []
-  // due_date est une date seule ("2026-08-31") — new Date(due_date) la parse comme
-  // minuit UTC, ce qui bascule la facture "en retard" 1 à 2h trop tôt en heure
-  // française (UTC+1/+2). On compare contre la fin de la journée d'échéance en
-  // heure locale (pas de suffixe "Z" → parsé en heure locale par le navigateur).
-  const isOverdue  = invoice.status === "sent" && new Date(`${invoice.due_date}T23:59:59`) < new Date()
-  const canCredit  = CAN_CREDIT.includes(invoice.status)
 
   return (
     <>
@@ -526,484 +507,81 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         reason={paywall ?? "send"}
       />
 
-      {/* Modal envoi email */}
-      {showSendModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 md:backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#0F1E35] rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
-                  <Send className="w-4 h-4 text-[#2563EB]" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-[#0F172A] dark:text-[#E2E8F0] text-sm">Envoyer la facture</h2>
-                  <p className="text-xs text-slate-400">{invoice?.invoice_number}</p>
-                </div>
-              </div>
-              <button onClick={() => setShowSendModal(false)} className="p-1.5 rounded-lg hover:bg-[#F1F5F9] transition-colors">
-                <X className="w-4 h-4 text-slate-400" />
-              </button>
+      {/* Fenêtre envoi email */}
+      <Dialog open={showSendModal} onOpenChange={(o) => { if (!o && !sendLoading) setShowSendModal(false) }}>
+        <DialogContent showCloseButton={!sendLoading} className="gap-0 overflow-hidden p-0 sm:max-w-[500px]">
+          <DialogHead
+            title="Envoyer la facture"
+            sub={<><span className="font-mono">{invoice.invoice_number}</span>{invoice.client ? ` · ${invoice.client.name}` : ""}</>}
+          />
+          <div className="flex flex-col gap-3.5 px-[22px] pb-5 pt-[18px]">
+            <div className="q-inset px-4 py-3.5 text-sm leading-relaxed text-[var(--q-text-2)]">
+              {invoice.client?.email ? (
+                <span className="mb-1.5 block text-xs text-[var(--q-text-4)]">À : {invoice.client.email}</span>
+              ) : (
+                <span className="mb-1.5 block text-xs text-[var(--q-danger)]">Aucune adresse email : ajoutez-en une dans la fiche client</span>
+              )}
+              Objet : <span className="font-medium text-[var(--q-ink)]">Facture {invoice.invoice_number} — {company?.name ?? "votre entreprise"}</span>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-4">
-                <p className="text-sm text-[#1E40AF] font-medium mb-1">Destinataire</p>
-                <p className="text-sm text-[#1E293B]">{invoice?.client?.name}</p>
-                {invoice?.client?.email
-                  ? <p className="text-xs text-[#2563EB] font-mono mt-0.5">{invoice.client.email}</p>
-                  : <p className="text-xs text-red-500 mt-0.5">Aucune adresse email — ajoutez-en une dans la fiche client</p>
-                }
-              </div>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                La facture <strong>{invoice?.invoice_number}</strong> sera envoyée avec le PDF Factur-X en pièce jointe.
-                Le statut passera automatiquement à <strong>Envoyée</strong>.
+            <div className="q-banner text-[13px] leading-normal">
+              <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <p>
+                Le PDF de la facture est joint à l&apos;email et une copie vous est adressée.
+                La facture passe au statut <strong>Envoyée</strong> : elle ne pourra plus être modifiée.
               </p>
-              <div className="bg-[#F8FAFC] dark:bg-[#162032] border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-xl p-3">
-                <p className="text-xs text-slate-500 dark:text-[#E2E8F0]">Objet : <span className="font-medium text-slate-700 dark:text-[#E2E8F0]">Facture {invoice?.invoice_number} — votre entreprise</span></p>
-              </div>
-            </div>
-            <div className="flex gap-3 p-6 pt-0" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))' }}>
-              <Button variant="outline" className="flex-1" onClick={() => setShowSendModal(false)} disabled={sendLoading}>
-                Annuler
-              </Button>
-              <Button
-                className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2"
-                onClick={sendByEmail}
-                disabled={sendLoading || !invoice?.client?.email}
-              >
-                {sendLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {sendLoading ? "Envoi en cours…" : "Envoyer"}
-              </Button>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFoot>
+            <Button variant="ghost" onClick={() => setShowSendModal(false)} disabled={sendLoading}>
+              Annuler
+            </Button>
+            <Button onClick={sendByEmail} disabled={sendLoading || !invoice.client?.email}>
+              <Send />
+              {sendLoading ? "Envoi en cours…" : "Envoyer"}
+            </Button>
+          </DialogFoot>
+        </DialogContent>
+      </Dialog>
 
-      {/* Modal avoir */}
+      {/* Fenêtre avoir (montée à l'ouverture pour repartir d'un formulaire vierge) */}
       {showCreditModal && (
         <CreditNoteModal
           invoice={invoice}
+          open={showCreditModal}
           onClose={() => setShowCreditModal(false)}
           onSuccess={handleCreditSuccess}
         />
       )}
 
-      <div className="space-y-6">
-
-        {/* ---- Header ---- */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Link href="/invoices">
-              <Button variant="ghost" size="sm" className="gap-1.5 text-slate-500 hover:text-slate-700 -ml-2">
-                <ArrowLeft className="w-4 h-4" /> Factures
-              </Button>
-            </Link>
-            <h1 className="text-lg sm:text-xl font-bold text-[#0F172A] dark:text-[#E2E8F0] font-mono">{invoice.invoice_number}</h1>
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_BADGE[invoice.status] ?? STATUS_BADGE.draft}`}>
-              {STATUS_LABELS[invoice.status] ?? invoice.status}
-            </span>
-            {/* Badge Factur-X */}
-            {invoice.status !== "draft" && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]" title="Facture électronique conforme EN 16931">
-                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="#2563EB"/><path d="M3.5 6l1.8 1.8L8.5 4" stroke="#2563EB" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                Factur-X
-              </span>
-            )}
-          </div>
-
-          {/* Boutons d'action — scroll horizontal sur mobile */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
-            {/* PDF */}
-            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={downloadPDF} disabled={pdfLoading}>
-              {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              <span className="hidden xs:inline">{pdfLoading ? "Génération…" : "PDF"}</span>
-            </Button>
-
-            {/* Télécharger Factur-X XML — disponible uniquement hors brouillon */}
-            {invoice.status !== "draft" && (
-              <Button
-                variant="outline" size="sm"
-                className="gap-1.5 shrink-0 border-[#BFDBFE] text-[#2563EB] hover:bg-[#EFF6FF]"
-                onClick={downloadFacturX}
-                disabled={fxLoading}
-                title="Télécharger le fichier XML Factur-X certifié EN 16931"
-              >
-                {fxLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCode className="w-4 h-4" />}
-                <span className="hidden xs:inline">{fxLoading ? "Génération…" : "Factur-X"}</span>
-              </Button>
-            )}
-
-            {/* Imprimer */}
-            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => window.print()}>
-              <Printer className="w-4 h-4" />
-              <span className="hidden xs:inline">Imprimer</span>
-            </Button>
-
-            {/* Modifier brouillon */}
-            {invoice.status === "draft" && (
-              <Link href={`/invoices/${invoice.id}/edit`} className="shrink-0">
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <Pencil className="w-4 h-4" /> Modifier
-                </Button>
-              </Link>
-            )}
-
-            {/* Supprimer brouillon */}
-            {invoice.status === "draft" && (
-              <Button
-                variant="outline" size="sm"
-                className="gap-1.5 shrink-0 border-[#FCA5A5] text-[#991B1B] hover:bg-[#FEE2E2]"
-                onClick={deleteInvoice} disabled={deleteLoading}
-              >
-                {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                <span className="hidden xs:inline">Supprimer</span>
-              </Button>
-            )}
-
-            {/* Archiver / Désarchiver */}
-            <Button
-              variant="outline" size="sm"
-              className={`gap-1.5 shrink-0 ${
-                invoice.is_archived
-                  ? "border-[#93C5FD] text-[#2563EB] hover:bg-[#EFF6FF]"
-                  : "border-[#CBD5E1] text-slate-500 hover:bg-[#F1F5F9]"
-              }`}
-              onClick={toggleArchive}
-              disabled={archiveLoading}
-            >
-              {archiveLoading
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : invoice.is_archived
-                  ? <ArchiveX className="w-4 h-4" />
-                  : <Archive className="w-4 h-4" />
-              }
-              <span className="hidden xs:inline">{invoice.is_archived ? "Désarchiver" : "Archiver"}</span>
-            </Button>
-
-            {/* Émettre un avoir */}
-            {canCredit && (
-              <Button
-                variant="outline" size="sm"
-                className="gap-1.5 shrink-0 border-[#FED7AA] text-[#C2410C] hover:bg-[#FFF7ED]"
-                onClick={() => setShowCreditModal(true)}
-              >
-                <RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Émettre un avoir</span>
-              </Button>
-            )}
-
-            {/* Relance manuelle — visible si facture impayée et client avec email */}
-            {["sent", "overdue"].includes(invoice.status) && invoice.client?.email && !invoice.reminder_2_sent_at && (
-              <Button
-                variant="outline" size="sm"
-                className="gap-1.5 shrink-0 border-[#FCA5A5] text-[#991B1B] hover:bg-[#FEE2E2]"
-                onClick={sendReminder}
-                disabled={remindLoading}
-                title={invoice.reminder_1_sent_at ? "Envoyer la 2ème relance" : "Envoyer la 1ère relance (J+30)"}
-              >
-                {remindLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
-                <span className="hidden sm:inline">
-                  {remindLoading ? "Envoi…" : invoice.reminder_1_sent_at ? "Relance 2" : "Relancer"}
-                </span>
-              </Button>
-            )}
-
-            {/* Bouton Envoyer par email (statut draft uniquement) */}
-            {invoice.status === "draft" && invoice.client?.email && (
-              <Button
-                size="sm"
-                className="gap-1.5 shrink-0 bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
-                onClick={() => setShowSendModal(true)}
-                disabled={sendLoading}
-              >
-                <Send className="w-4 h-4" />
-                Envoyer par email
-              </Button>
-            )}
-
-            {/* Transitions de statut (manuelles) */}
-            {actions.filter(a => a.status !== "sent" || invoice.status !== "draft").map(action => (
-              <Button
-                key={action.status}
-                variant={action.variant}
-                size="sm"
-                className={`gap-1.5 shrink-0 ${action.variant === "default" ? "bg-[#2563EB] hover:bg-[#1D4ED8] text-white" : ""}`}
-                onClick={() => changeStatus(action.status)}
-                disabled={statusLoading}
-              >
-                {statusLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <action.icon className="w-4 h-4" />}
-                {action.label}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Bandeau archivée */}
-        {invoice.is_archived && (
-          <div className="bg-[#F1F5F9] border border-[#CBD5E1] rounded-xl p-4 flex items-center gap-3">
-            <Archive className="w-5 h-5 text-slate-400 shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-slate-600">Facture archivée</p>
-              <p className="text-xs text-slate-400 mt-0.5">Cette facture n&apos;apparaît plus dans la liste principale. Vous pouvez la désarchiver à tout moment.</p>
-            </div>
-            <Button
-              size="sm" variant="outline"
-              className="shrink-0 border-[#93C5FD] text-[#2563EB] hover:bg-[#EFF6FF] gap-1.5"
-              onClick={toggleArchive} disabled={archiveLoading}
-            >
-              <ArchiveX className="w-3.5 h-3.5" /> Désarchiver
-            </Button>
-          </div>
-        )}
-
-        {/* Alerte retard */}
-        {isOverdue && (
-          <div className="bg-[#FEF3C7] border border-[#FCD34D] rounded-xl p-4 flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-[#D97706] shrink-0" />
-            <p className="text-sm text-[#92400E]">
-              Cette facture est <strong>en retard</strong> depuis le {formatDate(invoice.due_date)}.
-            </p>
-            <Button size="sm" variant="outline"
-              className="ml-auto border-[#FCD34D] text-[#92400E] hover:bg-[#FEF3C7] shrink-0"
-              onClick={() => changeStatus("overdue")} disabled={statusLoading}
-            >
-              <Clock className="w-3.5 h-3.5 mr-1.5" /> Marquer en retard
-            </Button>
-          </div>
-        )}
-
-        {/* Alerte avoir émis */}
-        {invoice.status === "credited" && (
-          <div className="bg-[#FFF7ED] border border-[#FED7AA] rounded-xl p-4 flex items-center gap-3">
-            <FileX className="w-5 h-5 text-[#C2410C] shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-[#9A3412]">Un avoir a été émis sur cette facture</p>
-              <p className="text-xs text-[#C2410C] mt-0.5">Cette facture est annulée. Consultez la section Avoirs pour le détail.</p>
-            </div>
-            <Link href="/credit-notes" className="ml-auto shrink-0">
-              <Button size="sm" variant="outline" className="border-[#FED7AA] text-[#C2410C] hover:bg-[#FFF7ED] gap-1.5">
-                <RotateCcw className="w-3.5 h-3.5" /> Voir les avoirs
-              </Button>
-            </Link>
-          </div>
-        )}
-
-        {/* ---- Corps facture ---- */}
-        <div className="relative bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] shadow-sm overflow-hidden">
-          {/* Brouillon : filigrane visible à l'écran et à l'impression — un brouillon
-              imprimé ne doit pas pouvoir circuler comme une facture émise */}
-          {invoice.status === "draft" && (
-            <div aria-hidden className="pointer-events-none select-none absolute inset-0 z-10 flex items-center justify-center overflow-hidden">
-              <span className="-rotate-[30deg] text-[64px] sm:text-[96px] font-extrabold tracking-[0.2em] text-[#DC2626]/10 dark:text-[#F87171]/10">
-                BROUILLON
-              </span>
-            </div>
-          )}
-
-          <div className="p-4 sm:p-8 border-b border-[#E2E8F0] dark:border-[#1E3A5F]">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-              <div>
-                <p className="text-xs font-medium text-slate-400 mb-1 uppercase tracking-wide">De</p>
-                {company ? (
-                  <div>
-                    <p className="text-sm font-bold text-[#0F172A] dark:text-[#E2E8F0]">{company.name}</p>
-                    {company.address && <p className="text-xs text-slate-500 mt-0.5">{company.address}</p>}
-                    {(company.zip_code || company.city) && (
-                      <p className="text-xs text-slate-500">{[company.zip_code, company.city].filter(Boolean).join(" ")}</p>
-                    )}
-                    {(company.siret || company.siren) && (
-                      <p className="text-xs text-slate-400 font-mono mt-0.5">
-                        {company.siret ? `SIRET ${company.siret}` : `SIREN ${company.siren}`}
-                      </p>
-                    )}
-                    {company.vat_number && (
-                      <p className="text-xs text-slate-400 font-mono">TVA {company.vat_number}</p>
-                    )}
-                  </div>
-                ) : (
-                  <a href="/settings" className="block group">
-                    <p className="text-sm font-bold text-[#0F172A] dark:text-[#E2E8F0] group-hover:text-[#2563EB] transition-colors">Votre entreprise</p>
-                    <p className="text-xs text-[#2563EB] underline mt-0.5">Complétez dans Paramètres → Entreprise</p>
-                  </a>
-                )}
-              </div>
-              <div>
-                <p className="text-xs font-medium text-slate-400 mb-1 uppercase tracking-wide">Pour</p>
-                {invoice.client ? (
-                  <div>
-                    <Link href={`/clients/${invoice.client.id}`} className="text-sm font-bold text-[#2563EB] hover:underline">
-                      {invoice.client.name}
-                    </Link>
-                    {invoice.client.siren && (
-                      <p className="text-xs text-slate-400 font-mono mt-0.5">SIREN {invoice.client.siren}</p>
-                    )}
-                    {invoice.client.address && (
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {invoice.client.address}<br />
-                        {invoice.client.zip_code} {invoice.client.city}
-                      </p>
-                    )}
-                    {invoice.client.email && (
-                      <p className="text-xs text-slate-500 mt-0.5">{invoice.client.email}</p>
-                    )}
-                  </div>
-                ) : <p className="text-sm text-slate-400">—</p>}
-              </div>
-              <div className="sm:text-right">
-                <div className="mb-3">
-                  <p className="text-xs font-medium text-slate-400 uppercase">N° Facture</p>
-                  <p className="text-sm font-bold font-mono text-[#0F172A] dark:text-[#E2E8F0]">{invoice.invoice_number}</p>
-                </div>
-                <div className="mb-3">
-                  <p className="text-xs font-medium text-slate-400 uppercase">Émission</p>
-                  <p className="text-sm text-[#0F172A] dark:text-[#E2E8F0]">{formatDate(invoice.issue_date)}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-slate-400 uppercase">Échéance</p>
-                  <p className={`text-sm font-medium ${isOverdue || invoice.status === "overdue" ? "text-[#EF4444]" : "text-[#0F172A] dark:text-[#E2E8F0]"}`}>
-                    {formatDate(invoice.due_date)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tableau lignes — mobile : cards empilées */}
-          <div className="block sm:hidden divide-y divide-[#F1F5F9] dark:divide-[#162032]">
-            {invoice.lines?.map((line, i) => (
-              <div key={i} className="px-4 py-3">
-                <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0] mb-1">{line.description}</p>
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>{line.quantity} × {formatCurrency(line.unit_price_ht)} HT · TVA {line.vat_rate}%</span>
-                  <span className="font-mono font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(line.total_ht)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#162032]/40">
-                  <th className="text-left text-xs font-medium text-slate-400 px-6 py-3">Désignation</th>
-                  <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">Qté</th>
-                  <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">Prix unitaire HT</th>
-                  <th className="text-right text-xs font-medium text-slate-400 px-4 py-3">TVA</th>
-                  <th className="text-right text-xs font-medium text-slate-400 px-6 py-3">Total HT</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoice.lines?.map((line, i) => (
-                  <tr key={i} className="border-b border-[#F1F5F9] dark:border-[#162032] last:border-0 dark:hover:bg-[#162032]/60">
-                    <td className="px-6 py-4 text-sm text-[#0F172A] dark:text-[#E2E8F0]">{line.description}</td>
-                    <td className="px-4 py-4 text-right text-sm font-mono text-slate-600">{line.quantity}</td>
-                    <td className="px-4 py-4 text-right text-sm font-mono text-slate-600">{formatCurrency(line.unit_price_ht)}</td>
-                    <td className="px-4 py-4 text-right text-sm font-mono text-slate-600">{line.vat_rate}%</td>
-                    <td className="px-6 py-4 text-right text-sm font-mono font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(line.total_ht)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Totaux */}
-          <div className="p-4 sm:p-8 border-t border-[#E2E8F0] dark:border-[#1E3A5F]">
-            <div className="flex justify-end">
-              <div className="w-64 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Sous-total HT</span>
-                  <span className="font-mono text-[#0F172A] dark:text-[#E2E8F0]">{formatCurrency(invoice.subtotal_ht)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">TVA</span>
-                  <span className="font-mono text-slate-600">{formatCurrency(invoice.total_vat)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between pt-1">
-                  <span className="font-bold text-[#0F172A] dark:text-[#E2E8F0]">Total TTC</span>
-                  <span className="font-mono text-lg font-bold text-[#2563EB]">{formatCurrency(invoice.total_ttc)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Notes */}
-          {invoice.notes && (
-            <div className="px-6 sm:px-8 pb-6 sm:pb-8">
-              <Separator className="mb-4" />
-              <p className="text-xs font-medium text-slate-400 mb-1.5">CONDITIONS DE PAIEMENT / NOTES</p>
-              <p className="text-sm text-slate-600 whitespace-pre-line">{invoice.notes}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Infos techniques */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: "Créée le",    value: formatDate(invoice.created_at) },
-            { label: "Statut PPF",  value: invoice.ppf_status || "Non transmise" },
-            { label: "Lignes",      value: `${invoice.lines?.length ?? 0} prestation${(invoice.lines?.length ?? 0) > 1 ? "s" : ""}` },
-            { label: "Statut",      value: STATUS_LABELS[invoice.status] ?? invoice.status,
-              color: INVOICE_STATUS_STYLES[invoice.status as InvoiceStatus]?.text },
-          ].map(item => (
-            <div key={item.label} className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-4 shadow-sm">
-              <p className="text-xs text-slate-400 mb-1">{item.label}</p>
-              <p className="text-sm font-semibold" style={item.color ? { color: item.color } : {}}>
-                {item.value}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Historique des relances */}
-        {(invoice.reminder_1_sent_at || invoice.reminder_2_sent_at) && (
-          <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-4 shadow-sm space-y-2">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-3">Relances envoyées</p>
-            {invoice.reminder_1_sent_at && (
-              <div className="flex items-center gap-2.5">
-                <div className="w-6 h-6 rounded-full bg-[#FEF3C7] border border-[#FCD34D] flex items-center justify-center shrink-0">
-                  <Bell className="w-3 h-3 text-[#D97706]" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">Relance 1 envoyée</p>
-                  <p className="text-xs text-slate-400">{formatDate(invoice.reminder_1_sent_at)}</p>
-                </div>
-              </div>
-            )}
-            {invoice.reminder_2_sent_at && (
-              <div className="flex items-center gap-2.5">
-                <div className="w-6 h-6 rounded-full bg-[#FEE2E2] border border-[#FCA5A5] flex items-center justify-center shrink-0">
-                  <Bell className="w-3 h-3 text-[#DC2626]" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">Relance 2 envoyée</p>
-                  <p className="text-xs text-slate-400">{formatDate(invoice.reminder_2_sent_at)}</p>
-                </div>
-              </div>
-            )}
-            {!invoice.reminder_2_sent_at && (
-              <p className="text-xs text-slate-400 pt-1">
-                {invoice.reminder_1_sent_at
-                  ? "La 2ème relance peut être envoyée manuellement ou sera envoyée automatiquement à J+45."
-                  : "La 2ème relance sera envoyée automatiquement à J+45."}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Édition brouillon */}
-        {invoice.status === "draft" && (
-          <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Pencil className="w-4 h-4 text-[#2563EB] shrink-0" />
-              <p className="text-sm text-[#1E40AF]">Ce brouillon peut encore être modifié.</p>
-            </div>
-            <Link href={`/invoices/${invoiceId}/edit`}>
-              <Button size="sm" variant="outline" className="border-[#93C5FD] text-[#2563EB] hover:bg-[#DBEAFE] shrink-0 gap-1.5">
-                <Pencil className="w-3.5 h-3.5" /> Modifier
-              </Button>
-            </Link>
-          </div>
-        )}
-      </div>
+      <InvoiceDetailView
+        invoice={invoice}
+        company={company}
+        today={today}
+        backHref="/invoices"
+        clientHref={invoice.client ? `/clients/${invoice.client.id}` : null}
+        quote={quote ? { number: quote.quote_number, href: `/quotes/${quote.id}` } : null}
+        creditNotesHref="/credit-notes"
+        settingsCompanyHref="/settings/company"
+        handlers={{
+          downloadPdf: downloadPDF,
+          pdfLoading,
+          downloadFacturX,
+          fxLoading,
+          print: () => window.print(),
+          editHref: `/invoices/${invoice.id}/edit`,
+          deleteDraft: deleteInvoice,
+          deleteLoading,
+          toggleArchive,
+          archiveLoading,
+          openCredit: () => setShowCreditModal(true),
+          remind: sendReminder,
+          remindLoading,
+          openSend: () => setShowSendModal(true),
+          sendLoading,
+          changeStatus,
+          statusLoading,
+        }}
+      />
     </>
   )
 }

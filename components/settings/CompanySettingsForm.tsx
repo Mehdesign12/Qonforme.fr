@@ -1,15 +1,28 @@
 'use client'
 
+/**
+ * Paramètres › Entreprise (planche « Paramètres — Entreprise ») : logo avec
+ * aperçu, identité, TVA, coordonnées bancaires.
+ *
+ * Seuls les champs qui existent en base sont proposés : pas de forme
+ * juridique, de téléphone, d'assurance décennale, de régime de TVA ni
+ * d'autoliquidation (non livrés, DECISIONS § 10). La numérotation et les
+ * conditions de paiement se règlent dans Paramètres › Modèles de documents.
+ *
+ * Même composant pour la démo (`mode="demo"`) : rien n'est lu ni enregistré.
+ */
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
-import { Loader2, Search, CheckCircle2, Building2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
+import { Loader2, Search, CheckCircle2, Wand2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { isValidSiren, sirenToVAT } from "@/lib/utils/invoice"
+import { PageHeader } from "@/components/app/kit"
+import type { ShellMode } from "@/components/layout/nav"
+import { settingsHref } from "@/components/settings/sections"
+import { DirtyHint, Field, FieldGrid, MobileSaveBar, SaveButton, SettingsCard } from "@/components/settings/ui"
+import { LogoDocPreview, LogoDropzone, useCompanyLogo } from "@/components/settings/LogoField"
 
-interface FormData {
+export interface CompanyFields {
   name: string
   siren: string
   siret: string
@@ -19,37 +32,55 @@ interface FormData {
   city: string
   country: string
   iban: string
-  invoice_prefix: string
-  payment_terms: string
   email: string
 }
 
 const DEFAULT_PAYMENT_TERMS =
   "Paiement par virement bancaire sous 30 jours.\nPénalités de retard : 3 fois le taux d'intérêt légal en vigueur."
 
-const EMPTY: FormData = {
+const EMPTY: CompanyFields = {
   name: "", siren: "", siret: "", vat_number: "",
   address: "", zip_code: "", city: "", country: "FR",
-  iban: "", invoice_prefix: "F", payment_terms: DEFAULT_PAYMENT_TERMS,
-  email: "",
+  iban: "", email: "",
 }
 
-export function CompanySettingsForm() {
-  const [loading, setLoading]       = useState(true)
+const FORM_ID = "company-form"
+
+const demoToast = () =>
+  toast("Créez un compte pour enregistrer vos informations", {
+    action: { label: "S'inscrire", onClick: () => { window.location.href = "/signup" } },
+  })
+
+export function CompanySettingsForm({
+  mode = "app",
+  initial,
+}: {
+  mode?: ShellMode
+  /** Démo : valeurs affichées (aucune lecture en base). */
+  initial?: Partial<CompanyFields> & { logo_url?: string | null }
+}) {
+  const demo = mode === "demo"
+  const start: CompanyFields = { ...EMPTY, ...(initial ?? {}) }
+
+  const [loading, setLoading]       = useState(!demo)
   const [saving, setSaving]         = useState(false)
-  const [companyId, setCompanyId]   = useState<string | null>(null)
-  const [fields, setFields]         = useState<FormData>(EMPTY)
-  const [saved, setSaved]           = useState<FormData>(EMPTY)   // copie au dernier save/load
-  const [errors, setErrors]         = useState<Partial<Record<keyof FormData, string>>>({})
+  const [companyId, setCompanyId]   = useState<string | null>(demo ? "demo" : null)
+  const [fields, setFields]         = useState<CompanyFields>(start)
+  const [saved, setSaved]           = useState<CompanyFields>(start)   // copie au dernier enregistrement / chargement
+  const [errors, setErrors]         = useState<Partial<Record<keyof CompanyFields, string>>>({})
+  const [loadedLogo, setLoadedLogo] = useState<string | null>(initial?.logo_url ?? null)
 
   const [sirenSearch, setSirenSearch]   = useState("")
   const [sirenLoading, setSirenLoading] = useState(false)
   const [sirenFound, setSirenFound]     = useState(false)
 
+  const logo = useCompanyLogo({ mode, initialUrl: loadedLogo })
+
   const isDirty = JSON.stringify(fields) !== JSON.stringify(saved)
 
   /* ───────────────────────────── Chargement ───────────────────── */
   useEffect(() => {
+    if (demo) return
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { setLoading(false); return }
@@ -67,31 +98,30 @@ export function CompanySettingsForm() {
       }
 
       if (company) {
-        const loaded: FormData = {
-          name:           company.name           ?? "",
-          siren:          company.siren          ?? "",
-          siret:          company.siret          ?? "",
-          vat_number:     company.vat_number     ?? "",
-          address:        company.address        ?? "",
-          zip_code:       company.zip_code       ?? "",
-          city:           company.city           ?? "",
-          country:        company.country        ?? "FR",
-          iban:           company.iban           ?? "",
-          invoice_prefix: company.invoice_prefix ?? "F",
-          payment_terms:  company.payment_terms  ?? DEFAULT_PAYMENT_TERMS,
+        const loaded: CompanyFields = {
+          name:       company.name       ?? "",
+          siren:      company.siren      ?? "",
+          siret:      company.siret      ?? "",
+          vat_number: company.vat_number ?? "",
+          address:    company.address    ?? "",
+          zip_code:   company.zip_code   ?? "",
+          city:       company.city       ?? "",
+          country:    company.country    ?? "FR",
+          iban:       company.iban       ?? "",
           // Si pas d'email entreprise enregistré, pré-remplir avec l'email de connexion
-          email:          company.email          ?? user.email ?? "",
+          email:      company.email      ?? user.email ?? "",
         }
         setFields(loaded)
         setSaved(loaded)
         setCompanyId(company.id)
+        setLoadedLogo(company.logo_url ?? null)
       }
       setLoading(false)
     })
-  }, [])
+  }, [demo])
 
   /* ──────────────────── Helpers champs contrôlés ─────────────── */
-  const set = (key: keyof FormData) => (
+  const set = (key: keyof CompanyFields) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     setFields(prev => ({ ...prev, [key]: e.target.value }))
@@ -99,27 +129,31 @@ export function CompanySettingsForm() {
     if (errors[key]) setErrors(prev => { const n = { ...prev }; delete n[key]; return n })
   }
 
-  /* ─────────────────── Lookup SIREN INSEE ─────────────────────── */
+  /* ─────────────────── Recherche SIREN (INSEE) ─────────────────── */
   const lookupSiren = async () => {
     if (sirenSearch.length !== 9) { toast.error("Le SIREN doit faire 9 chiffres"); return }
+    if (demo) { demoToast(); return }
     setSirenLoading(true); setSirenFound(false)
     try {
       const res  = await fetch(`/api/sirene?siren=${sirenSearch}`)
-      const json = await res.json()
-      if (json.result) {
-        const r = json.result
+      const json = await res.json().catch(() => null)
+      // La route renvoie directement le résultat (name, siren, address…)
+      const r = res.ok ? (json?.result ?? json) : null
+      if (r?.name || r?.siren) {
         setFields(prev => ({
           ...prev,
-          name:       r.name        ?? prev.name,
-          siren:      r.siren       ?? prev.siren,
-          address:    r.address     ?? prev.address,
-          zip_code:   r.zip_code    ?? prev.zip_code,
-          city:       r.city        ?? prev.city,
-          vat_number: r.vat_number  ?? prev.vat_number,
+          // `||` : une valeur vide renvoyée par l'INSEE n'efface pas ce qui est déjà saisi
+          name:       r.name       || prev.name,
+          siren:      r.siren      || prev.siren,
+          siret:      r.siret      || prev.siret,
+          address:    r.address    || prev.address,
+          zip_code:   r.zip_code   || prev.zip_code,
+          city:       r.city       || prev.city,
+          vat_number: r.vat_number || prev.vat_number || sirenToVAT(sirenSearch),
         }))
         setErrors({})
         setSirenFound(true)
-        toast.success(`${r.name} trouvé`)
+        toast.success(`${r.name || "Entreprise"} trouvée`)
       } else {
         toast.error("SIREN introuvable dans la base INSEE")
       }
@@ -128,22 +162,29 @@ export function CompanySettingsForm() {
   }
 
   /* ────────────────────────── Validation ──────────────────────── */
-  function validate(f: FormData): Partial<Record<keyof FormData, string>> {
-    const e: Partial<Record<keyof FormData, string>> = {}
-    if (!f.name.trim())                              e.name     = "Requis"
-    if (!f.siren.trim())                             e.siren    = "Requis"
-    else if (!/^\d{9}$/.test(f.siren.trim()))        e.siren    = "9 chiffres exactement"
-    if (!f.address.trim())                           e.address  = "Requis"
-    if (!f.zip_code.trim())                          e.zip_code = "Requis"
-    if (!f.city.trim())                              e.city     = "Requis"
+  function validate(f: CompanyFields): Partial<Record<keyof CompanyFields, string>> {
+    const e: Partial<Record<keyof CompanyFields, string>> = {}
+    const siren = f.siren.trim()
+    if (!f.name.trim())                 e.name     = "Requis"
+    if (!siren)                         e.siren    = "Requis"
+    else if (!/^\d{9}$/.test(siren))    e.siren    = "9 chiffres exactement"
+    else if (!isValidSiren(siren))      e.siren    = "SIREN invalide : vérifiez les 9 chiffres (clé de contrôle)"
+    if (!f.address.trim())              e.address  = "Requis"
+    if (!f.zip_code.trim())             e.zip_code = "Requis"
+    if (!f.city.trim())                 e.city     = "Requis"
     return e
   }
 
-  /* ─────────────────────────── Sauvegarde ─────────────────────── */
+  /* ─────────────────────────── Enregistrement ─────────────────── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (demo) { demoToast(); return }
     const errs = validate(fields)
-    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs)
+      toast.error("Certains champs sont à compléter")
+      return
+    }
 
     setSaving(true)
     try {
@@ -152,23 +193,22 @@ export function CompanySettingsForm() {
       if (!user) { toast.error("Session expirée, veuillez vous reconnecter"); return }
 
       const payload = {
-        user_id:        user.id,
-        name:           fields.name.trim(),
-        siren:          fields.siren.trim(),
-        siret:          fields.siret.trim()      || null,
-        vat_number:     fields.vat_number.trim() || null,
-        address:        fields.address.trim(),
-        zip_code:       fields.zip_code.trim(),
-        city:           fields.city.trim(),
-        country:        fields.country           || "FR",
-        iban:           fields.iban.trim()       || null,
-        invoice_prefix: fields.invoice_prefix    || "F",
-        payment_terms:  fields.payment_terms     || null,
-        email:          fields.email.trim()      || null,
+        user_id:    user.id,
+        name:       fields.name.trim(),
+        siren:      fields.siren.trim(),
+        siret:      fields.siret.trim()      || null,
+        vat_number: fields.vat_number.trim() || null,
+        address:    fields.address.trim(),
+        zip_code:   fields.zip_code.trim(),
+        city:       fields.city.trim(),
+        country:    fields.country           || "FR",
+        iban:       fields.iban.trim()       || null,
+        email:      fields.email.trim()      || null,
       }
 
       let dbError
       if (companyId) {
+        // Préfixe et conditions de paiement : réglés dans les modèles, laissés tels quels ici
         const { error } = await supabase
           .from("companies")
           .update(payload)
@@ -177,7 +217,10 @@ export function CompanySettingsForm() {
       } else {
         const { data, error } = await supabase
           .from("companies")
-          .upsert({ ...payload, invoice_sequence: 1 }, { onConflict: "user_id" })
+          .upsert(
+            { ...payload, invoice_prefix: "F", payment_terms: DEFAULT_PAYMENT_TERMS, invoice_sequence: 1 },
+            { onConflict: "user_id" },
+          )
           .select("id")
           .single()
         dbError = error
@@ -186,12 +229,12 @@ export function CompanySettingsForm() {
 
       if (dbError) {
         console.error("Erreur sauvegarde:", dbError)
-        toast.error(dbError.message || "Erreur lors de la sauvegarde")
+        toast.error(dbError.message || "Erreur lors de l'enregistrement")
         return
       }
 
       setSaved({ ...fields })
-      toast.success("Informations sauvegardées ✓")
+      toast.success("Informations enregistrées")
     } catch (err) {
       console.error(err)
       toast.error("Erreur réseau")
@@ -201,244 +244,167 @@ export function CompanySettingsForm() {
   }
 
   /* ───────────────────────────── UI ───────────────────────────── */
-  if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
-    </div>
-  )
-
-  const currentYear  = new Date().getFullYear()
-  const exampleNumber = `${fields.invoice_prefix || "F"}-${currentYear}-001`
+  const year = new Date().getFullYear()
+  const sirenTrim = fields.siren.trim()
+  const sirenOk = !demo && !errors.siren && /^\d{9}$/.test(sirenTrim) && isValidSiren(sirenTrim)
+  const suggestedVat = /^\d{9}$/.test(sirenTrim) ? sirenToVAT(sirenTrim) : null
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <>
+      <PageHeader
+        title="Entreprise"
+        subtitle="Identité, TVA et coordonnées bancaires"
+        backHref={settingsHref("/settings", mode)}
+        backLabel="Paramètres"
+        actions={
+          <>
+            {isDirty && <DirtyHint className="hidden lg:inline-flex" />}
+            <SaveButton form={FORM_ID} saving={saving} disabled={loading || !isDirty} />
+          </>
+        }
+      />
 
-      {/* Recherche SIREN auto-fill */}
-      <div className="bg-[#EFF6FF] dark:bg-[#162032] border border-[#BFDBFE] dark:border-[#1E3A5F] rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Building2 className="w-4 h-4 text-[#2563EB]" />
-          <p className="text-sm font-medium text-[#1E40AF]">Pré-remplissage automatique par SIREN</p>
+      {loading ? (
+        <div className="q-card flex items-center justify-center py-20">
+          <Loader2 className="size-6 animate-spin text-[var(--q-accent)]" aria-label="Chargement" />
         </div>
-        <div className="flex gap-2">
-          <Input
-            placeholder="Ex: 123456789"
-            value={sirenSearch}
-            onChange={e => setSirenSearch(e.target.value.replace(/\D/g, "").slice(0, 9))}
-            className="font-mono bg-white dark:bg-[#162032] dark:border-[#1E3A5F] dark:text-[#E2E8F0] max-w-48"
-            maxLength={9}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={lookupSiren}
-            disabled={sirenLoading || sirenSearch.length !== 9}
-            className="gap-1.5 shrink-0"
+      ) : (
+        <form id={FORM_ID} onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+          {logo.input}
+
+          {/* ── Logo ── */}
+          <SettingsCard
+            id="logo"
+            title="Logo"
+            description="Affiché en haut de vos devis, factures, avoirs et bons de commande."
           >
-            {sirenLoading
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : sirenFound
-                ? <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
-                : <Search className="w-4 h-4" />}
-            Rechercher
-          </Button>
-        </div>
-        <p className="text-xs text-[#3B82F6] mt-2">Pré-remplit automatiquement via la base INSEE Sirene</p>
-      </div>
-
-      {/* Identité juridique */}
-      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Identité juridique</h2>
-
-        <div>
-          <Label htmlFor="name">Raison sociale *</Label>
-          <Input
-            id="name"
-            placeholder="Mon Entreprise SARL"
-            className="mt-1"
-            value={fields.name}
-            onChange={set("name")}
-          />
-          {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="siren">SIREN *</Label>
-            <Input
-              id="siren"
-              placeholder="123456789"
-              className="mt-1 font-mono"
-              maxLength={9}
-              value={fields.siren}
-              onChange={set("siren")}
-            />
-            {errors.siren && <p className="text-xs text-red-500 mt-1">{errors.siren}</p>}
-          </div>
-          <div>
-            <Label htmlFor="siret">SIRET</Label>
-            <Input
-              id="siret"
-              placeholder="12345678900001"
-              className="mt-1 font-mono"
-              maxLength={14}
-              value={fields.siret}
-              onChange={set("siret")}
-            />
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="vat_number">N° TVA intracommunautaire</Label>
-          <Input
-            id="vat_number"
-            placeholder="FR12123456789"
-            className="mt-1 font-mono"
-            value={fields.vat_number}
-            onChange={set("vat_number")}
-          />
-          <p className="text-xs text-slate-400 mt-1">Mentionné obligatoirement sur toutes les factures</p>
-        </div>
-      </div>
-
-      {/* Adresse */}
-      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Adresse du siège social</h2>
-
-        <div>
-          <Label htmlFor="address">Adresse *</Label>
-          <Input
-            id="address"
-            placeholder="10 rue de la Paix"
-            className="mt-1"
-            value={fields.address}
-            onChange={set("address")}
-          />
-          {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
-        </div>
-
-        <div className="grid grid-cols-3 sm:grid-cols-3 gap-4">
-          <div>
-            <Input
-              id="zip_code"
-              placeholder="75001"
-              className="mt-1 font-mono"
-              value={fields.zip_code}
-              onChange={set("zip_code")}
-            />
-            {errors.zip_code && <p className="text-xs text-red-500 mt-1">{errors.zip_code}</p>}
-          </div>
-          <div className="col-span-2">
-            <Label htmlFor="city">Ville *</Label>
-            <Input
-              id="city"
-              placeholder="Paris"
-              className="mt-1"
-              value={fields.city}
-              onChange={set("city")}
-            />
-            {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city}</p>}
-          </div>
-        </div>
-      </div>
-
-      {/* Email professionnel */}
-      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Email professionnel</h2>
-        <div>
-          <Label htmlFor="email">Adresse email de l&apos;entreprise</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="contact@monentreprise.fr"
-            className="mt-1"
-            value={fields.email}
-            onChange={set("email")}
-            autoComplete="email"
-          />
-          <p className="text-xs text-slate-400 mt-1">
-            Utilisée comme expéditeur et en copie (CC) sur tous les emails envoyés à vos clients.
-            Si vide, l&apos;email de votre compte est utilisé à la place.
-          </p>
-        </div>
-      </div>
-
-      {/* Coordonnées bancaires */}
-      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Coordonnées bancaires</h2>
-        <div>
-          <Label htmlFor="iban">IBAN</Label>
-          <Input
-            id="iban"
-            placeholder="FR76 3000 6000 0112 3456 7890 189"
-            className="mt-1 font-mono text-sm"
-            value={fields.iban}
-            onChange={set("iban")}
-          />
-          <p className="text-xs text-slate-400 mt-1">Affiché dans les conditions de paiement sur vos factures</p>
-        </div>
-      </div>
-
-      {/* Numérotation */}
-      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Numérotation des factures</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-          <div>
-            <Label htmlFor="invoice_prefix">Préfixe</Label>
-            <Input
-              id="invoice_prefix"
-              placeholder="F"
-              className="mt-1 font-mono uppercase"
-              maxLength={5}
-              value={fields.invoice_prefix}
-              onChange={set("invoice_prefix")}
-            />
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 mb-1">Aperçu</p>
-            <div className="px-3 py-2 bg-[#F8FAFC] dark:bg-[#162032] border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg font-mono text-sm text-slate-600 dark:text-[#E2E8F0]">
-              {exampleNumber}
+            <div className="grid items-stretch gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr))]">
+              <LogoDropzone
+                logo={logo}
+                disabled={!companyId}
+                disabledReason="Enregistrez d'abord votre entreprise, puis ajoutez votre logo."
+              />
+              <LogoDocPreview logo={logo.preview} companyName={fields.name} number={`D-${year}-001`} />
             </div>
-          </div>
-        </div>
-        <p className="text-xs text-slate-400">
-          Le numéro est généré automatiquement : {exampleNumber}, {fields.invoice_prefix || "F"}-{currentYear}-002…
-        </p>
-      </div>
+          </SettingsCard>
 
-      {/* Conditions de paiement */}
-      <div className="bg-white dark:bg-[#0F1E35] rounded-xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5 space-y-3 shadow-sm">
-        <div>
-          <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#E2E8F0]">Conditions de paiement par défaut</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Pré-remplies dans chaque nouvelle facture</p>
-        </div>
-        <textarea
-          rows={3}
-          value={fields.payment_terms}
-          onChange={set("payment_terms")}
-          className="w-full px-3 py-2 text-sm border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] text-slate-600 dark:bg-[#162032] dark:text-[#E2E8F0]"
-          placeholder="Paiement par virement bancaire sous 30 jours..."
-        />
-      </div>
+          {/* ── Identité ── */}
+          <SettingsCard id="identite" title="Identité" description="Ces informations figurent sur chaque document.">
+            {/* Pré-remplissage depuis la base Sirene */}
+            <div className="q-inset flex flex-col gap-3 p-3.5 md:flex-row md:items-center">
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <label htmlFor="siren-search" className="q-label">Remplir depuis le SIREN</label>
+                <span className="q-field-hint">Base Sirene de l&apos;INSEE : raison sociale et n° de TVA complétés pour vous.</span>
+              </span>
+              <span className="flex gap-2">
+                <input
+                  id="siren-search"
+                  className="q-input min-w-0 flex-1 font-mono md:w-[150px] md:flex-none"
+                  inputMode="numeric"
+                  placeholder="123456789"
+                  value={sirenSearch}
+                  onChange={e => setSirenSearch(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); void lookupSiren() } }}
+                  maxLength={9}
+                />
+                <button
+                  type="button"
+                  className="q-btn q-btn-secondary !h-[42px]"
+                  onClick={() => void lookupSiren()}
+                  disabled={sirenLoading || sirenSearch.length !== 9}
+                >
+                  {sirenLoading
+                    ? <Loader2 className="animate-spin" aria-hidden />
+                    : sirenFound
+                      ? <CheckCircle2 className="text-[var(--q-ok)]" aria-hidden />
+                      : <Search aria-hidden />}
+                  Rechercher
+                </button>
+              </span>
+            </div>
 
-      <Separator />
+            <FieldGrid>
+              <Field label="Raison sociale" htmlFor="name" error={errors.name}>
+                <input id="name" className="q-input" placeholder="Mon Entreprise SARL" autoComplete="organization"
+                  value={fields.name} onChange={set("name")} aria-invalid={!!errors.name} />
+              </Field>
+              <Field label="SIREN" htmlFor="siren" error={errors.siren} ok={sirenOk ? "Numéro valide" : undefined}>
+                <input id="siren" className="q-input font-mono" placeholder="123456789" inputMode="numeric" maxLength={9}
+                  value={fields.siren} onChange={set("siren")} aria-invalid={!!errors.siren} />
+              </Field>
+              <Field label="SIRET" htmlFor="siret" hint="Facultatif : 14 chiffres.">
+                <input id="siret" className="q-input font-mono" placeholder="12345678900001" inputMode="numeric" maxLength={14}
+                  value={fields.siret} onChange={set("siret")} />
+              </Field>
+            </FieldGrid>
 
-      {/* Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        {isDirty && (
-          <p className="text-xs text-[#D97706] flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 bg-[#D97706] rounded-full inline-block" />
-            Modifications non sauvegardées
-          </p>
-        )}
-        <Button
-          type="submit"
-          className="sm:ml-auto w-full sm:w-auto bg-[#2563EB] hover:bg-[#1D4ED8] text-white gap-2"
-          disabled={saving || !isDirty}
-        >
-          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-          {saving ? "Sauvegarde…" : "Sauvegarder les modifications"}
-        </Button>
-      </div>
-    </form>
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.4fr)]">
+              <Field label="Adresse" htmlFor="address" error={errors.address} className="col-span-2 sm:col-span-1">
+                <input id="address" className="q-input" placeholder="10 rue de la Paix" autoComplete="street-address"
+                  value={fields.address} onChange={set("address")} aria-invalid={!!errors.address} />
+              </Field>
+              <Field label="Code postal" htmlFor="zip_code" error={errors.zip_code}>
+                <input id="zip_code" className="q-input" placeholder="75001" inputMode="numeric" autoComplete="postal-code"
+                  value={fields.zip_code} onChange={set("zip_code")} aria-invalid={!!errors.zip_code} />
+              </Field>
+              <Field label="Ville" htmlFor="city" error={errors.city}>
+                <input id="city" className="q-input" placeholder="Paris" autoComplete="address-level2"
+                  value={fields.city} onChange={set("city")} aria-invalid={!!errors.city} />
+              </Field>
+            </div>
+
+            <Field
+              label="E-mail de l'entreprise"
+              htmlFor="email"
+              hint="Vos clients vous répondent à cette adresse, en copie de chaque envoi. Vide : l'adresse de votre compte est utilisée."
+              className="sm:max-w-[calc(50%-6px)]"
+            >
+              <input id="email" type="email" className="q-input" placeholder="contact@monentreprise.fr" autoComplete="email"
+                value={fields.email} onChange={set("email")} />
+            </Field>
+          </SettingsCard>
+
+          {/* ── TVA ── */}
+          <SettingsCard id="tva" title="TVA">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+              <Field
+                label="N° de TVA intracommunautaire"
+                htmlFor="vat_number"
+                hint="Mentionné sur toutes vos factures. En franchise en base, laissez vide et ajoutez la mention de l'article 293 B du CGI dans vos modèles."
+                className="flex-1 sm:max-w-[calc(50%-6px)]"
+              >
+                <input id="vat_number" className="q-input font-mono" placeholder="FR12123456789"
+                  value={fields.vat_number} onChange={set("vat_number")} />
+              </Field>
+              {suggestedVat && !fields.vat_number.trim() && (
+                <button
+                  type="button"
+                  className="q-btn q-btn-ghost sm:mt-[25px]"
+                  onClick={() => setFields(prev => ({ ...prev, vat_number: suggestedVat }))}
+                >
+                  <Wand2 aria-hidden />
+                  Calculer depuis le SIREN
+                </button>
+              )}
+            </div>
+          </SettingsCard>
+
+          {/* ── Coordonnées bancaires ── */}
+          <SettingsCard id="banque" title="Coordonnées bancaires">
+            <Field
+              label="IBAN"
+              htmlFor="iban"
+              hint="Affiché sous le total de vos factures : vos clients vous règlent par virement."
+              className="sm:max-w-[calc(50%-6px)]"
+            >
+              <input id="iban" className="q-input font-mono" placeholder="FR76 3000 6000 0112 3456 7890 189" autoComplete="off"
+                value={fields.iban} onChange={set("iban")} />
+            </Field>
+          </SettingsCard>
+
+          <MobileSaveBar show={isDirty} form={FORM_ID} saving={saving} />
+        </form>
+      )}
+    </>
   )
 }

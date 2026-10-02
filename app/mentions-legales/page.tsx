@@ -10,7 +10,9 @@ export const metadata: Metadata = {
 export default function MentionsLegalesPage() {
   return (
     <LegalLayout
-      title="Mentions légales"
+      title="Mentions"
+      titleAccent="légales"
+      path="/mentions-legales"
       subtitle="Informations légales obligatoires conformément à la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN)."
       lastUpdated="15 mars 2026"
     >
@@ -25,13 +27,13 @@ export default function MentionsLegalesPage() {
 
       <h3>Vercel Inc. — hébergement applicatif</h3>
       <ul>
-        <li><strong>Adresse :</strong> 340 Pine Street, Suite 701, San Francisco, CA 94104, États-Unis</li>
-        <li><strong>Site web :</strong> <a href="https://vercel.com" target="_blank" rel="noopener noreferrer">vercel.com</a></li>
+        <li><strong>Adresse :</strong> 340 Pine Street, Suite 701, San Francisco, CA 94104, États-Unis</li>
+        <li><strong>Site web :</strong> <a href="https://vercel.com" target="_blank" rel="noopener noreferrer">vercel.com</a></li>
       </ul>
 
       <h3>Supabase Inc. — base de données</h3>
       <ul>
-        <li><strong>Site web :</strong> <a href="https://supabase.com" target="_blank" rel="noopener noreferrer">supabase.com</a></li>
+        <li><strong>Site web :</strong> <a href="https://supabase.com" target="_blank" rel="noopener noreferrer">supabase.com</a></li>
         <li>Données stockées dans la région <strong>eu-west-3 (Paris, France)</strong></li>
       </ul>
 
@@ -54,10 +56,10 @@ export default function MentionsLegalesPage() {
 
       <h3>Données collectées</h3>
       <ul>
-        <li>Données d&apos;identification : nom, prénom, adresse e-mail</li>
-        <li>Données professionnelles : dénomination sociale, SIREN/SIRET, numéro de TVA, adresse</li>
-        <li>Données de paiement : traitées par Stripe (certifié PCI-DSS), non stockées chez Qonforme</li>
-        <li>Données d&apos;utilisation : logs de connexion, actions dans l&apos;application</li>
+        <li>Données d&apos;identification : nom, prénom, adresse e-mail</li>
+        <li>Données professionnelles : dénomination sociale, SIREN/SIRET, numéro de TVA, adresse</li>
+        <li>Données de paiement : traitées par Stripe (certifié PCI-DSS), non stockées chez Qonforme</li>
+        <li>Données d&apos;utilisation : logs de connexion, actions dans l&apos;application</li>
       </ul>
 
       <h3>Finalités du traitement</h3>
@@ -111,7 +113,7 @@ export default function MentionsLegalesPage() {
 
       <h2>9. Contact</h2>
       <p>
-        Pour toute question : <a href="mailto:contact@qonforme.fr">contact@qonforme.fr</a>
+        Pour toute question : <a href="mailto:contact@qonforme.fr">contact@qonforme.fr</a>
       </p>
     </LegalLayout>
   )

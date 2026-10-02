@@ -1,95 +1,177 @@
-import Image from "next/image"
 import Link from "next/link"
+import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from "react"
+import { ChevronDown, FileText } from "lucide-react"
 import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
-
-const PICTO_Q        = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Logo%20bleu%20Qonforme%20PNG.webp"
+import Footer from "@/components/layout/Footer"
 
 interface LegalLayoutProps {
-  children:     React.ReactNode
+  children:     ReactNode
+  /** Début du titre (Bricolage). */
   title:        string
+  /** Fin du titre en seconde voix (Instrument Serif italique, bleu). */
+  titleAccent?: string
   subtitle:     string
   lastUpdated:  string
+  /** Chemin de la page, pour la marquer dans « Documents légaux ». */
+  path?:        string
 }
 
-export function LegalLayout({ children, title, subtitle, lastUpdated }: LegalLayoutProps) {
-  return (
-    <div
-      className="relative min-h-screen overflow-x-hidden"
-      style={{
-        background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 30%, #EEF2FF 60%, #F0F9FF 85%, #F8FAFC 100%)",
-      }}
-    >
-      {/* ── Fonds décoratifs ── */}
-      <div
-        aria-hidden
-        className="pointer-events-none select-none absolute -top-32 -left-32 z-0 w-[480px] h-[480px] rounded-full"
-        style={{ background: "radial-gradient(circle at center, rgba(37,99,235,0.10) 0%, rgba(37,99,235,0.03) 55%, transparent 75%)" }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none select-none absolute top-1/2 -right-24 z-0 w-[420px] h-[420px] rounded-full"
-        style={{ background: "radial-gradient(circle at center, rgba(99,102,241,0.08) 0%, transparent 70%)" }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none select-none absolute inset-0 z-0"
-        style={{
-          backgroundImage: "radial-gradient(circle, rgba(37,99,235,0.06) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
-          maskImage: "radial-gradient(ellipse 90% 90% at 50% 30%, black 40%, transparent 100%)",
-          WebkitMaskImage: "radial-gradient(ellipse 90% 90% at 50% 30%, black 40%, transparent 100%)",
-        }}
-      />
-      {/* Picto Q filigrane */}
-      <div
-        aria-hidden
-        className="pointer-events-none select-none absolute right-[-80px] bottom-[-80px] z-0 hidden lg:block"
-        style={{ opacity: 0.055 }}
-      >
-        <Image src={PICTO_Q} alt="" width={400} height={400} sizes="400px" loading="lazy" />
-      </div>
+const LEGAL_PAGES = [
+  { href: "/mentions-legales", label: "Mentions légales" },
+  { href: "/cgu",              label: "Conditions générales d'utilisation" },
+  { href: "/confidentialite",  label: "Politique de confidentialité" },
+]
 
-      {/* ── Header pill ── */}
+interface TocEntry { id: string; num: string | null; label: string }
+
+/** Texte brut d'un nœud React (titres h2 du contenu). */
+function textOf(node: ReactNode): string {
+  if (node == null || typeof node === "boolean") return ""
+  if (typeof node === "string" || typeof node === "number") return String(node)
+  if (Array.isArray(node)) return node.map(textOf).join("")
+  if (isValidElement<{ children?: ReactNode }>(node)) return textOf(node.props.children)
+  return ""
+}
+
+function slugify(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
+/**
+ * Donne un identifiant à chaque titre h2 du contenu et en tire le sommaire.
+ * « Article 4 — Formules… » et « 4. Formules… » donnent le numéro 4 et le libellé.
+ */
+function withToc(children: ReactNode): { content: ReactNode[]; toc: TocEntry[] } {
+  const toc: TocEntry[] = []
+  const used = new Set<string>()
+  const content = Children.toArray(children).map((child) => {
+    if (!isValidElement<{ id?: string; children?: ReactNode }>(child) || child.type !== "h2") return child
+    const text = textOf(child.props.children).trim()
+    let id = child.props.id ?? (slugify(text) || "section")
+    for (let n = 2; used.has(id); n++) id = `${slugify(text)}-${n}`
+    used.add(id)
+    const m = text.match(/^(?:Article\s+)?(\d+)\s*(?:\.|—|-)\s*(.+)$/)
+    toc.push({ id, num: m ? m[1] : null, label: m ? m[2] : text })
+    return cloneElement(child as ReactElement<{ id?: string }>, { id })
+  })
+  return { content, toc }
+}
+
+function TocList({ toc }: { toc: TocEntry[] }) {
+  return (
+    <ol className="flex flex-col">
+      {toc.map((t) => (
+        <li key={t.id}>
+          <a
+            href={`#${t.id}`}
+            className="flex min-h-[40px] items-baseline gap-3 rounded-[10px] px-3 py-2 text-[13.5px] leading-snug text-q-text-3 transition-colors hover:bg-q-hover hover:text-q-ink lg:min-h-0 lg:py-1.5"
+          >
+            {t.num && <span className="w-5 shrink-0 text-right text-xs font-medium tabular-nums text-q-text-4">{t.num}</span>}
+            <span className="min-w-0">{t.label}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+function OtherDocs({ path }: { path?: string }) {
+  return (
+    <div className="q-card p-2">
+      <p className="px-3 pb-1 pt-2.5 text-xs font-semibold uppercase tracking-[0.08em] text-q-text-4">Documents légaux</p>
+      <ul className="flex flex-col">
+        {LEGAL_PAGES.map((p) => (
+          <li key={p.href}>
+            <Link
+              href={p.href}
+              aria-current={p.href === path ? "page" : undefined}
+              className="flex min-h-[44px] items-center gap-2.5 rounded-[10px] px-3 py-2 text-sm text-q-text-2 transition-colors hover:bg-q-hover hover:text-q-ink aria-[current=page]:bg-q-wash aria-[current=page]:font-semibold aria-[current=page]:text-q-accent-strong"
+            >
+              <FileText className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+              {p.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <p className="border-t border-q-line-soft px-3 pb-2 pt-3 text-[13px] text-q-text-4">
+        Une question&nbsp;?{" "}
+        <a href="mailto:contact@qonforme.fr" className="q-link">contact@qonforme.fr</a>
+      </p>
+    </div>
+  )
+}
+
+/**
+ * Pages légales (mentions légales, CGU, confidentialité) : en-tête et pied de
+ * page publics, titre en deux voix, texte sur 720 px dans une carte, sommaire
+ * collant sur ordinateur et repliable sur mobile. Couleurs par jetons --q-*
+ * (thème sombre compris) ; typographie du texte : bloc .legal-content de globals.css.
+ */
+export function LegalLayout({ children, title, titleAccent, subtitle, lastUpdated, path }: LegalLayoutProps) {
+  const { content, toc } = withToc(children)
+
+  return (
+    <div className="relative min-h-screen bg-q-bg text-q-ink">
+      {/* Halo bleu discret en haut de page, comme la coque de l'application */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[520px]" style={{ background: "var(--q-glow)" }} />
+
       <PublicHeaderWrapper />
 
-      {/* ── Contenu ── */}
-      <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pt-24 pb-10 sm:pt-28 sm:pb-14">
+      <main className="relative px-4 pb-16 pt-[112px] sm:px-6 sm:pb-24 sm:pt-[136px]">
+        <div className="mx-auto grid max-w-[1040px] gap-6 lg:grid-cols-[256px_minmax(0,720px)] lg:justify-center lg:gap-x-14 lg:gap-y-8">
+          {/* En-tête */}
+          <header className="lg:col-start-2">
+            <p className="q-eyebrow">Informations légales</p>
+            <h1 className="mt-3 font-display text-[clamp(34px,5vw,52px)] font-semibold leading-[1.05] tracking-[-0.035em] text-q-ink [text-wrap:balance]">
+              {title}
+              {titleAccent && <> <span className="q-serif">{titleAccent}</span></>}
+            </h1>
+            <p className="mt-4 max-w-[620px] text-base leading-relaxed text-q-text-3 sm:text-[17px]">{subtitle}</p>
+            <p className="mt-3 text-[13px] text-q-text-4">Dernière mise à jour&nbsp;: {lastUpdated}</p>
+          </header>
 
-        {/* En-tête de la page */}
-        <div className="mb-10">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-1 text-[13px] font-medium text-[#2563EB] mb-4">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
-            Informations légales
-          </span>
-          <h1
-            className="text-3xl sm:text-4xl font-extrabold text-[#0F172A] leading-tight tracking-tight mb-2"
-            style={{ fontFamily: "var(--font-bricolage)" }}
-          >
-            {title}
-          </h1>
-          <p className="text-[15px] text-slate-500">{subtitle}</p>
-          <p className="text-[12px] text-slate-400 mt-1">Dernière mise à jour : {lastUpdated}</p>
-        </div>
+          {/* Sommaire et autres documents (colonne collante sur ordinateur) */}
+          {toc.length > 0 && (
+            <aside className="lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:self-start lg:sticky lg:top-[104px]">
+              <details className="group q-card lg:hidden">
+                <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-3 px-4 text-[15px] font-semibold text-q-ink [&::-webkit-details-marker]:hidden">
+                  <span>
+                    Sommaire <span className="font-normal text-q-text-4">· {toc.length} sections</span>
+                  </span>
+                  <ChevronDown className="h-4 w-4 text-q-text-4 transition-transform group-open:rotate-180" aria-hidden />
+                </summary>
+                <nav aria-label="Sommaire" className="border-t border-q-line-soft p-1.5">
+                  <TocList toc={toc} />
+                </nav>
+              </details>
 
-        {/* Corps de texte */}
-        <div
-          className="rounded-2xl border border-white/70 bg-white/80 p-6 sm:p-10 shadow-[0_8px_32px_rgba(37,99,235,0.07)]"
-        >
-          <div className="legal-content">
-            {children}
-          </div>
-        </div>
+              <div className="hidden flex-col gap-4 lg:flex">
+                <nav aria-label="Sommaire" className="q-card p-2">
+                  <p className="px-3 pb-1 pt-2.5 text-xs font-semibold uppercase tracking-[0.08em] text-q-text-4">Sommaire</p>
+                  <TocList toc={toc} />
+                </nav>
+                <OtherDocs path={path} />
+              </div>
+            </aside>
+          )}
 
-        {/* Pied de page de la carte */}
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-slate-400">
-          <p>© {new Date().getFullYear()} Qonforme. Tous droits réservés.</p>
-          <div className="flex items-center gap-4">
-            <Link href="/mentions-legales" className="hover:text-[#2563EB] transition-colors">Mentions légales</Link>
-            <Link href="/cgu" className="hover:text-[#2563EB] transition-colors">CGU</Link>
-            <Link href="/login" className="hover:text-[#2563EB] transition-colors">Connexion</Link>
+          {/* Texte */}
+          <article className="q-card px-5 py-7 sm:px-10 sm:py-10 lg:col-start-2">
+            <div className="legal-content">{content}</div>
+          </article>
+
+          <div className="lg:hidden">
+            <OtherDocs path={path} />
           </div>
         </div>
       </main>
+
+      <Footer showCta={false} />
     </div>
   )
 }

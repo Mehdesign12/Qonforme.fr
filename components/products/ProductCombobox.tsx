@@ -1,16 +1,19 @@
 'use client'
 
 /**
- * ProductCombobox
+ * ProductCombobox — insérer une prestation du catalogue dans un document.
  * ────────────────
- * • Desktop  : dropdown positionné avec JS (jamais hors-écran)
- * • Mobile   : bottom-sheet plein écran avec backdrop
+ * • Ordinateur : liste déroulante positionnée en JS (jamais hors de l'écran)
+ * • Mobile     : feuille du bas avec voile
+ * • `products` fourni (démo) : liste locale filtrée, aucun appel réseau ;
+ *   sinon recherche via GET /api/products.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { Package, Search, Loader2, ChevronDown, X } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/invoice"
+import { cn } from "@/lib/utils"
 
 export interface ProductSuggestion {
   id:            string
@@ -25,10 +28,16 @@ export interface ProductSuggestion {
 interface ProductComboboxProps {
   onSelect:   (product: ProductSuggestion) => void
   className?: string
+  /** Catalogue fourni par la page (démo) : pas de requête, filtre local. */
+  products?:  ProductSuggestion[]
+  /** Lien « Gérer le catalogue ». */
+  manageHref?: string
+  /** toolbar : bouton compact d'en-tête de carte ; block : bouton pleine largeur (mobile). */
+  variant?:   "toolbar" | "block"
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Inner list (partagée desktop + mobile)
+   Liste (partagée ordinateur + mobile)
 ───────────────────────────────────────────────────────────────────────── */
 function ProductList({
   products,
@@ -36,62 +45,52 @@ function ProductList({
   search,
   onSelect,
   onSearchChange,
-  onClose,
   inputRef,
+  manageHref,
 }: {
   products:       ProductSuggestion[]
   loading:        boolean
   search:         string
   onSelect:       (p: ProductSuggestion) => void
   onSearchChange: (v: string) => void
-  onClose:        () => void
   inputRef:       React.RefObject<HTMLInputElement>
+  manageHref:     string
 }) {
   return (
     <>
       {/* Recherche */}
-      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#F1F5F9]">
-        <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+      <div className="q-fw mx-3 mt-3 flex h-[42px] items-center gap-2 rounded-[10px] border border-[var(--q-field)] bg-[var(--q-surface)] px-3">
+        <Search className="size-4 shrink-0 text-[var(--q-text-4)]" aria-hidden />
         <input
           ref={inputRef}
           type="text"
-          placeholder="Rechercher un produit…"
+          placeholder="Rechercher une prestation…"
+          aria-label="Rechercher une prestation du catalogue"
           value={search}
           onChange={e => onSearchChange(e.target.value)}
-          className="flex-1 text-sm outline-none text-[#0F172A] placeholder:text-slate-400 bg-transparent"
+          className="h-full min-w-0 flex-1 bg-transparent text-base text-[var(--q-ink)] outline-none placeholder:text-[var(--q-placeholder)] md:text-sm"
         />
-        {search ? (
-          <button type="button" onClick={() => onSearchChange("")} className="text-slate-400 hover:text-slate-600 p-0.5">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        ) : (
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 p-0.5 sm:hidden">
-            <X className="w-3.5 h-3.5" />
+        {search && (
+          <button type="button" onClick={() => onSearchChange("")} aria-label="Effacer la recherche" className="grid size-7 place-items-center rounded-lg text-[var(--q-text-4)] hover:bg-[var(--q-hover)]">
+            <X className="size-3.5" aria-hidden />
           </button>
         )}
       </div>
 
       {/* Liste */}
-      <div className="overflow-y-auto" style={{ maxHeight: '50vh' }}>
+      <div className="mt-2 overflow-y-auto px-1.5 pb-1.5" style={{ maxHeight: "50vh" }}>
         {loading ? (
           <div className="flex items-center justify-center py-10">
-            <Loader2 className="w-5 h-5 text-[#2563EB] animate-spin" />
+            <Loader2 className="size-5 animate-spin text-[var(--q-accent)]" aria-label="Chargement" />
           </div>
         ) : products.length === 0 ? (
-          <div className="py-10 text-center px-4">
-            <Package className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-            <p className="text-sm text-slate-400 mb-1">
-              {search ? "Aucun résultat" : "Catalogue vide"}
+          <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+            <span className="q-empty-icon !size-10 !rounded-xl"><Package className="size-4" aria-hidden /></span>
+            <p className="text-sm text-[var(--q-text-4)]">
+              {search ? "Aucune prestation ne correspond." : "Votre catalogue est vide."}
             </p>
             {!search && (
-              <a
-                href="/products"
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-[#2563EB] hover:underline inline-block mt-1"
-              >
-                Gérer le catalogue →
-              </a>
+              <a href={manageHref} target="_blank" rel="noreferrer" className="q-link text-sm">Ajouter des prestations</a>
             )}
           </div>
         ) : (
@@ -100,51 +99,41 @@ function ProductList({
               key={product.id}
               type="button"
               onClick={() => onSelect(product)}
-              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-[#F8FAFC] active:bg-[#EFF6FF] transition-colors text-left group"
+              className="flex w-full items-start gap-3 rounded-[10px] px-2.5 py-2.5 text-left transition-colors hover:bg-[var(--q-hover)] focus-visible:bg-[var(--q-hover)] focus-visible:outline-none"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#EFF6FF] flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#DBEAFE] transition-colors">
-                <Package className="w-3.5 h-3.5 text-[#2563EB]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-[#0F172A] truncate">{product.name}</span>
-                  <span className="text-sm font-mono font-bold text-[#0F172A] shrink-0">
+              <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+                <Package className="size-3.5" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-start justify-between gap-3">
+                  <span className="min-w-0 text-sm font-semibold text-[var(--q-ink)]">{product.name}</span>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-[var(--q-ink)]">
                     {formatCurrency(product.unit_price_ht)}
-                    <span className="text-slate-400 font-normal text-xs"> HT</span>
+                    <span className="text-xs font-normal text-[var(--q-text-4)]"> HT</span>
                   </span>
-                </div>
-                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  {product.reference && (
-                    <span className="text-[10px] font-mono text-slate-400 bg-[#F8FAFC] border border-[#E2E8F0] px-1.5 py-0.5 rounded">
-                      {product.reference}
-                    </span>
-                  )}
-                  <span className="text-[10px] text-slate-400 font-mono">{product.vat_rate}% TVA</span>
-                  {product.unit && (
-                    <span className="text-[10px] text-slate-400 capitalize">· {product.unit}</span>
-                  )}
-                </div>
+                </span>
+                <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--q-text-4)]">
+                  {product.reference && <span className="font-mono">{product.reference}</span>}
+                  <span className="tabular-nums">TVA {String(product.vat_rate).replace(".", ",")}&nbsp;%</span>
+                  {product.unit && <span>· {product.unit}</span>}
+                </span>
                 {product.description && (
-                  <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{product.description}</p>
+                  <span className="mt-0.5 line-clamp-1 block text-xs text-[var(--q-text-4)]">{product.description}</span>
                 )}
-              </div>
+              </span>
             </button>
           ))
         )}
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-2.5 border-t border-[#F1F5F9] flex items-center justify-between bg-[#FAFBFC]/60">
-        <span className="text-[11px] text-slate-400">
-          {products.length} produit{products.length !== 1 ? "s" : ""}
+      {/* Pied */}
+      <div className="flex items-center justify-between border-t border-[var(--q-line-soft)] px-4 py-2.5">
+        <span className="text-xs tabular-nums text-[var(--q-text-4)]">
+          {products.length} prestation{products.length !== 1 ? "s" : ""}
         </span>
-        <a
-          href="/products"
-          target="_blank"
-          rel="noreferrer"
-          className="text-[11px] text-[#2563EB] hover:underline font-medium"
-        >
-          Gérer le catalogue →
+        {/* Nouvel onglet : le document en cours de saisie n'est pas perdu */}
+        <a href={manageHref} target="_blank" rel="noreferrer" className="q-link text-xs">
+          Gérer le catalogue
         </a>
       </div>
     </>
@@ -152,45 +141,61 @@ function ProductList({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Main component
+   Composant principal
 ───────────────────────────────────────────────────────────────────────── */
-export function ProductCombobox({ onSelect, className = "" }: ProductComboboxProps) {
+export function ProductCombobox({
+  onSelect,
+  className = "",
+  products: staticProducts,
+  manageHref = "/products",
+  variant = "toolbar",
+}: ProductComboboxProps) {
   const [open,      setOpen]      = useState(false)
   const [search,    setSearch]    = useState("")
   const [products,  setProducts]  = useState<ProductSuggestion[]>([])
   const [loading,   setLoading]   = useState(false)
   const [isMobile,  setIsMobile]  = useState(false)
 
-  // Position du dropdown desktop
+  // Position de la liste sur ordinateur
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
 
   const containerRef = useRef<HTMLDivElement>(null)
+  const dropdownRef  = useRef<HTMLDivElement>(null)
   const inputRef     = useRef<HTMLInputElement>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
 
-  // Détecter mobile (< 640px) — même breakpoint que Tailwind `sm`
+  // Mobile (< 768 px) — même seuil que `md` et que l'éditeur de lignes
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 640)
+    const check = () => setIsMobile(window.innerWidth < 768)
     check()
     window.addEventListener("resize", check)
     return () => window.removeEventListener("resize", check)
   }, [])
 
-  // Fermer en cliquant en dehors (desktop seulement)
+  // Fermer en cliquant en dehors (ordinateur). La liste vit dans un portail :
+  // un clic dedans ne doit pas la fermer avant que la sélection ne parte.
   useEffect(() => {
-    if (isMobile) return
+    if (isMobile || !open) return
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
+      const target = e.target as Node
+      if (containerRef.current?.contains(target) || dropdownRef.current?.contains(target)) return
+      setOpen(false)
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [isMobile])
+  }, [isMobile, open])
 
-  // Fetch produits
+  // Échap ferme la liste
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); setSearch("") } }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [open])
+
+  // Recherche des produits (API) — sauf catalogue fourni par la page
   const fetchProducts = useCallback(async (q: string) => {
     setLoading(true)
     try {
@@ -205,24 +210,34 @@ export function ProductCombobox({ onSelect, className = "" }: ProductComboboxPro
   }, [])
 
   useEffect(() => {
-    if (!open) return
+    if (!open || staticProducts) return
     const timer = setTimeout(() => fetchProducts(search), 200)
     return () => clearTimeout(timer)
-  }, [open, search, fetchProducts])
+  }, [open, search, fetchProducts, staticProducts])
 
-  // Calculer la position du dropdown desktop (évite de sortir de l'écran)
+  const q = search.trim().toLowerCase()
+  const visible = staticProducts
+    ? staticProducts.filter(p =>
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        (p.description?.toLowerCase().includes(q) ?? false) ||
+        (p.reference?.toLowerCase().includes(q) ?? false))
+    : products
+
+  // Position de la liste sur ordinateur (évite de sortir de l'écran)
   const calculateDropdownPosition = useCallback(() => {
     if (!containerRef.current) return
     const rect    = containerRef.current.getBoundingClientRect()
     const vh      = window.innerHeight
-    const dropH   = 360 // hauteur estimée du dropdown
+    const dropH   = 380 // hauteur estimée de la liste
+    const width   = 360
     const spaceB  = vh - rect.bottom
     const showUp  = spaceB < dropH && rect.top > dropH
 
     const style: React.CSSProperties = {
-      position: 'fixed',
-      left:     Math.min(rect.left, window.innerWidth - 320 - 8),
-      width:    320,
+      position: "fixed",
+      left:     Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
+      width,
       zIndex:   9999,
     }
     if (showUp) {
@@ -234,6 +249,7 @@ export function ProductCombobox({ onSelect, className = "" }: ProductComboboxPro
   }, [])
 
   const handleOpen = () => {
+    if (open) { setOpen(false); return }
     if (!isMobile) calculateDropdownPosition()
     setOpen(true)
     setSearch("")
@@ -251,83 +267,85 @@ export function ProductCombobox({ onSelect, className = "" }: ProductComboboxPro
     setSearch("")
   }
 
-  /* ── Trigger button ── */
+  /* ── Bouton ── */
   const trigger = (
     <button
       type="button"
       onClick={handleOpen}
-      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#2563EB] bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl hover:bg-[#DBEAFE] active:bg-[#BFDBFE] transition-colors"
+      aria-haspopup="dialog"
+      aria-expanded={open}
+      className={cn(
+        "q-btn q-btn-secondary",
+        variant === "toolbar" ? "q-btn-sm" : "!h-11 w-full !rounded-[14px] !text-[15px]",
+      )}
       title="Insérer depuis le catalogue"
     >
-      <Package className="w-3.5 h-3.5" />
-      <span>Catalogue</span>
-      <ChevronDown className="w-3 h-3 opacity-60" />
+      <Package aria-hidden strokeWidth={1.75} />
+      <span>{variant === "toolbar" ? "Depuis le catalogue" : "Catalogue"}</span>
+      {variant === "toolbar" && <ChevronDown className="!size-3.5 text-[var(--q-text-4)]" aria-hidden />}
     </button>
   )
 
-  /* ── Dropdown desktop — portail fixed ── */
+  const list = (
+    <ProductList
+      products={visible}
+      loading={!staticProducts && loading}
+      search={search}
+      onSelect={handleSelect}
+      onSearchChange={setSearch}
+      inputRef={inputRef}
+      manageHref={manageHref}
+    />
+  )
+
+  /* ── Liste ordinateur — portail fixe ── */
   const desktopDropdown = mounted && open && !isMobile ? createPortal(
     <div
-      className="bg-white border border-[#E2E8F0] rounded-2xl shadow-[0_8px_32px_rgba(15,23,42,0.12)] overflow-hidden"
+      ref={dropdownRef}
+      role="dialog"
+      aria-label="Catalogue"
+      className="overflow-hidden rounded-[14px] border border-[var(--q-line)] bg-[var(--q-surface)] shadow-[var(--q-shadow-pop)]"
       style={dropdownStyle}
     >
-      <ProductList
-        products={products}
-        loading={loading}
-        search={search}
-        onSelect={handleSelect}
-        onSearchChange={setSearch}
-        onClose={handleClose}
-        inputRef={inputRef}
-      />
+      {list}
     </div>,
     document.body
   ) : null
 
-  /* ── Bottom-sheet mobile — portail fixed ── */
+  /* ── Feuille du bas mobile — portail fixe, sans backdrop-filter ── */
   const mobileSheet = mounted && open && isMobile ? createPortal(
     <>
-      {/* Overlay */}
+      <div className="q-veil fixed inset-0 z-[9998]" onClick={handleClose} aria-hidden />
       <div
-        className="fixed inset-0 z-[9998] bg-black/40"
-        style={{  }}
-        onClick={handleClose}
-      />
-      {/* Sheet */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-[9999] bg-white rounded-t-2xl overflow-hidden shadow-[0_-4px_32px_rgba(15,23,42,0.15)]"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Depuis le catalogue"
+        className="q-sheet fixed inset-x-0 bottom-0 z-[9999] overflow-hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        {/* Handle */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-slate-200 mx-auto" />
-        </div>
-        <div className="flex items-center justify-between px-4 pb-2">
-          <h3 className="text-[15px] font-bold text-[#0F172A]">Catalogue produits</h3>
+        <div className="q-sheet-grip" aria-hidden />
+        <div className="flex items-start justify-between gap-3 px-4 pt-3">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="q-display text-[22px] text-[var(--q-ink)]">Depuis le catalogue</h2>
+            <p className="text-sm text-[var(--q-text-4)]">Touchez une prestation pour l&apos;ajouter.</p>
+          </div>
           <button
             type="button"
             onClick={handleClose}
-            className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
+            aria-label="Fermer"
+            className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--q-sunken)] text-[var(--q-text-3)]"
           >
-            <X className="w-4 h-4 text-slate-500" />
+            <X className="size-4" aria-hidden />
           </button>
         </div>
-        <ProductList
-          products={products}
-          loading={loading}
-          search={search}
-          onSelect={handleSelect}
-          onSearchChange={setSearch}
-          onClose={handleClose}
-          inputRef={inputRef}
-        />
+        {list}
       </div>
     </>,
     document.body
   ) : null
 
   return (
-    <div ref={containerRef} className={`relative inline-block ${className}`}>
+    <div ref={containerRef} className={cn("relative", variant === "block" ? "block w-full" : "inline-block", className)}>
       {trigger}
       {desktopDropdown}
       {mobileSheet}

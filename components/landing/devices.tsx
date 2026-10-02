@@ -2,81 +2,102 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 
 /**
- * Cadres d'appareils de l'accueil, en CSS pur (aucune image de cadre à charger).
+ * Cadres d'appareils de l'accueil, en CSS pur (aucune image de cadre à charger),
+ * aux proportions du canevas « Main » v20.
  * Les écrans affichés sont de vraies captures du produit (pages de démo,
  * données fictives) : public/landing/ecrans/.
  *
- * Ni backdrop-filter ni will-change (règle iOS de CLAUDE.md) : les ombres et
- * reflets sont de simples dégradés.
+ * Ni backdrop-filter ni will-change (règle iOS de CLAUDE.md) : les ombres sont
+ * de simples box-shadow. La découpe passe par .lp-clip (overflow: clip) pour ne
+ * pas figer les animations au défilement des éléments contenus.
  */
 
-interface ScreenProps {
+export interface ScreenProps {
   src: string
   alt: string
-  /** Largeur et hauteur réelles du fichier, pour éviter tout décalage de mise en page. */
+  /** Largeur et hauteur réelles du fichier. */
   width: number
   height: number
   sizes: string
   priority?: boolean
 }
 
-/** Ordinateur portable : écran 16/10, châssis aluminium. */
-export function MacBook({ screen, className, children }: { screen?: ScreenProps; className?: string; children?: React.ReactNode }) {
+function ScreenImage({ screen }: { screen: ScreenProps }) {
   return (
-    <div className={cn("relative w-full", className)}>
-      {/* Écran */}
-      <div className="relative mx-auto w-[86%] rounded-[2.2%/3.4%] bg-[#0B0F19] p-[1.15%] shadow-[0_0_0_1px_rgba(10,17,34,.35),0_40px_80px_-30px_rgba(10,17,34,.45)]">
-        <span aria-hidden className="absolute left-1/2 top-[0.55%] h-[0.7%] w-[0.7%] min-h-[4px] min-w-[4px] -translate-x-1/2 rounded-full bg-[#1F2937]" />
-        <div className="relative aspect-[16/10] overflow-hidden rounded-[0.6%/1%] bg-white">
-          {children ?? (screen && (
-            <Image
-              src={screen.src}
-              alt={screen.alt}
-              width={screen.width}
-              height={screen.height}
-              sizes={screen.sizes}
-              priority={screen.priority}
-              loading={screen.priority ? undefined : "lazy"}
-              className="h-full w-full object-cover object-top"
-            />
-          ))}
-          {/* Reflet très léger */}
-          <span aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,rgba(255,255,255,.10)_0%,rgba(255,255,255,0)_38%)]" />
+    <Image
+      src={screen.src}
+      alt={screen.alt}
+      fill
+      sizes={screen.sizes}
+      priority={screen.priority}
+      loading={screen.priority ? undefined : "lazy"}
+      className="object-cover object-top"
+    />
+  )
+}
+
+/**
+ * Ordinateur portable : coque marine arrondie, écran 16/10, socle plus large
+ * que l'écran. `screenClassName` remplace le format de l'écran (héros mobile),
+ * `baseClassName` permet de masquer le socle.
+ */
+export function MacBook({
+  screen,
+  className,
+  screenClassName,
+  baseClassName,
+  children,
+}: {
+  screen?: ScreenProps
+  className?: string
+  screenClassName?: string
+  baseClassName?: string
+  children?: React.ReactNode
+}) {
+  return (
+    <div className={cn("relative", className)}>
+      <div className="relative rounded-[clamp(16px,2.2vw,26px)] bg-[#0B0F19] p-[clamp(7px,1.15vw,14px)] shadow-[inset_0_0_0_1px_#2A3140,0_50px_90px_-42px_rgba(10,17,34,.55),0_24px_40px_-30px_rgba(10,17,34,.35)]">
+        <span aria-hidden className="absolute left-1/2 top-[clamp(2px,.35vw,5px)] h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[#273041]" />
+        <div className={cn("lp-clip relative aspect-[16/10] rounded-[clamp(8px,1vw,12px)] bg-[#F6F8FB]", screenClassName)}>
+          {children ?? (screen && <ScreenImage screen={screen} />)}
         </div>
       </div>
-      {/* Base */}
-      <div aria-hidden className="relative mx-auto h-[1.6vw] max-h-[18px] min-h-[8px] w-full rounded-b-[40%_100%] bg-[linear-gradient(180deg,#E3E6EB_0%,#C9CED6_45%,#A9AFB9_100%)] shadow-[0_18px_30px_-16px_rgba(10,17,34,.45)]">
-        <span className="absolute left-1/2 top-0 h-[38%] w-[14%] -translate-x-1/2 rounded-b-[10px] bg-[linear-gradient(180deg,#B8BEC7,#D5D9DF)]" />
+      <div
+        aria-hidden
+        className={cn(
+          "relative mx-[-5%] h-[clamp(8px,1.6vw,22px)] rounded-[3px_3px_26px_26px/3px_3px_22px_22px] bg-[linear-gradient(180deg,#E7EAEE_0%,#CCD1D8_55%,#A8AEB8_100%)] shadow-[0_30px_44px_-26px_rgba(10,17,34,.45)]",
+          baseClassName,
+        )}
+      >
+        <span className="absolute left-1/2 top-0 h-[40%] w-[16%] -translate-x-1/2 rounded-b-[12px] bg-[linear-gradient(180deg,#B7BDC6,#D9DDE2)]" />
       </div>
     </div>
   )
 }
 
-/** Téléphone : écran 9/19.5, îlot dynamique, boutons latéraux. */
-export function IPhone({ screen, className, children }: { screen?: ScreenProps; className?: string; children?: React.ReactNode }) {
+/**
+ * Téléphone : coque arrondie 16 % / 7,4 %, écran 390/844 arrondi 12,6 % / 5,8 %,
+ * îlot dynamique et boutons latéraux. L'écran est décalé sous l'îlot (11 % de la
+ * largeur) pour que l'îlot ne cache jamais le haut de la capture.
+ */
+export function IPhone({
+  screen,
+  className,
+  children,
+}: {
+  screen?: ScreenProps
+  className?: string
+  children?: React.ReactNode
+}) {
   return (
     <div className={cn("relative", className)}>
-      <div className="relative rounded-[16%/7.4%] bg-[#0B0F19] p-[3.2%] shadow-[0_0_0_1.5px_#2A3140,0_0_0_3px_#0B0F19,0_40px_70px_-28px_rgba(10,17,34,.55)]">
-        {/* Boutons latéraux */}
-        <span aria-hidden className="absolute -left-[2.4%] top-[19%] h-[6%] w-[1.6%] rounded-l-sm bg-[#1F2633]" />
-        <span aria-hidden className="absolute -left-[2.4%] top-[28%] h-[9.5%] w-[1.6%] rounded-l-sm bg-[#1F2633]" />
-        <span aria-hidden className="absolute -right-[2.4%] top-[25%] h-[13%] w-[1.6%] rounded-r-sm bg-[#1F2633]" />
-        <div className="relative aspect-[9/19.5] overflow-hidden rounded-[12.5%/5.8%] bg-white">
-          {children ?? (screen && (
-            <Image
-              src={screen.src}
-              alt={screen.alt}
-              width={screen.width}
-              height={screen.height}
-              sizes={screen.sizes}
-              priority={screen.priority}
-              loading={screen.priority ? undefined : "lazy"}
-              className="h-full w-full object-cover object-top"
-            />
-          ))}
-          {/* Îlot dynamique */}
-          <span aria-hidden className="absolute left-1/2 top-[1.6%] h-[3.4%] w-[30%] -translate-x-1/2 rounded-full bg-[#0B0F19]" />
-          <span aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,.12)_0%,rgba(255,255,255,0)_35%)]" />
+      <div className="relative rounded-[16%/7.4%] bg-[#0B0F19] p-[3.3%] shadow-[inset_0_0_0_1.5px_#2F3747,inset_0_0_0_3px_#0B0F19,0_50px_80px_-32px_rgba(10,17,34,.5),0_18px_30px_-20px_rgba(10,17,34,.32)]">
+        <span aria-hidden className="absolute left-[-1.4%] top-[16%] h-[4.5%] w-[3px] rounded-[2px] bg-[#1F2633]" />
+        <span aria-hidden className="absolute left-[-1.4%] top-[23%] h-[8%] w-[3px] rounded-[2px] bg-[#1F2633]" />
+        <span aria-hidden className="absolute right-[-1.4%] top-[21%] h-[11%] w-[3px] rounded-[2px] bg-[#1F2633]" />
+        <div className="lp-clip relative flex aspect-[390/844] flex-col rounded-[12.6%/5.8%] bg-[#F6F8FB] pt-[11%]">
+          <span aria-hidden className="absolute left-1/2 top-[1.5%] z-[2] aspect-[10/3] w-[30%] -translate-x-1/2 rounded-full bg-[#0B0F19]" />
+          <div className="relative min-h-0 flex-1">{children ?? (screen && <ScreenImage screen={screen} />)}</div>
         </div>
       </div>
     </div>

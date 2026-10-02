@@ -10,7 +10,9 @@ export const metadata: Metadata = {
 export default function CGUPage() {
   return (
     <LegalLayout
-      title="Conditions Générales d'Utilisation"
+      title="Conditions générales"
+      titleAccent="d'utilisation"
+      path="/cgu"
       subtitle="Merci de lire attentivement ces conditions avant d'utiliser Qonforme."
       lastUpdated="2 octobre 2026"
     >
@@ -24,7 +26,7 @@ export default function CGUPage() {
       <h2>Article 2 — Description du service</h2>
       <p>
         Qonforme est un service SaaS (Software as a Service) de facturation électronique destiné aux artisans,
-        micro-entrepreneurs et TPE françaises. Il permet de :
+        micro-entrepreneurs et TPE françaises. Il permet de :
       </p>
       <ul>
         <li>Créer, éditer et envoyer des factures, devis, bons de commande et avoirs</li>
@@ -62,19 +64,19 @@ export default function CGUPage() {
       <h3>4.1 Formules</h3>
       <ul>
         <li>
-          <strong>Version gratuite</strong>, sans limite de durée ni carte bancaire : devis illimités, gestion des clients
+          <strong>Version gratuite</strong>, sans limite de durée ni carte bancaire : devis illimités, gestion des clients
           et du catalogue, préparation de factures en brouillon, consultation et téléchargement des documents.
         </li>
         <li>
-          <strong>Formule Essentiel</strong> — 12 € HT par mois, ou 120 € HT par an : émission et envoi des factures et
+          <strong>Formule Essentiel</strong> — 12 € HT par mois, ou 120 € HT par an : émission et envoi des factures et
           des avoirs, relances des factures impayées, export comptable.
         </li>
         <li>
-          <strong>Formule Artisan</strong> — 24 € HT par mois, ou 240 € HT par an : proposée lorsque ses fonctionnalités
+          <strong>Formule Artisan</strong> — 24 € HT par mois, ou 240 € HT par an : proposée lorsque ses fonctionnalités
           propres (situations de travaux, retenue de garantie, autoliquidation) seront disponibles.
         </li>
       </ul>
-      <p>Les prix s&apos;entendent hors taxes ; la TVA au taux en vigueur (20 %) s&apos;y ajoute.</p>
+      <p>Les prix s&apos;entendent hors taxes ; la TVA au taux en vigueur (20 %) s&apos;y ajoute.</p>
       <h3>4.2 Paiement</h3>
       <p>
         Le paiement est traité par Stripe, par carte bancaire ou par prélèvement SEPA. L&apos;Utilisateur est débité à la
@@ -85,7 +87,7 @@ export default function CGUPage() {
       <p>
         Dans les 30 jours qui suivent son premier paiement, l&apos;Utilisateur peut obtenir le remboursement intégral des
         sommes versées, sans avoir à se justifier, depuis <strong>Paramètres → Abonnement</strong>. La garantie
-        s&apos;applique une seule fois par compte. Le remboursement met fin immédiatement à la formule : le compte repasse en
+        s&apos;applique une seule fois par compte. Le remboursement met fin immédiatement à la formule : le compte repasse en
         version gratuite. Les factures déjà émises par l&apos;Utilisateur restent émises.
       </p>
       <h3>4.4 Défaut de paiement</h3>
@@ -108,7 +110,7 @@ export default function CGUPage() {
       </p>
 
       <h2>Article 5 — Obligations de l&apos;Utilisateur</h2>
-      <p>L&apos;Utilisateur s&apos;engage à :</p>
+      <p>L&apos;Utilisateur s&apos;engage à :</p>
       <ul>
         <li>Utiliser le Service conformément à la législation française en vigueur</li>
         <li>Ne pas tenter de contourner les limitations techniques ou les mécanismes de sécurité</li>
@@ -176,7 +178,7 @@ export default function CGUPage() {
 
       <h2>Article 12 — Contact</h2>
       <p>
-        Pour toute question relative aux présentes CGU : <strong>contact@qonforme.fr</strong>
+        Pour toute question relative aux présentes CGU : <strong>contact@qonforme.fr</strong>
       </p>
     </LegalLayout>
   )
