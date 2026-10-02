@@ -1,6 +1,11 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import BillingPageClient, { type GuaranteeInfo } from '@/components/billing/BillingPageClient'
+import BillingPageClient, {
+  type BillingIdentity,
+  type BillingInvoice,
+  type GuaranteeInfo,
+  type PaymentMethodInfo,
+} from '@/components/billing/BillingPageClient'
 import { stripe } from '@/lib/stripe/client'
 import { getPlanByPriceId, PLANS } from '@/lib/stripe/plans'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -114,6 +119,16 @@ async function syncFromStripe(
   return applyStripeData(sub, stripeSub, userId)
 }
 
+/** Moyen de paiement lisible, sans jamais le numéro complet. */
+function toPaymentMethodInfo(pm: Stripe.PaymentMethod | string | null | undefined): PaymentMethodInfo | null {
+  if (!pm || typeof pm === 'string') return null
+  if (pm.type === 'card' && pm.card) {
+    return { kind: 'card', brand: pm.card.brand, last4: pm.card.last4, expMonth: pm.card.exp_month, expYear: pm.card.exp_year }
+  }
+  if (pm.type === 'sepa_debit' && pm.sepa_debit?.last4) return { kind: 'sepa_debit', last4: pm.sepa_debit.last4 }
+  return { kind: 'other', label: 'Moyen de paiement enregistré' }
+}
+
 export default async function BillingPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -121,13 +136,25 @@ export default async function BillingPage() {
   let subscription: Subscription | null = null
   let guarantee: GuaranteeInfo | null = null
   let cancelAtPeriodEnd = false
+  let paymentMethod: PaymentMethodInfo | null = null
+  let invoices: BillingInvoice[] = []
+  let identity: BillingIdentity | null = null
 
   if (user) {
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    const [{ data: sub }, { data: company }] = await Promise.all([
+      supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
+      supabase.from('companies').select('name, address, zip_code, city, siren').eq('user_id', user.id).maybeSingle(),
+    ])
+
+    // Coordonnées reprises sur les factures d'abonnement (app/api/stripe/checkout)
+    if (company) {
+      identity = {
+        name: company.name ?? '',
+        address: [company.address, [company.zip_code, company.city].filter(Boolean).join(' ')].filter(Boolean).join(', '),
+        siren: company.siren ?? '',
+        email: user.email ?? '',
+      }
+    }
 
     if (sub) {
       const enriched = sub as Subscription
@@ -143,7 +170,7 @@ export default async function BillingPage() {
       }
     }
 
-    // Formule en cours : garantie et résiliation programmée lues chez Stripe
+    // Formule en cours : garantie, résiliation programmée et moyen de paiement lus chez Stripe
     if (subscription?.stripe_customer_id && canIssueInvoices(subscription.status)) {
       try {
         const state = await getGuaranteeState(subscription.stripe_customer_id)
@@ -155,27 +182,50 @@ export default async function BillingPage() {
       }
       if (subscription.stripe_subscription_id) {
         try {
-          const stripeSub = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id)
+          const stripeSub = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id, {
+            expand: ['default_payment_method'],
+          })
           cancelAtPeriodEnd = Boolean(stripeSub.cancel_at_period_end || stripeSub.cancel_at)
+          paymentMethod = toPaymentMethodInfo(stripeSub.default_payment_method)
+          if (!paymentMethod) {
+            // Moyen de paiement par défaut du client, quand l'abonnement n'en a pas en propre
+            const customer = await stripe.customers.retrieve(subscription.stripe_customer_id, {
+              expand: ['invoice_settings.default_payment_method'],
+            })
+            if (!customer.deleted) paymentMethod = toPaymentMethodInfo(customer.invoice_settings?.default_payment_method)
+          }
         } catch { /* sans incidence : la page s'affiche quand même */ }
+      }
+    }
+
+    // Factures d'abonnement (aussi après résiliation : elles restent téléchargeables)
+    if (subscription?.stripe_customer_id) {
+      try {
+        const list = await stripe.invoices.list({ customer: subscription.stripe_customer_id, limit: 12 })
+        invoices = list.data
+          .filter((inv) => inv.status && inv.status !== 'draft')
+          .map((inv) => ({
+            id: inv.id ?? inv.number ?? String(inv.created),
+            number: inv.number ?? null,
+            date: new Date(inv.created * 1000).toISOString(),
+            amount: (inv.total ?? 0) / 100,
+            status: inv.status ?? 'open',
+            pdfUrl: inv.invoice_pdf ?? null,
+          }))
+      } catch (err) {
+        console.error('[BillingPage] Lecture des factures d\'abonnement impossible:', err)
       }
     }
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-xl font-bold text-[#0F172A] dark:text-[#E2E8F0]">Abonnement</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Votre formule, votre moyen de paiement et vos factures d&apos;abonnement.
-        </p>
-      </div>
-
-      <BillingPageClient
-        subscription={subscription}
-        guarantee={guarantee}
-        cancelAtPeriodEnd={cancelAtPeriodEnd}
-      />
-    </div>
+    <BillingPageClient
+      subscription={subscription}
+      guarantee={guarantee}
+      cancelAtPeriodEnd={cancelAtPeriodEnd}
+      paymentMethod={paymentMethod}
+      invoices={invoices}
+      identity={identity}
+    />
   )
 }

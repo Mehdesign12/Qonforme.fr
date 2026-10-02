@@ -27,7 +27,7 @@ export default function DemoClientsPage() {
       year={DEMO_YEAR}
       newHref="/demo/clients/new"
       detailHref={(id) => `/demo/clients/${id}`}
-      onEdit={() => demoCta("Créez un compte pour modifier vos clients")}
+      editHref={(id) => `/demo/clients/${id}/edit`}
       onArchive={() => { demoCta("Créez un compte pour archiver vos clients"); return true }}
     />
   )

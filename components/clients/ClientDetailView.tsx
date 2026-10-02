@@ -117,13 +117,14 @@ export function ClientDetailView({
   return (
     <div className="flex flex-col gap-[18px]">
       {/* ── En-tête mobile : retour et menu ──────────────────────────── */}
-      <div className="-mb-2 flex items-center justify-between lg:hidden">
-        <Link href={links.list} className="q-link inline-flex min-h-11 items-center gap-1 text-[16px] !font-medium">
+      <div className="-mb-2 grid grid-cols-[1fr_auto_1fr] items-center lg:hidden">
+        <Link href={links.list} className="q-link inline-flex min-h-11 items-center gap-1 justify-self-start text-[16px] !font-medium">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
           Clients
         </Link>
+        <span className="text-base font-semibold text-[var(--q-ink)]" aria-hidden>Client</span>
         <DropdownMenu>
-          <DropdownMenuTrigger className="q-btn q-btn-ghost q-btn-icon !size-11 !rounded-xl" aria-label="Plus d'actions">
+          <DropdownMenuTrigger className="q-btn q-btn-ghost q-btn-icon !size-11 justify-self-end !rounded-xl" aria-label="Plus d'actions">
             <Ellipsis className="!size-5" aria-hidden />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" sideOffset={6} className="w-56">
@@ -132,7 +133,7 @@ export function ClientDetailView({
             </DropdownMenuItem>
             {links.edit && (
               <DropdownMenuItem onClick={() => router.push(links.edit!)}>
-                <Building2 aria-hidden />SIREN et TVA
+                <Building2 aria-hidden />Modifier la fiche complète
               </DropdownMenuItem>
             )}
             {onArchive && !client.is_archived && (
@@ -198,6 +199,15 @@ export function ClientDetailView({
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {links.edit ? (
+            <Link href={links.edit} className="q-btn q-btn-ghost">
+              <Pencil aria-hidden />Modifier
+            </Link>
+          ) : (
+            <button type="button" onClick={() => setEditOpen(true)} className="q-btn q-btn-ghost">
+              <Pencil aria-hidden />Modifier
+            </button>
+          )}
           <Link href={links.newInvoice} className="q-btn q-btn-secondary">
             <FileText aria-hidden />Nouvelle facture
           </Link>
@@ -334,7 +344,7 @@ export function ClientDetailView({
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
                     {value ? (
                       <>
-                        <span className={cn("truncate text-[15px] font-semibold", mono && "font-mono text-sm")}>{value}</span>
+                        <span className={cn("truncate text-[15px] font-semibold", mono && "font-mono text-sm !font-medium")}>{value}</span>
                         <span className={cn("truncate text-[13px] text-[var(--q-text-4)]", mono && client.vat_number && "font-mono text-xs")}>{label}</span>
                       </>
                     ) : (

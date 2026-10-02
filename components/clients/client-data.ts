@@ -231,14 +231,16 @@ export function formatSirenDisplay(siren: string | null | undefined): string {
   return /^\d{9}$/.test(d) ? `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : d
 }
 
-/** « 12 sept. » (avec l'année si ce n'est pas l'année en cours). */
+/** « 12 sept. », « 1er oct. » (avec l'année si ce n'est pas l'année en cours). */
 export function formatShortDate(iso: string | null | undefined, year: number): string {
   if (!iso) return "—"
   const d = new Date(`${iso.slice(0, 10)}T12:00:00`)
   if (Number.isNaN(d.getTime())) return "—"
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }
   if (d.getFullYear() !== year) opts.year = "numeric"
-  return new Intl.DateTimeFormat("fr-FR", opts).format(d)
+  const out = new Intl.DateTimeFormat("fr-FR", opts).format(d)
+  // Premier du mois en ordinal, comme l'écrit la typographie française
+  return d.getDate() === 1 ? out.replace(/^1(?=\s)/, "1er") : out
 }
 
 /** « 44000 Nantes » ou « Nantes ». */

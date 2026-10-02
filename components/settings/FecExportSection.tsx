@@ -1,18 +1,39 @@
 'use client'
 
+/**
+ * Carte « Nouvel export » de la page Exports comptables (planche « Exports ») :
+ * période (année en cours, année précédente ou dates libres), format FEC,
+ * téléchargement par GET /api/export/fec?from=…&to=….
+ *
+ * Seul le FEC existe : pas de journal des ventes, d'archive de justificatifs,
+ * de grand livre ni d'envoi automatique au comptable (non livrés).
+ * Démo (`mode="demo"`) : rien n'est téléchargé.
+ */
 import { useState } from 'react'
 import Link from 'next/link'
-import {
-  Download, AlertCircle, CheckCircle2, FileDown,
-  Calendar, ChevronRight, Loader2,
-} from 'lucide-react'
+import { toast } from 'sonner'
+import { AlertCircle, CheckCircle2, ChevronRight, Download, FileText, Loader2 } from 'lucide-react'
+import type { ShellMode } from '@/components/layout/nav'
+import { settingsHref } from '@/components/settings/sections'
+import { SettingsCard } from '@/components/settings/ui'
 
 interface FecExportSectionProps {
   sirenMissing: boolean
   siren:        string
+  mode?:        ShellMode
 }
 
-export default function FecExportSection({ sirenMissing, siren }: FecExportSectionProps) {
+const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
+
+/** « 2026-01-01 » → « 1 janv. 2026 », sans passer par Date (pas d'écart de fuseau entre serveur et navigateur). */
+function shortDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return iso
+  return `${d} ${MONTHS[m - 1]} ${y}`
+}
+
+export default function FecExportSection({ sirenMissing, siren, mode = 'app' }: FecExportSectionProps) {
+  const demo        = mode === 'demo'
   const currentYear = new Date().getFullYear()
   const prevYear    = currentYear - 1
 
@@ -30,6 +51,12 @@ export default function FecExportSection({ sirenMissing, siren }: FecExportSecti
   }
 
   const handleDownload = async () => {
+    if (demo) {
+      toast('Créez un compte pour télécharger le FEC de vos factures', {
+        action: { label: "S'inscrire", onClick: () => { window.location.href = '/signup' } },
+      })
+      return
+    }
     setLoading(true)
     setError(null)
     setSuccess(false)
@@ -64,155 +91,115 @@ export default function FecExportSection({ sirenMissing, siren }: FecExportSecti
     }
   }
 
-  /* ── SIREN manquant — bloquer l'export ────────────────────────────────── */
+  /* ── SIREN manquant : l'export est bloqué ─────────────────────────────── */
   if (sirenMissing) {
     return (
-      <div className="rounded-2xl border border-[#FED7AA] bg-[#FFF7ED] dark:bg-[#2D1B0E] dark:border-[#92400E] p-5 flex gap-4">
-        <div className="w-9 h-9 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center shrink-0">
-          <AlertCircle className="w-4 h-4 text-[#D97706]" />
+      <SettingsCard id="export" title="Nouvel export">
+        <div className="q-banner q-banner-warn" role="status">
+          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <div className="flex flex-col gap-1">
+            <p className="font-semibold">SIREN requis pour exporter le FEC</p>
+            <p className="text-[13px] leading-relaxed text-[var(--q-text-2)]">
+              Le nom du fichier FEC contient votre SIREN (ex.&nbsp;: 123456789FEC20261231.txt).
+              Renseignez-le dans les informations de votre entreprise avant de lancer l&apos;export.
+            </p>
+            <Link href={settingsHref('/settings/company', mode)} className="q-link inline-flex items-center gap-1 text-[13px]">
+              Compléter mon entreprise
+              <ChevronRight className="size-3.5" aria-hidden />
+            </Link>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-[#92400E] dark:text-[#FDE68A] mb-1">
-            SIREN requis pour exporter le FEC
-          </p>
-          <p className="text-[12px] text-[#B45309] dark:text-[#FCD34D] leading-relaxed mb-3">
-            Le nom du fichier FEC inclut ton SIREN (ex&nbsp;: 123456789FEC20261231.txt).
-            Renseigne-le dans les paramètres de ton entreprise avant de lancer l&apos;export.
-          </p>
-          <Link
-            href="/settings/company"
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#D97706] hover:text-[#B45309] transition-colors"
-          >
-            Configurer mon entreprise
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </div>
+      </SettingsCard>
     )
   }
 
+  const isYear = (year: number) => from === `${year}-01-01` && to === `${year}-12-31`
+
   /* ── Interface principale ─────────────────────────────────────────────── */
   return (
-    <div className="space-y-4">
-
-      {/* ── Sélecteur de période ── */}
-      <div className="bg-white dark:bg-[#0F1E35] rounded-2xl border border-[#E2E8F0] dark:border-[#1E3A5F] p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-center">
-            <Calendar className="w-4 h-4 text-[#2563EB]" />
-          </div>
-          <p className="text-[13px] font-semibold text-[#0F172A] dark:text-[#E2E8F0]">
-            Période comptable
-          </p>
-        </div>
-
-        {/* Raccourcis rapides */}
-        <div className="flex gap-2 mb-4 flex-wrap">
+    <SettingsCard id="export" title="Nouvel export">
+      {/* Période */}
+      <div className="flex flex-col gap-2">
+        <span className="q-label" id="periode-label">Période</span>
+        <div className="q-seg self-start" role="group" aria-labelledby="periode-label">
           {[
-            { label: 'Année en cours',    year: currentYear },
-            { label: 'Année précédente',  year: prevYear    },
-          ].map(({ label, year }) => {
-            const active = from === `${year}-01-01` && to === `${year}-12-31`
-            return (
-              <button
-                key={year}
-                onClick={() => setYear(year)}
-                className={`text-[12px] font-medium px-3 py-1.5 rounded-lg border transition-colors ${
-                  active
-                    ? 'bg-[#2563EB] border-[#2563EB] text-white'
-                    : 'bg-white dark:bg-[#0F1E35] border-[#E2E8F0] dark:border-[#1E3A5F] text-slate-500 hover:border-[#2563EB] hover:text-[#2563EB]'
-                }`}
-              >
-                {label} ({year})
-              </button>
-            )
-          })}
+            { label: 'Année en cours',   year: currentYear },
+            { label: 'Année précédente', year: prevYear    },
+          ].map(({ label, year }) => (
+            <button key={year} type="button" aria-pressed={isYear(year)} onClick={() => setYear(year)}>
+              {label} ({year})
+            </button>
+          ))}
         </div>
-
-        {/* Dates personnalisées */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex-1 min-w-[140px]">
-            <label className="block text-[11px] font-medium text-slate-400 mb-1">
-              Du
-            </label>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <label htmlFor="fec-from" className="q-label">Du</label>
             <input
+              id="fec-from"
               type="date"
               value={from}
               max={to}
               onChange={e => { setFrom(e.target.value); setError(null); setSuccess(false) }}
-              className="w-full text-[13px] font-medium text-[#0F172A] dark:text-[#E2E8F0] bg-[#F8FAFC] dark:bg-[#0A1628] border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-xl px-3 py-2 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/20 transition-colors"
+              className="q-input"
             />
           </div>
-          <div className="flex-1 min-w-[140px]">
-            <label className="block text-[11px] font-medium text-slate-400 mb-1">
-              Au
-            </label>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <label htmlFor="fec-to" className="q-label">Au</label>
             <input
+              id="fec-to"
               type="date"
               value={to}
               min={from}
               onChange={e => { setTo(e.target.value); setError(null); setSuccess(false) }}
-              className="w-full text-[13px] font-medium text-[#0F172A] dark:text-[#E2E8F0] bg-[#F8FAFC] dark:bg-[#0A1628] border border-[#E2E8F0] dark:border-[#1E3A5F] rounded-xl px-3 py-2 focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/20 transition-colors"
+              className="q-input"
             />
           </div>
         </div>
+        <p className="flex items-center gap-1.5 text-[13px] text-[var(--q-text-3)]">
+          <FileText className="size-4 shrink-0 text-[var(--q-text-4)]" strokeWidth={1.75} aria-hidden />
+          Factures émises et avoirs · du {shortDate(from)} au {shortDate(to)}
+        </p>
       </div>
 
-      {/* ── Bouton de téléchargement ── */}
-      <button
-        onClick={handleDownload}
-        disabled={loading || !from || !to}
-        className="w-full flex items-center justify-center gap-2.5 rounded-2xl px-5 py-3.5 text-[14px] font-semibold transition-all
-          bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] text-white shadow-sm
-          disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Génération en cours…
-          </>
-        ) : success ? (
-          <>
-            <CheckCircle2 className="w-4 h-4" />
-            Fichier téléchargé
-          </>
-        ) : (
-          <>
-            <Download className="w-4 h-4" />
-            Télécharger le FEC
-          </>
-        )}
-      </button>
+      {/* Format : le FEC est le seul export disponible */}
+      <div className="flex flex-col gap-2 border-t border-[var(--q-line-soft)] pt-3.5">
+        <span className="q-label">Format</span>
+        <div className="flex items-start gap-3 rounded-xl border-[1.5px] border-[var(--q-accent)] bg-[var(--q-wash)] p-3.5">
+          <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-[var(--q-accent)]" strokeWidth={2} aria-hidden />
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-[15px] font-semibold text-[var(--q-ink)]">FEC</span>
+            <span className="text-[13px] leading-relaxed text-[var(--q-text-3)]">
+              Fichier des écritures comptables, au format défini par l&apos;administration fiscale
+            </span>
+          </span>
+        </div>
+      </div>
 
-      {/* ── Message d'erreur ── */}
+      {/* Erreur */}
       {error && (
-        <div className="flex items-start gap-3 rounded-xl border border-[#FECACA] bg-[#FEF2F2] dark:bg-[#2D0A0A] dark:border-[#991B1B] px-4 py-3">
-          <AlertCircle className="w-4 h-4 text-[#EF4444] shrink-0 mt-0.5" />
-          <p className="text-[12px] text-[#DC2626] dark:text-[#FCA5A5] leading-relaxed">{error}</p>
+        <div className="q-banner border-[var(--q-danger-line)] bg-[var(--q-danger-bg)] text-[var(--q-danger)]" role="alert">
+          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <p className="text-[13px] leading-relaxed">{error}</p>
         </div>
       )}
 
-      {/* ── Contenu inclus dans le FEC ── */}
-      <div className="rounded-2xl border border-[#E2E8F0] dark:border-[#1E3A5F] bg-[#F8FAFC] dark:bg-[#0A1628] px-5 py-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-3">
-          Contenu du fichier
-        </p>
-        <ul className="space-y-2">
-          {[
-            'Toutes les factures émises (hors brouillons et annulées)',
-            'Tous les avoirs de la période',
-            'Écritures par taux de TVA (0 %, 5,5 %, 10 %, 20 %)',
-            'Comptes PCG : 411 (clients), 706 (ventes), 4457x (TVA)',
-            '18 colonnes au format DGFiP, encodage UTF-8 avec BOM',
-          ].map(item => (
-            <li key={item} className="flex items-start gap-2.5">
-              <FileDown className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-              <span className="text-[12px] text-slate-500 dark:text-slate-400 leading-relaxed">{item}</span>
-            </li>
-          ))}
-        </ul>
+      {/* Téléchargement */}
+      <div className="flex justify-end border-t border-[var(--q-line-soft)] pt-3.5">
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={loading || !from || !to}
+          className="q-btn q-btn-primary q-btn-xl w-full md:h-10 md:w-auto md:rounded-[10px] md:px-4 md:text-sm"
+        >
+          {loading ? (
+            <><Loader2 className="animate-spin" aria-hidden />Génération en cours…</>
+          ) : success ? (
+            <><CheckCircle2 aria-hidden />Fichier téléchargé</>
+          ) : (
+            <><Download aria-hidden />Télécharger le FEC</>
+          )}
+        </button>
       </div>
-
-    </div>
+    </SettingsCard>
   )
 }

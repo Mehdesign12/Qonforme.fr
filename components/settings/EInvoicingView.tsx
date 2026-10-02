@@ -25,7 +25,7 @@ const STEPS = [
   {
     icon: Download,
     title: "Téléchargez son Factur-X",
-    text: "Bouton « Factur-X » sur la fiche de la facture : le fichier XML qui décrit la facture. Le PDF envoyé à votre client contient aussi ces données.",
+    text: "Bouton « XML Factur-X » sur la fiche de la facture : le fichier qui décrit la facture. Le PDF envoyé à votre client contient aussi ces données.",
   },
   {
     icon: Upload,

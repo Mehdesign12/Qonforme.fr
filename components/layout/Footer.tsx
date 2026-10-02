@@ -16,7 +16,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: "Ressources",
     links: [
-      { label: "Réforme de la facturation", href: "/guide/facture-electronique-2026" },
+      { label: "Réforme 2027", href: "/guide/facture-electronique-2026" },
       { label: "Facturation par métier", href: "/facturation" },
       { label: "Guides pratiques", href: "/guide" },
       { label: "Modèles gratuits", href: "/modele" },
