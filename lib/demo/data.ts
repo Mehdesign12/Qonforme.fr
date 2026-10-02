@@ -338,14 +338,29 @@ export interface DemoCreditNote {
   original_invoice_number: string
   reason: string
   issue_date: string
+  /** Lignes reprises de la facture d'origine, comme le fait l'application (avoir total ou partiel). */
+  lines: DemoLine[]
+  subtotal_ht: number
+  total_vat: number
   /** Montant de l'avoir (positif ; affiché en négatif). */
   total_ttc: number
 }
 
+/** Avoir partiel : reprend les lignes choisies de la facture d'origine. */
+function creditNote(n: string, invoiceNumber: string, lineIds: string[], reason: string, issue: string): DemoCreditNote {
+  const inv = DEMO_INVOICES.find((i) => i.invoice_number === invoiceNumber)
+  if (!inv) throw new Error(`Facture de démo inconnue : ${invoiceNumber}`)
+  const lines = inv.lines.filter((l) => lineIds.includes(l.id))
+  return {
+    id: n.toLowerCase(), credit_note_number: n, client: inv.client, original_invoice_number: invoiceNumber,
+    reason, issue_date: issue, lines, ...totals(lines),
+  }
+}
+
 export const DEMO_CREDIT_NOTES: DemoCreditNote[] = [
-  { id: "av-2026-003", credit_note_number: "AV-2026-003", client: demoClient("fontaine"), original_invoice_number: "F-2026-0138", reason: "Geste commercial", issue_date: "2026-09-03", total_ttc: 75 },
-  { id: "av-2026-002", credit_note_number: "AV-2026-002", client: demoClient("mercier"), original_invoice_number: "F-2026-0118", reason: "Prestation non réalisée", issue_date: "2026-08-12", total_ttc: 1200 },
-  { id: "av-2026-001", credit_note_number: "AV-2026-001", client: demoClient("habitat-loire"), original_invoice_number: "F-2026-0099", reason: "Annulation partielle du lot", issue_date: "2026-07-09", total_ttc: 2400 },
+  creditNote("AV-2026-003", "F-2026-0138", ["1"], "Dépose de l'ancienne isolation non réalisée", "2026-09-03"),
+  creditNote("AV-2026-002", "F-2026-0118", ["3"], "Échafaudage facturé en trop", "2026-08-12"),
+  creditNote("AV-2026-001", "F-2026-0099", ["3"], "Benne non utilisée", "2026-07-09"),
 ]
 
 /* ------------------------------------------------------------------ */
