@@ -203,7 +203,7 @@ export function Header({ identity }: { identity: ShellIdentity }) {
   return (
     <>
       <header
-        className="q-float sticky top-3 z-30 mx-6 mt-3 hidden h-14 items-center gap-3 rounded-[14px] pl-4 pr-2.5 lg:flex"
+        className="q-float sticky top-3 z-30 mx-6 mt-3 hidden h-14 items-center gap-3 rounded-[14px] pl-4 pr-2.5 lg:flex print:!hidden"
         style={{ isolation: "isolate" }}
       >
         <nav aria-label="Fil d'Ariane" className="flex min-w-0 shrink-0 items-center gap-2 text-sm">

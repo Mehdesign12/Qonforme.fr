@@ -145,6 +145,15 @@ export function KpiGrid({ children, className }: { children: React.ReactNode; cl
 
 export type Tone = "ok" | "info" | "warn" | "danger" | "neutral"
 
+/** Classes écrites en toutes lettres : Tailwind ne garde que les classes qu'il trouve dans le code. */
+const TONE_CLASS: Record<Tone, string> = {
+  ok: "q-pill-ok",
+  info: "q-pill-info",
+  warn: "q-pill-warn",
+  danger: "q-pill-danger",
+  neutral: "q-pill-neutral",
+}
+
 export function StatusPill({
   tone = "neutral",
   icon,
@@ -157,7 +166,7 @@ export function StatusPill({
   className?: string
 }) {
   return (
-    <span className={cn("q-pill", `q-pill-${tone}`, className)}>
+    <span className={cn("q-pill", TONE_CLASS[tone], className)}>
       {icon}
       {children}
     </span>

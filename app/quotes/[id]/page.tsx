@@ -115,7 +115,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       if (!res.ok) { toast.error(json.error); return false }
       // La route renvoie un client réduit : on garde la fiche client complète déjà chargée
       setQuote((prev) => prev ? { ...prev, ...json.quote, client: prev.client } : json.quote)
-      toast.success(`Statut mis à jour : ${STATUS_LABELS[newStatus]}`)
+      toast.success(`Statut mis à jour : ${STATUS_LABELS[newStatus]}`)
       return true
     } catch { toast.error("Erreur réseau"); return false }
     finally { setFlag("status", false) }
@@ -197,12 +197,17 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
           issue_date:  today,
           valid_until: addDays(today, validity),
           notes:       quote.notes,
-          lines:       quote.lines,
+          // Totaux de ligne recalculés si une ancienne ligne n'en a pas : la route additionne total_ht et total_vat
+          lines: (quote.lines ?? []).map((l) => {
+            const total_ht  = Number(l.total_ht) || 0
+            const total_vat = l.total_vat ?? Math.round(total_ht * Number(l.vat_rate)) / 100
+            return { ...l, total_ht, total_vat, total_ttc: l.total_ttc ?? Math.round((total_ht + total_vat) * 100) / 100 }
+          }),
         }),
       })
       const json = await res.json()
       if (!res.ok || !json.quote) { toast.error(json.error ?? "La copie n'a pas pu être créée"); return }
-      toast.success(`Copie créée : ${json.quote.quote_number}`)
+      toast.success(`Copie créée : ${json.quote.quote_number}`)
       router.push(`/quotes/${json.quote.id}/edit`)
     } catch { toast.error("Erreur réseau") }
     finally { setFlag("duplicate", false) }
