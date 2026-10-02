@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import PricingSelector from '@/components/billing/PricingSelector'
-import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import PlanComparison from '@/components/billing/PlanComparison'
 import Footer from '@/components/layout/Footer'
 import PublicHeaderWrapper from '@/components/layout/PublicHeaderWrapper'
 import { MetaPixelEvent } from '@/components/shared/MetaPixelEvent'
@@ -23,7 +22,10 @@ export const dynamic = 'force-dynamic'
 
 const essentiel = PLANS.starter
 
-const FAQ = [
+/** Typographie française : espace insécable avant « ? : ; ! », « € » et « % ». */
+const nbsp = (text: string) => text.replace(/ ([?:;!€%])/g, '\u00A0$1')
+
+const FAQ = ([
   { question: "Faut-il une carte bancaire pour commencer ?", reponse: "Non. Les devis sont gratuits et illimités. La carte bancaire ou le prélèvement SEPA ne sont demandés qu'au moment d'envoyer votre première facture." },
   { question: `Que comprend la formule ${essentiel.name} ?`, reponse: `${essentiel.features.join(', ')}. ${formatEuros(essentiel.monthlyPrice)} HT par mois, ou ${formatEuros(essentiel.yearlyPrice)} HT par an.` },
   { question: "Et si Qonforme ne me convient pas ?", reponse: `Vous êtes remboursé intégralement dans les ${GUARANTEE_DAYS} jours qui suivent votre premier paiement, sans avoir à vous justifier, directement depuis votre espace. Vos documents restent consultables et téléchargeables.` },
@@ -32,7 +34,7 @@ const FAQ = [
   { question: `Quand la formule ${PLANS.pro.name} sera-t-elle disponible ?`, reponse: `Elle ouvrira avec les situations de travaux, la retenue de garantie et l'autoliquidation en sous-traitance, aujourd'hui en préparation. Elle ne sera proposée qu'une fois ces fonctions livrées.` },
   { question: "Qonforme est-il prêt pour la facturation électronique ?", reponse: "Qonforme produit des factures PDF accompagnées de leurs données structurées Factur-X. L'émission via une plateforme agréée, obligatoire pour les TPE à partir de septembre 2027, est en préparation." },
   { question: "Est-ce que Qonforme fonctionne sur mobile ?", reponse: "Oui. Qonforme fonctionne sur téléphone, tablette et ordinateur, et s'installe sur l'écran d'accueil de votre téléphone." },
-]
+]).map((f) => ({ question: nbsp(f.question), reponse: nbsp(f.reponse) }))
 
 export default async function PricingPage() {
   const supabase = await createClient()
@@ -52,57 +54,60 @@ export default async function PricingPage() {
     <>
       <MetaPixelEvent event="ViewContent" data={{ content_name: 'Pricing', content_category: 'pricing' }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="min-h-screen bg-[#F8FAFC]">
-        {/* Header */}
+      <div className="relative min-h-screen overflow-x-clip bg-q-bg text-q-ink">
+        {/* Halo bleu discret derrière l'en-tête et le titre */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-[520px]"
+          style={{ background: 'radial-gradient(900px 360px at 50% -80px, rgba(37,99,235,.10), transparent 70%)' }}
+        />
+
         <PublicHeaderWrapper />
 
-        {/* Hero */}
-        <header className="bg-gradient-to-b from-white to-[#F8FAFC] border-b border-[#E2E8F0]">
-          <div className="max-w-4xl mx-auto px-4 pt-24 pb-14 sm:pt-28 sm:pb-16 text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold text-[#0F172A] leading-tight tracking-tight">
-              Vos devis sont gratuits.<br className="hidden sm:block" /> Vous payez quand vous facturez.
+        <main className="relative">
+          {/* Titre */}
+          <header className="mx-auto flex max-w-[1200px] flex-col items-center gap-[18px] px-4 pt-[120px] text-center sm:px-6 sm:pt-[152px]">
+            <h1 className="max-w-[860px] font-display text-[clamp(38px,4.6vw,64px)] font-semibold leading-[1.04] tracking-[-0.035em] text-q-ink-strong [text-wrap:balance]">
+              <span className="sm:block">Vos devis sont gratuits.</span>{' '}
+              <span className="q-serif sm:block">Vous payez quand vous facturez.</span>
             </h1>
-            <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
+            <p className="max-w-[600px] text-[17px] leading-[1.55] text-q-text-3 [text-wrap:pretty] sm:text-lg">
               Commencez sans carte bancaire. Vous choisissez une formule au moment d&apos;envoyer votre première facture.
             </p>
-          </div>
-        </header>
+          </header>
 
-        {/* Plans */}
-        <section className="max-w-[1080px] mx-auto px-4 sm:px-6 py-12">
-          <PricingSelector isAuthenticated={!!user} />
-        </section>
+          {/* Formules */}
+          <section aria-label="Formules" className="mx-auto max-w-[1200px] px-4 pt-8 sm:px-6 sm:pt-10">
+            <PricingSelector isAuthenticated={!!user} />
+          </section>
 
-        {/* FAQ */}
-        <section className="bg-white border-y border-[#E2E8F0]">
-          <div className="max-w-3xl mx-auto px-4 py-16">
-            <h2 className="text-2xl font-bold text-[#0F172A] text-center mb-10">Questions fréquentes</h2>
-            <div className="space-y-4">
-              {FAQ.map((f, i) => (
-                <div key={i} className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-5">
-                  <h3 className="font-semibold text-[#0F172A] mb-2">{f.question}</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">{f.reponse}</p>
+          {/* Comparaison */}
+          <section aria-labelledby="comparer" className="mx-auto max-w-[1200px] px-4 pt-16 sm:px-6 sm:pt-20">
+            <h2 id="comparer" className="mb-6 font-display text-[28px] font-semibold tracking-[-0.025em] text-q-ink-strong sm:text-[32px]">
+              Comparer <span className="q-serif">les offres</span>
+            </h2>
+            <PlanComparison />
+            <p className="mt-3.5 text-[13px] leading-relaxed text-q-text-4">
+              Prix hors taxes&nbsp;: la TVA à 20&nbsp;% s&apos;y ajoute, le montant TTC est indiqué sous chaque prix. Vos factures restent consultables après résiliation.
+            </p>
+          </section>
+
+          {/* Questions */}
+          <section aria-labelledby="questions" className="mx-auto max-w-[860px] px-4 pb-16 pt-16 sm:px-6 sm:pb-24 sm:pt-20">
+            <h2 id="questions" className="mb-3 font-display text-[28px] font-semibold tracking-[-0.025em] text-q-ink-strong sm:text-[32px]">
+              Questions sur <span className="q-serif">les offres</span>
+            </h2>
+            <div className="border-t border-q-line">
+              {FAQ.map((f) => (
+                <div key={f.question} className="border-b border-q-line py-5">
+                  <h3 className="text-base font-semibold text-q-ink">{f.question}</h3>
+                  <p className="mt-2 text-[15px] leading-[1.6] text-q-text-3">{f.reponse}</p>
                 </div>
               ))}
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* CTA */}
-        <section className="bg-[#0F172A] text-white">
-          <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-            <h2 className="text-2xl font-bold mb-4">Votre premier devis, en quelques minutes</h2>
-            <p className="text-slate-300 mb-8">Gratuit, sans carte bancaire, avec les mentions obligatoires de votre métier.</p>
-            <Link href="/signup" className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8] shadow-lg">
-              Commencer gratuitement <ArrowRight className="w-4 h-4" />
-            </Link>
-            <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
-              <Link href="/facturation" className="hover:text-white">Facturation par métier</Link>
-              <Link href="/guide" className="hover:text-white">Guides pratiques</Link>
-              <Link href="/demo" className="hover:text-white">Démo</Link>
-            </div>
-          </div>
-        </section>
+        </main>
 
         <Footer />
       </div>

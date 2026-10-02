@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils"
    Instrument Serif italique bleu (.q-serif)
 ───────────────────────────────────────────────────────── */
 export function SectionTitle({
+  eyebrow,
   title,
   accent,
   sub,
@@ -25,6 +26,8 @@ export function SectionTitle({
   className,
   as: Tag = "h2",
 }: {
+  /** Surtitre court en capitales bleues (canevas : « Ce que dit la loi »). */
+  eyebrow?: string
   title: React.ReactNode
   /** Seconde voix, en italique bleu. */
   accent?: React.ReactNode
@@ -37,6 +40,7 @@ export function SectionTitle({
 }) {
   return (
     <div className={cn("flex flex-col", align === "center" && "items-center text-center", className)}>
+      {eyebrow && <p className="lp-reveal q-eyebrow mb-3">{eyebrow}</p>}
       <Tag
         className={cn(
           "lp-reveal font-display text-[clamp(32px,3.6vw,48px)] font-semibold leading-[1.08] tracking-[-0.03em] [text-wrap:balance]",
@@ -145,20 +149,23 @@ export function PhotoBand({
   accent,
   floater,
   label,
+  stack = false,
 }: {
   photo: LandingPhoto
   title: string
   accent: string
   floater?: React.ReactNode
   label: string
+  /** Seconde voix sur sa propre ligne. */
+  stack?: boolean
 }) {
   return (
-    <section aria-label={label} className="bg-q-surface px-4 sm:px-6">
+    <section aria-label={label} className="bg-q-surface px-6">
       <div className="lp-reveal lp-clip relative mx-auto h-[clamp(320px,40vw,540px)] max-w-[1200px] rounded-[22px] bg-[#1B2333] sm:rounded-[28px]">
         <PanPhoto photo={photo} sizes="(min-width: 1248px) 1200px, 100vw" />
         <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,17,34,0)_40%,rgba(10,17,34,.72)_100%)]" />
         <p className="absolute bottom-[clamp(24px,4vw,44px)] left-[clamp(24px,4vw,48px)] right-6 m-0 max-w-[680px] font-display text-[clamp(26px,3.2vw,42px)] font-semibold leading-[1.1] tracking-[-0.03em] text-white [text-wrap:balance]">
-          {title} <span className="q-serif !text-white">{accent}</span>
+          {title} <span className={cn("q-serif !text-white", stack && "block")}>{accent}</span>
         </p>
         {floater && (
           <div aria-hidden className="absolute right-[clamp(24px,4vw,48px)] top-[clamp(24px,4vw,44px)] z-[5] hidden md:block">

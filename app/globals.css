@@ -629,8 +629,13 @@ html[data-standalone="true"] [role="button"] {
 /* ──────────────────────────────────────────────────────────────────────────
  * Accueil (app/page.tsx, components/landing/) — classes préfixées lp-
  *
- * Boutons en pilule avec micro-interactions (design validé, DECISIONS § 6).
- * Aucun backdrop-filter ni will-change : règle iOS de CLAUDE.md.
+ * Langage du canevas « Main » v20. Boutons en pilule (design validé,
+ * DECISIONS § 6), entrée du héros au chargement, apparitions et profondeur au
+ * défilement en CSS seul (animation-timeline, sous @supports). Sans support,
+ * ou avec « Réduire les animations », tout s'affiche à sa place, immobile :
+ * le rendu du serveur ne dépend jamais de ce réglage.
+ * Aucune animation infinie, aucun backdrop-filter ni will-change (règle iOS
+ * de CLAUDE.md) : seules opacity, transform et color sont animées.
  * ────────────────────────────────────────────────────────────────────────── */
 .lp-btn-p {
   position: relative; isolation: isolate; overflow: hidden;
@@ -674,28 +679,79 @@ html[data-standalone="true"] [role="button"] {
 .lp-btn-p:active { transform: translateY(0) scale(.985); background-color: #1D4ED8; box-shadow: inset 0 1px 2px rgba(10,17,34,.30), 0 1px 1px rgba(10,17,34,.10); transition-duration: .06s; }
 .lp-btn-s:active { transform: translateY(0) scale(.985); background-color: #F4F6F8; background-image: none; box-shadow: inset 0 1px 2px rgba(10,17,34,.10); transition-duration: .06s; }
 .lp-btn-p:focus-visible, .lp-btn-s:focus-visible { outline: 2px solid #2563EB; outline-offset: 3px; }
+/* Bouton secondaire en thème sombre : mêmes jetons que les cartes */
+.dark .lp-btn-s, .dark .lp-btn-s:hover, .dark .lp-btn-s:active { color: var(--q-ink); background-color: var(--q-surface); background-image: none; border-color: var(--q-line); box-shadow: none; }
+.dark .lp-btn-s-ic { background-color: var(--q-sunken); color: var(--q-ink); }
 
-/* Bandeau des métiers qui défile */
-@keyframes lp-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-.lp-marquee-track { display: flex; width: max-content; animation: lp-marquee 45s linear infinite; }
-.lp-marquee:hover .lp-marquee-track { animation-play-state: paused; }
+/* Découpe sans conteneur de défilement : overflow:hidden capterait les
+   animations view() des éléments contenus (elles resteraient figées). */
+.lp-clip { overflow: hidden; overflow: clip; }
+
+/* Bandeau des métiers : fondu sur les bords ; il glisse avec la page, jamais en boucle. */
 .lp-marquee { -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.lp-marquee-track { display: flex; width: max-content; }
 
-/* Entrée du héros en CSS pur : elle joue avant le chargement du JavaScript,
-   donc le titre n'attend jamais l'hydratation sur un mobile lent. */
-@keyframes lp-rise { from { transform: translateY(105%); } to { transform: translateY(0); } }
-@keyframes lp-fade-up { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
-.lp-word { display: inline-block; animation: lp-rise .95s cubic-bezier(.22,1,.36,1) both; }
-.lp-fade-up { animation: lp-fade-up .9s cubic-bezier(.22,1,.36,1) both; }
+/* Portées des frises nommées (manifeste, cartes de profil, étapes) */
+.lp-ink-scope { view-timeline: --lp-ink block; }
+.lp-card-scope { view-timeline: --lp-card block; }
+.lp-steps-scope { view-timeline: --lp-steps block; }
+.lp-progress { display: none; }
 
+@keyframes lp-fade-up { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+@keyframes lp-tilt { from { opacity: 0; transform: perspective(2000px) rotateX(20deg) translateY(48px) scale(.95); } to { opacity: 1; transform: none; } }
+@keyframes lp-phone-in { from { opacity: 0; transform: translateY(90px); } to { opacity: 1; transform: none; } }
+@keyframes lp-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@keyframes lp-rise { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+@keyframes lp-zoomin { from { opacity: .35; transform: perspective(2000px) rotateX(14deg) scale(.86) translateY(60px); } to { opacity: 1; transform: none; } }
+@keyframes lp-pan { from { transform: translateY(-7%); } to { transform: translateY(7%); } }
+@keyframes lp-drift { from { transform: translateY(0); } to { transform: translateY(-80px); } }
+@keyframes lp-rail-l { from { transform: translateX(0); } to { transform: translateX(-22%); } }
+@keyframes lp-rail-r { from { transform: translateX(-8%); } to { transform: translateX(8%); } }
+@keyframes lp-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes lp-ink { from { color: var(--q-field); } to { color: var(--q-ink-strong); } }
+@keyframes lp-ink-accent { from { color: var(--q-field); } to { color: var(--q-accent); } }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Entrée du héros : jouée avant l'hydratation, sans attendre le JavaScript */
+  .lp-fade-up { animation: lp-fade-up .9s cubic-bezier(.22,1,.36,1) both; }
+  .lp-tilt { transform-origin: 50% 100%; animation: lp-tilt 1.4s cubic-bezier(.22,1,.36,1) .3s both; }
+  .lp-phone-in { animation: lp-phone-in 1.2s cubic-bezier(.22,1,.36,1) .9s both; }
+  /* Ondulation des notifications : quelques allers-retours, puis immobile */
+  .lp-bob { animation: lp-bob 6s ease-in-out 5; }
+  .lp-bob-2 { animation: lp-bob 7s ease-in-out 1.2s 4; }
+  .lp-bob-3 { animation: lp-bob 8s ease-in-out 2.4s 4; }
+  .lp-zoom { transition: transform 1.2s cubic-bezier(.22,1,.36,1); }
+
+  @supports (animation-timeline: view()) {
+    .lp-reveal { animation: lp-rise cubic-bezier(.22,1,.36,1) both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+    .lp-d1 { animation-range: entry 20% entry 100%; }
+    .lp-d2 { animation-range: entry 40% entry 100%; }
+    .lp-pan { animation: lp-pan linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+    .lp-drift { animation: lp-drift linear both; animation-timeline: scroll(root); animation-range: 0px 900px; }
+    .lp-drift-v { animation: lp-drift linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+    .lp-zoomin { transform-origin: 50% 100%; animation: lp-zoomin cubic-bezier(.22,1,.36,1) both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+    .lp-rail-l, .lp-marquee-track { animation: lp-rail-l linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+    .lp-rail-r { animation: lp-rail-r linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+    .lp-fill { transform-origin: 0 50%; animation: lp-grow-x cubic-bezier(.22,1,.36,1) both; animation-timeline: --lp-card; animation-range: entry 30% entry 100%; }
+    .lp-line-x { transform-origin: 0 50%; animation: lp-grow-x cubic-bezier(.22,1,.36,1) both; animation-timeline: --lp-steps; animation-range: entry 20% entry 100%; }
+    /* Manifeste : chaque mot s'encre à son tour (plage posée en ligne, mot par mot) */
+    .lp-w { animation: lp-ink linear both; animation-timeline: --lp-ink; }
+    .lp-wb { animation: lp-ink-accent linear both; animation-timeline: --lp-ink; }
+    .lp-w, .lp-wb { animation-range: entry var(--lp-a, 0%) entry var(--lp-b, 30%); }
+    .lp-progress {
+      display: block; position: fixed; inset-inline: 0; top: 0; z-index: 110; height: 3px; pointer-events: none;
+      background: var(--q-accent); transform-origin: 0 50%; transform: scaleX(0);
+      animation: lp-grow-x linear both; animation-timeline: scroll(root);
+    }
+  }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .lp-zoom-host:hover .lp-zoom { transform: scale(1.045); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .lp-word, .lp-fade-up { animation: none; }
-  /* Effets liés au défilement (components/landing/motion.tsx) : figés à leur place finale */
-  .lp-motion { transform: none !important; }
   .lp-btn-p, .lp-btn-s, .lp-btn-s-ic, .lp-btn-arrow { transition: none; }
   .lp-btn-p::after { display: none; }
   .lp-btn-p:hover, .lp-btn-s:hover, .lp-btn-p:active, .lp-btn-s:active, .lp-btn-p:hover .lp-btn-arrow { transform: none; }
-  .lp-marquee-track { animation: none; }
 }
 
 

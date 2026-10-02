@@ -9,16 +9,20 @@ import {
   formatEuros,
   withVat,
   type BillingPeriod,
+  type Plan,
 } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { trackEvent } from '@/lib/meta-pixel'
+import { cn } from '@/lib/utils'
 
 /**
- * Grille des formules — page Tarifs (visiteur) et choix de formule (connecté).
+ * Grille des formules — page Tarifs (visiteur), aperçu de l'accueil et choix
+ * de formule (connecté), d'après la planche « Tarifs » du canevas.
  *
- * Trois colonnes : Devis (gratuit), Essentiel, Artisan. Artisan reste affiché
- * « bientôt disponible » tant que ses fonctions ne sont pas livrées
- * (PLANS.pro.available) : on ne vend pas ce qui n'existe pas.
+ * Trois cartes : Devis (gratuit), Essentiel, Artisan. Artisan garde la carte
+ * encre du canevas mais reste « bientôt » tant que ses fonctions ne sont pas
+ * livrées (PLANS.pro.available) : aucun bouton de paiement, on ne vend pas ce
+ * qui n'existe pas. Le bouton principal va donc à Essentiel, seule formule vendue.
  */
 export default function PricingSelector({
   isAuthenticated = false,
@@ -38,51 +42,57 @@ export default function PricingSelector({
   const essentiel = PLANS.starter
   const artisan = PLANS.pro
 
-  const checkoutHref = (plan: 'starter' | 'pro') => {
-    const params = new URLSearchParams({ plan, period })
+  const checkoutHref = (plan: Plan) => {
+    const params = new URLSearchParams({ plan: plan.id, period })
     if (next) params.set('next', next)
     return `/pricing/checkout?${params.toString()}`
   }
 
-  const onChoose = () => {
+  const onChoose = (plan: Plan) => {
     trackEvent('InitiateCheckout', {
       currency: 'EUR',
-      value: period === 'monthly' ? essentiel.monthlyPrice : essentiel.yearlyPrice,
-      content_name: essentiel.name,
-      content_ids: [essentiel.id],
+      value: period === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice,
+      content_name: plan.name,
+      content_ids: [plan.id],
       num_items: 1,
     })
   }
 
   return (
-    <div className="w-full flex flex-col gap-8">
+    <div className="flex w-full flex-col gap-8">
       {backHref && (
         <Link
           href={backHref}
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-[#0F172A] transition-colors w-fit min-h-[44px]"
+          className="inline-flex min-h-[44px] w-fit items-center gap-2 text-sm font-medium text-q-text-3 transition-colors hover:text-q-ink"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="h-4 w-4" aria-hidden />
           Retour
         </Link>
       )}
 
       {/* Mensuel / annuel */}
       <div className="flex justify-center">
-        <div role="radiogroup" aria-label="Période de facturation" className="inline-flex items-center gap-1 rounded-full border border-[#E2E8F0] bg-white p-1">
+        <div
+          role="group"
+          aria-label="Période de facturation"
+          className="inline-flex items-center gap-0.5 rounded-xl bg-[var(--q-seg-bg)] p-1"
+        >
           {(['monthly', 'yearly'] as BillingPeriod[]).map((p) => (
             <button
               key={p}
               type="button"
-              role="radio"
-              aria-checked={period === p}
+              aria-pressed={period === p}
               onClick={() => setPeriod(p)}
-              className={`inline-flex items-center gap-2 h-10 px-5 rounded-full text-sm font-semibold transition-colors ${
-                period === p ? 'bg-[#0F172A] text-white' : 'text-slate-500 hover:text-[#0F172A]'
-              }`}
+              className={cn(
+                'inline-flex h-10 items-center gap-2 rounded-[9px] px-4 text-sm font-semibold transition-colors',
+                period === p
+                  ? 'bg-q-surface text-q-ink shadow-[0_1px_3px_rgba(10,17,34,.12)]'
+                  : 'text-q-text-3 hover:text-q-ink',
+              )}
             >
               {p === 'monthly' ? 'Mensuel' : 'Annuel'}
               {p === 'yearly' && (
-                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${period === p ? 'bg-white/15 text-white' : 'bg-[#D1FAE5] text-[#065F46]'}`}>
+                <span className="rounded-full bg-q-ok-bg px-2 py-0.5 text-xs font-semibold text-q-ok">
                   2 mois offerts
                 </span>
               )}
@@ -91,122 +101,221 @@ export default function PricingSelector({
         </div>
       </div>
 
-      <div className={`grid grid-cols-1 gap-4 lg:gap-5 items-stretch ${showFree ? 'lg:grid-cols-3' : 'lg:grid-cols-2 w-full max-w-3xl mx-auto'}`}>
+      <div
+        className={cn(
+          'grid grid-cols-1 items-stretch gap-4',
+          showFree ? 'lg:grid-cols-3' : 'mx-auto w-full max-w-[820px] md:grid-cols-2',
+        )}
+      >
         {/* ── Devis : gratuit ─────────────────────────────────────────── */}
         {showFree && (
-        <section aria-labelledby="plan-devis" className="flex flex-col rounded-2xl border border-[#E2E8F0] bg-white p-6">
-          <h2 id="plan-devis" className="text-lg font-semibold text-[#0F172A]">Devis</h2>
-          <p className="text-sm text-slate-500 mt-1">Pour démarrer et décrocher vos chantiers.</p>
-          <p className="mt-5 flex items-baseline gap-1.5">
-            <span className="text-4xl font-bold tracking-tight text-[#0F172A]">0 €</span>
-            <span className="text-sm text-slate-500">pour toujours</span>
-          </p>
-          <p className="text-[13px] text-slate-500 mt-1">Sans carte bancaire</p>
-          <Link
-            href={isAuthenticated ? '/quotes/new' : '/signup'}
-            className="mt-5 inline-flex h-11 items-center justify-center rounded-xl border border-[#CBD5E1] bg-white text-sm font-semibold text-[#0F172A] hover:border-[#94A3B8] transition-colors"
-          >
-            {isAuthenticated ? 'Faire un devis' : 'Créer mon premier devis'}
-          </Link>
-          <FeatureList items={FREE_FEATURES} />
-        </section>
+          <PlanCard id="plan-devis" name="Devis" tagline="Pour démarrer et décrocher vos chantiers.">
+            <div className="flex items-baseline gap-1.5">
+              <Amount>{eur(0)}</Amount>
+              <span className="text-sm text-q-text-3">pour toujours</span>
+            </div>
+            <Link
+              href={isAuthenticated ? '/quotes/new' : '/signup'}
+              className="q-btn q-btn-secondary h-11 w-full text-[15px]"
+            >
+              {isAuthenticated ? 'Faire un devis' : 'Créer mon premier devis'}
+            </Link>
+            <FeatureList items={[...FREE_FEATURES, 'Envoi des devis par email, avec le PDF']} />
+          </PlanCard>
         )}
 
-        {/* ── Essentiel ──────────────────────────────────────────────── */}
-        <section aria-labelledby="plan-essentiel" className="relative flex flex-col rounded-2xl border-2 border-[#2563EB] bg-white p-6 shadow-[0_12px_32px_-20px_rgba(37,99,235,0.45)]">
-          <span className="absolute -top-3 left-6 rounded-full bg-[#2563EB] px-2.5 py-1 text-[11px] font-bold text-white">Conseillé</span>
-          <h2 id="plan-essentiel" className="text-lg font-semibold text-[#0F172A]">{essentiel.name}</h2>
-          <p className="text-sm text-slate-500 mt-1">{essentiel.tagline}</p>
-          <PriceBlock monthly={essentiel.monthlyPrice} yearly={essentiel.yearlyPrice} perMonthYearly={essentiel.yearlyMonthlyEquivalent} period={period} />
-          {isAuthenticated ? (
-            <Link
-              href={checkoutHref('starter')}
-              onClick={onChoose}
-              className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-[#2563EB] text-sm font-semibold text-white hover:bg-[#1D4ED8] transition-colors"
-            >
-              Choisir {essentiel.name}
-            </Link>
-          ) : (
-            <Link
-              href="/signup"
-              className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-[#2563EB] text-sm font-semibold text-white hover:bg-[#1D4ED8] transition-colors"
-            >
-              Commencer gratuitement
-            </Link>
-          )}
-          <p className="text-[12px] text-slate-500 mt-2 text-center">
-            {isAuthenticated ? 'Carte bancaire ou prélèvement SEPA' : 'La formule se choisit à votre première facture'}
-          </p>
+        {/* ── Essentiel : seule formule vendue ───────────────────────── */}
+        <PlanCard id="plan-essentiel" name={essentiel.name} tagline={essentiel.tagline}>
+          <PriceBlock plan={essentiel} period={period} />
+          <div className="flex flex-col gap-2">
+            {essentiel.available ? (
+              isAuthenticated ? (
+                <Link
+                  href={checkoutHref(essentiel)}
+                  onClick={() => onChoose(essentiel)}
+                  className="q-btn q-btn-primary h-11 w-full text-[15px]"
+                >
+                  Choisir {essentiel.name}
+                </Link>
+              ) : (
+                <Link href="/signup" className="q-btn q-btn-primary h-11 w-full text-[15px]">
+                  Commencer gratuitement
+                </Link>
+              )
+            ) : (
+              <SoonButton />
+            )}
+            <p className="text-center text-xs text-q-text-4">
+              {isAuthenticated ? 'Carte bancaire ou prélèvement SEPA' : 'La formule se choisit à votre première facture'}
+            </p>
+          </div>
           <FeatureList items={essentiel.features} />
           <UpcomingList items={essentiel.upcoming} />
-        </section>
+        </PlanCard>
 
-        {/* ── Artisan : bientôt ──────────────────────────────────────── */}
-        <section aria-labelledby="plan-artisan" className="flex flex-col rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-6">
-          <div className="flex items-center gap-2">
-            <h2 id="plan-artisan" className="text-lg font-semibold text-[#0F172A]">{artisan.name}</h2>
-            <span className="rounded-full bg-[#E2E8F0] px-2 py-0.5 text-[11px] font-semibold text-slate-600">Bientôt</span>
+        {/* ── Artisan : carte encre, bientôt ─────────────────────────── */}
+        <PlanCard
+          id="plan-artisan"
+          name={artisan.name}
+          tagline={artisan.tagline}
+          ink
+          badge={artisan.available ? undefined : 'Bientôt'}
+        >
+          <PriceBlock plan={artisan} period={period} ink />
+          {artisan.available ? (
+            <Link
+              href={isAuthenticated ? checkoutHref(artisan) : '/signup'}
+              onClick={isAuthenticated ? () => onChoose(artisan) : undefined}
+              className="q-btn q-btn-primary h-11 w-full text-[15px]"
+            >
+              {isAuthenticated ? `Choisir ${artisan.name}` : 'Commencer gratuitement'}
+            </Link>
+          ) : (
+            <SoonButton ink />
+          )}
+          <div className="flex flex-col gap-[11px]">
+            <p className="flex gap-2.5 text-sm font-semibold text-white">
+              <Check className="mt-px h-[18px] w-[18px] shrink-0 text-[#7FA6FF]" strokeWidth={2.25} aria-hidden />
+              Tout {essentiel.name}, plus :
+            </p>
+            <FeatureList items={artisan.features} ink />
+            <UpcomingList items={artisan.upcoming} ink bare />
           </div>
-          <p className="text-sm text-slate-500 mt-1">{artisan.tagline}</p>
-          <PriceBlock monthly={artisan.monthlyPrice} yearly={artisan.yearlyPrice} perMonthYearly={artisan.yearlyMonthlyEquivalent} period={period} muted />
-          <button
-            type="button"
-            disabled
-            className="mt-5 inline-flex h-11 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white text-sm font-semibold text-slate-400 cursor-not-allowed"
-          >
-            Bientôt disponible
-          </button>
-          <p className="text-[12px] text-slate-500 mt-2 text-center">Tout {essentiel.name}, plus :</p>
-          <UpcomingList items={artisan.upcoming} title="En préparation" />
-        </section>
+          {!artisan.available && (
+            <p className="text-[13px] leading-relaxed text-[#94A3B8]">
+              Ces fonctions sont en préparation. La formule ouvrira une fois livrées.
+            </p>
+          )}
+        </PlanCard>
       </div>
 
-      <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] text-slate-500">
-        <span className="inline-flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-[#059669]" />Satisfait ou remboursé {GUARANTEE_DAYS} jours</span>
-        <span>Sans engagement</span>
-        <span>Prix hors taxes, TVA 20 % en sus</span>
-        <span>Vos factures restent consultables après résiliation</span>
-      </div>
+      <ul className="flex flex-col flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] text-q-text-3 sm:flex-row">
+        <li className="inline-flex items-center gap-1.5">
+          <ShieldCheck className="h-4 w-4 text-q-ok" aria-hidden />
+          Satisfait ou remboursé {GUARANTEE_DAYS}&nbsp;jours
+        </li>
+        <li>Sans engagement</li>
+        <li>Prix hors taxes, TVA 20&nbsp;% en sus</li>
+        <li>Vos factures restent consultables après résiliation</li>
+      </ul>
     </div>
   )
 }
 
-function PriceBlock({
-  monthly,
-  yearly,
-  perMonthYearly,
-  period,
-  muted = false,
+/** « 10 € » avec une espace insécable avant le symbole. */
+function eur(amount: number): string {
+  return formatEuros(amount).replace(/ €$/, ' €')
+}
+
+function PlanCard({
+  id,
+  name,
+  tagline,
+  ink = false,
+  badge,
+  children,
 }: {
-  monthly: number
-  yearly: number
-  perMonthYearly: number
-  period: BillingPeriod
-  muted?: boolean
+  id: string
+  name: string
+  tagline: string
+  /** Carte encre (#0A1122), identique dans les deux thèmes. */
+  ink?: boolean
+  badge?: string
+  children: React.ReactNode
 }) {
-  const perMonth = period === 'monthly' ? monthly : perMonthYearly
   return (
-    <>
-      <p className="mt-5 flex items-baseline gap-1.5">
-        <span className={`text-4xl font-bold tracking-tight ${muted ? 'text-slate-500' : 'text-[#0F172A]'}`}>{formatEuros(perMonth)}</span>
-        <span className="text-sm text-slate-500">HT / mois</span>
-      </p>
-      <p className="text-[13px] text-slate-500 mt-1">
-        {period === 'monthly'
-          ? `soit ${formatEuros(withVat(monthly))} TTC par mois`
-          : `${formatEuros(yearly)} HT par an, soit ${formatEuros(withVat(yearly))} TTC`}
-      </p>
-    </>
+    <section
+      aria-labelledby={id}
+      className={cn(
+        'relative flex flex-col gap-5 overflow-hidden rounded-[20px] p-6 sm:p-7',
+        ink
+          ? 'q-on-ink border border-[#0A1122] bg-[#0A1122] text-[#E2E8F0] shadow-[0_30px_60px_-30px_rgba(10,17,34,.6)] dark:border-[rgba(127,166,255,.16)]'
+          : 'border border-q-line bg-q-surface text-q-ink',
+      )}
+    >
+      {ink && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ background: 'radial-gradient(320px 220px at 85% 0%, rgba(37,99,235,.45), transparent 70%)' }}
+        />
+      )}
+      <div className="relative flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1.5">
+          <h2 id={id} className={cn('text-lg font-semibold', ink ? 'text-white' : 'text-q-ink')}>
+            {name}
+          </h2>
+          <p className={cn('text-sm', ink ? 'text-[#AFBDD3]' : 'text-q-text-3')}>{tagline}</p>
+        </div>
+        {badge && (
+          <span className="shrink-0 rounded-full border border-white/15 bg-white/10 px-2.5 py-[5px] text-xs font-semibold text-white">
+            {badge}
+          </span>
+        )}
+      </div>
+      <div className="relative flex flex-col gap-5">{children}</div>
+    </section>
   )
 }
 
-function FeatureList({ items }: { items: string[] }) {
+function Amount({ children, ink = false }: { children: React.ReactNode; ink?: boolean }) {
+  return (
+    <span
+      className={cn(
+        'font-display text-[44px] font-semibold leading-none tracking-[-0.04em] tabular-nums sm:text-[52px]',
+        ink ? 'text-white' : 'text-q-ink-strong',
+      )}
+    >
+      {children}
+    </span>
+  )
+}
+
+function PriceBlock({ plan, period, ink = false }: { plan: Plan; period: BillingPeriod; ink?: boolean }) {
+  const perMonth = period === 'monthly' ? plan.monthlyPrice : plan.yearlyMonthlyEquivalent
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-baseline gap-1.5">
+        <Amount ink={ink}>{eur(perMonth)}</Amount>
+        <span className={cn('text-sm', ink ? 'text-[#AFBDD3]' : 'text-q-text-3')}>HT / mois</span>
+      </div>
+      <span className={cn('text-[13px] tabular-nums', ink ? 'text-[#94A3B8]' : 'text-q-text-4')}>
+        {period === 'monthly'
+          ? `Soit ${eur(withVat(plan.monthlyPrice))} TTC par mois`
+          : `Facturé ${eur(plan.yearlyPrice)} HT par an · ${eur(withVat(plan.yearlyPrice))} TTC`}
+      </span>
+    </div>
+  )
+}
+
+function SoonButton({ ink = false }: { ink?: boolean }) {
+  return (
+    <button
+      type="button"
+      disabled
+      className={cn(
+        'inline-flex h-11 w-full cursor-not-allowed items-center justify-center rounded-[10px] text-[15px] font-semibold',
+        ink
+          ? 'border border-white/15 bg-white/[.06] text-[#AFBDD3]'
+          : 'border border-q-line bg-q-surface-2 text-q-text-4',
+      )}
+    >
+      Bientôt disponible
+    </button>
+  )
+}
+
+function FeatureList({ items, ink = false }: { items: string[]; ink?: boolean }) {
   if (items.length === 0) return null
   return (
-    <ul className="mt-6 flex flex-col gap-2.5">
+    <ul className={cn('flex flex-col gap-[11px] text-sm leading-snug', ink ? 'text-[#CBD5E1]' : 'text-q-text-2')}>
       {items.map((item) => (
-        <li key={item} className="flex items-start gap-2.5 text-sm text-[#0F172A] leading-snug">
-          <Check className="w-4 h-4 mt-0.5 shrink-0 text-[#059669]" aria-hidden />
+        <li key={item} className="flex gap-2.5">
+          <Check
+            className={cn('mt-px h-[18px] w-[18px] shrink-0', ink ? 'text-[#7FA6FF]' : 'text-q-accent')}
+            strokeWidth={2.25}
+            aria-hidden
+          />
           {item}
         </li>
       ))}
@@ -214,15 +323,40 @@ function FeatureList({ items }: { items: string[] }) {
   )
 }
 
-function UpcomingList({ items, title = 'À venir' }: { items: string[]; title?: string }) {
+/** Fonctions annoncées, pas encore livrées : toujours dites « à venir ». */
+function UpcomingList({
+  items,
+  title = 'À venir',
+  ink = false,
+  bare = false,
+}: {
+  items: string[]
+  title?: string
+  ink?: boolean
+  /** Sans filet ni intitulé : la carte le dit déjà autrement. */
+  bare?: boolean
+}) {
   if (items.length === 0) return null
   return (
-    <div className="mt-5 border-t border-[#E2E8F0] pt-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2.5">{title}</p>
-      <ul className="flex flex-col gap-2.5">
+    <div className={cn(!bare && 'border-t pt-4', ink ? 'border-white/10' : 'border-q-line-soft')}>
+      {!bare && (
+        <p
+          className={cn(
+            'mb-2.5 text-[11px] font-semibold uppercase tracking-[0.08em]',
+            ink ? 'text-[#94A3B8]' : 'text-q-text-4',
+          )}
+        >
+          {title}
+        </p>
+      )}
+      <ul className={cn('flex flex-col gap-[11px] text-sm leading-snug', ink ? 'text-[#AFBDD3]' : 'text-q-text-3')}>
         {items.map((item) => (
-          <li key={item} className="flex items-start gap-2.5 text-sm text-slate-500 leading-snug">
-            <Clock className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" aria-hidden />
+          <li key={item} className="flex gap-2.5">
+            <Clock
+              className={cn('mt-px h-[18px] w-[18px] shrink-0', ink ? 'text-[#64748B]' : 'text-q-text-4')}
+              strokeWidth={2}
+              aria-hidden
+            />
             {item}
           </li>
         ))}

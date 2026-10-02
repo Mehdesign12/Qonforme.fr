@@ -46,7 +46,7 @@ export function StorySection() {
   const photo = PHOTOS.chezLeClient
 
   return (
-    <section className="border-y border-q-line bg-q-bg px-4 py-[clamp(88px,9vw,112px)] sm:px-6">
+    <section id="features" className="border-y border-q-line bg-q-bg px-6 py-[clamp(88px,9vw,120px)]">
       <div className="mx-auto grid max-w-[1200px] items-center gap-14 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div>
           <SectionTitle
