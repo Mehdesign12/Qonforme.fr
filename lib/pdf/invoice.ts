@@ -345,7 +345,7 @@ export async function generateInvoicePdf({ invoice, company, watermark }: Invoic
   // FOOTER
   hLine(32, mL, mR, 0.5, separator)
   draw(`${company?.name ?? "Qonforme"} — ${invoice.invoice_number}`, mL, 20, { size: 7, color: grayLight })
-  draw("Factur-X EN 16931 — Généré par Qonforme", mR, 20, { size: 7, color: accent, align: "right" })
+  draw("Généré par Qonforme", mR, 20, { size: 7, color: accent, align: "right" })
 
   // Filigrane (brouillon, aperçu) — dessiné en dernier pour rester au-dessus du contenu
   if (watermark) {

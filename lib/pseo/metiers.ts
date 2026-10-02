@@ -19,13 +19,13 @@ export interface Metier {
 const BTP_FEATURES = [
   { titre: "Devis détaillés", texte: "Créez des devis avec vos lignes de main-d'œuvre, de matériaux et de déplacement, et un taux de TVA par ligne (5,5 %, 10 % ou 20 %)." },
   { titre: "Du devis à la facture", texte: "Une fois le devis accepté, transformez-le en facture en un clic, sans rien ressaisir." },
-  { titre: "Décennale sur vos documents", texte: "Enregistrez une fois votre assurance décennale et vos mentions : elles figurent ensuite sur chaque devis et chaque facture." },
+  { titre: "Décennale sur vos documents", texte: "Enregistrez une fois vos mentions légales, assurance décennale comprise : elles figurent ensuite en bas de chaque devis et de chaque facture." },
 ]
 
 const SERVICE_FEATURES = [
   { titre: "Devis gratuits et illimités", texte: "Préparez autant de devis que nécessaire, sans abonnement, puis transformez-les en facture une fois acceptés." },
   { titre: "Suivi des paiements", texte: "Voyez d'un coup d'œil les factures payées, en attente et en retard." },
-  { titre: "Relances par email", texte: "Relancez une facture impayée en un clic, ou laissez partir les relances automatiques 30 et 45 jours après l'échéance." },
+  { titre: "Relances par email", texte: "Avec la formule Essentiel, relancez une facture impayée en un clic, ou laissez partir les relances automatiques 30 et 45 jours après l'échéance." },
 ]
 
 const SANTE_FEATURES = [
@@ -236,7 +236,7 @@ export const METIERS: Metier[] = [
       { question: "Comment faire une facture en auto-entrepreneur ?", reponse: "La facture doit comporter : vos coordonnées et SIRET, celles du client, la date, un numéro séquentiel, le détail des prestations, le montant HT, et la mention « TVA non applicable, art. 293 B du CGI » si vous êtes en franchise de TVA." },
       { question: "Un auto-entrepreneur doit-il facturer la TVA ?", reponse: "Non, tant que vous restez sous les seuils de franchise (36 800 € pour les services, 91 900 € pour la vente). Au-delà, vous devez facturer la TVA et la reverser." },
       { question: "Comment gérer les frais de déplacement en auto-entrepreneur ?", reponse: "Vous pouvez refacturer les frais de déplacement au client en les intégrant comme une ligne distincte sur la facture. En micro-entreprise, les frais ne sont pas déductibles : ils s'ajoutent à votre chiffre d'affaires déclaré." },
-      { question: "Quelles sont les pénalités de retard obligatoires sur une facture auto-entrepreneur ?", reponse: "Toute facture doit mentionner le taux de pénalités de retard (minimum : taux BCE + 10 points) et l'indemnité forfaitaire de 40 € pour frais de recouvrement, conformément aux articles L441-10 et D441-5 du Code de commerce." },
+      { question: "Quelles sont les pénalités de retard obligatoires sur une facture auto-entrepreneur ?", reponse: "Toute facture doit mentionner le taux de pénalités de retard (à défaut de taux convenu : taux directeur de la BCE majoré de 10 points ; jamais moins de 3 fois le taux d'intérêt légal) et l'indemnité forfaitaire de 40 € pour frais de recouvrement, conformément aux articles L441-10 et D441-5 du Code de commerce." },
       { question: "Un auto-entrepreneur est-il concerné par Factur-X 2026 ?", reponse: "Oui. Depuis le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques. À partir du 1er septembre 2027, vous devrez aussi émettre vos factures aux clients professionnels dans un format structuré (Factur-X, UBL ou CII), par une plateforme agréée, même en franchise de TVA." },
     ],
     ["consultant", "developpeur-freelance", "graphiste", "photographe"],
@@ -332,7 +332,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer une traduction ?", reponse: "Facturez au mot (tarif standard en traduction technique) ou au feuillet (1 500 signes espaces comprises). Précisez les langues, le domaine de spécialité et le délai de livraison." },
       { question: "Comment facturer la cession de droits sur une traduction littéraire ?", reponse: "Pour les traductions littéraires, la cession de droits d'auteur doit être détaillée conformément à l'article L131-3 du CPI : étendue des droits, durée, territoire et supports. La rémunération de la cession doit être distincte des honoraires de traduction." },
       { question: "Un traducteur freelance doit-il facturer la TVA ?", reponse: "Oui, au taux de 20 %, sauf en franchise de TVA (seuil de 36 800 €). Pour les clients professionnels dans l'UE, la TVA est autoliquidée par le client. Pensez à vérifier et mentionner le numéro de TVA intracommunautaire." },
-      { question: "Comment gérer les pénalités de retard sur une facture de traduction ?", reponse: "La facture doit mentionner le taux de pénalités de retard applicable (minimum : taux directeur BCE + 10 points) et l'indemnité forfaitaire de 40 € pour frais de recouvrement, conformément à l'article L441-10 du Code de commerce." },
+      { question: "Comment gérer les pénalités de retard sur une facture de traduction ?", reponse: "La facture doit mentionner le taux de pénalités de retard applicable (à défaut de taux convenu : taux directeur de la BCE majoré de 10 points ; jamais moins de 3 fois le taux d'intérêt légal) et l'indemnité forfaitaire de 40 € pour frais de recouvrement, conformément à l'article L441-10 du Code de commerce." },
       { question: "Quelles obligations Factur-X 2026 pour un traducteur ?", reponse: "Les traducteurs doivent pouvoir recevoir des factures électroniques depuis le 1er septembre 2026. À partir du 1er septembre 2027, ils devront émettre au format électronique leurs factures aux clients professionnels français. Pour les clients étrangers, les données de transaction seront transmises à l'administration fiscale (e-reporting)." },
     ],
     ["formateur", "consultant", "graphiste", "auto-entrepreneur"],
@@ -340,7 +340,7 @@ export const METIERS: Metier[] = [
 
   // ── Artisanat / Commerce ──
   metier("coiffeur", "Coiffeur", "artisanat",
-    ["facture salon coiffure", "logiciel caisse coiffeur"],
+    ["facture salon coiffure", "facture coiffeur professionnel"],
     ["Affichage des prix obligatoire", "Note/facture obligatoire au-delà de 25 €"],
     [
       { question: "Un coiffeur doit-il faire des factures ?", reponse: "Une note (ticket) suffit pour les particuliers si le montant est inférieur à 25 €. Au-delà, une note détaillée est obligatoire. Pour les clients professionnels, une facture complète est toujours requise." },
@@ -382,7 +382,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer des honoraires d'architecte d'intérieur ?", reponse: "Facturez au pourcentage du montant des travaux (8-15%), au forfait, ou en régie (taux horaire/journalier). Détaillez les phases : étude, conception, plans, suivi de chantier." },
       { question: "Un architecte d'intérieur doit-il facturer la TVA ?", reponse: "Oui, les honoraires d'architecte d'intérieur sont soumis à la TVA au taux de 20 %. En franchise de TVA (seuil 36 800 €), mentionnez « TVA non applicable, art. 293 B du CGI ». Les achats de mobilier refacturés suivent leur propre taux." },
       { question: "Comment refacturer les achats de mobilier et matériaux ?", reponse: "Deux options : la refacturation (vous achetez et revendez avec marge, TVA sur le tout) ou le débours (vous achetez au nom du client, aucune TVA sur le remboursement). La méthode choisie doit être claire dans le contrat et sur la facture." },
-      { question: "Quelles pénalités de retard mentionner sur une facture d'architecte d'intérieur ?", reponse: "La facture doit indiquer le taux de pénalités de retard (minimum : taux directeur BCE + 10 points) et l'indemnité forfaitaire de 40 € pour frais de recouvrement, conformément aux articles L441-10 et D441-5 du Code de commerce." },
+      { question: "Quelles pénalités de retard mentionner sur une facture d'architecte d'intérieur ?", reponse: "La facture doit indiquer le taux de pénalités de retard (à défaut de taux convenu : taux directeur de la BCE majoré de 10 points ; jamais moins de 3 fois le taux d'intérêt légal) et l'indemnité forfaitaire de 40 € pour frais de recouvrement, conformément aux articles L441-10 et D441-5 du Code de commerce." },
       { question: "Quelles obligations Factur-X 2026 pour un architecte d'intérieur ?", reponse: "Les architectes d'intérieur doivent pouvoir recevoir des factures électroniques depuis le 1er septembre 2026. À partir du 1er septembre 2027, leurs factures aux clients professionnels devront être émises au format électronique : honoraires de conception, de suivi de chantier et achats refacturés." },
     ],
     ["peintre", "menuisier", "carreleur", "graphiste"],
@@ -400,7 +400,7 @@ export const METIERS: Metier[] = [
     ["fleuriste", "photographe", "coiffeur", "auto-entrepreneur"],
   ),
   metier("fleuriste", "Fleuriste", "artisanat",
-    ["facture fleuriste", "logiciel caisse fleuriste"],
+    ["facture fleuriste", "devis fleuriste mariage"],
     ["Affichage des prix obligatoire", "TVA à 10% sur certaines plantes"],
     [
       { question: "Quel taux de TVA pour un fleuriste ?", reponse: "Le taux de TVA est de 10% pour les fleurs coupées, plantes vivantes et compositions florales. Le taux de 20% s'applique aux accessoires et contenants décoratifs." },
@@ -444,7 +444,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer les soins infirmiers à domicile ?", reponse: "Les soins infirmiers conventionnés sont facturés via le système Sesam-Vitale (tiers payant). Les majorations (nuit, dimanche, urgence, déplacement) sont codifiées. Les soins hors nomenclature sont facturés librement." },
       { question: "Les soins infirmiers sont-ils exonérés de TVA ?", reponse: "Oui, les actes de soins infirmiers sont exonérés de TVA en vertu de l'article 261-4-1° du CGI. Cette exonération s'applique à tous les actes thérapeutiques réalisés par un infirmier diplômé d'État, qu'ils soient conventionnés ou non." },
       { question: "Le numéro RPPS est-il obligatoire pour un infirmier libéral ?", reponse: "Oui, le numéro RPPS doit figurer sur toutes les feuilles de soins et notes d'honoraires. Il est indispensable pour la télétransmission Sesam-Vitale et l'identification auprès de la CPAM et des organismes complémentaires." },
-      { question: "Comment facturer les indemnités de déplacement en soins infirmiers ?", reponse: "Les indemnités forfaitaires de déplacement (IFD) et les indemnités kilométriques (IK) sont codifiées par la convention nationale. Elles s'ajoutent automatiquement aux actes lors de la télétransmission via Sesam-Vitale." },
+      { question: "Comment facturer les indemnités de déplacement en soins infirmiers ?", reponse: "Les indemnités forfaitaires de déplacement (IFD) et les indemnités kilométriques (IK) sont codifiées par la convention nationale. Elles sont facturées avec les actes, par la télétransmission Sesam-Vitale." },
       { question: "Un infirmier libéral est-il concerné par Factur-X 2026 ?", reponse: "Pour les actes conventionnés aux particuliers, la facturation passe par Sesam-Vitale. Comme toute entreprise assujettie à la TVA, un infirmier libéral doit pouvoir recevoir des factures électroniques depuis le 1er septembre 2026. Pour les prestations facturées à des établissements (médecine du travail, EHPAD), faites le point avec votre expert-comptable : les actes exonérés de TVA obéissent à des règles particulières." },
     ],
     ["kinesitherapeute", "osteopathe", "dieteticien", "auto-entrepreneur"],
@@ -502,12 +502,12 @@ export const METIERS: Metier[] = [
 
   // ── Artisanat / Commerce (suite) ──
   metier("boulanger", "Boulanger / Pâtissier", "artisanat",
-    ["facture boulangerie", "logiciel caisse boulanger", "ticket boulangerie"],
+    ["facture boulangerie", "facture boulangerie professionnel", "ticket boulangerie"],
     ["Affichage prix au kg obligatoire", "Normes HACCP", "TVA à 5,5 % sur le pain et les viennoiseries"],
     [
       { question: "Quels taux de TVA appliquer en boulangerie-pâtisserie ?", reponse: "Le pain et les viennoiseries de consommation courante sont à 5,5 % (article 278-0 bis du CGI). Les pâtisseries et confiseries sont à 10 % si consommées sur place, 5,5 % si emportées. Les boissons alcoolisées et produits de luxe sont à 20 %." },
       { question: "Un boulanger doit-il émettre un ticket ou une facture ?", reponse: "Pour les ventes aux particuliers, un ticket de caisse suffit (obligatoire si le client le demande ou si le montant dépasse 25 € TTC). Pour les clients professionnels (restaurants, collectivités), une facture complète est obligatoire." },
-      { question: "Un logiciel de caisse certifié est-il obligatoire en boulangerie ?", reponse: "Oui, depuis le 1er janvier 2018, tout commerçant assujetti à la TVA utilisant un logiciel de caisse doit disposer d'un logiciel certifié NF 525 ou attesté conforme (article 286-I-3° bis du CGI), garantissant l'inaltérabilité et la conservation des données." },
+      { question: "Un logiciel de caisse certifié est-il obligatoire en boulangerie ?", reponse: "Oui, depuis le 1er janvier 2018, tout commerçant assujetti à la TVA utilisant un logiciel de caisse doit disposer d'un logiciel certifié par un organisme accrédité, par exemple NF 525 (article 286-I-3° bis du CGI), qui garantit l'inaltérabilité et la conservation des données. Depuis la loi de finances pour 2025, l'attestation individuelle de l'éditeur ne suffit plus." },
       { question: "Comment gérer l'affichage des allergènes en boulangerie ?", reponse: "Le règlement européen INCO n° 1169/2011 impose l'information sur les 14 allergènes majeurs. En boulangerie, cette information doit être accessible sur le lieu de vente (affichage, classeur). La facture ou le ticket n'a pas à les mentionner." },
       { question: "La facturation électronique Factur-X concerne-t-elle les boulangers ?", reponse: "Oui. Les boulangers doivent pouvoir recevoir des factures électroniques depuis le 1er septembre 2026, notamment celles de leurs fournisseurs. À partir du 1er septembre 2027, leurs factures aux clients professionnels (restaurants, hôtels) devront être émises au format électronique, et les données des ventes aux particuliers transmises à l'administration fiscale (e-reporting)." },
     ],

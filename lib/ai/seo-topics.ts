@@ -77,7 +77,7 @@ export const SEO_TOPICS: Topic[] = [
   },
   {
     topic: "Du carnet de commandes au logiciel : parcours d'un artisan qui se digitalise",
-    keywords: ["digitalisation artisan", "transition numérique témoignage", "parcours artisan", "moderniser gestion"],
+    keywords: ["digitalisation artisan", "transition numérique artisan", "parcours artisan", "moderniser gestion"],
     category: "cas-usage",
   },
 
@@ -126,11 +126,6 @@ export const SEO_TOPICS: Topic[] = [
     topic: "Zéro papier : comment dématérialiser toute sa gestion d'artisan",
     keywords: ["zéro papier", "dématérialisation artisan", "gestion numérique", "bureau sans papier TPE"],
     category: "digital",
-  },
-  {
-    topic: "Comment un plombier a divisé par deux son temps de facturation",
-    keywords: ["témoignage artisan facturation", "gain de temps plombier", "avant après facturation", "logiciel facturation retour"],
-    category: "cas-usage",
   },
 
   // ── Round 3 ─────────────────────────────────────────────────────────────
@@ -399,11 +394,6 @@ export const SEO_TOPICS: Topic[] = [
     topic: "Différence entre devis et facture : rôles juridiques et obligations",
     keywords: ["différence devis facture", "devis vs facture", "valeur juridique devis", "quand facturer"],
     category: "guide",
-  },
-  {
-    topic: "Comment un électricien gère sa facturation avec Qonforme : étude de cas",
-    keywords: ["témoignage électricien", "facturation électricien logiciel", "cas usage artisan", "retour expérience"],
-    category: "cas-usage",
   },
   {
     topic: "La retenue de garantie dans le BTP : fonctionnement et facturation",

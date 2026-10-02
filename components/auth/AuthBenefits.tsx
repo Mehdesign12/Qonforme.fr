@@ -3,7 +3,7 @@ import { Bell, FileCheck2, FileText, Smartphone, type LucideIcon } from "lucide-
 /**
  * Colonne de droite de la connexion (canevas « Connexion », « À votre retour »).
  * Uniquement ce que le code livre : devis gratuits (mur de paiement à
- * l'émission seulement), mentions et PDF Factur-X, relance en un clic et
+ * l'émission seulement), mentions et PDF avec données Factur-X, relance en un clic et
  * rappels du cron J+30/J+45 réservés aux formules, site installable (PWA).
  */
 const BENEFITS: { icon: LucideIcon; title: string; text: string }[] = [
@@ -15,12 +15,12 @@ const BENEFITS: { icon: LucideIcon; title: string; text: string }[] = [
   {
     icon: FileCheck2,
     title: "Des factures aux mentions obligatoires",
-    text: "Numérotation continue, mentions légales reprises d’office, PDF au format Factur-X à télécharger ou envoyer.",
+    text: "Numérotation continue, mentions légales reprises d’office, PDF accompagné de ses données Factur-X, à télécharger ou envoyer.",
   },
   {
     icon: Bell,
     title: "Des relances par email",
-    text: "Relancez un client en un clic. Avec une formule, un rappel part aussi 30 puis 45 jours après l’échéance.",
+    text: "Avec une formule, relancez un client en un clic ; un rappel part aussi 30 puis 45 jours après l’échéance.",
   },
   {
     icon: Smartphone,
