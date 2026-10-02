@@ -1,88 +1,90 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Calendar, Clock, ArrowRight } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import CategoryBadge from "./CategoryBadge"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
+import { cn } from "@/lib/utils"
 
-const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Picto%20Q.webp"
+export const PICTO_Q = "https://lxnowrmyyaylvnognifu.supabase.co/storage/v1/object/public/Logos/Picto%20Q.webp"
+
+export interface ArticleCardPost {
+  slug: string
+  title: string
+  excerpt: string | null
+  cover_url: string | null
+  published_at: string | null
+  category: TopicCategory
+  readingTime?: number
+}
 
 interface Props {
-  post: {
-    slug: string
-    title: string
-    excerpt: string | null
-    cover_url: string | null
-    published_at: string | null
-    category: TopicCategory
-    readingTime: number
-  }
-  /** Index for staggered fade-in animation */
-  index: number
+  post: ArticleCardPost
+  /** Rang dans la grille, pour décaler l'apparition des cartes. */
+  index?: number
+  /** Titre de carte : h2 dans la liste du blog, h3 sous un article. */
+  as?: "h2" | "h3"
+  sizes?: string
+}
+
+/** Date courte d'un article (« 2 oct. 2026 »). */
+export function shortDate(iso: string) {
+  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
+}
+
+/** Couverture absente : lavis bleu et picto Q, sans dégradé. */
+export function CoverFallback({ size = 56 }: { size?: number }) {
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-q-wash">
+      <Image src={PICTO_Q} alt="" width={size} height={size} className="opacity-40" style={{ width: size, height: size }} sizes={`${size}px`} />
+    </div>
+  )
 }
 
 /**
- * Blog article card with category badge, reading time, and hover effects.
- * Uses CSS animation with stagger delay.
+ * Carte d'article du blog (canevas « Main » : carte blanche r20, photo en
+ * tête, pastille de catégorie, méta discrète, lien « Lire » en bleu).
  */
-export default function ArticleCard({ post, index }: Props) {
+export default function ArticleCard({ post, index = 0, as: Tag = "h2", sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px" }: Props) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group blog-card-animate rounded-2xl border border-slate-200 bg-white overflow-hidden hover:shadow-xl hover:shadow-blue-500/5 hover:border-[#2563EB]/20 transition-all duration-300"
-      style={{ animationDelay: `${index * 80}ms` }}
+      className={cn(
+        "group blog-card-animate flex flex-col overflow-hidden rounded-[20px] border border-q-line bg-q-surface shadow-[var(--q-shadow-card)]",
+        "transition-[border-color,box-shadow] duration-300 hover:border-q-wash-line hover:shadow-[0_18px_36px_-22px_rgba(10,17,34,.35)]",
+        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent",
+      )}
+      style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}
     >
-      {/* Cover */}
-      <div className="relative aspect-[2/1] overflow-hidden bg-slate-100">
+      <div className="relative aspect-[16/10] overflow-hidden bg-q-sunken">
         {post.cover_url ? (
           <Image
             src={post.cover_url}
             alt=""
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            sizes={sizes}
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#2563EB] via-[#1d4ed8] to-[#0F172A] flex items-center justify-center">
-            <Image src={PICTO_Q} alt="" width={80} height={80} className="w-16 h-16 opacity-30" sizes="64px" />
-          </div>
+          <CoverFallback />
         )}
-        {/* Category badge on image */}
-        <div className="absolute top-3 left-3">
-          <CategoryBadge category={post.category} />
+        <div className="absolute left-3 top-3">
+          <CategoryBadge category={post.category} onImage />
         </div>
       </div>
 
-      {/* Body */}
-      <div className="p-5">
-        {/* Meta row */}
-        <div className="flex items-center gap-3 mb-2.5">
-          {post.published_at && (
-            <span className="flex items-center gap-1 text-[11px] text-slate-400">
-              <Calendar className="w-3 h-3" />
-              {new Date(post.published_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
-            </span>
-          )}
-          <span className="flex items-center gap-1 text-[11px] text-slate-400">
-            <Clock className="w-3 h-3" />
-            {post.readingTime} min
-          </span>
-        </div>
-
-        {/* Title */}
-        <h2 className="text-[17px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors leading-snug line-clamp-2">
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
+        <p className="mb-2 flex items-center gap-2 text-[12.5px] text-q-text-4">
+          {post.published_at && <time dateTime={post.published_at}>{shortDate(post.published_at)}</time>}
+          {post.published_at && post.readingTime ? <span aria-hidden>·</span> : null}
+          {post.readingTime ? <span>{post.readingTime} min de lecture</span> : null}
+        </p>
+        <Tag className="line-clamp-3 font-display text-[19px] font-semibold leading-[1.25] tracking-[-0.02em] text-q-ink-strong transition-colors group-hover:text-q-accent-strong">
           {post.title}
-        </h2>
-
-        {/* Excerpt */}
-        {post.excerpt && (
-          <p className="mt-2 text-[13px] text-slate-500 line-clamp-2 leading-relaxed">
-            {post.excerpt}
-          </p>
-        )}
-
-        {/* Read more */}
-        <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#2563EB]">
-          Lire <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-200" />
+        </Tag>
+        {post.excerpt && <p className="mt-2 line-clamp-2 text-[14px] leading-[1.6] text-q-text-3">{post.excerpt}</p>}
+        <span className="mt-auto inline-flex items-center gap-1.5 pt-4 text-[14px] font-semibold text-q-accent-strong">
+          Lire l&apos;article
+          <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
         </span>
       </div>
     </Link>
