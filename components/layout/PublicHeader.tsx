@@ -10,7 +10,7 @@ interface PublicHeaderProps {
 /**
  * En-tête public partagé par TOUTES les pages publiques (accueil, tarifs,
  * guides, pages par métier, outils, blog, pages légales). Le rendu vit dans
- * PublicNav ; BlogHeader et OutilsHeader en sont des variantes.
+ * PublicNav ; BlogHeader en est une variante (les outils utilisent cet en-tête via ToolShell).
  */
 export function PublicHeader({ isLandingPage = false }: PublicHeaderProps) {
   return <PublicNav isLandingPage={isLandingPage} />
