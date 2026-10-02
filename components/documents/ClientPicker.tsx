@@ -33,6 +33,7 @@ export function ClientPicker({
   const [search, setSearch] = useState("")
   const isMobile = useIsMobile()
   const rootRef = useRef<HTMLDivElement>(null)
+  const sheetHeadRef = useRef<HTMLDivElement>(null)
   const listId = useId()
   const selected = clients.find((c) => c.id === value) ?? null
 
@@ -66,7 +67,7 @@ export function ClientPicker({
   const options = (
     <>
       {clients.length > 6 && (
-        <label className="q-fw mb-1 flex h-[42px] items-center gap-2 rounded-[10px] border border-[var(--q-field)] bg-[var(--q-surface)] px-3">
+        <label className="q-fw mb-1 flex h-[42px] shrink-0 items-center gap-2 rounded-[10px] border border-[var(--q-field)] bg-[var(--q-surface)] px-3">
           <Search className="size-4 shrink-0 text-[var(--q-text-4)]" aria-hidden />
           <input
             type="search"
@@ -157,9 +158,14 @@ export function ClientPicker({
       {/* Mobile : feuille du bas */}
       {isMobile && (
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent side="bottom" className="max-h-[80dvh] gap-3 overflow-auto px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-2">
+          <SheetContent
+            side="bottom"
+            // Au doigt, pas de clavier qui surgit sur la recherche : le focus va au titre
+            initialFocus={(type) => (type === "keyboard" ? true : sheetHeadRef.current)}
+            className="max-h-[80dvh] gap-3 overflow-auto px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-2"
+          >
             <span className="q-sheet-grip !mt-0" aria-hidden />
-            <div className="flex flex-col gap-1 pr-10">
+            <div ref={sheetHeadRef} tabIndex={-1} className="flex flex-col gap-1 pr-10 outline-none">
               <SheetTitle className="q-display text-[22px] text-[var(--q-ink)]">Pour qui ?</SheetTitle>
               <SheetDescription className="text-sm text-[var(--q-text-4)]">Choisissez un client existant.</SheetDescription>
             </div>

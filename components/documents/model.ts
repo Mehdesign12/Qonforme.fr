@@ -299,7 +299,7 @@ export function buildChecks(
   if (client) {
     checks.push({
       key: "siren",
-      label: client.siren ? "SIREN du client renseigné" : "SIREN du client absent : obligatoire pour un professionnel",
+      label: client.siren ? "SIREN du client renseigné" : "Pas de SIREN : à ajouter si le client est un professionnel",
       state: client.siren ? "ok" : "info",
       required: false,
     })

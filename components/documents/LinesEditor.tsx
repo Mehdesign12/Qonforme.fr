@@ -5,7 +5,7 @@
  * feuille « Modifier la ligne » sur mobile (canevas Nouveau-devis et
  * Mobile-devis-creation). Les deux vues partagent le même état.
  */
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Plus, Trash2, Check } from "lucide-react"
 import { VAT_RATES, formatCurrency } from "@/lib/utils/invoice"
 import { ProductCombobox, type ProductSuggestion } from "@/components/products/ProductCombobox"
@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 import { formatRate, lineHasError, lineSummary, vatBreakdown, type DocLine } from "./model"
 import type { DocumentFormApi } from "./useDocumentForm"
 
-const COLS = "grid-cols-[minmax(0,1fr)_68px_100px_80px_96px_34px]"
+const COLS = "grid-cols-[minmax(0,1fr)_60px_92px_76px_92px_34px]"
 
 const cellInput =
   "h-9 w-full min-w-0 rounded-[9px] border border-[var(--q-field)] bg-[var(--q-surface)] px-2.5 text-base text-[var(--q-ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--q-placeholder)] focus:border-[var(--q-accent)] focus:shadow-[0_0_0_4px_var(--q-focus)] aria-invalid:border-[var(--q-danger)] aria-invalid:shadow-[0_0_0_3px_var(--q-danger-bg)] md:text-sm"
@@ -30,6 +30,7 @@ export function LinesEditor({
 }) {
   const { form, errors, computed } = doc
   const [editing, setEditing] = useState<string | null>(null)
+  const sheetHeadRef = useRef<HTMLDivElement>(null)
   const canRemove = form.lines.length > 1
 
   const set = (line: DocLine, index: number, key: "description" | "quantity" | "unit_price_ht" | "vat_rate", value: string) => {
@@ -43,8 +44,9 @@ export function LinesEditor({
   const count = form.lines.length
 
   return (
-    <section className="q-card overflow-hidden" aria-labelledby="doc-lines-title">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 pb-3 pt-4 md:px-5">
+    // Mobile : intitulé au-dessus d'une carte de lignes compactes ; ordinateur : une carte
+    <section className="flex flex-col gap-2.5 md:q-card md:gap-0 md:overflow-hidden" aria-labelledby="doc-lines-title">
+      <div className="flex flex-wrap items-center justify-between gap-3 md:px-5 md:pb-3 md:pt-4">
         <h2 id="doc-lines-title" className="q-h2">{title}</h2>
         <span className="text-[13px] tabular-nums text-[var(--q-text-4)] md:hidden">
           {count} ligne{count > 1 ? "s" : ""}
@@ -138,8 +140,8 @@ export function LinesEditor({
       </div>
 
       {/* ── Mobile : liste compacte, une feuille pour modifier ── */}
-      <div className="md:hidden">
-        <div className="q-list border-t border-[var(--q-line-soft)]">
+      <div className="q-card overflow-hidden md:hidden">
+        <div className="q-list">
           {form.lines.map((line, i) => {
             const hasErr = lineHasError(errors, i)
             return (
@@ -185,9 +187,14 @@ export function LinesEditor({
       {/* Feuille « Modifier la ligne » (mobile) */}
       <Sheet open={editLine !== null} onOpenChange={(open) => { if (!open) setEditing(null) }}>
         {editLine && (
-          <SheetContent side="bottom" className="max-h-[88dvh] gap-3 overflow-auto px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-2 md:hidden">
+          <SheetContent
+            side="bottom"
+            // Ligne neuve : focus sur la désignation ; ligne existante touchée au doigt : pas de clavier d'office
+            initialFocus={(type) => (type === "keyboard" || !editLine.description.trim() ? true : sheetHeadRef.current)}
+            className="max-h-[88dvh] gap-3 overflow-auto px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-2 md:hidden"
+          >
             <span className="q-sheet-grip !mt-0" aria-hidden />
-            <div className="flex flex-col gap-1 pr-10">
+            <div ref={sheetHeadRef} tabIndex={-1} className="flex flex-col gap-1 pr-10 outline-none">
               <SheetTitle className="q-display text-[22px] text-[var(--q-ink)]">Modifier la ligne</SheetTitle>
               <SheetDescription className="text-sm text-[var(--q-text-4)]">Prix unitaire hors taxes, TVA par ligne.</SheetDescription>
             </div>

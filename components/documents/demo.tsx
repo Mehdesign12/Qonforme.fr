@@ -65,8 +65,10 @@ export function DemoNotice() {
       <Info className="size-4 shrink-0" strokeWidth={2} aria-hidden />
       <span className="flex-1">
         <strong className="font-semibold">Démo</strong> : explorez le formulaire librement, rien n&apos;est enregistré ni envoyé.
+        {/* Mobile : lien sous le texte, pour ne pas le serrer sur quatre lignes */}
+        <Link href="/signup" className="q-link mt-0.5 block text-[13px] sm:hidden">Créer mon compte</Link>
       </span>
-      <Link href="/signup" className="q-link shrink-0 text-[13px]">Créer mon compte</Link>
+      <Link href="/signup" className="q-link hidden shrink-0 text-[13px] sm:inline">Créer mon compte</Link>
     </div>
   )
 }
