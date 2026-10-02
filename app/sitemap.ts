@@ -3,7 +3,6 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { METIERS } from "@/lib/pseo/metiers";
 import { GUIDES } from "@/lib/pseo/guides";
 import { MODELES } from "@/lib/pseo/modeles";
-import { COMPARATIFS } from "@/lib/pseo/comparatifs";
 import { GLOSSAIRE } from "@/lib/pseo/glossaire";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -154,19 +153,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...metierEntries,
     ...guideEntries,
     ...modeleEntries,
-    // Comparatifs
-    {
-      url: `${baseUrl}/comparatif`,
-      lastModified: new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.8,
-    },
-    ...COMPARATIFS.map((c) => ({
-      url: `${baseUrl}/comparatif/${c.slug}`,
-      lastModified: new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.7,
-    })),
     // Glossaire
     {
       url: `${baseUrl}/glossaire`,

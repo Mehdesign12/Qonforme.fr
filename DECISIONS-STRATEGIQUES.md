@@ -18,7 +18,7 @@
 ## 2. Règles de communication — validées
 
 - **Ne jamais mentionner un concurrent** en public : site, publicités, emails, contenus, réseaux sociaux. Qonforme a sa place, on ne se compare pas.
-  - Conséquence : les 8 pages `/comparatif/*` (« Qonforme contre X ») doivent être retirées, ou transformées en guides neutres sans aucun nom, du type « Comment choisir son premier logiciel de facturation quand on est artisan ».
+  - Conséquence : les 8 pages `/comparatif/*` (« Qonforme contre X ») ont été **retirées le 02/10/2026**, avec une redirection permanente vers `/pricing`. Les sujets « Qonforme vs … » sont sortis du générateur d'articles du blog, et sa consigne interdit désormais de nommer un autre logiciel. Un guide neutre du type « Comment choisir son premier logiciel de facturation quand on est artisan » reste possible, sans aucun nom.
   - Les données de concurrence restent un outil interne, par exemple pour fixer les prix.
 - **Aucune affirmation invérifiable :** pas de faux avis, pas de faux chiffres, pas de fausse homologation ou certification. Les éléments actuels du site sont listés dans le lot 1 de la stratégie.
 - **Aucune promesse de contact humain :** pas d'appel, de visio, de rendez-vous, de « un humain vous répond » ni de message signé du fondateur. Ce service n'existe pas : le promettre serait une affirmation invérifiable de plus. Les emails partent au nom de Qonforme, sans inviter à répondre. L'aide passe par le produit : écrans clairs, devis d'essai, tableau de bord explorable.

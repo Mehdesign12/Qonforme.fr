@@ -107,7 +107,6 @@ export default function Footer() {
                 { label: "Facturation par métier", href: "/facturation" },
                 { label: "Guides pratiques", href: "/guide" },
                 { label: "Modèles gratuits", href: "/modele" },
-                { label: "Comparatifs", href: "/comparatif" },
                 { label: "Glossaire", href: "/glossaire" },
               ].map((l) => (
                 <li key={l.label}>
