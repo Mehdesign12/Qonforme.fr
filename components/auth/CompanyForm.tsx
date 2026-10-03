@@ -83,7 +83,8 @@ export default function CompanyForm() {
         if (data.city)     delete n.city
         return n
       })
-      toast.success("Entreprise trouvée : formulaire pré-rempli.")
+      if (data.closed) toast.warning("Cette entreprise est indiquée comme fermée au répertoire Sirene. Vérifiez le numéro.")
+      else toast.success("Entreprise trouvée : formulaire pré-rempli.")
     } catch {
       toast.error("Entreprise introuvable. Remplissez les champs à la main.")
     } finally {

@@ -159,4 +159,6 @@ export interface SireneResult {
   city: string
   vat_number?: string
   activity_code?: string
+  /** Vrai si l'entreprise est fermée (état administratif « cessée » au répertoire Sirene). */
+  closed?: boolean
 }

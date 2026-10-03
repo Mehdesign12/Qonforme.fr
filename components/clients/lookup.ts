@@ -2,9 +2,9 @@
  * Recherche d'une entreprise au répertoire Sirene (INSEE) depuis la fiche client.
  *
  * - SIREN (9 chiffres) : /api/sirene, comme l'inscription et les paramètres
- *   de l'entreprise — renvoie la raison sociale ;
+ *   de l'entreprise — raison sociale et adresse du siège ;
  * - SIRET (14 chiffres) : /api/outils/siret, seule route qui résout un
- *   établissement — renvoie aussi son adresse.
+ *   établissement — raison sociale et adresse de cet établissement.
  * Le numéro de TVA intracommunautaire est calculé depuis le SIREN.
  */
 import { isValidSiren, sirenToVAT } from "@/lib/utils/invoice"
@@ -16,6 +16,8 @@ export interface CompanyLookup {
   address: string
   zip_code: string
   city: string
+  /** Entreprise fermée au répertoire Sirene. */
+  closed: boolean
 }
 
 export type LookupOutcome =
@@ -51,6 +53,7 @@ export async function lookupCompany(raw: string): Promise<LookupOutcome> {
         address: data.address ? String(data.address) : "",
         zip_code: data.zip_code ? String(data.zip_code) : "",
         city: data.city ? String(data.city) : "",
+        closed: data.closed === true,
       },
     }
   } catch {

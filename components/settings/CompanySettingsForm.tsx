@@ -153,7 +153,8 @@ export function CompanySettingsForm({
         }))
         setErrors({})
         setSirenFound(true)
-        toast.success(`${r.name || "Entreprise"} trouvée`)
+        if (r.closed) toast.warning(`${r.name || "Cette entreprise"} est indiquée comme fermée au répertoire Sirene. Vérifiez le numéro.`)
+        else toast.success(`${r.name || "Entreprise"} trouvée`)
       } else {
         toast.error("SIREN introuvable dans la base INSEE")
       }

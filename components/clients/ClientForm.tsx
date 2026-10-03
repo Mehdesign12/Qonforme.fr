@@ -10,7 +10,7 @@
  */
 import { useState } from "react"
 import Link from "next/link"
-import { Check, CircleCheck, Info, Loader2, Search } from "lucide-react"
+import { Check, CircleCheck, Info, Loader2, Search, TriangleAlert } from "lucide-react"
 import { PageHeader } from "@/components/app/kit"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -328,10 +328,13 @@ export function ClientFormPage({
                 </div>
                 <div id="client-lookup-status" aria-live="polite">
                   {lookup.status === "found" && (
-                    <div className="q-banner q-banner-ok">
-                      <CircleCheck className="mt-0.5 size-[18px] shrink-0" aria-hidden />
+                    <div className={lookup.company.closed ? "q-banner q-banner-warn" : "q-banner q-banner-ok"}>
+                      {lookup.company.closed
+                        ? <TriangleAlert className="mt-0.5 size-[18px] shrink-0" aria-hidden />
+                        : <CircleCheck className="mt-0.5 size-[18px] shrink-0" aria-hidden />}
                       <span className="flex min-w-0 flex-col gap-0.5 leading-snug">
                         <strong className="font-semibold">{lookup.company.name}</strong>
+                        {lookup.company.closed && <span className="font-semibold">Entreprise fermée au répertoire Sirene : vérifiez le numéro.</span>}
                         <span>
                           SIREN <span className="font-mono">{formatSirenDisplay(lookup.company.siren)}</span>
                           {" · "}TVA <span className="font-mono">{lookup.company.vat_number}</span>
