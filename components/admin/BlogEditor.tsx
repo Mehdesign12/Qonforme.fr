@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Eye, EyeOff, Trash2, Loader2, Bot, RefreshCw } from 'lucide-react'
-import Link from 'next/link'
+import { Bot, Loader2, RefreshCw, Save, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { PageHeader, Panel, StatusPill, Switch } from '@/components/app/kit'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 
 interface Post {
   id:           string
@@ -27,10 +28,20 @@ function slugify(text: string): string {
   return text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 80)
+}
+
+function Field({ id, label, hint, children }: { id: string; label: string; hint?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-[7px]">
+      <label htmlFor={id} className="q-label">{label}</label>
+      {children}
+      {hint && <div className="q-field-hint">{hint}</div>}
+    </div>
+  )
 }
 
 export function BlogEditor({ mode, post }: BlogEditorProps) {
@@ -44,6 +55,7 @@ export function BlogEditor({ mode, post }: BlogEditorProps) {
   const [published, setPublished] = useState(post?.is_published ?? false)
   const [saving,    setSaving]    = useState(false)
   const [deleting,  setDeleting]  = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const [slugEdited, setSlugEdited] = useState(mode === 'edit')
 
@@ -54,7 +66,7 @@ export function BlogEditor({ mode, post }: BlogEditorProps) {
 
   const handleSave = async () => {
     if (!title.trim() || !content.trim() || !slug.trim()) {
-      toast.error('Titre, slug et contenu sont obligatoires')
+      toast.error('Titre, adresse et contenu sont obligatoires')
       return
     }
     setSaving(true)
@@ -69,27 +81,27 @@ export function BlogEditor({ mode, post }: BlogEditorProps) {
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data?.error ?? 'Erreur lors de la sauvegarde')
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error ?? 'Erreur lors de l\'enregistrement')
       }
 
-      toast.success(mode === 'create' ? 'Article créé !' : 'Article mis à jour !')
+      toast.success(mode === 'create' ? 'Article créé' : 'Article mis à jour')
       router.push('/admin/blog')
       router.refresh()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur lors de la sauvegarde')
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement')
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm('Supprimer cet article définitivement ?')) return
     setDeleting(true)
     try {
       const res = await fetch(`/api/admin/blog/${post!.id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error()
       toast.success('Article supprimé')
+      setConfirmDelete(false)
       router.push('/admin/blog')
       router.refresh()
     } catch {
@@ -99,164 +111,162 @@ export function BlogEditor({ mode, post }: BlogEditorProps) {
     }
   }
 
-  return (
-    <div className="space-y-5">
+  const handleRegenerate = async () => {
+    if (!post) return
+    setRegenerating(true)
+    try {
+      const res = await fetch('/api/admin/blog/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: title, keywords: post.ai_keywords ?? [] }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
+      toast.success(`Nouvel article généré : « ${data.post.title} »`)
+      router.push(`/admin/blog/${data.post.id}`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur de régénération')
+    } finally {
+      setRegenerating(false)
+    }
+  }
 
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <Link href="/admin/blog" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-foreground transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          Retour
-        </Link>
-        <div className="flex items-center gap-2">
+  return (
+    <div className="mx-auto flex w-full max-w-[860px] flex-col gap-5">
+      <PageHeader
+        backHref="/admin/blog"
+        backLabel="Blog"
+        title={mode === 'create' ? 'Nouvel article' : 'Modifier l\'article'}
+        subtitle={
+          <span className="mt-1 flex flex-wrap items-center gap-2">
+            <StatusPill tone={published ? 'ok' : 'neutral'}>{published ? 'Publié' : 'Brouillon'}</StatusPill>
+            {post?.ai_generated && (
+              <StatusPill tone="info" icon={<Bot strokeWidth={2.25} aria-hidden />}>Généré par IA</StatusPill>
+            )}
+          </span>
+        }
+        actions={
+          <>
+            {mode === 'edit' && (
+              <button type="button" onClick={() => setConfirmDelete(true)} disabled={deleting} className="q-btn q-btn-danger">
+                <Trash2 aria-hidden />
+                Supprimer
+              </button>
+            )}
+            <button type="button" onClick={handleSave} disabled={saving} className="q-btn q-btn-primary">
+              {saving ? <Loader2 className="animate-spin" aria-hidden /> : <Save aria-hidden />}
+              {saving ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </>
+        }
+      />
+
+      {post?.ai_generated && (
+        <Panel bodyClassName="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="flex min-w-0 flex-col gap-2">
+            <p className="text-sm text-[var(--q-text-2)]">Article généré par l&apos;IA. Relisez-le avant publication.</p>
+            {post.ai_keywords && post.ai_keywords.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs font-semibold text-[var(--q-text-4)]">Mots-clés :</span>
+                {post.ai_keywords.map((kw, i) => (
+                  <span key={i} className="q-tag">{kw}</span>
+                ))}
+              </div>
+            )}
+          </div>
           {mode === 'edit' && (
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
-            >
-              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              Supprimer
+            <button type="button" onClick={handleRegenerate} disabled={regenerating} className="q-btn q-btn-secondary q-btn-sm shrink-0 self-start sm:self-center">
+              {regenerating ? <Loader2 className="animate-spin" aria-hidden /> : <RefreshCw aria-hidden />}
+              Régénérer
             </button>
           )}
-          <button
-            onClick={() => setPublished(v => !v)}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-muted transition-colors"
-          >
-            {published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {published ? 'Dépublier' : 'Publier'}
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium bg-[#2563EB] text-white hover:bg-[#1d4ed8] transition-colors disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
-        </div>
-      </div>
-
-      {/* Statut + AI badge */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium ${
-          published
-            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-        }`}>
-          {published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-          {published ? 'Publié' : 'Brouillon'}
-        </div>
-
-        {post?.ai_generated && (
-          <div className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-            <Bot className="w-4 h-4" />
-            Généré par IA
-          </div>
-        )}
-
-        {mode === 'edit' && post?.ai_generated && (
-          <button
-            onClick={async () => {
-              setRegenerating(true)
-              try {
-                const res = await fetch('/api/admin/blog/generate', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ topic: title, keywords: post.ai_keywords ?? [] }),
-                })
-                const data = await res.json()
-                if (!res.ok) throw new Error(data.error || 'Erreur')
-                toast.success(`Nouvel article généré : "${data.post.title}"`)
-                router.push(`/admin/blog/${data.post.id}`)
-              } catch (err) {
-                toast.error(err instanceof Error ? err.message : 'Erreur de régénération')
-              } finally {
-                setRegenerating(false)
-              }
-            }}
-            disabled={regenerating}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-amber-600 border border-amber-200 hover:bg-amber-50 dark:border-amber-800 dark:hover:bg-amber-900/30 transition-colors disabled:opacity-50"
-          >
-            {regenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            Régénérer
-          </button>
-        )}
-      </div>
-
-      {/* AI Keywords */}
-      {post?.ai_keywords && post.ai_keywords.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">SEO</span>
-          {post.ai_keywords.map((kw, i) => (
-            <span key={i} className="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-              {kw}
-            </span>
-          ))}
-        </div>
+        </Panel>
       )}
 
-      {/* Formulaire */}
-      <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] p-5 space-y-4">
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Titre *</label>
+      <Panel bodyClassName="flex flex-col gap-5 p-4 sm:p-5">
+        <Field id="blog-title" label="Titre">
           <input
+            id="blog-title"
             value={title}
             onChange={e => handleTitleChange(e.target.value)}
             placeholder="Titre de l'article…"
-            className="w-full h-10 px-3 text-base font-semibold rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            required
+            className="q-input font-semibold"
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Slug *</label>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-400">/blog/</span>
+        <Field id="blog-slug" label="Adresse de l'article" hint="Lettres minuscules, chiffres et tirets ; remplie à partir du titre.">
+          <div className="q-fw flex h-[42px] items-center rounded-[10px] border border-[var(--q-field)] bg-[var(--q-surface)] pl-3">
+            <span className="shrink-0 font-mono text-sm text-[var(--q-text-4)]">/blog/</span>
             <input
+              id="blog-slug"
               value={slug}
               onChange={e => { setSlug(e.target.value); setSlugEdited(true) }}
               placeholder="mon-article"
-              className="flex-1 h-9 px-3 text-sm font-mono rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              required
+              className="h-full min-w-0 flex-1 bg-transparent pr-3 font-mono text-base text-[var(--q-ink)] outline-none placeholder:text-[var(--q-placeholder)] md:text-sm"
             />
           </div>
-        </div>
+        </Field>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Extrait</label>
+        <Field id="blog-excerpt" label="Extrait" hint="Une ou deux phrases pour les aperçus et les moteurs de recherche.">
           <input
+            id="blog-excerpt"
             value={excerpt}
             onChange={e => setExcerpt(e.target.value)}
-            placeholder="Courte description pour les aperçus…"
-            className="w-full h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            placeholder="Courte description…"
+            className="q-input"
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">URL de couverture</label>
+        <Field id="blog-cover" label="Image de couverture (adresse)">
           <input
+            id="blog-cover"
             value={coverUrl}
             onChange={e => setCoverUrl(e.target.value)}
             placeholder="https://…"
             type="url"
-            className="w-full h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            inputMode="url"
+            className="q-input"
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-            Contenu (Markdown) *
-          </label>
+        <Field id="blog-content" label="Contenu (Markdown)" hint={`${content.length.toLocaleString('fr-FR')} caractères`}>
           <textarea
+            id="blog-content"
             value={content}
             onChange={e => setContent(e.target.value)}
             rows={20}
+            required
             placeholder={`# Titre\n\nIntroduction…\n\n## Section\n\nContenu en **Markdown**…`}
-            className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+            className="q-input !min-h-[360px] font-mono leading-relaxed"
           />
-          <p className="text-[11px] text-slate-400 mt-1">{content.length} caractères</p>
+        </Field>
+
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--q-line)] bg-[var(--q-surface-2)] px-4 py-3">
+          <span className="flex min-w-0 flex-col">
+            <label htmlFor="blog-published" className="q-label">Publié sur le blog</label>
+            <span className="text-xs text-[var(--q-text-4)]">Pris en compte à l&apos;enregistrement.</span>
+          </span>
+          <Switch id="blog-published" checked={published} onCheckedChange={setPublished} />
         </div>
-      </div>
+      </Panel>
+
+      <Dialog open={confirmDelete} onOpenChange={(o) => { if (!deleting) setConfirmDelete(o) }}>
+        <DialogContent showCloseButton={false} className="gap-3 sm:max-w-md">
+          <DialogTitle className="q-display text-[22px] font-semibold leading-tight">Supprimer cet article ?</DialogTitle>
+          <DialogDescription className="text-sm leading-relaxed !text-[var(--q-text-3)]">
+            L&apos;article « {title || 'sans titre'} » sera supprimé définitivement{published ? ' et retiré du blog' : ''}.
+          </DialogDescription>
+          <div className="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => setConfirmDelete(false)} disabled={deleting} className="q-btn q-btn-ghost">Annuler</button>
+            <button type="button" onClick={handleDelete} disabled={deleting} className="q-btn q-btn-danger">
+              {deleting ? <Loader2 className="animate-spin" aria-hidden /> : <Trash2 aria-hidden />}
+              Supprimer
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

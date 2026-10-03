@@ -12,6 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server"
+import { prospectionEnabled, PROSPECTION_DISABLED_REASON } from "@/lib/outreach/enabled"
 import { createAdminClient } from "@/lib/supabase/server"
 import { extractNextBatch } from "@/lib/scraping/sirene-extractor"
 
@@ -30,6 +31,11 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("Authorization")
   if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+  }
+
+  // Démarchage désactivé par décision : la tâche répond sans rien faire
+  if (!prospectionEnabled()) {
+    return NextResponse.json({ ok: true, skipped: PROSPECTION_DISABLED_REASON })
   }
 
   // Vérifier que la clé INSEE est configurée
