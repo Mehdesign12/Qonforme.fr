@@ -5,8 +5,8 @@ import { OutilsHero } from "@/components/outils/OutilsHero"
 import { ToolCard, ToolShell } from "@/components/outils/kit"
 
 export const metadata: Metadata = {
-  title: "Outils gratuits pour auto-entrepreneurs et TPE | Qonforme",
-  description: "12 outils gratuits : calculateur TVA, simulateur charges auto-entrepreneur, vérificateur SIRET, générateur de facture et devis PDF. Sans inscription.",
+  title: "Outils gratuits pour auto-entrepreneurs et TPE",
+  description: "12 outils gratuits pour artisans : calculateur de TVA, simulateurs de charges et de seuil de TVA, vérificateur SIRET, facture et devis en PDF. Sans inscription.",
   keywords: ["calculateur tva gratuit", "simulateur charges auto-entrepreneur", "vérificateur siret", "générateur facture gratuit", "outils auto-entrepreneur"],
   alternates: { canonical: "/outils" },
   openGraph: {
@@ -27,9 +27,9 @@ interface Tool {
 /* ── Les essentiels : grandes cartes en tête ── */
 const ESSENTIELS: Tool[] = [
   { title: "Calculateur TVA HT ↔ TTC", desc: "Convertissez instantanément vos montants HT en TTC et inversement avec les 4 taux de TVA français.", href: "/outils/calculateur-tva", icon: Calculator },
-  { title: "Générateur de devis gratuit", desc: "Devis professionnel en PDF, en 4 étapes, avec aperçu en direct. Téléchargement immédiat.", href: "/outils/generateur-devis-gratuit", icon: ClipboardList },
+  { title: "Générateur de devis gratuit", desc: "Devis professionnel en PDF, en 5 étapes, avec aperçu en direct. Téléchargement immédiat.", href: "/outils/generateur-devis-gratuit", icon: ClipboardList },
   { title: "Générateur de facture gratuit", desc: "Créez une facture professionnelle en PDF. Formulaire simple, téléchargement immédiat.", href: "/outils/generateur-facture-gratuite", icon: FileText },
-  { title: "Vérificateur SIREN / SIRET", desc: "Vérifiez une entreprise française avec les données officielles INSEE.", href: "/outils/verification-siret", icon: Search },
+  { title: "Vérificateur SIREN / SIRET", desc: "Vérifiez une entreprise française d'après le répertoire Sirene de l'INSEE : active ou fermée, adresse, SIREN.", href: "/outils/verification-siret", icon: Search },
 ]
 
 /* ── Les autres outils, par usage ── */
@@ -41,7 +41,7 @@ const CATEGORIES: { title: string; accent: string; tools: Tool[] }[] = [
       { title: "Simulateur charges auto-entrepreneur", desc: "Cotisations URSSAF, CFP, versement libératoire. Barèmes 2026.", href: "/outils/simulateur-charges-auto-entrepreneur", icon: TrendingUp },
       { title: "Simulateur revenus net", desc: "De votre CA brut à votre revenu net après charges et IR.", href: "/outils/simulateur-revenu-net", icon: TrendingUp },
       { title: "Simulateur seuil TVA", desc: "Franchise de TVA dépassée ? Seuils 2026, jauge et alertes.", href: "/outils/simulateur-seuil-tva", icon: Calculator },
-      { title: "Calculateur pénalités de retard", desc: "Intérêts de retard + indemnité forfaitaire de 40 €. Taux du 2ᵉ semestre 2026.", href: "/outils/calculateur-penalites-retard", icon: Scale },
+      { title: "Calculateur pénalités de retard", desc: "Intérêts de retard au taux de chaque semestre, et indemnité forfaitaire de 40 €.", href: "/outils/calculateur-penalites-retard", icon: Scale },
     ],
   },
   {

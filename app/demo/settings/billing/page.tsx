@@ -9,7 +9,7 @@ import {
   DEMO_SUBSCRIPTION,
 } from "@/components/settings/demo-data"
 
-export const metadata: Metadata = { title: "Abonnement — Démo Qonforme" }
+export const metadata: Metadata = { title: "Abonnement — Démo" }
 
 /** Démo de Paramètres › Abonnement : même page que l'application, formule Essentiel fictive. */
 export default function DemoBillingPage() {

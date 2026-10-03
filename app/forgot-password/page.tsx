@@ -4,7 +4,7 @@ import AuthLayout from "@/components/auth/AuthLayout"
 import AuthBenefits from "@/components/auth/AuthBenefits"
 
 export const metadata: Metadata = {
-  title: "Mot de passe oublié — Qonforme",
+  title: "Mot de passe oublié",
   description: "Réinitialisez votre mot de passe Qonforme. Un lien de récupération sera envoyé à votre adresse email en quelques secondes.",
   alternates: { canonical: "/forgot-password" },
 }

@@ -7,7 +7,7 @@ import { parsePeriod } from "@/components/dashboard/model"
 import { MetaPixelEvent } from "@/components/shared/MetaPixelEvent"
 
 export const metadata: Metadata = {
-  title: "Démo interactive — Qonforme",
+  title: "Démo interactive",
   description: "Explorez la démo de Qonforme : devis, factures, clients et bons de commande d'un artisan du bâtiment, avec des données d'exemple, et sans inscription.",
   alternates: { canonical: "/demo" },
   openGraph: {

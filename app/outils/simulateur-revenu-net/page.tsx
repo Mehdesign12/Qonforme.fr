@@ -6,37 +6,17 @@ import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 import { Callout, Field, Formula, JsonLd, Prose, ResultBox, ResultRow, ToolArea, ToolCta, ToolFaq, ToolGuide, ToolLinks, ToolPanel, ToolShell, faqJsonLd, toolJsonLd } from "@/components/outils/kit"
 import { AmountInput, CopyButton, ResetButton, Seg } from "@/components/outils/controls"
-import { ACTIVITES, calculerCharges, type ActiviteId } from "@/lib/outils/charges"
+import { ACTIVITES, type ActiviteId } from "@/lib/outils/charges"
+import { DECOTE_PERSONNE_SEULE, calculerRevenuNet, pourcentagesEntiers } from "@/lib/outils/revenu-net"
+import { filtrerSaisieMontant, parseMontant } from "@/lib/outils/montant"
 
 function fmtEur(n: number) { return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n) }
-
-/**
- * Barème de l'impôt sur le revenu 2026 (revenus 2025, loi de finances pour 2026),
- * pour une part : service-public.gouv.fr, fiche F1419 (vérifiée le 15 avril 2026).
- * Le barème qui s'appliquera aux revenus 2026 n'est pas encore connu.
- */
-const TRANCHES_IR = [
-  { min: 0, max: 11600, taux: 0 },
-  { min: 11600, max: 29579, taux: 11 },
-  { min: 29579, max: 84577, taux: 30 },
-  { min: 84577, max: 181917, taux: 41 },
-  { min: 181917, max: Infinity, taux: 45 },
-]
-
-function calculerIR(revenuImposable: number): number {
-  let impot = 0
-  for (const t of TRANCHES_IR) {
-    if (revenuImposable <= t.min) break
-    const base = Math.min(revenuImposable, t.max) - t.min
-    impot += base * (t.taux / 100)
-  }
-  return Math.round(impot)
-}
 
 const FAQ = [
   { q: "L'abattement fiscal est-il automatique ?", a: "Oui, le fisc l'applique automatiquement sur votre déclaration. Vous déclarez votre CA brut." },
   { q: "Le versement libératoire change-t-il le calcul ?", a: "Oui, il remplace l'IR progressif par un taux fixe (1 % à 2,2 %). Utilisez le simulateur de charges pour cette option." },
-  { q: "Ce calcul est-il exact ?", a: "C'est une estimation pour 1 part fiscale. Votre IR réel dépend de votre foyer fiscal et autres revenus." },
+  { q: "Ce calcul est-il exact ?", a: "C'est une estimation pour 1 part fiscale, au barème 2026 des revenus 2025, décote comprise. Votre impôt réel dépend de votre foyer fiscal et de vos autres revenus." },
+  { q: "Qu'est-ce que la décote ?", a: `Une réduction d'impôt pour les petits montants : pour une personne seule dont l'impôt brut est inférieur à ${DECOTE_PERSONNE_SEULE.plafondImpotBrut.toLocaleString("fr-FR")} €, elle vaut ${DECOTE_PERSONNE_SEULE.forfait} € moins 45,25 % de l'impôt brut (art. 197 du CGI). Le simulateur l'applique.` },
 ]
 
 /** Parts du CA : bleu (net), bleu clair (charges), ardoise (impôt) — avec libellés, jamais la couleur seule. */
@@ -52,28 +32,23 @@ export default function SimulateurRevenuNetPage() {
   const [periode, setPeriode] = useState<"mensuel" | "annuel">("mensuel")
   const resultRef = useRef<HTMLDivElement>(null)
 
-  const numCa = parseFloat(ca.replace(",", ".").replace(/\s/g, "")) || 0
-  const caAnnuel = periode === "mensuel" ? numCa * 12 : numCa
-  const activite = ACTIVITES.find((a) => a.id === activiteId)!
+  const parsed = parseMontant(ca)
+  const erreurCa = ca.trim() && (parsed === null || parsed < 0) ? "Montant invalide : saisissez par exemple 3 000 ou 1 234,56." : ""
+  const numCa = erreurCa ? 0 : (parsed ?? 0)
+  const caAnnuel = periode === "mensuel" ? Math.round(numCa * 12 * 100) / 100 : numCa
 
-  const result = useMemo(() => {
-    if (caAnnuel <= 0) return null
-    const charges = calculerCharges(caAnnuel, activiteId, false)
-    const revenuImposable = Math.round(caAnnuel * (1 - activite.abattement / 100))
-    const impotAnnuel = calculerIR(revenuImposable)
-    const netAnnuel = caAnnuel - charges.totalCharges - impotAnnuel
-    return { caAnnuel, charges: charges.totalCharges, tauxCharges: charges.tauxEffectif, revenuImposable, abattement: activite.abattement, impotAnnuel, netAnnuel, netMensuel: Math.round(netAnnuel / 12) }
-  }, [caAnnuel, activiteId, activite.abattement])
+  const result = useMemo(() => (caAnnuel > 0 ? calculerRevenuNet(caAnnuel, activiteId) : null), [caAnnuel, activiteId])
 
-  const copyText = result ? `CA: ${fmtEur(result.caAnnuel)} | Charges: ${fmtEur(result.charges)} | IR: ${fmtEur(result.impotAnnuel)} | Net: ${fmtEur(result.netAnnuel)}/an (${fmtEur(result.netMensuel)}/mois)` : ""
+  const copyText = result ? `CA : ${fmtEur(result.caAnnuel)} | Charges : ${fmtEur(result.charges)} | Impôt : ${fmtEur(result.impotAnnuel)} | Net : ${fmtEur(result.netAnnuel)} par an (${fmtEur(result.netMensuel)} par mois)` : ""
 
-  const handleCaChange = (v: string) => { setCa(v.replace(/[^0-9.,\s]/g, "")); setTimeout(() => { if (resultRef.current && parseFloat(v.replace(",", ".").replace(/\s/g, "")) > 0) resultRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }) }, 100) }
+  const handleCaChange = (v: string) => { setCa(filtrerSaisieMontant(v)); setTimeout(() => { if (resultRef.current && (parseMontant(v) ?? 0) > 0) resultRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }) }, 100) }
 
-  // Répartition du CA
-  const netPercent = result ? Math.max(0, (result.netAnnuel / result.caAnnuel) * 100) : 0
-  const chargesPercent = result ? (result.charges / result.caAnnuel) * 100 : 0
-  const irPercent = result ? (result.impotAnnuel / result.caAnnuel) * 100 : 0
-  const parts = { net: netPercent, charges: chargesPercent, ir: irPercent }
+  // Répartition du CA : largeurs exactes pour la barre, pourcentages entiers qui totalisent 100 pour la légende
+  const brut = result ? [Math.max(0, result.netAnnuel), result.charges, result.impotAnnuel] : [0, 0, 0]
+  const total = brut.reduce((s, v) => s + v, 0) || 1
+  const [netPct, chargesPct, irPct] = pourcentagesEntiers(brut)
+  const largeurs = { net: (brut[0] / total) * 100, charges: (brut[1] / total) * 100, ir: (brut[2] / total) * 100 }
+  const parts = { net: netPct, charges: chargesPct, ir: irPct }
 
   return (
     <ToolShell ctaBar={<OutilsCtaBar text="Suivez ce que vous avez encaissé, mois par mois." />}>
@@ -111,7 +86,8 @@ export default function SimulateurRevenuNetPage() {
               />
             }
           >
-            <AmountInput id="net-ca" value={ca} onChange={handleCaChange} placeholder={periode === "mensuel" ? "3 000" : "36 000"} autoFocus />
+            <AmountInput id="net-ca" value={ca} onChange={handleCaChange} placeholder={periode === "mensuel" ? "3 000" : "36 000"} autoFocus invalid={!!erreurCa} ariaDescribedBy={erreurCa ? "net-ca-err" : undefined} />
+            {erreurCa && <p id="net-ca-err" className="q-field-error">{erreurCa}</p>}
           </Field>
 
           <div ref={resultRef}>
@@ -133,7 +109,7 @@ export default function SimulateurRevenuNetPage() {
                     <p className="text-[13px] text-q-text-3">Répartition de votre CA</p>
                     <div className="flex h-3 overflow-hidden rounded-full bg-[var(--q-line-soft)]" aria-hidden>
                       {PARTS.map((p) => (
-                        <span key={p.key} className={`${p.bar} h-full transition-[width] duration-500 motion-reduce:transition-none`} style={{ width: `${parts[p.key]}%` }} />
+                        <span key={p.key} className={`${p.bar} h-full transition-[width] duration-500 motion-reduce:transition-none`} style={{ width: `${largeurs[p.key]}%` }} />
                       ))}
                     </div>
                     <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] font-medium text-q-text-3">
@@ -148,13 +124,15 @@ export default function SimulateurRevenuNetPage() {
                   <ResultRow label="Chiffre d'affaires annuel" value={fmtEur(result.caAnnuel)} divider />
                   <ResultRow label={`Charges sociales (${String(result.tauxCharges).replace(".", ",")} %)`} value={`−${fmtEur(result.charges)}`} tone="danger" />
                   <ResultRow label={`Revenu imposable (abattement ${result.abattement} %)`} value={fmtEur(result.revenuImposable)} tone="muted" />
-                  <ResultRow label="Impôt sur le revenu (estimé)" value={`−${fmtEur(result.impotAnnuel)}`} tone="danger" />
+                  {result.decote > 0 && <ResultRow label="Impôt brut, avant décote" value={fmtEur(result.impotBrut)} tone="muted" />}
+                  {result.decote > 0 && <ResultRow label="Décote" value={`−${fmtEur(result.decote)}`} tone="muted" />}
+                  <ResultRow label="Impôt sur le revenu (estimé)" value={result.impotAnnuel > 0 ? `−${fmtEur(result.impotAnnuel)}` : fmtEur(0)} tone="danger" />
                   <ResultRow label="Revenu net annuel" value={fmtEur(result.netAnnuel)} tone="ok" strong divider />
                   <ResultRow label="Soit par mois" value={fmtEur(result.netMensuel)} tone="ok" strong />
                 </ResultBox>
 
                 <Callout tone="neutral" icon={Info}>
-                  L&apos;IR est estimé pour une personne seule (1 part). Le calcul réel dépend de votre situation familiale et de vos autres revenus.
+                  L&apos;impôt est estimé pour une personne seule (1 part), au barème 2026 des revenus 2025, décote comprise. Le calcul réel dépend de votre situation familiale et de vos autres revenus.
                 </Callout>
               </div>
             )}

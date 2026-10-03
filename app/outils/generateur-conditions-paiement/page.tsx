@@ -5,7 +5,9 @@ import { Receipt } from "lucide-react"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 import { Field, JsonLd, Prose, ToolArea, ToolCta, ToolFaq, ToolGuide, ToolLinks, ToolPanel, ToolShell, faqJsonLd, toolJsonLd } from "@/components/outils/kit"
-import { ChoiceGroup, CopyButton, SwitchRow } from "@/components/outils/controls"
+import { ChoiceGroup, CopyButton, ResetButton, SwitchRow } from "@/components/outils/controls"
+import { parseNombre } from "@/lib/outils/montant"
+import { aAuPlusDecimales } from "@/lib/outils/decimal"
 import { SEMESTRE_REFERENCE, TAUX_PENALITES_DEFAUT, TAUX_PENALITES_PLANCHER } from "@/lib/outils/penalites"
 
 const fmtPct = (n: number) => `${n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`
@@ -54,13 +56,36 @@ export default function GenerateurConditionsPaiementPage() {
   const delaiObj = DELAIS.find((d) => d.id === delai)!
   const tauxObj = TAUX_OPTIONS.find((t) => t.id === taux)!
 
+  // Taux d'escompte : nombre positif (virgule ou point), deux décimales au plus, affiché « 1,5 % »
+  const tauxEscompteNum = parseNombre(tauxEscompte)
+  const erreurEscompte = !escompte
+    ? ""
+    : tauxEscompte.trim() === ""
+      ? "Saisissez le taux d'escompte, par exemple 1,5."
+      : tauxEscompteNum === null
+        ? "Taux invalide : saisissez par exemple 1,5."
+        : tauxEscompteNum <= 0 || tauxEscompteNum >= 100
+          ? "Le taux doit être compris entre 0 et 100 %."
+          : !aAuPlusDecimales(tauxEscompteNum, 2)
+            ? "Deux décimales au plus."
+            : ""
+  const tauxEscompteTexte = tauxEscompteNum !== null ? `${tauxEscompteNum.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}\u00a0%` : ""
+
+  const reset = () => {
+    setDelai("30")
+    setTaux("bce10")
+    setEscompte(false)
+    setTauxEscompte("2")
+    setRib(false)
+  }
+
   const generatedText = `Conditions de paiement : ${delaiObj.text}.
 
 En cas de retard de paiement, des pénalités de retard seront appliquées ${tauxObj.value}. Ces pénalités sont exigibles de plein droit, sans qu'un rappel soit nécessaire, conformément à l'article L441-10 du Code de commerce.
 
 Une indemnité forfaitaire pour frais de recouvrement de 40 € sera due de plein droit en cas de retard de paiement (art. D441-5 du Code de commerce).
 
-${escompte ? `Escompte pour paiement anticipé : ${tauxEscompte} % du montant HT.` : "Pas d'escompte accordé en cas de paiement anticipé."}
+${escompte ? `Escompte pour paiement anticipé : ${tauxEscompteTexte} du montant HT.` : "Pas d'escompte accordé en cas de paiement anticipé."}
 ${rib ? "\nMode de paiement : virement bancaire. RIB joint à la facture." : ""}`
 
   return (
@@ -88,9 +113,20 @@ ${rib ? "\nMode de paiement : virement bancaire. RIB joint à la facture." : ""}
             <SwitchRow checked={escompte} onChange={setEscompte} label="Escompte pour paiement anticipé">
               <div className="flex items-center gap-2">
                 <label htmlFor="cp-escompte" className="sr-only">Taux d&apos;escompte</label>
-                <input id="cp-escompte" type="number" min={0} step={0.5} value={tauxEscompte} onChange={(e) => setTauxEscompte(e.target.value)} className="q-input !w-24 text-center font-semibold tabular-nums" />
+                <input
+                  id="cp-escompte"
+                  type="text"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={tauxEscompte}
+                  onChange={(e) => setTauxEscompte(e.target.value.replace(/[^0-9.,]/g, ""))}
+                  aria-invalid={erreurEscompte ? true : undefined}
+                  aria-describedby={erreurEscompte ? "cp-escompte-err" : undefined}
+                  className="q-input !w-24 text-center font-semibold tabular-nums"
+                />
                 <span className="text-[13px] text-q-text-3">% du montant HT</span>
               </div>
+              {erreurEscompte && <p id="cp-escompte-err" className="q-field-error mt-1.5">{erreurEscompte}</p>}
             </SwitchRow>
             <SwitchRow checked={rib} onChange={setRib} label="Mention virement + RIB joint" />
           </div>
@@ -98,10 +134,13 @@ ${rib ? "\nMode de paiement : virement bancaire. RIB joint à la facture." : ""}
           <div className="mt-6 overflow-hidden rounded-2xl border border-q-line bg-q-surface-2">
             <div className="flex items-center justify-between gap-3 border-b border-q-line px-4 py-2.5 sm:px-5">
               <p className="text-[13px] font-semibold text-q-text-3">Texte généré</p>
-              <CopyButton text={generatedText} label="Copier" />
+              <div className="flex items-center gap-1">
+                <ResetButton onClick={reset} />
+                {!erreurEscompte && <CopyButton text={generatedText} label="Copier" />}
+              </div>
             </div>
             <p className="whitespace-pre-line px-4 py-4 text-[14px] leading-[1.65] text-q-ink sm:px-5" aria-live="polite">
-              {generatedText}
+              {erreurEscompte ? "Corrigez le taux d'escompte pour obtenir le texte." : generatedText}
             </p>
           </div>
         </ToolPanel>

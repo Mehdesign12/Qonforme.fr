@@ -6,7 +6,7 @@ import QuotePreview from "@/components/auth/QuotePreview"
 import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
 
 export const metadata: Metadata = {
-  title: "Créer un compte — Qonforme",
+  title: "Créer un compte",
   description: "Créez votre compte Qonforme gratuitement : devis illimités pour les artisans du bâtiment. La formule ne se choisit qu’à l’envoi de votre première facture.",
   alternates: { canonical: "/signup" },
   openGraph: {

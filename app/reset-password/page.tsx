@@ -4,7 +4,7 @@ import ResetPasswordForm from "@/components/auth/ResetPasswordForm"
 import AuthLayout from "@/components/auth/AuthLayout"
 import AuthBenefits from "@/components/auth/AuthBenefits"
 
-export const metadata: Metadata = { title: "Nouveau mot de passe — Qonforme" }
+export const metadata: Metadata = { title: "Nouveau mot de passe" }
 export const dynamic = "force-dynamic"
 
 export default function ResetPasswordPage() {

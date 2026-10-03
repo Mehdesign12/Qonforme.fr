@@ -3,7 +3,7 @@ import { InvoiceSettingsForm } from "@/components/settings/InvoiceSettingsForm"
 import { SettingsFrame } from "@/components/settings/SettingsFrame"
 import { DEMO_COMPANY, DEMO_INVOICES, DEMO_QUOTES } from "@/lib/demo/data"
 
-export const metadata: Metadata = { title: "Modèles de documents — Démo Qonforme" }
+export const metadata: Metadata = { title: "Modèles de documents — Démo" }
 
 /** Démo de Paramètres › Modèles de documents : même formulaire que l'application, rien n'est enregistré. */
 export default function DemoInvoiceSettingsPage() {

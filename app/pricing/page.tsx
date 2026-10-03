@@ -9,7 +9,7 @@ import { PLANS, formatEuros } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 
 export const metadata: Metadata = {
-  title: 'Tarifs — Qonforme | Devis gratuits, factures dès 10 € HT/mois',
+  title: 'Tarifs — Devis gratuits, factures dès 10 € HT/mois',
   description: 'Devis gratuits et illimités, sans carte bancaire. Formule Essentiel à 12 € HT par mois, 10 € à l’année, pour envoyer vos factures. Sans engagement.',
   alternates: { canonical: '/pricing' },
   openGraph: {

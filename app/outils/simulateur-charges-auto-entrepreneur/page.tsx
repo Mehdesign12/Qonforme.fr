@@ -7,6 +7,7 @@ import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 import { Callout, Field, Gauge, JsonLd, Prose, RateTable, ResultBox, ResultRow, StatGrid, ToolArea, ToolCta, ToolFaq, ToolGuide, ToolLinks, ToolPanel, ToolShell, faqJsonLd, toolJsonLd } from "@/components/outils/kit"
 import { AmountInput, ChoiceGroup, CopyButton, ResetButton, Seg, SwitchRow } from "@/components/outils/controls"
 import { ACTIVITES, calculerCharges, type ActiviteId } from "@/lib/outils/charges"
+import { filtrerSaisieMontant, parseMontant } from "@/lib/outils/montant"
 
 function fmtEur(n: number): string {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n)
@@ -27,7 +28,9 @@ export default function SimulateurChargesPage() {
   const [periode, setPeriode] = useState<"mensuel" | "annuel">("mensuel")
   const resultRef = useRef<HTMLDivElement>(null)
 
-  const numCa = parseFloat(ca.replace(",", ".").replace(/\s/g, "")) || 0
+  const parsed = parseMontant(ca)
+  const erreurCa = ca.trim() && (parsed === null || parsed < 0) ? "Montant invalide : saisissez par exemple 3 000 ou 1 234,56." : ""
+  const numCa = erreurCa ? 0 : (parsed ?? 0)
   const caAnnuel = periode === "mensuel" ? numCa * 12 : numCa
   const caMensuel = periode === "annuel" ? numCa / 12 : numCa
   const activite = ACTIVITES.find((a) => a.id === activiteId)!
@@ -43,9 +46,9 @@ export default function SimulateurChargesPage() {
   const copyText = `CA mensuel: ${fmtEur(caMensuel)} | Charges: ${fmtEur(resultMensuel.totalCharges)} (${resultMensuel.tauxEffectif}%) | Net: ${fmtEur(resultMensuel.revenuNet)}`
 
   const handleCaChange = (v: string) => {
-    setCa(v.replace(/[^0-9.,\s]/g, ""))
+    setCa(filtrerSaisieMontant(v))
     setTimeout(() => {
-      if (resultRef.current && parseFloat(v.replace(",", ".").replace(/\s/g, "")) > 0) {
+      if (resultRef.current && (parseMontant(v) ?? 0) > 0) {
         resultRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" })
       }
     }, 100)
@@ -94,7 +97,8 @@ export default function SimulateurChargesPage() {
               />
             }
           >
-            <AmountInput id="charges-ca" value={ca} onChange={handleCaChange} placeholder={periode === "mensuel" ? "3 000" : "36 000"} suffix={periode === "mensuel" ? "€/mois" : "€/an"} />
+            <AmountInput id="charges-ca" value={ca} onChange={handleCaChange} placeholder={periode === "mensuel" ? "3 000" : "36 000"} suffix={periode === "mensuel" ? "€/mois" : "€/an"} invalid={!!erreurCa} ariaDescribedBy={erreurCa ? "charges-ca-err" : undefined} />
+            {erreurCa && <p id="charges-ca-err" className="q-field-error">{erreurCa}</p>}
           </Field>
 
           <div className="mt-5">

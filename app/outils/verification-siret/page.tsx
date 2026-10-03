@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
-import { Search, Building2, MapPin, Hash, FileText, AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
+import { Search, Building2, MapPin, Hash, FileText, AlertCircle, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 import { Callout, Field, Formula, JsonLd, Prose, ToolArea, ToolCta, ToolFaq, ToolGuide, ToolLinks, ToolPanel, ToolShell, faqJsonLd, toolJsonLd } from "@/components/outils/kit"
 import { AmountInput, CopyButton, ResetButton } from "@/components/outils/controls"
 import { cn } from "@/lib/utils"
+import { isValidSiren } from "@/lib/utils/invoice"
 
 interface SiretResult {
   siren: string
@@ -16,6 +17,8 @@ interface SiretResult {
   zip_code: string
   city: string
   vat_number?: string
+  /** Unité légale fermée (cessée) au répertoire Sirene. */
+  closed?: boolean
 }
 
 function formatSiren(v: string): string {
@@ -29,8 +32,9 @@ function formatSiren(v: string): string {
 
 const FAQ = [
   { q: "Différence SIREN / SIRET ?", a: "SIREN (9 chiffres) = entreprise. SIRET (14 chiffres) = établissement. Une entreprise a 1 SIREN mais peut avoir plusieurs SIRET." },
-  { q: "Le SIREN est-il obligatoire sur les factures ?", a: "Oui, le SIRET est une mention obligatoire sur toute facture." },
-  { q: "D'où viennent ces données ?", a: "API Sirene de l'INSEE, source officielle du répertoire des entreprises françaises." },
+  { q: "Le SIREN est-il obligatoire sur les factures ?", a: "Oui : toute entreprise immatriculée indique son numéro SIREN sur ses factures (art. R123-237 du Code de commerce). Le SIRET, qui désigne un établissement, peut le compléter." },
+  { q: "D'où viennent ces données ?", a: "Du répertoire Sirene de l'INSEE, le répertoire officiel des entreprises françaises : interrogé par l'API Sirene de l'INSEE ou, si elle ne répond pas, par l'API Recherche d'entreprises de l'État, qui lit le même répertoire." },
+  { q: "Le numéro de TVA affiché est-il fiable ?", a: "Il est calculé à partir du SIREN avec la formule officielle de la clé. Il ne dit pas si l'entreprise est réellement immatriculée à la TVA : vérifiez-le sur le service VIES de la Commission européenne avant de l'utiliser sur une facture." },
 ]
 
 export default function VerificationSiretPage() {
@@ -44,15 +48,30 @@ export default function VerificationSiretPage() {
   const handleSearch = useCallback(async () => {
     const cleaned = query.replace(/\s/g, "")
     if (!cleaned) return
-    setLoading(true)
     setError("")
     setResult(null)
     setSearched(true)
+    // Contrôles locaux avant tout appel : longueur, puis clé de Luhn du SIREN
+    if (!/^\d+$/.test(cleaned) || (cleaned.length !== 9 && cleaned.length !== 14)) {
+      setError("Le numéro doit contenir 9 chiffres (SIREN) ou 14 chiffres (SIRET).")
+      return
+    }
+    if (!isValidSiren(cleaned.slice(0, 9))) {
+      setError("Ce numéro n'existe pas : sa clé de contrôle ne correspond pas. Vérifiez chaque chiffre.")
+      return
+    }
+    setLoading(true)
     try {
       const res = await fetch(`/api/outils/siret?q=${encodeURIComponent(cleaned)}`)
-      const data = await res.json()
-      if (!res.ok) { setError(data.error || "Une erreur est survenue.") }
-      else {
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        setError(
+          data?.error ||
+            (res.status === 503
+              ? "Le répertoire Sirene ne répond pas pour le moment. Réessayez dans un instant."
+              : "Une erreur est survenue. Réessayez dans un instant."),
+        )
+      } else {
         setResult(data)
         setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 100)
       }
@@ -69,8 +88,11 @@ export default function VerificationSiretPage() {
         { icon: Building2, label: "Raison sociale", value: result.name, mono: false },
         { icon: Hash, label: "SIREN", value: result.siren, mono: true },
         ...(result.siret ? [{ icon: Hash, label: "SIRET", value: result.siret, mono: true }] : []),
-        ...(result.vat_number ? [{ icon: FileText, label: "N° TVA intracommunautaire", value: result.vat_number, mono: true }] : []),
-        ...((result.address || result.city) ? [{ icon: MapPin, label: "Adresse", value: [result.address, result.zip_code, result.city].filter(Boolean).join(", "), mono: false }] : []),
+        // Calculé depuis le SIREN : rien ne garantit l'immatriculation à la TVA, et sans objet pour une entreprise fermée
+        ...(result.vat_number && !result.closed ? [{ icon: FileText, label: "N° de TVA calculé depuis le SIREN (à confirmer sur VIES)", value: result.vat_number, mono: true }] : []),
+        ...((result.address || result.city)
+          ? [{ icon: MapPin, label: "Adresse", value: [result.address, [result.zip_code, result.city].filter(Boolean).join(" ")].filter(Boolean).join(", "), mono: false }]
+          : []),
       ]
     : []
 
@@ -79,10 +101,10 @@ export default function VerificationSiretPage() {
       <OutilsHero
         crumb="Vérificateur SIREN / SIRET"
         icon={<Search />}
-        badge="Données INSEE"
+        badge="Répertoire Sirene"
         title="Vérificateur"
         accent="SIREN et SIRET."
-        subtitle="Vérifiez l'existence et les informations d'une entreprise française. Données officielles INSEE."
+        subtitle="Vérifiez l'existence et les informations d'une entreprise française, d'après le répertoire Sirene de l'INSEE."
       />
 
       <ToolArea>
@@ -133,11 +155,23 @@ export default function VerificationSiretPage() {
           <div ref={resultRef}>
             {result && (
               <div className="mt-5 overflow-hidden rounded-2xl border border-q-line bg-q-surface-2" aria-live="polite">
-                <div className="flex items-center justify-between gap-3 border-b border-q-line px-4 py-3 sm:px-5">
-                  <span className="q-pill q-pill-ok">
-                    <CheckCircle2 aria-hidden />
-                    Entreprise trouvée
-                  </span>
+                <div className="flex flex-col gap-3 border-b border-q-line px-4 py-3 sm:px-5">
+                  {result.closed ? (
+                    <>
+                      <span className="q-pill q-pill-warn self-start">
+                        <AlertTriangle aria-hidden />
+                        Entreprise fermée
+                      </span>
+                      <p className="text-[13px] leading-[1.5] text-q-text-3">
+                        Le répertoire Sirene indique que cette entreprise a cessé son activité. Ne lui adressez pas de facture sans vérifier auprès de votre client.
+                      </p>
+                    </>
+                  ) : (
+                    <span className="q-pill q-pill-ok self-start">
+                      <CheckCircle2 aria-hidden />
+                      Entreprise active
+                    </span>
+                  )}
                 </div>
                 <dl className="q-list">
                   {rows.map((item) => (
@@ -177,13 +211,13 @@ export default function VerificationSiretPage() {
           <h3>Pourquoi vérifier ?</h3>
           <ul>
             <li><strong>Avant de facturer</strong> : vérifiez que votre client existe</li>
-            <li><strong>N° TVA</strong> : calculé à partir du SIREN</li>
-            <li><strong>Mentions obligatoires</strong> : le SIRET est requis sur chaque facture</li>
+            <li><strong>N° TVA</strong> : calculé à partir du SIREN, à confirmer sur le service VIES de la Commission européenne</li>
+            <li><strong>Mentions obligatoires</strong> : le SIREN est requis sur chaque facture (art. R123-237 du Code de commerce)</li>
           </ul>
           <h3>Calcul du n° TVA</h3>
           <Formula>
             <p>Clé : (12 + 3 × (SIREN mod 97)) mod 97</p>
-            <p className="text-q-text-4">Ex : SIREN 443 061 841 → FR44443061841</p>
+            <p className="text-q-text-4">Ex : SIREN 443 061 841 → 443061841 mod 97 = 82 ; (12 + 3 × 82) mod 97 = 64 → FR64443061841</p>
           </Formula>
         </Prose>
 

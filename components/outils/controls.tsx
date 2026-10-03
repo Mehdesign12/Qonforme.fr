@@ -110,6 +110,7 @@ export function AmountInput({
   mono,
   onKeyDown,
   ariaDescribedBy,
+  invalid,
 }: {
   id: string
   value: string
@@ -122,6 +123,8 @@ export function AmountInput({
   mono?: boolean
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
   ariaDescribedBy?: string
+  /** Saisie fautive : bordure d'erreur (aria-invalid). */
+  invalid?: boolean
 }) {
   return (
     <div className="relative">
@@ -136,6 +139,7 @@ export function AmountInput({
         placeholder={placeholder}
         autoFocus={autoFocus}
         aria-describedby={ariaDescribedBy}
+        aria-invalid={invalid ? true : undefined}
         className={cn(
           "q-input !h-12 font-semibold tabular-nums md:!text-[20px]",
           mono && "font-mono tracking-[0.04em]",

@@ -76,7 +76,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!post) return { title: "Article introuvable" }
 
   return {
-    title: `${post.title} — Blog Qonforme`,
+    title: post.title,
     description: post.excerpt || `${post.title} — Guide facturation électronique par Qonforme.`,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {

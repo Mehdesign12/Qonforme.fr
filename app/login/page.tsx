@@ -6,7 +6,7 @@ import AuthBenefits from "@/components/auth/AuthBenefits"
 import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
 
 export const metadata: Metadata = {
-  title: "Connexion — Qonforme",
+  title: "Connexion",
   description: "Connectez-vous à votre espace Qonforme pour retrouver vos devis, vos factures, vos clients et vos relances, depuis un ordinateur ou un téléphone.",
   alternates: { canonical: "/login" },
   openGraph: {

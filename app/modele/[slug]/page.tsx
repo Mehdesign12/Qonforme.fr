@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const modele = getModeleBySlug(slug)
   if (!modele) return {}
   return {
-    title: `${modele.titre} | Qonforme`,
+    title: modele.titre,
     description: modele.description,
     keywords: modele.motsCles,
     alternates: { canonical: `/modele/${modele.slug}` },

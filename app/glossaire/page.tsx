@@ -3,7 +3,7 @@ import { GLOSSAIRE } from "@/lib/pseo/glossaire"
 import { ContentCta, ContentHero, ContentPage, LinkCard, WRAP } from "@/components/content/ui"
 
 export const metadata: Metadata = {
-  title: "Glossaire facturation — Définitions et termes clés | Qonforme",
+  title: "Glossaire facturation — Définitions et termes clés",
   description: "Glossaire complet de la facturation : acompte, avoir, Factur-X, TVA, FEC, PDP, pénalités de retard. Toutes les définitions pour comprendre la facturation en France.",
   keywords: ["glossaire facturation", "definition facture", "termes facturation", "lexique comptabilite"],
   alternates: { canonical: "/glossaire" },
