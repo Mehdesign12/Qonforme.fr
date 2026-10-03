@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { searchBySiren, searchBySiret } from "@/lib/utils/sirene"
+import { lookupSiren, lookupSiret } from "@/lib/utils/sirene"
+import { isValidSiren } from "@/lib/utils/invoice"
 
 /**
  * Public SIRET/SIREN lookup for the free tool.
@@ -18,24 +19,33 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  let result
-  if (cleaned.length === 14) {
-    result = await searchBySiret(cleaned)
-  } else if (cleaned.length === 9) {
-    result = await searchBySiren(cleaned)
-  } else {
+  if (cleaned.length !== 9 && cleaned.length !== 14) {
     return NextResponse.json(
       { error: "Le numéro doit contenir 9 chiffres (SIREN) ou 14 chiffres (SIRET)." },
       { status: 400 }
     )
   }
+  if (!isValidSiren(cleaned.slice(0, 9))) {
+    return NextResponse.json(
+      { error: "Ce numéro n'existe pas : sa clé de contrôle ne correspond pas." },
+      { status: 400 }
+    )
+  }
 
-  if (!result) {
+  const outcome = cleaned.length === 14 ? await lookupSiret(cleaned) : await lookupSiren(cleaned)
+  if (outcome.status === "unavailable") {
+    return NextResponse.json(
+      { error: "Le répertoire Sirene ne répond pas pour le moment. Réessayez dans un instant." },
+      { status: 503 }
+    )
+  }
+  if (outcome.status === "notfound") {
     return NextResponse.json(
       { error: "Aucune entreprise trouvée pour ce numéro." },
       { status: 404 }
     )
   }
+  const result = outcome.result
 
   // Compute VAT number (FR + key + SIREN)
   const siren = result.siren

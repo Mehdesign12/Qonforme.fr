@@ -18,6 +18,7 @@ import {
   BarChart3,
   UserSearch,
   Megaphone,
+  ShieldAlert,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -29,6 +30,7 @@ const NAV = [
   { href: '/admin/errors',        icon: AlertTriangle,   label: 'Erreurs' },
   { href: '/admin/blog',          icon: FileText,        label: 'Blog', exact: true },
   { href: '/admin/blog/ai',      icon: Bot,             label: 'Blog IA' },
+  { href: '/admin/blog/verification', icon: ShieldAlert, label: 'Vérif. blog' },
   { href: '/admin/brand-studio',  icon: Palette,         label: 'Brand Studio' },
   { href: '/admin/prospects',      icon: UserSearch,      label: 'Prospects' },
   { href: '/admin/outreach',      icon: Megaphone,       label: 'Outreach' },
