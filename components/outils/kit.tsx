@@ -236,7 +236,7 @@ export function Gauge({
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-[13px] text-q-text-3">{label}</span>
-        <span className="text-[14px] font-semibold tabular-nums text-q-ink">{value}</span>
+        <span className="shrink-0 whitespace-nowrap text-[14px] font-semibold tabular-nums text-q-ink">{value}</span>
       </div>
       <div
         className="relative h-2 overflow-hidden rounded-full bg-[var(--q-line-soft)]"

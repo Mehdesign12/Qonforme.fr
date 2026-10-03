@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Vérificateur mentions obligatoires facture 2026 | Qonforme",
-  description: "Vérifiez que votre facture contient toutes les mentions obligatoires exigées par la loi en 2026. Checklist interactive gratuite.",
+  title: "Vérificateur des mentions obligatoires de facture",
+  description: "Cochez les mentions de votre facture : seules celles qui s'appliquent à votre statut, votre TVA et votre client comptent, artisans du bâtiment compris.",
   keywords: ["mentions obligatoires facture", "vérificateur facture", "facture conforme 2026", "mentions légales facture"],
   alternates: { canonical: "/outils/verificateur-mentions-facture" },
   openGraph: {

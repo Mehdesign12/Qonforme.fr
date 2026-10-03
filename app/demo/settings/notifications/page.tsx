@@ -4,7 +4,7 @@ import { DEMO_IDENTITY } from "@/components/layout/shell"
 import { NotificationsView } from "@/components/settings/NotificationsView"
 import { SettingsFrame } from "@/components/settings/SettingsFrame"
 
-export const metadata: Metadata = { title: "Relances et notifications — Démo Qonforme" }
+export const metadata: Metadata = { title: "Relances et notifications — Démo" }
 
 /** Démo de Paramètres › Relances : même page que l'application, réglages d'exemple. */
 export default function DemoNotificationsPage() {

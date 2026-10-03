@@ -4,7 +4,7 @@ import { SettingsFrame } from "@/components/settings/SettingsFrame"
 import { DEMO_COMPANY } from "@/lib/demo/data"
 import { DEMO_BANK } from "@/lib/demo/payment-link"
 
-export const metadata: Metadata = { title: "Entreprise — Démo Qonforme" }
+export const metadata: Metadata = { title: "Entreprise — Démo" }
 
 /** Démo de Paramètres › Entreprise : même formulaire que l'application, rien n'est enregistré. */
 export default function DemoCompanySettingsPage() {

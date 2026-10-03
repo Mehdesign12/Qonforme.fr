@@ -5,7 +5,7 @@ import { SettingsFrame } from "@/components/settings/SettingsFrame"
 import { SettingsOverview } from "@/components/settings/SettingsOverview"
 import { DEMO_PLAN } from "@/components/settings/demo-data"
 
-export const metadata: Metadata = { title: "Paramètres — Démo Qonforme" }
+export const metadata: Metadata = { title: "Paramètres — Démo" }
 
 /** Démo de l'accueil des paramètres : même liste que l'application, données fictives. */
 export default function DemoSettingsPage() {

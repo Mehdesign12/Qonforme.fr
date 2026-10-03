@@ -8,7 +8,7 @@ import CategoryFilter from "@/components/blog/CategoryFilter"
 import { ContentCta, ContentHero, ContentPage, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
 
 export const metadata: Metadata = {
-  title: "Blog — Qonforme",
+  title: "Blog",
   description: "Guides, conseils et actualités sur la facturation électronique, la conformité Factur-X et la réglementation 2026 pour artisans et TPE.",
   alternates: { canonical: "/blog" },
   openGraph: {

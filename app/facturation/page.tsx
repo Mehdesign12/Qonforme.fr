@@ -7,7 +7,7 @@ import { ContentCta, ContentHero, ContentPage, LinkCard, SectionHeading, WRAP } 
 import { TRADE_PHOTOS } from "@/components/content/metier"
 
 export const metadata: Metadata = {
-  title: "Logiciel de facturation par métier | Qonforme",
+  title: "Logiciel de facturation par métier",
   description: "Découvrez un logiciel de facturation adapté à votre métier : bâtiment, services, santé, artisanat, transport. Devis gratuits et illimités, mentions obligatoires.",
   keywords: ["logiciel facturation", "facturation par metier", "facture BTP", "facture freelance", "facture artisan"],
   alternates: { canonical: "/facturation" },
