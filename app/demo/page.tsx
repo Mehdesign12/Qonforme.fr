@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, BookOpen } from "lucide-react"
+import { ArrowRight, BookOpen, Compass } from "lucide-react"
 import { DashboardBody } from "@/components/dashboard/DashboardBody"
 import { buildDemoDashboardView } from "@/components/dashboard/demo-data"
 import { parsePeriod } from "@/components/dashboard/model"
@@ -15,8 +15,9 @@ export const metadata: Metadata = {
   },
 }
 
-/** Liens de maillage interne (tarifs, blog), sous le tableau de bord de la démo. */
+/** Liens de maillage interne (premiers pas, tarifs, blog), sous le tableau de bord de la démo. */
 const CROSS_LINKS = [
+  { href: "/demo/demarrer", Icon: Compass, title: "Premiers pas d'un compte neuf", text: "L'écran « Par quoi commencer ? »" },
   { href: "/pricing", Icon: ArrowRight, title: "Prêt à démarrer\u00a0?", text: "Voir les tarifs\u00a0: devis gratuits" },
   { href: "/blog", Icon: BookOpen, title: "Guides et conseils", text: "Tout savoir sur la facturation électronique" },
 ]
@@ -30,7 +31,7 @@ export default function DemoDashboardPage({ searchParams }: { searchParams: { pe
       <MetaPixelEvent event="ViewContent" data={{ content_name: 'Demo', content_category: 'demo' }} />
       <DashboardBody view={view} />
 
-      <nav aria-label="Aller plus loin" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <nav aria-label="Aller plus loin" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {CROSS_LINKS.map(({ href, Icon, title, text }) => (
           <Link
             key={href}

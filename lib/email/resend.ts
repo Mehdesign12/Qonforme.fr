@@ -14,6 +14,8 @@ export interface SendEmailOptions {
   replyTo?: string
   cc?: string[]
   attachments?: EmailAttachment[]
+  /** En-têtes ajoutés à l'email principal (ex. List-Unsubscribe, lib/onboarding/unsubscribe.ts). */
+  headers?: Record<string, string>
 }
 
 /**
@@ -67,6 +69,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<{ id: string }>
     subject: finalSubject,
     html:    opts.html,
     replyTo: opts.replyTo,
+    headers: opts.headers,
     attachments: opts.attachments?.map(a => ({
       filename: a.filename,
       content:  a.content,

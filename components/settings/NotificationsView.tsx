@@ -17,6 +17,7 @@ import type { ShellMode } from "@/components/layout/nav"
 import { settingsHref } from "@/components/settings/sections"
 import { SettingsCard } from "@/components/settings/ui"
 import { ReminderSettingsForm } from "@/components/settings/ReminderSettingsForm"
+import { OnboardingEmailsCard } from "@/components/settings/OnboardingEmailsCard"
 import type { ReminderSettings } from "@/lib/reminders/settings"
 
 export function NotificationsView({
@@ -65,6 +66,9 @@ export function NotificationsView({
           </ul>
         </div>
       </SettingsCard>
+
+      {/* Conseils de démarrage et rappel « plus tard » (masqués avant leur migration) */}
+      <OnboardingEmailsCard mode={mode} />
 
       <SettingsCard
         id="adresse"
