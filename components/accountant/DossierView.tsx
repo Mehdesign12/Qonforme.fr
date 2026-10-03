@@ -150,26 +150,24 @@ export function DossierView({ mode, data, presets, basePath, backHref, exportUrl
         </div>
       )}
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
-        {/* ── Documents ── */}
-        <div className="flex min-w-0 flex-col gap-3">
-          <div role="tablist" aria-label="Documents du dossier" className="q-tabs">
-            {tabs.map((t) => (
-              <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)}>
-                {t.label}
-                <span className="q-count">{t.count}</span>
-              </button>
-            ))}
-          </div>
-          {tab === "invoices" && <InvoicesTable data={data} refYear={refYear} />}
-          {tab === "credits" && <CreditsTable data={data} refYear={refYear} />}
-          {tab === "suppliers" && <SuppliersTable data={data} refYear={refYear} />}
-        </div>
+      {/* Téléchargements et TVA côte à côte, puis les listes sur toute la largeur (tableaux à 7 colonnes) */}
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <ExportsCard mode={mode} exportUrl={exportUrl} period={period} docCount={docCount} hasSiren={!!company.siren} />
+        <VatCard data={data} />
+      </div>
 
-        <aside className="flex flex-col gap-4">
-          <ExportsCard mode={mode} exportUrl={exportUrl} period={period} docCount={docCount} hasSiren={!!company.siren} />
-          <VatCard data={data} />
-        </aside>
+      <div className="flex min-w-0 flex-col gap-3">
+        <div role="tablist" aria-label="Documents du dossier" className="q-tabs">
+          {tabs.map((t) => (
+            <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)}>
+              {t.label}
+              <span className="q-count">{t.count}</span>
+            </button>
+          ))}
+        </div>
+        {tab === "invoices" && <InvoicesTable data={data} refYear={refYear} />}
+        {tab === "credits" && <CreditsTable data={data} refYear={refYear} />}
+        {tab === "suppliers" && <SuppliersTable data={data} refYear={refYear} />}
       </div>
     </div>
   )

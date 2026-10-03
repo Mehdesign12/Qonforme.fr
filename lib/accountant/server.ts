@@ -257,7 +257,19 @@ export async function inviteAccountant(params: {
     if (isMissingSchemaError(error)) return fail(503, UNAVAILABLE)
     raise(error, "invite lecture")
   }
-  const rows = ((live ?? []) as AccessRow[]).filter((r) => r.owner_id === owner.id)
+  const all = ((live ?? []) as AccessRow[]).filter((r) => r.owner_id === owner.id)
+  // Accès accepté dont le compte du comptable a été supprimé : terminé, il est clos
+  // pour que la même adresse puisse être réinvitée (index unique sur les accès en cours)
+  const stale = all.filter((r) => accessStatus(r, now) === "revoked")
+  if (stale.length > 0) {
+    const { error: staleErr } = await db
+      .from(ACCESS_TABLE)
+      .update({ revoked_at: now.toISOString(), token_hash: null })
+      .eq("owner_id", owner.id)
+      .in("id", stale.map((r) => r.id))
+    if (staleErr) raise(staleErr, "invite accès terminés")
+  }
+  const rows = all.filter((r) => !stale.includes(r))
   const existing = rows.find((r) => r.email === email)
   if (existing) {
     if (accessStatus(existing, now) === "active") return fail(409, "Cette personne a déjà accès à votre facturation.")

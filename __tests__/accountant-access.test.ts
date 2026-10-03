@@ -267,6 +267,18 @@ describe("révocation et cloisonnement", () => {
     expect((await inviteAccountant({ owner: ARTISAN, email: ACCOUNTANT.email, label: null, db: db as never, now: minutes(60) })).ok).toBe(true)
   })
 
+  it("compte du comptable supprimé : l'accès se ferme et l'adresse peut être réinvitée", async () => {
+    const { accessId } = await inviteAndAccept()
+    // ON DELETE SET NULL sur accountant_id
+    rows()[0].accountant_id = null
+    expect(await authorizeDossier(accessId, ACCOUNTANT.id, db as never)).toBeNull()
+    expect((await getOverview(ARTISAN.id, db as never, minutes(10))).accesses).toEqual([])
+    const again = await inviteAccountant({ owner: ARTISAN, email: ACCOUNTANT.email, label: null, db: db as never, now: minutes(10) })
+    expect(again.ok).toBe(true)
+    expect(rows()[0].revoked_at).not.toBeNull()
+    expect(rows()).toHaveLength(2)
+  })
+
   it("annuler une invitation rend son lien inutilisable", async () => {
     const { access, token } = await invite()
     await revokeAccess({ ownerId: ARTISAN.id, accessId: access.id, db: db as never })
