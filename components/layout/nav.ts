@@ -3,12 +3,12 @@
  * mobile, la feuille « Plus », le menu « Nouveau » et la palette de recherche —
  * pour l'application réelle comme pour la démo (préfixe /demo).
  *
- * N'y figurent que des écrans qui existent : pas de chantiers, réception,
- * trésorerie ni relances tant qu'ils ne sont pas livrés (DECISIONS § 10).
+ * N'y figurent que des écrans qui existent : pas de chantiers ni de
+ * trésorerie tant qu'ils ne sont pas livrés (DECISIONS § 10).
  */
 import {
   LayoutDashboard, FileText, FileCheck2, Users, Package, ShoppingCart,
-  ReceiptText, Download, SlidersHorizontal, UserPlus,
+  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox,
   type LucideIcon,
 } from "lucide-react"
 
@@ -35,6 +35,7 @@ export const NAV_MAIN: NavLink[] = [
   { key: "quotes", label: "Devis", href: "/quotes", demoHref: "/demo/quotes", icon: FileCheck2, hint: "Gratuits et illimités" },
   { key: "purchase-orders", label: "Bons de commande", href: "/purchase-orders", demoHref: "/demo/purchase-orders", icon: ShoppingCart, hint: "Facultatifs" },
   { key: "credit-notes", label: "Avoirs", href: "/credit-notes", demoHref: "/demo/credit-notes", icon: ReceiptText, hint: "Corrections de factures" },
+  { key: "received-invoices", label: "Factures reçues", href: "/received-invoices", demoHref: "/demo/received-invoices", icon: Inbox, hint: "Factures de vos fournisseurs" },
   { key: "clients", label: "Clients", href: "/clients", demoHref: "/demo/clients", icon: Users, hint: "Particuliers et professionnels" },
   { key: "products", label: "Catalogue", href: "/products", demoHref: "/demo/products", icon: Package, hint: "Vos prestations et fournitures" },
 ]
@@ -89,6 +90,7 @@ const SECTION_TITLES: { prefix: string; title: string; href: string }[] = [
   { prefix: "/products", title: "Catalogue", href: "/products" },
   { prefix: "/purchase-orders", title: "Bons de commande", href: "/purchase-orders" },
   { prefix: "/credit-notes", title: "Avoirs", href: "/credit-notes" },
+  { prefix: "/received-invoices", title: "Factures reçues", href: "/received-invoices" },
   { prefix: "/settings/exports", title: "Exports comptables", href: "/settings/exports" },
   { prefix: "/settings", title: "Paramètres", href: "/settings" },
   { prefix: "/dashboard", title: "Tableau de bord", href: "/dashboard" },
@@ -99,6 +101,7 @@ const LEAF_TITLES: Record<string, string> = {
   "/quotes/new": "Nouveau devis",
   "/clients/new": "Nouveau client",
   "/purchase-orders/new": "Nouveau bon de commande",
+  "/received-invoices/import": "Importer une facture",
   "/settings/company": "Entreprise",
   "/settings/invoices": "Modèles de documents",
   "/settings/notifications": "Relances",
