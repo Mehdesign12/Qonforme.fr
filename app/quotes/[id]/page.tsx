@@ -13,6 +13,9 @@ import {
   QuoteDetailView, type QuoteDetailBusy, type QuoteDetailCompany, type QuoteDetailData,
 } from "@/components/quotes/QuoteDetailView"
 import { addDays, daysBetween, todayISO, type QuoteStatus } from "@/components/quotes/QuoteListHelpers"
+import { PaywallDialog } from "@/components/billing/PaywallDialog"
+import { SignaturePanel } from "@/components/signature/SignaturePanel"
+import { useSignaturePanel } from "@/components/signature/useSignaturePanel"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -86,6 +89,18 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       if (comp) setCompany(comp)
     }).finally(() => setLoading(false))
   }, [params.id])
+
+  // Signature en ligne : le panneau se masque tant que la migration n'est pas appliquée.
+  // Un envoi pour signature fait sortir un brouillon ; une signature ou un refus change le statut.
+  const sig = useSignaturePanel("quote", params.id, (reason) => {
+    if (reason === "sent") {
+      setQuote((prev) => prev && prev.status === "draft" ? { ...prev, status: "sent" } : prev)
+      return
+    }
+    fetch(`/api/quotes/${params.id}`).then(r => r.json()).then((json) => {
+      if (json.quote) setQuote(json.quote)
+    }).catch(() => {})
+  })
 
   // Facture issue de la conversion : numéro et statut pour « Liés à ce devis »
   const convertedId = quote?.converted_invoice_id ?? null
@@ -163,6 +178,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
         sent_at: new Date().toISOString(),
       })
       toast.success(`Devis envoyé à ${json.sentTo}`)
+      void sig.reload()
       return true
     } catch { toast.error("Erreur réseau"); return false }
     finally { setFlag("send", false) }
@@ -258,12 +274,39 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       : null,
   }
 
+  const signature = sig.data?.available ? (
+    <SignaturePanel
+      docType="quote"
+      docNumber={quote.quote_number}
+      docStatus={quote.status}
+      totalTtc={data.total_ttc}
+      validUntil={quote.valid_until}
+      today={today}
+      clientName={quote.client?.name ?? null}
+      clientEmail={quote.client?.email ?? null}
+      clientHref={quote.client ? `/clients/${quote.client.id}` : null}
+      data={sig.data}
+      busy={sig.busy}
+      actions={sig.actions}
+      settingsHref="/settings/invoices"
+    />
+  ) : undefined
+  const sendNote = sig.data?.available
+    ? sig.data.access && sig.data.enabled
+      ? "L'email contient aussi un lien pour lire et signer le devis en ligne."
+      : "L'email contient aussi un lien pour consulter le devis en ligne."
+    : undefined
+
   return (
+    <>
+    <PaywallDialog open={sig.paywall} onOpenChange={sig.setPaywall} reason="signature" nextPath={`/quotes/${params.id}`} />
     <QuoteDetailView
       quote={data}
       company={company}
       today={today}
       busy={busy}
+      signature={signature}
+      sendNote={sendNote}
       links={{ list: "/quotes", newQuote: "/quotes/new", companySettings: "/settings/company" }}
       actions={{
         onDownloadPdf: downloadPDF,
@@ -276,5 +319,6 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
         onConvert: convertToInvoice,
       }}
     />
+    </>
   )
 }

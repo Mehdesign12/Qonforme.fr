@@ -26,6 +26,8 @@ export interface QuoteFollowupEmailData {
    * à part) ; affiche un bouton « Consulter le devis ».
    */
   quoteUrl?:      string
+  /** « sign » : le lien permet de signer en ligne ; « view » : consultation seule. */
+  quoteLinkMode?: "sign" | "view"
 }
 
 function esc(value: string): string {
@@ -74,7 +76,7 @@ export function buildQuoteFollowupEmail(d: QuoteFollowupEmailData): { subject: s
 
     ${amountBlock(d.subtotalHt, d.totalVat, d.totalTtc, accent)}
 
-    ${d.quoteUrl ? ctaButton("Consulter le devis", esc(d.quoteUrl), accent) : ""}
+    ${d.quoteUrl ? ctaButton(d.quoteLinkMode === "sign" ? "Consulter et signer le devis" : "Consulter le devis", esc(d.quoteUrl), accent) : ""}
 
     <p style="margin:24px 0 0;font-size:14px;color:#475569;">
       Cordialement,<br/>

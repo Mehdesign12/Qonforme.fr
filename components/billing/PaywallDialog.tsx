@@ -13,7 +13,8 @@ import { trackEvent } from '@/lib/meta-pixel'
  * Mur de paiement « Votre facture est prête » — s'ouvre quand une route
  * d'émission répond 402 SUBSCRIPTION_REQUIRED (envoi, passage hors brouillon,
  * relance). Le choix de la formule mène au paiement, puis revient sur la
- * facture avec ?send=1 pour l'envoyer d'un clic.
+ * facture avec ?send=1 pour l'envoyer d'un clic. Aussi ouvert par le panneau
+ * « Signature en ligne » d'un devis (reason 'signature', retour sur `nextPath`).
  *
  * La vraie protection est côté serveur (requireIssuingAccess) : ce composant
  * n'est que l'explication et le chemin le plus court vers la formule.
@@ -27,19 +28,22 @@ export function PaywallDialog({
   invoiceId,
   invoiceNumber,
   reason = 'send',
+  nextPath,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   invoiceId?: string
   invoiceNumber?: string
-  /** 'send' : première facture à envoyer ; 'remind' : relance d'un client. */
-  reason?: 'send' | 'remind'
+  /** 'send' : première facture à envoyer ; 'remind' : relance d'un client ; 'signature' : signature en ligne d'un devis. */
+  reason?: 'send' | 'remind' | 'signature'
+  /** Retour après le paiement quand ce n'est pas une facture (ex. la fiche du devis). */
+  nextPath?: string
 }) {
   const router = useRouter()
   const [period, setPeriod] = useState<BillingPeriod>('yearly')
   const plan = PLANS.starter
 
-  const next = invoiceId ? `/invoices/${invoiceId}${reason === 'send' ? '?send=1' : ''}` : null
+  const next = invoiceId ? `/invoices/${invoiceId}${reason === 'send' ? '?send=1' : ''}` : nextPath ?? null
   const chargeHt = period === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
 
   const choose = () => {
@@ -62,12 +66,16 @@ export function PaywallDialog({
           <DialogTitle className="q-display text-[22px] leading-tight text-[var(--q-ink)]">
             {reason === 'remind'
               ? 'Les relances font partie de la formule.'
-              : invoiceNumber ? `Votre facture ${invoiceNumber} est prête.` : 'Votre facture est prête.'}
+              : reason === 'signature'
+                ? 'La signature en ligne fait partie de la formule.'
+                : invoiceNumber ? `Votre facture ${invoiceNumber} est prête.` : 'Votre facture est prête.'}
           </DialogTitle>
           <DialogDescription className="text-[15px] leading-relaxed text-[var(--q-text-3)]">
             {reason === 'remind'
               ? 'Choisissez votre formule pour relancer vos clients. Vos devis restent gratuits.'
-              : 'Choisissez votre formule pour l’envoyer. Vos devis restent gratuits.'}
+              : reason === 'signature'
+                ? 'Votre client lit et signe vos devis en ligne. Vos devis restent gratuits : sans formule, envoyez-les par email avec leur PDF.'
+                : 'Choisissez votre formule pour l’envoyer. Vos devis restent gratuits.'}
           </DialogDescription>
         </div>
 
@@ -118,7 +126,7 @@ export function PaywallDialog({
 
         <div className="flex flex-col gap-2">
           <button type="button" onClick={choose} className="q-btn q-btn-primary q-btn-lg w-full">
-            {reason === 'remind' ? `Choisir ${plan.name}` : `Choisir ${plan.name} et envoyer ma facture`}
+            {reason === 'send' ? `Choisir ${plan.name} et envoyer ma facture` : `Choisir ${plan.name}`}
           </button>
           <p className="text-center text-[13px] tabular-nums text-[var(--q-text-4)]">
             {formatEuros(chargeHt)} HT {period === 'monthly' ? 'par mois' : 'par an'}, soit {formatEuros(withVat(chargeHt))} TTC

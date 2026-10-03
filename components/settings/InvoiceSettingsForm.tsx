@@ -6,8 +6,9 @@
  * conditions, avec l'aperçu d'une facture à droite.
  *
  * Seuls les réglages qui existent sont proposés : pas de lien de paiement,
- * de QR code, de mention de plateforme agréée ni de signature en ligne
- * (non livrés, DECISIONS § 10).
+ * de QR code ni de mention de plateforme agréée (non livrés, DECISIONS § 10).
+ * La signature en ligne a sa propre carte, sous le formulaire
+ * (components/signature/SignatureSettingsCard.tsx, enregistrée à part).
  *
  * Enregistrement : PATCH /api/company réécrit toutes les colonnes de
  * l'entreprise (un champ absent y devient vide). On renvoie donc la fiche
@@ -28,6 +29,7 @@ import { settingsHref } from "@/components/settings/sections"
 import { DirtyHint, Field, MobileSaveBar, SaveButton, SettingsCard } from "@/components/settings/ui"
 import { LogoInline, useCompanyLogo } from "@/components/settings/LogoField"
 import { DocumentPreview, type PreviewCompany } from "@/components/settings/DocumentPreview"
+import { SignatureSettingsCard } from "@/components/signature/SignatureSettingsCard"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -388,6 +390,13 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
             <MobileSaveBar show={isDirty} form={FORM_ID} saving={saving} />
           </div>
         </form>
+      )}
+
+      {/* Hors du formulaire : la signature en ligne s'enregistre à part */}
+      {!loading && (
+        <div className="grid items-start gap-5 min-[1360px]:grid-cols-[minmax(0,1fr)_minmax(340px,440px)]">
+          <SignatureSettingsCard mode={mode} />
+        </div>
       )}
     </>
   )
