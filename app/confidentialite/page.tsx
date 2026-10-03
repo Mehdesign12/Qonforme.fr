@@ -64,6 +64,7 @@ export default function ConfidentialitePage() {
         <li><strong>Exécution du contrat</strong> — fourniture du service de facturation électronique (création de compte, génération de documents, envoi d&apos;e-mails transactionnels)</li>
         <li><strong>Obligation légale</strong> — archivage des documents comptables pendant 10 ans (article L.123-22 du Code de commerce)</li>
         <li><strong>Intérêt légitime</strong> — sécurité du service, prévention de la fraude, amélioration du produit</li>
+        <li><strong>Intérêt légitime</strong> — conseils de démarrage par e-mail pendant les 30 jours qui suivent la création du compte (premier devis, passage du devis à la facture, formule Essentiel). Chaque e-mail contient un lien pour ne plus les recevoir, sans connexion ; le réglage existe aussi dans Paramètres › Relances (article L34-5 du Code des postes et des communications électroniques)</li>
         <li><strong>Gestion des abonnements</strong> — traitement des paiements via Stripe</li>
       </ul>
 

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/resend"
 import { buildWelcomeEmail } from "@/lib/email/templates/welcome"
+import { claimSequenceStep, enrollInOnboarding } from "@/lib/onboarding/store"
+import { listUnsubscribeHeaders, unsubscribePageUrl } from "@/lib/onboarding/unsubscribe"
 
 /**
  * POST /api/auth/signup
@@ -77,14 +79,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
+    // Séquence de démarrage : seul un compte créé ici y entre (jamais les comptes
+    // existants). Sans la migration 20261003_onboarding_emails.sql : false, et
+    // l'email de bienvenue part comme avant, sans lien de désinscription.
+    const userId = data.user?.id
+    const enrolled = userId ? await enrollInOnboarding(admin, userId) : false
+    const to = email.trim().toLowerCase()
+
     // Email de bienvenue — fire & forget (ne bloque pas la réponse)
-    const { subject, html } = buildWelcomeEmail({ firstName: first_name.trim() })
+    const { subject, html } = buildWelcomeEmail({
+      firstName: first_name.trim(),
+      unsubscribeUrl: enrolled && userId ? unsubscribePageUrl(userId) : null,
+    })
     sendEmail({
-      to: email.trim().toLowerCase(),
+      to,
       subject,
       html,
       fromName: "Qonforme",
-    }).catch((err) => console.error("[signup] welcome email error:", err))
+      headers: (enrolled && userId && listUnsubscribeHeaders(userId)) || undefined,
+    })
+      .then(async () => {
+        // Bienvenue au journal : compte pour l'écart minimal avec l'email suivant
+        if (enrolled && userId) await claimSequenceStep(admin, { user_id: userId, step: "welcome", sent_to: to })
+      })
+      .catch((err) => console.error("[signup] welcome email error:", err))
 
     return NextResponse.json({ success: true, userId: data.user?.id })
   } catch (err) {

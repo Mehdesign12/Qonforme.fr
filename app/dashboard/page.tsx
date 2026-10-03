@@ -12,13 +12,14 @@ import { parsePeriod, todayInParis, type DashPeriod, type DashboardInput } from 
 export const metadata: Metadata = { title: 'Tableau de bord' }
 export const dynamic = 'force-dynamic'
 
-export default async function DashboardPage({ searchParams }: { searchParams: { periode?: string } }) {
+export default async function DashboardPage({ searchParams }: { searchParams: { periode?: string; depuis?: string } }) {
   const period = parsePeriod(searchParams?.periode)
   let userId: string | null = null
   let firstName = ''
   let company: DashboardInput['company'] = null
   let showWelcome = false
   let companyMissing = false
+  let startScreen = false
 
   try {
     const supabase = await createClient()
@@ -43,6 +44,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
         company = { name: data.name, siren: data.siren, address: data.address, zip_code: data.zip_code, city: data.city }
         // Premiers pas pas encore vus
         showWelcome = !data.onboarding_seen_at
+        // Compte neuf (ni devis ni facture), premier passage : écran « Par quoi
+        // commencer ? » (app/demarrer), une seule fois, jamais depuis cet écran
+        if (showWelcome && searchParams?.depuis !== 'demarrer') {
+          const [quotes, invoices] = await Promise.all([
+            supabase.from('quotes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+            supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+          ])
+          startScreen = !quotes.error && !invoices.error && quotes.count === 0 && invoices.count === 0
+        }
       }
     }
   } catch {
@@ -52,6 +62,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   // Hors du try/catch : redirect() lève une exception que le catch avalait.
   // Un comptable invité n'a pas d'entreprise : il va à son espace (lib/accountant).
   if (companyMissing) redirect(userId && (await hasDossiers(userId)) ? '/comptable' : '/signup/company')
+  if (startScreen) redirect('/demarrer')
 
   return (
     <Suspense fallback={<DashboardSkeleton />}>

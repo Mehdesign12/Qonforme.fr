@@ -6,10 +6,12 @@ import { Serif } from "@/components/auth/AuthHeading"
 export const metadata: Metadata = { title: "Votre entreprise — Qonforme" }
 export const dynamic = "force-dynamic"
 
-// Deux étapes réelles : pas d'étape « Prestations » ni « Premier pas » dans le code.
+// Étapes réelles : la troisième est « Par quoi commencer ? » (app/demarrer), où
+// le tableau de bord d'un compte neuf renvoie. Pas d'étape « Prestations » dans le code.
 const STEPS = [
   { label: "Compte" },
   { label: "Entreprise" },
+  { label: "Démarrer" },
 ]
 
 export default function SignupCompanyPage() {
