@@ -1,51 +1,59 @@
 import { createAdminClient } from '@/lib/supabase/server'
-import { AdminSidebar } from '@/components/admin/AdminSidebar'
+import { AdminSidebar, AdminMobileNav, type AdminCounts } from '@/components/admin/AdminSidebar'
+import { AdminHeader } from '@/components/admin/AdminHeader'
+import { CrumbProvider } from '@/components/layout/crumb'
 
 export const metadata = {
-  title: 'Admin — Qonforme',
+  title: 'Admin',
   robots: { index: false, follow: false },
 }
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  // Le middleware vérifie déjà le cookie admin_session — pas de check ici
-
-  // ── Badges sidebar ────────────────────────────────────────────────────
-  let unreadSupport    = 0
-  let unresolvedErrors = 0
+/** Compteurs de la barre latérale ; null si la lecture échoue (on n'affiche pas « 0 » à tort). */
+async function getCounts(): Promise<AdminCounts> {
   try {
     const admin = createAdminClient()
     const [supportRes, errorsRes] = await Promise.all([
       admin.from('support_messages').select('id', { count: 'exact', head: true }).eq('status', 'new'),
       admin.from('error_logs').select('id', { count: 'exact', head: true }).is('resolved_at', null),
     ])
-    unreadSupport    = supportRes.count ?? 0
-    unresolvedErrors = errorsRes.count  ?? 0
-  } catch { /* non bloquant */ }
+    return {
+      unreadSupport: supportRes.error ? null : supportRes.count ?? 0,
+      unresolvedErrors: errorsRes.error ? null : errorsRes.count ?? 0,
+    }
+  } catch {
+    return { unreadSupport: null, unresolvedErrors: null }
+  }
+}
+
+/**
+ * Coque de l'espace admin, sur le modèle de celle de l'application
+ * (components/layout/AppShell.tsx) : barre latérale blanche, fond #F6F8FB avec
+ * halo, barre supérieure flottante, barre flottante du bas sur mobile.
+ * Pas de will-change ni de transform sur les enveloppes (règle iOS de CLAUDE.md).
+ */
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Le middleware vérifie déjà le cookie admin_session — pas de vérification ici
+  const counts = await getCounts()
 
   return (
-    <div
-      className="flex h-[100dvh] overflow-hidden"
-      style={{ background: 'var(--dashboard-bg)' }}
-    >
-      {/* Blobs décoratifs identiques au dashboard */}
-      <div
-        aria-hidden
-        className="pointer-events-none select-none fixed top-0 right-0 w-[600px] h-[600px] z-0"
-        style={{ background: 'var(--dashboard-blob1)' }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none select-none fixed bottom-0 left-0 w-[400px] h-[400px] z-0"
-        style={{ background: 'var(--dashboard-blob2)' }}
-      />
-
-      <AdminSidebar unreadSupport={unreadSupport} unresolvedErrors={unresolvedErrors} />
-
-      <div className="relative z-10 flex flex-col flex-1 min-w-0 overflow-hidden">
-        <main className="flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-6">
-          {children}
-        </main>
+    <CrumbProvider>
+      <div data-admin-shell className="flex h-[100dvh] overflow-hidden bg-[var(--q-bg)] print:block print:h-auto print:overflow-visible">
+        <AdminSidebar counts={counts} />
+        <div
+          data-admin-scroll
+          className="relative flex min-w-0 flex-1 flex-col overflow-y-auto print:block print:overflow-visible"
+          style={{ background: 'var(--dashboard-bg)', overscrollBehavior: 'none' }}
+        >
+          <AdminHeader />
+          <main
+            id="contenu"
+            className="mx-auto flex w-full max-w-[1240px] flex-1 flex-col gap-5 px-4 pb-[calc(112px+env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] md:px-6 lg:pb-10 lg:pt-7"
+          >
+            {children}
+          </main>
+        </div>
+        <AdminMobileNav counts={counts} />
       </div>
-    </div>
+    </CrumbProvider>
   )
 }

@@ -1,73 +1,14 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import {
-  ArrowLeft,
-  Building2,
-  Mail,
-  CreditCard,
-  FileText,
-  ExternalLink,
-} from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
+import { DocStatusPill, Initials, Kpi, KpiGrid, PageHeader, Panel } from '@/components/app/kit'
+import { SetCrumb } from '@/components/layout/crumb'
+import { InfoList, InfoRow, LoadError, SubscriptionPill, fmtDate, fmtEuro, periodLabel, planLabel } from '@/components/admin/ui'
 import AdminChangePlanButton from './AdminChangePlanButton'
 import AdminSubscriptionActions from './AdminSubscriptionActions'
 
 export const dynamic = 'force-dynamic'
-
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between py-2.5 border-b border-slate-50 dark:border-[#162032] last:border-0">
-      <span className="text-[12px] text-slate-400 shrink-0 w-36">{label}</span>
-      <span className="text-sm text-foreground text-right">{value || <span className="text-slate-300 dark:text-slate-600">—</span>}</span>
-    </div>
-  )
-}
-
-function SectionCard({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-100 dark:border-[#1E3A5F] flex items-center gap-2">
-        <Icon className="w-4 h-4 text-slate-400" />
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      </div>
-      <div className="px-4 py-1">{children}</div>
-    </div>
-  )
-}
-
-function StatBadge({ count, label, href }: { count: number; label: string; href?: string }) {
-  const content = (
-    <div className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-100 dark:border-[#1E3A5F] bg-slate-50/60 dark:bg-[#162032]/40 text-center hover:border-[#2563EB] dark:hover:border-[#3B82F6] transition-colors cursor-pointer">
-      <p className="font-mono text-2xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0]">{count}</p>
-      <p className="text-[11px] text-slate-400 mt-0.5">{label}</p>
-    </div>
-  )
-  return href ? <Link href={href}>{content}</Link> : content
-}
-
-function StatusPill({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    active:     { label: 'Actif',     className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-    past_due:   { label: 'En retard', className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-    canceled:   { label: 'Annulé',    className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    incomplete: { label: 'Incomplet', className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-    trialing:   { label: 'Essai',     className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  }
-  const s = map[status] ?? { label: status, className: 'bg-slate-100 text-slate-600' }
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.className}`}>{s.label}</span>
-}
-
-function InvoiceStatusPill({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    draft:    { label: 'Brouillon', className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-    sent:     { label: 'Envoyée',   className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-    paid:     { label: 'Payée',     className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-    overdue:  { label: 'En retard', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    canceled: { label: 'Annulée',   className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-  }
-  const s = map[status] ?? { label: status, className: 'bg-slate-100 text-slate-600' }
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.className}`}>{s.label}</span>
-}
+export const metadata = { title: 'Admin — Fiche utilisateur' }
 
 async function getUserData(userId: string) {
   const admin = createAdminClient()
@@ -84,8 +25,8 @@ async function getUserData(userId: string) {
     recentInvoicesRes,
   ] = await Promise.all([
     admin.auth.admin.getUserById(userId),
-    admin.from('companies').select('*').eq('user_id', userId).single(),
-    admin.from('subscriptions').select('*').eq('user_id', userId).single(),
+    admin.from('companies').select('*').eq('user_id', userId).maybeSingle(),
+    admin.from('subscriptions').select('*').eq('user_id', userId).maybeSingle(),
     admin.from('invoices').select('id', { count: 'exact', head: true }).eq('user_id', userId),
     admin.from('quotes').select('id', { count: 'exact', head: true }).eq('user_id', userId),
     admin.from('clients').select('id', { count: 'exact', head: true }).eq('user_id', userId),
@@ -98,28 +39,59 @@ async function getUserData(userId: string) {
       .limit(5),
   ])
 
-  if (authRes.error || !authRes.data.user) return null
+  // Compte introuvable → 404. Toute autre erreur (réseau, API Auth en panne)
+  // s'affiche comme telle au lieu de passer pour un compte inexistant.
+  if (authRes.error) {
+    const status = (authRes.error as { status?: number }).status
+    if (status === 404 || status === 400) return { kind: 'missing' as const }
+    return { kind: 'error' as const }
+  }
+  if (!authRes.data.user) return { kind: 'missing' as const }
+
+  const count = (r: { count: number | null; error: unknown }) => (r.error ? null : r.count ?? 0)
 
   return {
+    kind: 'ok' as const,
     auth:           authRes.data.user,
     company:        companyRes.data,
+    companyError:   !!companyRes.error,
     subscription:   subRes.data,
+    subscriptionError: !!subRes.error,
     counts: {
-      invoices:       invoicesCountRes.count ?? 0,
-      quotes:         quotesCountRes.count ?? 0,
-      clients:        clientsCountRes.count ?? 0,
-      products:       productsCountRes.count ?? 0,
-      purchaseOrders: purchaseOrdersCountRes.count ?? 0,
+      invoices:       count(invoicesCountRes),
+      quotes:         count(quotesCountRes),
+      clients:        count(clientsCountRes),
+      products:       count(productsCountRes),
+      purchaseOrders: count(purchaseOrdersCountRes),
     },
     recentInvoices: recentInvoicesRes.data ?? [],
+    recentInvoicesError: !!recentInvoicesRes.error,
   }
+}
+
+function StripeLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="q-link inline-flex max-w-full items-center gap-1 font-mono text-[13px] !font-medium">
+      <span className="truncate">{children}</span>
+      <ExternalLink className="size-3.5 shrink-0" aria-hidden />
+      <span className="sr-only">(ouvre Stripe dans un nouvel onglet)</span>
+    </a>
+  )
 }
 
 export default async function AdminUserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const data   = await getUserData(id)
 
-  if (!data) notFound()
+  if (data.kind === 'missing') notFound()
+  if (data.kind === 'error') {
+    return (
+      <div className="flex flex-col gap-5">
+        <PageHeader title="Fiche utilisateur" backHref="/admin/users" backLabel="Utilisateurs" />
+        <LoadError what="ce compte" />
+      </div>
+    )
+  }
 
   const { auth, company, subscription, counts, recentInvoices } = data
 
@@ -128,132 +100,127 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
     auth.user_metadata?.last_name,
   ].filter(Boolean).join(' ') || auth.email || id
 
+  const title = company?.name || auth.email || 'Compte sans entreprise'
+
   return (
-    <div className="space-y-5 max-w-[960px] mx-auto">
+    <div className="flex flex-col gap-5">
+      <SetCrumb label={title} />
+      <PageHeader
+        backHref="/admin/users"
+        backLabel="Utilisateurs"
+        title={
+          <span className="flex items-center gap-3">
+            <Initials name={title} ink className="!size-11 !rounded-xl !text-sm" />
+            <span className="min-w-0 break-words">{title}</span>
+          </span>
+        }
+        subtitle={fullName}
+        actions={subscription ? <SubscriptionPill status={subscription.status} /> : <SubscriptionPill status="none" />}
+      />
 
-      {/* Back */}
-      <Link href="/admin/users" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-foreground transition-colors">
-        <ArrowLeft className="w-4 h-4" />
-        Retour aux utilisateurs
-      </Link>
+      <KpiGrid className="!grid-cols-2 sm:!grid-cols-3 xl:!grid-cols-5">
+        <Kpi label="Factures" value={counts.invoices ?? '—'} />
+        <Kpi label="Devis" value={counts.quotes ?? '—'} />
+        <Kpi label="Clients" value={counts.clients ?? '—'} />
+        <Kpi label="Prestations" value={counts.products ?? '—'} />
+        <Kpi label="Bons de commande" value={counts.purchaseOrders ?? '—'} className="max-sm:col-span-2" />
+      </KpiGrid>
 
-      {/* Hero */}
-      <div className="flex items-center gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#3B82F6] text-2xl font-extrabold">
-          {(company?.name || auth.email || '?').charAt(0).toUpperCase()}
-        </div>
-        <div>
-          <h1 className="text-[20px] font-extrabold text-[#0F172A] dark:text-[#E2E8F0] leading-tight">
-            {company?.name || '—'}
-          </h1>
-          <p className="text-[13px] text-slate-400">{fullName}</p>
-        </div>
-        {subscription && <StatusPill status={subscription.status} />}
-      </div>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Panel title="Compte">
+          <InfoList>
+            <InfoRow label="Email">{auth.email}</InfoRow>
+            <InfoRow label="Prénom">{auth.user_metadata?.first_name}</InfoRow>
+            <InfoRow label="Nom">{auth.user_metadata?.last_name}</InfoRow>
+            <InfoRow label="Inscription">{fmtDate(auth.created_at, { day: 'numeric', month: 'long', year: 'numeric' })}</InfoRow>
+            <InfoRow label="Dernière connexion">{auth.last_sign_in_at ? fmtDate(auth.last_sign_in_at) : null}</InfoRow>
+          </InfoList>
+        </Panel>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <StatBadge count={counts.invoices}       label="Factures" />
-        <StatBadge count={counts.quotes}         label="Devis" />
-        <StatBadge count={counts.clients}        label="Clients" />
-        <StatBadge count={counts.products}       label="Produits" />
-        <StatBadge count={counts.purchaseOrders} label="Bons de commande" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-        {/* Compte */}
-        <SectionCard title="Compte" icon={Mail}>
-          <InfoRow label="Email"       value={auth.email} />
-          <InfoRow label="Prénom"      value={auth.user_metadata?.first_name} />
-          <InfoRow label="Nom"         value={auth.user_metadata?.last_name} />
-          <InfoRow label="Inscription" value={new Date(auth.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} />
-          <InfoRow label="Dernière connexion" value={auth.last_sign_in_at ? new Date(auth.last_sign_in_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : null} />
-        </SectionCard>
-
-        {/* Entreprise */}
-        <SectionCard title="Entreprise" icon={Building2}>
-          <InfoRow label="Raison sociale" value={company?.name} />
-          <InfoRow label="SIREN"          value={company?.siren} />
-          <InfoRow label="SIRET"          value={company?.siret} />
-          <InfoRow label="TVA intra."     value={company?.vat_number} />
-          <InfoRow label="Ville"          value={[company?.city, company?.country].filter(Boolean).join(', ')} />
-        </SectionCard>
-
-        {/* Abonnement */}
-        {subscription && (
-          <SectionCard title="Abonnement" icon={CreditCard}>
-            <InfoRow label="Plan"          value={<span className="capitalize">{subscription.plan}</span>} />
-            <InfoRow label="Facturation"   value={subscription.billing_period === 'yearly' ? 'Annuelle' : 'Mensuelle'} />
-            <InfoRow label="Statut"        value={<StatusPill status={subscription.status} />} />
-            <InfoRow label="Renouvellement" value={subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString('fr-FR') : null} />
-            <InfoRow label="Stripe sub."   value={
-              subscription.stripe_subscription_id ? (
-                <a
-                  href={`https://dashboard.stripe.com/subscriptions/${subscription.stripe_subscription_id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#2563EB] hover:underline inline-flex items-center gap-1"
-                >
-                  {subscription.stripe_subscription_id.slice(0, 20)}…
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              ) : null
-            } />
-            <InfoRow label="Stripe customer" value={
-              subscription.stripe_customer_id ? (
-                <a
-                  href={`https://dashboard.stripe.com/customers/${subscription.stripe_customer_id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#2563EB] hover:underline inline-flex items-center gap-1"
-                >
-                  {subscription.stripe_customer_id}
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              ) : null
-            } />
-            {(subscription.plan === 'starter' || subscription.plan === 'pro') && (
-              <AdminChangePlanButton
-                userId={id}
-                currentPlan={subscription.plan}
-                hasStripeSubscription={!!subscription.stripe_subscription_id && (subscription.status === 'active' || subscription.status === 'past_due')}
-                isDowngrade={subscription.plan === 'pro'}
-              />
-            )}
-            <AdminSubscriptionActions
-              userId={id}
-              currentStatus={subscription.status}
-              currentPeriodEnd={subscription.current_period_end}
-            />
-          </SectionCard>
-        )}
-
-        {/* Dernières factures */}
-        <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 dark:border-[#1E3A5F] flex items-center gap-2">
-            <FileText className="w-4 h-4 text-slate-400" />
-            <h3 className="text-sm font-semibold text-foreground">Dernières factures</h3>
-          </div>
-          {recentInvoices.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-slate-400 text-center">Aucune facture</p>
+        <Panel title="Entreprise">
+          {data.companyError ? (
+            <LoadError what="l'entreprise de ce compte" compact />
           ) : (
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-slate-50 dark:divide-[#1E3A5F]">
-                {recentInvoices.map(inv => (
-                  <tr key={inv.id} className="hover:bg-slate-50/60 dark:hover:bg-[#162032]/40 transition-colors">
-                    <td className="px-4 py-2.5 font-mono text-[12px] text-foreground">{inv.invoice_number}</td>
-                    <td className="px-4 py-2.5 text-[12px] text-slate-400">{inv.issue_date ? new Date(inv.issue_date).toLocaleDateString('fr-FR') : '—'}</td>
-                    <td className="px-4 py-2.5 font-mono text-[12px] text-right text-foreground">
-                      {inv.total_ttc?.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) ?? '—'}
-                    </td>
-                    <td className="px-4 py-2.5 text-right"><InvoiceStatusPill status={inv.status} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <InfoList>
+              <InfoRow label="Raison sociale">{company?.name}</InfoRow>
+              <InfoRow label="SIREN">{company?.siren && <span className="font-mono">{company.siren}</span>}</InfoRow>
+              <InfoRow label="SIRET">{company?.siret && <span className="font-mono">{company.siret}</span>}</InfoRow>
+              <InfoRow label="TVA intracommunautaire">{company?.vat_number && <span className="font-mono">{company.vat_number}</span>}</InfoRow>
+              <InfoRow label="Ville">{[company?.city, company?.country].filter(Boolean).join(', ')}</InfoRow>
+            </InfoList>
           )}
-        </div>
+        </Panel>
+
+        <Panel title="Abonnement">
+          {data.subscriptionError ? (
+            <LoadError what="l'abonnement de ce compte" compact />
+          ) : !subscription ? (
+            <p className="px-5 pb-5 text-sm text-[var(--q-text-3)]">
+              Aucun abonnement : le compte utilise la version gratuite (devis, clients, brouillons).
+            </p>
+          ) : (
+            <>
+              <InfoList>
+                <InfoRow label="Formule">{planLabel(subscription.plan)}</InfoRow>
+                <InfoRow label="Facturation">{periodLabel(subscription.billing_period)}</InfoRow>
+                <InfoRow label="Statut"><SubscriptionPill status={subscription.status} /></InfoRow>
+                <InfoRow label="Fin de période">{subscription.current_period_end ? fmtDate(subscription.current_period_end, { day: 'numeric', month: 'long', year: 'numeric' }) : null}</InfoRow>
+                <InfoRow label="Abonnement Stripe">
+                  {subscription.stripe_subscription_id && (
+                    <StripeLink href={`https://dashboard.stripe.com/subscriptions/${subscription.stripe_subscription_id}`}>
+                      {subscription.stripe_subscription_id}
+                    </StripeLink>
+                  )}
+                </InfoRow>
+                <InfoRow label="Client Stripe">
+                  {subscription.stripe_customer_id && (
+                    <StripeLink href={`https://dashboard.stripe.com/customers/${subscription.stripe_customer_id}`}>
+                      {subscription.stripe_customer_id}
+                    </StripeLink>
+                  )}
+                </InfoRow>
+              </InfoList>
+              <div className="flex flex-col gap-3 border-t border-[var(--q-line-soft)] px-5 py-4">
+                {(subscription.plan === 'starter' || subscription.plan === 'pro') && (
+                  <AdminChangePlanButton
+                    userId={id}
+                    currentPlan={subscription.plan}
+                    hasStripeSubscription={!!subscription.stripe_subscription_id && (subscription.status === 'active' || subscription.status === 'past_due')}
+                    isDowngrade={subscription.plan === 'pro'}
+                  />
+                )}
+                <AdminSubscriptionActions
+                  userId={id}
+                  currentStatus={subscription.status}
+                  currentPeriodEnd={subscription.current_period_end}
+                />
+              </div>
+            </>
+          )}
+        </Panel>
+
+        <Panel title="Dernières factures">
+          {data.recentInvoicesError ? (
+            <LoadError what="les factures de ce compte" compact />
+          ) : recentInvoices.length === 0 ? (
+            <p className="px-5 pb-5 text-sm text-[var(--q-text-4)]">Aucune facture.</p>
+          ) : (
+            <ul className="q-list border-t border-[var(--q-line-soft)]">
+              {recentInvoices.map(inv => (
+                <li key={inv.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3">
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate font-mono text-[13px] text-[var(--q-ink)]">{inv.invoice_number || 'Brouillon sans numéro'}</span>
+                    <span className="text-xs text-[var(--q-text-4)]">{inv.issue_date ? fmtDate(inv.issue_date) : 'Date non renseignée'}</span>
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums text-[var(--q-ink)]">
+                    {typeof inv.total_ttc === 'number' ? fmtEuro(inv.total_ttc, 2) : '—'}
+                  </span>
+                  <DocStatusPill kind="invoice" status={inv.status} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
       </div>
     </div>
   )

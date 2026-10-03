@@ -1,79 +1,15 @@
+import Link from 'next/link'
+import { ArrowRight, CircleAlert } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/server'
-import {
-  Users,
-  CreditCard,
-  UserPlus,
-  MessageSquare,
-  TrendingUp,
-  FileText,
-  ArrowUpRight,
-  CheckCircle,
-  XCircle,
-  Clock,
-} from 'lucide-react'
-import MrrChart from '@/components/admin/MrrChart'
 import { PLANS } from '@/lib/stripe/plans'
+import { Initials, Kpi, KpiGrid, PageHeader, Panel } from '@/components/app/kit'
+import {
+  BarChart, LoadError, SubscriptionPill, fmtDate, fmtEuro, fmtInt, periodLabel, planLabel,
+  type BarDatum,
+} from '@/components/admin/ui'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin — Vue d\'ensemble' }
-
-/* ── KPI Card identique au style dashboard ─────────────────────── */
-function KpiCard({
-  icon,
-  iconBg,
-  value,
-  label,
-  sub,
-  badge,
-}: {
-  icon:    React.ReactNode
-  iconBg:  string
-  value:   React.ReactNode
-  label:   string
-  sub?:    string
-  badge?:  React.ReactNode
-}) {
-  return (
-    <div
-      className="relative overflow-hidden rounded-2xl border p-4 sm:p-5 bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F] shadow-[0_2px_12px_rgba(37,99,235,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.20)]"
-      style={{ transition: 'transform 0.15s ease' }}
-    >
-      <div aria-hidden className="pointer-events-none absolute -right-4 -bottom-4 w-24 h-24 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.05) 0%, transparent 70%)' }}
-      />
-      <div className="relative z-10">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: iconBg }}>
-            {icon}
-          </div>
-          {badge}
-        </div>
-        <p className="font-mono text-xl sm:text-2xl font-extrabold leading-none truncate mb-2 text-[#0F172A] dark:text-[#E2E8F0]">
-          {value}
-        </p>
-        <p className="text-[12px] font-semibold text-slate-500 dark:text-slate-400">{label}</p>
-        {sub && <p className="text-[11px] text-slate-300 dark:text-slate-600 mt-0.5">{sub}</p>}
-      </div>
-    </div>
-  )
-}
-
-/* ── Status pill ────────────────────────────────────────────────── */
-function StatusPill({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    active:     { label: 'Actif',       className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-    past_due:   { label: 'Retard',      className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-    canceled:   { label: 'Annulé',      className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    incomplete: { label: 'Incomplet',   className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-    trialing:   { label: 'Essai',       className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  }
-  const s = map[status] ?? { label: status, className: 'bg-slate-100 text-slate-600' }
-  return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.className}`}>
-      {s.label}
-    </span>
-  )
-}
 
 /* ── Data fetching ─────────────────────────────────────────────── */
 async function getOverviewData() {
@@ -134,7 +70,7 @@ async function getOverviewData() {
       .order('created_at', { ascending: false })
       .limit(5),
 
-    // Nouveaux abonnés sur 6 mois (pour graphique MRR)
+    // Nouveaux abonnés sur 6 mois (pour le graphique)
     admin
       .from('subscriptions')
       .select('created_at')
@@ -165,27 +101,32 @@ async function getOverviewData() {
   const arr = mrr * 12
   const churnRate = (active + canceled) > 0 ? (canceled / (active + canceled)) * 100 : 0
 
-  // Grouper les nouveaux abonnés par mois (6 derniers mois)
-  const monthCounts: Record<string, number> = {}
+  // Nouveaux abonnés par mois (6 derniers mois, mois en cours compris)
+  const months: BarDatum[] = []
+  const indexByKey: Record<string, number> = {}
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    const key = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' })
-    monthCounts[key] = 0
+    const key = `${d.getFullYear()}-${d.getMonth()}`
+    indexByKey[key] = months.length
+    months.push({
+      key,
+      short: d.toLocaleDateString('fr-FR', { month: 'short' }),
+      long: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+      value: 0,
+      current: i === 0,
+    })
   }
   for (const sub of newSubsRes.data ?? []) {
     const d = new Date(sub.created_at)
-    const key = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' })
-    if (key in monthCounts) monthCounts[key]++
+    const idx = indexByKey[`${d.getFullYear()}-${d.getMonth()}`]
+    if (idx !== undefined) months[idx].value++
   }
-  const chartData = Object.entries(monthCounts).map(([month, count]) => ({ month, count }))
 
-  // Total users (Supabase Admin API renvoie le total dans la pagination)
   // listUsers() interroge l'API Auth Admin, un sous-système à part — si elle
   // échoue (réseau, API down), ne pas confondre avec "0 utilisateur" réel.
   const totalUsers = (usersRes.data as { users: unknown[]; total?: number } | null)?.total
     ?? (usersRes.data as { users: unknown[] } | null)?.users?.length
     ?? 0
-  const totalUsersError = !!usersRes.error
 
   // Enrichir les derniers abonnements avec les emails (via auth admin)
   const recentSubsWithEmail = await Promise.all(
@@ -201,22 +142,45 @@ async function getOverviewData() {
 
   return {
     totalUsers,
-    totalUsersError,
+    totalUsersError: !!usersRes.error,
     newUsersThisMonth: newUsersRes.count ?? 0,
+    newUsersError: !!newUsersRes.error,
+    subsError: !!subsRes.error,
     activeSubscriptions: active,
     pastDue,
     canceled,
     starter,
     pro,
     unreadSupport: supportRes.count ?? 0,
+    supportError: !!supportRes.error,
     publishedPosts: blogRes.count ?? 0,
+    blogError: !!blogRes.error,
     recentCompanies: recentUsersRes.data ?? [],
+    recentCompaniesError: !!recentUsersRes.error,
     recentSubs: recentSubsWithEmail,
+    recentSubsError: !!recentSubsRes.error,
     mrr,
     arr,
     churnRate,
-    chartData,
+    chart: months,
+    chartError: !!newSubsRes.error,
   }
+}
+
+const UNAVAILABLE = (
+  <span className="inline-flex items-center gap-1 text-[var(--q-danger)]">
+    <CircleAlert className="size-3.5" aria-hidden />
+    Indisponible
+  </span>
+)
+
+function StatRow({ label, value, error }: { label: string; value: number; error?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-2.5">
+      <span className="text-sm text-[var(--q-text-2)]">{label}</span>
+      <span className="text-sm font-semibold tabular-nums text-[var(--q-ink)]">{error ? '—' : fmtInt(value)}</span>
+    </div>
+  )
 }
 
 /* ── Page ─────────────────────────────────────────────────────────── */
@@ -224,168 +188,114 @@ export default async function AdminOverviewPage() {
   const d = await getOverviewData()
 
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto">
+    <div className="flex flex-col gap-5">
+      <PageHeader title="Vue d'ensemble" subtitle="Comptes, abonnements et revenus de la plateforme." />
 
-      {/* Header */}
-      <div className="flex items-center gap-3 pt-1">
-        <div>
-          <h1 className="text-[22px] sm:text-[26px] font-extrabold text-[#0F172A] dark:text-[#E2E8F0] leading-tight tracking-tight">
-            Vue d&apos;ensemble
-          </h1>
-          <p className="text-[13px] text-slate-400 dark:text-slate-500 mt-0.5">
-            Données en temps réel de la plateforme Qonforme
-          </p>
-        </div>
-      </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <KpiCard
-          iconBg="linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)"
-          icon={<Users className="w-4 h-4 text-[#2563EB]" />}
-          value={d.totalUsersError ? '—' : d.totalUsers.toLocaleString('fr-FR')}
+      <KpiGrid>
+        <Kpi
           label="Utilisateurs"
-          sub={d.totalUsersError ? 'Données indisponibles' : 'inscrits au total'}
-          badge={d.totalUsersError ? (
-            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold rounded-full px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-              Erreur
-            </span>
-          ) : d.newUsersThisMonth > 0 ? (
-            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold rounded-full px-2 py-0.5 bg-[#D1FAE5] text-[#065F46]">
-              <ArrowUpRight className="w-3 h-3" />
-              +{d.newUsersThisMonth} ce mois
-            </span>
-          ) : undefined}
+          value={d.totalUsersError ? '—' : fmtInt(d.totalUsers)}
+          sub={d.totalUsersError ? UNAVAILABLE : d.newUsersError ? 'inscrits au total' : `+${fmtInt(d.newUsersThisMonth)} ce mois-ci`}
         />
-        <KpiCard
-          iconBg="linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)"
-          icon={<CreditCard className="w-4 h-4 text-[#059669]" />}
-          value={d.activeSubscriptions.toLocaleString('fr-FR')}
-          label="Abonnements actifs"
-          sub={`${d.starter} starter · ${d.pro} pro`}
+        <Kpi
+          label="Abonnés actifs"
+          value={d.subsError ? '—' : fmtInt(d.activeSubscriptions)}
+          sub={d.subsError ? UNAVAILABLE : `${fmtInt(d.starter)} ${PLANS.starter.name} · ${fmtInt(d.pro)} ${PLANS.pro.name}`}
         />
-        <KpiCard
-          iconBg="linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)"
-          icon={<UserPlus className="w-4 h-4 text-[#D97706]" />}
-          value={d.newUsersThisMonth}
-          label="Nouveaux ce mois"
-          sub="inscriptions récentes"
+        <Kpi
+          label="Revenu mensuel récurrent"
+          value={d.subsError ? '—' : fmtEuro(d.mrr)}
+          sub={d.subsError ? UNAVAILABLE : `HT · ${fmtEuro(d.arr)} sur un an`}
         />
-        <KpiCard
-          iconBg={d.unreadSupport > 0
-            ? 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)'
-            : 'linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%)'
-          }
-          icon={<MessageSquare className={`w-4 h-4 ${d.unreadSupport > 0 ? 'text-[#EF4444]' : 'text-[#7C3AED]'}`} />}
-          value={d.unreadSupport}
-          label="Messages non lus"
-          sub="bug reports + contact"
+        <Kpi
+          label="Support non lu"
+          value={d.supportError ? '—' : fmtInt(d.unreadSupport)}
+          tone={!d.supportError && d.unreadSupport > 0 ? 'warn' : 'default'}
+          sub={d.supportError ? UNAVAILABLE : (
+            <Link href={d.unreadSupport > 0 ? '/admin/support?status=new' : '/admin/support'} className="q-link text-[13px]">
+              {d.unreadSupport > 0 ? 'Lire les messages' : 'Voir le support'}
+            </Link>
+          )}
         />
-      </div>
+      </KpiGrid>
 
-      {/* Statut abonnements + Blog */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <div className="rounded-2xl border p-4 bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]">
-          <div className="flex items-center gap-2 mb-3">
-            <CheckCircle className="w-4 h-4 text-green-500" />
-            <span className="text-sm font-semibold text-foreground">Actifs</span>
-            <span className="ml-auto font-mono font-bold text-[#0F172A] dark:text-[#E2E8F0]">{d.activeSubscriptions}</span>
-          </div>
-          <div className="flex items-center gap-2 mb-3">
-            <Clock className="w-4 h-4 text-yellow-500" />
-            <span className="text-sm font-semibold text-foreground">En retard</span>
-            <span className="ml-auto font-mono font-bold text-[#0F172A] dark:text-[#E2E8F0]">{d.pastDue}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <XCircle className="w-4 h-4 text-red-500" />
-            <span className="text-sm font-semibold text-foreground">Annulés</span>
-            <span className="ml-auto font-mono font-bold text-[#0F172A] dark:text-[#E2E8F0]">{d.canceled}</span>
-          </div>
-        </div>
-        <div className="rounded-2xl border p-4 bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Plans actifs</p>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-foreground">Essentiel</span>
-            <span className="font-mono font-bold text-[#0F172A] dark:text-[#E2E8F0]">{d.starter}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-foreground">Artisan</span>
-            <span className="font-mono font-bold text-[#0F172A] dark:text-[#E2E8F0]">{d.pro}</span>
-          </div>
-        </div>
-        <div className="rounded-2xl border p-4 bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]">
-          <div className="flex items-center gap-2 mb-1">
-            <FileText className="w-4 h-4 text-[#2563EB]" />
-            <span className="text-sm font-semibold text-foreground">Articles publiés</span>
-          </div>
-          <p className="font-mono text-3xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0] mt-2">{d.publishedPosts}</p>
-          <p className="text-[11px] text-slate-400 mt-1">sur le blog Qonforme</p>
-        </div>
-      </div>
-
-      {/* Section revenus MRR */}
-      <div>
-        <h2 className="text-[14px] font-bold text-[#0F172A] dark:text-[#E2E8F0] mb-3">Revenus</h2>
-        <MrrChart
-          mrr={d.mrr}
-          arr={d.arr}
-          activeCount={d.activeSubscriptions}
-          churnRate={d.churnRate}
-          data={d.chartData}
-        />
-      </div>
-
-      {/* Dernières inscriptions + derniers abonnements */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-
-        {/* Dernières entreprises inscrites */}
-        <div className="rounded-2xl border bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F] overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 dark:border-[#1E3A5F] flex items-center gap-2">
-            <UserPlus className="w-4 h-4 text-slate-400" />
-            <h3 className="text-sm font-semibold text-foreground">Inscriptions récentes</h3>
-          </div>
-          <div className="divide-y divide-slate-50 dark:divide-[#1E3A5F]">
-            {d.recentCompanies.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-slate-400 text-center">Aucune inscription</p>
-            ) : d.recentCompanies.map((c) => (
-              <div key={c.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/60 dark:hover:bg-[#162032]/40 transition-colors">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#3B82F6] text-xs font-bold">
-                  {(c.name || '?').charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{c.name || '—'}</p>
-                  <p className="text-[11px] text-slate-400">
-                    {new Date(c.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </p>
-                </div>
-                <a href={`/admin/users/${c.user_id}`} className="text-[11px] text-[#2563EB] hover:underline shrink-0">Voir →</a>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+        <Panel title="Abonnements" action={<Link href="/admin/subscriptions" className="q-link text-[13px]">Tout voir</Link>}>
+          {d.subsError ? (
+            <LoadError what="les abonnements" compact />
+          ) : (
+            <div className="divide-y divide-[var(--q-line-soft)] px-5 pb-2">
+              <StatRow label="Actifs" value={d.activeSubscriptions} />
+              <StatRow label="Paiement en retard" value={d.pastDue} />
+              <StatRow label="Résiliés" value={d.canceled} />
+              <div className="flex items-center justify-between gap-3 py-2.5">
+                <span className="text-sm text-[var(--q-text-2)]">Taux de résiliation</span>
+                <span className="text-sm font-semibold tabular-nums text-[var(--q-ink)]">{d.churnRate.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}&nbsp;%</span>
               </div>
-            ))}
-          </div>
-        </div>
+              <StatRow label="Articles publiés sur le blog" value={d.publishedPosts} error={d.blogError} />
+            </div>
+          )}
+        </Panel>
 
-        {/* Derniers abonnements */}
-        <div className="rounded-2xl border bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F] overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 dark:border-[#1E3A5F] flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-slate-400" />
-            <h3 className="text-sm font-semibold text-foreground">Derniers abonnements</h3>
-          </div>
-          <div className="divide-y divide-slate-50 dark:divide-[#1E3A5F]">
-            {d.recentSubs.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-slate-400 text-center">Aucun abonnement</p>
-            ) : d.recentSubs.map((s) => (
-              <div key={s.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/60 dark:hover:bg-[#162032]/40 transition-colors">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{s.email}</p>
-                  <p className="text-[11px] text-slate-400 capitalize">{s.plan} · {s.billing_period === 'yearly' ? 'annuel' : 'mensuel'}</p>
-                </div>
-                <StatusPill status={s.status} />
-              </div>
-            ))}
-          </div>
-        </div>
+        <Panel title="Nouveaux abonnés" action={<span className="text-xs text-[var(--q-text-4)]">6 derniers mois</span>} bodyClassName="px-5 pb-5 pt-3">
+          {d.chartError ? (
+            <LoadError what="l'historique des abonnements" compact className="!px-0 !pb-0" />
+          ) : (
+            <BarChart data={d.chart} caption="Nouveaux abonnés par mois" valueName="Nouveaux abonnés" emptyText="Aucun nouvel abonné sur ces six mois." />
+          )}
+        </Panel>
       </div>
 
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Panel title="Inscriptions récentes" action={<Link href="/admin/users" className="q-link text-[13px]">Utilisateurs</Link>}>
+          {d.recentCompaniesError ? (
+            <LoadError what="les inscriptions" compact />
+          ) : d.recentCompanies.length === 0 ? (
+            <p className="px-5 pb-6 pt-2 text-sm text-[var(--q-text-4)]">Aucune inscription pour l&apos;instant.</p>
+          ) : (
+            <ul className="q-list border-t border-[var(--q-line-soft)]">
+              {d.recentCompanies.map((c) => (
+                <li key={c.id}>
+                  <Link href={`/admin/users/${c.user_id}`} className="q-list-row !min-h-[56px] !px-5 !py-2.5">
+                    <Initials name={c.name} />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate text-sm font-semibold">{c.name || 'Entreprise sans nom'}</span>
+                      <span className="text-xs text-[var(--q-text-4)]">Inscrite le {fmtDate(c.created_at)}</span>
+                    </span>
+                    <ArrowRight className="size-4 shrink-0 text-[var(--q-text-4)]" aria-hidden />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel title="Derniers abonnements" action={<Link href="/admin/subscriptions" className="q-link text-[13px]">Abonnements</Link>}>
+          {d.recentSubsError ? (
+            <LoadError what="les abonnements" compact />
+          ) : d.recentSubs.length === 0 ? (
+            <p className="px-5 pb-6 pt-2 text-sm text-[var(--q-text-4)]">Aucun abonnement pour l&apos;instant.</p>
+          ) : (
+            <ul className="q-list border-t border-[var(--q-line-soft)]">
+              {d.recentSubs.map((s) => (
+                <li key={s.id}>
+                  <Link href={`/admin/users/${s.user_id}`} className="q-list-row !min-h-[56px] !px-5 !py-2.5">
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate text-sm font-semibold">{s.email}</span>
+                      <span className="text-xs text-[var(--q-text-4)]">{planLabel(s.plan)} · {periodLabel(s.billing_period)} · {fmtDate(s.created_at)}</span>
+                    </span>
+                    <SubscriptionPill status={s.status} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
+
+      <p className="text-xs text-[var(--q-text-4)]">
+        Revenu estimé à partir des abonnements actifs et de la grille de prix actuelle, hors remises et avoirs.
+      </p>
     </div>
   )
 }

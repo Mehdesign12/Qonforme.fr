@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CalendarPlus, Ban, Loader2, X, AlertTriangle } from 'lucide-react'
+import { Ban, CalendarPlus, Check, Loader2, TriangleAlert } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { fmtDate } from '@/components/admin/ui'
 
 interface Props {
   userId: string
@@ -18,9 +20,12 @@ export default function AdminSubscriptionActions({ userId, currentStatus, curren
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState<string | null>(null)
   const [done,    setDone]    = useState<ActionType>(null)
+  // Contenu de la fenêtre : garde la dernière action pendant l'animation de fermeture
+  const [shown,   setShown]   = useState<ActionType>(null)
 
   const openModal = (a: ActionType) => {
     setError(null)
+    setShown(a)
     setAction(a)
   }
 
@@ -43,7 +48,7 @@ export default function AdminSubscriptionActions({ userId, currentStatus, curren
       setAction(null)
       router.refresh()
     } catch {
-      setError('Erreur réseau. Réessaie.')
+      setError('Erreur réseau. Réessayez.')
     } finally {
       setLoading(false)
     }
@@ -52,127 +57,86 @@ export default function AdminSubscriptionActions({ userId, currentStatus, curren
   const canCancel = currentStatus === 'active' || currentStatus === 'past_due' || currentStatus === 'trialing'
   const canExtend = currentStatus !== 'canceled'
 
+  const newEnd = (() => {
+    if (!currentPeriodEnd) return null
+    const d = new Date(currentPeriodEnd)
+    d.setDate(d.getDate() + 30)
+    return fmtDate(d, { day: 'numeric', month: 'long', year: 'numeric' })
+  })()
+
+  if (!canExtend && !canCancel) return null
+
   return (
     <>
-      {/* ── Boutons ──────────────────────────────────────────────────────── */}
-      <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#1E3A5F] flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {canExtend && (
           done === 'extend' ? (
-            <p className="text-[12px] text-blue-600 dark:text-blue-400 font-medium">
-              ✓ Accès prolongé de 30 jours
+            <p role="status" className="flex items-center gap-2 text-[13px] font-semibold text-[var(--q-ok)]">
+              <Check className="size-4" strokeWidth={2.5} aria-hidden />
+              Accès prolongé de 30 jours
             </p>
           ) : (
-            <button
-              onClick={() => openModal('extend')}
-              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#2563EB] dark:text-[#3B82F6] hover:underline transition-colors"
-            >
-              <CalendarPlus className="w-3.5 h-3.5" />
-              Prolonger 30 jours
+            <button type="button" onClick={() => openModal('extend')} className="q-btn q-btn-secondary q-btn-sm">
+              <CalendarPlus aria-hidden />
+              Prolonger de 30 jours
             </button>
           )
         )}
 
         {canCancel && (
           done === 'cancel' ? (
-            <p className="text-[12px] text-red-600 dark:text-red-400 font-medium">
-              ✓ Abonnement annulé
+            <p role="status" className="flex items-center gap-2 text-[13px] font-semibold text-[var(--q-danger)]">
+              <Check className="size-4" strokeWidth={2.5} aria-hidden />
+              Abonnement résilié
             </p>
           ) : (
-            <button
-              onClick={() => openModal('cancel')}
-              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-red-500 dark:text-red-400 hover:underline transition-colors"
-            >
-              <Ban className="w-3.5 h-3.5" />
-              Annuler l&apos;abonnement
+            <button type="button" onClick={() => openModal('cancel')} className="q-btn q-btn-danger q-btn-sm">
+              <Ban aria-hidden />
+              Résilier l&apos;abonnement
             </button>
           )
         )}
       </div>
 
-      {/* ── Modal ────────────────────────────────────────────────────────── */}
-      {action && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 md:backdrop-blur-sm px-4"
-          onClick={(e) => { if (e.target === e.currentTarget && !loading) setAction(null) }}
-        >
-          <div className="bg-white dark:bg-[#0F1E35] rounded-2xl border border-slate-200 dark:border-[#1E3A5F] shadow-2xl w-full max-w-sm p-6">
+      <Dialog open={action !== null} onOpenChange={(o) => { if (!o && !loading) setAction(null) }}>
+        <DialogContent className="gap-4 sm:max-w-md">
+          <DialogTitle className="q-display pr-8 text-[22px] font-semibold leading-tight">
+            {shown === 'cancel' ? 'Résilier l\'abonnement ?' : 'Prolonger l\'accès'}
+          </DialogTitle>
 
-            {/* Entête */}
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-bold text-[#0F172A] dark:text-[#E2E8F0]">
-                {action === 'extend' ? 'Prolonger l\'accès' : 'Annuler l\'abonnement'}
-              </h2>
-              <button
-                onClick={() => !loading && setAction(null)}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-[#162032] transition-colors"
-                aria-label="Fermer"
-                disabled={loading}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+          {shown === 'cancel' ? (
+            <DialogDescription className="q-banner q-banner-warn !gap-2 !px-3.5 !py-3 !text-[13px] !leading-relaxed">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>
+                L&apos;abonnement Stripe sera <strong>résilié immédiatement</strong> : le compte ne pourra plus émettre de factures.
+                Ses devis, brouillons et documents déjà émis restent consultables. Action irréversible.
+              </span>
+            </DialogDescription>
+          ) : (
+            <DialogDescription className="rounded-xl bg-[var(--q-surface-2)] px-3.5 py-3 text-[13px] leading-relaxed !text-[var(--q-text-3)]">
+              L&apos;accès sera prolongé de <strong>30 jours</strong> en base de données uniquement ; Stripe ne sera pas modifié.
+              {newEnd && <> Nouvelle fin de période : <strong>{newEnd}</strong>.</>}
+            </DialogDescription>
+          )}
 
-            {/* Corps */}
-            {action === 'extend' ? (
-              <div className="mb-5">
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#162032]/60 rounded-lg px-3 py-2">
-                  L&apos;accès sera prolongé de <strong>30 jours</strong> en base de données uniquement.
-                  Stripe ne sera pas modifié.
-                  {currentPeriodEnd && (
-                    <> La nouvelle date de fin sera le{' '}
-                      <strong>
-                        {(() => {
-                          const d = new Date(currentPeriodEnd)
-                          d.setDate(d.getDate() + 30)
-                          return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-                        })()}
-                      </strong>.
-                    </>
-                  )}
-                </p>
-              </div>
-            ) : (
-              <div className="mb-5 flex flex-col gap-2">
-                <div className="flex items-start gap-2 text-[12px] text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                  <span>
-                    L&apos;abonnement Stripe sera <strong>annulé immédiatement</strong> et l&apos;accès coupé.
-                    Cette action est irréversible.
-                  </span>
-                </div>
-              </div>
-            )}
+          {error && <p role="alert" className="text-[13px] text-[var(--q-danger)]">{error}</p>}
 
-            {/* Erreur */}
-            {error && (
-              <p className="text-[12px] text-red-600 dark:text-red-400 mb-4">{error}</p>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => !loading && setAction(null)}
-                disabled={loading}
-                className="flex-1 h-9 rounded-xl border border-slate-200 dark:border-[#1E3A5F] text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#162032] transition-colors disabled:opacity-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleConfirm}
-                disabled={loading}
-                className={`flex-1 h-9 rounded-xl text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-60 ${
-                  action === 'cancel'
-                    ? 'bg-red-500 hover:bg-red-600'
-                    : 'bg-[#2563EB] hover:bg-[#1D4ED8]'
-                }`}
-              >
-                {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                {loading ? 'En cours…' : 'Confirmer'}
-              </button>
-            </div>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => setAction(null)} disabled={loading} className="q-btn q-btn-ghost">
+              Annuler
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={loading}
+              className={shown === 'cancel' ? 'q-btn q-btn-danger' : 'q-btn q-btn-primary'}
+            >
+              {loading && <Loader2 className="animate-spin" aria-hidden />}
+              {loading ? 'En cours…' : shown === 'cancel' ? 'Résilier' : 'Prolonger'}
+            </button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

@@ -1,59 +1,63 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Users, Search } from 'lucide-react'
+import { Users } from 'lucide-react'
+import { EmptyState, Initials, PageHeader, StatusPill } from '@/components/app/kit'
+import { FilterBar, FilterSearch, FilterSelect, LoadError, SubscriptionPill, fmtDate, plural } from '@/components/admin/ui'
 import AdminQuickPlanToggle from './AdminQuickPlanToggle'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin — Utilisateurs' }
 
-function StatusPill({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    active:     { label: 'Actif',     className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-    past_due:   { label: 'Retard',    className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-    canceled:   { label: 'Annulé',    className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    incomplete: { label: 'Incomplet', className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-    trialing:   { label: 'Essai',     className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-    none:       { label: 'Sans plan', className: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500' },
-  }
-  const s = map[status] ?? map.none
-  return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.className}`}>
-      {s.label}
-    </span>
-  )
-}
-
 interface SearchParams { q?: string; plan?: string; status?: string }
+
+const LIMIT = 200
+const INACTIVE_MS = 30 * 24 * 60 * 60 * 1000
+
+/** Échappe les jokers de LIKE (% _ \) : « 50% » cherche « 50% ». */
+function likePattern(term: string): string {
+  return `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
+}
 
 async function getUsers(search: string, planFilter: string, statusFilter: string) {
   const admin = createAdminClient()
 
-  // Récupérer toutes les entreprises (contient user_id + nom)
+  // Emails et dernières connexions via l'API Auth Admin (un seul appel)
+  const { data: authUsersData, error: authError } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const authUsers = authUsersData?.users ?? []
+  const authMap = new Map(
+    authUsers.map(u => [u.id, { email: u.email ?? '', lastSignIn: u.last_sign_in_at ?? null }])
+  )
+
+  // Entreprises (contiennent user_id + nom)
   let companiesQuery = admin
     .from('companies')
     .select('user_id, name, city, created_at')
     .order('created_at', { ascending: false })
 
-  if (search) {
-    companiesQuery = companiesQuery.ilike('name', `%${search}%`)
+  const byEmail = search.includes('@')
+  if (search && byEmail) {
+    // Recherche par email : l'email vit dans Auth, pas dans `companies`. Filtrer
+    // d'abord les entreprises par nom (comme avant) ne trouvait jamais personne.
+    if (authError) return { rows: [], error: 'auth' as const, authError: true, truncated: false }
+    const needle = search.toLowerCase()
+    const ids = authUsers.filter(u => (u.email ?? '').toLowerCase().includes(needle)).map(u => u.id)
+    if (ids.length === 0) return { rows: [], error: null, authError: false, truncated: false }
+    companiesQuery = companiesQuery.in('user_id', ids.slice(0, LIMIT))
+  } else if (search) {
+    companiesQuery = companiesQuery.ilike('name', likePattern(search))
   }
 
-  const { data: companies } = await companiesQuery.limit(200)
+  const { data: companies, error: companiesError } = await companiesQuery.limit(LIMIT)
+  if (companiesError) return { rows: [], error: 'companies' as const, authError: !!authError, truncated: false }
+  if (!companies?.length) return { rows: [], error: null, authError: !!authError, truncated: false }
 
-  if (!companies?.length) return []
-
-  // Récupérer les abonnements pour ces users
+  // Abonnements de ces comptes
   const userIds = companies.map(c => c.user_id)
-  const { data: subs } = await admin
+  const { data: subs, error: subsError } = await admin
     .from('subscriptions')
     .select('user_id, plan, status, billing_period, current_period_end')
     .in('user_id', userIds)
-
-  // Récupérer les emails + dernière connexion via auth admin (batch)
-  const { data: authUsersData } = await admin.auth.admin.listUsers({ perPage: 1000 })
-  const authMap = new Map(
-    (authUsersData?.users ?? []).map(u => [u.id, { email: u.email ?? '', lastSignIn: u.last_sign_in_at ?? null }])
-  )
+  if (subsError) return { rows: [], error: 'subscriptions' as const, authError: !!authError, truncated: false }
 
   const subMap = new Map((subs ?? []).map(s => [s.user_id, s]))
 
@@ -62,10 +66,10 @@ async function getUsers(search: string, planFilter: string, statusFilter: string
     const auth = authMap.get(c.user_id)
     return {
       user_id:  c.user_id,
-      name:     c.name || '—',
+      name:     c.name || 'Entreprise sans nom',
       email:    auth?.email ?? '',
       lastSignIn: auth?.lastSignIn ?? null,
-      city:     c.city || '—',
+      city:     c.city || '',
       created_at: c.created_at,
       plan:     sub?.plan ?? 'none',
       subStatus: sub?.status ?? 'none',
@@ -75,16 +79,14 @@ async function getUsers(search: string, planFilter: string, statusFilter: string
   })
 
   // Filtres post-requête
-  if (search && !companies.length) return []
   if (planFilter)   rows = rows.filter(r => r.plan === planFilter)
   if (statusFilter) rows = rows.filter(r => r.subStatus === statusFilter)
 
-  // Si recherche par email
-  if (search && search.includes('@')) {
-    rows = rows.filter(r => r.email.toLowerCase().includes(search.toLowerCase()))
-  }
+  return { rows, error: null, authError: !!authError, truncated: companies.length === LIMIT }
+}
 
-  return rows
+function isInactive(lastSignIn: string | null): boolean {
+  return !!lastSignIn && Date.now() - new Date(lastSignIn).getTime() > INACTIVE_MS
 }
 
 export default async function AdminUsersPage({
@@ -93,154 +95,133 @@ export default async function AdminUsersPage({
   searchParams: Promise<SearchParams>
 }) {
   const params = await searchParams
-  const q      = params.q ?? ''
+  const q      = (params.q ?? '').trim()
   const plan   = params.plan ?? ''
   const status = params.status ?? ''
+  const filtered = !!(q || plan || status)
 
-  const users = await getUsers(q, plan, status)
+  const { rows: users, error, authError, truncated } = await getUsers(q, plan, status)
 
   return (
-    <div className="space-y-5 max-w-[1200px] mx-auto">
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        title="Utilisateurs"
+        subtitle={error ? 'Lecture impossible' : `${plural(users.length, 'compte')}${filtered ? ' correspondant aux filtres' : ''}${truncated ? ` (les ${LIMIT} plus récents)` : ''}`}
+      />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[22px] font-extrabold text-[#0F172A] dark:text-[#E2E8F0] leading-tight">
-            Utilisateurs
-          </h1>
-          <p className="text-[13px] text-slate-400 mt-0.5">{users.length} résultat(s)</p>
-        </div>
-      </div>
+      <FilterBar resetHref="/admin/users" active={filtered} label="Filtrer les utilisateurs">
+        <FilterSearch defaultValue={q} placeholder="Nom d'entreprise ou email…" label="Rechercher un utilisateur" />
+        <FilterSelect
+          name="plan"
+          label="Formule"
+          defaultValue={plan}
+          options={[
+            { value: '', label: 'Toutes les formules' },
+            { value: 'starter', label: 'Essentiel' },
+            { value: 'pro', label: 'Artisan' },
+            { value: 'none', label: 'Sans formule' },
+          ]}
+        />
+        <FilterSelect
+          name="status"
+          label="Statut de l'abonnement"
+          defaultValue={status}
+          options={[
+            { value: '', label: 'Tous les statuts' },
+            { value: 'active', label: 'Actif' },
+            { value: 'past_due', label: 'Paiement en retard' },
+            { value: 'canceled', label: 'Résilié' },
+            { value: 'incomplete', label: 'Paiement incomplet' },
+            { value: 'none', label: 'Sans abonnement' },
+          ]}
+        />
+      </FilterBar>
 
-      {/* Filtres */}
-      <form method="GET" className="flex flex-wrap gap-2">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="Rechercher par nom ou email…"
-            className="w-full h-9 pl-9 pr-3 text-sm rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+      {authError && !error && (
+        <p role="status" className="q-banner q-banner-warn">
+          Emails et dernières connexions indisponibles : l&apos;API d&apos;authentification n&apos;a pas répondu.
+        </p>
+      )}
+
+      {error ? (
+        <LoadError what={error === 'auth' ? 'les emails des comptes' : error === 'subscriptions' ? 'les abonnements' : 'les comptes'} />
+      ) : users.length === 0 ? (
+        <div className="q-card">
+          <EmptyState
+            icon={<Users className="size-5" aria-hidden />}
+            title={filtered ? 'Aucun compte ne correspond' : 'Aucun compte pour l\'instant'}
+            text={filtered ? 'Modifiez la recherche ou effacez les filtres.' : 'Les entreprises inscrites apparaîtront ici.'}
           />
         </div>
-        <select
-          name="plan"
-          defaultValue={plan}
-          className="h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="">Tous les plans</option>
-          <option value="starter">Essentiel</option>
-          <option value="pro">Artisan</option>
-          <option value="none">Sans plan</option>
-        </select>
-        <select
-          name="status"
-          defaultValue={status}
-          className="h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="">Tous les statuts</option>
-          <option value="active">Actif</option>
-          <option value="past_due">En retard</option>
-          <option value="canceled">Annulé</option>
-          <option value="none">Sans abonnement</option>
-        </select>
-        <button
-          type="submit"
-          className="h-9 px-4 text-sm font-medium rounded-lg bg-[#2563EB] text-white hover:bg-[#1d4ed8] transition-colors"
-        >
-          Filtrer
-        </button>
-        {(q || plan || status) && (
-          <a href="/admin/users" className="h-9 px-4 text-sm font-medium rounded-lg border border-border text-foreground hover:bg-muted flex items-center transition-colors">
-            Effacer
-          </a>
-        )}
-      </form>
-
-      {/* Table */}
-      <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 dark:border-[#1E3A5F] bg-slate-50/80 dark:bg-[#162032]/60">
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Entreprise</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Email</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Plan</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Statut</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Inscription</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Activité</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-[#1E3A5F]">
-              {users.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-400">
-                    <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    Aucun utilisateur trouvé
-                  </td>
-                </tr>
-              ) : users.map((u) => (
-                <tr key={u.user_id} className="hover:bg-slate-50/60 dark:hover:bg-[#162032]/40 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#3B82F6] text-xs font-bold">
-                        {u.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{u.name}</p>
-                        <p className="text-[11px] text-slate-400">{u.city}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{u.email}</td>
-                  <td className="px-4 py-3">
-                    {u.plan === 'starter' || u.plan === 'pro' ? (
-                      <AdminQuickPlanToggle
-                        userId={u.user_id}
-                        currentPlan={u.plan}
-                        billingPeriod={u.billing_period}
-                      />
-                    ) : (
-                      <span className="text-slate-400 text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusPill status={u.subStatus} />
-                  </td>
-                  <td className="px-4 py-3 text-[12px] text-slate-400">
-                    {new Date(u.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </td>
-                  <td className="px-4 py-3">
-                    {u.lastSignIn ? (
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[12px] text-slate-400">
-                          {new Date(u.lastSignIn).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </span>
-                        {(Date.now() - new Date(u.lastSignIn).getTime()) > 30 * 24 * 60 * 60 * 1000 && (
-                          <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 w-fit">
-                            Inactif
+      ) : (
+        <>
+          {/* Tableau (ordinateur) */}
+          <section aria-label="Liste des utilisateurs" className="q-card hidden overflow-hidden md:block">
+            <div className="overflow-x-auto">
+              <table className="q-table min-w-[820px] [&_th]:border-t-0">
+                <thead>
+                  <tr className="bg-[var(--q-surface-2)]">
+                    <th scope="col">Compte</th>
+                    <th scope="col">Formule</th>
+                    <th scope="col">Abonnement</th>
+                    <th scope="col">Inscription</th>
+                    <th scope="col">Dernière connexion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.user_id}>
+                      <td className="!py-2.5">
+                        <Link href={`/admin/users/${u.user_id}`} className="group flex min-w-[220px] max-w-[300px] items-center gap-3 text-[var(--q-ink)]">
+                          <Initials name={u.name} className="!size-9 !rounded-[10px]" />
+                          <span className="flex min-w-0 flex-col gap-px">
+                            <span className="line-clamp-2 font-semibold group-hover:text-[var(--q-accent-strong)]">{u.name}</span>
+                            <span className="truncate text-xs text-[var(--q-text-3)]" title={u.email || undefined}>{u.email || 'Email indisponible'}</span>
+                            {u.city && <span className="truncate text-xs text-[var(--q-text-4)]">{u.city}</span>}
                           </span>
+                        </Link>
+                      </td>
+                      <td className="!py-2.5">
+                        {u.plan === 'starter' || u.plan === 'pro' ? (
+                          <AdminQuickPlanToggle userId={u.user_id} currentPlan={u.plan} billingPeriod={u.billing_period} accountName={u.name} />
+                        ) : (
+                          <span className="text-[var(--q-placeholder)]">—</span>
                         )}
-                      </div>
-                    ) : (
-                      <span className="text-[12px] text-slate-300 dark:text-slate-600">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/admin/users/${u.user_id}`}
-                      className="text-[12px] font-medium text-[#2563EB] hover:underline"
-                    >
-                      Voir →
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      </td>
+                      <td className="!py-2.5"><SubscriptionPill status={u.subStatus} /></td>
+                      <td className="!py-2.5 whitespace-nowrap text-[13px] text-[var(--q-text-3)]">{fmtDate(u.created_at)}</td>
+                      <td className="!py-2.5 whitespace-nowrap text-[13px] text-[var(--q-text-3)]">
+                        <span className="flex flex-col items-start gap-1">
+                          {fmtDate(u.lastSignIn)}
+                          {isInactive(u.lastSignIn) && (
+                            <StatusPill tone="warn" className="!h-5 !text-[11px]">
+                              Inactif<span className="sr-only"> depuis plus de 30 jours</span>
+                            </StatusPill>
+                          )}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* Liste (mobile) — le changement de formule se fait depuis la fiche */}
+          <section aria-label="Liste des utilisateurs" className="q-card q-list overflow-hidden !rounded-[18px] md:hidden">
+            {users.map((u) => (
+              <Link key={u.user_id} href={`/admin/users/${u.user_id}`} className="q-list-row !gap-3 !px-3.5 !py-2.5">
+                <Initials name={u.name} className="!size-10 !rounded-xl !text-[13px]" />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="truncate text-[15px] font-semibold">{u.name}</span>
+                  <span className="truncate text-[13px] text-[var(--q-text-4)]">{u.email || u.city || 'Inscrit le ' + fmtDate(u.created_at)}</span>
+                </span>
+                <SubscriptionPill status={u.subStatus} className="shrink-0" />
+              </Link>
+            ))}
+          </section>
+        </>
+      )}
     </div>
   )
 }

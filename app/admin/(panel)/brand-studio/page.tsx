@@ -10,16 +10,18 @@ import {
   RefreshCw,
   Image as ImageIcon,
   X,
-  ZoomIn,
   Copy,
   Check,
   Trash2,
-  Settings,
   ChevronDown,
   Save,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import { EmptyState, PageHeader, Panel } from '@/components/app/kit'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { LoadError, fmtDateTime } from '@/components/admin/ui'
+import { cn } from '@/lib/utils'
 
 interface ImageAnalysis {
   description: string
@@ -48,12 +50,41 @@ const ASPECT_RATIOS = [
   { value: '3:4', label: '3:4', desc: 'Portrait classique' },
 ] as const
 
+type Guidelines = {
+  primary_color: string
+  secondary_color: string
+  accent_colors: string[]
+  mood: string
+  target: string
+  visual_identity: string
+}
+
+/** Couleur : pastille native + code hexadécimal (16 px sur mobile, règle iOS de CLAUDE.md). */
+function ColorField({ id, label, value, onChange }: { id: string; label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex flex-col gap-[7px]">
+      <label htmlFor={id} className="q-label">{label}</label>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={/^#[0-9a-f]{6}$/i.test(value) ? value : '#000000'}
+          onChange={(e) => onChange(e.target.value)}
+          aria-label={`${label} (sélecteur)`}
+          className="size-[42px] shrink-0 cursor-pointer rounded-[10px] border border-[var(--q-field)] bg-[var(--q-surface)] p-1"
+        />
+        <input id={id} type="text" value={value} onChange={(e) => onChange(e.target.value)} className="q-input font-mono" spellCheck={false} />
+      </div>
+    </div>
+  )
+}
+
 export default function BrandStudioPage() {
   // Upload state
   const [inspirationSrc, setInspirationSrc] = useState<string | null>(null)
   const [inspirationBase64, setInspirationBase64] = useState<string | null>(null)
   const [inspirationMime, setInspirationMime] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [dragOver, setDragOver] = useState(false)
 
   // Analysis state
   const [analysis, setAnalysis] = useState<ImageAnalysis | null>(null)
@@ -68,15 +99,17 @@ export default function BrandStudioPage() {
   // Gallery state
   const [gallery, setGallery] = useState<GalleryImage[]>([])
   const [loadingGallery, setLoadingGallery] = useState(true)
+  const [galleryError, setGalleryError] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
   const [deletingImage, setDeletingImage] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<GalleryImage | null>(null)
 
   // Brand guidelines state
   const [guidelinesOpen, setGuidelinesOpen] = useState(false)
   const [guidelinesLoading, setGuidelinesLoading] = useState(false)
   const [guidelinesSaving, setGuidelinesSaving] = useState(false)
-  const [guidelines, setGuidelines] = useState({
+  const [guidelines, setGuidelines] = useState<Guidelines>({
     primary_color: '#2563EB',
     secondary_color: '#0F172A',
     accent_colors: ['#3B82F6', '#EFF6FF'],
@@ -94,7 +127,7 @@ export default function BrandStudioPage() {
         method: 'DELETE',
       })
       if (!res.ok) {
-        const data = await res.json()
+        const data = await res.json().catch(() => ({}))
         throw new Error(data.error || 'Erreur')
       }
       setGallery((prev) => prev.filter((img) => img.file_name !== fileName))
@@ -104,6 +137,7 @@ export default function BrandStudioPage() {
           setPreviewImage(null)
         }
       }
+      setPendingDelete(null)
       toast.success('Image supprimée')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur lors de la suppression')
@@ -116,12 +150,12 @@ export default function BrandStudioPage() {
   const fetchGallery = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/brand-studio')
-      if (res.ok) {
-        const data = await res.json()
-        setGallery(data.images ?? [])
-      }
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setGallery(data.images ?? [])
+      setGalleryError(false)
     } catch {
-      // silent
+      setGalleryError(true)
     } finally {
       setLoadingGallery(false)
     }
@@ -159,22 +193,28 @@ export default function BrandStudioPage() {
         body: JSON.stringify({ key: 'brand_guidelines', value: JSON.stringify(guidelines) }),
       })
       if (!res.ok) throw new Error('Erreur')
-      toast.success('Brand guidelines sauvegardées')
+      toast.success('Charte enregistrée')
     } catch {
-      toast.error('Erreur lors de la sauvegarde')
+      toast.error('Erreur lors de l\'enregistrement')
     } finally {
       setGuidelinesSaving(false)
     }
   }
 
+  const setAccent = (index: number, value: string) => {
+    const next = [...guidelines.accent_colors]
+    next[index] = value
+    setGuidelines({ ...guidelines, accent_colors: next })
+  }
+
   // ── File upload ──────────────────────────────────────────────────────────
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast.error('Fichier non supporté — envoyez une image (PNG, JPG, WebP)')
+      toast.error('Fichier non pris en charge : envoyez une image (PNG, JPG, WebP)')
       return
     }
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('Image trop volumineuse (max 10 Mo)')
+      toast.error('Image trop volumineuse (10 Mo au maximum)')
       return
     }
 
@@ -196,6 +236,7 @@ export default function BrandStudioPage() {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
+    setDragOver(false)
     const file = e.dataTransfer.files?.[0]
     if (file) handleFileSelect(file)
   }
@@ -210,7 +251,7 @@ export default function BrandStudioPage() {
         if (file) {
           e.preventDefault()
           handleFileSelect(file)
-          toast.success('Image collée depuis le presse-papier')
+          toast.success('Image collée depuis le presse-papiers')
           break
         }
       }
@@ -250,7 +291,7 @@ export default function BrandStudioPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur')
       setAnalysis(data.analysis)
-      toast.success('Image analysée avec succès')
+      toast.success('Image analysée')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur lors de l'analyse")
     } finally {
@@ -279,12 +320,12 @@ export default function BrandStudioPage() {
 
       if (data.url) {
         setGeneratedUrl(data.url)
-        toast.success('Image brandée générée !')
+        toast.success('Image générée')
         fetchGallery()
       } else if (data.base64) {
         // Fallback: create a data URL
         setGeneratedUrl(`data:${data.mimeType};base64,${data.base64}`)
-        toast.success('Image générée (sauvegarde locale uniquement)')
+        toast.success('Image générée (non enregistrée dans la galerie)')
       } else {
         throw new Error('Aucune image dans la réponse')
       }
@@ -300,585 +341,387 @@ export default function BrandStudioPage() {
     try {
       await navigator.clipboard.writeText(url)
       setCopiedUrl(url)
-      toast.success('URL copiée')
+      toast.success('Adresse copiée')
       setTimeout(() => setCopiedUrl(null), 2000)
     } catch {
       toast.error('Impossible de copier')
     }
   }
 
+  const analysisRows: [string, string][] = analysis
+    ? [
+        ['Style', analysis.style],
+        ['Ambiance', analysis.mood],
+        ['Composition', analysis.composition],
+        ['Description', analysis.description],
+      ]
+    : []
+
   return (
-    <div className="space-y-6 max-w-[960px] mx-auto">
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        title="Brand Studio"
+        subtitle="Importez une image d'inspiration : l'IA la recrée aux couleurs de Qonforme."
+      />
 
-      {/* Header */}
-      <div>
-        <h1 className="text-[22px] font-extrabold text-[#0F172A] dark:text-[#E2E8F0] leading-tight flex items-center gap-2">
-          <Palette className="w-6 h-6 text-[#2563EB]" />
-          Brand Studio
-        </h1>
-        <p className="text-[13px] text-slate-400 mt-0.5">
-          Uploadez une image d&apos;inspiration, l&apos;IA la recrée avec le branding Qonforme
-        </p>
-      </div>
-
-      {/* Main workflow area */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-        {/* LEFT — Inspiration upload */}
-        <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] p-5 space-y-4">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Upload className="w-4 h-4 text-[#2563EB]" />
-            Image d&apos;inspiration
-          </h2>
-
+      <div className="grid gap-5 lg:grid-cols-2">
+        {/* Image d'inspiration */}
+        <Panel title="1. Image d'inspiration" bodyClassName="flex flex-col gap-4 px-5 pb-5 pt-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleFileSelect(file)
+            }}
+          />
           {!inspirationSrc ? (
-            <div
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleDrop}
+            <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-200 dark:border-[#1E3A5F] rounded-xl p-8 text-center cursor-pointer hover:border-[#2563EB] hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors"
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              className={cn(
+                'flex flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-10 text-center transition-colors focus-visible:shadow-[0_0_0_4px_var(--q-focus)] focus-visible:outline-none',
+                dragOver ? 'border-[var(--q-accent)] bg-[var(--q-wash)]' : 'border-[var(--q-field)] hover:border-[var(--q-accent)] hover:bg-[var(--q-wash)]',
+              )}
             >
-              <ImageIcon className="w-10 h-10 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-              <p className="text-sm font-medium text-foreground mb-1">
-                Glissez une image ici ou cliquez pour uploader
-              </p>
-              <p className="text-[12px] text-slate-400">
-                PNG, JPG, WebP — max 10 Mo — ou collez depuis le presse-papier (Ctrl+V)
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleFileSelect(file)
-                }}
-              />
-            </div>
+              <span className="q-empty-icon"><Upload className="size-5" aria-hidden /></span>
+              <span className="text-sm font-semibold text-[var(--q-ink)]">Glissez une image ici ou choisissez un fichier</span>
+              <span className="text-[13px] text-[var(--q-text-4)]">PNG, JPG ou WebP, 10 Mo au maximum. Vous pouvez aussi la coller (Ctrl+V).</span>
+            </button>
           ) : (
-            <div className="relative">
-              <div className="relative rounded-xl overflow-hidden border border-slate-100 dark:border-[#1E3A5F]">
+            <div className="flex flex-col gap-3">
+              <div className="relative overflow-hidden rounded-xl border border-[var(--q-line)] bg-[var(--q-sunken)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={inspirationSrc}
-                  alt="Image d'inspiration"
-                  className="w-full h-auto max-h-[300px] object-contain bg-slate-50 dark:bg-[#0A1628]"
-                />
-              </div>
-              <button
-                onClick={clearInspiration}
-                className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
-                title="Supprimer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
-              {/* Analyze button */}
-              {!analysis && (
+                <img src={inspirationSrc} alt="Image d'inspiration" className="h-auto max-h-[300px] w-full object-contain" />
                 <button
-                  onClick={handleAnalyze}
-                  disabled={analyzing}
-                  className="mt-3 w-full inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-[#1d4ed8] transition-colors disabled:opacity-50"
+                  type="button"
+                  onClick={clearInspiration}
+                  aria-label="Retirer l'image d'inspiration"
+                  className="q-btn q-btn-secondary q-btn-sm q-btn-icon absolute right-2 top-2"
                 >
-                  {analyzing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Analyse en cours…
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Analyser l&apos;image
-                    </>
-                  )}
+                  <X aria-hidden />
+                </button>
+              </div>
+
+              {!analysis && (
+                <button type="button" onClick={handleAnalyze} disabled={analyzing} className="q-btn q-btn-primary w-full">
+                  {analyzing ? <Loader2 className="animate-spin" aria-hidden /> : <Sparkles aria-hidden />}
+                  {analyzing ? 'Analyse en cours…' : 'Analyser l\'image'}
                 </button>
               )}
             </div>
           )}
 
-          {/* Analysis results */}
           {analysis && (
-            <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Analyse de l&apos;image
-                </h3>
-                <button
-                  onClick={handleAnalyze}
-                  disabled={analyzing}
-                  className="text-[11px] text-[#2563EB] hover:underline flex items-center gap-1"
-                >
-                  <RefreshCw className={`w-3 h-3 ${analyzing ? 'animate-spin' : ''}`} />
-                  Re-analyser
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="q-label">Analyse de l&apos;image</h3>
+                <button type="button" onClick={handleAnalyze} disabled={analyzing} className="q-btn q-btn-ghost q-btn-sm">
+                  <RefreshCw className={analyzing ? 'animate-spin' : undefined} aria-hidden />
+                  Analyser à nouveau
                 </button>
               </div>
-
-              <div className="rounded-xl bg-slate-50 dark:bg-[#0A1628] p-3 space-y-2 text-[13px]">
-                <div>
-                  <span className="font-semibold text-foreground">Style : </span>
-                  <span className="text-slate-600 dark:text-slate-400">{analysis.style}</span>
-                </div>
-                <div>
-                  <span className="font-semibold text-foreground">Ambiance : </span>
-                  <span className="text-slate-600 dark:text-slate-400">{analysis.mood}</span>
-                </div>
-                <div>
-                  <span className="font-semibold text-foreground">Composition : </span>
-                  <span className="text-slate-600 dark:text-slate-400">{analysis.composition}</span>
-                </div>
-                <div>
-                  <span className="font-semibold text-foreground">Description : </span>
-                  <span className="text-slate-600 dark:text-slate-400">{analysis.description}</span>
-                </div>
-                <div>
-                  <span className="font-semibold text-foreground">Couleurs : </span>
-                  <div className="inline-flex gap-1.5 ml-1 align-middle">
-                    {analysis.colors.map((c, i) => (
-                      <span key={i} className="inline-block rounded-full px-2 py-0.5 text-[10px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                        {c}
-                      </span>
-                    ))}
+              <dl className="q-inset flex flex-col gap-2.5 p-3.5 text-[13px] leading-relaxed">
+                {analysisRows.map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="inline font-semibold text-[var(--q-ink)]">{label} : </dt>
+                    <dd className="inline text-[var(--q-text-2)]">{value}</dd>
                   </div>
+                ))}
+                <div>
+                  <dt className="font-semibold text-[var(--q-ink)]">Couleurs</dt>
+                  <dd className="mt-1 flex flex-wrap gap-1">
+                    {analysis.colors.map((c, i) => <span key={i} className="q-tag font-mono">{c}</span>)}
+                  </dd>
                 </div>
                 <div>
-                  <span className="font-semibold text-foreground">Éléments clés : </span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {analysis.elements.map((el, i) => (
-                      <span key={i} className="inline-block rounded-full px-2 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                        {el}
-                      </span>
-                    ))}
-                  </div>
+                  <dt className="font-semibold text-[var(--q-ink)]">Éléments clés</dt>
+                  <dd className="mt-1 flex flex-wrap gap-1">
+                    {analysis.elements.map((el, i) => <span key={i} className="q-tag">{el}</span>)}
+                  </dd>
                 </div>
-              </div>
+              </dl>
             </div>
           )}
-        </div>
+        </Panel>
 
-        {/* RIGHT — Generation controls + result */}
-        <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] p-5 space-y-4">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#2563EB]" />
-            Génération brandée
-          </h2>
-
+        {/* Génération */}
+        <Panel title="2. Image aux couleurs de Qonforme" bodyClassName="flex flex-col gap-4 px-5 pb-5 pt-2">
           {!analysis ? (
-            <div className="py-12 text-center">
-              <Palette className="w-10 h-10 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-              <p className="text-sm font-medium text-foreground mb-1">
-                En attente d&apos;analyse
-              </p>
-              <p className="text-[12px] text-slate-400">
-                Uploadez et analysez une image d&apos;inspiration pour commencer la génération.
-              </p>
-            </div>
+            <EmptyState
+              className="py-10"
+              icon={<Palette className="size-5" aria-hidden />}
+              title="En attente d'une analyse"
+              text="Importez puis analysez une image d'inspiration pour lancer la génération."
+            />
           ) : (
             <>
-              {/* Instructions */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Instructions supplémentaires (optionnel)
+              <div className="flex flex-col gap-[7px]">
+                <label htmlFor="bs-instructions" className="q-label">
+                  Consignes <span className="font-normal text-[var(--q-text-4)]">(facultatif)</span>
                 </label>
                 <textarea
+                  id="bs-instructions"
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value.slice(0, 500))}
-                  placeholder="Ex: Mettre en avant un artisan plombier, ajouter des outils en arrière-plan…"
+                  placeholder="Ex. : mettre en avant un artisan plombier, des outils en arrière-plan…"
                   disabled={generating}
                   rows={3}
                   maxLength={500}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 resize-none"
+                  className="q-input !min-h-[96px] resize-none"
                 />
-                <p className={`text-[11px] mt-1 text-right ${instructions.length > 450 ? 'text-amber-500' : 'text-slate-400'}`}>
+                <p className={cn('q-field-hint text-right tabular-nums', instructions.length > 450 && '!text-[var(--q-warn)]')}>
                   {instructions.length}/500
                 </p>
               </div>
 
-              {/* Aspect ratio */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Format
-                </label>
-                <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col gap-[7px]">
+                <span id="bs-format" className="q-label">Format</span>
+                <div role="group" aria-labelledby="bs-format" className="q-seg flex-wrap self-start">
                   {ASPECT_RATIOS.map((ar) => (
                     <button
                       key={ar.value}
+                      type="button"
                       onClick={() => setAspectRatio(ar.value)}
                       disabled={generating}
-                      className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-colors ${
-                        aspectRatio === ar.value
-                          ? 'bg-[#2563EB] text-white border-[#2563EB]'
-                          : 'bg-background text-foreground border-border hover:border-[#2563EB] hover:text-[#2563EB]'
-                      } disabled:opacity-50`}
+                      aria-pressed={aspectRatio === ar.value}
                       title={ar.desc}
                     >
                       {ar.label}
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {ASPECT_RATIOS.find((ar) => ar.value === aspectRatio)?.desc}
-                </p>
+                <p className="q-field-hint">{ASPECT_RATIOS.find((ar) => ar.value === aspectRatio)?.desc}</p>
               </div>
 
-              {/* Generate button */}
-              <button
-                onClick={handleGenerate}
-                disabled={generating}
-                className="w-full inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-[#1d4ed8] transition-colors disabled:opacity-50"
-              >
-                {generating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Génération en cours…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Générer l&apos;image brandée
-                  </>
-                )}
+              <button type="button" onClick={handleGenerate} disabled={generating} className="q-btn q-btn-primary w-full">
+                {generating ? <Loader2 className="animate-spin" aria-hidden /> : <Sparkles aria-hidden />}
+                {generating ? 'Génération en cours…' : 'Générer l\'image'}
               </button>
 
-              {/* Result */}
               {generatedUrl && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="relative rounded-xl overflow-hidden border border-slate-100 dark:border-[#1E3A5F]">
+                <div className="flex flex-col gap-3">
+                  <div className="overflow-hidden rounded-xl border border-[var(--q-line)] bg-[var(--q-sunken)]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={generatedUrl}
-                      alt="Image brandée générée"
-                      className="w-full h-auto bg-slate-50 dark:bg-[#0A1628]"
-                    />
+                    <img src={generatedUrl} alt="Image générée" className="h-auto w-full" />
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <a
                       href={generatedUrl}
                       download={`qonforme-brand-${Date.now()}.png`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 inline-flex items-center justify-center gap-2 h-9 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-slate-50 dark:hover:bg-[#162032] transition-colors"
+                      className="q-btn q-btn-secondary q-btn-sm flex-1"
                     >
-                      <Download className="w-4 h-4" />
+                      <Download aria-hidden />
                       Télécharger
                     </a>
                     {generatedUrl.startsWith('http') && (
-                      <button
-                        onClick={() => handleCopyUrl(generatedUrl)}
-                        className="flex-1 inline-flex items-center justify-center gap-2 h-9 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-slate-50 dark:hover:bg-[#162032] transition-colors"
-                      >
-                        {copiedUrl === generatedUrl ? (
-                          <><Check className="w-4 h-4 text-green-500" /> Copié !</>
-                        ) : (
-                          <><Copy className="w-4 h-4" /> Copier l&apos;URL</>
-                        )}
+                      <button type="button" onClick={() => handleCopyUrl(generatedUrl)} className="q-btn q-btn-secondary q-btn-sm flex-1">
+                        {copiedUrl === generatedUrl ? <Check aria-hidden /> : <Copy aria-hidden />}
+                        {copiedUrl === generatedUrl ? 'Copiée' : 'Copier l\'adresse'}
                       </button>
                     )}
                     <button
+                      type="button"
                       onClick={handleGenerate}
                       disabled={generating}
-                      className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-slate-50 dark:hover:bg-[#162032] transition-colors disabled:opacity-50"
-                      title="Régénérer"
+                      aria-label="Générer à nouveau"
+                      title="Générer à nouveau"
+                      className="q-btn q-btn-secondary q-btn-sm q-btn-icon"
                     >
-                      <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={generating ? 'animate-spin' : undefined} aria-hidden />
                     </button>
                   </div>
                 </div>
               )}
             </>
           )}
-        </div>
+        </Panel>
       </div>
 
-      {/* Brand Guidelines Editor (collapsible) */}
-      <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] overflow-hidden">
+      {/* Charte graphique (repliable) */}
+      <section className="q-card overflow-hidden" aria-labelledby="bs-guidelines-title">
         <button
+          type="button"
           onClick={() => setGuidelinesOpen(!guidelinesOpen)}
-          className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-50 dark:hover:bg-[#162032] transition-colors"
+          aria-expanded={guidelinesOpen}
+          aria-controls="bs-guidelines"
+          className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition-colors hover:bg-[var(--q-row-hover)] sm:px-5"
         >
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Settings className="w-4 h-4 text-[#2563EB]" />
-            Brand Guidelines
-          </h2>
-          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${guidelinesOpen ? 'rotate-180' : ''}`} />
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span id="bs-guidelines-title" className="q-h2">Charte graphique</span>
+            <span className="text-[13px] text-[var(--q-text-4)]">Couleurs et consignes envoyées à l&apos;IA pour chaque génération.</span>
+          </span>
+          <ChevronDown className={cn('size-4 shrink-0 text-[var(--q-text-4)] transition-transform', guidelinesOpen && 'rotate-180')} aria-hidden />
         </button>
 
         {guidelinesOpen && (
-          <div className="px-5 pb-5 pt-2 border-t border-slate-100 dark:border-[#1E3A5F] space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+          <div id="bs-guidelines" className="flex flex-col gap-4 border-t border-[var(--q-line-soft)] px-4 pb-5 pt-4 sm:px-5">
             {guidelinesLoading ? (
-              <div className="py-6 text-center">
-                <Loader2 className="w-5 h-5 mx-auto animate-spin text-slate-300" />
+              <div className="grid place-items-center py-6" role="status" aria-label="Chargement de la charte">
+                <Loader2 className="size-5 animate-spin text-[var(--q-accent)]" aria-hidden />
               </div>
             ) : (
               <>
-                {/* Colors row */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Couleur primaire</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={guidelines.primary_color}
-                        onChange={(e) => setGuidelines({ ...guidelines, primary_color: e.target.value })}
-                        className="w-8 h-8 rounded border border-border cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={guidelines.primary_color}
-                        onChange={(e) => setGuidelines({ ...guidelines, primary_color: e.target.value })}
-                        className="flex-1 px-2 py-1.5 text-xs font-mono border border-border rounded-lg bg-background text-foreground"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Couleur secondaire</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={guidelines.secondary_color}
-                        onChange={(e) => setGuidelines({ ...guidelines, secondary_color: e.target.value })}
-                        className="w-8 h-8 rounded border border-border cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={guidelines.secondary_color}
-                        onChange={(e) => setGuidelines({ ...guidelines, secondary_color: e.target.value })}
-                        className="flex-1 px-2 py-1.5 text-xs font-mono border border-border rounded-lg bg-background text-foreground"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Accent 1</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={guidelines.accent_colors[0] || '#3B82F6'}
-                        onChange={(e) => {
-                          const newAccents = [...guidelines.accent_colors]
-                          newAccents[0] = e.target.value
-                          setGuidelines({ ...guidelines, accent_colors: newAccents })
-                        }}
-                        className="w-8 h-8 rounded border border-border cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={guidelines.accent_colors[0] || '#3B82F6'}
-                        onChange={(e) => {
-                          const newAccents = [...guidelines.accent_colors]
-                          newAccents[0] = e.target.value
-                          setGuidelines({ ...guidelines, accent_colors: newAccents })
-                        }}
-                        className="flex-1 px-2 py-1.5 text-xs font-mono border border-border rounded-lg bg-background text-foreground"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Accent 2</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={guidelines.accent_colors[1] || '#EFF6FF'}
-                        onChange={(e) => {
-                          const newAccents = [...guidelines.accent_colors]
-                          newAccents[1] = e.target.value
-                          setGuidelines({ ...guidelines, accent_colors: newAccents })
-                        }}
-                        className="w-8 h-8 rounded border border-border cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={guidelines.accent_colors[1] || '#EFF6FF'}
-                        onChange={(e) => {
-                          const newAccents = [...guidelines.accent_colors]
-                          newAccents[1] = e.target.value
-                          setGuidelines({ ...guidelines, accent_colors: newAccents })
-                        }}
-                        className="flex-1 px-2 py-1.5 text-xs font-mono border border-border rounded-lg bg-background text-foreground"
-                      />
-                    </div>
-                  </div>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <ColorField id="bs-primary" label="Couleur principale" value={guidelines.primary_color} onChange={(v) => setGuidelines({ ...guidelines, primary_color: v })} />
+                  <ColorField id="bs-secondary" label="Couleur secondaire" value={guidelines.secondary_color} onChange={(v) => setGuidelines({ ...guidelines, secondary_color: v })} />
+                  <ColorField id="bs-accent-1" label="Accent 1" value={guidelines.accent_colors[0] || '#3B82F6'} onChange={(v) => setAccent(0, v)} />
+                  <ColorField id="bs-accent-2" label="Accent 2" value={guidelines.accent_colors[1] || '#EFF6FF'} onChange={(v) => setAccent(1, v)} />
                 </div>
 
-                {/* Text fields */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Ambiance / Mood</label>
-                    <textarea
-                      value={guidelines.mood}
-                      onChange={(e) => setGuidelines({ ...guidelines, mood: e.target.value })}
-                      rows={2}
-                      className="w-full px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-foreground resize-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Audience cible</label>
-                    <textarea
-                      value={guidelines.target}
-                      onChange={(e) => setGuidelines({ ...guidelines, target: e.target.value })}
-                      rows={2}
-                      className="w-full px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-foreground resize-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Identité visuelle</label>
-                    <textarea
-                      value={guidelines.visual_identity}
-                      onChange={(e) => setGuidelines({ ...guidelines, visual_identity: e.target.value })}
-                      rows={2}
-                      className="w-full px-2 py-1.5 text-xs border border-border rounded-lg bg-background text-foreground resize-none"
-                    />
-                  </div>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {([
+                    ['bs-mood', 'Ambiance', 'mood'],
+                    ['bs-target', 'Public visé', 'target'],
+                    ['bs-identity', 'Identité visuelle', 'visual_identity'],
+                  ] as const).map(([id, label, key]) => (
+                    <div key={id} className="flex flex-col gap-[7px]">
+                      <label htmlFor={id} className="q-label">{label}</label>
+                      <textarea
+                        id={id}
+                        value={guidelines[key]}
+                        onChange={(e) => setGuidelines({ ...guidelines, [key]: e.target.value })}
+                        rows={3}
+                        className="q-input !min-h-[88px] resize-none"
+                      />
+                    </div>
+                  ))}
                 </div>
 
                 <div className="flex justify-end">
-                  <button
-                    onClick={saveGuidelines}
-                    disabled={guidelinesSaving}
-                    className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-[#1d4ed8] transition-colors disabled:opacity-50"
-                  >
-                    {guidelinesSaving ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" /> Sauvegarde…</>
-                    ) : (
-                      <><Save className="w-4 h-4" /> Sauvegarder</>
-                    )}
+                  <button type="button" onClick={saveGuidelines} disabled={guidelinesSaving} className="q-btn q-btn-primary">
+                    {guidelinesSaving ? <Loader2 className="animate-spin" aria-hidden /> : <Save aria-hidden />}
+                    {guidelinesSaving ? 'Enregistrement…' : 'Enregistrer la charte'}
                   </button>
                 </div>
               </>
             )}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Gallery */}
-      <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-100 dark:border-[#1E3A5F]">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <ImageIcon className="w-4 h-4 text-[#2563EB]" />
-            Galerie des images générées
-          </h2>
-        </div>
-
+      {/* Galerie */}
+      <section aria-labelledby="bs-gallery-title" className="flex flex-col gap-3">
+        <h2 id="bs-gallery-title" className="q-h2">Images générées</h2>
         {loadingGallery ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-4">
+          <div className="q-card grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 md:grid-cols-4" role="status" aria-label="Chargement de la galerie">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="rounded-xl overflow-hidden border border-slate-100 dark:border-[#1E3A5F]">
-                <div className="w-full h-32 bg-slate-100 dark:bg-[#162032] animate-pulse" />
-                <div className="px-2 py-1.5 space-y-1">
-                  <div className="h-2.5 w-16 bg-slate-100 dark:bg-[#162032] rounded animate-pulse" />
-                </div>
-              </div>
+              <div key={i} className="h-32 animate-pulse rounded-xl bg-[var(--q-sunken)]" />
             ))}
           </div>
+        ) : galleryError ? (
+          <LoadError
+            what="la galerie"
+            action={<button type="button" onClick={() => { setLoadingGallery(true); fetchGallery() }} className="q-btn q-btn-secondary">Réessayer</button>}
+          />
         ) : gallery.length === 0 ? (
-          <div className="px-4 py-12 text-center">
-            <ImageIcon className="w-10 h-10 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-            <p className="text-sm font-medium text-foreground mb-1">Aucune image</p>
-            <p className="text-[13px] text-slate-400">
-              Les images générées apparaîtront ici.
-            </p>
+          <div className="q-card">
+            <EmptyState
+              icon={<ImageIcon className="size-5" aria-hidden />}
+              title="Aucune image"
+              text="Les images générées apparaîtront ici."
+            />
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-4">
+          <ul className="q-card grid grid-cols-2 gap-3 p-3 sm:grid-cols-3 sm:p-4 md:grid-cols-4">
             {gallery.map((img) => (
-              <div
-                key={img.file_name}
-                className="group relative rounded-xl overflow-hidden border border-slate-100 dark:border-[#1E3A5F] cursor-pointer hover:ring-2 hover:ring-[#2563EB] transition-all"
-                onClick={() => setPreviewImage(img.url)}
-              >
-                <Image
-                  src={img.url}
-                  alt={img.file_name}
-                  width={300}
-                  height={200}
-                  className="w-full h-32 object-cover"
-                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                  <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                {/* Delete button */}
+              <li key={img.file_name} className="group relative overflow-hidden rounded-xl border border-[var(--q-line)] bg-[var(--q-sunken)]">
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleDeleteImage(img.file_name) }}
-                  disabled={deletingImage === img.file_name}
-                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-all disabled:opacity-50"
-                  title="Supprimer"
+                  type="button"
+                  onClick={() => setPreviewImage(img.url)}
+                  className="block w-full focus-visible:shadow-[inset_0_0_0_3px_var(--q-accent)] focus-visible:outline-none"
+                  aria-label={`Agrandir l'image du ${fmtDateTime(img.created_at)}`}
                 >
-                  {deletingImage === img.file_name ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-3 h-3" />
-                  )}
+                  <Image
+                    src={img.url}
+                    alt=""
+                    width={300}
+                    height={200}
+                    className="h-32 w-full object-cover"
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                  />
+                  <span className="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-4 text-left">
+                    <span className="truncate text-[11px] text-white/90">
+                      {img.created_at ? fmtDateTime(img.created_at) : img.file_name}
+                    </span>
+                    {(img.aspect_ratio || img.instructions) && (
+                      <span className="flex items-center gap-1">
+                        {img.aspect_ratio && <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] text-white">{img.aspect_ratio}</span>}
+                        {img.instructions && <span className="truncate text-[10px] text-white/75" title={img.instructions}>{img.instructions}</span>}
+                      </span>
+                    )}
+                  </span>
                 </button>
-                {/* Bottom info */}
-                <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/60 to-transparent">
-                  <p className="text-[10px] text-white/80 truncate">
-                    {img.created_at
-                      ? new Date(img.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-                      : img.file_name}
-                  </p>
-                  {(img.aspect_ratio || img.instructions) && (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      {img.aspect_ratio && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/20 text-white/90">{img.aspect_ratio}</span>
-                      )}
-                      {img.instructions && (
-                        <span className="text-[9px] text-white/70 truncate" title={img.instructions}>
-                          {img.instructions.length > 25 ? img.instructions.slice(0, 25) + '…' : img.instructions}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+                {/* Toujours visible au doigt ; au survol ou au clavier sur ordinateur */}
+                <button
+                  type="button"
+                  onClick={() => setPendingDelete(img)}
+                  disabled={deletingImage === img.file_name}
+                  aria-label="Supprimer cette image"
+                  className="q-btn q-btn-secondary q-btn-sm q-btn-icon absolute right-1.5 top-1.5 !size-8 !text-[var(--q-danger)] md:opacity-0 md:focus-visible:opacity-100 md:group-hover:opacity-100"
+                >
+                  {deletingImage === img.file_name ? <Loader2 className="animate-spin" aria-hidden /> : <Trash2 aria-hidden />}
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
 
-      {/* Full-screen preview modal */}
-      {previewImage && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-          onClick={() => setPreviewImage(null)}
-        >
-          <button
-            onClick={() => setPreviewImage(null)}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          <div className="flex gap-3 absolute bottom-6 left-1/2 -translate-x-1/2">
-            <a
-              href={previewImage}
-              download
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              Télécharger
-            </a>
+      {/* Aperçu en grand */}
+      <Dialog open={previewImage !== null} onOpenChange={(o) => { if (!o) setPreviewImage(null) }}>
+        <DialogContent className="gap-3 p-3 sm:max-w-[min(960px,calc(100%-2rem))]">
+          <DialogTitle className="sr-only">Aperçu de l&apos;image</DialogTitle>
+          <DialogDescription className="sr-only">Image générée par Brand Studio, en grand.</DialogDescription>
+          {previewImage && (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={previewImage} alt="Aperçu de l'image générée" className="max-h-[70vh] w-full rounded-xl bg-[var(--q-sunken)] object-contain" />
+              <div className="flex flex-wrap gap-2 pr-1">
+                <a href={previewImage} download target="_blank" rel="noopener noreferrer" className="q-btn q-btn-secondary q-btn-sm">
+                  <Download aria-hidden />
+                  Télécharger
+                </a>
+                <button type="button" onClick={() => handleCopyUrl(previewImage)} className="q-btn q-btn-secondary q-btn-sm">
+                  {copiedUrl === previewImage ? <Check aria-hidden /> : <Copy aria-hidden />}
+                  {copiedUrl === previewImage ? 'Copiée' : 'Copier l\'adresse'}
+                </button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation de suppression (le bouton est désormais visible au doigt) */}
+      <Dialog open={pendingDelete !== null} onOpenChange={(o) => { if (!o && !deletingImage) setPendingDelete(null) }}>
+        <DialogContent showCloseButton={false} className="gap-3 sm:max-w-md">
+          <DialogTitle className="q-display text-[22px] font-semibold leading-tight">Supprimer cette image ?</DialogTitle>
+          <DialogDescription className="text-sm leading-relaxed !text-[var(--q-text-3)]">
+            Elle sera retirée de la galerie et du stockage. Les pages qui l&apos;utilisent n&apos;afficheront plus rien.
+          </DialogDescription>
+          <div className="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => setPendingDelete(null)} disabled={!!deletingImage} className="q-btn q-btn-ghost">Annuler</button>
             <button
-              onClick={(e) => { e.stopPropagation(); handleCopyUrl(previewImage) }}
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors"
+              type="button"
+              onClick={() => pendingDelete && handleDeleteImage(pendingDelete.file_name)}
+              disabled={!!deletingImage}
+              className="q-btn q-btn-danger"
             >
-              {copiedUrl === previewImage ? (
-                <><Check className="w-4 h-4 text-green-400" /> Copié</>
-              ) : (
-                <><Copy className="w-4 h-4" /> Copier l&apos;URL</>
-              )}
+              {deletingImage ? <Loader2 className="animate-spin" aria-hidden /> : <Trash2 aria-hidden />}
+              Supprimer
             </button>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={previewImage}
-            alt="Aperçu"
-            className="max-w-full max-h-[80vh] object-contain rounded-lg"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Play, Pause, Loader2 } from 'lucide-react'
+import { Plus, Play, Pause, Loader2, TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { METIER_OPTIONS } from '@/lib/scraping/naf-mapping'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 
 const TEMPLATES = [
   { id: 'alerte-reglementaire', label: 'Alerte réglementaire', type: 'alerte_reglementaire' },
@@ -22,6 +23,7 @@ export default function OutreachActions({
 }) {
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [confirmLaunch, setConfirmLaunch] = useState(false)
 
   // ── Actions sur une campagne existante ──────────────────────────────────
   const toggleStatut = async () => {
@@ -41,7 +43,7 @@ export default function OutreachActions({
       })
       if (!res.ok) throw new Error((await res.json()).error)
 
-      toast.success(`Campagne ${newStatut === 'en_cours' ? 'lancée' : 'pausée'}`)
+      toast.success(`Campagne ${newStatut === 'en_cours' ? 'lancée' : 'mise en pause'}`)
       window.location.reload()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur')
@@ -52,17 +54,40 @@ export default function OutreachActions({
 
   if (inline && campaignId) {
     if (campaignStatut === 'terminee') return null
+    const running = campaignStatut === 'en_cours'
 
     return (
-      <button
-        onClick={toggleStatut}
-        disabled={loading}
-        className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#2563EB] hover:underline disabled:opacity-50"
-      >
-        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
-          campaignStatut === 'en_cours' ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-        {campaignStatut === 'en_cours' ? 'Pause' : 'Lancer'}
-      </button>
+      <>
+        <button
+          type="button"
+          // Mettre en pause reste immédiat ; lancer demande une confirmation (démarchage désactivé par décision)
+          onClick={() => (running ? toggleStatut() : setConfirmLaunch(true))}
+          disabled={loading}
+          className={running ? 'q-btn q-btn-secondary q-btn-sm' : 'q-btn q-btn-ghost q-btn-sm'}
+        >
+          {loading ? <Loader2 className="animate-spin" aria-hidden /> : running ? <Pause aria-hidden /> : <Play aria-hidden />}
+          {running ? 'Mettre en pause' : 'Lancer'}
+        </button>
+
+        <Dialog open={confirmLaunch} onOpenChange={setConfirmLaunch}>
+          <DialogContent showCloseButton={false} className="gap-3 sm:max-w-md">
+            <DialogTitle className="q-display text-[22px] font-semibold leading-tight">Lancer cette campagne ?</DialogTitle>
+            <DialogDescription className="q-banner q-banner-warn !gap-2 !px-3.5 !py-3 !text-[13px] !leading-relaxed">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>
+                Le démarchage est désactivé par décision : aucun email à froid. Une campagne lancée part avec la prochaine
+                exécution de la séquence automatique. Ne continuez que si cette décision a changé.
+              </span>
+            </DialogDescription>
+            <div className="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setConfirmLaunch(false)} className="q-btn q-btn-ghost">Annuler</button>
+              <button type="button" onClick={() => { setConfirmLaunch(false); toggleStatut() }} className="q-btn q-btn-secondary">
+                Lancer quand même
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
     )
   }
 
@@ -87,7 +112,7 @@ export default function OutreachActions({
       })
       if (!res.ok) throw new Error((await res.json()).error)
 
-      toast.success('Campagne créée')
+      toast.success('Campagne créée (brouillon)')
       setShowForm(false)
       window.location.reload()
     } catch (err) {
@@ -98,63 +123,50 @@ export default function OutreachActions({
   }
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setShowForm(!showForm)}
-        className="h-9 px-4 text-sm font-medium rounded-lg bg-[#2563EB] text-white hover:bg-[#1d4ed8] transition-colors flex items-center gap-2"
-      >
-        <Plus className="w-4 h-4" />
+    <>
+      <button type="button" onClick={() => setShowForm(true)} className="q-btn q-btn-secondary q-btn-sm">
+        <Plus aria-hidden />
         Nouvelle campagne
       </button>
 
-      {showForm && (
-        <div className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-slate-200 dark:border-[#1E3A5F] bg-white dark:bg-[#0F1E35] shadow-xl p-5">
-          <h3 className="text-sm font-bold text-foreground mb-3">Créer une campagne</h3>
-          <form onSubmit={handleCreate} className="space-y-3">
-            <input
-              name="nom"
-              required
-              placeholder="Nom de la campagne"
-              className="w-full h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            <select
-              name="template_id"
-              required
-              className="w-full h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              {TEMPLATES.map((t) => (
-                <option key={t.id} value={t.id}>{t.label}</option>
-              ))}
-            </select>
-            <select
-              name="metier_cible"
-              className="w-full h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Tous les métiers</option>
-              {METIER_OPTIONS.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 h-9 text-sm font-medium rounded-lg bg-[#2563EB] text-white hover:bg-[#1d4ed8] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-              >
-                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Créer
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="h-9 px-3 text-sm font-medium rounded-lg border border-border text-foreground hover:bg-muted transition-colors"
-              >
-                Annuler
+      <Dialog open={showForm} onOpenChange={(o) => { if (!loading) setShowForm(o) }}>
+        <DialogContent className="gap-4 sm:max-w-md">
+          <DialogTitle className="q-display pr-8 text-[22px] font-semibold leading-tight">Créer une campagne</DialogTitle>
+          <DialogDescription className="text-[13px] leading-relaxed !text-[var(--q-text-3)]">
+            La campagne est créée en brouillon : rien ne part tant qu&apos;elle n&apos;est pas lancée.
+          </DialogDescription>
+          <form onSubmit={handleCreate} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-[7px]">
+              <label htmlFor="oc-nom" className="q-label">Nom</label>
+              <input id="oc-nom" name="nom" required placeholder="Nom de la campagne" className="q-input" />
+            </div>
+            <div className="flex flex-col gap-[7px]">
+              <label htmlFor="oc-template" className="q-label">Modèle d&apos;email</label>
+              <select id="oc-template" name="template_id" required className="q-input pr-2">
+                {TEMPLATES.map((t) => (
+                  <option key={t.id} value={t.id}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-[7px]">
+              <label htmlFor="oc-metier" className="q-label">Métier visé</label>
+              <select id="oc-metier" name="metier_cible" className="q-input pr-2">
+                <option value="">Tous les métiers</option>
+                {METIER_OPTIONS.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="mt-1 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setShowForm(false)} disabled={loading} className="q-btn q-btn-ghost">Annuler</button>
+              <button type="submit" disabled={loading} className="q-btn q-btn-primary">
+                {loading && <Loader2 className="animate-spin" aria-hidden />}
+                Créer le brouillon
               </button>
             </div>
           </form>
-        </div>
-      )}
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Eye, Mail } from 'lucide-react'
+import { Check, Eye, Loader2, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface SupportActionsProps {
@@ -24,7 +24,7 @@ export function SupportActions({ id, currentStatus, email }: SupportActionsProps
           body:    JSON.stringify({ status }),
         })
         if (!res.ok) throw new Error()
-        toast.success(`Message marqué comme "${status === 'read' ? 'lu' : 'résolu'}"`)
+        toast.success(status === 'read' ? 'Message marqué comme lu' : 'Message marqué comme résolu')
         router.refresh()
       } catch {
         toast.error('Impossible de mettre à jour le statut')
@@ -33,35 +33,27 @@ export function SupportActions({ id, currentStatus, email }: SupportActionsProps
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex flex-wrap items-center gap-2">
       {currentStatus === 'new' && (
-        <button
-          onClick={() => updateStatus('read')}
-          disabled={isPending}
-          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-medium border border-border text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-        >
-          <Eye className="w-3 h-3" />
+        <button type="button" onClick={() => updateStatus('read')} disabled={isPending} className="q-btn q-btn-secondary q-btn-sm">
+          {isPending ? <Loader2 className="animate-spin" aria-hidden /> : <Eye aria-hidden />}
           Marquer comme lu
         </button>
       )}
       {currentStatus !== 'resolved' && (
-        <button
-          onClick={() => updateStatus('resolved')}
-          disabled={isPending}
-          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors disabled:opacity-50"
-        >
-          <Check className="w-3 h-3" />
+        <button type="button" onClick={() => updateStatus('resolved')} disabled={isPending} className="q-btn q-btn-secondary q-btn-sm">
+          <Check aria-hidden />
           Résoudre
         </button>
       )}
       {email && (
-        <a
-          href={`mailto:${email}`}
-          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-medium border border-[#2563EB] text-[#2563EB] hover:bg-[#EFF6FF] dark:hover:bg-[#1E3A5F] transition-colors"
-        >
-          <Mail className="w-3 h-3" />
+        <a href={`mailto:${email}`} className="q-btn q-btn-ghost q-btn-sm">
+          <Mail aria-hidden />
           Répondre
         </a>
+      )}
+      {currentStatus === 'resolved' && !email && (
+        <span className="text-[13px] text-[var(--q-text-4)]">Aucune action en attente.</span>
       )}
     </div>
   )

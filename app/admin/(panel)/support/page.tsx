@@ -1,31 +1,34 @@
 import { createAdminClient } from '@/lib/supabase/server'
-import { Bug, MessageSquare, CheckCircle, Mail } from 'lucide-react'
+import { Bug, Check, Inbox, Mail, MessageSquare } from 'lucide-react'
+import { EmptyState, PageHeader, StatusPill, type Tone } from '@/components/app/kit'
+import { FilterBar, FilterSelect, LoadError, StatLink, fmtDateTime, fmtInt, plural } from '@/components/admin/ui'
 import { SupportActions } from '@/components/admin/SupportActions'
+import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin — Support' }
 
-function TypeBadge({ type }: { type: string }) {
-  if (type === 'bug_report') return (
-    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-      <Bug className="w-3 h-3" /> Bug
-    </span>
-  )
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-      <MessageSquare className="w-3 h-3" /> Contact
-    </span>
+const STATUS: Record<string, { label: string; tone: Tone }> = {
+  new:      { label: 'Nouveau', tone: 'warn' },
+  read:     { label: 'Lu',      tone: 'neutral' },
+  resolved: { label: 'Résolu',  tone: 'ok' },
+}
+
+function TypePill({ type }: { type: string }) {
+  return type === 'bug_report' ? (
+    <StatusPill tone="danger" icon={<Bug strokeWidth={2.25} aria-hidden />}>Problème signalé</StatusPill>
+  ) : (
+    <StatusPill tone="info" icon={<MessageSquare strokeWidth={2.25} aria-hidden />}>Message</StatusPill>
   )
 }
 
-function StatusPill({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    new:      { label: 'Nouveau',  className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-    read:     { label: 'Lu',       className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-    resolved: { label: 'Résolu',   className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  }
-  const s = map[status] ?? { label: status, className: 'bg-slate-100 text-slate-600' }
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.className}`}>{s.label}</span>
+function MessageStatus({ status }: { status: string }) {
+  const s = STATUS[status] ?? { label: status, tone: 'neutral' as Tone }
+  return (
+    <StatusPill tone={s.tone} icon={status === 'resolved' ? <Check strokeWidth={2.75} aria-hidden /> : undefined}>
+      {s.label}
+    </StatusPill>
+  )
 }
 
 interface SearchParams { type?: string; status?: string }
@@ -41,8 +44,21 @@ async function getMessages(typeFilter: string, statusFilter: string) {
   if (typeFilter)   query = query.eq('type', typeFilter)
   if (statusFilter) query = query.eq('status', statusFilter)
 
-  const { data } = await query.limit(200)
-  return data ?? []
+  const { data, error } = await query.limit(200)
+  return { messages: data ?? [], error: !!error }
+}
+
+/** Compteurs sur toute la table (et non sur la liste filtrée). */
+async function getCounts() {
+  const admin = createAdminClient()
+  const head = () => admin.from('support_messages').select('id', { count: 'exact', head: true })
+  const [unread, bugs, contacts] = await Promise.all([
+    head().eq('status', 'new'),
+    head().eq('type', 'bug_report'),
+    head().eq('type', 'contact'),
+  ])
+  const n = (r: { count: number | null; error: unknown }) => (r.error ? null : r.count ?? 0)
+  return { unread: n(unread), bugs: n(bugs), contacts: n(contacts) }
 }
 
 export default async function AdminSupportPage({
@@ -53,137 +69,115 @@ export default async function AdminSupportPage({
   const params       = await searchParams
   const typeFilter   = params.type ?? ''
   const statusFilter = params.status ?? ''
+  const filtered     = !!(typeFilter || statusFilter)
 
-  const messages = await getMessages(typeFilter, statusFilter)
+  const [{ messages, error }, counts] = await Promise.all([
+    getMessages(typeFilter, statusFilter),
+    getCounts(),
+  ])
 
-  const newCount      = messages.filter(m => m.status === 'new').length
-  const bugCount      = messages.filter(m => m.type === 'bug_report').length
-  const contactCount  = messages.filter(m => m.type === 'contact').length
+  const subtitle = counts.unread === null
+    ? 'Compteur indisponible'
+    : counts.unread > 0
+      ? `${plural(counts.unread, 'message non lu', 'messages non lus')}`
+      : 'Aucun message non lu'
 
   return (
-    <div className="space-y-5 max-w-[1100px] mx-auto">
+    <div className="flex flex-col gap-5">
+      <PageHeader title="Support" subtitle={subtitle} />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[22px] font-extrabold text-[#0F172A] dark:text-[#E2E8F0] leading-tight">Support</h1>
-          <p className="text-[13px] text-slate-400 mt-0.5">
-            {newCount > 0 ? `${newCount} message(s) non lu(s)` : 'Aucun nouveau message'}
-          </p>
-        </div>
-      </div>
+      <nav aria-label="Résumé du support" className="grid grid-cols-3 gap-3">
+        <StatLink
+          label="Non lus"
+          value={counts.unread === null ? '—' : fmtInt(counts.unread)}
+          href="/admin/support?status=new"
+          active={statusFilter === 'new' && !typeFilter}
+          tone={counts.unread ? 'warn' : 'default'}
+        />
+        <StatLink label="Problèmes" value={counts.bugs === null ? '—' : fmtInt(counts.bugs)} href="/admin/support?type=bug_report" active={typeFilter === 'bug_report' && !statusFilter} />
+        <StatLink label="Messages" value={counts.contacts === null ? '—' : fmtInt(counts.contacts)} href="/admin/support?type=contact" active={typeFilter === 'contact' && !statusFilter} />
+      </nav>
 
-      {/* Résumé */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Non lus',  count: messages.filter(m => m.status === 'new').length,      href: '/admin/support?status=new',            icon: '🔴' },
-          { label: 'Bug reports', count: bugCount,    href: '/admin/support?type=bug_report',   icon: '🐛' },
-          { label: 'Contact',  count: contactCount,   href: '/admin/support?type=contact',       icon: '✉️' },
-        ].map(({ label, count, href, icon }) => (
-          <a key={label} href={href} className="rounded-xl border border-slate-100 dark:border-[#1E3A5F] p-3 text-center bg-white/95 dark:bg-[#0F1E35] hover:border-[#2563EB] dark:hover:border-[#3B82F6] transition-colors">
-            <p className="text-lg">{icon}</p>
-            <p className="font-mono text-2xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0]">{count}</p>
-            <p className="text-[11px] text-slate-400 mt-0.5">{label}</p>
-          </a>
-        ))}
-      </div>
-
-      {/* Filtres */}
-      <form method="GET" className="flex flex-wrap gap-2">
-        <select
+      <FilterBar resetHref="/admin/support" active={filtered} label="Filtrer les messages">
+        <FilterSelect
           name="type"
+          label="Type"
           defaultValue={typeFilter}
-          className="h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="">Tous les types</option>
-          <option value="bug_report">Bug reports</option>
-          <option value="contact">Messages de contact</option>
-        </select>
-        <select
+          options={[
+            { value: '', label: 'Tous les types' },
+            { value: 'bug_report', label: 'Problèmes signalés' },
+            { value: 'contact', label: 'Messages de contact' },
+          ]}
+        />
+        <FilterSelect
           name="status"
+          label="Statut"
           defaultValue={statusFilter}
-          className="h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="">Tous les statuts</option>
-          <option value="new">Nouveaux</option>
-          <option value="read">Lus</option>
-          <option value="resolved">Résolus</option>
-        </select>
-        <button type="submit" className="h-9 px-4 text-sm font-medium rounded-lg bg-[#2563EB] text-white hover:bg-[#1d4ed8] transition-colors">
-          Filtrer
-        </button>
-        {(typeFilter || statusFilter) && (
-          <a href="/admin/support" className="h-9 px-4 text-sm font-medium rounded-lg border border-border text-foreground hover:bg-muted flex items-center transition-colors">
-            Effacer
-          </a>
-        )}
-      </form>
+          options={[
+            { value: '', label: 'Tous les statuts' },
+            { value: 'new', label: 'Nouveaux' },
+            { value: 'read', label: 'Lus' },
+            { value: 'resolved', label: 'Résolus' },
+          ]}
+        />
+      </FilterBar>
 
-      {/* Liste */}
-      <div className="space-y-3">
-        {messages.length === 0 ? (
-          <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] px-4 py-10 text-center">
-            <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500 opacity-60" />
-            <p className="text-sm text-slate-400">Aucun message trouvé</p>
-          </div>
-        ) : messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`rounded-2xl border bg-white/95 dark:bg-[#0F1E35] overflow-hidden transition-colors ${
-              msg.status === 'new'
-                ? 'border-yellow-200 dark:border-yellow-800/50'
-                : 'border-slate-100 dark:border-[#1E3A5F]'
-            }`}
-          >
-            {/* Header */}
-            <div className="px-4 py-3 border-b border-slate-50 dark:border-[#1E3A5F] flex flex-wrap items-center gap-2">
-              <TypeBadge type={msg.type} />
-              <StatusPill status={msg.status} />
-              <span className="text-[11px] text-slate-400 ml-auto">
-                {new Date(msg.created_at).toLocaleDateString('fr-FR', {
-                  day: 'numeric', month: 'short', year: 'numeric',
-                  hour: '2-digit', minute: '2-digit',
-                })}
-              </span>
-            </div>
+      {error ? (
+        <LoadError what="les messages du support" />
+      ) : messages.length === 0 ? (
+        <div className="q-card">
+          <EmptyState
+            icon={<Inbox className="size-5" aria-hidden />}
+            title={filtered ? 'Aucun message ne correspond' : 'Aucun message'}
+            text={filtered ? 'Modifiez les filtres ou effacez-les.' : 'Les signalements et messages envoyés depuis l\'application arrivent ici.'}
+          />
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-3" aria-label="Messages">
+          {messages.map((msg) => (
+            <li
+              key={msg.id}
+              className={cn('q-card overflow-hidden', msg.status === 'new' && '!border-[var(--q-warn-line)]')}
+            >
+              <div className="flex flex-wrap items-center gap-2 border-b border-[var(--q-line-soft)] px-4 py-3 sm:px-5">
+                <TypePill type={msg.type} />
+                <MessageStatus status={msg.status} />
+                <span className="ml-auto text-xs text-[var(--q-text-4)]">{fmtDateTime(msg.created_at)}</span>
+              </div>
 
-            {/* Contenu */}
-            <div className="px-4 py-3 space-y-2">
-              {msg.type === 'bug_report' ? (
-                <>
-                  <p className="font-semibold text-foreground">{msg.title || '(Sans titre)'}</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{msg.description}</p>
-                  {msg.page && (
-                    <p className="text-[12px] text-slate-400">
-                      Page : <span className="font-mono text-foreground">{msg.page}</span>
-                    </p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-foreground">{msg.name}</p>
-                    {msg.email && (
-                      <a
-                        href={`mailto:${msg.email}`}
-                        className="inline-flex items-center gap-1 text-[12px] text-[#2563EB] hover:underline"
-                      >
-                        <Mail className="w-3 h-3" /> {msg.email}
-                      </a>
+              <div className="flex flex-col gap-2 px-4 py-3.5 sm:px-5">
+                {msg.type === 'bug_report' ? (
+                  <>
+                    <p className="font-semibold text-[var(--q-ink)]">{msg.title || 'Sans titre'}</p>
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-[var(--q-text-2)]">{msg.description}</p>
+                    {msg.page && (
+                      <p className="break-all text-[13px] text-[var(--q-text-4)]">
+                        Page : <span className="font-mono text-[var(--q-text-2)]">{msg.page}</span>
+                      </p>
                     )}
-                  </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{msg.message}</p>
-                </>
-              )}
-            </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="font-semibold text-[var(--q-ink)]">{msg.name || 'Nom non renseigné'}</span>
+                      {msg.email && (
+                        <a href={`mailto:${msg.email}`} className="q-link inline-flex min-w-0 items-center gap-1 break-all text-[13px] !font-medium">
+                          <Mail className="size-3.5 shrink-0" aria-hidden /> {msg.email}
+                        </a>
+                      )}
+                    </p>
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-[var(--q-text-2)]">{msg.message}</p>
+                  </>
+                )}
+              </div>
 
-            {/* Actions */}
-            <div className="px-4 py-2 border-t border-slate-50 dark:border-[#1E3A5F] flex items-center gap-2">
-              <SupportActions id={msg.id} currentStatus={msg.status} email={msg.email} />
-            </div>
-          </div>
-        ))}
-      </div>
+              <div className="border-t border-[var(--q-line-soft)] bg-[var(--q-surface-2)] px-4 py-2.5 sm:px-5">
+                <SupportActions id={msg.id} currentStatus={msg.status} email={msg.email} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
