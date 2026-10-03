@@ -47,6 +47,8 @@ export interface DashInvoice {
   client_email: string | null
   reminder_1_sent_at?: string | null
   reminder_2_sent_at?: string | null
+  /** Retenue de garantie (formule Artisan) : due seulement à sa libération, hors des montants à encaisser. */
+  retention_amount?: number
 }
 
 export interface DashQuote {
@@ -247,6 +249,12 @@ function monthLabels(key: string): { short: string; long: string; name: string }
 const sum = (list: { total_ttc: number }[]) =>
   Math.round(list.reduce((s, x) => s + (Number(x.total_ttc) || 0), 0) * 100) / 100
 
+/** Montant exigible d'une facture ouverte : TTC moins la retenue de garantie, due seulement à sa libération. */
+const dueOf = (inv: { total_ttc: number; retention_amount?: number }) =>
+  Math.max(0, Math.round(((Number(inv.total_ttc) || 0) - (Number(inv.retention_amount) || 0)) * 100) / 100)
+const sumDue = (list: { total_ttc: number; retention_amount?: number }[]) =>
+  Math.round(list.reduce((s, x) => s + dueOf(x), 0) * 100) / 100
+
 /** « 14,3 k€ », « 850 € » (axes et étiquettes du graphique). */
 export function formatCompactEuro(value: number): string {
   if (value === 0) return "0"
@@ -372,7 +380,7 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
 
   /* ── Recouvrement : part réglée du montant émis (payé + en cours) ── */
   const paidTotal = sum(input.paid)
-  const openTotal = sum(open)
+  const openTotal = sumDue(open)
   const recoveryRate = paidTotal + openTotal > 0 ? Math.round((paidTotal / (paidTotal + openTotal)) * 100) : null
 
   /* ── À faire, à partir des seules données réelles ── */
@@ -388,7 +396,7 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
       tone: "warn",
       icon: "clock",
       title: `Relancer ${client}`,
-      meta: `${fmt(inv.total_ttc)} · échue depuis ${days}\u00a0j`,
+      meta: `${fmt(dueOf(inv))} · échue depuis ${days}\u00a0j`,
       href: href(`/invoices/${inv.id}`),
       action: canRemind
         ? { kind: "remind", invoiceId: inv.id, invoiceNumber: invoiceNumberLabel(inv.invoice_number), clientName: client }
@@ -402,7 +410,7 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
       tone: "warn",
       icon: "list",
       title: `${rest} autre${rest > 1 ? "s" : ""} facture${rest > 1 ? "s" : ""} en retard`,
-      meta: fmt(sum(late.slice(3))),
+      meta: fmt(sumDue(late.slice(3))),
       href: href("/invoices?filtre=retard"),
       action: { kind: "link", label: "Voir" },
     })
@@ -511,8 +519,8 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
       },
       period: periodKpi,
       open: { amount: openTotal, count: open.length },
-      late: { amount: sum(late), count: late.length, oldestDays },
-      dueSoon: { amount: sum(dueSoon), count: dueSoon.length, untilLabel: formatShortDate(limit30) },
+      late: { amount: sumDue(late), count: late.length, oldestDays },
+      dueSoon: { amount: sumDue(dueSoon), count: dueSoon.length, untilLabel: formatShortDate(limit30) },
       quotesPending: input.quotes.filter((q) => q.status === "sent").length,
     },
     recoveryRate,

@@ -260,7 +260,7 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 | Apport | Aujourd'hui | Valeur |
 |---|---|---|
 | « Devis gratuits, factures payantes » : application ouverte sans abonnement, paiement à la première facture | **Construit le 02/10/2026** (§ 12) | Lève le principal frein pour un premier logiciel |
-| Grille Essentiel 12 € / Artisan 24 € HT (10 € et 20 € à l'année), satisfait ou remboursé 30 jours | **Construit le 02/10/2026** (§ 12). Artisan affiché « bientôt » tant que ses fonctions manquent | Panier moyen plus haut, garantie qui rassure |
+| Grille Essentiel 12 € / Artisan 24 € HT (10 € et 20 € à l'année), satisfait ou remboursé 30 jours | **Construit le 02/10/2026** (§ 12). Artisan livré le 03/10/2026 : mis en vente automatiquement dès que ses prix Stripe sont configurés | Panier moyen plus haut, garantie qui rassure |
 | Lien « Propulsé par Qonforme » cliquable, avec provenance | **Partiel** : texte seul dans les emails et les PDF | Bouche-à-oreille mesurable, sans démarchage |
 | Accueil et tarifs réécrits, sans faux avis ni promesse non tenue | **Construit le 02/10/2026** : accueil refait (héros validé, vrai produit dans un Mac et un iPhone, animations au défilement, FAQ honnête), tarifs, données structurées, CGU et pied de page corrigés. Le même jour, accueil porté au langage de la version 20 du canevas avec 16 photos Pexels, et affirmations fausses retirées à la source (contenus SEO, pied de page des PDF, image de partage, emails) | Confiance |
 
@@ -294,8 +294,8 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 
 | Apport | Aujourd'hui | Valeur |
 |---|---|---|
-| Situations de travaux, acomptes, retenue de garantie, autoliquidation | **À construire** | Justifie l'offre Artisan, garde les clients qui grandissent |
-| Suivi par chantier | **À construire** | Vision claire par chantier |
+| Situations de travaux, acomptes, retenue de garantie, autoliquidation | **Construit le 03/10/2026** (formule Artisan, migration à appliquer, masqué d'ici là) ; l'autoliquidation est réservée à Artisan, à confirmer | Justifie l'offre Artisan, garde les clients qui grandissent |
+| Suivi par chantier | **Construit le 03/10/2026** (formule Artisan, migration à appliquer) | Vision claire par chantier |
 | TVA par ligne (5,5 / 10 / 20 %) | **Existe** | — |
 | Bons de commande, avoirs | **Existent**. Le bon de commande devient facultatif (§ 11) | — |
 

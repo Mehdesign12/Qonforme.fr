@@ -35,6 +35,7 @@ function toDash(inv: DemoInvoice): DashInvoice {
     client_email: inv.client.email,
     reminder_1_sent_at: null,
     reminder_2_sent_at: null,
+    retention_amount: inv.retention_amount ?? 0,
   }
 }
 

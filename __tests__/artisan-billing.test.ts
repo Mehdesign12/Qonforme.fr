@@ -383,3 +383,21 @@ describe("libellés et contexte", () => {
     expect(parseBillingContext({ v: 1, kind: "deposit" })?.deductions).toEqual([])
   })
 })
+
+describe("tableau de bord : la retenue de garantie n'est pas à encaisser", () => {
+  it("les montants ouverts et en retard excluent la retenue", async () => {
+    const { buildDashboardView } = await import("@/components/dashboard/model")
+    const base = {
+      mode: "demo" as const, period: "mois" as const, today: "2026-10-03", firstName: "A",
+      company: null, counts: { invoices: 1, quotes: 0 }, issued: [], paid: [], drafts: [], recent: [], quotes: [],
+      clientsWithoutSiren: 0,
+    }
+    const inv = {
+      id: "s1", invoice_number: "F-2026-0001", status: "sent", issue_date: "2026-08-01", due_date: "2026-09-01",
+      total_ttc: 10_000, retention_amount: 500, client_name: "SCI", client_city: null, client_email: null,
+    }
+    const view = buildDashboardView({ ...base, open: [inv] } as unknown as Parameters<typeof buildDashboardView>[0])
+    expect(view.kpi.open.amount).toBe(9_500)
+    expect(view.kpi.late.amount).toBe(9_500)
+  })
+})
