@@ -23,14 +23,23 @@
 --   (idem pour quote_number / credit_note_number / po_number)
 -- ============================================================
 
-ALTER TABLE invoices
-  ADD CONSTRAINT invoices_user_id_invoice_number_key UNIQUE (user_id, invoice_number);
-
-ALTER TABLE quotes
-  ADD CONSTRAINT quotes_user_id_quote_number_key UNIQUE (user_id, quote_number);
-
-ALTER TABLE credit_notes
-  ADD CONSTRAINT credit_notes_user_id_credit_note_number_key UNIQUE (user_id, credit_note_number);
-
-ALTER TABLE purchase_orders
-  ADD CONSTRAINT purchase_orders_user_id_po_number_key UNIQUE (user_id, po_number);
+-- Rejouable (03/10/2026) : chaque contrainte n'est ajoutée que si elle n'existe
+-- pas encore ; 20261003_invoice_number_at_issue_and_reminders.sql pose aussi
+-- celle des factures, l'ordre d'application n'a donc pas d'importance.
+DO $$
+DECLARE
+  c RECORD;
+BEGIN
+  FOR c IN
+    SELECT * FROM (VALUES
+      ('invoices',        'invoices_user_id_invoice_number_key',          'invoice_number'),
+      ('quotes',          'quotes_user_id_quote_number_key',              'quote_number'),
+      ('credit_notes',    'credit_notes_user_id_credit_note_number_key',  'credit_note_number'),
+      ('purchase_orders', 'purchase_orders_user_id_po_number_key',        'po_number')
+    ) AS t(tbl, con, col)
+  LOOP
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = c.con) THEN
+      EXECUTE format('ALTER TABLE public.%I ADD CONSTRAINT %I UNIQUE (user_id, %I)', c.tbl, c.con, c.col);
+    END IF;
+  END LOOP;
+END $$;

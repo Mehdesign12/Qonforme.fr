@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient, createAdminClient, createClientWithToken } from "@/lib/supabase/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
+import { parseLegalProfile } from "@/lib/legal/profile"
+import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 
 // Helper : résout l'utilisateur ET le client DB adapté.
 // - Cookie (navigateur) : createClient() cookie-based → RLS via session cookie ✅
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
 
-  const { data, error } = await supabase.from("companies").upsert({
+  const row = {
     user_id: user.id,
     name: body.name,
     siren: body.siren,
@@ -63,7 +65,15 @@ export async function POST(request: NextRequest) {
     iban: body.iban || null,
     invoice_prefix: body.invoice_prefix || "F",
     invoice_sequence: 1,
-  }, { onConflict: "user_id" }).select().single()
+  }
+  // Métier et régime de TVA choisis à l'inscription (lib/legal/profile.ts) ;
+  // sans la colonne (migration pas encore appliquée), l'entreprise s'enregistre sans eux
+  const legalProfile = parseLegalProfile(body.legal_profile)
+  const upsert = (values: Record<string, unknown>) =>
+    supabase.from("companies").upsert(values, { onConflict: "user_id" }).select().single()
+
+  let { data, error } = await upsert(legalProfile ? { ...row, legal_profile: legalProfile } : row)
+  if (error && legalProfile && isMissingSchemaError(error)) ({ data, error } = await upsert(row))
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ company: data }, { status: 201 })

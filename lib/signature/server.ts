@@ -9,6 +9,7 @@
  * Migration absente (lib/supabase/schema-guard.ts) : les fonctions renvoient
  * `available: false` et l'interface garde l'accord sur papier.
  */
+import { selectCompanyWithProfile } from "@/lib/legal/db"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { NextRequest } from "next/server"
 import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
@@ -178,14 +179,18 @@ export interface CompanyInfo {
   accent_color: string | null
   logo_url: string | null
   email: string | null
+  /** Profil légal (lib/legal/profile.ts) : mentions du bâtiment ; absent avant sa migration. */
+  legal_profile?: unknown
 }
 
 export async function loadCompany(admin: Admin, userId: string): Promise<CompanyInfo | null> {
-  const { data } = await admin
-    .from("companies")
-    .select("name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color,logo_url,email")
-    .eq("user_id", userId)
-    .maybeSingle()
+  // Avec le profil légal quand sa colonne existe : le PDF signé porte les mêmes
+  // mentions que le PDF envoyé (lib/legal/db.ts relit sans elle sinon)
+  const { data } = await selectCompanyWithProfile(
+    admin,
+    "name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color,logo_url,email",
+    userId,
+  )
   return (data as CompanyInfo | null) ?? null
 }
 

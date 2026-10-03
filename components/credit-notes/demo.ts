@@ -9,6 +9,7 @@ import { DEMO_COMPANY, DEMO_CREDIT_NOTES, demoInvoice, type DemoCreditNote } fro
 import type { CreditNoteListItem } from "@/components/credit-notes/CreditNoteListView"
 import type { CreditNoteDetailData } from "@/components/credit-notes/CreditNoteDetailView"
 import type { PaperParty } from "@/components/purchase-orders/detail-bits"
+import { DEMO_LEGAL_NOTICE, DEMO_LEGAL_PROFILE, DEMO_LEGAL_SNAPSHOT } from "@/lib/demo/legal-profile"
 
 export const DEMO_CREDIT_COMPANY: PaperParty = {
   name: DEMO_COMPANY.name,
@@ -17,6 +18,8 @@ export const DEMO_CREDIT_COMPANY: PaperParty = {
   city: DEMO_COMPANY.city,
   siren: DEMO_COMPANY.siren,
   vat_number: DEMO_COMPANY.vat_number,
+  legal_notice: DEMO_LEGAL_NOTICE,
+  legal_profile: DEMO_LEGAL_PROFILE,
 }
 
 const invoiceHref = (number: string) => {
@@ -58,6 +61,7 @@ function toDetail(c: DemoCreditNote): CreditNoteDetailData {
       issue_date: inv?.issue_date ?? null,
       total_ttc: inv?.total_ttc ?? null,
     },
+    legal_snapshot: DEMO_LEGAL_SNAPSHOT,
   }
 }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient, createClientWithToken } from "@/lib/supabase/server"
 import { generateInvoicePdf } from "@/lib/pdf/invoice"
 import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
+import { selectCompanyWithProfile } from "@/lib/legal/db"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -30,11 +31,8 @@ export async function GET(request: NextRequest, { params }: Params) {
       .single()
     if (invErr || !invoice) return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
 
-    const { data: company } = await supabase
-      .from("companies")
-      .select("name,siren,siret,vat_number,address,zip_code,city,country,iban,legal_notice,accent_color,logo_url,email")
-      .eq("user_id", user.id)
-      .single()
+    // Profil légal compris (mentions automatiques d'un brouillon), s'il existe déjà en base
+    const { data: company } = await selectCompanyWithProfile(supabase, "name,siren,siret,vat_number,address,zip_code,city,country,iban,legal_notice,accent_color,logo_url,email", user.id)
 
     // Une facture pas encore émise sort filigranée « BROUILLON », sans XML Factur-X.
     // Elle n'a pas encore de numéro (attribué à l'émission) : « Brouillon » à la place.

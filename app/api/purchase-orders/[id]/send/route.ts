@@ -5,6 +5,7 @@ import { sendEmail } from "@/lib/email/resend"
 import { buildPurchaseOrderEmail } from "@/lib/email/templates/purchase-order"
 import { generatePurchaseOrderPdf } from "@/lib/pdf/purchase-order"
 import { markShareLinkSent, shareLinkForEmail } from "@/lib/signature/share"
+import { selectCompanyWithProfile } from "@/lib/legal/db"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -31,11 +32,8 @@ export async function POST(_req: NextRequest, { params }: Params) {
     if (!clientEmail) return NextResponse.json({ error: "Le client n'a pas d'adresse email" }, { status: 422 })
 
     // 2. Données entreprise
-    const { data: company } = await supabase
-      .from("companies")
-      .select("name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color,logo_url,email")
-      .eq("user_id", user.id)
-      .single()
+    // Profil légal compris (mentions automatiques d'un brouillon), s'il existe déjà en base
+    const { data: company } = await selectCompanyWithProfile(supabase, "name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color,logo_url,email", user.id)
 
     const companyName = company?.name?.trim() || user.email?.split("@")[0] || "Votre prestataire"
     const senderEmail = company?.email?.trim() || user.email

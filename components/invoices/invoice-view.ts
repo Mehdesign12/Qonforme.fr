@@ -75,6 +75,8 @@ export interface InvoiceView {
   total_ttc: number
   notes?: string | null
   client: InvoiceViewClient | null
+  /** Mentions de l'entreprise figées à l'émission (lib/legal/mentions.ts). */
+  legal_snapshot?: unknown
 }
 
 export interface CompanyView {
@@ -87,6 +89,8 @@ export interface CompanyView {
   vat_number?: string | null
   iban?: string | null
   legal_notice?: string | null
+  /** Profil légal (mentions automatiques d'un brouillon), colonne `legal_profile`. */
+  legal_profile?: unknown
 }
 
 /* ------------------------------------------------------------------ */

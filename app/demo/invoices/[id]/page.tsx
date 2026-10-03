@@ -12,6 +12,7 @@ import { describeInvoiceSchedule } from "@/lib/reminders/settings"
 import { DeclarationBanner, PaymentLinkPanel } from "@/components/payment-link/PaymentLinkPanel"
 import { demoPaymentLinkState } from "@/lib/demo/payment-link"
 import { isPayableStatus } from "@/lib/payment-link/rules"
+import { DEMO_LEGAL_NOTICE, DEMO_LEGAL_PROFILE, demoLegalSnapshot } from "@/lib/demo/legal-profile"
 
 /** Miroir de /invoices/[id] : même fiche, données de démo, rien n'est enregistré ni envoyé. */
 const COMPANY: CompanyView = {
@@ -22,6 +23,8 @@ const COMPANY: CompanyView = {
   siren: DEMO_COMPANY.siren,
   vat_number: DEMO_COMPANY.vat_number,
   iban: DEMO_COMPANY.iban,
+  legal_notice: DEMO_LEGAL_NOTICE,
+  legal_profile: DEMO_LEGAL_PROFILE,
 }
 
 const signupToast = (what: string) =>
@@ -74,6 +77,8 @@ export default function DemoInvoiceDetailPage() {
       city: data.client.city,
       siren: data.client.siren ?? null,
     },
+    // Mentions figées à l'émission, comme le déclencheur le fait en production
+    legal_snapshot: demoLegalSnapshot(data.status),
   }
 
   return (

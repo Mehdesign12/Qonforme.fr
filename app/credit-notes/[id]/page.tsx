@@ -21,6 +21,8 @@ interface ApiCreditNote {
   subtotal_ht: number
   total_vat: number
   total_ttc: number
+  /** Mentions figées à la création (lib/legal/mentions.ts) ; absent avant la migration. */
+  legal_snapshot?: unknown
   client: {
     id: string
     name: string
@@ -51,6 +53,7 @@ function toDetail(c: ApiCreditNote): CreditNoteDetailData {
     total_vat: Number(c.total_vat) || 0,
     total_ttc: Number(c.total_ttc) || 0,
     client: c.client ? { ...c.client, href: `/clients/${c.client.id}`, editHref: `/clients/${c.client.id}/edit` } : null,
+    legal_snapshot: c.legal_snapshot,
     original_invoice: c.original_invoice
       ? {
           invoice_number: c.original_invoice.invoice_number,
@@ -73,7 +76,8 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
     const supabase = createClient()
     Promise.all([
       fetch(`/api/credit-notes/${params.id}`).then(r => r.json()),
-      supabase.from("companies").select("name,address,zip_code,city,siret,siren,vat_number").single(),
+      // Mentions libres : pied de l'aperçu d'un avoir émis avant l'instantané des mentions
+      supabase.from("companies").select("name,address,zip_code,city,siret,siren,vat_number,legal_notice").single(),
     ]).then(([json, { data: comp }]) => {
       if (json.credit_note) setNote(toDetail(json.credit_note))
       if (comp) setCompany(comp)

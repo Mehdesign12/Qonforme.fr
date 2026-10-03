@@ -12,6 +12,8 @@ import fontkit from "@pdf-lib/fontkit"
 import { buildFacturX, documentMentions } from "@/lib/facturx/xml"
 import { creditNoteToFacturX, type LineRecord } from "@/lib/facturx/records"
 import { pdfSafeText, saveAsFacturX } from "@/lib/facturx/pdfa"
+import { withDocumentMentions } from "@/lib/legal/mentions"
+import { legalPdfLines } from "@/lib/pdf/legal-lines"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 import path from "path"
 import fs from "fs"
@@ -29,6 +31,8 @@ export interface CreditNotePdfInput {
     notes?: string | null
     /** Traitement de TVA du document, s'il est enregistré (voir lib/facturx/vat.ts). */
     vat_treatment?: string | null
+    /** Mentions figées à la création de l'avoir (lib/legal/mentions.ts). */
+    legal_snapshot?: unknown
     lines?: (LineRecord & {
       description: string
       quantity: number
@@ -63,7 +67,8 @@ export interface CreditNotePdfInput {
     city?: string
     country?: string
     iban?: string
-    legal_notice?: string
+    legal_notice?: string | null
+    legal_profile?: unknown
     email?: string
     accent_color?: string
     logo_url?: string
@@ -101,7 +106,9 @@ function fmtDate(d: string): string {
 
 // ── Générateur principal ─────────────────────────────────────────────────────
 
-export async function generateCreditNotePdf({ creditNote, company }: CreditNotePdfInput): Promise<Buffer> {
+export async function generateCreditNotePdf({ creditNote, company: companyInput }: CreditNotePdfInput): Promise<Buffer> {
+  // Mentions de l'entreprise figées à la création de l'avoir (lib/legal/mentions.ts)
+  const company = withDocumentMentions(companyInput, creditNote, "credit_note")
   // Avoir au modèle Factur-X : XML, montants et mentions viennent du même calcul
   const fxDoc = creditNoteToFacturX(creditNote, company)
   const fx = buildFacturX(fxDoc)
@@ -314,14 +321,12 @@ export async function generateCreditNotePdf({ creditNote, company }: CreditNoteP
   curY -= 24
 
   // ── MENTIONS LÉGALES — de l'entreprise, puis celles que déclare le XML ─────
-  const legalLines = [
-    ...(company?.legal_notice?.trim() ? company.legal_notice.trim().split("\n").slice(0, 8) : []),
-    ...extraMentions,
-  ]
+  const measure7 = (l: string) => fontRegular.widthOfTextAtSize(pdfSafeText(fontRegular, l), 7)
+  const legalLines = legalPdfLines([...(company?.legal_notice ?? "").split("\n"), ...extraMentions], measure7, cW)
   if (legalLines.length) {
     hLine(curY, mL, mR, 0.5, separator); curY -= 12
     legalLines.forEach((l: string) => {
-      const tw = Math.min(cW, fontRegular.widthOfTextAtSize(pdfSafeText(fontRegular, l), 7))
+      const tw = Math.min(cW, measure7(l))
       draw(l, Math.max(mL, (width - tw) / 2), curY, { size: 7, color: grayLight, maxWidth: cW }); curY -= 10
     })
   }

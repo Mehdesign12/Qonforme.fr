@@ -12,6 +12,8 @@ import fontkit from "@pdf-lib/fontkit"
 import { buildFacturX, documentMentions } from "@/lib/facturx/xml"
 import { invoiceToFacturX, type LineRecord } from "@/lib/facturx/records"
 import { pdfSafeText, saveAsFacturX } from "@/lib/facturx/pdfa"
+import { withDocumentMentions } from "@/lib/legal/mentions"
+import { legalPdfLines } from "@/lib/pdf/legal-lines"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 import path from "path"
 import fs from "fs"
@@ -58,6 +60,10 @@ export interface InvoicePdfInput {
     notes?: string | null
     /** Traitement de TVA du document, s'il est enregistré (voir lib/facturx/vat.ts). */
     vat_treatment?: string | null
+    /** Statut : absent pour un aperçu, `draft` pour un brouillon (mentions des réglages actuels). */
+    status?: string | null
+    /** Mentions figées à l'émission (lib/legal/mentions.ts). */
+    legal_snapshot?: unknown
     lines?: (LineRecord & {
       description: string
       quantity: number
@@ -88,7 +94,9 @@ export interface InvoicePdfInput {
     city?: string
     country?: string
     iban?: string
-    legal_notice?: string
+    legal_notice?: string | null
+    /** Profil légal (Paramètres › Entreprise) : mentions automatiques d'un brouillon ou d'un aperçu. */
+    legal_profile?: unknown
     email?: string
     accent_color?: string
     logo_url?: string
@@ -105,7 +113,10 @@ export interface InvoicePdfInput {
 
 // ── Générateur principal ─────────────────────────────────────────────────────
 
-export async function generateInvoicePdf({ invoice, company, watermark }: InvoicePdfInput): Promise<Uint8Array> {
+export async function generateInvoicePdf({ invoice, company: companyInput, watermark }: InvoicePdfInput): Promise<Uint8Array> {
+  // Mentions de l'entreprise : figées à l'émission, ou réglages actuels pour un
+  // brouillon et un aperçu (lib/legal/mentions.ts). Le XML lit les mêmes.
+  const company = withDocumentMentions(companyInput, invoice, "invoice")
   // Facture au modèle Factur-X : XML, montants et mentions viennent du même calcul
   const fxDoc = invoiceToFacturX(invoice, company)
   const fx = buildFacturX(fxDoc)
@@ -326,17 +337,16 @@ export async function generateInvoicePdf({ invoice, company, watermark }: Invoic
     curY -= 10
   }
 
-  // MENTIONS LÉGALES — celles de l'entreprise, puis celles que le XML déclare en
-  // plus (motif d'absence de TVA, conditions de règlement entre professionnels)
-  const legalLines = [
-    ...(company?.legal_notice?.trim() ? company.legal_notice.trim().split("\n").slice(0, 8) : []),
-    ...extraMentions,
-  ]
+  // MENTIONS LÉGALES — celles de l'entreprise (profil puis mentions libres),
+  // puis celles que le XML déclare en plus (motif d'absence de TVA, conditions
+  // de règlement entre professionnels), coupées à la largeur de la page
+  const measure7 = (l: string) => fontRegular.widthOfTextAtSize(pdfSafeText(fontRegular, l), 7)
+  const legalLines = legalPdfLines([...(company?.legal_notice ?? "").split("\n"), ...extraMentions], measure7, cW)
   if (legalLines.length) {
     hLine(curY, mL, mR, 0.5, separator)
     curY -= 12
     legalLines.forEach((l: string) => {
-      const tw = Math.min(cW, fontRegular.widthOfTextAtSize(pdfSafeText(fontRegular, l), 7))
+      const tw = Math.min(cW, measure7(l))
       draw(l, Math.max(mL, (width - tw) / 2), curY, { size: 7, color: grayLight, maxWidth: cW })
       curY -= 10
     })

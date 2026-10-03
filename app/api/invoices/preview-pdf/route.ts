@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { generateInvoicePdf } from "@/lib/pdf/invoice"
 import { DRAFT_INVOICE_LABEL } from "@/lib/utils/document-numbering"
+import { selectCompanyWithProfile } from "@/lib/legal/db"
 
 // POST /api/invoices/preview-pdf — génère un aperçu PDF SANS créer de facture.
 //
@@ -18,11 +19,8 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
 
-  const { data: company } = await supabase
-    .from("companies")
-    .select("name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color,logo_url,invoice_prefix")
-    .eq("user_id", user.id)
-    .single()
+  // Profil légal compris (mentions automatiques d'un brouillon), s'il existe déjà en base
+  const { data: company } = await selectCompanyWithProfile(supabase, "name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color,logo_url,invoice_prefix", user.id)
 
   let client = null
   if (body.client_id) {

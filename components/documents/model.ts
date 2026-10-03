@@ -57,6 +57,8 @@ export interface DocCompany {
   city?: string | null
   iban?: string | null
   legal_notice?: string | null
+  /** Profil légal (colonne `legal_profile`) : mentions automatiques de l'aperçu (lib/legal/mentions.ts). */
+  legal_profile?: unknown
   logo_url?: string | null
 }
 
@@ -166,7 +168,8 @@ export function lineFromProduct(product: ProductSuggestion): DocLine {
     id: crypto.randomUUID(),
     description: product.name + (product.description ? ` — ${product.description}` : ""),
     quantity: "1",
-    unit_price_ht: String(product.unit_price_ht),
+    // Prix à 0 € : prestation importée « Prix à compléter » ; la ligne reste à chiffrer
+    unit_price_ht: Number(product.unit_price_ht) > 0 ? String(product.unit_price_ht) : "",
     vat_rate: product.vat_rate as VatRate,
   }
 }

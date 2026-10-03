@@ -30,6 +30,7 @@ import { formatCurrency } from "@/lib/utils/invoice"
 import {
   fmtQty, fmtRate, fmtUnit, longDate, parisDay, shortDate, vatBreakdown, vatRatesLabel,
 } from "@/components/quotes/QuoteListHelpers"
+import { resolveDocumentMentions } from "@/lib/legal/mentions"
 
 export interface PurchaseOrderDetailData {
   id: string
@@ -49,6 +50,8 @@ export interface PurchaseOrderDetailData {
   confirmed_at: string | null
   created_at: string | null
   client: (PaperParty & { href?: string | null; editHref?: string | null }) | null
+  /** Mentions de l'entreprise figées à l'envoi (lib/legal/mentions.ts). */
+  legal_snapshot?: unknown
 }
 
 export interface PurchaseOrderDetailActions {
@@ -266,6 +269,7 @@ export function PurchaseOrderDetailView({
               subtotal_ht={po.subtotal_ht}
               total_ttc={po.total_ttc}
               notes={po.notes}
+              mentions={resolveDocumentMentions(company, po, "purchase_order").lines}
             />
           </section>
 
