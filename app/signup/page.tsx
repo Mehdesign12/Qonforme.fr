@@ -3,6 +3,7 @@ import Link from "next/link"
 import SignupForm from "@/components/auth/SignupForm"
 import AuthLayout from "@/components/auth/AuthLayout"
 import QuotePreview from "@/components/auth/QuotePreview"
+import { safeNextPath } from "@/lib/stripe/access"
 import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
 
 export const metadata: Metadata = {
@@ -15,7 +16,22 @@ export const metadata: Metadata = {
 }
 export const dynamic = "force-dynamic"
 
-export default function SignupPage() {
+export default function SignupPage({ searchParams }: { searchParams?: { next?: string } }) {
+  // Retour après inscription (SignupForm) ; l'invitation d'un comptable a son propre titre
+  const next = safeNextPath(searchParams?.next)
+  if (next?.startsWith("/invitation-comptable")) {
+    return (
+      <AuthLayout>
+        <AuthTitle>Votre accès <Serif>comptable</Serif>, gratuit.</AuthTitle>
+        <AuthLead>Créez votre compte pour accepter l&apos;invitation de votre client. Aucune entreprise à renseigner.</AuthLead>
+        <SignupForm />
+        <p className="mt-6 text-[14px] text-q-text-3">
+          Déjà un compte ?{" "}
+          <Link href={`/login?next=${encodeURIComponent(next)}`} className="q-link">Se connecter</Link>
+        </p>
+      </AuthLayout>
+    )
+  }
   return (
     <AuthLayout aside={<QuotePreview />}>
       <AuthTitle>Votre premier <Serif>devis</Serif>, sans attendre.</AuthTitle>
@@ -27,7 +43,7 @@ export default function SignupPage() {
 
       <p className="mt-6 text-[14px] text-q-text-3">
         Déjà un compte ?{" "}
-        <Link href="/login" className="q-link">Se connecter</Link>
+        <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="q-link">Se connecter</Link>
       </p>
     </AuthLayout>
   )

@@ -104,6 +104,7 @@ const LEAF_TITLES: Record<string, string> = {
   "/settings/notifications": "Relances",
   "/settings/billing": "Abonnement",
   "/settings/ppf": "Facturation électronique",
+  "/settings/comptable": "Accès comptable",
 }
 
 export interface Crumbs {

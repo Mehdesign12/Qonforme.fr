@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
+import { safeNextPath } from "@/lib/stripe/access"
 import { AUTH_INPUT, AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
 
 export default function LoginForm() {
@@ -45,7 +46,8 @@ export default function LoginForm() {
         return
       }
       toast.success("Connexion réussie !")
-      window.location.href = '/dashboard'
+      // Retour à la page qui a demandé la connexion (invitation d'un comptable…), chemin interne seulement
+      window.location.href = safeNextPath(new URLSearchParams(window.location.search).get("next")) ?? '/dashboard'
     } catch {
       toast.error("Erreur réseau. Réessayez.")
     } finally {

@@ -9,7 +9,7 @@
  * Partagé par l'application et la démo.
  */
 import Link from "next/link"
-import { Bell, ChevronRight, CreditCard, Download, Layers, ShieldCheck, Building2, type LucideIcon } from "lucide-react"
+import { Bell, ChevronRight, CreditCard, Download, Layers, ShieldCheck, Building2, UserCheck, type LucideIcon } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { initialsOf, PageHeader, StatusPill } from "@/components/app/kit"
 import type { ShellMode } from "@/components/layout/nav"
@@ -125,6 +125,7 @@ export function SettingsOverview({
       <Group title="Documents">
         <Row href={href("/settings/invoices")} icon={Layers} title="Modèles de devis et factures" sub="Logo, couleur d'accent, numérotation, mentions" />
         <Row href={href("/settings/exports")} icon={Download} title="Exports comptables" sub="Fichier des écritures comptables (FEC)" />
+        <Row href={href("/settings/comptable")} icon={UserCheck} title="Accès comptable" sub="Votre comptable consulte et exporte, en lecture seule" />
       </Group>
 
       {/* ── Relances et notifications ── */}
