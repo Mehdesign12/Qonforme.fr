@@ -2,15 +2,17 @@
  * Exports comptables (planches « Exports » et « Exports — vide ») : carte
  * « Nouvel export » à gauche, contenu du fichier à droite.
  *
- * Version honnête : seul le FEC existe. Pas de journal des ventes, d'archive
- * de justificatifs, de grand livre, d'historique des exports, d'accès
- * comptable ni d'envoi automatique (non livrés, DECISIONS § 10).
+ * Version honnête : seul le FEC se télécharge ici. Pas de grand livre,
+ * d'historique des exports ni d'envoi automatique (non livrés, DECISIONS § 10).
+ * Le comptable invité (Paramètres › Accès comptable) télécharge lui-même le
+ * FEC, les ventes en CSV et les PDF de la période.
  * Partagé par l'application et la démo.
  */
 import Link from "next/link"
-import { Check, Download, Plus } from "lucide-react"
+import { Check, ChevronRight, Download, Plus } from "lucide-react"
 import { EmptyState, PageHeader } from "@/components/app/kit"
 import type { ShellMode } from "@/components/layout/nav"
+import { settingsHref } from "@/components/settings/sections"
 import { SettingsCard } from "@/components/settings/ui"
 import FecExportSection from "@/components/settings/FecExportSection"
 
@@ -67,6 +69,10 @@ export function ExportsView({
                 Transmettez-lui le fichier téléchargé. Son nom suit la règle officielle : SIREN, « FEC », puis la date
                 de clôture{siren ? <> (ex.&nbsp;: <span className="font-mono">{siren}FEC20261231.txt</span>)</> : null}.
               </p>
+              <Link href={settingsHref("/settings/comptable", mode)} className="q-link inline-flex items-center gap-1 text-[13px]">
+                Ou donnez-lui un accès en lecture seule
+                <ChevronRight className="size-3.5" aria-hidden />
+              </Link>
             </SettingsCard>
           </div>
         </div>

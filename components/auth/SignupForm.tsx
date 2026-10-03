@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
+import { safeNextPath } from "@/lib/stripe/access"
 import { trackEvent } from "@/lib/meta-pixel"
 import { AUTH_INPUT, AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
 
@@ -89,9 +90,11 @@ export default function SignupForm() {
         return
       }
 
-      toast.success("Compte créé. Il reste votre entreprise.")
+      // Retour à la page qui a demandé l'inscription (invitation d'un comptable : pas d'entreprise à créer)
+      const next = safeNextPath(new URLSearchParams(window.location.search).get("next"))
+      toast.success(next ? "Compte créé." : "Compte créé. Il reste votre entreprise.")
       trackEvent("Lead", { currency: "EUR", value: 0 })
-      router.push("/signup/company")
+      router.push(next ?? "/signup/company")
     } catch {
       toast.error("Une erreur inattendue s'est produite. Réessayez.", { duration: 8000 })
       setLoading(false)

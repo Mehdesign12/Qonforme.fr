@@ -146,6 +146,9 @@ export async function updateSession(request: NextRequest) {
     '/products',
     '/credit-notes',
     '/purchase-orders',
+    // Espace comptable : compte connecté, sans entreprise exigée (l'accès à
+    // chaque dossier est vérifié par lib/accountant/server.ts)
+    '/comptable',
   ]
 
   const isProtected = protectedPaths.some((path) =>
