@@ -4,7 +4,7 @@ import { GUIDES } from "@/lib/pseo/guides"
 import { ContentCta, ContentHero, ContentPage, LinkCard, WRAP } from "@/components/content/ui"
 
 export const metadata: Metadata = {
-  title: "Guides pratiques facturation | Qonforme",
+  title: "Guides pratiques facturation",
   description: "Guides complets sur la facturation en France : mentions obligatoires, TVA, délais de paiement, facture électronique 2026. Tout savoir pour être en conformité.",
   keywords: ["guide facturation", "mentions obligatoires facture", "facture electronique 2026", "TVA facture"],
   alternates: { canonical: "/guide" },

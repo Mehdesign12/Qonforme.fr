@@ -3,7 +3,7 @@ import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm"
 import { SettingsFrame } from "@/components/settings/SettingsFrame"
 import { DEMO_COMPANY } from "@/lib/demo/data"
 
-export const metadata: Metadata = { title: "Entreprise — Démo Qonforme" }
+export const metadata: Metadata = { title: "Entreprise — Démo" }
 
 /** Démo de Paramètres › Entreprise : même formulaire que l'application, rien n'est enregistré. */
 export default function DemoCompanySettingsPage() {

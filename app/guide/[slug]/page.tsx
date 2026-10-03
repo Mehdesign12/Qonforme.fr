@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const guide = getGuideBySlug(slug)
   if (!guide) return {}
   return {
-    title: `${guide.titre} | Qonforme`,
+    title: guide.titre,
     description: guide.description,
     keywords: guide.motsCles,
     alternates: { canonical: `/guide/${guide.slug}` },

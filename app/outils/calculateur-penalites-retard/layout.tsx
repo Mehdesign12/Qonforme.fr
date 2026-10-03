@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Calculateur pénalités de retard facture gratuit | Qonforme",
-  description: "Calculez les intérêts de retard et l'indemnité forfaitaire de 40 € de vos factures impayées, au taux légal du 2ᵉ semestre 2026 (BCE + 10 points). Gratuit.",
+  title: "Calculateur de pénalités de retard de facture",
+  description: "Calculez les intérêts de retard d'une facture impayée, semestre par semestre au taux BCE + 10 points, et l'indemnité forfaitaire de 40 €. Gratuit, sans compte.",
   keywords: ["pénalités retard facture", "intérêts de retard", "calcul pénalités", "indemnité forfaitaire recouvrement", "facture impayée"],
   alternates: { canonical: "/outils/calculateur-penalites-retard" },
   openGraph: {

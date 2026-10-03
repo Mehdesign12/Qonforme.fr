@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const terme = getTermeBySlug(slug)
   if (!terme) return {}
   return {
-    title: `${terme.terme} — Définition facturation | Qonforme`,
+    title: `${terme.terme} — Définition facturation`,
     description: terme.definition,
     keywords: [terme.slug, `definition ${terme.slug}`, `${terme.slug} facturation`],
     alternates: { canonical: `/glossaire/${terme.slug}` },

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { ArrowLeftRight, Calculator } from "lucide-react"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
@@ -22,7 +22,8 @@ import {
   toolJsonLd,
 } from "@/components/outils/kit"
 import { AmountInput, ChoiceGroup, CopyButton, ResetButton, Seg } from "@/components/outils/controls"
-import { TVA_RATES, htToTtc, ttcToHt, calculateVat } from "@/lib/outils/tva"
+import { TVA_RATES, depuisHt, depuisTtc } from "@/lib/outils/tva"
+import { filtrerSaisieMontant, parseMontant } from "@/lib/outils/montant"
 
 function fmtEur(n: number): string {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n)
@@ -31,6 +32,9 @@ function fmtEur(n: number): string {
 function fmtRate(r: number): string {
   return `${String(r).replace(".", ",")}\u00a0%`
 }
+
+/** Au-delà, le calcul en centimes entiers sortirait des entiers exacts. */
+const MONTANT_MAX = 1_000_000_000
 
 const FAQ = [
   { q: "Comment passer du HT au TTC ?", a: "Multipliez le montant HT par (1 + taux de TVA). Pour 20 %, multipliez par 1,20. Exemple : 500 € HT × 1,20 = 600 € TTC." },
@@ -46,16 +50,24 @@ export default function CalculateurTvaPage() {
   const resultRef = useRef<HTMLDivElement>(null)
 
   const rate = TVA_RATES[rateIndex].value
-  const numAmount = parseFloat(amount.replace(",", ".")) || 0
+  const numAmount = parseMontant(amount)
+  // Saisie non vide mais illisible, négative ou démesurée : message sous le champ
+  const erreur =
+    amount.trim() === ""
+      ? ""
+      : numAmount === null
+        ? "Montant invalide : saisissez par exemple 1 234,56."
+        : numAmount < 0
+          ? "Le montant doit être positif."
+          : numAmount > MONTANT_MAX
+            ? "Montant trop élevé (1 milliard d'euros au plus)."
+            : ""
 
-  const result = useCallback(() => {
-    if (numAmount <= 0) return null
-    if (mode === "ht-to-ttc") {
-      return { ht: numAmount, tva: calculateVat(numAmount, rate), ttc: htToTtc(numAmount, rate) }
-    }
-    const ht = ttcToHt(numAmount, rate)
-    return { ht, tva: calculateVat(ht, rate), ttc: numAmount }
-  }, [numAmount, rate, mode])()
+  // HT + TVA = TTC au centime : la TVA (ou le HT) est arrondie au centime, l'autre montant s'en déduit
+  const result = useMemo(() => {
+    if (erreur || numAmount === null || numAmount <= 0) return null
+    return mode === "ht-to-ttc" ? depuisHt(numAmount, rate) : depuisTtc(numAmount, rate)
+  }, [erreur, numAmount, rate, mode])
 
   const handleSwapMode = () => {
     setMode((m) => (m === "ht-to-ttc" ? "ttc-to-ht" : "ht-to-ttc"))
@@ -63,16 +75,16 @@ export default function CalculateurTvaPage() {
   }
 
   const handleAmountChange = (v: string) => {
-    setAmount(v.replace(/[^0-9.,]/g, ""))
+    setAmount(filtrerSaisieMontant(v))
     // Fait défiler jusqu'au résultat sur mobile
     setTimeout(() => {
-      if (resultRef.current && parseFloat(v.replace(",", ".")) > 0) {
+      if (resultRef.current && (parseMontant(v) ?? 0) > 0) {
         resultRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" })
       }
     }, 100)
   }
 
-  const copyText = result ? `HT: ${fmtEur(result.ht)} | TVA (${rate}%): ${fmtEur(result.tva)} | TTC: ${fmtEur(result.ttc)}` : ""
+  const copyText = result ? `HT : ${fmtEur(result.ht)} | TVA (${fmtRate(rate)}) : ${fmtEur(result.tva)} | TTC : ${fmtEur(result.ttc)}` : ""
 
   return (
     <ToolShell ctaBar={<OutilsCtaBar text="La TVA calculée sur chaque ligne de vos devis et factures." />}>
@@ -102,8 +114,9 @@ export default function CalculateurTvaPage() {
             </button>
           </div>
 
-          <Field label={`Montant ${mode === "ht-to-ttc" ? "HT" : "TTC"}`} htmlFor="tva-montant" className="mt-6">
-            <AmountInput id="tva-montant" value={amount} onChange={handleAmountChange} placeholder={mode === "ht-to-ttc" ? "1 000" : "1 200"} autoFocus />
+          <Field label={`Montant ${mode === "ht-to-ttc" ? "HT" : "TTC"}`} htmlFor="tva-montant" className="mt-6" hint={erreur ? undefined : "Virgule ou point pour les centimes : 1 234,56 ou 1234.56."}>
+            <AmountInput id="tva-montant" value={amount} onChange={handleAmountChange} placeholder={mode === "ht-to-ttc" ? "1 000" : "1 200"} autoFocus ariaDescribedBy={erreur ? "tva-montant-err" : undefined} invalid={!!erreur} />
+            {erreur && <p id="tva-montant-err" className="q-field-error">{erreur}</p>}
           </Field>
 
           <Field label="Taux de TVA" className="mt-5">
@@ -168,15 +181,15 @@ export default function CalculateurTvaPage() {
             La <strong>taxe sur la valeur ajoutée (TVA)</strong> est un impôt indirect sur la consommation. En France, il existe quatre taux :
           </p>
           <ul>
-            <li><strong>20 % (taux normal)</strong> : majorité des biens et services</li>
-            <li><strong>10 % (taux intermédiaire)</strong> : restauration, transports, travaux</li>
-            <li><strong>5,5 % (taux réduit)</strong> : alimentation, énergie, livres</li>
-            <li><strong>2,1 % (taux super-réduit)</strong> : presse, médicaments remboursés</li>
+            <li><strong>20 % (taux normal)</strong> : majorité des biens et services, construction neuve</li>
+            <li><strong>10 % (taux intermédiaire)</strong> : travaux d&apos;amélioration, de transformation, d&apos;aménagement et d&apos;entretien d&apos;un logement achevé depuis plus de deux ans (art. 279-0 bis du CGI), restauration, transports</li>
+            <li><strong>5,5 % (taux réduit)</strong> : travaux de rénovation énergétique d&apos;un logement achevé depuis plus de deux ans (art. 278-0 bis A du CGI), alimentation, livres</li>
+            <li><strong>2,1 % (taux super-réduit)</strong> : presse, médicaments remboursables</li>
           </ul>
           <h3>Formules</h3>
           <Formula>
-            <p>HT → TTC : Montant TTC = Montant HT × (1 + Taux / 100)</p>
-            <p>TTC → HT : Montant HT = Montant TTC / (1 + Taux / 100)</p>
+            <p>HT → TTC : TVA = Montant HT × Taux / 100, arrondie au centime ; TTC = HT + TVA</p>
+            <p>TTC → HT : Montant HT = Montant TTC / (1 + Taux / 100), arrondi au centime ; TVA = TTC − HT</p>
           </Formula>
           <h3>Auto-entrepreneurs et TVA</h3>
           <p>
@@ -191,7 +204,7 @@ export default function CalculateurTvaPage() {
             { href: "/outils/simulateur-charges-auto-entrepreneur", label: "Simulateur charges auto-entrepreneur" },
             { href: "/outils/simulateur-seuil-tva", label: "Simulateur seuil TVA" },
             { href: "/outils/generateur-facture-gratuite", label: "Générateur de facture gratuit" },
-            { href: "/guide/tva-auto-entrepreneur", label: "Guide TVA auto-entrepreneur" },
+            { href: "/guide/facture-sans-tva", label: "Guide : facture sans TVA" },
           ]}
         />
       </ToolGuide>

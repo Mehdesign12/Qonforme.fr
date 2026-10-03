@@ -151,10 +151,11 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
           <Link
             href="/"
             aria-label="Qonforme, accueil"
-            className="inline-flex shrink-0 items-center rounded-lg px-0.5 py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent"
+            className="relative inline-flex shrink-0 items-center rounded-lg px-0.5 py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent"
           >
-            <Image src={LOGO_LONG_BLUE} alt="Qonforme" width={104} height={20} sizes="104px" priority className="h-5 w-auto dark:hidden" />
-            <Image src={LOGO_LONG_LIGHT} alt="Qonforme" width={104} height={20} sizes="104px" className="hidden h-5 w-auto dark:block" />
+            {/* Boîte de 104 × 20 fixée en CSS (object-contain) : next/image ne signale plus de ratio modifié ; la variante sombre est superposée, pas masquée */}
+            <Image src={LOGO_LONG_BLUE} alt="Qonforme" width={104} height={20} sizes="104px" priority className="h-5 w-[104px] object-contain object-left dark:opacity-0" />
+            <Image src={LOGO_LONG_LIGHT} alt="" aria-hidden width={104} height={20} sizes="104px" className="absolute left-0.5 top-1 h-5 w-[104px] object-contain object-left opacity-0 dark:opacity-100" />
           </Link>
           {backLink && (
             <>

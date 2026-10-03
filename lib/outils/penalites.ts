@@ -102,3 +102,126 @@ export function joursEntre(dateEcheance: string, datePaiement: string): number {
   const diff = d2.getTime() - d1.getTime()
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
 }
+
+/* ─────────────────────────────────────────────────────────
+   Historique des semestres et calcul par période
+───────────────────────────────────────────────────────── */
+
+export interface SemestreTaux {
+  /** Premier jour du semestre, AAAA-MM-JJ. */
+  debut: string
+  libelle: string
+  /** Taux BCE des opérations principales de refinancement au 1er jour du semestre. */
+  tauxBce: number
+  /** Taux de l'intérêt légal du semestre, créances des professionnels (« tous les autres cas »). */
+  tauxInteretLegalPro: number
+}
+
+/**
+ * Semestres dont les deux taux sont vérifiés, du plus ancien au plus récent.
+ *
+ * Taux BCE (BCE, « Key ECB interest rates », tableau consulté le 3 octobre 2026) :
+ * 3,15 % depuis le 18 décembre 2024, 2,15 % depuis le 11 juin 2025, 2,40 %
+ * depuis le 17 juin 2026.
+ * Taux de l'intérêt légal (« tous les autres cas ») :
+ * - 1er semestre 2025 : 3,71 %, arrêté du 17 décembre 2024 (JORFTEXT000050793726) ;
+ * - 2ᵉ semestre 2025 : 2,76 %, arrêté du 19 juin 2025 (JORFTEXT000051783186) ;
+ * - 1er semestre 2026 : 2,62 %, arrêté du 15 décembre 2025, JORF du 26 décembre 2025 (JORFTEXT000053165408) ;
+ * - 2ᵉ semestre 2026 : 2,75 %, arrêté du 26 juin 2026, JORF du 30 juin 2026.
+ * À compléter chaque 1er janvier et 1er juillet, en même temps que SEMESTRE_REFERENCE.
+ */
+export const HISTORIQUE_SEMESTRES: readonly SemestreTaux[] = [
+  { debut: "2025-01-01", libelle: "1er semestre 2025", tauxBce: 3.15, tauxInteretLegalPro: 3.71 },
+  { debut: "2025-07-01", libelle: "2ᵉ semestre 2025", tauxBce: 2.15, tauxInteretLegalPro: 2.76 },
+  { debut: "2026-01-01", libelle: "1er semestre 2026", tauxBce: 2.15, tauxInteretLegalPro: 2.62 },
+  { debut: "2026-07-01", libelle: SEMESTRE_REFERENCE.libelle, tauxBce: SEMESTRE_REFERENCE.tauxBce, tauxInteretLegalPro: SEMESTRE_REFERENCE.tauxInteretLegalPro },
+]
+
+export interface TranchePenalites {
+  /** Premier et dernier jour de retard de la tranche (inclus), AAAA-MM-JJ. */
+  debut: string
+  fin: string
+  jours: number
+  /** Semestre de la tranche (« 1er semestre 2026 »). */
+  semestre: string
+  /** Faux si le semestre est hors de l'historique vérifié : taux du semestre connu le plus proche, à vérifier. */
+  connu: boolean
+  /** Semestre dont le taux est appliqué (différent de `semestre` hors historique). */
+  semestreDuTaux: string
+  taux: number
+  interets: number
+}
+
+export interface PenalitesPeriodeResult {
+  montantFacture: number
+  joursRetard: number
+  tranches: TranchePenalites[]
+  tauxParDefaut: boolean
+  /** Vrai si le taux convenu est sous 3 × le taux d'intérêt légal d'un des semestres de la période. */
+  sousLePlancher: boolean
+  /** Vrai si une partie de la période sort de l'historique vérifié. */
+  horsHistorique: boolean
+  interetsRetard: number
+  indemniteForfaitaire: number
+  /** Intérêts de retard + indemnité forfaitaire (le montant de la facture est dû à part). */
+  totalPenalites: number
+}
+
+const JOUR = 86_400_000
+const versJour = (iso: string) => Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)))
+const versIso = (t: number) => new Date(t).toISOString().slice(0, 10)
+
+function semestreDe(iso: string): { debut: string; fin: string; libelle: string } {
+  const annee = iso.slice(0, 4)
+  return Number(iso.slice(5, 7)) <= 6
+    ? { debut: `${annee}-01-01`, fin: `${annee}-06-30`, libelle: `1er semestre ${annee}` }
+    : { debut: `${annee}-07-01`, fin: `${annee}-12-31`, libelle: `2ᵉ semestre ${annee}` }
+}
+
+/**
+ * Pénalités de retard découpées par semestre : à défaut de taux convenu, chaque
+ * jour de retard porte intérêt au taux BCE + 10 points du semestre où il tombe
+ * (Code de commerce, art. L441-10 II). Un taux convenu s'applique à toute la
+ * période. Le retard court du lendemain de l'échéance au jour du paiement inclus.
+ */
+export function calculerPenalitesPeriode(montant: number, dateEcheance: string, datePaiement: string, tauxAnnuel?: number): PenalitesPeriodeResult {
+  const convenu = tauxAnnuel !== undefined && Number.isFinite(tauxAnnuel)
+  const premier = versJour(dateEcheance) + JOUR
+  const dernier = versJour(datePaiement)
+  const tranches: TranchePenalites[] = []
+  let sousLePlancher = false
+
+  for (let jour = premier; jour <= dernier; ) {
+    const sem = semestreDe(versIso(jour))
+    const fin = Math.min(versJour(sem.fin), dernier)
+    const jours = Math.round((fin - jour) / JOUR) + 1
+    const exact = HISTORIQUE_SEMESTRES.find((s) => s.debut === sem.debut)
+    const proche = exact ?? (sem.debut < HISTORIQUE_SEMESTRES[0].debut ? HISTORIQUE_SEMESTRES[0] : HISTORIQUE_SEMESTRES[HISTORIQUE_SEMESTRES.length - 1])
+    const taux = convenu ? tauxAnnuel! : arrondi2(proche.tauxBce + 10)
+    if (convenu && taux < arrondi2(proche.tauxInteretLegalPro * 3)) sousLePlancher = true
+    tranches.push({
+      debut: versIso(jour),
+      fin: versIso(fin),
+      jours,
+      semestre: sem.libelle,
+      connu: Boolean(exact),
+      semestreDuTaux: proche.libelle,
+      taux,
+      interets: arrondi2(montant * (taux / 100) * (jours / 365)),
+    })
+    jour = fin + JOUR
+  }
+
+  const interetsRetard = arrondi2(tranches.reduce((s, t) => s + t.interets, 0))
+  return {
+    montantFacture: montant,
+    joursRetard: tranches.reduce((s, t) => s + t.jours, 0),
+    tranches,
+    tauxParDefaut: !convenu,
+    sousLePlancher,
+    horsHistorique: tranches.some((t) => !t.connu),
+    interetsRetard,
+    indemniteForfaitaire: INDEMNITE_FORFAITAIRE,
+    totalPenalites: arrondi2(interetsRetard + INDEMNITE_FORFAITAIRE),
+  }
+}

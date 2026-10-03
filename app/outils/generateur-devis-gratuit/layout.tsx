@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Générateur de devis gratuit en ligne — PDF | Qonforme",
-  description: "Créez un devis professionnel en PDF gratuitement. Formulaire en 4 étapes, téléchargement immédiat. Mentions légales incluses, sans inscription requise.",
+  title: "Générateur de devis gratuit en ligne — PDF",
+  description: "Créez un devis en PDF gratuitement : jusqu'à 200 lignes, TVA ventilée par taux, franchise de TVA, assurance professionnelle. Sans inscription ni stockage.",
   keywords: ["générateur devis gratuit", "créer devis en ligne", "devis pdf gratuit", "faire un devis", "modèle devis"],
   alternates: { canonical: "/outils/generateur-devis-gratuit" },
   openGraph: {

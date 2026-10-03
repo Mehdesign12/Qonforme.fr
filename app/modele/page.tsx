@@ -4,7 +4,7 @@ import { MODELES } from "@/lib/pseo/modeles"
 import { ContentCta, ContentHero, ContentPage, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
 
 export const metadata: Metadata = {
-  title: "Modèles de factures et devis gratuits | Qonforme",
+  title: "Modèles de factures et devis gratuits",
   description: "Modèles gratuits de factures, devis, avoirs et bons de commande, avec les mentions obligatoires de la réglementation française. Prêts à utiliser.",
   keywords: ["modele facture gratuit", "modele devis gratuit", "modele avoir", "modele bon de commande"],
   alternates: { canonical: "/modele" },

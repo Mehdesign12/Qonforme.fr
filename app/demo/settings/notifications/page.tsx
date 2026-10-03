@@ -4,7 +4,7 @@ import { DEMO_IDENTITY } from "@/components/layout/shell"
 import { NotificationsView } from "@/components/settings/NotificationsView"
 import { SettingsFrame } from "@/components/settings/SettingsFrame"
 
-export const metadata: Metadata = { title: "Notifications — Démo Qonforme" }
+export const metadata: Metadata = { title: "Notifications — Démo" }
 
 /** Démo de Paramètres › Notifications : même page que l'application, données fictives. */
 export default function DemoNotificationsPage() {

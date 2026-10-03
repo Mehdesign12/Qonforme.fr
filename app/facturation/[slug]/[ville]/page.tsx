@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const metier = getMetierBySlug(slug)
   const v = getVilleBySlug(ville)
   if (!metier || !v) return {}
-  const title = `${metier.nom} à ${v.nom} — Facturation | Qonforme`
+  const title = `${metier.nom} à ${v.nom} — Facturation`
   const description = `Logiciel de facturation pour ${metier.nom.toLowerCase()} à ${v.nom} (${v.codePostal}). Devis, factures et obligations légales. Devis gratuits et illimités.`
   return {
     title,
