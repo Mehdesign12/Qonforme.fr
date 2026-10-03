@@ -304,6 +304,11 @@ function AmountCard({ invoice }: { invoice: PublicInvoice }) {
           Total de la facture {formatCurrency(invoice.totalTtc)}, avoir déduit : −{formatCurrency(invoice.credited)}
         </span>
       )}
+      {(invoice.retention ?? 0) > 0 && (
+        <span className="text-[13px] text-[var(--q-text-4)]">
+          Retenue de garantie de {formatCurrency(invoice.retention ?? 0)} non comprise : elle se règle à sa libération.
+        </span>
+      )}
     </section>
   )
 }
@@ -412,6 +417,9 @@ function InvoiceCard({ invoice, pdfHref, mode }: { invoice: PublicInvoice; pdfHr
         <Row label="Total TTC"><span className="tabular-nums">{formatCurrency(invoice.totalTtc)}</span></Row>
         {invoice.credited > 0 && (
           <Row label="Avoirs émis"><span className="tabular-nums">−{formatCurrency(invoice.credited)}</span></Row>
+        )}
+        {(invoice.retention ?? 0) > 0 && (
+          <Row label="Retenue de garantie"><span className="tabular-nums">−{formatCurrency(invoice.retention ?? 0)}</span></Row>
         )}
         <Row label="Reste à régler"><span className="font-semibold tabular-nums">{formatCurrency(invoice.remaining)}</span></Row>
       </dl>

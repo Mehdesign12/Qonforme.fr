@@ -6,11 +6,12 @@ import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
-import { PaywallDialog, isSubscriptionRequired } from "@/components/billing/PaywallDialog"
+import { PaywallDialog, isArtisanPaywall, isSubscriptionRequired } from "@/components/billing/PaywallDialog"
+import { useArtisanPlan } from "@/components/artisan/useArtisanPlan"
 import { SetCrumb } from "@/components/layout/crumb"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { useDocumentForm } from "@/components/documents/useDocumentForm"
-import { lineFromSaved, newLine, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
+import { lineFromSaved, newLine, savedIsReverseCharge, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
 
 export default function EditInvoicePage() {
   const router = useRouter()
@@ -23,6 +24,8 @@ export default function EditInvoicePage() {
   const [loadingData, setLoadingData]     = useState(true)
   const [saving, setSaving]               = useState(false)
   const [sending, setSending]             = useState(false)
+  const artisan = useArtisanPlan()
+  const [artisanPaywall, setArtisanPaywall] = useState(false)
 
   const doc = useDocumentForm("invoice", () => ({
     client_id: "", issue_date: "", due_date: "", valid_until: "", delivery_date: "",
@@ -58,6 +61,7 @@ export default function EditInvoicePage() {
           reference:     "",
           notes:         inv.notes      || "",
           lines:         (inv.lines || []).map(lineFromSaved),
+          autoliquidation: savedIsReverseCharge(inv.lines),
         })
         setClients(withDocClient(cliJson.clients ?? [], inv.client))
       } else if (cliJson.clients) {
@@ -76,7 +80,7 @@ export default function EditInvoicePage() {
         issue_date: form.issue_date,
         due_date:   form.due_date,
         notes:      form.notes || null,
-        lines:      toPayloadLines(form.lines, computed),
+        lines:      toPayloadLines(form.lines, computed, form.autoliquidation),
       }
 
       // 1. Enregistrer le brouillon
@@ -86,6 +90,7 @@ export default function EditInvoicePage() {
         body: JSON.stringify(payload),
       })
       const json = await res.json()
+      if (isArtisanPaywall(res.status, json)) { setArtisanPaywall(true); return }
       if (!res.ok) { toast.error(json.error || "Erreur lors de la sauvegarde"); return }
 
       // 2. « Envoyer » envoie vraiment l'email (et émet la facture) — avant, le
@@ -94,6 +99,7 @@ export default function EditInvoicePage() {
         const sendRes  = await fetch(`/api/invoices/${id}/send`, { method: "POST" })
         const sendJson = await sendRes.json()
         if (isSubscriptionRequired(sendRes.status, sendJson)) { setShowPaywall(true); return }
+        if (isArtisanPaywall(sendRes.status, sendJson)) { setArtisanPaywall(true); return }
         if (!sendRes.ok) {
           toast.error(sendJson.error ?? "Brouillon enregistré, mais l'envoi par email a échoué")
           router.push(`/invoices/${id}`)
@@ -122,6 +128,7 @@ export default function EditInvoicePage() {
   return (
     <>
       <SetCrumb label={invoiceNumber || "Brouillon"} />
+      <PaywallDialog open={artisanPaywall} onOpenChange={setArtisanPaywall} reason="artisan" nextPath={`/invoices/${id}/edit`} />
       <PaywallDialog
         open={showPaywall}
         onOpenChange={(open) => {
@@ -136,6 +143,7 @@ export default function EditInvoicePage() {
 
       <DocumentEditor
         kind="invoice"
+        reverseCharge={{ locked: artisan === false, onLocked: () => setArtisanPaywall(true) }}
         doc={doc}
         title={invoiceNumber ? `Modifier ${invoiceNumber}` : "Modifier le brouillon"}
         status={`${invoiceNumber ? `${invoiceNumber} · ` : ""}brouillon · ${doc.dirty ? "modifications non enregistrées" : "enregistré"}`}

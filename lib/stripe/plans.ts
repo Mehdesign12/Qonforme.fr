@@ -14,7 +14,23 @@
  * `features` ne liste que ce qui existe aujourd'hui dans l'application ;
  * `upcoming` ce qui est annoncé mais pas encore livré, toujours affiché comme
  * « à venir ». Aucune promesse invérifiable (CLAUDE.md).
+ *
+ * Formule Artisan : ses fonctions sont livrées (situations, acomptes, retenue
+ * de garantie, autoliquidation, chantiers — lib/artisan). Elle se vend dès que
+ * ses deux prix Stripe sont configurés (STRIPE_PRICE_ARTISAN_MONTHLY et
+ * STRIPE_PRICE_ARTISAN_YEARLY). Ces variables ne sont lues que côté serveur :
+ * next.config.mjs en déduit au build NEXT_PUBLIC_ARTISAN_ON_SALE, la même
+ * valeur pour le serveur et le navigateur (pas d'écart d'hydratation). Changer
+ * les prix dans Vercel demande donc un redéploiement, comme toute variable.
  */
+
+/** Vrai si les deux prix de la formule Artisan sont renseignés (même règle que next.config.mjs). */
+export function isArtisanOnSale(monthly: string | undefined | null, yearly: string | undefined | null): boolean {
+  return Boolean(monthly?.trim()) && Boolean(yearly?.trim())
+}
+
+/** Valeur inlinée au build par next.config.mjs (« true » / « false »). */
+const ARTISAN_ON_SALE = process.env.NEXT_PUBLIC_ARTISAN_ON_SALE === 'true'
 
 export type PlanId = 'starter' | 'pro'
 export type BillingPeriod = 'monthly' | 'yearly'
@@ -81,14 +97,14 @@ export const PLANS: Record<PlanId, Plan> = {
     monthlyPrice: 24,
     yearlyPrice: 240,
     yearlyMonthlyEquivalent: 20,
-    available: false,
-    features: [],
-    upcoming: [
+    available: ARTISAN_ON_SALE,
+    features: [
       'Situations de travaux et factures d’acompte',
       'Retenue de garantie suivie',
       'Autoliquidation en sous-traitance',
-      'Accès pour votre expert-comptable',
+      'Suivi par chantier',
     ],
+    upcoming: [],
     stripePriceIds: {
       monthly: process.env.STRIPE_PRICE_ARTISAN_MONTHLY ?? '',
       yearly: process.env.STRIPE_PRICE_ARTISAN_YEARLY ?? '',

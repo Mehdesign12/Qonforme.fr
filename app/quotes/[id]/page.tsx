@@ -17,6 +17,9 @@ import { PaywallDialog } from "@/components/billing/PaywallDialog"
 import { SignaturePanel } from "@/components/signature/SignaturePanel"
 import { useSignaturePanel } from "@/components/signature/useSignaturePanel"
 import { selectCompanyWithProfile } from "@/lib/legal/db"
+import { QuoteBillingPanel } from "@/components/artisan/QuoteBillingPanel"
+import { useQuoteBilling } from "@/components/artisan/useQuoteBilling"
+import { conversionBlockedBy } from "@/lib/artisan/quote-billing"
 import { snapshotOf } from "@/lib/legal/mentions"
 
 /* ------------------------------------------------------------------ */
@@ -106,6 +109,9 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       if (json.quote) setQuote(json.quote)
     }).catch(() => {})
   })
+
+  // Facturation par acomptes et situations (formule Artisan) : devis accepté seulement
+  const artisan = useQuoteBilling(params.id, quote?.status === "accepted")
 
   // Facture issue de la conversion : numéro et statut pour « Liés à ce devis »
   const convertedId = quote?.converted_invoice_id ?? null
@@ -269,6 +275,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       vat_rate: Number(l.vat_rate) || 0,
       total_ht: Number(l.total_ht) || 0,
       total_vat: l.total_vat ?? null,
+      vat_treatment: (l as { vat_treatment?: string | null }).vat_treatment ?? null,
     })),
     subtotal_ht: Number(quote.subtotal_ht) || 0,
     total_vat: Number(quote.total_vat) || 0,
@@ -305,9 +312,27 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       : "L'email contient aussi un lien pour consulter le devis en ligne."
     : undefined
 
+  const billingData = artisan.data?.available && artisan.data.billing ? artisan.data.billing : null
+  const billing = billingData && quote.status === "accepted" ? (
+    <QuoteBillingPanel
+      billing={billingData}
+      artisan={artisan.data?.artisan ?? null}
+      clientName={quote.client?.name ?? null}
+      today={today}
+      invoiceHref={(inv) => `/invoices/${inv.id}`}
+      chantierHref={(id) => `/chantiers/${id}`}
+      freeDeposits={artisan.data?.freeDeposits ?? []}
+      creating={artisan.creating}
+      onCreate={artisan.create}
+      onAttachDeposit={artisan.attachDeposit}
+      onLocked={() => artisan.setPaywall(true)}
+    />
+  ) : undefined
+
   return (
     <>
     <PaywallDialog open={sig.paywall} onOpenChange={sig.setPaywall} reason="signature" nextPath={`/quotes/${params.id}`} />
+    <PaywallDialog open={artisan.paywall} onOpenChange={artisan.setPaywall} reason="artisan" nextPath={`/quotes/${params.id}`} />
     <QuoteDetailView
       quote={data}
       company={company}
@@ -315,6 +340,8 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       busy={busy}
       signature={signature}
       sendNote={sendNote}
+      billing={billing}
+      conversionBlocked={billingData ? conversionBlockedBy(billingData.invoices) : null}
       links={{ list: "/quotes", newQuote: "/quotes/new", companySettings: "/settings/company" }}
       actions={{
         onDownloadPdf: downloadPDF,

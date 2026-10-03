@@ -22,6 +22,7 @@ import { ClientPicker } from "./ClientPicker"
 import { LinesEditor } from "./LinesEditor"
 import { LivePreview } from "./LivePreview"
 import { ReadyBanner, ReadyChecklist } from "./ReadyChecklist"
+import { ReverseChargeCard } from "./ReverseChargeCard"
 import { DOC_TEXT, buildChecks, daysBetween, type DocClient, type DocCompany, type DocKind } from "./model"
 import type { DocumentFormApi } from "./useDocumentForm"
 
@@ -55,7 +56,10 @@ export function DocumentEditor({
   catalog,
   banners,
   actions,
+  reverseCharge,
 }: {
+  /** Facture, devis : case « sous-traitance, autoliquidation » (formule Artisan). Absente : pas de case. */
+  reverseCharge?: { locked: boolean; onLocked: () => void }
   kind: DocKind
   doc: DocumentFormApi
   title: string
@@ -134,6 +138,10 @@ export function DocumentEditor({
           />
 
           <LinesEditor doc={doc} title="Prestations" catalog={catalog} />
+
+          {reverseCharge && kind !== "purchase_order" && (
+            <ReverseChargeCard doc={doc} client={client} locked={reverseCharge.locked} onLocked={reverseCharge.onLocked} />
+          )}
 
           <ConditionsCard kind={kind} doc={doc} numbered={Boolean(number)} />
 

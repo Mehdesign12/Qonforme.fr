@@ -1,4 +1,4 @@
-import { emailBase, fmtEur, fmtDate, amountBlock, ctaButton } from "./base"
+import { emailBase, fmtEur, fmtDate, amountBlock, ctaButton, retentionBlock } from "./base"
 
 interface InvoiceEmailData {
   invoiceNumber:  string
@@ -16,6 +16,10 @@ interface InvoiceEmailData {
   appUrl:         string
   /** Page de règlement par virement (lib/payment-link) ; absente sans IBAN valide ou lien désactivé. */
   paymentUrl?:    string | null
+  /** Nature du document (« facture d'acompte », « situation de travaux n° 2 ») ; « facture » par défaut. */
+  docLabel?:      string | null
+  /** Retenue de garantie (formule Artisan) : montant retenu TTC, à régler à sa libération. */
+  retention?:     { rate: number; amount: number } | null
 }
 
 export function buildInvoiceEmail(d: InvoiceEmailData): { subject: string; html: string } {
@@ -24,7 +28,7 @@ export function buildInvoiceEmail(d: InvoiceEmailData): { subject: string; html:
   const body = `
     <p style="margin:0 0 6px;font-size:15px;color:#475569;">Bonjour,</p>
     <p style="margin:0 0 24px;font-size:15px;color:#1E293B;line-height:1.6;">
-      Veuillez trouver ci-joint votre facture <strong>${d.invoiceNumber}</strong>
+      Veuillez trouver ci-joint votre ${d.docLabel ?? "facture"} <strong>${d.invoiceNumber}</strong>
       du <strong>${fmtDate(d.issueDate)}</strong>, échéance le
       <strong style="color:#DC2626;">${fmtDate(d.dueDate)}</strong>.
     </p>
@@ -52,6 +56,7 @@ export function buildInvoiceEmail(d: InvoiceEmailData): { subject: string; html:
     </table>
 
     ${amountBlock(d.subtotalHt, d.totalVat, d.totalTtc, d.accentColor)}
+    ${retentionBlock(d.totalTtc, d.retention)}
 
     ${d.companyIban ? `
     <table width="100%" cellpadding="0" cellspacing="0"

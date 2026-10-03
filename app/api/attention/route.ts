@@ -83,13 +83,20 @@ export async function GET() {
 
   const [overdueRes, quotesRes, invDraftsRes, quoteDraftsRes] = await Promise.all([
     // En retard : marquée « overdue », ou émise, non réglée et échue (heure de Paris)
-    supabase
-      .from("invoices")
-      .select("id, invoice_number, total_ttc, due_date, client:clients(name)", { count: "exact" })
-      .eq("user_id", user.id)
-      .or(`status.eq.overdue,and(status.in.(sent,pending,received,accepted),due_date.lt.${today})`)
-      .order("due_date", { ascending: true })
-      .limit(ATTENTION_LIMIT),
+    // Avec la retenue de garantie quand sa colonne existe : elle n'est pas en retard, elle est due à sa libération
+    (async () => {
+      const run = (cols: string) => supabase
+        .from("invoices")
+        .select(cols, { count: "exact" })
+        .eq("user_id", user.id)
+        .or(`status.eq.overdue,and(status.in.(sent,pending,received,accepted),due_date.lt.${today})`)
+        .order("due_date", { ascending: true })
+        .limit(ATTENTION_LIMIT)
+      const withRetention = await run("id, invoice_number, total_ttc, retention_amount, due_date, client:clients(name)")
+      return withRetention.error && isMissingSchemaError(withRetention.error)
+        ? run("id, invoice_number, total_ttc, due_date, client:clients(name)")
+        : withRetention
+    })(),
     // Devis envoyés sans réponse (sans date d'envoi : la date d'émission en tient lieu)
     supabase
       .from("quotes")
@@ -123,11 +130,13 @@ export async function GET() {
     return NextResponse.json({ error: "Impossible de charger les éléments à surveiller." }, { status: 500, headers: NO_STORE })
   }
 
-  const overdue = (overdueRes.data ?? []).map((r) => overdueItem({
+  // Sélection construite dynamiquement (avec ou sans retenue) : lignes non typées par le client
+  type OverdueRow = { id: string; invoice_number: string | null; total_ttc: number | null; retention_amount?: number | null; due_date: string | null; client: unknown }
+  const overdue = ((overdueRes.data ?? []) as unknown as OverdueRow[]).map((r) => overdueItem({
     id: r.id as string,
     number: invoiceNumberLabel(r.invoice_number as string | null),
-    client: clientName(r.client),
-    amount: Number(r.total_ttc ?? 0),
+    client: clientName(r.client as Parameters<typeof clientName>[0]),
+    amount: Math.max(0, Number(r.total_ttc ?? 0) - Number(r.retention_amount ?? 0)),
     dueDate: (r.due_date as string | null) ?? null,
   }, today, `/invoices/${r.id}`))
 

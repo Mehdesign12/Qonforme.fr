@@ -3,12 +3,13 @@
  * mobile, la feuille « Plus », le menu « Nouveau » et la palette de recherche —
  * pour l'application réelle comme pour la démo (préfixe /demo).
  *
- * N'y figurent que des écrans qui existent : pas de chantiers ni de
- * trésorerie tant qu'ils ne sont pas livrés (DECISIONS § 10).
+ * N'y figurent que des écrans qui existent : pas de trésorerie tant qu'elle
+ * n'est pas livrée (DECISIONS § 10). Chantiers : formule Artisan (la page
+ * explique la formule à un compte qui ne l'a pas).
  */
 import {
   LayoutDashboard, FileText, FileCheck2, Users, Package, ShoppingCart,
-  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox,
+  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox, HardHat,
   type LucideIcon,
 } from "lucide-react"
 
@@ -33,6 +34,7 @@ export const NAV_MAIN: NavLink[] = [
   { key: "dashboard", label: "Tableau de bord", href: "/dashboard", demoHref: "/demo", icon: LayoutDashboard },
   { key: "invoices", label: "Factures", href: "/invoices", demoHref: "/demo/invoices", icon: FileText, hint: "Toutes vos factures" },
   { key: "quotes", label: "Devis", href: "/quotes", demoHref: "/demo/quotes", icon: FileCheck2, hint: "Gratuits et illimités" },
+  { key: "chantiers", label: "Chantiers", href: "/chantiers", demoHref: "/demo/chantiers", icon: HardHat, hint: "Acomptes, situations, retenues" },
   { key: "purchase-orders", label: "Bons de commande", href: "/purchase-orders", demoHref: "/demo/purchase-orders", icon: ShoppingCart, hint: "Facultatifs" },
   { key: "credit-notes", label: "Avoirs", href: "/credit-notes", demoHref: "/demo/credit-notes", icon: ReceiptText, hint: "Corrections de factures" },
   { key: "received-invoices", label: "Factures reçues", href: "/received-invoices", demoHref: "/demo/received-invoices", icon: Inbox, hint: "Factures de vos fournisseurs" },
@@ -86,6 +88,7 @@ export function isActivePath(pathname: string, href: string): boolean {
 const SECTION_TITLES: { prefix: string; title: string; href: string }[] = [
   { prefix: "/invoices", title: "Factures", href: "/invoices" },
   { prefix: "/quotes", title: "Devis", href: "/quotes" },
+  { prefix: "/chantiers", title: "Chantiers", href: "/chantiers" },
   { prefix: "/clients", title: "Clients", href: "/clients" },
   { prefix: "/products", title: "Catalogue", href: "/products" },
   { prefix: "/purchase-orders", title: "Bons de commande", href: "/purchase-orders" },

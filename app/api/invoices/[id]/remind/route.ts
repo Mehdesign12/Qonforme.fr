@@ -7,6 +7,7 @@ import { buildReminderEmail } from "@/lib/email/templates/reminder"
 import { paymentLinkFor } from "@/lib/payment-link/server"
 import { daysBetween, parisDayOf, todayInParis } from "@/lib/utils/paris-date"
 import { loadReminderLog, recordManualReminder } from "@/lib/reminders/store"
+import { artisanEmailExtras } from "@/lib/artisan/billing"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -116,6 +117,8 @@ export async function POST(_req: NextRequest, { params }: Params) {
       clientName:    invoice.client?.name ?? "",
       clientIsProfessional: Boolean(invoice.client?.siren?.trim()),
       paymentUrl: paymentUrl ?? undefined,
+      // Retenue de garantie : à régler à sa libération, pas à l'échéance
+      retention: artisanEmailExtras(invoice).retention,
     })
 
     await sendEmail({

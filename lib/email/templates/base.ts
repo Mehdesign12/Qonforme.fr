@@ -107,6 +107,21 @@ export function ctaButton(label: string, href: string, color: string): string {
 }
 
 /** Bloc récap montants */
+/**
+ * Retenue de garantie (loi n° 71-584 du 16 juillet 1971) : le total TTC ne
+ * change pas ; la retenue se règle à sa libération, le reste à l'échéance.
+ */
+export function retentionBlock(totalTtc: number, retention: { rate: number; amount: number } | null | undefined): string {
+  if (!retention || !(retention.amount > 0)) return ""
+  const now = Math.round((totalTtc - retention.amount) * 100) / 100
+  const rate = String(Math.round(retention.rate * 100) / 100).replace(".", ",")
+  return `
+  <p style="margin:12px 0 0;font-size:13px;color:#475569;line-height:1.6;">
+    Retenue de garantie de ${rate}&nbsp;% : <strong>${fmtEur(retention.amount)}</strong>, à régler à sa libération,
+    un an après la réception des travaux. Montant à régler à l'échéance : <strong>${fmtEur(now)}</strong>.
+  </p>`
+}
+
 export function amountBlock(subtotalHt: number, totalVat: number, totalTtc: number, accentColor: string): string {
   return `
   <table width="100%" cellpadding="0" cellspacing="0"

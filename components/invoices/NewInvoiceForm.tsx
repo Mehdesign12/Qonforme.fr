@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { PaywallDialog, isSubscriptionRequired } from "@/components/billing/PaywallDialog"
+import { PaywallDialog, isArtisanPaywall, isSubscriptionRequired } from "@/components/billing/PaywallDialog"
+import { useArtisanPlan } from "@/components/artisan/useArtisanPlan"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { PersonalizeTip } from "@/components/documents/PersonalizeTip"
 import { useDocumentForm, usePreselectedClient } from "@/components/documents/useDocumentForm"
@@ -21,6 +22,9 @@ export default function NewInvoiceForm() {
   const [company,        setCompany]        = useState<DocCompany | null>(null)
   const [hasLogo,        setHasLogo]        = useState(true) // true par défaut = masqué pendant le chargement
   const [tipDismissed,   setTipDismissed]   = useState(false)
+  // Autoliquidation (formule Artisan) : case visible, mur de paiement sans la formule
+  const artisan = useArtisanPlan()
+  const [artisanPaywall, setArtisanPaywall] = useState(false)
 
   // Dates calculées au montage du composant (pas au chargement du module) pour
   // ne pas rester figées sur la veille dans un onglet resté ouvert (ou
@@ -58,7 +62,7 @@ export default function NewInvoiceForm() {
         body: JSON.stringify({
           client_id: form.client_id, issue_date: form.issue_date,
           due_date: form.due_date, notes: form.notes || null,
-          lines: toPayloadLines(form.lines, computed),
+          lines: toPayloadLines(form.lines, computed, form.autoliquidation),
         }),
       })
       if (!res.ok) {
@@ -86,13 +90,14 @@ export default function NewInvoiceForm() {
         issue_date: form.issue_date,
         due_date:   form.due_date,
         notes:      form.notes || null,
-        lines:      toPayloadLines(form.lines, computed),
+        lines:      toPayloadLines(form.lines, computed, form.autoliquidation),
         status:     "draft",
       }
       const res  = await fetch("/api/invoices", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       })
       const json = await res.json()
+      if (isArtisanPaywall(res.status, json)) { setArtisanPaywall(true); return }
       if (!res.ok) {
         toast.error(json.error || "Erreur lors de la sauvegarde")
         return
@@ -146,8 +151,11 @@ export default function NewInvoiceForm() {
         />
       )}
 
+      <PaywallDialog open={artisanPaywall} onOpenChange={setArtisanPaywall} reason="artisan" nextPath="/invoices/new" />
+
       <DocumentEditor
         kind="invoice"
+        reverseCharge={{ locked: artisan === false, onLocked: () => setArtisanPaywall(true) }}
         doc={doc}
         title="Nouvelle facture"
         status="nouveau brouillon · non enregistré"

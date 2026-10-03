@@ -8,6 +8,7 @@ import fontkit from "@pdf-lib/fontkit"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 import { withDocumentMentions } from "@/lib/legal/mentions"
 import { legalPdfLines } from "@/lib/pdf/legal-lines"
+import { REVERSE_CHARGE_MENTION, hasReverseCharge } from "@/lib/artisan/reverse-charge"
 import path from "path"
 import fs from "fs"
 
@@ -32,6 +33,8 @@ export interface QuotePdfInput {
       unit_price_ht: number
       vat_rate: number
       total_ht: number
+      /** Autoliquidation (sous-traitance du BTP) : mention imprimée en pied. */
+      vat_treatment?: string | null
     }[]
     client?: {
       name?: string
@@ -281,7 +284,9 @@ export async function generateQuotePdf({ quote, company: companyInput, watermark
 
   // ── MENTIONS LÉGALES (profil puis mentions libres, coupées à la largeur) ──
   const measure7 = (l: string) => fontRegular.widthOfTextAtSize(l, 7)
-  const legalLines = legalPdfLines((company?.legal_notice ?? "").split("\n"), measure7, cW)
+  // Devis en autoliquidation (sous-traitance du BTP) : le client sait que la TVA lui revient
+  const reverseCharge = hasReverseCharge(quote.lines) ? [REVERSE_CHARGE_MENTION] : []
+  const legalLines = legalPdfLines([...(company?.legal_notice ?? "").split("\n"), ...reverseCharge], measure7, cW)
   if (legalLines.length) {
     hLine(curY, mL, mR, 0.5, separator); curY -= 12
     legalLines.forEach((l: string) => {

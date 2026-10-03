@@ -17,8 +17,12 @@
  *   https://www.impots.gouv.fr/specifications-externes-b2b
  *
  * Ce qui est porté :
- * - type de document BT-3 : 380 (facture) ou 381 (avoir) avec la facture
- *   d'origine BT-25/BT-26 (BR-FR-CO-05) ;
+ * - type de document BT-3 : 380 (facture), 386 (facture d'acompte) ou 381
+ *   (avoir) avec la facture d'origine BT-25/BT-26 (BR-FR-CO-05) ; une facture
+ *   de solde ou une situation cite les acomptes qu'elle reprend (BG-3, type
+ *   386) et le devis signé (BT-12) — voir lib/artisan/billing.ts ;
+ * - retenue de garantie : note ABU, sans changer le total ni le montant dû
+ *   (lib/artisan/retention.ts) ;
  * - cadre de facturation BT-23 (BR-FR-08), S1 par défaut : les travaux du
  *   bâtiment sont des prestations de services ;
  * - vendeur : SIREN en BT-30 (schéma 0002), SIRET en BT-29 (schéma 0009),
@@ -89,6 +93,11 @@ export type BillingFramework = "B1" | "S1" | "M1" | "B2" | "S2" | "M2" | "B4" | 
 
 export interface FxDocument {
   kind: "invoice" | "credit_note"
+  /**
+   * Type de facture (BT-3) quand ce n'est pas une facture ordinaire : 386 pour
+   * une facture d'acompte (DGFiP, annexe 7, G1.01). Ignoré pour un avoir (381).
+   */
+  type_code?: "380" | "386" | null
   number: string
   issue_date: string            // AAAA-MM-JJ
   due_date?: string | null      // AAAA-MM-JJ
@@ -101,6 +110,20 @@ export interface FxDocument {
   vat_treatment?: VatTreatment | null
   /** Avoir : facture d'origine (BT-25, BT-26). */
   preceding_invoice?: { number: string; issue_date?: string | null } | null
+  /**
+   * Factures antérieures citées par une facture (BG-3, plusieurs possibles) :
+   * les factures d'acompte reprises par une facture de solde ou une situation,
+   * avec leur type (386, EXT-FR-FE-02).
+   */
+  preceding_invoices?: { number: string; issue_date?: string | null; type_code?: "380" | "386" | null }[] | null
+  /** Référence du contrat (BT-12) : le devis signé d'un acompte, d'une situation ou d'un solde. */
+  contract_reference?: string | null
+  /**
+   * Notes supplémentaires (BG-1), avec leur code sujet UNTDID 4451 : « AAI »
+   * (information générale, ex. récapitulatif d'une situation), « ABU »
+   * (paiement différé : retenue de garantie).
+   */
+  extra_notes?: { subject: "AAI" | "ABU"; content: string }[] | null
   business_process?: BillingFramework
   /** Date de livraison ou de fin d'exécution (BT-72), pays de livraison (BT-80). */
   delivery?: { date?: string | null; country?: string | null } | null
@@ -358,7 +381,8 @@ export function buildFacturX(doc: FxDocument): FacturXResult {
   }
   if (doc.lines.length === 0) warnings.push(`Aucune ligne sur ${label} (BR-16).`)
   if (!isCredit && !doc.due_date) warnings.push("Date d'échéance absente (BT-9, BR-CO-25).")
-  if (doc.due_date && doc.due_date.slice(0, 10) < doc.issue_date.slice(0, 10)) warnings.push("Échéance antérieure à la date de facture (BR-FR-CO-07).")
+  // Acompte : l'échéance peut précéder la date de facture (acompte déjà versé, BR-FR-CO-07)
+  if (doc.due_date && doc.due_date.slice(0, 10) < doc.issue_date.slice(0, 10) && doc.type_code !== "386") warnings.push("Échéance antérieure à la date de facture (BR-FR-CO-07).")
   if (isCredit && !doc.preceding_invoice?.number) warnings.push("Avoir sans facture d'origine (BT-25, BR-FR-CO-05).")
   if (isCredit && doc.preceding_invoice?.number && !doc.preceding_invoice.issue_date) warnings.push("Date de la facture d'origine absente (BT-26, BR-FR-CO-05).")
   const iban = compact(seller.iban) || undefined
@@ -369,6 +393,7 @@ export function buildFacturX(doc: FxDocument): FacturXResult {
   if (doc.notes?.trim()) notes.push({ content: doc.notes.trim(), subject: "AAI" })
   for (const m of paymentMentions(b2b, seller.legal_notice, doc.notes)) notes.push({ content: m.text, subject: m.code })
   if (seller.legal_notice?.trim()) notes.push({ content: seller.legal_notice.trim(), subject: "ABL" })
+  for (const n of doc.extra_notes ?? []) if (n.content?.trim()) notes.push({ content: n.content.trim(), subject: n.subject })
   const notesXml = notes.map((n) => `
     <ram:IncludedNote>
       <ram:Content>${esc(n.content)}</ram:Content>
@@ -509,13 +534,27 @@ ${addressXml(buyer, "        ")}${buyerUri ? `
         </ram:DueDateDateTime>` : ""}
       </ram:SpecifiedTradePaymentTerms>` : ""
 
-  const precedingXml = doc.preceding_invoice?.number ? `
+  // Factures antérieures (BG-3) : la facture d'origine d'un avoir, ou les
+  // acomptes repris par une facture de solde ou une situation
+  const preceding: { number: string; issue_date?: string | null; type_code?: string | null }[] = [
+    ...(doc.preceding_invoice?.number ? [doc.preceding_invoice] : []),
+    ...(doc.preceding_invoices ?? []).filter((p) => p.number),
+  ]
+  const precedingXml = preceding.map((p) => `
       <ram:InvoiceReferencedDocument>
-        <ram:IssuerAssignedID>${esc(doc.preceding_invoice.number)}</ram:IssuerAssignedID>${doc.preceding_invoice.issue_date ? `
+        <ram:IssuerAssignedID>${esc(p.number)}</ram:IssuerAssignedID>${p.type_code ? `
+        <ram:TypeCode>${p.type_code}</ram:TypeCode>` : ""}${p.issue_date ? `
         <ram:FormattedIssueDateTime>
-          <qdt:DateTimeString format="102">${ciiDate(doc.preceding_invoice.issue_date)}</qdt:DateTimeString>
+          <qdt:DateTimeString format="102">${ciiDate(p.issue_date)}</qdt:DateTimeString>
         </ram:FormattedIssueDateTime>` : ""}
-      </ram:InvoiceReferencedDocument>` : ""
+      </ram:InvoiceReferencedDocument>`).join("")
+  for (const p of doc.preceding_invoices ?? []) {
+    if (p.number && !p.issue_date) warnings.push(`Date de la facture ${p.number} absente (BT-26).`)
+  }
+  const contractXml = doc.contract_reference?.trim() ? `
+      <ram:ContractReferencedDocument>
+        <ram:IssuerAssignedID>${esc(doc.contract_reference.trim())}</ram:IssuerAssignedID>
+      </ram:ContractReferencedDocument>` : ""
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
@@ -529,13 +568,13 @@ ${addressXml(buyer, "        ")}${buyerUri ? `
   </rsm:ExchangedDocumentContext>
   <rsm:ExchangedDocument>
     <ram:ID>${esc(doc.number)}</ram:ID>
-    <ram:TypeCode>${isCredit ? "381" : "380"}</ram:TypeCode>
+    <ram:TypeCode>${isCredit ? "381" : doc.type_code ?? "380"}</ram:TypeCode>
     <ram:IssueDateTime>
       <udt:DateTimeString format="102">${ciiDate(doc.issue_date)}</udt:DateTimeString>
     </ram:IssueDateTime>${notesXml}
   </rsm:ExchangedDocument>
   <rsm:SupplyChainTradeTransaction>${linesXml}
-    <ram:ApplicableHeaderTradeAgreement>${sellerXml}${buyerXml}
+    <ram:ApplicableHeaderTradeAgreement>${sellerXml}${buyerXml}${contractXml}
     </ram:ApplicableHeaderTradeAgreement>${deliveryXml}
     <ram:ApplicableHeaderTradeSettlement>
       <ram:InvoiceCurrencyCode>${currency}</ram:InvoiceCurrencyCode>${paymentMeansXml}${taxXml}${termsXml}

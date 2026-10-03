@@ -5,10 +5,16 @@
  *
  * Aucun champ nouveau n'est exigé en base : `vat_treatment` (document ou ligne
  * du JSON `lines`) est lu s'il existe, sinon le traitement est déduit.
+ * Formule Artisan (migration 20261003_artisan_chantiers.sql) : `invoice_kind`
+ * et `billing_context` d'une facture d'acompte, de situation ou de solde sont
+ * lus s'ils existent (type 386, acomptes repris, devis, retenue de garantie).
  */
 import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
 import type { FxDocument, FxLine, FxParty, FxSeller } from "@/lib/facturx/xml"
 import { parseVatTreatment } from "@/lib/facturx/vat"
+import { parseBillingContext, parseInvoiceKind, type BillingContext } from "@/lib/artisan/billing"
+import { retentionNote } from "@/lib/artisan/retention"
+import { formatEurosFr, formatPercentFr, toCents } from "@/lib/artisan/money"
 
 export interface CompanyRecord {
   name?: string | null
@@ -105,6 +111,45 @@ export interface InvoiceRecord {
   lines?: LineRecord[] | null
   client?: ClientRecord | null
   vat_treatment?: string | null
+  /** Formule Artisan : nature de la facture et contexte figé à l'émission (lib/artisan/billing.ts). */
+  invoice_kind?: string | null
+  billing_context?: unknown
+}
+
+/** Récapitulatif d'une situation de travaux (note AAI du XML). */
+export function situationSummaryText(ctx: BillingContext): string | null {
+  const s = ctx.situation
+  if (!s) return null
+  const quote = ctx.quote?.number ? ` sur le devis ${ctx.quote.number}` : ""
+  return `Situation de travaux n° ${s.number}${s.final ? " (décompte final)" : ""}${quote} : `
+    + `avancement cumulé ${formatPercentFr(s.cumulative_percent)} % ; `
+    + `travaux cumulés ${formatEurosFr(toCents(s.cumulative_ht))} HT ; `
+    + `déjà facturé ${formatEurosFr(toCents(s.previous_ht))} HT ; `
+    + `présente situation ${formatEurosFr(toCents(s.amount_ht))} HT.`
+}
+
+/**
+ * Éléments propres à la formule Artisan : type 386 d'un acompte, cadre S4 et
+ * acomptes cités quand la facture en reprend, devis en référence de contrat,
+ * récapitulatif d'une situation et retenue de garantie en notes.
+ */
+export function artisanFacturX(invoice: Pick<InvoiceRecord, "invoice_kind" | "billing_context">): Partial<FxDocument> {
+  const ctx = parseBillingContext(invoice.billing_context)
+  const kind = ctx?.kind ?? parseInvoiceKind(invoice.invoice_kind)
+  if (kind === "standard") return {}
+  const notes: NonNullable<FxDocument["extra_notes"]> = []
+  const recap = ctx ? situationSummaryText(ctx) : null
+  if (recap) notes.push({ subject: "AAI", content: recap })
+  const retention = retentionNote(ctx?.retention)
+  if (retention) notes.push({ subject: "ABU", content: retention })
+  const deductions = ctx?.deductions ?? []
+  return {
+    type_code: kind === "deposit" ? "386" : "380",
+    business_process: deductions.length > 0 ? "S4" : "S1",
+    preceding_invoices: deductions.map((d) => ({ number: d.number, issue_date: d.issue_date, type_code: "386" as const })),
+    contract_reference: ctx?.quote?.number ?? null,
+    extra_notes: notes,
+  }
 }
 
 export function invoiceToFacturX(invoice: InvoiceRecord, company: CompanyRecord | null | undefined): FxDocument {
@@ -118,6 +163,7 @@ export function invoiceToFacturX(invoice: InvoiceRecord, company: CompanyRecord 
     lines:         linesFromRecords(invoice.lines),
     notes:         invoice.notes ?? null,
     vat_treatment: parseVatTreatment(invoice.vat_treatment) ?? null,
+    ...artisanFacturX(invoice),
   }
 }
 

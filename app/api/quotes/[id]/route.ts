@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { canTransition, isContentLocked, transitionError } from "@/lib/utils/document-status"
+import { requireArtisanAccess } from "@/lib/artisan/access"
+import { hasReverseCharge } from "@/lib/artisan/reverse-charge"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -54,6 +56,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (body.status !== undefined && !canTransition("quote", current.status, body.status)) {
       return NextResponse.json({ error: transitionError("quote", current.status, body.status) }, { status: 403 })
     }
+  }
+
+  // Autoliquidation en sous-traitance du BTP : fonction de la formule Artisan
+  if (Array.isArray(body.lines) && hasReverseCharge(body.lines)) {
+    const artisanBlocked = await requireArtisanAccess(supabase, user.id)
+    if (artisanBlocked) return artisanBlocked
   }
 
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() }

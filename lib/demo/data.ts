@@ -4,8 +4,10 @@
  *
  * Reprises du canevas (entreprise « Garnier Plâtrerie Isolation ») et ramenées
  * à ce que l'application sait faire aujourd'hui : statuts réels du code, pas de
- * situation de travaux, de retenue de garantie, de transmission ni de paiement
- * partiel (fonctions non livrées, DECISIONS § 10).
+ * transmission ni de paiement partiel (fonctions non livrées, DECISIONS § 10).
+ * Le chantier en sous-traitance de la formule Artisan (acompte, deux situations
+ * avec retenue de garantie, autoliquidation) est calculé par lib/artisan, comme
+ * dans l'application (lib/demo/chantiers.ts le regroupe).
  *
  * Aucune donnée réelle : les SIREN affichés ne passent volontairement pas la
  * clé de contrôle, les emails sont en @example.com (domaine réservé).
@@ -13,6 +15,12 @@
  */
 import type { InvoiceStatus, QuoteStatus } from "@/types"
 import type { ReminderSettings } from "@/lib/reminders/settings"
+import {
+  computeDeposit, computeSituation, depositGroups, previousProgress,
+  type BillingContext, type BillingLine, type DeductedRecord,
+} from "@/lib/artisan/billing"
+import { applyRetention } from "@/lib/artisan/retention"
+import { fromCents } from "@/lib/artisan/money"
 
 /** « Aujourd'hui » de la démo (jeudi 1er octobre 2026, comme le canevas). */
 export const DEMO_TODAY = "2026-10-01"
@@ -120,6 +128,12 @@ export interface DemoLine {
   total_ht: number
   total_vat: number
   total_ttc: number
+  /** Autoliquidation (sous-traitance du BTP) : TVA due par le client. */
+  vat_treatment?: "autoliquidation_btp"
+  /** Situation de travaux : avancement de la ligne du devis. */
+  progress?: BillingLine["progress"]
+  /** Reprise d'un acompte. */
+  deposit_of?: BillingLine["deposit_of"]
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100
@@ -165,7 +179,118 @@ export interface DemoInvoice {
   quote_number?: string
   /** Relances déjà parties (journal), selon DEMO_REMINDER_SETTINGS. */
   reminders?: { stage: string; origin: string; sent_at: string }[]
+  /** Formule Artisan : nature (acompte, situation, solde), contexte et retenue de garantie. */
+  invoice_kind?: "deposit" | "situation" | "final"
+  billing_context?: BillingContext
+  retention_amount?: number
 }
+
+/* ------------------------------------------------------------------ */
+/* Chantier en sous-traitance (formule Artisan)                        */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Garnier intervient en sous-traitance du Groupe Arvel Construction (lot
+ * plâtrerie d'une résidence) : devis signé en autoliquidation, acompte de
+ * 20 %, situation n° 1 à 35 % puis n° 2 par ligne, retenue de garantie de 5 %.
+ * Tous les montants sortent de lib/artisan/billing.ts, comme dans l'application.
+ */
+export const DEMO_SUB_CHANTIER_ID = "clos-fleuri"
+const SUB_QUOTE_NUMBER = "D-2026-024"
+const SUB_QUOTE_DATE = "2026-06-30"
+
+function autoliquidation(l: DemoLine): DemoLine {
+  return { ...l, vat_rate: 0, total_vat: 0, total_ttc: l.total_ht, vat_treatment: "autoliquidation_btp" }
+}
+
+/** Ligne calculée par lib/artisan → ligne de démo. */
+function fromBilling(l: BillingLine): DemoLine {
+  return {
+    ...l,
+    id: l.id,
+    unit: l.unit ?? "",
+    vat_rate: l.vat_rate as DemoLine["vat_rate"],
+    vat_treatment: l.vat_treatment === "autoliquidation_btp" ? "autoliquidation_btp" : undefined,
+  }
+}
+
+function must<T extends { ok: boolean }>(r: T | { ok: false; error: string }): T {
+  if (!r.ok) throw new Error(`Démo Artisan : ${(r as { error: string }).error}`)
+  return r as T
+}
+
+const SUB_QUOTE_LINES: DemoLine[] = [
+  autoliquidation(line("1", "cloison", 420)),
+  autoliquidation(line("2", "doublage", 380)),
+  autoliquidation(line("3", "bandes", 800)),
+  autoliquidation(line("4", "faux-plafond", 160)),
+]
+
+function subContractInvoices(): DemoInvoice[] {
+  const client = demoClient("arvel")
+  const subject = "Résidence Le Clos Fleuri · lot plâtrerie"
+  const totals = (lines: DemoLine[]) => {
+    const subtotal_ht = round2(lines.reduce((s, l) => s + l.total_ht, 0))
+    const total_vat = round2(lines.reduce((s, l) => s + l.total_vat, 0))
+    return { subtotal_ht, total_vat, total_ttc: round2(subtotal_ht + total_vat) }
+  }
+  const quoteRef = (ht: number) => ({ id: SUB_QUOTE_NUMBER.toLowerCase(), number: SUB_QUOTE_NUMBER, issue_date: SUB_QUOTE_DATE, total_ht: ht, total_ttc: ht })
+  const chantier = { id: DEMO_SUB_CHANTIER_ID, name: "Résidence Le Clos Fleuri" }
+  const contractHt = round2(SUB_QUOTE_LINES.reduce((s, l) => s + l.total_ht, 0))
+
+  // Acompte de 20 % à la signature
+  const dep = must(computeDeposit(SUB_QUOTE_LINES, { mode: "percent", percent: 20 }, { quoteNumber: SUB_QUOTE_NUMBER }))
+  const depLines = dep.lines.map(fromBilling)
+  const depositInv: DemoInvoice = {
+    id: "f-2026-0124", invoice_number: "F-2026-0124", client_id: client.id, client, subject: `${subject} · acompte 20 %`,
+    status: "paid", issue_date: "2026-07-10", due_date: "2026-07-10", sent_at: "2026-07-10", paid_at: "2026-07-16",
+    lines: depLines, ...totals(depLines), quote_number: SUB_QUOTE_NUMBER,
+    notes: "Acompte payable à réception, par virement.",
+    invoice_kind: "deposit",
+    billing_context: { v: 1, kind: "deposit", quote: quoteRef(contractHt), chantier, deposit: { mode: "percent", percent: 20, requested_ttc: null }, deductions: [], retention: null },
+    retention_amount: 0,
+  }
+  const depositRecord = { invoice_id: depositInv.id, number: "F-2026-0124", issue_date: "2026-07-10", groups: depositGroups(dep.lines) }
+
+  // Situation n° 1 : 35 % partout, acompte repris au prorata, retenue de 5 %
+  const s1 = must(computeSituation(SUB_QUOTE_LINES, { global: 35 }, previousProgress(4, []), { records: [depositRecord], deducted: [] }))
+  const s1Ret = applyRetention(s1.ttc, "retenue", 5)
+  const s1Lines = s1.lines.map(fromBilling)
+  const situation1: DemoInvoice = {
+    id: "f-2026-0130", invoice_number: "F-2026-0130", client_id: client.id, client, subject: `${subject} · situation n° 1`,
+    status: "paid", issue_date: "2026-08-31", due_date: "2026-09-30", sent_at: "2026-08-31", paid_at: "2026-09-28",
+    lines: s1Lines, ...totals(s1Lines), quote_number: SUB_QUOTE_NUMBER,
+    invoice_kind: "situation",
+    billing_context: {
+      v: 1, kind: "situation", quote: quoteRef(contractHt), chantier,
+      situation: { number: 1, final: false, contract_ht: fromCents(s1.contract_ht), previous_ht: 0, cumulative_ht: fromCents(s1.cumulative_ht), amount_ht: fromCents(s1.amount_ht), cumulative_percent: s1.cumulative_percent },
+      deductions: s1.deductions, retention: s1Ret,
+    },
+    retention_amount: s1Ret?.amount ?? 0,
+  }
+
+  // Situation n° 2 : avancement par ligne
+  const deducted: DeductedRecord[] = s1.deductions.map((d) => ({ invoice_id: d.invoice_id, groups: d.groups }))
+  const s2 = must(computeSituation(SUB_QUOTE_LINES, [{ percent: 80 }, { percent: 70 }, { percent: 55 }, { percent: 40 }], previousProgress(4, [{ lines: s1.lines }]), { records: [depositRecord], deducted }))
+  const s2Ret = applyRetention(s2.ttc, "retenue", 5)
+  const s2Lines = s2.lines.map(fromBilling)
+  const situation2: DemoInvoice = {
+    id: "f-2026-0137", invoice_number: "F-2026-0137", client_id: client.id, client, subject: `${subject} · situation n° 2`,
+    status: "sent", issue_date: "2026-09-30", due_date: "2026-10-30", sent_at: "2026-09-30",
+    lines: s2Lines, ...totals(s2Lines), quote_number: SUB_QUOTE_NUMBER,
+    invoice_kind: "situation",
+    billing_context: {
+      v: 1, kind: "situation", quote: quoteRef(contractHt), chantier,
+      situation: { number: 2, final: false, contract_ht: fromCents(s2.contract_ht), previous_ht: fromCents(s2.previous_ht), cumulative_ht: fromCents(s2.cumulative_ht), amount_ht: fromCents(s2.amount_ht), cumulative_percent: s2.cumulative_percent },
+      deductions: s2.deductions, retention: s2Ret,
+    },
+    retention_amount: s2Ret?.amount ?? 0,
+  }
+  return [situation2, situation1, depositInv]
+}
+
+/** Acompte, situations n° 1 et n° 2 du chantier en sous-traitance (du plus récent au plus ancien). */
+export const DEMO_SUB_INVOICES: DemoInvoice[] = subContractInvoices()
 
 function invoice(
   n: string, clientId: string, subject: string, status: InvoiceStatus,
@@ -195,6 +320,7 @@ export const DEMO_INVOICES: DemoInvoice[] = [
     [line("1", "main-oeuvre", 38), line("2", "bandes", 64), line("3", "echafaudage", 2)], { sent_at: "2026-10-01", quote_number: "D-2026-029" }),
   invoice("F-2026-0143", "habitat-loire", "Extension maison individuelle", "sent", "2026-09-30", "2026-10-30",
     [line("1", "cloison", 54), line("2", "bandes", 54), line("3", "deplacement", 1)], { sent_at: "2026-09-30", quote_number: "D-2026-028" }),
+  DEMO_SUB_INVOICES[0],
   invoice("F-2026-0142", "bati-ouest", "Résidence Les Tilleuls · lot 3", "sent", "2026-09-12", "2026-10-12",
     [line("1", "doublage", 210), line("2", "cloison", 120), line("3", "bandes", 330)], { sent_at: "2026-09-12" }),
   invoice("F-2026-0141", "sci-tilleuls", "Rénovation du hall", "sent", "2026-09-15", "2026-10-15",
@@ -220,8 +346,10 @@ export const DEMO_INVOICES: DemoInvoice[] = [
     [line("1", "doublage", 96), line("2", "bandes", 96), line("3", "benne", 1)], { sent_at: "2026-08-12" }),
   invoice("F-2026-0133", "verdier", "Agencement de bureaux", "sent", "2026-09-01", "2026-11-01",
     [line("1", "cloison", 16), line("2", "deplacement", 1)], { sent_at: "2026-09-01" }),
+  DEMO_SUB_INVOICES[1],
   invoice("F-2026-0138", "fontaine", "Isolation des combles", "paid", "2026-08-05", "2026-09-04",
     [line("1", "depose", 45), line("2", "combles", 45)], { sent_at: "2026-08-05", paid_at: "2026-08-29", quote_number: "D-2026-026" }),
+  DEMO_SUB_INVOICES[2],
   invoice("F-2026-0127", "bati-ouest", "Résidence Les Tilleuls · lot 1", "paid", "2026-07-08", "2026-08-07",
     [line("1", "ba13", 120), line("2", "bandes", 120)], { sent_at: "2026-07-08", paid_at: "2026-08-03" }),
   invoice("F-2026-0118", "mercier", "Cage d'escalier A", "paid", "2026-06-24", "2026-07-24",
@@ -291,6 +419,7 @@ export const DEMO_QUOTES: DemoQuote[] = [
     [line("1", "depose", 45), line("2", "combles", 45)], { converted_invoice_number: "F-2026-0138" }),
   quote("D-2026-025", "pichon", "Reprise de plafond après dégât des eaux", "rejected", "2026-07-02", "2026-08-01",
     [line("1", "faux-plafond", 30), line("2", "lissage", 30), line("3", "deplacement", 1)]),
+  quote(SUB_QUOTE_NUMBER, "arvel", "Résidence Le Clos Fleuri · lot plâtrerie (sous-traitance)", "accepted", SUB_QUOTE_DATE, "2026-07-30", SUB_QUOTE_LINES),
 ]
 
 export function demoQuote(id: string): DemoQuote | undefined {

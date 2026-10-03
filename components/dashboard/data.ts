@@ -5,6 +5,7 @@
  * Une requête en échec laisse sa partie vide sans bloquer la page ; une
  * erreur sur les compteurs n'affiche jamais à tort l'écran d'un compte neuf.
  */
+import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import type { createClient } from "@/lib/supabase/server"
 import {
   ISSUED_INVOICE_STATUSES, OPEN_INVOICE_STATUSES, buildDashboardView, issuedSince,
@@ -34,6 +35,7 @@ function toInvoice(row: any): DashInvoice {
     client_email: client?.email ?? null,
     reminder_1_sent_at: row.reminder_1_sent_at ?? null,
     reminder_2_sent_at: row.reminder_2_sent_at ?? null,
+    retention_amount: Number(row.retention_amount) || 0,
   }
 }
 
@@ -77,8 +79,14 @@ export async function getDashboardView({
     const [issued, open, paid, drafts, recent, quotes, invoiceCount, quoteCount, clients] = await Promise.all([
       supabase.from("invoices").select("issue_date, total_ttc")
         .eq("user_id", userId).in("status", [...ISSUED_INVOICE_STATUSES]).gte("issue_date", since),
-      supabase.from("invoices").select(`${INVOICE_FIELDS}, reminder_1_sent_at, reminder_2_sent_at`)
-        .eq("user_id", userId).in("status", [...OPEN_INVOICE_STATUSES]),
+      // Avec la retenue de garantie quand sa colonne existe (migration de la formule Artisan)
+      (async () => {
+        const run = (extra: string) => supabase.from("invoices")
+          .select(`${INVOICE_FIELDS}, reminder_1_sent_at, reminder_2_sent_at${extra}`)
+          .eq("user_id", userId).in("status", [...OPEN_INVOICE_STATUSES])
+        const withRetention = await run(", retention_amount")
+        return withRetention.error && isMissingSchemaError(withRetention.error) ? run("") : withRetention
+      })(),
       supabase.from("invoices").select("total_ttc, client_id, client:clients(name)")
         .eq("user_id", userId).eq("status", "paid"),
       supabase.from("invoices").select(INVOICE_FIELDS)

@@ -13,6 +13,7 @@ import { DeclarationBanner, PaymentLinkPanel } from "@/components/payment-link/P
 import { demoPaymentLinkState } from "@/lib/demo/payment-link"
 import { isPayableStatus } from "@/lib/payment-link/rules"
 import { DEMO_LEGAL_NOTICE, DEMO_LEGAL_PROFILE, demoLegalSnapshot } from "@/lib/demo/legal-profile"
+import { demoChantierOf } from "@/lib/demo/chantiers"
 
 /** Miroir de /invoices/[id] : même fiche, données de démo, rien n'est enregistré ni envoyé. */
 const COMPANY: CompanyView = {
@@ -79,6 +80,14 @@ export default function DemoInvoiceDetailPage() {
     },
     // Mentions figées à l'émission, comme le déclencheur le fait en production
     legal_snapshot: demoLegalSnapshot(data.status),
+    // Formule Artisan : acompte, situation (contexte calculé par lib/artisan)
+    invoice_kind: data.invoice_kind ?? null,
+    billing_context: data.billing_context ?? null,
+    retention_amount: data.retention_amount ?? 0,
+    chantier: (() => {
+      const c = demoChantierOf(data.invoice_number)
+      return c ? { id: c.id, name: c.name, href: `/demo/chantiers/${c.id}` } : null
+    })(),
   }
 
   return (
@@ -89,6 +98,8 @@ export default function DemoInvoiceDetailPage() {
       backHref="/demo/invoices"
       clientHref={`/demo/clients/${data.client.id}`}
       quote={data.quote_number ? { number: data.quote_number, href: `/demo/quotes/${data.quote_number.toLowerCase()}` } : null}
+      invoiceHref={(ref) => `/demo/invoices/${ref.number.toLowerCase()}`}
+      quoteHref={(id) => `/demo/quotes/${id}`}
       creditNotesHref="/demo/credit-notes"
       settingsCompanyHref="/demo/settings"
       autoReminders={describeInvoiceSchedule(DEMO_REMINDER_SETTINGS)}

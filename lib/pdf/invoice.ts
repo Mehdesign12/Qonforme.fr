@@ -15,6 +15,9 @@ import { pdfSafeText, saveAsFacturX } from "@/lib/facturx/pdfa"
 import { withDocumentMentions } from "@/lib/legal/mentions"
 import { legalPdfLines } from "@/lib/pdf/legal-lines"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
+import { invoiceTitle, longDateFr, parseBillingContext, parseInvoiceKind } from "@/lib/artisan/billing"
+import { retentionNote } from "@/lib/artisan/retention"
+import { formatPercentFr, toCents } from "@/lib/artisan/money"
 import path from "path"
 import fs from "fs"
 
@@ -64,6 +67,9 @@ export interface InvoicePdfInput {
     status?: string | null
     /** Mentions figées à l'émission (lib/legal/mentions.ts). */
     legal_snapshot?: unknown
+    /** Formule Artisan : acompte, situation, solde (lib/artisan/billing.ts). */
+    invoice_kind?: string | null
+    billing_context?: unknown
     lines?: (LineRecord & {
       description: string
       quantity: number
@@ -197,11 +203,19 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   if (logoImg) {
     const scale = Math.min(logoMaxW / logoImg.width, logoMaxH / logoImg.height, 1)
     page.drawImage(logoImg, { x: mL, y: curY - logoImg.height * scale + 4, width: logoImg.width * scale, height: logoImg.height * scale })
-  } else {
-    draw(company?.name ?? "Votre entreprise", mL, curY, { size: 16, bold: true, color: accent })
   }
 
-  draw("FACTURE", mR, curY, { size: 22, bold: true, color: black, align: "right" })
+  // Titre : « FACTURE », ou la nature d'une facture de la formule Artisan
+  // (« FACTURE D'ACOMPTE », « SITUATION DE TRAVAUX N° 2 », « FACTURE DE SOLDE »)
+  const ctx = parseBillingContext(invoice.billing_context)
+  const kind = ctx?.kind ?? parseInvoiceKind(invoice.invoice_kind)
+  const docTitle = invoiceTitle(kind, ctx?.situation ? { situation: { ...ctx.situation, final: false } } : null).toUpperCase()
+  const titleSize = docTitle.length <= 10 ? 22 : 15
+  draw(docTitle, mR, curY, { size: titleSize, bold: true, color: black, align: "right" })
+  if (!logoImg) {
+    const titleW = fontBold.widthOfTextAtSize(pdfSafeText(fontBold, docTitle), titleSize)
+    draw(company?.name ?? "Votre entreprise", mL, curY, { size: 16, bold: true, color: accent, maxWidth: Math.max(120, cW - titleW - 16) })
+  }
   draw(invoice.invoice_number, mR, curY - 20, { size: 11, bold: true, color: accent, align: "right" })
   draw(`Émission : ${fmtDate(invoice.issue_date)}`, mR, curY - 36, { size: 8.5, color: grayDark, align: "right" })
   draw(`Échéance : ${fmtDate(invoice.due_date)}`,   mR, curY - 50, { size: 8.5, color: grayDark, align: "right" })
@@ -264,6 +278,22 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   }
   curY -= 12
 
+  // Références d'une facture de la formule Artisan : devis signé, chantier, décompte final
+  const refs: string[] = []
+  if (ctx?.quote?.number) refs.push(`Devis ${ctx.quote.number}${ctx.quote.issue_date ? ` du ${longDateFr(ctx.quote.issue_date)}` : ""}`)
+  if (ctx?.chantier?.name) refs.push(`Chantier : ${ctx.chantier.name}`)
+  if (ctx?.situation?.final) refs.push("Décompte final")
+  if (refs.length) {
+    draw(refs.join("  ·  "), mL, curY + 2, { size: 8, color: grayDark, maxWidth: cW })
+    curY -= 13
+  }
+  if (ctx?.deductions.length) {
+    const list = ctx.deductions.map((d) => `${d.number} du ${fmtDate(d.issue_date)}`).join(", ")
+    draw(`${ctx.deductions.length > 1 ? "Acomptes repris" : "Acompte repris"} : ${list}`, mL, curY + 2, { size: 8, color: grayDark, maxWidth: cW })
+    curY -= 13
+  }
+  if (refs.length || ctx?.deductions.length) curY -= 3
+
   // TABLEAU
   const colDesc = mL, colQty = mL + 250, colPU = mL + 300, colTVA = mL + 378, colTotal = mR
   const tableHeaderH = 20
@@ -291,6 +321,30 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
 
   // TOTAUX — ceux du XML Factur-X, calculés au centime depuis les lignes
   const totBlockW = 210, totX = mR - totBlockW, totValX = mR
+
+  // Situation : récapitulatif de l'avancement, à gauche des totaux
+  let recapBottom = curY
+  if (ctx?.situation) {
+    const s = ctx.situation
+    const valX = totX - 24
+    let y = curY
+    draw("RÉCAPITULATIF DE LA SITUATION", mL, y, { size: 7, bold: true, color: accent })
+    y -= 13
+    const deducted = ctx.deductions.reduce((t, d) => t + toCents(d.ht), 0) / 100
+    const rows: [string, number, boolean?][] = [
+      ["Montant du devis HT", s.contract_ht],
+      [`Travaux cumulés HT (${formatPercentFr(s.cumulative_percent)} %)`, s.cumulative_ht],
+      ["Situations précédentes HT", -s.previous_ht],
+      ["Présente situation HT", s.amount_ht, true],
+      ...(deducted > 0 ? [["Acomptes repris HT", -deducted] as [string, number]] : []),
+    ]
+    for (const [label, value, strong] of rows) {
+      draw(label, mL, y, { size: 8, color: strong ? black : grayDark, bold: !!strong, maxWidth: valX - mL - 70 })
+      draw(fmt(value), valX, y, { size: 8, color: black, bold: !!strong, align: "right" })
+      y -= 12
+    }
+    recapBottom = y - 4
+  }
   draw("Sous-total HT", totX, curY, { size: 8.5, color: grayDark })
   draw(fmt(totals.taxBasis), totValX, curY, { size: 8.5, color: black, align: "right" })
   curY -= 14
@@ -304,7 +358,8 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
     }
     curY += 6
   } else {
-    draw(vatRows.length === 1 ? `TVA ${fmtRate(vatRows[0].rate)} %` : "TVA", totX, curY, { size: 8.5, color: grayDark })
+    const reverseCharge = vatRows.length === 0 && totals.breakdown.some((b) => b.category === "AE")
+    draw(vatRows.length === 1 ? `TVA ${fmtRate(vatRows[0].rate)} %` : reverseCharge ? "TVA (autoliquidation)" : "TVA", totX, curY, { size: 8.5, color: grayDark })
     draw(fmt(totals.taxTotal), totValX, curY, { size: 8.5, color: black, align: "right" })
     curY -= 8
   }
@@ -316,6 +371,21 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   draw(fmt(totals.grandTotal), totValX, curY, { size: 14, bold: true, color: accent, align: "right" })
   curY -= 18
 
+  // Retenue de garantie : le total TTC (et le montant dû du XML) ne change
+  // pas ; on montre ce qui est à régler à l'échéance (lib/artisan/retention.ts)
+  const retention = ctx?.retention ?? null
+  if (retention?.mode === "retenue" && retention.amount > 0) {
+    draw(`Retenue de garantie ${formatPercentFr(retention.rate)} %`, totX, curY, { size: 8.5, color: grayDark })
+    draw(fmt(-retention.amount), totValX, curY, { size: 8.5, color: black, align: "right" })
+    curY -= 14
+    draw("À régler à l'échéance", totX, curY, { size: 9, bold: true, color: black })
+    draw(fmt((toCents(totals.grandTotal) - toCents(retention.amount)) / 100), totValX, curY, { size: 10, bold: true, color: black, align: "right" })
+    curY -= 16
+  } else if (retention?.mode === "caution") {
+    draw("Retenue de garantie : caution bancaire", totX, curY, { size: 7.5, color: grayLight })
+    curY -= 12
+  }
+
   if (company?.iban) {
     curY -= 8
     hLine(curY, totX, mR, 0.4, separator)
@@ -325,6 +395,7 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
     curY -= 14
   }
   curY -= 16
+  curY = Math.min(curY, recapBottom)
 
   // NOTES
   if (invoice.notes?.trim()) {
@@ -341,7 +412,8 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   // puis celles que le XML déclare en plus (motif d'absence de TVA, conditions
   // de règlement entre professionnels), coupées à la largeur de la page
   const measure7 = (l: string) => fontRegular.widthOfTextAtSize(pdfSafeText(fontRegular, l), 7)
-  const legalLines = legalPdfLines([...(company?.legal_notice ?? "").split("\n"), ...extraMentions], measure7, cW)
+  const retentionMention = retentionNote(retention)
+  const legalLines = legalPdfLines([...(company?.legal_notice ?? "").split("\n"), ...extraMentions, ...(retentionMention ? [retentionMention] : [])], measure7, cW)
   if (legalLines.length) {
     hLine(curY, mL, mR, 0.5, separator)
     curY -= 12
@@ -392,9 +464,9 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   // Facture émise : PDF/A-3 avec le XML embarqué
   return saveAsFacturX(doc, {
     xml:      fx.xml,
-    title:    `Facture ${invoice.invoice_number}`,
+    title:    `${invoiceTitle(kind, ctx)} ${invoice.invoice_number}`,
     author,
-    subject:  `Facture ${invoice.invoice_number}${invoice.client?.name ? ` — ${invoice.client.name}` : ""}`,
+    subject:  `${invoiceTitle(kind, ctx)} ${invoice.invoice_number}${invoice.client?.name ? ` — ${invoice.client.name}` : ""}`,
     keywords: ["facture", "Factur-X", invoice.invoice_number],
   })
 }

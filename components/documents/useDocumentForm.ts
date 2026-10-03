@@ -47,8 +47,22 @@ export function useDocumentForm(kind: DocKind, init: () => DocForm) {
   /** Ajoute une ligne vide et renvoie son identifiant (le mobile l'ouvre aussitôt). */
   const addLine = useCallback((): string => {
     const line = newLine()
-    setForm((prev) => ({ ...prev, lines: [...prev.lines, line] }))
+    setForm((prev) => ({ ...prev, lines: [...prev.lines, prev.autoliquidation ? { ...line, vat_rate: 0 } : line] }))
     return line.id
+  }, [])
+
+  // Taux saisis avant de passer en autoliquidation : rendus si la case est décochée
+  const ratesBeforeReverseCharge = useRef(new Map<string, VatRate>())
+  /** Sous-traitance du BTP (autoliquidation) : toutes les lignes à 0 %, taux d'avant rendus à la décoche. */
+  const setAutoliquidation = useCallback((on: boolean) => {
+    setForm((prev) => {
+      if (on) {
+        ratesBeforeReverseCharge.current = new Map(prev.lines.map((l) => [l.id, l.vat_rate]))
+        return { ...prev, autoliquidation: true, lines: prev.lines.map((l) => ({ ...l, vat_rate: 0 as VatRate })) }
+      }
+      const saved = ratesBeforeReverseCharge.current
+      return { ...prev, autoliquidation: false, lines: prev.lines.map((l) => ({ ...l, vat_rate: saved.get(l.id) ?? l.vat_rate })) }
+    })
   }, [])
 
   const removeLine = useCallback((id: string) => {
@@ -67,7 +81,8 @@ export function useDocumentForm(kind: DocKind, init: () => DocForm) {
     setForm((prev) => {
       const last = prev.lines[prev.lines.length - 1]
       const lastIsBlank = last && !last.description.trim() && last.unit_price_ht === ""
-      const lines = lastIsBlank ? [...prev.lines.slice(0, -1), line] : [...prev.lines, line]
+      const added = prev.autoliquidation ? { ...line, vat_rate: 0 as VatRate } : line
+      const lines = lastIsBlank ? [...prev.lines.slice(0, -1), added] : [...prev.lines, added]
       return { ...prev, lines }
     })
   }, [])
@@ -92,7 +107,7 @@ export function useDocumentForm(kind: DocKind, init: () => DocForm) {
 
   return {
     kind, form, errors, computed, totals, dirty,
-    setValue, setLineValue, addLine, removeLine, insertProduct,
+    setValue, setLineValue, addLine, removeLine, insertProduct, setAutoliquidation,
     validate, clearError, load,
   }
 }

@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server"
 import { insertDraftInvoice } from "@/lib/utils/document-numbering"
 import { todayInParis } from "@/lib/utils/paris-date"
 import { canConvertQuote } from "@/lib/utils/document-status"
+import { invoicesOfQuote } from "@/lib/artisan/server"
+import { conversionBlockedBy } from "@/lib/artisan/quote-billing"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -32,6 +34,12 @@ export async function POST(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Seul un devis envoyé ou accepté peut être converti en facture" }, { status: 400 })
   }
 
+  // Devis déjà facturé par acomptes ou situations (formule Artisan) : la
+  // conversion le facturerait une seconde fois. Colonne absente : rien à vérifier.
+  const artisanInvoices = await invoicesOfQuote(supabase, user.id, id)
+  const blockedBy = artisanInvoices ? conversionBlockedBy(artisanInvoices) : null
+  if (blockedBy) return NextResponse.json({ error: blockedBy }, { status: 409 })
+
   // 2. La facture naît brouillon, sans numéro : elle le reçoit à son émission,
   //    dans la même série que les factures directes (lib/utils/document-numbering.ts).
   //    Le préfixe ne sert que si la base exige encore un numéro à la création.
@@ -59,6 +67,9 @@ export async function POST(_req: NextRequest, { params }: Params) {
       total_vat:   quote.total_vat,
       total_ttc:   quote.total_ttc,
       notes:       quote.notes,
+      // Devis rattaché à un chantier : la facture en hérite (colonne posée par
+      // la migration 20261003_artisan_chantiers.sql, donc absente avant elle)
+      ...(quote.chantier_id ? { chantier_id: quote.chantier_id } : {}),
     },
   })
 

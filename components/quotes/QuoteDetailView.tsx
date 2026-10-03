@@ -29,6 +29,7 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { resolveDocumentMentions } from "@/lib/legal/mentions"
+import { REVERSE_CHARGE_MENTION, hasReverseCharge } from "@/lib/artisan/reverse-charge"
 import { PaperMentions } from "@/components/documents/PaperMentions"
 import {
   daysBetween, daysLeft, dateTime, expiryHint, fmtAmount, fmtQty, fmtRate, fmtSiren, fmtUnit, longDate, parisDay, plural,
@@ -47,6 +48,8 @@ export interface QuoteDetailLine {
   vat_rate: number
   total_ht: number
   total_vat?: number | null
+  /** Autoliquidation (sous-traitance du BTP) : mention en pied du devis. */
+  vat_treatment?: string | null
 }
 
 export interface QuoteDetailData {
@@ -133,9 +136,15 @@ export function QuoteDetailView({
   demo = false,
   signature,
   sendNote,
+  billing,
+  conversionBlocked,
 }: {
   /** Panneau « Signature en ligne », quand la fonction est disponible. */
   signature?: React.ReactNode
+  /** Panneau « Facturation du chantier » (formule Artisan : acomptes, situations, solde). */
+  billing?: React.ReactNode
+  /** Devis facturé par acomptes ou situations : plus de conversion simple (motif affiché). */
+  conversionBlocked?: string | null
   /** Précision de la fenêtre d'envoi (lien de signature ou de consultation joint à l'email). */
   sendNote?: string
   quote: QuoteDetailData
@@ -158,7 +167,7 @@ export function QuoteDetailView({
   const hint = expiryHint(quote, today)
   const clientName = quote.client?.name ?? null
   const title = quoteTitle(clientName, quote)
-  const canConvert = (s === "sent" || s === "accepted") && !quote.converted
+  const canConvert = (s === "sent" || s === "accepted") && !quote.converted && !conversionBlocked
   const invoiceNumber = quote.converted_invoice?.number ?? null
   const closeModal = () => setModal(null)
   const openModal = (k: ModalKey) => () => setModal(k)
@@ -204,7 +213,7 @@ export function QuoteDetailView({
   const nextKpi =
     s === "draft" ? { value: "À envoyer", sub: "Brouillon modifiable" }
     : s === "sent" ? (expired ? { value: "Expiré", sub: "Renouvelez le devis" } : { value: "En attente", sub: "de l'accord du client" })
-    : s === "accepted" ? (quote.converted ? { value: "Facturé", sub: invoiceNumber ?? "Facture créée" } : { value: "À facturer", sub: "Convertissez-le en facture" })
+    : s === "accepted" ? (quote.converted ? { value: "Facturé", sub: invoiceNumber ?? "Facture créée" } : conversionBlocked ? { value: "En facturation", sub: "Acomptes et situations" } : { value: "À facturer", sub: "Convertissez-le en facture" })
     : { value: "Sans suite", sub: "Refusé par le client" }
 
   /* ── Historique (dates réelles uniquement) ── */
@@ -230,7 +239,9 @@ export function QuoteDetailView({
       events.push(
         quote.converted
           ? { title: "Converti en facture", sub: invoiceNumber ?? "Facture créée", state: "done" }
-          : { title: "Facture à créer", sub: "Conversion en facture brouillon", state: "todo" },
+          : conversionBlocked
+            ? { title: "Facturé par acomptes ou situations", sub: "Voir « Facturation du chantier »", state: "done" }
+            : { title: "Facture à créer", sub: "Conversion en facture brouillon", state: "todo" },
       )
     } else {
       events.push({ title: "Refusé par le client", sub: "Sans suite", state: "refused" })
@@ -273,8 +284,10 @@ export function QuoteDetailView({
       pdfBtn(), dupBtn(), printBtn,
       quote.converted && quote.converted_invoice
         ? <Act key="inv" label="Voir la facture" icon={FileText} variant="primary" href={quote.converted_invoice.href} />
-        : <Act key="conv" label="Convertir en facture" icon={FileText} variant="primary" onClick={openModal("convert")} loading={busy.convert} />,
-    ]
+        : conversionBlocked
+          ? null
+          : <Act key="conv" label="Convertir en facture" icon={FileText} variant="primary" onClick={openModal("convert")} loading={busy.convert} />,
+    ].filter(Boolean)
   } else {
     headerActions = [pdfBtn(), printBtn, dupBtn("Dupliquer en nouveau devis", true)]
   }
@@ -314,7 +327,15 @@ export function QuoteDetailView({
           </span>
         </div>
       )}
-      {s === "accepted" && !quote.converted && (
+      {s === "accepted" && !quote.converted && conversionBlocked && (
+        <div role="status" className="q-banner flex-wrap items-center print:hidden">
+          <CheckCircle2 className="size-5 shrink-0" aria-hidden />
+          <span className="min-w-[220px] flex-1 text-[15px] leading-snug">
+            <strong className="font-semibold">Devis accepté.</strong> {conversionBlocked}
+          </span>
+        </div>
+      )}
+      {s === "accepted" && !quote.converted && !conversionBlocked && (
         <div role="status" className="q-banner flex-wrap items-center print:hidden">
           <CheckCircle2 className="size-5 shrink-0" aria-hidden />
           <span className="min-w-[220px] flex-1 text-[15px] leading-snug">
@@ -417,7 +438,7 @@ export function QuoteDetailView({
               <div className="flex flex-col gap-1.5 bg-[var(--q-surface-2)] px-3.5 py-3 text-sm tabular-nums">
                 <TotalRow label="Total HT" value={formatCurrency(quote.subtotal_ht)} />
                 {vatBreakdown(quote.lines).map((v) => (
-                  <TotalRow key={v.rate} label={`TVA ${fmtRate(v.rate)} %`} value={formatCurrency(v.amount)} />
+                  <TotalRow key={v.rate} label={v.rate === 0 && hasReverseCharge(quote.lines) ? "TVA (autoliquidation)" : `TVA ${fmtRate(v.rate)} %`} value={formatCurrency(v.amount)} />
                 ))}
                 <TotalRow label="Total TTC" value={formatCurrency(quote.total_ttc)} strong />
               </div>
@@ -440,6 +461,8 @@ export function QuoteDetailView({
           </section>
 
           {signature}
+
+          {billing}
 
           {/* Accord sur papier : seul moyen sans signature en ligne, solution de secours avec elle */}
           {signature && s === "sent" && (
@@ -555,7 +578,7 @@ export function QuoteDetailView({
           <>
             {quote.converted && quote.converted_invoice
               ? <BarBtn primary label={invoiceNumber ? `Voir la facture ${invoiceNumber}` : "Voir la facture"} icon={FileText} href={quote.converted_invoice.href} />
-              : <BarBtn primary label="Convertir en facture" icon={FileText} onClick={openModal("convert")} loading={busy.convert} />}
+              : !conversionBlocked && <BarBtn primary label="Convertir en facture" icon={FileText} onClick={openModal("convert")} loading={busy.convert} />}
             <BarBtn label="Télécharger le PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
           </>
         )}
@@ -789,7 +812,7 @@ function QuotePaper({ quote, company, companySettings }: { quote: QuoteDetailDat
       <div className="ml-auto flex w-[58%] flex-col gap-1.5 tabular-nums">
         <div className="flex justify-between"><span className="text-[#475569]">Total HT</span><span>{formatCurrency(quote.subtotal_ht)}</span></div>
         {vatBreakdown(quote.lines).map((v) => (
-          <div key={v.rate} className="flex justify-between"><span className="text-[#475569]">TVA {fmtRate(v.rate)} %</span><span>{formatCurrency(v.amount)}</span></div>
+          <div key={v.rate} className="flex justify-between"><span className="text-[#475569]">{v.rate === 0 && hasReverseCharge(quote.lines) ? "TVA (autoliquidation)" : `TVA ${fmtRate(v.rate)} %`}</span><span>{formatCurrency(v.amount)}</span></div>
         ))}
         <div className="flex justify-between border-t border-[#E6E9F0] pt-1.5 text-sm font-semibold"><span>Total TTC</span><span>{formatCurrency(quote.total_ttc)}</span></div>
       </div>
@@ -801,7 +824,10 @@ function QuotePaper({ quote, company, companySettings }: { quote: QuoteDetailDat
         </div>
       )}
 
-      <PaperMentions lines={resolveDocumentMentions(company, quote, "quote").lines} />
+      <PaperMentions lines={[
+        ...resolveDocumentMentions(company, quote, "quote").lines,
+        ...(hasReverseCharge(quote.lines) ? [REVERSE_CHARGE_MENTION] : []),
+      ]} />
     </div>
   )
 }

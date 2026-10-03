@@ -24,7 +24,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
   AlertTriangle, Archive, ArchiveX, Bell, Check, ChevronLeft, ChevronRight, Clock, Copy,
-  CreditCard, Download, FileCheck2, FileCode, FileX, MoreHorizontal, Pencil, Printer,
+  CreditCard, Download, FileCheck2, FileCode, FileX, HardHat, MoreHorizontal, Pencil, Printer,
   RotateCcw, Send, Trash2, XCircle, CheckCircle2, type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -39,6 +39,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SetCrumb } from "@/components/layout/crumb"
+import { invoiceKindLabel, isArtisanKind, parseBillingContext, parseInvoiceKind } from "@/lib/artisan/billing"
+import { formatPercentFr, fromCents, toCents } from "@/lib/artisan/money"
 import { InvoicePaper } from "@/components/invoices/InvoicePaper"
 import {
   type CompanyView, type InvoiceView, daysBetween, daysLate, formatIban, isOpen, longDate,
@@ -124,6 +126,10 @@ export interface InvoiceDetailViewProps {
   payment?: React.ReactNode
   /** Bandeau en tête de fiche (virement déclaré par le client). */
   paymentBanner?: React.ReactNode
+  /** Lien d'une facture citée (acompte repris par un solde ou une situation). */
+  invoiceHref?: (ref: { id: string; number: string }) => string
+  /** Lien du devis d'origine d'un acompte, d'une situation ou d'un solde. */
+  quoteHref?: (quoteId: string) => string
 }
 
 /* ------------------------------------------------------------------ */
@@ -133,7 +139,7 @@ export interface InvoiceDetailViewProps {
 export function InvoiceDetailView({
   invoice, company, today, backHref, clientHref, quote, creditNotesHref, settingsCompanyHref, handlers: h,
   autoReminders = describeInvoiceSchedule(DEFAULT_REMINDER_SETTINGS),
-  payment, paymentBanner,
+  payment, paymentBanner, invoiceHref, quoteHref,
 }: InvoiceDetailViewProps) {
   const router = useRouter()
   const status = invoice.status
@@ -150,6 +156,14 @@ export function InvoiceDetailView({
   const subject = invoice.subject ?? subjectFromLines(invoice.lines)
   const clientName = invoice.client?.name ?? "Client"
   const clientEmail = invoice.client?.email ?? null
+  // Formule Artisan : nature (acompte, situation, solde), devis, acomptes repris, retenue de garantie
+  const ctx = parseBillingContext(invoice.billing_context)
+  const kind = ctx?.kind ?? parseInvoiceKind(invoice.invoice_kind)
+  const kindLabel = invoiceKindLabel(kind, ctx)
+  const artisanDoc = isArtisanKind(kind)
+  const retentionCents = ctx?.retention?.mode === "retenue" ? Math.max(0, toCents(invoice.retention_amount ?? ctx.retention.amount)) : 0
+  const originQuote = ctx?.quote && quoteHref ? { number: ctx.quote.number, href: quoteHref(ctx.quote.id) } : null
+  const linkedQuote = quote ?? originQuote
 
   /* ---- Actions ---- */
   const pdf: Action = {
@@ -161,7 +175,8 @@ export function InvoiceDetailView({
     title: "Télécharger le fichier XML Factur-X de la facture",
   }
   const print: Action = { key: "print", label: "Imprimer", icon: Printer, onClick: h.print }
-  const edit: Action | null = draft
+  // Acompte, situation, solde : calculés depuis le devis, ils ne se modifient pas à la main
+  const edit: Action | null = draft && !artisanDoc
     ? { key: "edit", label: "Modifier", icon: Pencil, href: h.editHref, onClick: h.onEdit }
     : null
   const del: Action | null = draft
@@ -228,7 +243,8 @@ export function InvoiceDetailView({
   }
 
   /* ---- Montants ---- */
-  const remaining = open || status === "rejected" ? invoice.total_ttc : 0
+  // Reste à encaisser à l'échéance : la retenue de garantie se règle à sa libération
+  const remaining = open || status === "rejected" ? fromCents(toCents(invoice.total_ttc) - retentionCents) : 0
   const dueIn = daysBetween(today, invoice.due_date)
   const dueSub = draft ? "Facture pas encore émise"
     : status === "paid" ? "Réglée"
@@ -268,6 +284,7 @@ export function InvoiceDetailView({
         <div className="flex min-w-0 grow basis-[420px] flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2.5">
             {invoice.invoice_number && <span className="font-mono text-sm text-[var(--q-text-3)]">{invoice.invoice_number}</span>}
+            {kindLabel && <span className="q-tag">{kindLabel}</span>}
             <StatusPills invoice={invoice} lateDays={lateDays} />
           </div>
           <h1 className="q-h1 md:!text-[30px]">
@@ -294,10 +311,14 @@ export function InvoiceDetailView({
           <h1 className="text-[13px] font-normal text-[var(--q-text-3)]">{clientName}{subject && ` · ${subject}`}</h1>
           <span className="text-[13px] text-[var(--q-text-3)]">{open ? "Reste à encaisser" : "Total TTC"}</span>
           <span className="q-display text-[38px] leading-[1.05] tracking-[-0.04em] tabular-nums text-[var(--q-ink)]">
-            {formatCurrency(invoice.total_ttc)}
+            {formatCurrency(open ? remaining : invoice.total_ttc)}
           </span>
+          {retentionCents > 0 && (
+            <span className="text-[13px] text-[var(--q-text-3)]">Retenue de garantie : {formatCurrency(fromCents(retentionCents))}, à sa libération</span>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {kindLabel && <span className="q-tag">{kindLabel}</span>}
           <StatusPills invoice={invoice} lateDays={lateDays} />
           <span className={cn("text-[13px]", late ? "font-semibold text-[var(--q-warn)]" : "text-[var(--q-text-3)]")}>
             Échéance {shortDate(invoice.due_date, year)}
@@ -339,6 +360,7 @@ export function InvoiceDetailView({
       )}
       {draft && (
         <Banner icon={Pencil} title="Ce brouillon n’est pas encore une facture">
+          {artisanDoc && ctx?.quote && <>Calculé depuis le devis {ctx.quote.number} : pour le changer, supprimez ce brouillon et recréez-le depuis le devis. </>}
           {clientEmail
             ? invoice.invoice_number
               ? "Modifiez-le librement, puis envoyez-le à votre client par email pour l’émettre."
@@ -352,7 +374,12 @@ export function InvoiceDetailView({
         <Kpi label="Total TTC" value={formatCurrency(invoice.total_ttc)} sub={plural(invoice.lines?.length ?? 0, "ligne", "lignes")} />
         <Kpi label="Total HT" value={formatCurrency(invoice.subtotal_ht)} sub={`TVA ${formatCurrency(invoice.total_vat)}`} />
         <Kpi label="Échéance" value={shortDate(invoice.due_date, year)} sub={dueSub} tone={late ? "warn" : "default"} />
-        <Kpi tone="ink" label="Reste à encaisser" value={draft ? "—" : formatCurrency(remaining)} sub={remainingSub} />
+        <Kpi
+          tone="ink"
+          label="Reste à encaisser"
+          value={draft ? "—" : formatCurrency(remaining)}
+          sub={retentionCents > 0 && (open || status === "paid") ? `+ ${formatCurrency(fromCents(retentionCents))} de retenue, à sa libération` : remainingSub}
+        />
       </KpiGrid>
 
       {/* ---- Document + colonne ---- */}
@@ -378,6 +405,12 @@ export function InvoiceDetailView({
             <dl className="flex flex-col gap-2.5 text-sm">
               <Row label="État"><PaymentState status={status} lateDays={lateDays} /></Row>
               <Row label="Montant TTC"><span className="font-semibold tabular-nums">{formatCurrency(invoice.total_ttc)}</span></Row>
+              {retentionCents > 0 && ctx?.retention && (
+                <>
+                  <Row label={`Retenue de garantie ${formatPercentFr(ctx.retention.rate)} %`}><span className="tabular-nums">{formatCurrency(-fromCents(retentionCents))}</span></Row>
+                  <Row label="À l’échéance"><span className="font-semibold tabular-nums">{formatCurrency(fromCents(toCents(invoice.total_ttc) - retentionCents))}</span></Row>
+                </>
+              )}
               <Row label="Échéance">
                 <span className={cn(late && "font-semibold text-[var(--q-warn)]")}>{mediumDate(invoice.due_date)}</span>
               </Row>
@@ -419,18 +452,43 @@ export function InvoiceDetailView({
                 title={invoice.client.name}
                 sub={clientEmail ?? ([invoice.client.zip_code, invoice.client.city].filter(Boolean).join(" ") || "Client")}
               />
-              {quote && (
+              {linkedQuote && (
                 <RelatedRow
-                  href={quote.href}
+                  href={linkedQuote.href}
                   icon={
                     <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
                       <FileCheck2 className="size-4" aria-hidden />
                     </span>
                   }
-                  title={<span className="font-mono text-sm">{quote.number}</span>}
+                  title={<span className="font-mono text-sm">{linkedQuote.number}</span>}
                   sub="Devis d’origine"
                 />
               )}
+              {invoice.chantier && (
+                <RelatedRow
+                  href={invoice.chantier.href}
+                  icon={
+                    <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+                      <HardHat className="size-4" aria-hidden />
+                    </span>
+                  }
+                  title={invoice.chantier.name}
+                  sub="Chantier"
+                />
+              )}
+              {(ctx?.deductions ?? []).map((d) => (
+                <RelatedRow
+                  key={d.invoice_id}
+                  href={invoiceHref ? invoiceHref({ id: d.invoice_id, number: d.number }) : null}
+                  icon={
+                    <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+                      <RotateCcw className="size-4" aria-hidden />
+                    </span>
+                  }
+                  title={<span className="font-mono text-sm">{d.number}</span>}
+                  sub={`Acompte repris : ${formatCurrency(-d.ttc)} TTC`}
+                />
+              ))}
             </Panel>
           )}
         </div>

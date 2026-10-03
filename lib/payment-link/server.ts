@@ -303,12 +303,19 @@ export async function resolvePaymentToken(token: string): Promise<{ data: Paymen
     }
     if (!link) return notFound
 
-    const { data: invoice, error: invErr } = await db
-      .from("invoices")
-      .select("id, user_id, client_id, invoice_number, status, issue_date, due_date, total_ttc")
-      .eq("id", link.invoice_id)
-      .eq("user_id", link.user_id)
-      .maybeSingle()
+    // retention_amount : formule Artisan (migration 20261003_artisan_chantiers.sql) ;
+    // sans la colonne, relecture sans elle
+    const INVOICE_COLUMNS = "id, user_id, client_id, invoice_number, status, issue_date, due_date, total_ttc"
+    type InvoiceRow = {
+      id: string; user_id: string; client_id: string | null; invoice_number: string; status: string
+      issue_date: string; due_date: string; total_ttc: number; retention_amount?: number | string | null
+    }
+    const readInvoice = async (columns: string) => {
+      const r = await db.from("invoices").select(columns).eq("id", link.invoice_id).eq("user_id", link.user_id).maybeSingle()
+      return { data: r.data as unknown as InvoiceRow | null, error: r.error }
+    }
+    let { data: invoice, error: invErr } = await readInvoice(`${INVOICE_COLUMNS}, retention_amount`)
+    if (invErr && isMissingSchemaError(invErr)) ({ data: invoice, error: invErr } = await readInvoice(INVOICE_COLUMNS))
     if (invErr) throw invErr
     if (!invoice || invoice.status === "draft") return notFound
 
@@ -325,16 +332,21 @@ export async function resolvePaymentToken(token: string): Promise<{ data: Paymen
     if (credErr) throw credErr
 
     const total = Number(invoice.total_ttc ?? 0)
-    const remaining = remainingDue(total, credits ?? [])
+    const retention = Math.max(0, Number(invoice.retention_amount ?? 0) || 0)
+    // Montant demandé à l'échéance : sans la retenue de garantie, payable à sa libération
+    const remaining = remainingDue(total, credits ?? [], retention)
+    // Plafond d'une déclaration de virement : un client peut aussi verser la retenue
+    const payable = remainingDue(total, credits ?? [])
     const pubInvoice: PublicInvoice = {
       number: String(invoice.invoice_number),
       issueDate: String(invoice.issue_date),
       dueDate: String(invoice.due_date),
       totalTtc: total,
-      credited: Math.max(0, Math.round((total - remaining) * 100) / 100),
+      credited: Math.max(0, Math.round((total - payable) * 100) / 100),
       remaining,
+      ...(retention > 0 && payable > 0 ? { retention: Math.min(retention, payable) } : {}),
     }
-    const ctx: ResolvedLink = { linkId: link.id, userId: link.user_id, invoice, company, remaining }
+    const ctx: ResolvedLink = { linkId: link.id, userId: link.user_id, invoice, company, remaining: payable }
 
     const state = payState(invoice.status, remaining)
     if (state === "draft") return notFound

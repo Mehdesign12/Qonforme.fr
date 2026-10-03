@@ -94,12 +94,15 @@ describe('grille de prix', () => {
     expect(PLANS.starter.yearlyMonthlyEquivalent).toBe(10)
     expect(PLANS.starter.available).toBe(true)
   })
-  it('Artisan : 24 € HT, pas encore en vente tant que ses fonctions manquent', () => {
+  it('Artisan : 24 € HT, fonctions livrées, en vente seulement avec ses deux prix Stripe', () => {
     expect(PLANS.pro.name).toBe('Artisan')
     expect(PLANS.pro.monthlyPrice).toBe(24)
     expect(PLANS.pro.yearlyPrice).toBe(240)
+    // Sans NEXT_PUBLIC_ARTISAN_ON_SALE (next.config.mjs), pas en vente
     expect(PLANS.pro.available).toBe(false)
-    expect(PLANS.pro.features).toEqual([])
+    expect(PLANS.pro.features).toContain('Situations de travaux et factures d’acompte')
+    expect(PLANS.pro.features).toContain('Suivi par chantier')
+    expect(PLANS.pro.upcoming).toEqual([])
   })
   it('TVA 20 % arrondie au centime', () => {
     expect(withVat(12)).toBe(14.4)
