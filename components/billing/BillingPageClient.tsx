@@ -120,15 +120,18 @@ export default function BillingPageClient({
   const [loadingPortal, setLoadingPortal] = useState(false)
   const [portalError, setPortalError] = useState<string | null>(null)
 
-  async function openPortal() {
-    if (demo) { demoToast('gérer votre abonnement'); return }
+  const openPortal = () => openPortalWith('manage')
+
+  async function openPortalWith(action: 'manage' | 'upgrade') {
+    if (demo) { demoToast(action === 'upgrade' ? 'passer à la formule Artisan' : 'gérer votre abonnement'); return }
     setLoadingPortal(true)
     setPortalError(null)
     try {
       const res = await fetch('/api/stripe/portal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'manage' }),
+        // « upgrade » : confirmation directe du passage à Artisan (portail Stripe, au prorata)
+        body: JSON.stringify({ action }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -197,7 +200,10 @@ export default function BillingPageClient({
             Vous ne payez qu&apos;à votre première facture. La formule {essentiel.name} :{' '}
             <strong className="font-semibold text-[var(--q-ink)]">{formatEuros(essentiel.monthlyPrice)} HT par mois</strong>, ou{' '}
             {formatEuros(essentiel.yearlyMonthlyEquivalent)} HT par mois à l&apos;année ({formatEuros(essentiel.yearlyPrice)} HT,
-            soit {formatEuros(withVat(essentiel.yearlyPrice))} TTC). La formule {artisan.name} arrive bientôt.
+            soit {formatEuros(withVat(essentiel.yearlyPrice))} TTC).{' '}
+            {artisan.available
+              ? <>La formule {artisan.name} ({formatEuros(artisan.monthlyPrice)} HT par mois) ajoute chantiers, acomptes, situations de travaux, retenue de garantie et autoliquidation.</>
+              : <>La formule {artisan.name} (chantiers, situations, retenue de garantie, autoliquidation) n&apos;est pas encore en vente : essayez-la dans la démo.</>}
           </p>
           <FeatureList items={essentiel.features} />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -282,6 +288,27 @@ export default function BillingPageClient({
           Moyen de paiement, factures d&apos;abonnement, passage à l&apos;année et résiliation : dans l&apos;espace de paiement sécurisé.
         </p>
       </SettingsCard>
+
+      {subscription.plan === 'starter' && (
+        <SettingsCard id="artisan" title={`Formule ${artisan.name}`}>
+          <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
+            {artisan.available
+              ? <>Chantiers, factures d&apos;acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance, pour {formatEuros(artisan.monthlyPrice)} HT par mois ({formatEuros(artisan.yearlyMonthlyEquivalent)} HT par mois à l&apos;année). Le changement se fait au prorata.</>
+              : <>Chantiers, factures d&apos;acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance. La formule n&apos;est pas encore en vente : {demo ? <>ses fonctions sont ouvertes dans cette démo.</> : <>essayez ses fonctions dans la démo.</>}</>}
+          </p>
+          <FeatureList items={artisan.features} />
+          <div className="flex flex-wrap gap-2">
+            {artisan.available ? (
+              <button type="button" onClick={() => openPortalWith('upgrade')} disabled={loadingPortal} className="q-btn q-btn-primary">
+                {loadingPortal ? <Loader2 className="animate-spin" aria-hidden /> : <Sparkles aria-hidden />}
+                Passer à {artisan.name}
+              </button>
+            ) : (
+              <Link href="/demo/chantiers" className="q-btn q-btn-secondary">{demo ? 'Voir les chantiers' : 'Voir dans la démo'}</Link>
+            )}
+          </div>
+        </SettingsCard>
+      )}
 
       <div className="grid items-stretch gap-4 lg:grid-cols-2">
         <SettingsCard id="paiement" title="Moyen de paiement">

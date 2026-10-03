@@ -139,6 +139,19 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
         body:    JSON.stringify({ planId, billingPeriod, next }),
       })
       const data = await res.json()
+      // Essentiel active, Artisan demandée : changement de formule au prorata
+      // dans l'espace de paiement Stripe (pas de second abonnement)
+      if (res.ok && data.alreadySubscribed && data.upgrade) {
+        const portal = await fetch('/api/stripe/portal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'upgrade' }),
+        })
+        const portalData = await portal.json().catch(() => ({}))
+        if (portal.ok && portalData.url) { window.location.href = portalData.url; return '' }
+        setFetchError(portalData.error ?? "L'espace de paiement n'a pas pu s'ouvrir.")
+        return ''
+      }
       // Formule déjà active : rien à payer, on reprend là où l'artisan en était
       if (res.ok && data.alreadySubscribed) {
         router.replace(data.next ?? destination)

@@ -31,6 +31,7 @@ export default function DemoInvoiceForm() {
   return (
     <DocumentEditor
       kind="invoice"
+      reverseCharge={{ locked: false, onLocked: () => {} }}
       doc={doc}
       title="Nouvelle facture"
       status="nouveau brouillon · non enregistré"

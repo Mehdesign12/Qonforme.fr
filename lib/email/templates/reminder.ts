@@ -1,4 +1,4 @@
-import { emailBase, fmtEur, fmtDate, amountBlock, ctaButton } from "./base"
+import { emailBase, fmtEur, fmtDate, amountBlock, ctaButton, retentionBlock } from "./base"
 import { INDEMNITE_FORFAITAIRE, SEMESTRE_REFERENCE, TAUX_PENALITES_DEFAUT } from "@/lib/outils/penalites"
 
 /**
@@ -41,6 +41,8 @@ export interface ReminderEmailData {
    * règlement par virement ; affiche un bouton « Régler la facture ».
    */
   paymentUrl?: string
+  /** Retenue de garantie (formule Artisan) : à régler à sa libération, pas à l'échéance. */
+  retention?: { rate: number; amount: number } | null
 }
 
 /** Échappe un texte inséré dans le HTML de l'email. */
@@ -152,6 +154,7 @@ export function buildReminderEmail(d: ReminderEmailData): { subject: string; htm
     </table>
 
     ${amountBlock(d.subtotalHt, d.totalVat, d.totalTtc, accent)}
+    ${retentionBlock(d.totalTtc, d.retention)}
 
     ${d.paymentUrl ? ctaButton("Régler la facture", esc(d.paymentUrl), accent) : ""}
 

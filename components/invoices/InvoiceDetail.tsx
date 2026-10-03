@@ -16,7 +16,7 @@ import { selectCompanyWithProfile } from "@/lib/legal/db"
 import { cn } from "@/lib/utils"
 import { formatCurrency, INVOICE_STATUS_LABELS } from "@/lib/utils/invoice"
 import { InvoiceStatus } from "@/types"
-import { PaywallDialog, isSubscriptionRequired } from "@/components/billing/PaywallDialog"
+import { PaywallDialog, isArtisanPaywall, isSubscriptionRequired } from "@/components/billing/PaywallDialog"
 import { EmptyState } from "@/components/app/kit"
 import { InvoiceDetailView } from "@/components/invoices/InvoiceDetailView"
 import { type CompanyView, todayISO } from "@/components/invoices/invoice-view"
@@ -63,6 +63,12 @@ interface Invoice {
   reminder_2_sent_at: string | null
   /** Journal des relances (null tant qu'il n'est pas en place). */
   reminders?: { stage: string; origin: string; sent_at: string }[] | null
+  /** Formule Artisan (migration 20261003_artisan_chantiers.sql) : absents avant elle. */
+  invoice_kind?: string | null
+  billing_context?: unknown
+  retention_amount?: number | null
+  chantier_id?: string | null
+  quote_id?: string | null
   client: {
     id: string
     name: string
@@ -337,8 +343,10 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [showSendModal, setShowSendModal]       = useState(false)
   const [sendLoading, setSendLoading]           = useState(false)
   const [remindLoading, setRemindLoading]       = useState(false)
-  // Mur de paiement : ouvert quand l'émission est refusée faute de formule (402)
-  const [paywall, setPaywall]                   = useState<null | "send" | "remind">(null)
+  // Mur de paiement : ouvert quand l'émission est refusée faute de formule (402) ;
+  // « artisan » pour un acompte, une situation ou un solde (formule Artisan)
+  const [paywall, setPaywall]                   = useState<null | "send" | "remind" | "artisan">(null)
+  const [chantier, setChantier]                 = useState<{ id: string; name: string } | null>(null)
   // Calendrier des relances automatiques du compte (Paramètres › Relances)
   const [autoReminders, setAutoReminders]       = useState<string | null | undefined>(undefined)
   // Lien de paiement par virement : relu quand la facture change de statut (envoi, paiement)
@@ -365,6 +373,14 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       .then(({ data }) => { if (data) setQuote(data) }, () => {})
   }, [invoiceId])
 
+  // Chantier de rattachement (lien de la fiche) : rien si la table n'existe pas encore
+  const chantierId = invoice?.chantier_id ?? null
+  useEffect(() => {
+    if (!chantierId) { setChantier(null); return }
+    createClient().from("chantiers").select("id,name").eq("id", chantierId).maybeSingle()
+      .then(({ data }) => { if (data) setChantier(data as { id: string; name: string }) }, () => {})
+  }, [chantierId])
+
   // Retour du paiement (?send=1) : la formule est active, on rouvre l'envoi
   // de la facture qui attendait, puis on nettoie l'URL.
   useEffect(() => {
@@ -386,6 +402,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       })
       const json = await res.json()
       if (isSubscriptionRequired(res.status, json)) { setPaywall("send"); return }
+      if (isArtisanPaywall(res.status, json)) { setPaywall("artisan"); return }
       if (!res.ok) { toast.error(json.error); return }
       setInvoice(prev => mergeInvoice(prev, json.invoice))
       toast.success(`Statut mis à jour : ${STATUS_LABELS[newStatus] ?? newStatus}`)
@@ -464,6 +481,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       const res = await fetch(`/api/invoices/${invoiceId}/send`, { method: "POST" })
       const json = await res.json()
       if (isSubscriptionRequired(res.status, json)) { setShowSendModal(false); setPaywall("send"); return }
+      if (isArtisanPaywall(res.status, json)) { setShowSendModal(false); setPaywall("artisan"); return }
       if (!res.ok) {
         // Facture émise (numérotée) mais email non parti : elle reste émise, à renvoyer
         if (json.issued && json.invoice) { setInvoice(prev => mergeInvoice(prev, json.invoice)); setShowSendModal(false) }
@@ -537,6 +555,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         invoiceId={invoice.id}
         invoiceNumber={invoice.invoice_number ?? undefined}
         reason={paywall ?? "send"}
+        nextPath={`/invoices/${invoice.id}`}
       />
 
       {/* Fenêtre envoi email */}
@@ -594,7 +613,9 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       )}
 
       <InvoiceDetailView
-        invoice={invoice}
+        invoice={{ ...invoice, chantier: chantier ? { ...chantier, href: `/chantiers/${chantier.id}` } : null }}
+        invoiceHref={(ref) => `/invoices/${ref.id}`}
+        quoteHref={(id) => `/quotes/${id}`}
         company={company}
         today={today}
         backHref="/invoices"

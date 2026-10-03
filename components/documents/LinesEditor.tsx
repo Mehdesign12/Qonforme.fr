@@ -103,6 +103,8 @@ export function LinesEditor({
                 <select
                   aria-label={`Taux de TVA, ligne ${i + 1}`}
                   value={line.vat_rate}
+                  disabled={doc.form.autoliquidation}
+                  title={doc.form.autoliquidation ? "Autoliquidation : TVA due par le client" : undefined}
                   onChange={(e) => set(line, i, "vat_rate", e.target.value)}
                   className={cn(cellInput, "px-1.5 tabular-nums")}
                 >
@@ -203,6 +205,7 @@ export function LinesEditor({
               index={editIndex}
               errors={errors}
               total={computed[editIndex]?.totalHT ?? 0}
+              vatLocked={doc.form.autoliquidation}
               onChange={(key, value) => set(editLine, editIndex, key, value)}
             />
             <button type="button" onClick={() => setEditing(null)} className="q-btn q-btn-primary q-btn-xl mt-1 w-full">
@@ -232,12 +235,15 @@ function LineFields({
   index,
   errors,
   total,
+  vatLocked,
   onChange,
 }: {
   line: DocLine
   index: number
   errors: Record<string, string>
   total: number
+  /** Autoliquidation : taux figé à 0 %. */
+  vatLocked?: boolean
   onChange: (key: "description" | "quantity" | "unit_price_ht" | "vat_rate", value: string) => void
 }) {
   const big = "q-input !h-12 !rounded-[14px] !text-base"
@@ -280,7 +286,7 @@ function LineFields({
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="ml-vat" className="q-label">TVA</label>
-        <select id="ml-vat" value={line.vat_rate} onChange={(e) => onChange("vat_rate", e.target.value)} className={big}>
+        <select id="ml-vat" value={line.vat_rate} disabled={vatLocked} onChange={(e) => onChange("vat_rate", e.target.value)} className={big}>
           {VAT_RATES.map((rate) => <option key={rate} value={rate}>{formatRate(rate)}</option>)}
         </select>
       </div>
@@ -310,7 +316,7 @@ export function TotalsBlock({ doc, className }: { doc: DocumentFormApi; classNam
         ))
       ) : (
         <div className="flex justify-between gap-6">
-          <dt className="text-[var(--q-text-3)]">TVA{breakdown[0] ? ` ${formatRate(breakdown[0].rate)}` : ""}</dt>
+          <dt className="text-[var(--q-text-3)]">{doc.form.autoliquidation ? "TVA (autoliquidation)" : `TVA${breakdown[0] ? ` ${formatRate(breakdown[0].rate)}` : ""}`}</dt>
           <dd className="text-[var(--q-text-2)]">{formatCurrency(doc.totals.total_vat)}</dd>
         </div>
       )}

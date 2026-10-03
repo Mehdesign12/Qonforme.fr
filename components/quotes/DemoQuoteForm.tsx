@@ -23,6 +23,7 @@ export default function DemoQuoteForm() {
   return (
     <DocumentEditor
       kind="quote"
+      reverseCharge={{ locked: false, onLocked: () => {} }}
       doc={doc}
       title="Nouveau devis"
       status="nouveau brouillon · non enregistré"

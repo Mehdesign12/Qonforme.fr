@@ -249,8 +249,8 @@ describe("Factur-X — autoliquidation de la sous-traitance du BTP", () => {
     expect(warnings).toEqual([])
   })
 
-  it("le PDF imprime la mention « Autoliquidation »", () => {
-    expect(documentMentions(fxDoc)).toContain("Autoliquidation")
+  it("le PDF imprime la mention « Autoliquidation », TVA due par le preneur (BOFiP, BOI-TVA-DECLA-10-10-20, § 536)", () => {
+    expect(documentMentions(fxDoc)).toContain("Autoliquidation : TVA due par le preneur assujetti (art. 283, 2 nonies du CGI).")
   })
 
   it("aussi pour tout le document, et une ligne qui facture la TVA reste en S", () => {

@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server"
 import { INITIAL_STATUS } from "@/lib/utils/document-status"
 import { insertDraftInvoice } from "@/lib/utils/document-numbering"
 import { todayInParis } from "@/lib/utils/paris-date"
+import { requireArtisanAccess } from "@/lib/artisan/access"
+import { hasReverseCharge } from "@/lib/artisan/reverse-charge"
 
 // GET /api/invoices
 export async function GET(request: NextRequest) {
@@ -47,6 +49,12 @@ export async function POST(request: NextRequest) {
   // est à l'émission (envoi, passage hors brouillon) — lib/stripe/subscription.ts.
 
   const body = await request.json()
+
+  // Autoliquidation en sous-traitance du BTP : fonction de la formule Artisan
+  if (Array.isArray(body.lines) && hasReverseCharge(body.lines)) {
+    const artisanBlocked = await requireArtisanAccess(supabase, user.id)
+    if (artisanBlocked) return artisanBlocked
+  }
 
   // Préfixe de l'entreprise : sert seulement si la base exige encore un numéro
   // à la création (migration 20261003 pas encore appliquée)

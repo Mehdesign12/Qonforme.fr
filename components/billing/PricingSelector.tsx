@@ -19,10 +19,10 @@ import { cn } from '@/lib/utils'
  * Grille des formules — page Tarifs (visiteur), aperçu de l'accueil et choix
  * de formule (connecté), d'après la planche « Tarifs » du canevas.
  *
- * Trois cartes : Devis (gratuit), Essentiel, Artisan. Artisan garde la carte
- * encre du canevas mais reste « bientôt » tant que ses fonctions ne sont pas
- * livrées (PLANS.pro.available) : aucun bouton de paiement, on ne vend pas ce
- * qui n'existe pas. Le bouton principal va donc à Essentiel, seule formule vendue.
+ * Trois cartes : Devis (gratuit), Essentiel, Artisan. Les fonctions d'Artisan
+ * sont livrées ; la formule reste « bientôt » tant que ses prix Stripe ne sont
+ * pas configurés (PLANS.pro.available) : aucun bouton de paiement, un lien
+ * vers la démo pour essayer ses fonctions.
  */
 export default function PricingSelector({
   isAuthenticated = false,
@@ -183,7 +183,9 @@ export default function PricingSelector({
           </div>
           {!artisan.available && (
             <p className="text-[13px] leading-relaxed text-[#94A3B8]">
-              Ces fonctions sont en préparation. La formule ouvrira une fois livrées.
+              Ces fonctions sont prêtes : essayez-les dans la{' '}
+              <Link href="/demo/chantiers" className="font-semibold text-white underline underline-offset-2">démo</Link>.
+              La formule n&apos;est pas encore en vente.
             </p>
           )}
         </PlanCard>

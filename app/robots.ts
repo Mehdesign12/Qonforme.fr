@@ -16,6 +16,7 @@ export default function robots(): MetadataRoute.Robots {
           "/settings",
           "/purchase-orders",
           "/credit-notes",
+          "/chantiers",
           "/api",
           "/signup/company",
         ],

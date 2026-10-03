@@ -63,9 +63,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Déjà abonné : on n'ouvre pas un second abonnement, on renvoie vers la suite
+    // Déjà abonné : on n'ouvre pas un second abonnement. Passage d'Essentiel à
+    // Artisan : changement de formule au prorata dans le portail Stripe
+    // (POST /api/stripe/portal, action « upgrade »), pas un nouvel abonnement.
     const existingSub = await getSubscriptionByUserId(user.id)
     if (existingSub && canIssueInvoices(existingSub.status) && existingSub.stripe_subscription_id) {
+      if (planId === 'pro' && existingSub.plan !== 'pro') {
+        return NextResponse.json({ alreadySubscribed: true, upgrade: true, next: next ?? '/settings/billing' })
+      }
       return NextResponse.json({ alreadySubscribed: true, next: next ?? '/settings/billing' })
     }
 

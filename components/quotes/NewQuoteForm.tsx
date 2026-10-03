@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
+import { PaywallDialog, isArtisanPaywall } from "@/components/billing/PaywallDialog"
+import { useArtisanPlan } from "@/components/artisan/useArtisanPlan"
 import { useDocumentForm, usePreselectedClient } from "@/components/documents/useDocumentForm"
 import { isoDateIn, newLine, toPayloadLines, type DocClient, type DocCompany } from "@/components/documents/model"
 
@@ -14,6 +16,9 @@ export default function NewQuoteForm() {
   const [clients, setClients]               = useState<DocClient[]>([])
   const [clientsLoading, setClientsLoading] = useState(true)
   const [company, setCompany]               = useState<DocCompany | null>(null)
+  // Autoliquidation (formule Artisan) : case visible, mur de paiement sans la formule
+  const artisan = useArtisanPlan()
+  const [artisanPaywall, setArtisanPaywall] = useState(false)
 
   // Dates calculées au montage du composant (pas au chargement du module) — voir
   // components/invoices/NewInvoiceForm.tsx pour le même fix et son pourquoi.
@@ -46,7 +51,7 @@ export default function NewQuoteForm() {
         issue_date:  form.issue_date,
         valid_until: form.valid_until,
         notes:       form.notes || null,
-        lines:       toPayloadLines(form.lines, computed),
+        lines:       toPayloadLines(form.lines, computed, form.autoliquidation),
         status:      "draft",
       }
 
@@ -56,6 +61,7 @@ export default function NewQuoteForm() {
         body: JSON.stringify(payload),
       })
       const json = await res.json()
+      if (isArtisanPaywall(res.status, json)) { setArtisanPaywall(true); return }
       if (!res.ok) { toast.error(json.error || "Erreur lors de la sauvegarde"); return }
 
       // Si action "send" → envoyer réellement l'email via /api/quotes/{id}/send
@@ -82,8 +88,11 @@ export default function NewQuoteForm() {
   }
 
   return (
+    <>
+    <PaywallDialog open={artisanPaywall} onOpenChange={setArtisanPaywall} reason="artisan" nextPath="/quotes/new" />
     <DocumentEditor
       kind="quote"
+      reverseCharge={{ locked: artisan === false, onLocked: () => setArtisanPaywall(true) }}
       doc={doc}
       title="Nouveau devis"
       status="nouveau brouillon · non enregistré"
@@ -102,5 +111,6 @@ export default function NewQuoteForm() {
         sending: loading,
       }}
     />
+    </>
   )
 }

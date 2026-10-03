@@ -75,14 +75,17 @@ export function demoPaymentPage(id: string): PaymentPageData {
   if (!inv || inv.status === "draft") return { state: "not_found" }
 
   const credits = DEMO_CREDIT_NOTES.filter((c) => c.original_invoice_number === inv.invoice_number)
-  const remaining = remainingDue(inv.total_ttc, credits)
+  const retention = Math.max(0, inv.retention_amount ?? 0)
+  const remaining = remainingDue(inv.total_ttc, credits, retention)
+  const payable = remainingDue(inv.total_ttc, credits)
   const invoice = {
     number: invoiceNumberLabel(inv.invoice_number),
     issueDate: inv.issue_date,
     dueDate: inv.due_date,
     totalTtc: inv.total_ttc,
-    credited: Math.round((inv.total_ttc - remaining) * 100) / 100,
+    credited: Math.round((inv.total_ttc - payable) * 100) / 100,
     remaining,
+    ...(retention > 0 && payable > 0 ? { retention: Math.min(retention, payable) } : {}),
   }
   const state = payState(inv.status, remaining)
   if (state === "draft") return { state: "not_found" }
