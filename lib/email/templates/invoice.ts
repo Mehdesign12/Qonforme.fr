@@ -1,4 +1,4 @@
-import { emailBase, fmtEur, fmtDate, amountBlock } from "./base"
+import { emailBase, fmtEur, fmtDate, amountBlock, ctaButton } from "./base"
 
 interface InvoiceEmailData {
   invoiceNumber:  string
@@ -14,6 +14,8 @@ interface InvoiceEmailData {
   clientName:     string
   clientEmail:    string
   appUrl:         string
+  /** Page de règlement par virement (lib/payment-link) ; absente sans IBAN valide ou lien désactivé. */
+  paymentUrl?:    string | null
 }
 
 export function buildInvoiceEmail(d: InvoiceEmailData): { subject: string; html: string } {
@@ -65,6 +67,12 @@ export function buildInvoiceEmail(d: InvoiceEmailData): { subject: string; html:
         </td>
       </tr>
     </table>` : ""}
+
+    ${d.paymentUrl ? `
+    ${ctaButton("Régler par virement", d.paymentUrl, d.accentColor)}
+    <p style="margin:10px 0 0;font-size:12px;color:#64748B;text-align:center;line-height:1.5;">
+      IBAN, montant et référence à copier, et un bouton pour signaler votre virement.
+    </p>` : ""}
 
     ${d.notes ? `
     <div style="margin-top:20px;padding:16px 20px;background-color:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;">

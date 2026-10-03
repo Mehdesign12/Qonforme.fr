@@ -7,6 +7,7 @@ import { buildInvoiceEmail } from "@/lib/email/templates/invoice"
 import { generateInvoicePdf } from "@/lib/pdf/invoice"
 import { issueDraftInvoice } from "@/lib/utils/document-numbering"
 import { todayInParis } from "@/lib/utils/paris-date"
+import { paymentLinkFor } from "@/lib/payment-link/server"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -91,6 +92,11 @@ export async function POST(_req: NextRequest, { params }: Params) {
     }
     console.log(`[invoice-send] PDF généré (${pdfBuffer.length} bytes)`)
 
+    // Lien de la page de règlement par virement, sur la facture désormais émise et
+    // numérotée (null sans IBAN valide ou si l'artisan l'a désactivé ; ne fait
+    // jamais échouer l'envoi)
+    const paymentUrl = await paymentLinkFor({ invoiceId: id, userId: user.id, issuing: true })
+
     // 5. Construire et envoyer l'email
     const { subject, html } = buildInvoiceEmail({
       invoiceNumber: invoice.invoice_number,
@@ -106,6 +112,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       clientName,
       clientEmail,
       appUrl:        process.env.NEXT_PUBLIC_APP_URL ?? "https://qonforme.fr",
+      paymentUrl,
     })
 
     const cc        = senderEmail ? [senderEmail] : []

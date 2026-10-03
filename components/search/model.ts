@@ -72,7 +72,8 @@ export const ATTENTION_LIMIT = 8
 /** Au-delà, un devis sans réponse ou un brouillon mérite un coup d'œil. */
 export const STALE_DAYS = 7
 
-export type AttentionKind = "overdue" | "quote" | "draft"
+/** « transfer » : virement déclaré par un client sur la page de règlement, à vérifier (lib/payment-link). */
+export type AttentionKind = "overdue" | "quote" | "draft" | "transfer"
 
 export interface AttentionItem {
   id: string
@@ -84,7 +85,7 @@ export interface AttentionItem {
 
 export interface AttentionData {
   items: AttentionItem[]
-  counts: { overdue: number; quotes: number; drafts: number }
+  counts: { overdue: number; quotes: number; drafts: number; transfers?: number }
   total: number
 }
 
@@ -163,7 +164,27 @@ export function draftItem(
   }
 }
 
-/** Retards d'abord, puis devis sans réponse, puis brouillons ; plafonné à ATTENTION_LIMIT. */
-export function mergeAttention(overdue: AttentionItem[], quotes: AttentionItem[], drafts: AttentionItem[]): AttentionItem[] {
-  return [...overdue, ...quotes, ...drafts].slice(0, ATTENTION_LIMIT)
+/** Virement déclaré par le client, en attente de vérification par l'artisan. */
+export function transferItem(
+  t: { id: string; number: string; client: string | null; amount: number; transferDate: string },
+  href: string,
+): AttentionItem {
+  const [y, m, d] = t.transferDate.slice(0, 10).split("-")
+  return {
+    id: `transfer-${t.id}`,
+    kind: "transfer",
+    title: `${t.client ?? "Client"} · virement déclaré`,
+    meta: `${t.number} · ${formatCurrency(t.amount)} · le ${d}/${m}/${y}`,
+    href,
+  }
+}
+
+/**
+ * Virements déclarés d'abord (un encaissement à vérifier), puis retards, devis
+ * sans réponse et brouillons ; plafonné à ATTENTION_LIMIT.
+ */
+export function mergeAttention(
+  overdue: AttentionItem[], quotes: AttentionItem[], drafts: AttentionItem[], transfers: AttentionItem[] = [],
+): AttentionItem[] {
+  return [...transfers, ...overdue, ...quotes, ...drafts].slice(0, ATTENTION_LIMIT)
 }

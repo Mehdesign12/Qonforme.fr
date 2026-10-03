@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm"
 import { SettingsFrame } from "@/components/settings/SettingsFrame"
 import { DEMO_COMPANY } from "@/lib/demo/data"
+import { DEMO_BANK } from "@/lib/demo/payment-link"
 
 export const metadata: Metadata = { title: "Entreprise — Démo Qonforme" }
 
@@ -20,6 +21,8 @@ export default function DemoCompanySettingsPage() {
           zip_code: DEMO_COMPANY.zip_code,
           city: DEMO_COMPANY.city,
           iban: DEMO_COMPANY.iban,
+          account_holder: DEMO_BANK.holder,
+          bic: DEMO_BANK.bic,
           email: DEMO_COMPANY.email,
           logo_url: null,
         }}

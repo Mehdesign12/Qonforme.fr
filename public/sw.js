@@ -43,7 +43,10 @@ const PRECACHE_URLS = [
 /**
  * Préfixes dont le HTML peut être mis en cache : le middleware y répond sans
  * consulter Supabase, la réponse est donc identique pour tous les visiteurs.
- * Doit rester aligné sur `purePublicPaths` dans `lib/supabase/middleware.ts`.
+ * Doit rester aligné sur `purePublicPaths` dans `lib/supabase/middleware.ts`,
+ * à une exception près : `/regler/<jeton>` (page de règlement d'une facture)
+ * est publique mais propre à une facture et à son jeton, elle n'est JAMAIS
+ * mise en cache.
  */
 const CACHEABLE_PAGE_PREFIXES = [
   '/blog',

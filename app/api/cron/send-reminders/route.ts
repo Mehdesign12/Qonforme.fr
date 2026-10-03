@@ -38,6 +38,7 @@ import { createAdminClient } from "@/lib/supabase/server"
 import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { sendEmail, type EmailAttachment } from "@/lib/email/resend"
 import { buildReminderEmail } from "@/lib/email/templates/reminder"
+import { paymentLinkFor } from "@/lib/payment-link/server"
 import { buildQuoteFollowupEmail } from "@/lib/email/templates/quote-followup"
 import { generateQuotePdf } from "@/lib/pdf/quote"
 import { canIssueInvoices } from "@/lib/stripe/access"
@@ -295,6 +296,7 @@ async function runWithSettings(admin: SupabaseClient, today: string) {
         try {
           const company = await accounts.company(inv.user_id)
           const companyName = company.name?.trim() || "Votre prestataire"
+          const paymentUrl = await paymentLinkFor({ invoiceId: inv.id, userId: inv.user_id, admin })
           const { subject, html } = buildReminderEmail({
             reminderNumber: plan.reminderNumber,
             kind: plan.kind,
@@ -311,6 +313,7 @@ async function runWithSettings(admin: SupabaseClient, today: string) {
             accentColor: company.accent_color ?? "#2563EB",
             clientName: client?.name ?? "",
             clientIsProfessional: Boolean(client?.siren?.trim()),
+            paymentUrl: paymentUrl ?? undefined,
           })
           await sendEmail({
             to: clientEmail,
@@ -474,6 +477,7 @@ async function runLegacy(admin: SupabaseClient, today: string) {
       try {
         const company     = await accounts.company(invoice.user_id)
         const companyName = company.name?.trim() || "Votre prestataire"
+        const paymentUrl  = await paymentLinkFor({ invoiceId: invoice.id, userId: invoice.user_id, admin })
 
         const { subject, html } = buildReminderEmail({
           reminderNumber: n,
@@ -491,6 +495,7 @@ async function runLegacy(admin: SupabaseClient, today: string) {
           accentColor:    company.accent_color ?? "#2563EB",
           clientName:     client?.name ?? "",
           clientIsProfessional: Boolean(client?.siren?.trim()),
+          paymentUrl: paymentUrl ?? undefined,
         })
 
         await sendEmail({

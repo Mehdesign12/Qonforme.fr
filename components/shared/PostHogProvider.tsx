@@ -14,6 +14,10 @@ if (
     person_profiles: "identified_only",
     capture_pageview: false, // on le fait manuellement ci-dessous
     capture_pageleave: true,
+    // Page de règlement (/regler/<jeton>) : le jeton donne accès à une facture,
+    // il ne part jamais chez un tiers. Aucun événement n'est envoyé depuis cette page.
+    before_send: (event) =>
+      event && /\/regler\/[A-Za-z0-9_-]{20,}/.test(String(event.properties?.$current_url ?? "")) ? null : event,
   });
 }
 
