@@ -87,6 +87,12 @@ export function ReformCard({ reform, mode }: { reform: DashboardView["reform"]; 
           )
         )}
         <Item
+          tone="info"
+          title="Factures de vos fournisseurs"
+          sub="Importez-les (Factur-X, XML ou PDF) pour les contrôler et suivre leur paiement"
+          fix={{ href: hrefFor(mode, "/received-invoices"), label: "Factures reçues" }}
+        />
+        <Item
           tone="pending"
           title="Transmission par plateforme agréée"
           pill="En préparation"
