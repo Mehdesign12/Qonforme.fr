@@ -135,7 +135,7 @@ export function DocumentEditor({
 
           <LinesEditor doc={doc} title="Prestations" catalog={catalog} />
 
-          <ConditionsCard kind={kind} doc={doc} />
+          <ConditionsCard kind={kind} doc={doc} numbered={Boolean(number)} />
 
           {/* Mobile : état d'envoi en une ligne, aperçu PDF à portée */}
           <div className="flex flex-col gap-3 md:hidden">
@@ -290,7 +290,7 @@ function ClientCard({
 /* Carte Conditions : dates et notes                                   */
 /* ------------------------------------------------------------------ */
 
-function ConditionsCard({ kind, doc }: { kind: DocKind; doc: DocumentFormApi }) {
+function ConditionsCard({ kind, doc, numbered }: { kind: DocKind; doc: DocumentFormApi; numbered: boolean }) {
   const { form, errors } = doc
   const text = DOC_TEXT[kind]
   const secondKey = kind === "invoice" ? "due_date" : kind === "quote" ? "valid_until" : "delivery_date"
@@ -319,7 +319,12 @@ function ConditionsCard({ kind, doc }: { kind: DocKind; doc: DocumentFormApi }) 
               onChange={(e) => doc.setValue("issue_date", e.target.value)}
               aria-invalid={errors.issue_date ? true : undefined}
             />
-            {errors.issue_date && <p className="q-field-error">{errors.issue_date}</p>}
+            {errors.issue_date
+              ? <p className="q-field-error">{errors.issue_date}</p>
+              : kind === "invoice" && !numbered && (
+                // Numéro et date d'émission sont attribués à l'envoi (lib/utils/document-numbering.ts)
+                <p className="q-field-hint">À l&apos;envoi, la facture prend la date du jour et son numéro ; l&apos;échéance garde le même délai.</p>
+              )}
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="doc-second" className="q-label">{text.secondDateLabel}</label>

@@ -11,7 +11,7 @@ import { type InvoiceListItem, subjectFromLines, todayISO } from "@/components/i
 
 /** Facture telle que la renvoie GET /api/invoices. */
 interface ApiInvoice {
-  id: string; invoice_number: string; status: InvoiceStatus
+  id: string; invoice_number: string | null; status: InvoiceStatus
   is_archived: boolean; issue_date: string; due_date: string
   total_ttc: number; client: { name: string } | null
   lines: { description?: string | null }[] | null

@@ -21,7 +21,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   { key: "invoices", label: "Modèles de documents", href: "/settings/invoices", icon: Layers },
   { key: "ppf", label: "Facturation électronique", href: "/settings/ppf", icon: ShieldCheck },
   { key: "billing", label: "Abonnement", href: "/settings/billing", icon: CreditCard },
-  { key: "notifications", label: "Notifications", href: "/settings/notifications", icon: Bell },
+  { key: "notifications", label: "Relances", href: "/settings/notifications", icon: Bell },
 ]
 
 /** Chemin d'une page des paramètres selon le mode (« /settings/company » → « /demo/settings/company »). */

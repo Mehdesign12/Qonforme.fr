@@ -6,6 +6,7 @@
  * Aucun champ nouveau n'est exigé en base : `vat_treatment` (document ou ligne
  * du JSON `lines`) est lu s'il existe, sinon le traitement est déduit.
  */
+import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
 import type { FxDocument, FxLine, FxParty, FxSeller } from "@/lib/facturx/xml"
 import { parseVatTreatment } from "@/lib/facturx/vat"
 
@@ -93,7 +94,8 @@ export function linesFromRecords(lines: LineRecord[] | null | undefined): FxLine
 }
 
 export interface InvoiceRecord {
-  invoice_number: string
+  /** Vide pour un brouillon (numéro attribué à l'émission) ; un brouillon n'a jamais de XML. */
+  invoice_number: string | null
   issue_date: string
   due_date?: string | null
   notes?: string | null
@@ -105,7 +107,7 @@ export interface InvoiceRecord {
 export function invoiceToFacturX(invoice: InvoiceRecord, company: CompanyRecord | null | undefined): FxDocument {
   return {
     kind:          "invoice",
-    number:        invoice.invoice_number,
+    number:        invoiceNumberLabel(invoice.invoice_number),
     issue_date:    invoice.issue_date,
     due_date:      invoice.due_date ?? null,
     seller:        sellerFromCompany(company),

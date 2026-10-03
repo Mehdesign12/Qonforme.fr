@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { canTransition, isContentLocked, transitionError } from "@/lib/utils/document-status"
 import { requireIssuingAccess } from "@/lib/stripe/subscription"
+import { issueDraftInvoice } from "@/lib/utils/document-numbering"
+import { todayInParis } from "@/lib/utils/paris-date"
+import { loadReminderLog } from "@/lib/reminders/store"
 
 interface Params {
   params: Promise<{ id: string }>
@@ -23,7 +26,17 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })
-  return NextResponse.json({ invoice: data })
+
+  // Relances envoyées (journal, migration 20261003) pour l'historique de la fiche.
+  // `reminders: null` : journal absent ou illisible, la fiche s'en tient aux
+  // colonnes reminder_1_sent_at / reminder_2_sent_at.
+  let reminders: { stage: string; origin: string; sent_at: string }[] | null = null
+  if (data.status !== "draft") {
+    const logRes = await loadReminderLog(supabase, "invoice", [id])
+    if (logRes.available && !logRes.error) reminders = logRes.log.get(id) ?? []
+  }
+
+  return NextResponse.json({ invoice: { ...data, reminders } })
 }
 
 // PATCH /api/invoices/[id]
@@ -45,6 +58,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const contentFields = ["lines", "client_id", "issue_date", "due_date", "notes", "payment_terms"]
   const touchesContent = contentFields.some((f) => body[f] !== undefined)
 
+  let issuing = false
+
   if (touchesContent || body.status !== undefined) {
     const { data: current } = await supabase
       .from("invoices")
@@ -54,6 +69,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       .single()
 
     if (!current) return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
+    issuing = current.status === "draft" && body.status !== undefined && body.status !== "draft"
 
     if (touchesContent && isContentLocked(current.status)) {
       return NextResponse.json(
@@ -71,7 +87,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     // Sortir du brouillon, c'est émettre la facture (« Marquer comme envoyée ») :
     // même mur de paiement que l'envoi par email.
-    if (current.status === "draft" && body.status !== undefined && body.status !== "draft") {
+    if (issuing) {
       const blocked = await requireIssuingAccess(supabase, user.id)
       if (blocked) return blocked
     }
@@ -91,7 +107,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     }
   }
 
-  if (body.status) updateData.status = body.status
+  if (body.status && !issuing) updateData.status = body.status
   if (body.is_archived !== undefined) updateData.is_archived = body.is_archived
   if (body.client_id) updateData.client_id = body.client_id
   if (body.issue_date) updateData.issue_date = body.issue_date
@@ -99,15 +115,45 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (body.notes !== undefined) updateData.notes = body.notes
   if (body.payment_terms !== undefined) updateData.payment_terms = body.payment_terms
 
-  const { data, error } = await supabase
-    .from("invoices")
-    .update(updateData)
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .select(`*, client:clients(id, name, email)`)
-    .single()
+  const select = `*, client:clients(id, name, email)`
+  let data: Record<string, unknown> | null = null
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (Object.keys(updateData).length > 0 || !issuing) {
+    const res = await supabase
+      .from("invoices")
+      .update(updateData)
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .select(select)
+      .single()
+    if (res.error) return NextResponse.json({ error: res.error.message }, { status: 500 })
+    data = res.data
+  }
+
+  // Émission (« Marquer comme envoyée ») : numéro définitif, statut et date
+  // d'émission en une seule écriture (lib/utils/document-numbering.ts)
+  if (issuing) {
+    const [{ data: company }, { data: draft }] = await Promise.all([
+      supabase.from("companies").select("invoice_prefix").eq("user_id", user.id).maybeSingle(),
+      supabase.from("invoices").select("status, invoice_number, issue_date, due_date").eq("id", id).eq("user_id", user.id).single(),
+    ])
+    if (!draft) return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
+
+    const issued = await issueDraftInvoice<Record<string, unknown>>(supabase, {
+      invoiceId: id,
+      userId: user.id,
+      companyPrefix: company?.invoice_prefix,
+      draft,
+      status: body.status,
+      today: todayInParis(),
+      selectClause: select,
+    })
+    if (issued.error || !issued.data) {
+      return NextResponse.json({ error: issued.error?.message ?? "La facture n'a pas pu être émise. Réessayez." }, { status: 500 })
+    }
+    data = issued.data
+  }
+
   return NextResponse.json({ invoice: data })
 }
 

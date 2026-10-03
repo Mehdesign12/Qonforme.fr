@@ -76,8 +76,8 @@ export function LivePreview({
           </div>
           <div className="flex max-w-[48%] shrink-0 flex-col items-end gap-0.5 text-right">
             <strong className="text-[15px] font-semibold leading-tight tracking-[-0.01em]">{text.paperTitle}</strong>
-            {/* Numéro attribué par le serveur à l'enregistrement : jamais deviné ici */}
-            <span className="font-mono text-[10.5px] text-[#475569]">{number || "N° à l'enregistrement"}</span>
+            {/* Numéro attribué par le serveur (facture : à l'envoi, autres documents : à l'enregistrement), jamais deviné ici */}
+            <span className="font-mono text-[10.5px] text-[#475569]">{number || (kind === "invoice" ? "Brouillon" : "N° à l'enregistrement")}</span>
             {form.issue_date && <span className="font-mono text-[10.5px] text-[#475569]">{formatDayFr(form.issue_date)}</span>}
           </div>
         </div>

@@ -11,8 +11,12 @@
  *
  * Écarts volontaires avec le canevas (fonctions non livrées, DECISIONS § 10) :
  * pas de cycle de vie « plateforme agréée », pas de paiement partiel ni de lien
- * de paiement, pas de relances programmables par facture. L'historique ne
- * montre que des dates réellement enregistrées.
+ * de paiement, pas de relances programmables par facture (elles se règlent
+ * pour tout le compte, Paramètres › Relances). L'historique ne montre que des
+ * dates réellement enregistrées.
+ *
+ * Un brouillon n'a pas encore de numéro : il le reçoit à l'envoi
+ * (lib/utils/document-numbering.ts) et s'affiche « Brouillon » d'ici là.
  */
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -24,6 +28,8 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
+import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
+import { DEFAULT_REMINDER_SETTINGS, describeInvoiceSchedule } from "@/lib/reminders/settings"
 import type { InvoiceStatus } from "@/types"
 import {
   DocStatusPill, Initials, Kpi, KpiGrid, Panel, StatusPill,
@@ -107,6 +113,11 @@ export interface InvoiceDetailViewProps {
   quote?: { number: string; href: string } | null
   creditNotesHref: string
   settingsCompanyHref: string
+  /**
+   * Calendrier des relances automatiques du compte (« 30 et 45 jours après
+   * l'échéance »), null si elles sont désactivées. Absent : calendrier par défaut.
+   */
+  autoReminders?: string | null
   handlers: InvoiceDetailHandlers
 }
 
@@ -116,10 +127,14 @@ export interface InvoiceDetailViewProps {
 
 export function InvoiceDetailView({
   invoice, company, today, backHref, clientHref, quote, creditNotesHref, settingsCompanyHref, handlers: h,
+  autoReminders = describeInvoiceSchedule(DEFAULT_REMINDER_SETTINGS),
 }: InvoiceDetailViewProps) {
   const router = useRouter()
   const status = invoice.status
   const draft = status === "draft"
+  const numberLabel = invoiceNumberLabel(invoice.invoice_number)
+  // Journal des relances en place : plus de limite à deux relances manuelles
+  const journal = Array.isArray(invoice.reminders)
   const open = isOpen(status)
   const lateDays = daysLate(status, invoice.due_date, today)
   const late = status === "overdue" || lateDays > 0
@@ -152,17 +167,23 @@ export function InvoiceDetailView({
   const credit: Action | null = CAN_CREDIT.includes(status)
     ? { key: "credit", label: "Créer un avoir", icon: RotateCcw, onClick: h.openCredit }
     : null
-  // Relance manuelle : facture impayée, client avec email, deuxième relance pas encore partie
-  const remind: Action | null = (status === "sent" || status === "overdue") && clientEmail && !invoice.reminder_2_sent_at
+  // Relance manuelle : facture émise et impayée, client avec email (sans journal :
+  // deux relances au plus, suivies par reminder_1_sent_at / reminder_2_sent_at)
+  const canRemindNow = open && !!clientEmail && (journal || !invoice.reminder_2_sent_at)
+  const remind: Action | null = canRemindNow
     ? {
-        key: "remind", label: invoice.reminder_1_sent_at ? "Relance 2" : "Relancer", icon: Bell, onClick: h.remind,
+        key: "remind", label: !journal && invoice.reminder_1_sent_at ? "Relance 2" : "Relancer", icon: Bell, onClick: h.remind,
         busy: h.remindLoading, busyLabel: "Envoi…",
-        title: invoice.reminder_1_sent_at ? "Envoyer la 2e relance" : "Envoyer une relance par email",
+        title: !journal && invoice.reminder_1_sent_at ? "Envoyer la 2e relance" : "Envoyer une relance par email",
       }
     : null
   // Envoi par email : brouillon dont le client a une adresse
   const send: Action | null = draft && clientEmail
     ? { key: "send", label: "Envoyer par email", icon: Send, onClick: h.openSend, busy: h.sendLoading, busyLabel: "Envoi…" }
+    : null
+  // Facture émise : renvoyer une copie (email perdu, ou envoi interrompu après l'émission)
+  const resend: Action | null = !draft && clientEmail && (open || status === "paid")
+    ? { key: "resend", label: "Renvoyer par email", icon: Send, onClick: h.openSend, busy: h.sendLoading, busyLabel: "Envoi…" }
     : null
   // « Marquer comme envoyée » n'est jamais proposé sur un brouillon : il part par email
   const transitions: (Action & { main: boolean })[] = (NEXT_ACTIONS[status] ?? [])
@@ -185,11 +206,11 @@ export function InvoiceDetailView({
     // En retard : relancer d'abord (canevas « Relancer maintenant »)
     primary = remind
     secondaries = [mainTransition, credit].filter(Boolean) as Action[]
-    menu = [...(xml ? [xml] : []), print, ...otherTransitions, archive]
+    menu = [...(xml ? [xml] : []), print, ...(resend ? [resend] : []), ...otherTransitions, archive]
   } else {
     primary = mainTransition
     secondaries = [remind, credit].filter(Boolean) as Action[]
-    menu = [...(xml ? [xml] : []), print, ...otherTransitions, archive]
+    menu = [...(xml ? [xml] : []), print, ...(resend ? [resend] : []), ...otherTransitions, archive]
   }
   // Téléphone : une action secondaire à côté du PDF, le reste dans le menu « ··· »
   const mobileSecond = secondaries[0] ?? null
@@ -220,7 +241,7 @@ export function InvoiceDetailView({
 
   return (
     <div className="flex flex-col gap-5">
-      <SetCrumb label={invoice.invoice_number} />
+      <SetCrumb label={numberLabel} />
       <style>{PRINT_CSS}</style>
 
       {/* ---- Téléphone : retour, numéro, menu ---- */}
@@ -229,7 +250,7 @@ export function InvoiceDetailView({
           <ChevronLeft className="size-4" strokeWidth={2.25} aria-hidden />
           Factures
         </Link>
-        <span className="font-mono text-sm font-medium text-[var(--q-ink)]">{invoice.invoice_number}</span>
+        <span className={cn("text-sm font-medium text-[var(--q-ink)]", invoice.invoice_number && "font-mono")}>{numberLabel}</span>
         <span className="justify-self-end">
           <MoreMenu actions={mobileMenu} run={run} triggerClassName="q-btn q-btn-ghost q-btn-icon !size-11 !rounded-xl" />
         </span>
@@ -240,7 +261,7 @@ export function InvoiceDetailView({
       <header className="hidden flex-wrap items-end justify-between gap-x-6 gap-y-4 lg:flex print:hidden">
         <div className="flex min-w-0 grow basis-[420px] flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="font-mono text-sm text-[var(--q-text-3)]">{invoice.invoice_number}</span>
+            {invoice.invoice_number && <span className="font-mono text-sm text-[var(--q-text-3)]">{invoice.invoice_number}</span>}
             <StatusPills invoice={invoice} lateDays={lateDays} />
           </div>
           <h1 className="q-h1 md:!text-[30px]">
@@ -312,7 +333,9 @@ export function InvoiceDetailView({
       {draft && (
         <Banner icon={Pencil} title="Ce brouillon n’est pas encore une facture">
           {clientEmail
-            ? "Modifiez-le librement, puis envoyez-le à votre client par email pour l’émettre."
+            ? invoice.invoice_number
+              ? "Modifiez-le librement, puis envoyez-le à votre client par email pour l’émettre."
+              : "Modifiez-le librement, puis envoyez-le à votre client par email pour l’émettre : il recevra alors son numéro de facture, à la date du jour."
             : <>Le client n&apos;a pas d&apos;adresse email : ajoutez-la {clientHref ? <Link href={clientHref} className="q-link">dans sa fiche</Link> : "dans sa fiche"} pour envoyer la facture.</>}
         </Banner>
       )}
@@ -335,9 +358,11 @@ export function InvoiceDetailView({
         <div className="order-1 flex min-w-0 flex-col gap-4 lg:order-2 print:hidden">
           <Panel title="Historique" className="order-2 lg:order-1" bodyClassName="px-5 pb-5 pt-2">
             <Timeline invoice={invoice} today={today} year={year} />
-            {(status === "sent" || status === "overdue") && clientEmail && !invoice.reminder_2_sent_at && (
+            {open && clientEmail && (journal || !invoice.reminder_2_sent_at) && (
               <p className="q-field-hint mt-3 border-t border-[var(--q-line-soft)] pt-3">
-                Avec une formule active, une relance part automatiquement par email 30 jours après l&apos;échéance, puis une seconde à 45 jours.
+                {autoReminders
+                  ? <>Avec une formule active, le client est relancé automatiquement par email : {autoReminders}.</>
+                  : "Les relances automatiques sont désactivées dans vos paramètres."}
               </p>
             )}
           </Panel>
@@ -616,8 +641,17 @@ function buildSteps(inv: InvoiceView, today: string, year: number): Step[] {
     steps.push({ title: "Envoi au client", sub: "Pas encore envoyée", state: "todo" })
   }
 
-  if (inv.reminder_1_sent_at) steps.push({ title: "Relance 1 envoyée", sub: stamp(inv.reminder_1_sent_at, year), state: "done" })
-  if (inv.reminder_2_sent_at) steps.push({ title: "Relance 2 envoyée", sub: stamp(inv.reminder_2_sent_at, year), state: "done" })
+  if (Array.isArray(inv.reminders)) {
+    for (const r of inv.reminders) {
+      const title = r.stage.startsWith("before_") ? "Rappel avant échéance envoyé"
+        : r.origin === "manual" ? "Relance envoyée"
+        : "Relance automatique envoyée"
+      steps.push({ title, sub: stamp(r.sent_at, year), state: "done" })
+    }
+  } else {
+    if (inv.reminder_1_sent_at) steps.push({ title: "Relance 1 envoyée", sub: stamp(inv.reminder_1_sent_at, year), state: "done" })
+    if (inv.reminder_2_sent_at) steps.push({ title: "Relance 2 envoyée", sub: stamp(inv.reminder_2_sent_at, year), state: "done" })
+  }
 
   const late = daysLate(status, inv.due_date, today)
   if (status === "paid") {

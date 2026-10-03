@@ -48,7 +48,7 @@ export function InvoicePaper({
   return (
     <article
       data-invoice-print=""
-      aria-label={`Aperçu de la facture ${invoice.invoice_number}`}
+      aria-label={invoice.invoice_number ? `Aperçu de la facture ${invoice.invoice_number}` : "Aperçu du brouillon de facture"}
       className="q-paper relative mx-auto flex w-full max-w-[640px] flex-col gap-6 overflow-hidden px-5 py-6 text-[12px] leading-[1.55] text-[#0F172A] sm:px-9 sm:py-9"
     >
       {draft && (
@@ -72,7 +72,7 @@ export function InvoicePaper({
         <span className="flex min-w-0 flex-col items-end gap-0.5 text-right">
           <span className="text-[18px] font-semibold tracking-[-0.01em]">Facture</span>
           <span className="font-mono text-[#475569]">
-            {invoice.invoice_number} · {mediumDate(invoice.issue_date)}
+            {invoice.invoice_number ?? "N° attribué à l’envoi"} · {mediumDate(invoice.issue_date)}
           </span>
           <span className="text-[#475569]">Échéance : {mediumDate(invoice.due_date)}</span>
         </span>

@@ -101,7 +101,7 @@ const LEAF_TITLES: Record<string, string> = {
   "/purchase-orders/new": "Nouveau bon de commande",
   "/settings/company": "Entreprise",
   "/settings/invoices": "Modèles de documents",
-  "/settings/notifications": "Notifications",
+  "/settings/notifications": "Relances",
   "/settings/billing": "Abonnement",
   "/settings/ppf": "Facturation électronique",
 }

@@ -12,7 +12,7 @@ import { isoDateIn, newLine, toPayloadLines, type DocClient, type DocCompany } f
 export default function NewInvoiceForm() {
   const router = useRouter()
   // Facture créée en brouillon mais pas envoyée faute de formule : mur de paiement
-  const [paywallInvoice, setPaywallInvoice] = useState<{ id: string; number: string } | null>(null)
+  const [paywallInvoice, setPaywallInvoice] = useState<{ id: string; number?: string } | null>(null)
   const [loading,        setLoading]        = useState(false)
   const [saving,         setSaving]         = useState(false)
   const [previewing,     setPreviewing]     = useState(false)
@@ -104,7 +104,8 @@ export default function NewInvoiceForm() {
         const sendJson = await sendRes.json()
         // Pas de formule : la facture reste un brouillon, le mur de paiement s'ouvre
         if (isSubscriptionRequired(sendRes.status, sendJson)) {
-          setPaywallInvoice({ id: json.invoice.id, number: json.invoice.invoice_number })
+          // Brouillon sans numéro : il ne le recevra qu'à l'envoi
+          setPaywallInvoice({ id: json.invoice.id, number: json.invoice.invoice_number ?? undefined })
           return
         }
         if (!sendRes.ok) {

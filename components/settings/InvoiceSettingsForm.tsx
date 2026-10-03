@@ -157,7 +157,7 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
     // Numéros déjà attribués cette année, pour annoncer les prochains (lecture seule)
     const supabase = createClient()
     supabase.from("invoices").select("invoice_number").like("invoice_number", `%-${year}-%`)
-      .then(({ data }) => setInvoiceNumbers((data ?? []).map(r => r.invoice_number as string)))
+      .then(({ data }) => setInvoiceNumbers((data ?? []).flatMap(r => (r.invoice_number ? [r.invoice_number as string] : []))))
     supabase.from("quotes").select("quote_number").like("quote_number", `D-${year}-%`)
       .then(({ data }) => setQuoteNumbers((data ?? []).map(r => r.quote_number as string)))
   }, [demo, reset, year])
@@ -308,9 +308,10 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
                 </p>
               </div>
               <p className="text-[13px] leading-relaxed text-[var(--q-text-4)]">
-                Chaque série est continue et sans trou, comme l&apos;exige la réglementation. Le numéro d&apos;une
-                facture émise ne change jamais : un nouveau préfixe ouvre une nouvelle série à partir de la
-                prochaine facture.
+                Chaque série est continue et sans trou, comme l&apos;exige la réglementation. Une facture reçoit
+                son numéro au moment où vous l&apos;envoyez, jamais en brouillon : supprimer un brouillon ne laisse
+                pas de trou. Le numéro d&apos;une facture émise ne change jamais : un nouveau préfixe ouvre une
+                nouvelle série à partir de la prochaine facture.
               </p>
             </SettingsCard>
 

@@ -47,7 +47,7 @@ export function RecentInvoices({ rows, mode }: { rows: RecentRow[]; mode: DashMo
               >
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-[15px] font-semibold text-[var(--q-ink)]">{r.clientName ?? "Client inconnu"}</span>
-                  <span className="font-mono text-xs text-[var(--q-text-4)]">{r.number}</span>
+                  <span className={r.status === "draft" ? "text-xs text-[var(--q-text-4)]" : "font-mono text-xs text-[var(--q-text-4)]"}>{r.number}</span>
                 </span>
                 <span className="flex shrink-0 flex-col items-end gap-1">
                   <span className="text-[15px] font-semibold text-[var(--q-ink)] tabular-nums">{formatCurrency(r.total)}</span>
@@ -83,7 +83,7 @@ export function RecentInvoices({ rows, mode }: { rows: RecentRow[]; mode: DashMo
                 {rows.map((r) => (
                   <tr key={r.id}>
                     <td className="whitespace-nowrap">
-                      <Link href={r.href} className="font-mono text-[13px] text-[var(--q-text-2)] hover:text-[var(--q-accent-strong)] hover:underline">
+                      <Link href={r.href} className={`${r.status === "draft" ? "" : "font-mono "}text-[13px] text-[var(--q-text-2)] hover:text-[var(--q-accent-strong)] hover:underline`}>
                         {r.number}
                       </Link>
                     </td>
