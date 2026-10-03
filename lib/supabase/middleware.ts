@@ -141,6 +141,7 @@ export async function updateSession(request: NextRequest) {
     '/products',
     '/credit-notes',
     '/purchase-orders',
+    '/received-invoices',
   ]
 
   const isProtected = protectedPaths.some((path) =>
