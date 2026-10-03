@@ -133,6 +133,15 @@
    - un copywriting de haut niveau pour le site, les tarifs, l'onboarding, l'écran de paiement et les emails ;
    - un vrai parcours d'onboarding client.
 
+6. **Choix laissés au fondateur par les chantiers du 03/10/2026** (tous construits avec un réglage par défaut prudent) :
+   - **Réception des factures fournisseurs** : gratuite pour tous, parce que c'est une obligation légale. À confirmer.
+   - **Accès du comptable** : ouvert à tous pour l'instant ; la section 4 le range dans l'offre Artisan. Une constante (`ACCOUNTANT_ACCESS_REQUIRES_PLAN`) le place derrière le mur de paiement.
+   - **Lien de paiement d'une facture déjà émise par un compte résilié** : reste disponible (accès au document, pas une émission). À confirmer.
+   - **Date d'une facture émise** : à l'émission, la facture prend la date du jour (numérotation chronologique), l'échéance garde le même délai.
+   - **Signature en ligne** : code par email au-delà de 5 000 € TTC pour tout client, particulier compris ; particulier ou professionnel déduit du SIREN ou du n° de TVA de la fiche client ; certification du taux réduit demandée dès qu'une ligne est à 10 % ou 5,5 %, sans la tolérance du BOFiP sous 1 000 € TTC.
+   - **Emails de démarrage** : textes et fenêtre de 30 jours à relire ; l'email de bienvenue garde « Écrivez à contact@qonforme.fr », à la limite de la règle sur le contact humain.
+   - **Attestation d'assurance décennale** : le Code des assurances (L243-2) demande de la joindre aux devis et factures ; Qonforme imprime les mentions mais ne joint pas l'attestation (il faudrait un téléversement).
+
 ## 8. Onboarding et mur de paiement
 
 ### État actuel
@@ -242,9 +251,9 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 
 | Apport | Aujourd'hui | Valeur |
 |---|---|---|
-| Réception des factures fournisseurs, raccordement à une plateforme agréée, inscription à l'annuaire | **À construire** : `/settings/ppf` est un guide manuel | Obligation légale depuis le 1er septembre 2026. C'est le premier argument de « conforme » |
-| Cycle de la facture sur la plateforme (déposée, reçue, acceptée, refusée, payée) | **Partiel** : statuts saisis à la main, `ppf_status` jamais écrit | Visibilité réelle, moins de relances inutiles |
-| Factur-X valide (profil EN 16931, PDF/A-3, motif d'exonération) | **À corriger** (stratégie, lot 1) | Condition pour devenir « Solution compatible » |
+| Réception des factures fournisseurs, raccordement à une plateforme agréée, inscription à l'annuaire | **Partiel, construit le 03/10/2026** : boîte « Factures reçues » avec import Factur-X, CII, UBL ou PDF, contrôles et cycle de vie aux codes DGFiP (migration à appliquer, masqué d'ici là) ; adaptateur de plateforme prêt (`lib/pa`), partenaire à choisir (§ 7.3) ; pas encore d'inscription à l'annuaire | Obligation légale depuis le 1er septembre 2026. C'est le premier argument de « conforme » |
+| Cycle de la facture sur la plateforme (déposée, reçue, acceptée, refusée, payée) | **Partiel** : cycle de vie des factures reçues aux codes DGFiP (03/10/2026), local tant qu'aucune plateforme n'est raccordée ; factures émises : statuts saisis à la main | Visibilité réelle, moins de relances inutiles |
+| Factur-X valide (profil EN 16931, PDF/A-3, motif d'exonération) | **Construit le 03/10/2026** : validé avec Mustang (veraPDF, XSD, schématrons CEN EN 16931 et AFNOR BR-FR) | Condition pour devenir « Solution compatible » |
 
 ### Accès, offre et conversion
 
@@ -260,26 +269,26 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 | Apport | Aujourd'hui | Valeur |
 |---|---|---|
 | Entreprise remplie depuis le SIRET | **Existe** (`/api/sirene`) | — |
-| Mentions BTP automatiques : franchise de TVA (art. 293 B), décennale avec champs dédiés | **Partiel** : modèle de texte libre à remplir | Documents conformes sans y penser |
-| Catalogue de prestations pré-rempli selon le métier | **Partiel** : le catalogue démarre vide | Premier devis en 2 minutes |
-| Écran « Par quoi commencer ? » et accès libre au tableau de bord | **Partiel** : fenêtre de bienvenue à 3 actions | Personne n'est bloqué ni forcé |
-| Devis d'essai envoyé à soi-même | **À construire** | Premier résultat même sans client |
-| Rappel « plus tard » au moment choisi | **À construire** | Récupère les inscrits pressés |
+| Mentions BTP automatiques : franchise de TVA (art. 293 B), décennale avec champs dédiés | **Construit le 03/10/2026** : profil légal, mentions générées et figées à l'émission (migration à appliquer, masqué d'ici là) | Documents conformes sans y penser |
+| Catalogue de prestations pré-rempli selon le métier | **Construit le 03/10/2026** : 11 métiers, TVA selon le chantier, aucun prix inventé | Premier devis en 2 minutes |
+| Écran « Par quoi commencer ? » et accès libre au tableau de bord | **Construit le 03/10/2026** (`/demarrer`) ; le tableau de bord exige encore une entreprise | Personne n'est bloqué ni forcé |
+| Devis d'essai envoyé à soi-même | **Construit le 03/10/2026** (migration à appliquer, masqué d'ici là) | Premier résultat même sans client |
+| Rappel « plus tard » au moment choisi | **Construit le 03/10/2026** (migration à appliquer, masqué d'ici là) | Récupère les inscrits pressés |
 | Tableau de bord d'un compte neuf (premiers pas, états vides expliqués) | **Construit le 02/10/2026** : tuiles « Pour commencer » (entreprise, premier client, premier devis, logo) à la place de graphiques vides | Activation |
-| Séquence de 5 emails déclenchés par les actions | **Partiel** : email de bienvenue seulement | Activation et passage au payant |
+| Séquence de 5 emails déclenchés par les actions | **Construit le 03/10/2026**, désinscription en un clic (migration à appliquer, masqué d'ici là) ; cron `/api/cron/onboarding` à créer | Activation et passage au payant |
 | Logo personnalisé, avec aperçu sur un devis | **Existe** dans Paramètres › Préférences factures (import, couleur). La maquette le place dans Paramètres › Entreprise avec un aperçu en direct | Documents à l'image de l'artisan |
 
 ### Devis, facture, paiement (le cœur)
 
 | Apport | Aujourd'hui | Valeur |
 |---|---|---|
-| Signature en ligne des devis et bons de commande (§ 11) | **À construire**, maquettée le 01/10/2026 : l'artisan change le statut à la main | Chantiers signés plus vite |
-| Lien de paiement par virement dans la facture : page de règlement du client (IBAN, référence, « j'ai effectué le virement ») | **À construire** : IBAN seulement dans l'email. Pas de carte ni de prélèvement côté client (§ 12) | Payé plus vite |
-| Relances réglables (avant échéance, J+7, J+15) et relance des devis non signés | **Partiel** : J+30 et J+45 fixes, factures seulement | Trésorerie |
+| Signature en ligne des devis et bons de commande (§ 11) | **Construit le 03/10/2026** (signature électronique simple, Essentiel) (migration à appliquer, masqué d'ici là) ; restent la rétractation en ligne, l'acompte après signature et la relance avant expiration | Chantiers signés plus vite |
+| Lien de paiement par virement dans la facture : page de règlement du client (IBAN, référence, « j'ai effectué le virement ») | **Construit le 03/10/2026** : page `/regler`, QR code SEPA, déclaration de virement, lien dans l'email et les relances (migration à appliquer, masqué d'ici là) | Payé plus vite |
+| Relances réglables (avant échéance, J+7, J+15) et relance des devis non signés | **Construit le 03/10/2026** (migration à appliquer, masqué d'ici là) ; J+30 et J+45 d'ici là | Trésorerie |
 | Suivi d'ouverture des devis et factures | **À construire** | L'artisan sait quand relancer |
 | Devis transformé en facture en un clic | **Existe** ; la facture née d'un devis passe le mur de paiement à l'envoi (§ 12) | — |
 | Aperçu du document en direct pendant la saisie | **Construit le 02/10/2026** : aperçu papier en direct à côté du formulaire (facture, devis, bon de commande) et liste « Avant l'envoi » limitée aux contrôles réels ; le bouton « Aperçu PDF » reste | Moins d'erreurs |
-| Numéro de facture attribué à l'envoi (brouillons sans numéro) | **À construire** : numéro dès la création | Numérotation continue, conforme |
+| Numéro de facture attribué à l'envoi (brouillons sans numéro) | **Construit le 03/10/2026** (migration à appliquer, masqué d'ici là) ; numéro à la création d'ici là | Numérotation continue, conforme |
 
 ### Fonctions du bâtiment (les raisons de rester)
 
@@ -298,8 +307,8 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 | Trésorerie | **À construire** | Anticiper les mois creux |
 | Liste des factures : recherche, vues enregistrées, actions groupées | **Partiel** : onglets à compteurs et recherche (02/10/2026) ; pas de vues enregistrées ni d'actions groupées | Gain de temps au-delà de 50 factures |
 | Recherche globale ⌘K | **Construit le 02/10/2026** : factures, devis, clients et actions, au clavier (`/api/search`) ; cloche « À surveiller » (retards, devis sans réponse, brouillons oubliés, `/api/attention`) | Rapidité |
-| Exports comptables | **Partiel** : FEC seulement | Le comptable reçoit ce qu'il attend |
-| Accès pour le comptable et l'équipe | **À construire** : un seul utilisateur | Prescription par les comptables |
+| Exports comptables | **Partiel** : FEC ; ventes CSV et archive des PDF dans l'espace comptable (03/10/2026) | Le comptable reçoit ce qu'il attend |
+| Accès pour le comptable et l'équipe | **Partiel, construit le 03/10/2026** : accès du comptable en lecture et exports (migration à appliquer, masqué d'ici là) ; pas d'accès d'équipe | Prescription par les comptables |
 | Plusieurs entreprises par compte | **À construire** | Artisans qui ont plusieurs structures |
 
 ### Mobile
