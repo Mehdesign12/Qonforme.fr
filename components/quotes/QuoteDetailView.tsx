@@ -26,6 +26,8 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } fr
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
+import { resolveDocumentMentions } from "@/lib/legal/mentions"
+import { PaperMentions } from "@/components/documents/PaperMentions"
 import {
   daysBetween, daysLeft, dateTime, expiryHint, fmtAmount, fmtQty, fmtRate, fmtSiren, fmtUnit, longDate, parisDay, plural,
   quoteTitle, shortDate, vatBreakdown, vatRatesLabel, type QuoteStatus,
@@ -72,6 +74,8 @@ export interface QuoteDetailData {
   } | null
   converted: boolean
   converted_invoice: { number?: string | null; status?: string | null; href: string } | null
+  /** Mentions de l'entreprise figées à l'envoi (lib/legal/mentions.ts). */
+  legal_snapshot?: unknown
 }
 
 export interface QuoteDetailCompany {
@@ -82,6 +86,9 @@ export interface QuoteDetailCompany {
   siret?: string | null
   siren?: string | null
   vat_number?: string | null
+  /** Mentions libres et profil légal : pied du devis (lib/legal/mentions.ts). */
+  legal_notice?: string | null
+  legal_profile?: unknown
 }
 
 export interface QuoteDetailActions {
@@ -768,6 +775,8 @@ function QuotePaper({ quote, company, companySettings }: { quote: QuoteDetailDat
           <span className="whitespace-pre-line">{quote.notes}</span>
         </div>
       )}
+
+      <PaperMentions lines={resolveDocumentMentions(company, quote, "quote").lines} />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { FileX2 } from "lucide-react"
 import { EmptyState } from "@/components/app/kit"
 import { QuoteDetailView, type QuoteDetailData } from "@/components/quotes/QuoteDetailView"
 import { DEMO_COMPANY, DEMO_TODAY, demoInvoice, demoQuote } from "@/lib/demo/data"
+import { DEMO_LEGAL_NOTICE, DEMO_LEGAL_PROFILE, demoLegalSnapshot } from "@/lib/demo/legal-profile"
 
 /** La démo n'enregistre rien : chaque action invite à créer un compte. */
 const ctaToast = (what: string) => toast(`Créez un compte pour ${what}`, {
@@ -45,12 +46,13 @@ export default function DemoQuoteDetailPage({ params }: { params: { id: string }
     converted_invoice: q.converted_invoice_number
       ? { number: q.converted_invoice_number, status: invoice?.status ?? null, href: `/demo/invoices/${q.converted_invoice_number.toLowerCase()}` }
       : null,
+    legal_snapshot: demoLegalSnapshot(q.status),
   }
 
   return (
     <QuoteDetailView
       quote={data}
-      company={DEMO_COMPANY}
+      company={{ ...DEMO_COMPANY, legal_notice: DEMO_LEGAL_NOTICE, legal_profile: DEMO_LEGAL_PROFILE }}
       today={DEMO_TODAY}
       demo
       links={{ list: "/demo/quotes", newQuote: "/demo/quotes/new", companySettings: "/demo/settings/company" }}

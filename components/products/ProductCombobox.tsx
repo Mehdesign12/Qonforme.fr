@@ -107,10 +107,15 @@ function ProductList({
               <span className="min-w-0 flex-1">
                 <span className="flex items-start justify-between gap-3">
                   <span className="min-w-0 text-sm font-semibold text-[var(--q-ink)]">{product.name}</span>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-[var(--q-ink)]">
-                    {formatCurrency(product.unit_price_ht)}
-                    <span className="text-xs font-normal text-[var(--q-text-4)]"> HT</span>
-                  </span>
+                  {Number(product.unit_price_ht) > 0 ? (
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-[var(--q-ink)]">
+                      {formatCurrency(product.unit_price_ht)}
+                      <span className="text-xs font-normal text-[var(--q-text-4)]"> HT</span>
+                    </span>
+                  ) : (
+                    // Prestation importée sans prix : la ligne du devis reste à chiffrer
+                    <span className="q-pill q-pill-warn shrink-0">Prix à compléter</span>
+                  )}
                 </span>
                 <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--q-text-4)]">
                   {product.reference && <span className="font-mono">{product.reference}</span>}

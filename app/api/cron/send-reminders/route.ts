@@ -41,6 +41,7 @@ import { buildReminderEmail } from "@/lib/email/templates/reminder"
 import { paymentLinkFor } from "@/lib/payment-link/server"
 import { buildQuoteFollowupEmail } from "@/lib/email/templates/quote-followup"
 import { generateQuotePdf } from "@/lib/pdf/quote"
+import { loadLegalSnapshot } from "@/lib/legal/db"
 import { canIssueInvoices } from "@/lib/stripe/access"
 import { addDays, daysBetween, todayInParis } from "@/lib/utils/paris-date"
 import { settingsFromRow, BEFORE_DUE_CHOICES, type ReminderSettings, type ReminderSettingsRow } from "@/lib/reminders/settings"
@@ -391,8 +392,10 @@ async function runWithSettings(admin: SupabaseClient, today: string) {
           // Le devis joint, comme à l'envoi ; sans PDF, la relance part quand même
           let attachments: EmailAttachment[] = []
           try {
+            // Mentions figées à l'envoi du devis (lib/legal/mentions.ts) ; null avant la migration
+            const legal_snapshot = await loadLegalSnapshot(admin, "quotes", q.id)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const pdf = await generateQuotePdf({ quote: { ...q, client } as any, company: company as any })
+            const pdf = await generateQuotePdf({ quote: { ...q, client, legal_snapshot } as any, company: company as any })
             attachments = [{ filename: `${q.quote_number}.pdf`, content: Buffer.from(pdf) }]
           } catch (err) {
             console.error(`[cron] PDF du devis ${q.quote_number} non généré :`, err)

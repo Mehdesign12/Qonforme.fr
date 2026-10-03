@@ -23,6 +23,7 @@ import {
 } from "@/components/purchase-orders/detail-bits"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { fmtQty, fmtRate, fmtUnit, longDate, shortDate, vatBreakdown, vatRatesLabel } from "@/components/quotes/QuoteListHelpers"
+import { resolveDocumentMentions } from "@/lib/legal/mentions"
 
 export interface CreditNoteDetailData {
   id: string
@@ -42,6 +43,8 @@ export interface CreditNoteDetailData {
     issue_date?: string | null
     total_ttc?: number | null
   } | null
+  /** Mentions de l'entreprise figées à la création de l'avoir (lib/legal/mentions.ts). */
+  legal_snapshot?: unknown
 }
 
 export interface CreditNoteDetailActions {
@@ -199,6 +202,7 @@ export function CreditNoteDetailView({
               total_ttc={note.total_ttc}
               negative
               totalLabel="Total TTC de l'avoir"
+              mentions={resolveDocumentMentions(company, note, "credit_note").lines}
             />
           </section>
 

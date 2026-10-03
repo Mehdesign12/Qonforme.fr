@@ -15,6 +15,7 @@ import {
   type DocClient, type DocCompany, type DocKind,
 } from "./model"
 import type { DocumentFormApi } from "./useDocumentForm"
+import { resolveDocumentMentions } from "@/lib/legal/mentions"
 
 export function LivePreview({
   kind,
@@ -45,9 +46,10 @@ export function LivePreview({
     : null
   const companyAddress = [company?.address, [company?.zip_code, company?.city].filter(Boolean).join(" ")].filter(Boolean).join(", ")
   const clientAddress = client ? [client.address, [client.zip_code, client.city].filter(Boolean).join(" ")].filter(Boolean).join(", ") : ""
-  // Le PDF imprime les 3 premières lignes des notes et 4 des mentions légales
+  // Le PDF imprime les 3 premières lignes des notes, puis les mentions de
+  // l'entreprise : automatiques (Paramètres › Entreprise) et libres (Modèles)
   const notes = form.notes.trim().split("\n").slice(0, 3).join("\n")
-  const legal = (company?.legal_notice ?? "").trim().split("\n").slice(0, 4).join("\n")
+  const legal = resolveDocumentMentions(company, null, kind).lines.join("\n")
   const secondLabel = kind === "invoice" ? "Échéance" : kind === "quote" ? "Valable jusqu'au" : "Livraison souhaitée"
 
   return (

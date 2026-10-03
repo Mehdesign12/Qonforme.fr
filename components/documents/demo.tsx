@@ -11,6 +11,7 @@ import { DEMO_CLIENTS, DEMO_COMPANY, DEMO_PRODUCTS } from "@/lib/demo/data"
 import type { ProductSuggestion } from "@/components/products/ProductCombobox"
 import { lineFromProduct, type DocClient, type DocCompany, type DocLine } from "./model"
 import type { DocumentFormApi } from "./useDocumentForm"
+import { DEMO_LEGAL_NOTICE, DEMO_LEGAL_PROFILE } from "@/lib/demo/legal-profile"
 
 export const DEMO_DOC_CLIENTS: DocClient[] = DEMO_CLIENTS.map((c) => ({
   id: c.id, name: c.name, siren: c.siren ?? null, email: c.email,
@@ -25,6 +26,8 @@ export const DEMO_DOC_COMPANY: DocCompany = {
   zip_code: DEMO_COMPANY.zip_code,
   city: DEMO_COMPANY.city,
   iban: DEMO_COMPANY.iban,
+  legal_notice: DEMO_LEGAL_NOTICE,
+  legal_profile: DEMO_LEGAL_PROFILE,
 }
 
 /** Catalogue actif, au format du sélecteur de prestations. */

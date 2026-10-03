@@ -28,6 +28,8 @@ import { settingsHref } from "@/components/settings/sections"
 import { DirtyHint, Field, MobileSaveBar, SaveButton, SettingsCard } from "@/components/settings/ui"
 import { LogoInline, useCompanyLogo } from "@/components/settings/LogoField"
 import { DocumentPreview, type PreviewCompany } from "@/components/settings/DocumentPreview"
+import { composeMentions, type ComposedMentions } from "@/lib/legal/mentions"
+import { parseLegalProfile, type LegalProfile } from "@/lib/legal/profile"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -42,6 +44,8 @@ interface InvoiceForm {
 
 export interface InvoiceSettingsDemo {
   company: PreviewCompany
+  /** Profil légal (Paramètres › Entreprise) : mentions automatiques de la démo. */
+  legalProfile?: LegalProfile | null
   settings: InvoiceForm
   logo_url: string | null
   /** Numéros déjà attribués, pour calculer les prochains. */
@@ -64,7 +68,9 @@ const PRESET_COLORS = [
 const LEGAL_TEMPLATES = [
   {
     label: "Micro-entrepreneur",
-    text: "Dispensé d'immatriculation au registre du commerce et des sociétés (RCS) et au répertoire des métiers (RM).\nTVA non applicable, art. 293 B du CGI.",
+    // Pas de « dispensé d'immatriculation » : un micro-entrepreneur artisan
+    // s'immatricule au registre national des entreprises
+    text: "TVA non applicable, art. 293 B du CGI.",
   },
   {
     label: "SARL / SAS",
@@ -111,6 +117,9 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
   const [loadedLogo, setLoadedLogo] = useState<string | null>(demoData?.logo_url ?? null)
   const [invoiceNumbers, setInvoiceNumbers] = useState<string[]>(demoData?.invoiceNumbers ?? [])
   const [quoteNumbers, setQuoteNumbers]     = useState<string[]>(demoData?.quoteNumbers ?? [])
+  // Profil légal (colonne `legal_profile`, migration 20261003_legal_profile_btp.sql) :
+  // undefined tant que la colonne n'existe pas, et l'écran reste celui d'avant
+  const [legalProfile, setLegalProfile] = useState<LegalProfile | null | undefined>(demo ? demoData?.legalProfile ?? null : undefined)
   // Fiche complète de l'entreprise, renvoyée telle quelle à l'enregistrement (voir l'en-tête)
   const companyRef = useRef<Record<string, unknown> | null>(null)
 
@@ -137,6 +146,7 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
         const c = json.company
         if (c) {
           companyRef.current = c
+          if ("legal_profile" in c) setLegalProfile(parseLegalProfile(c.legal_profile))
           setHasCompany(true)
           reset({
             legal_notice:   c.legal_notice   ?? "",
@@ -196,6 +206,11 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
   }
 
   const isPreset = PRESET_COLORS.some(c => c.value.toLowerCase() === accentColor?.toLowerCase())
+
+  // Mentions automatiques (Paramètres › Entreprise) et lignes libres qu'elles remplacent
+  const profileOn = legalProfile !== undefined
+  const composed = composeMentions(legalProfile ?? null, legalNotice ?? "", preview.name)
+  const templates = profileOn ? LEGAL_TEMPLATES.filter(t => t.label === "SARL / SAS") : LEGAL_TEMPLATES
 
   return (
     <>
@@ -320,10 +335,12 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
               <Field
                 label="Mentions légales"
                 htmlFor="legal_notice"
-                hint="En bas de chaque facture (4 lignes au plus). Obligatoires selon votre statut."
+                hint={profileOn
+                  ? "En bas de vos devis, factures, bons de commande et avoirs, après les mentions automatiques."
+                  : "En bas de chaque facture (4 lignes au plus). Obligatoires selon votre statut."}
               >
                 <div className="mb-1 flex flex-wrap gap-1.5">
-                  {LEGAL_TEMPLATES.map(t => (
+                  {templates.map(t => (
                     <button
                       key={t.label}
                       type="button"
@@ -334,6 +351,9 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
                     </button>
                   ))}
                 </div>
+                {profileOn && (
+                  <AutoMentions composed={composed} companyHref={settingsHref("/settings/company", mode)} />
+                )}
                 <textarea
                   id="legal_notice"
                   rows={4}
@@ -352,7 +372,11 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
                   <li className="list-disc">Pénalités de retard : taux et date d&apos;exigibilité</li>
                   <li className="list-disc">Indemnité forfaitaire de recouvrement : 40 €</li>
                   <li className="list-disc">Conditions d&apos;escompte (si applicable)</li>
-                  <li className="list-disc">Micro-entrepreneur : mention de l&apos;art. 293 B du CGI</li>
+                  <li className="list-disc">
+                    {profileOn
+                      ? "Franchise en base : mention de l'art. 293 B du CGI, ajoutée d'office si vous l'avez choisie dans Paramètres › Entreprise"
+                      : "Micro-entrepreneur : mention de l'art. 293 B du CGI"}
+                  </li>
                 </ul>
               </div>
 
@@ -380,7 +404,7 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
               logo={logo.preview}
               company={preview}
               number={nextInvoice}
-              legalNotice={legalNotice ?? ""}
+              legalNotice={profileOn ? composed.lines.join("\n") : legalNotice ?? ""}
             />
           </aside>
 
@@ -390,5 +414,47 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
         </form>
       )}
     </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Mentions automatiques (profil de Paramètres › Entreprise)            */
+/* ------------------------------------------------------------------ */
+
+const MENTION_LABELS: Record<string, string> = {
+  identity: "votre statut",
+  decennale: "votre assurance décennale",
+  rc_pro: "votre responsabilité civile professionnelle",
+  vat: "votre régime de TVA",
+}
+
+function AutoMentions({ composed, companyHref }: { composed: ComposedMentions; companyHref: string }) {
+  return (
+    <div className="q-inset mb-1 flex flex-col gap-2 p-3.5 text-[13px] leading-relaxed">
+      <p className="font-semibold text-[var(--q-ink)]">Mentions automatiques</p>
+      {composed.generated.length > 0 ? (
+        <ul className="flex flex-col gap-1 text-[var(--q-text-2)]">
+          {composed.generated.map(g => <li key={g.key}>{g.text}</li>)}
+        </ul>
+      ) : (
+        <p className="text-[var(--q-text-4)]">Aucune pour l&apos;instant.</p>
+      )}
+      <p className="text-[var(--q-text-4)]">
+        Tirées de votre statut, de votre régime de TVA et de votre assurance :{" "}
+        <Link href={companyHref} className="q-link">les modifier dans Paramètres › Entreprise</Link>.
+        Vos mentions ci-dessous s&apos;impriment à la suite.
+      </p>
+      {composed.superseded.length > 0 && (
+        <ul className="flex flex-col gap-1 border-t border-[var(--q-line-soft)] pt-2 text-[var(--q-warn)]">
+          {composed.superseded.map((l, i) => (
+            <li key={i}>
+              {l.contradiction
+                ? <>« {l.line} » n&apos;est pas imprimée : elle contredit {MENTION_LABELS[l.by]}.</>
+                : <>« {l.line} » n&apos;est pas imprimée : {MENTION_LABELS[l.by]} la remplace.</>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }

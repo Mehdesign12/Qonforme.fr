@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { InvoiceSettingsForm } from "@/components/settings/InvoiceSettingsForm"
 import { SettingsFrame } from "@/components/settings/SettingsFrame"
 import { DEMO_COMPANY, DEMO_INVOICES, DEMO_QUOTES } from "@/lib/demo/data"
+import { DEMO_LEGAL_NOTICE, DEMO_LEGAL_PROFILE } from "@/lib/demo/legal-profile"
 
 export const metadata: Metadata = { title: "Modèles de documents — Démo Qonforme" }
 
@@ -22,11 +23,11 @@ export default function DemoInvoiceSettingsPage() {
             vat_number: DEMO_COMPANY.vat_number,
             iban: DEMO_COMPANY.iban,
           },
+          legalProfile: DEMO_LEGAL_PROFILE,
           settings: {
             accent_color: "#2563EB",
             invoice_prefix: DEMO_COMPANY.invoice_prefix,
-            legal_notice:
-              "En cas de retard de paiement, une pénalité égale à 3 fois le taux d'intérêt légal sera exigible (art. L. 441-10 C. com.).\nIndemnité forfaitaire pour frais de recouvrement : 40 € (art. D. 441-5 C. com.).",
+            legal_notice: DEMO_LEGAL_NOTICE,
             payment_terms: "Paiement par virement bancaire sous 30 jours.",
           },
           logo_url: null,

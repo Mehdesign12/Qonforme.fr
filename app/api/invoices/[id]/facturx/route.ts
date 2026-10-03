@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { buildFacturX } from "@/lib/facturx/xml"
 import { invoiceToFacturX } from "@/lib/facturx/records"
+import { withDocumentMentions } from "@/lib/legal/mentions"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -33,8 +34,8 @@ export async function GET(request: NextRequest, { params }: Params) {
       .single()
 
     // Même modèle que le PDF (lib/pdf/invoice.ts) : le XML seul et le XML
-    // embarqué dans le PDF sont identiques
-    const { xml, warnings } = buildFacturX(invoiceToFacturX(invoice, company))
+    // embarqué dans le PDF sont identiques, mentions figées à l'émission comprises
+    const { xml, warnings } = buildFacturX(invoiceToFacturX(invoice, withDocumentMentions(company, invoice, "invoice")))
     if (warnings.length) console.warn(`[facturx] ${invoice.invoice_number} : ${warnings.join(" | ")}`)
 
     const filename = `${invoice.invoice_number}-facturx.xml`

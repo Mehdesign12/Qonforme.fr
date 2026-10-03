@@ -3,7 +3,7 @@
  * Modèles de documents », colonne de droite). Reprend la mise en page réelle
  * du PDF (lib/pdf/invoice.ts) : bande et numéro à la couleur d'accent, logo ou
  * raison sociale, total TTC, IBAN sous le total, mentions légales en bas
- * (4 lignes au plus, comme le PDF). Les lignes sont des exemples.
+ * (automatiques puis libres, comme le PDF). Les lignes sont des exemples.
  *
  * La feuille reste blanche en thème sombre (c'est un document).
  */
@@ -42,7 +42,8 @@ export function DocumentPreview({
 }) {
   const color = /^#[0-9a-f]{6}$/i.test(accent) ? accent : "#2563EB"
   const cityLine = [company.zip_code, company.city].filter(Boolean).join(" ")
-  const notice = legalNotice.trim().split("\n").filter(Boolean).slice(0, 4)
+  // Mentions automatiques puis libres, comme le pied du PDF (coupé à 16 lignes)
+  const notice = legalNotice.trim().split("\n").filter(Boolean).slice(0, 16)
 
   return (
     <div className="q-paper flex flex-col gap-3.5 p-6 text-[11px] leading-snug" aria-label="Aperçu d'une facture">

@@ -22,6 +22,8 @@ export interface CompanyRecord {
   iban?: string | null
   legal_notice?: string | null
   email?: string | null
+  /** Régime de TVA du profil légal (lib/legal/mentions.ts, withDocumentMentions). */
+  vat_regime?: "franchise" | "assujetti" | null
 }
 
 export interface ClientRecord {
@@ -64,6 +66,7 @@ export function sellerFromCompany(company: CompanyRecord | null | undefined): Fx
     iban:         company?.iban,
     legal_notice: company?.legal_notice,
     email:        company?.email,
+    vat_regime:   company?.vat_regime ?? null,
   }
 }
 

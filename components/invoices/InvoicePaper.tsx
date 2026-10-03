@@ -12,6 +12,7 @@ import Link from "next/link"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { documentMentions } from "@/lib/facturx/xml"
 import { invoiceToFacturX } from "@/lib/facturx/records"
+import { withDocumentMentions } from "@/lib/legal/mentions"
 import { initialsOf } from "@/components/app/kit"
 import {
   type CompanyView, type InvoiceView, formatIban, formatSiren, mediumDate,
@@ -40,10 +41,12 @@ export function InvoicePaper({
   }
   const vatRows = Array.from(vatByRate.entries()).sort((a, b) => b[0] - a[0])
 
-  // Mentions que le PDF ajoute à celles de l'entreprise (motif d'absence de TVA,
+  // Mentions de l'entreprise (figées à l'émission, ou réglages actuels pour un
+  // brouillon), puis celles que le PDF ajoute (motif d'absence de TVA,
   // conditions de règlement entre professionnels) : même calcul que le PDF
-  const extraMentions = documentMentions(invoiceToFacturX(invoice, company))
-  const footer = [company?.legal_notice?.trim(), ...extraMentions].filter(Boolean).join("\n")
+  const effective = withDocumentMentions(company, invoice, "invoice")
+  const extraMentions = documentMentions(invoiceToFacturX(invoice, effective))
+  const footer = [effective?.legal_notice?.trim(), ...extraMentions].filter(Boolean).join("\n")
 
   return (
     <article

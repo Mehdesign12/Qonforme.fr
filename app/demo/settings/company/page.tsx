@@ -3,6 +3,7 @@ import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm"
 import { SettingsFrame } from "@/components/settings/SettingsFrame"
 import { DEMO_COMPANY } from "@/lib/demo/data"
 import { DEMO_BANK } from "@/lib/demo/payment-link"
+import { DEMO_LEGAL_NOTICE, DEMO_LEGAL_PROFILE } from "@/lib/demo/legal-profile"
 
 export const metadata: Metadata = { title: "Entreprise — Démo Qonforme" }
 
@@ -25,6 +26,8 @@ export default function DemoCompanySettingsPage() {
           bic: DEMO_BANK.bic,
           email: DEMO_COMPANY.email,
           logo_url: null,
+          legal_profile: DEMO_LEGAL_PROFILE,
+          legal_notice: DEMO_LEGAL_NOTICE,
         }}
       />
     </SettingsFrame>

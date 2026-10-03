@@ -6,6 +6,8 @@
 import { PDFDocument, rgb, PageSizes } from "pdf-lib"
 import fontkit from "@pdf-lib/fontkit"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
+import { withDocumentMentions } from "@/lib/legal/mentions"
+import { legalPdfLines } from "@/lib/pdf/legal-lines"
 import path from "path"
 import fs from "fs"
 
@@ -20,6 +22,10 @@ export interface QuotePdfInput {
     total_vat: number
     total_ttc: number
     notes?: string | null
+    /** Statut : `draft` (ou absent) → mentions des réglages actuels ; émis → mentions figées. */
+    status?: string | null
+    /** Mentions figées à l'émission (lib/legal/mentions.ts). */
+    legal_snapshot?: unknown
     lines?: {
       description: string
       quantity: number
@@ -46,7 +52,8 @@ export interface QuotePdfInput {
     zip_code?: string
     city?: string
     iban?: string
-    legal_notice?: string
+    legal_notice?: string | null
+    legal_profile?: unknown
     accent_color?: string
     logo_url?: string
   } | null
@@ -78,7 +85,9 @@ function fmtDate(d: string): string {
 
 // ── Générateur principal ─────────────────────────────────────────────────────
 
-export async function generateQuotePdf({ quote, company }: QuotePdfInput): Promise<Buffer> {
+export async function generateQuotePdf({ quote, company: companyInput }: QuotePdfInput): Promise<Buffer> {
+  // Mentions de l'entreprise : figées à l'émission, ou réglages actuels pour un brouillon
+  const company = withDocumentMentions(companyInput, quote, "quote")
   const doc = await PDFDocument.create()
   doc.registerFontkit(fontkit)
 
@@ -265,11 +274,13 @@ export async function generateQuotePdf({ quote, company }: QuotePdfInput): Promi
     curY -= 10
   }
 
-  // ── MENTIONS LÉGALES ─────────────────────────────────────────────────────
-  if (company?.legal_notice?.trim()) {
+  // ── MENTIONS LÉGALES (profil puis mentions libres, coupées à la largeur) ──
+  const measure7 = (l: string) => fontRegular.widthOfTextAtSize(l, 7)
+  const legalLines = legalPdfLines((company?.legal_notice ?? "").split("\n"), measure7, cW)
+  if (legalLines.length) {
     hLine(curY, mL, mR, 0.5, separator); curY -= 12
-    company.legal_notice.trim().split("\n").slice(0, 4).forEach((l: string) => {
-      const tw = fontRegular.widthOfTextAtSize(l, 7)
+    legalLines.forEach((l: string) => {
+      const tw = Math.min(cW, measure7(l))
       draw(l, Math.max(mL, (width - tw) / 2), curY, { size: 7, color: grayLight }); curY -= 10
     })
   }
