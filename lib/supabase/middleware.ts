@@ -156,6 +156,8 @@ export async function updateSession(request: NextRequest) {
     // chaque dossier est vérifié par lib/accountant/server.ts)
     '/comptable',
     '/received-invoices',
+    // Chantiers (formule Artisan)
+    '/chantiers',
   ]
 
   const isProtected = protectedPaths.some((path) =>

@@ -1,7 +1,20 @@
 import { withSentryConfig } from '@sentry/nextjs'
 
+/**
+ * Formule Artisan en vente : ses deux prix Stripe sont configurés. Les
+ * variables de prix ne sont lues que côté serveur ; cette valeur dérivée est
+ * inlinée au build pour le serveur comme pour le navigateur (même règle que
+ * isArtisanOnSale, lib/stripe/plans.ts). Après avoir renseigné les prix dans
+ * Vercel, redéployer.
+ */
+const artisanOnSale = Boolean(process.env.STRIPE_PRICE_ARTISAN_MONTHLY?.trim()) && Boolean(process.env.STRIPE_PRICE_ARTISAN_YEARLY?.trim())
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_ARTISAN_ON_SALE: artisanOnSale ? 'true' : 'false',
+  },
+
   images: {
     remotePatterns: [
       {

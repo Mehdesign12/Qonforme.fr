@@ -10,6 +10,9 @@ import { SignaturePanel } from "@/components/signature/SignaturePanel"
 import { demoSignatureActions } from "@/components/signature/demo-actions"
 import { demoPublicHref, demoSignaturePanel } from "@/lib/demo/signature"
 import { DEMO_LEGAL_NOTICE, DEMO_LEGAL_PROFILE, demoLegalSnapshot } from "@/lib/demo/legal-profile"
+import { QuoteBillingPanel } from "@/components/artisan/QuoteBillingPanel"
+import { demoQuoteBilling } from "@/lib/demo/chantiers"
+import { conversionBlockedBy } from "@/lib/artisan/quote-billing"
 
 /** La démo n'enregistre rien : chaque action invite à créer un compte. */
 const ctaToast = (what: string) => toast(`Créez un compte pour ${what}`, {
@@ -72,6 +75,21 @@ export default function DemoQuoteDetailPage({ params }: { params: { id: string }
     />
   )
 
+  // Formule Artisan : acomptes, situations, solde (aperçu calculé, rien n'est créé)
+  const billingData = demoQuoteBilling(q.id)
+  const billing = billingData ? (
+    <QuoteBillingPanel
+      billing={billingData}
+      artisan
+      clientName={q.client.name}
+      today={DEMO_TODAY}
+      invoiceHref={(inv) => `/demo/invoices/${inv.id}`}
+      chantierHref={(id) => `/demo/chantiers/${id}`}
+      onCreate={() => { ctaToast("facturer vos chantiers par acomptes et situations") }}
+      onLocked={() => { ctaToast("facturer vos chantiers par acomptes et situations") }}
+    />
+  ) : undefined
+
   return (
     <QuoteDetailView
       quote={data}
@@ -79,6 +97,8 @@ export default function DemoQuoteDetailPage({ params }: { params: { id: string }
       today={DEMO_TODAY}
       demo
       signature={signature}
+      billing={billing}
+      conversionBlocked={billingData ? conversionBlockedBy(billingData.invoices) : null}
       sendNote="L'email contient aussi un lien pour lire et signer le devis en ligne."
       links={{ list: "/demo/quotes", newQuote: "/demo/quotes/new", companySettings: "/demo/settings/company" }}
       actions={{

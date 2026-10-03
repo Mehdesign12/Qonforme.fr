@@ -7,7 +7,9 @@ import { PLANS } from '@/lib/stripe/plans'
  * Ne compare que ce que fait le code aujourd'hui : le mur de paiement est à
  * l'émission (envoi, sortie du brouillon, relance — requireIssuingAccess), le
  * reste est ouvert à tous. Les fonctions annoncées viennent de
- * PLANS[…].upcoming et sont toujours dites « à venir ».
+ * PLANS[…].upcoming et sont toujours dites « à venir ». Les fonctions de la
+ * formule Artisan sont livrées (PLANS.pro.features) : incluses dans Artisan,
+ * que la formule soit déjà en vente ou non (la carte le précise).
  */
 
 type Cell =
@@ -27,6 +29,7 @@ const ROWS: { label: string; cells: [Cell, Cell, Cell] }[] = [
   { label: 'Envoi des factures par email, avec le PDF', cells: [no, yes(), yes()] },
   { label: 'Relances des impayés', cells: [no, yes(), yes()] },
   ...PLANS.starter.upcoming.map((label) => ({ label, cells: [no, soon, soon] as [Cell, Cell, Cell] })),
+  ...PLANS.pro.features.map((label) => ({ label, cells: [no, no, yes()] as [Cell, Cell, Cell] })),
   ...PLANS.pro.upcoming.map((label) => ({ label, cells: [no, no, soon] as [Cell, Cell, Cell] })),
 ]
 

@@ -5,6 +5,10 @@ import { requireIssuingAccess } from "@/lib/stripe/subscription"
 import { issueDraftInvoice } from "@/lib/utils/document-numbering"
 import { todayInParis } from "@/lib/utils/paris-date"
 import { loadReminderLog } from "@/lib/reminders/store"
+import { isArtisanKind } from "@/lib/artisan/billing"
+import { requireArtisanAccess } from "@/lib/artisan/access"
+import { invoiceKindOf } from "@/lib/artisan/server"
+import { hasReverseCharge } from "@/lib/artisan/reverse-charge"
 
 interface Params {
   params: Promise<{ id: string }>
@@ -85,12 +89,31 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       )
     }
 
+    // Acompte, situation, solde (formule Artisan) : contenu calculé depuis le
+    // devis, jamais réécrit à la main
+    const artisanDoc = (touchesContent || issuing) && isArtisanKind(await invoiceKindOf(supabase, id, user.id))
+    if (artisanDoc && touchesContent) {
+      return NextResponse.json(
+        { error: "Ce brouillon est calculé depuis le devis (acompte, situation ou solde) : supprimez-le, puis recréez-le depuis le devis." },
+        { status: 409 },
+      )
+    }
+
     // Sortir du brouillon, c'est émettre la facture (« Marquer comme envoyée ») :
-    // même mur de paiement que l'envoi par email.
+    // même mur de paiement que l'envoi par email (formule Artisan pour un
+    // acompte, une situation ou un solde).
     if (issuing) {
-      const blocked = await requireIssuingAccess(supabase, user.id)
+      const blocked = artisanDoc
+        ? await requireArtisanAccess(supabase, user.id)
+        : await requireIssuingAccess(supabase, user.id)
       if (blocked) return blocked
     }
+  }
+
+  // Autoliquidation en sous-traitance : formule Artisan
+  if (Array.isArray(body.lines) && hasReverseCharge(body.lines)) {
+    const artisanBlocked = await requireArtisanAccess(supabase, user.id)
+    if (artisanBlocked) return artisanBlocked
   }
 
   // Recalculer les totaux si les lignes sont modifiées

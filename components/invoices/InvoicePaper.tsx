@@ -13,6 +13,9 @@ import { formatCurrency } from "@/lib/utils/invoice"
 import { documentMentions } from "@/lib/facturx/xml"
 import { invoiceToFacturX } from "@/lib/facturx/records"
 import { withDocumentMentions } from "@/lib/legal/mentions"
+import { invoiceTitle, longDateFr, parseBillingContext, parseInvoiceKind } from "@/lib/artisan/billing"
+import { retentionNote } from "@/lib/artisan/retention"
+import { formatPercentFr, fromCents, toCents } from "@/lib/artisan/money"
 import { initialsOf } from "@/components/app/kit"
 import {
   type CompanyView, type InvoiceView, formatIban, formatSiren, mediumDate,
@@ -33,6 +36,17 @@ export function InvoicePaper({
 }) {
   const draft = invoice.status === "draft"
   const client = invoice.client
+  // Formule Artisan : acompte, situation, solde (contexte figé à l'émission)
+  const ctx = parseBillingContext(invoice.billing_context)
+  const kind = ctx?.kind ?? parseInvoiceKind(invoice.invoice_kind)
+  const title = invoiceTitle(kind, ctx?.situation ? { situation: { ...ctx.situation, final: false } } : null)
+  const retention = ctx?.retention ?? null
+  const reverseCharge = (invoice.lines ?? []).length > 0 && (invoice.lines ?? []).every((l) => l.vat_treatment === "autoliquidation_btp")
+  const refs = [
+    ctx?.quote?.number ? `Devis ${ctx.quote.number}${ctx.quote.issue_date ? ` du ${longDateFr(ctx.quote.issue_date)}` : ""}` : null,
+    ctx?.chantier?.name ? `Chantier : ${ctx.chantier.name}` : null,
+    ctx?.situation?.final ? "Décompte final" : null,
+  ].filter(Boolean) as string[]
 
   // TVA par taux, à partir des lignes (une seule ligne « TVA » s'il n'y a qu'un taux)
   const vatByRate = new Map<number, number>()
@@ -46,7 +60,7 @@ export function InvoicePaper({
   // conditions de règlement entre professionnels) : même calcul que le PDF
   const effective = withDocumentMentions(company, invoice, "invoice")
   const extraMentions = documentMentions(invoiceToFacturX(invoice, effective))
-  const footer = [effective?.legal_notice?.trim(), ...extraMentions].filter(Boolean).join("\n")
+  const footer = [effective?.legal_notice?.trim(), ...extraMentions, retentionNote(retention)].filter(Boolean).join("\n")
 
   return (
     <article
@@ -73,7 +87,7 @@ export function InvoicePaper({
           {initialsOf(company?.name)}
         </span>
         <span className="flex min-w-0 flex-col items-end gap-0.5 text-right">
-          <span className="text-[18px] font-semibold tracking-[-0.01em]">Facture</span>
+          <span className="text-[18px] font-semibold tracking-[-0.01em]">{title}</span>
           <span className="font-mono text-[#475569]">
             {invoice.invoice_number ?? "N° attribué à l’envoi"} · {mediumDate(invoice.issue_date)}
           </span>
@@ -117,6 +131,15 @@ export function InvoicePaper({
         </div>
       </div>
 
+      {(refs.length > 0 || (ctx?.deductions.length ?? 0) > 0) && (
+        <div className="-mt-2 flex flex-col gap-0.5 text-[#475569]">
+          {refs.length > 0 && <p>{refs.join(" · ")}</p>}
+          {ctx && ctx.deductions.length > 0 && (
+            <p>{ctx.deductions.length > 1 ? "Acomptes repris" : "Acompte repris"} : {ctx.deductions.map((d) => `${d.number} du ${longDateFr(d.issue_date)}`).join(", ")}</p>
+          )}
+        </div>
+      )}
+
       {/* Lignes */}
       <div className="flex flex-col">
         <div className="hidden grid-cols-[minmax(0,1fr)_48px_84px_44px_88px] gap-2 border-b border-[#E6E9F0] py-2 font-semibold text-[#64748B] sm:grid">
@@ -144,6 +167,20 @@ export function InvoicePaper({
         ))}
       </div>
 
+      {/* Situation : récapitulatif de l'avancement */}
+      {ctx?.situation && (
+        <div className="flex flex-col gap-1 rounded-lg bg-[#F8FAFC] px-3 py-2.5 tabular-nums">
+          <p className="text-[11px] font-semibold tracking-[0.04em] text-[#64748B]">RÉCAPITULATIF DE LA SITUATION</p>
+          <div className="flex justify-between gap-4"><span className="text-[#475569]">Montant du devis HT</span><span>{formatCurrency(ctx.situation.contract_ht)}</span></div>
+          <div className="flex justify-between gap-4"><span className="text-[#475569]">Travaux cumulés HT ({formatPercentFr(ctx.situation.cumulative_percent)} %)</span><span>{formatCurrency(ctx.situation.cumulative_ht)}</span></div>
+          <div className="flex justify-between gap-4"><span className="text-[#475569]">Situations précédentes HT</span><span>{formatCurrency(-ctx.situation.previous_ht)}</span></div>
+          <div className="flex justify-between gap-4 font-semibold"><span>Présente situation HT</span><span>{formatCurrency(ctx.situation.amount_ht)}</span></div>
+          {ctx.deductions.length > 0 && (
+            <div className="flex justify-between gap-4"><span className="text-[#475569]">Acomptes repris HT</span><span>{formatCurrency(-fromCents(ctx.deductions.reduce((s, d) => s + toCents(d.ht), 0)))}</span></div>
+          )}
+        </div>
+      )}
+
       {/* Totaux */}
       <div className="ml-auto flex w-full flex-col gap-1.5 tabular-nums sm:w-[58%]">
         <div className="flex justify-between gap-4"><span className="text-[#475569]">Sous-total HT</span><span>{formatCurrency(invoice.subtotal_ht)}</span></div>
@@ -155,13 +192,23 @@ export function InvoicePaper({
           ))
         ) : (
           <div className="flex justify-between gap-4">
-            <span className="text-[#475569]">TVA{vatRows[0] ? ` ${qty.format(vatRows[0][0])} %` : ""}</span>
+            <span className="text-[#475569]">{reverseCharge ? "TVA (autoliquidation)" : `TVA${vatRows[0] ? ` ${qty.format(vatRows[0][0])} %` : ""}`}</span>
             <span>{formatCurrency(invoice.total_vat)}</span>
           </div>
         )}
         <div className="flex justify-between gap-4 border-t border-[#E6E9F0] pt-1.5 text-[14px] font-semibold">
           <span>Total TTC</span><span>{formatCurrency(invoice.total_ttc)}</span>
         </div>
+        {retention?.mode === "retenue" && retention.amount > 0 && (
+          <>
+            <div className="flex justify-between gap-4">
+              <span className="text-[#475569]">Retenue de garantie {formatPercentFr(retention.rate)} %</span><span>{formatCurrency(-retention.amount)}</span>
+            </div>
+            <div className="flex justify-between gap-4 font-semibold">
+              <span>À régler à l&apos;échéance</span><span>{formatCurrency(fromCents(toCents(invoice.total_ttc) - toCents(retention.amount)))}</span>
+            </div>
+          </>
+        )}
         {company?.iban && (
           <div className="flex justify-between gap-4 pt-1 text-[11px]">
             <span className="text-[#64748B]">IBAN</span><span className="font-mono text-[#334155]">{formatIban(company.iban)}</span>

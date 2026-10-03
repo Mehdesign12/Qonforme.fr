@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { insertWithSequentialNumber } from "@/lib/utils/document-numbering"
+import { requireArtisanAccess } from "@/lib/artisan/access"
+import { hasReverseCharge } from "@/lib/artisan/reverse-charge"
 
 // GET /api/quotes
 export async function GET(request: NextRequest) {
@@ -33,6 +35,12 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
   const body = await request.json()
+
+  // Autoliquidation en sous-traitance du BTP : fonction de la formule Artisan
+  if (Array.isArray(body.lines) && hasReverseCharge(body.lines)) {
+    const artisanBlocked = await requireArtisanAccess(supabase, user.id)
+    if (artisanBlocked) return artisanBlocked
+  }
 
   // Format attendu : "D-YYYY-NNN" — numérotation robuste (voir lib/utils/document-numbering.ts)
   const year   = new Date().getFullYear()

@@ -8,8 +8,10 @@ import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { SetCrumb } from "@/components/layout/crumb"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
+import { PaywallDialog, isArtisanPaywall } from "@/components/billing/PaywallDialog"
+import { useArtisanPlan } from "@/components/artisan/useArtisanPlan"
 import { useDocumentForm } from "@/components/documents/useDocumentForm"
-import { lineFromSaved, newLine, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
+import { lineFromSaved, newLine, savedIsReverseCharge, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
 
 export default function EditQuotePage() {
   const router = useRouter()
@@ -55,6 +57,7 @@ export default function EditQuotePage() {
           reference:     "",
           notes:         q.notes       || "",
           lines:         (q.lines || []).map(lineFromSaved),
+          autoliquidation: savedIsReverseCharge(q.lines),
         })
         setClients(withDocClient(cliJson.clients ?? [], q.client))
       } else if (cliJson.clients) {
@@ -62,6 +65,10 @@ export default function EditQuotePage() {
       }
     }).finally(() => setLoadingData(false))
   }, [id, router, load])
+
+  // Autoliquidation (formule Artisan) : case visible, mur de paiement sans la formule
+  const artisan = useArtisanPlan()
+  const [artisanPaywall, setArtisanPaywall] = useState(false)
 
   const submit = async (action: "draft" | "send") => {
     if (!doc.validate()) { toast.error("Corrigez les erreurs avant de continuer"); return }
@@ -73,7 +80,7 @@ export default function EditQuotePage() {
         issue_date:  form.issue_date,
         valid_until: form.valid_until,
         notes:       form.notes || null,
-        lines:       toPayloadLines(form.lines, computed),
+        lines:       toPayloadLines(form.lines, computed, form.autoliquidation),
       }
 
       // 1. Enregistrer le brouillon
@@ -83,6 +90,7 @@ export default function EditQuotePage() {
         body: JSON.stringify(payload),
       })
       const json = await res.json()
+      if (isArtisanPaywall(res.status, json)) { setArtisanPaywall(true); return }
       if (!res.ok) { toast.error(json.error || "Erreur lors de la sauvegarde"); return }
 
       // 2. « Envoyer » envoie vraiment l'email, comme à la création — avant,
@@ -118,8 +126,10 @@ export default function EditQuotePage() {
   return (
     <>
       <SetCrumb label={quoteNumber || null} />
+      <PaywallDialog open={artisanPaywall} onOpenChange={setArtisanPaywall} reason="artisan" nextPath={`/quotes/${id}/edit`} />
       <DocumentEditor
         kind="quote"
+        reverseCharge={{ locked: artisan === false, onLocked: () => setArtisanPaywall(true) }}
         doc={doc}
         title={quoteNumber ? `Modifier ${quoteNumber}` : "Modifier le devis"}
         status={`${quoteNumber ? `${quoteNumber} · ` : ""}brouillon · ${doc.dirty ? "modifications non enregistrées" : "enregistré"}`}

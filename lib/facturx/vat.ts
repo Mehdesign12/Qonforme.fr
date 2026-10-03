@@ -69,7 +69,9 @@ export const VAT_EXEMPTIONS: Record<Exclude<VatTreatment, "standard">, VatExempt
     category: "AE",
     code: "VATEX-EU-AE",
     reason: "Autoliquidation, art. 283-2 nonies du CGI",
-    mention: "Autoliquidation",
+    // BOFiP, BOI-TVA-DECLA-10-10-20, § 536 : la facture fait apparaître que la
+    // TVA est due par le preneur et porte la mention « autoliquidation »
+    mention: "Autoliquidation : TVA due par le preneur assujetti (art. 283, 2 nonies du CGI).",
   },
   intracom: {
     category: "K",

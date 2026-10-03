@@ -38,9 +38,16 @@ const toCents = (n: number | string | null | undefined) => Math.round(Number(n ?
  * Montant restant dû : total TTC moins les avoirs déjà émis sur la facture,
  * au centime, jamais négatif. Les virements déclarés ne sont pas déduits :
  * seul l'artisan confirme un encaissement (« Marquer payée »).
+ * `retention` : retenue de garantie de la facture (formule Artisan), payable
+ * à sa libération et non à l'échéance (loi n° 71-584 du 16 juillet 1971,
+ * art. 1er et 2) ; elle sort du montant demandé maintenant.
  */
-export function remainingDue(totalTtc: number | string, credits: { total_ttc: number | string | null }[] = []): number {
-  const cents = toCents(totalTtc) - credits.reduce((s, c) => s + toCents(c.total_ttc), 0)
+export function remainingDue(
+  totalTtc: number | string,
+  credits: { total_ttc: number | string | null }[] = [],
+  retention: number | string | null = 0,
+): number {
+  const cents = toCents(totalTtc) - credits.reduce((s, c) => s + toCents(c.total_ttc), 0) - Math.max(0, toCents(retention))
   return Math.max(0, cents) / 100
 }
 

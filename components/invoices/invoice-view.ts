@@ -36,6 +36,8 @@ export interface InvoiceViewLine {
   vat_rate: number
   total_ht: number
   total_ttc: number
+  /** Autoliquidation (sous-traitance du BTP) : lue par le XML et les mentions. */
+  vat_treatment?: string | null
 }
 
 export interface InvoiceViewClient {
@@ -77,6 +79,13 @@ export interface InvoiceView {
   client: InvoiceViewClient | null
   /** Mentions de l'entreprise figées à l'émission (lib/legal/mentions.ts). */
   legal_snapshot?: unknown
+  /** Formule Artisan : acompte, situation, solde (lib/artisan/billing.ts), figés à l'émission. */
+  invoice_kind?: string | null
+  billing_context?: unknown
+  /** Retenue de garantie TTC (à régler à sa libération). */
+  retention_amount?: number | null
+  /** Chantier de rattachement (lien de la fiche). */
+  chantier?: { id: string; name: string; href: string } | null
 }
 
 export interface CompanyView {

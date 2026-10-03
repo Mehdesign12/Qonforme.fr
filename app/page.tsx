@@ -180,9 +180,9 @@ const PROFILES: {
   {
     kicker: "Votre entreprise grandit",
     title: "Les chantiers longs, sans changer d'outil.",
-    items: artisan.upcoming,
-    upcoming: true,
-    pill: `${artisan.name} · bientôt`,
+    // Fonctions livrées ; la formule n'est vendue qu'une fois ses prix configurés
+    items: artisan.features,
+    pill: artisan.available ? `${artisan.name} · ${euros(artisan.monthlyPrice)} HT/mois` : `${artisan.name} · bientôt en vente`,
     pillTone: "bg-q-ink-strong text-q-surface",
     photo: PHOTOS.entrepriseGrandit,
   },

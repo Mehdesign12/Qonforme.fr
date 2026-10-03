@@ -8,6 +8,8 @@ import { generateInvoicePdf } from "@/lib/pdf/invoice"
 import { issueDraftInvoice } from "@/lib/utils/document-numbering"
 import { todayInParis } from "@/lib/utils/paris-date"
 import { paymentLinkFor } from "@/lib/payment-link/server"
+import { artisanEmailExtras, isArtisanKind } from "@/lib/artisan/billing"
+import { requireArtisanAccess } from "@/lib/artisan/access"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -19,10 +21,6 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-
-    // Envoyer une facture demande une formule active (devis gratuits, factures payantes)
-    const blocked = await requireIssuingAccess(supabase, user.id)
-    if (blocked) return blocked
 
     const { id } = await params
     console.log(`[invoice-send] Début envoi facture ${id} par user ${user.id}`)
@@ -39,6 +37,14 @@ export async function POST(_req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
     }
     let invoice = loaded
+
+    // Envoyer une facture demande une formule active (devis gratuits, factures
+    // payantes). Acompte, situation ou solde à émettre : la formule Artisan
+    // (colonne absente avant la migration : facture ordinaire, rien ne change).
+    const blocked = invoice.status === "draft" && isArtisanKind((invoice as { invoice_kind?: string }).invoice_kind)
+      ? await requireArtisanAccess(supabase, user.id)
+      : await requireIssuingAccess(supabase, user.id)
+    if (blocked) return blocked
 
     const clientEmail = invoice.client?.email
     console.log(`[invoice-send] Client: ${invoice.client?.name}, email: ${clientEmail}`)
@@ -113,6 +119,8 @@ export async function POST(_req: NextRequest, { params }: Params) {
       clientEmail,
       appUrl:        process.env.NEXT_PUBLIC_APP_URL ?? "https://qonforme.fr",
       paymentUrl,
+      // Acompte, situation, solde : nature du document et retenue de garantie
+      ...artisanEmailExtras(invoice),
     })
 
     const cc        = senderEmail ? [senderEmail] : []

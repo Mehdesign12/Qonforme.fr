@@ -380,9 +380,11 @@ export function MobileBottomNav({ identity }: { identity: ShellIdentity }) {
   const [bugOpen, setBugOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
 
-  const dashboard = NAV_MAIN[0]
-  const invoices = NAV_MAIN[1]
-  const quotes = NAV_MAIN[2]
+  // Par clé, pas par position : la liste s'allonge (Chantiers…)
+  const byKey = (key: string) => NAV_MAIN.find((l) => l.key === key) ?? NAV_MAIN[0]
+  const dashboard = byKey("dashboard")
+  const invoices = byKey("invoices")
+  const quotes = byKey("quotes")
   const tabs = [
     { link: dashboard, label: "Accueil" },
     { link: invoices, label: "Factures" },

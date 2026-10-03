@@ -38,6 +38,7 @@ import { createAdminClient } from "@/lib/supabase/server"
 import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { sendEmail, type EmailAttachment } from "@/lib/email/resend"
 import { buildReminderEmail } from "@/lib/email/templates/reminder"
+import { artisanExtrasFor } from "@/lib/artisan/server"
 import { paymentLinkFor } from "@/lib/payment-link/server"
 import { shareLinkForEmail } from "@/lib/signature/share"
 import { buildQuoteFollowupEmail } from "@/lib/email/templates/quote-followup"
@@ -299,6 +300,8 @@ async function runWithSettings(admin: SupabaseClient, today: string) {
           const company = await accounts.company(inv.user_id)
           const companyName = company.name?.trim() || "Votre prestataire"
           const paymentUrl = await paymentLinkFor({ invoiceId: inv.id, userId: inv.user_id, admin })
+          // Retenue de garantie (formule Artisan) : à régler à sa libération, pas à l'échéance
+          const { retention } = await artisanExtrasFor(admin, inv.id)
           const { subject, html } = buildReminderEmail({
             reminderNumber: plan.reminderNumber,
             kind: plan.kind,
@@ -316,6 +319,7 @@ async function runWithSettings(admin: SupabaseClient, today: string) {
             clientName: client?.name ?? "",
             clientIsProfessional: Boolean(client?.siren?.trim()),
             paymentUrl: paymentUrl ?? undefined,
+            retention,
           })
           await sendEmail({
             to: clientEmail,
@@ -488,6 +492,7 @@ async function runLegacy(admin: SupabaseClient, today: string) {
         const company     = await accounts.company(invoice.user_id)
         const companyName = company.name?.trim() || "Votre prestataire"
         const paymentUrl  = await paymentLinkFor({ invoiceId: invoice.id, userId: invoice.user_id, admin })
+        const { retention } = await artisanExtrasFor(admin, invoice.id)
 
         const { subject, html } = buildReminderEmail({
           reminderNumber: n,
@@ -506,6 +511,7 @@ async function runLegacy(admin: SupabaseClient, today: string) {
           clientName:     client?.name ?? "",
           clientIsProfessional: Boolean(client?.siren?.trim()),
           paymentUrl: paymentUrl ?? undefined,
+          retention,
         })
 
         await sendEmail({

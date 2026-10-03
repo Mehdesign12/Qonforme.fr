@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Check, ShieldCheck } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { PLANS, formatEuros, withVat, type BillingPeriod } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS, SUBSCRIPTION_REQUIRED } from '@/lib/stripe/access'
+import { ARTISAN_REQUIRED } from '@/lib/artisan/plan'
 import { trackEvent } from '@/lib/meta-pixel'
 
 /**
@@ -15,6 +17,12 @@ import { trackEvent } from '@/lib/meta-pixel'
  * relance). Le choix de la formule mène au paiement, puis revient sur la
  * facture avec ?send=1 pour l'envoyer d'un clic. Aussi ouvert par le panneau
  * « Signature en ligne » d'un devis (reason 'signature', retour sur `nextPath`).
+ *
+ * reason 'artisan' (route Artisan en 402 ARTISAN_REQUIRED : chantiers,
+ * acomptes, situations, retenue de garantie, autoliquidation) : propose la
+ * formule Artisan. Tant qu'elle n'est pas en vente (prix Stripe non
+ * configurés, PLANS.pro.available), la fenêtre le dit honnêtement, sans
+ * bouton de paiement, et renvoie vers la démo.
  *
  * La vraie protection est côté serveur (requireIssuingAccess) : ce composant
  * n'est que l'explication et le chemin le plus court vers la formule.
@@ -34,14 +42,16 @@ export function PaywallDialog({
   onOpenChange: (open: boolean) => void
   invoiceId?: string
   invoiceNumber?: string
-  /** 'send' : première facture à envoyer ; 'remind' : relance d'un client ; 'signature' : signature en ligne d'un devis. */
-  reason?: 'send' | 'remind' | 'signature'
+  /** 'send' : première facture à envoyer ; 'remind' : relance d'un client ; 'signature' : signature en ligne d'un devis ; 'artisan' : fonction de la formule Artisan. */
+  reason?: 'send' | 'remind' | 'signature' | 'artisan'
   /** Retour après le paiement quand ce n'est pas une facture (ex. la fiche du devis). */
   nextPath?: string
 }) {
   const router = useRouter()
   const [period, setPeriod] = useState<BillingPeriod>('yearly')
-  const plan = PLANS.starter
+  const artisan = reason === 'artisan'
+  const plan = artisan ? PLANS.pro : PLANS.starter
+  const onSale = plan.available
 
   const next = invoiceId ? `/invoices/${invoiceId}${reason === 'send' ? '?send=1' : ''}` : nextPath ?? null
   const chargeHt = period === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
@@ -64,14 +74,20 @@ export function PaywallDialog({
       <DialogContent className="max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto p-[22px] sm:max-w-[460px]">
         <div className="flex flex-col gap-1.5 pr-8">
           <DialogTitle className="q-display text-[22px] leading-tight text-[var(--q-ink)]">
-            {reason === 'remind'
+            {artisan
+              ? `Cette fonction fait partie de la formule ${plan.name}.`
+              : reason === 'remind'
               ? 'Les relances font partie de la formule.'
               : reason === 'signature'
                 ? 'La signature en ligne fait partie de la formule.'
                 : invoiceNumber ? `Votre facture ${invoiceNumber} est prête.` : 'Votre facture est prête.'}
           </DialogTitle>
           <DialogDescription className="text-[15px] leading-relaxed text-[var(--q-text-3)]">
-            {reason === 'remind'
+            {artisan
+              ? onSale
+                ? 'Chantiers, acomptes, situations de travaux, retenue de garantie et autoliquidation en sous-traitance. Vos devis restent gratuits.'
+                : `La formule ${plan.name} n’est pas encore en vente. Ses fonctions sont prêtes : essayez-les dans la démo.`
+              : reason === 'remind'
               ? 'Choisissez votre formule pour relancer vos clients. Vos devis restent gratuits.'
               : reason === 'signature'
                 ? 'Votre client lit et signe vos devis en ligne. Vos devis restent gratuits : sans formule, envoyez-les par email avec leur PDF.'
@@ -79,7 +95,8 @@ export function PaywallDialog({
           </DialogDescription>
         </div>
 
-        {/* Mensuel / annuel */}
+        {/* Mensuel / annuel (formule en vente seulement) */}
+        {onSale && (
         <div role="radiogroup" aria-label="Période de facturation" className="grid grid-cols-2 gap-2">
           {(['yearly', 'monthly'] as BillingPeriod[]).map((p) => {
             const selected = period === p
@@ -111,6 +128,7 @@ export function PaywallDialog({
             )
           })}
         </div>
+        )}
 
         <div className="q-inset p-4">
           <p className="text-sm font-semibold text-[var(--q-ink)]">{plan.name}</p>
@@ -124,6 +142,20 @@ export function PaywallDialog({
           </ul>
         </div>
 
+        {!onSale ? (
+          <div className="flex flex-col gap-2">
+            <Link href="/demo/chantiers" className="q-btn q-btn-primary q-btn-lg w-full">
+              Essayer dans la démo
+            </Link>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="q-btn q-btn-ghost mx-auto min-h-[44px]"
+            >
+              Fermer
+            </button>
+          </div>
+        ) : (
         <div className="flex flex-col gap-2">
           <button type="button" onClick={choose} className="q-btn q-btn-primary q-btn-lg w-full">
             {reason === 'send' ? `Choisir ${plan.name} et envoyer ma facture` : `Choisir ${plan.name}`}
@@ -143,6 +175,7 @@ export function PaywallDialog({
             Pas maintenant
           </button>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -151,4 +184,9 @@ export function PaywallDialog({
 /** La réponse d'une route d'émission demande-t-elle le mur de paiement ? */
 export function isSubscriptionRequired(status: number, json: { code?: string } | null | undefined): boolean {
   return status === 402 && json?.code === SUBSCRIPTION_REQUIRED
+}
+
+/** La réponse demande-t-elle la formule Artisan (402 ARTISAN_REQUIRED) ? */
+export function isArtisanPaywall(status: number, json: { code?: string } | null | undefined): boolean {
+  return status === 402 && json?.code === ARTISAN_REQUIRED
 }

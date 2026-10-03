@@ -26,8 +26,10 @@ export interface PublicInvoice {
   totalTtc: number
   /** Avoirs déjà émis sur la facture (TTC). */
   credited: number
-  /** Reste à régler : total moins avoirs. */
+  /** Reste à régler : total moins avoirs et retenue de garantie. */
   remaining: number
+  /** Retenue de garantie (formule Artisan), payable à sa libération. */
+  retention?: number
 }
 
 /** Coordonnées du virement (IBAN valide uniquement). */

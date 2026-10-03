@@ -34,6 +34,12 @@ export interface DocForm {
   reference: string
   notes: string
   lines: DocLine[]
+  /**
+   * Sous-traitance du BTP, autoliquidation (formule Artisan) : toutes les
+   * lignes à 0 %, traitement « autoliquidation_btp » à l'enregistrement
+   * (CGI, art. 283, 2 nonies ; lib/artisan/reverse-charge.ts).
+   */
+  autoliquidation?: boolean
 }
 
 /** Client tel que renvoyé par GET /api/clients (champs utiles à l'écran). */
@@ -209,17 +215,27 @@ export function vatBreakdown(lines: DocLine[], computed: ComputedLine[]): { rate
     .map(([rate, amount]) => ({ rate, amount: Math.round(amount * 100) / 100 }))
 }
 
-/** Lignes au format attendu par les routes (totaux recalculés côté client, comme avant). */
-export function toPayloadLines(lines: DocLine[], computed: ComputedLine[]) {
+/**
+ * Lignes au format attendu par les routes (totaux recalculés côté client, comme avant).
+ * Autoliquidation : taux 0, aucune TVA, traitement posé sur chaque ligne.
+ */
+export function toPayloadLines(lines: DocLine[], computed: ComputedLine[], autoliquidation = false) {
   return lines.map((line, i) => ({
     description: line.description.trim(),
     quantity: num(line.quantity),
     unit_price_ht: num(line.unit_price_ht),
-    vat_rate: line.vat_rate,
+    vat_rate: autoliquidation ? 0 : line.vat_rate,
     total_ht: computed[i].totalHT,
-    total_vat: computed[i].totalVAT,
-    total_ttc: computed[i].totalTTC,
+    total_vat: autoliquidation ? 0 : computed[i].totalVAT,
+    total_ttc: autoliquidation ? computed[i].totalHT : computed[i].totalTTC,
+    ...(autoliquidation ? { vat_treatment: "autoliquidation_btp" as const } : {}),
   }))
+}
+
+/** Le document enregistré est-il en autoliquidation (toutes ses lignes) ? */
+export function savedIsReverseCharge(lines: { vat_treatment?: string | null }[] | null | undefined): boolean {
+  const list = lines ?? []
+  return list.length > 0 && list.every((l) => l?.vat_treatment === "autoliquidation_btp")
 }
 
 /** « 12 × 48,00 € · TVA 10 % » (lignes compactes sur mobile). */

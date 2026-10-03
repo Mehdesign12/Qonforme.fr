@@ -16,6 +16,7 @@ import {
 } from "./model"
 import type { DocumentFormApi } from "./useDocumentForm"
 import { resolveDocumentMentions } from "@/lib/legal/mentions"
+import { REVERSE_CHARGE_MENTION } from "@/lib/artisan/reverse-charge"
 
 export function LivePreview({
   kind,
@@ -49,7 +50,11 @@ export function LivePreview({
   // Le PDF imprime les 3 premières lignes des notes, puis les mentions de
   // l'entreprise : automatiques (Paramètres › Entreprise) et libres (Modèles)
   const notes = form.notes.trim().split("\n").slice(0, 3).join("\n")
-  const legal = resolveDocumentMentions(company, null, kind).lines.join("\n")
+  const legal = [
+    ...resolveDocumentMentions(company, null, kind).lines,
+    // Autoliquidation (formule Artisan) : mention imprimée, comme sur le PDF
+    ...(form.autoliquidation ? [REVERSE_CHARGE_MENTION] : []),
+  ].join("\n")
   const secondLabel = kind === "invoice" ? "Échéance" : kind === "quote" ? "Valable jusqu'au" : "Livraison souhaitée"
 
   return (
@@ -139,7 +144,7 @@ export function LivePreview({
             </div>
           ) : breakdown.map((v) => (
             <div key={v.rate} className="flex justify-between gap-5">
-              <span className="text-[#475569]">TVA {formatRate(v.rate)}</span>
+              <span className="text-[#475569]">{form.autoliquidation && v.rate === 0 ? "TVA (autoliquidation)" : `TVA ${formatRate(v.rate)}`}</span>
               <span>{formatCurrency(v.amount)}</span>
             </div>
           ))}
