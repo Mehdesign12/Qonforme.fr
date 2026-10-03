@@ -39,6 +39,7 @@ import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { sendEmail, type EmailAttachment } from "@/lib/email/resend"
 import { buildReminderEmail } from "@/lib/email/templates/reminder"
 import { paymentLinkFor } from "@/lib/payment-link/server"
+import { shareLinkForEmail } from "@/lib/signature/share"
 import { buildQuoteFollowupEmail } from "@/lib/email/templates/quote-followup"
 import { generateQuotePdf } from "@/lib/pdf/quote"
 import { canIssueInvoices } from "@/lib/stripe/access"
@@ -398,6 +399,10 @@ async function runWithSettings(admin: SupabaseClient, today: string) {
             console.error(`[cron] PDF du devis ${q.quote_number} non généré :`, err)
           }
 
+          // Lien de signature (formule active, réglage activé) ou de consultation ;
+          // null tant que la migration de la signature n'est pas appliquée
+          const share = await shareLinkForEmail(admin, q.user_id, "quote", q.id)
+
           const { subject, html } = buildQuoteFollowupEmail({
             quoteNumber: q.quote_number,
             issueDate: q.issue_date,
@@ -411,6 +416,8 @@ async function runWithSettings(admin: SupabaseClient, today: string) {
             clientName: client?.name ?? "",
             followupNumber: plan.followupNumber,
             hasAttachment: attachments.length > 0,
+            quoteUrl: share?.url,
+            quoteLinkMode: share?.mode,
           })
           await sendEmail({
             to: clientEmail,

@@ -31,6 +31,12 @@ export async function updateSession(request: NextRequest) {
     // des pages mises en cache par le service worker (public/sw.js).
     '/regler',
     '/api/regler',
+    // Signature en ligne : lien du client (/s/<jeton>), sa page et ses actions.
+    // Publiques mais propres à un document : volontairement ABSENTES des pages
+    // mises en cache par public/sw.js (CACHEABLE_PAGE_PREFIXES).
+    '/s',
+    '/signer',
+    '/api/signature/public',
   ]
 
   const isPurePublic = purePublicPaths.some((path) =>

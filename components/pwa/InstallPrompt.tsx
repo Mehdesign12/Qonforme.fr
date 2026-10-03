@@ -95,8 +95,9 @@ export function InstallPrompt() {
   }, [deferredPrompt])
 
   if (!visible) return null
-  // Page de règlement : c'est le client de l'artisan qui la consulte, pas un utilisateur de Qonforme
-  if (pathname.startsWith('/regler/') || pathname.startsWith('/demo/regler/')) return null
+  // Pages de règlement et de signature : c'est le client de l'artisan qui les
+  // consulte, pas un utilisateur de Qonforme
+  if (pathname.startsWith('/regler/') || pathname.startsWith('/demo/regler/') || pathname.startsWith('/signer')) return null
 
   const hasBottomNav = ROUTES_WITH_BOTTOM_NAV.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),

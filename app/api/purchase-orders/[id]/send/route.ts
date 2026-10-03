@@ -4,6 +4,7 @@ import { statusAfterSend } from "@/lib/utils/document-status"
 import { sendEmail } from "@/lib/email/resend"
 import { buildPurchaseOrderEmail } from "@/lib/email/templates/purchase-order"
 import { generatePurchaseOrderPdf } from "@/lib/pdf/purchase-order"
+import { markShareLinkSent, shareLinkForEmail } from "@/lib/signature/share"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -44,6 +45,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
     // 3. Générer le PDF (même lib que le téléchargement — logo, SIRET, etc.)
     const pdfBuffer = await generatePurchaseOrderPdf({ po, company })
 
+    // Lien en ligne : signature (formule active) ou consultation (compte gratuit) ;
+    // null tant que la migration de la signature n'est pas appliquée
+    const share = await shareLinkForEmail(supabase, user.id, "purchase_order", id)
+
     // 4. Construire et envoyer l'email
     const { subject, html } = buildPurchaseOrderEmail({
       poNumber:     po.po_number,
@@ -58,6 +63,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       accentColor,
       clientName,
       appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://qonforme.fr",
+      link: share ? { url: share.url, mode: share.mode } : null,
     })
 
     const cc        = senderEmail ? [senderEmail] : []
@@ -81,7 +87,9 @@ export async function POST(_req: NextRequest, { params }: Params) {
       .eq("id", id)
       .eq("user_id", user.id)
 
-    return NextResponse.json({ success: true, sentTo: clientEmail })
+    await markShareLinkSent(share, clientEmail)
+
+    return NextResponse.json({ success: true, sentTo: clientEmail, link: share?.mode ?? null })
   } catch (err) {
     console.error("Purchase order send error:", err)
     const message = err instanceof Error ? err.message : "Erreur inconnue"
