@@ -48,7 +48,7 @@ export default function EditInvoicePage() {
           router.replace(`/invoices/${id}`)
           return
         }
-        setInvoiceNumber(inv.invoice_number)
+        setInvoiceNumber(inv.invoice_number ?? "") // vide : numéro attribué à l'envoi
         load({
           client_id:     inv.client_id  || "",
           issue_date:    inv.issue_date || "",
@@ -121,7 +121,7 @@ export default function EditInvoicePage() {
 
   return (
     <>
-      <SetCrumb label={invoiceNumber || null} />
+      <SetCrumb label={invoiceNumber || "Brouillon"} />
       <PaywallDialog
         open={showPaywall}
         onOpenChange={(open) => {
@@ -137,11 +137,11 @@ export default function EditInvoicePage() {
       <DocumentEditor
         kind="invoice"
         doc={doc}
-        title={invoiceNumber ? `Modifier ${invoiceNumber}` : "Modifier la facture"}
+        title={invoiceNumber ? `Modifier ${invoiceNumber}` : "Modifier le brouillon"}
         status={`${invoiceNumber ? `${invoiceNumber} · ` : ""}brouillon · ${doc.dirty ? "modifications non enregistrées" : "enregistré"}`}
         number={invoiceNumber || null}
         backHref={`/invoices/${id}`}
-        backLabel={invoiceNumber || "Facture"}
+        backLabel={invoiceNumber || "Brouillon"}
         clients={clients}
         clientsLoading={false}
         newClientHref="/clients/new"

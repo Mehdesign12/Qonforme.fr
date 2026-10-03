@@ -7,7 +7,8 @@ import { FileText } from "lucide-react"
 import { EmptyState } from "@/components/app/kit"
 import { InvoiceDetailView } from "@/components/invoices/InvoiceDetailView"
 import type { CompanyView, InvoiceView } from "@/components/invoices/invoice-view"
-import { DEMO_COMPANY, DEMO_TODAY, demoInvoice } from "@/lib/demo/data"
+import { DEMO_COMPANY, DEMO_REMINDER_SETTINGS, DEMO_TODAY, demoInvoice } from "@/lib/demo/data"
+import { describeInvoiceSchedule } from "@/lib/reminders/settings"
 
 /** Miroir de /invoices/[id] : même fiche, données de démo, rien n'est enregistré ni envoyé. */
 const COMPANY: CompanyView = {
@@ -52,6 +53,8 @@ export default function DemoInvoiceDetailPage() {
     created_at: data.issue_date,
     sent_at: data.sent_at ?? null,
     paid_at: data.paid_at ?? null,
+    // La démo a son journal de relances (réglages d'exemple de lib/demo/data.ts)
+    reminders: data.status === "draft" ? null : data.reminders ?? [],
     subject: data.subject,
     lines: data.lines,
     subtotal_ht: data.subtotal_ht,
@@ -79,6 +82,7 @@ export default function DemoInvoiceDetailPage() {
       quote={data.quote_number ? { number: data.quote_number, href: `/demo/quotes/${data.quote_number.toLowerCase()}` } : null}
       creditNotesHref="/demo/credit-notes"
       settingsCompanyHref="/demo/settings"
+      autoReminders={describeInvoiceSchedule(DEMO_REMINDER_SETTINGS)}
       handlers={{
         downloadPdf: () => signupToast("télécharger vos factures en PDF"),
         downloadFacturX: () => signupToast("télécharger le XML Factur-X"),

@@ -7,6 +7,7 @@
  * (lib/utils/document-status.ts).
  */
 import type { InvoiceStatus } from "@/types"
+import { todayInParis } from "@/lib/utils/paris-date"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -15,7 +16,8 @@ import type { InvoiceStatus } from "@/types"
 /** Ligne de la liste des factures. */
 export interface InvoiceListItem {
   id: string
-  invoice_number: string
+  /** Vide tant que la facture est un brouillon : le numéro est attribué à l'émission. */
+  invoice_number: string | null
   status: InvoiceStatus
   is_archived: boolean
   issue_date: string
@@ -50,7 +52,8 @@ export interface InvoiceViewClient {
 /** Facture telle que la fiche l'affiche (API réelle ou lib/demo/data.ts). */
 export interface InvoiceView {
   id: string
-  invoice_number: string
+  /** Vide tant que la facture est un brouillon : le numéro est attribué à l'émission. */
+  invoice_number: string | null
   status: InvoiceStatus
   is_archived: boolean
   issue_date: string
@@ -60,6 +63,11 @@ export interface InvoiceView {
   paid_at?: string | null
   reminder_1_sent_at?: string | null
   reminder_2_sent_at?: string | null
+  /**
+   * Relances envoyées (journal, automatiques et manuelles). `null` ou absent :
+   * journal pas encore en place, l'historique s'en tient aux deux colonnes ci-dessus.
+   */
+  reminders?: { stage: string; origin: string; sent_at: string }[] | null
   subject?: string | null
   lines: InvoiceViewLine[]
   subtotal_ht: number
@@ -158,10 +166,9 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((Date.UTC(b.y, b.m - 1, b.d) - Date.UTC(a.y, a.m - 1, a.d)) / 86_400_000)
 }
 
-/** Date du jour en heure locale, « AAAA-MM-JJ ». */
+/** Date du jour à Paris, « AAAA-MM-JJ » : les retards se comptent à l'heure française, où que soit le navigateur. */
 export function todayISO(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+  return todayInParis()
 }
 
 export const yearOf = (value: string) => parts(value).y

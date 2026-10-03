@@ -70,7 +70,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
   const [today] = useState(todayISO)
   const [quote, setQuote]     = useState<Quote | null>(null)
   const [company, setCompany] = useState<QuoteDetailCompany | null>(null)
-  const [invoice, setInvoice] = useState<{ invoice_number: string; status: string } | null>(null)
+  const [invoice, setInvoice] = useState<{ invoice_number: string | null; status: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy]       = useState<QuoteDetailBusy>({})
 

@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation"
 import { Archive, ChevronRight, FileText, Plus, RotateCcw, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
+import { DRAFT_INVOICE_LABEL, invoiceNumberLabel } from "@/lib/utils/document-numbering"
 import { DocStatusPill, EmptyState, Kpi, KpiGrid, PageHeader, SearchField } from "@/components/app/kit"
 import {
   type InvoiceListItem, OPEN_STATUSES, daysLate, isLate, isOpen, normalize, plural, shortDate, yearOf,
@@ -109,7 +110,7 @@ export function InvoiceList({
     const q = normalize(query.trim())
     if (!q) return byTab
     return byTab.filter((i) =>
-      normalize(`${i.invoice_number} ${i.client_name ?? ""} ${i.subject ?? ""}`).includes(q),
+      normalize(`${invoiceNumberLabel(i.invoice_number)} ${i.client_name ?? ""} ${i.subject ?? ""}`).includes(q),
     )
   }, [tab, invoices, archived, query, today])
 
@@ -295,9 +296,16 @@ export function InvoiceList({
                         className={cn("cursor-pointer", inv.is_archived && tab !== "archived" && "opacity-60")}
                       >
                         <td className="whitespace-nowrap text-[13px]">
-                          <Link href={href} className="font-mono text-[var(--q-accent-strong)] hover:underline">
-                            {inv.invoice_number}
-                          </Link>
+                          {inv.invoice_number ? (
+                            <Link href={href} className="font-mono text-[var(--q-accent-strong)] hover:underline">
+                              {inv.invoice_number}
+                            </Link>
+                          ) : (
+                            // Brouillon : le numéro sera attribué à l'envoi
+                            <Link href={href} className="text-[var(--q-text-3)] hover:underline" title="Numéro attribué à l'envoi">
+                              {DRAFT_INVOICE_LABEL}
+                            </Link>
+                          )}
                         </td>
                         <td className="max-w-[320px]">
                           <span className="block truncate font-semibold">{inv.client_name ?? "—"}</span>
@@ -312,7 +320,7 @@ export function InvoiceList({
                         <td>
                           <Link
                             href={href}
-                            aria-label={`Ouvrir ${inv.invoice_number}`}
+                            aria-label={`Ouvrir ${inv.invoice_number ?? `le brouillon${inv.client_name ? ` pour ${inv.client_name}` : ""}`}`}
                             className="grid size-[30px] place-items-center rounded-lg text-[var(--q-text-4)] hover:bg-[var(--q-hover)]"
                           >
                             <ChevronRight className="size-4" aria-hidden />
@@ -345,8 +353,8 @@ export function InvoiceList({
               <Link key={inv.id} href={hrefFor(inv.id)} className={cn("q-list-row", inv.is_archived && tab !== "archived" && "opacity-60")}>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-[15px] font-semibold">{inv.client_name ?? "—"}</span>
-                  <span className="truncate font-mono text-xs text-[var(--q-text-4)]">
-                    {inv.invoice_number}{inv.subject ? ` · ${inv.subject}` : ""}
+                  <span className={cn("truncate text-xs text-[var(--q-text-4)]", inv.invoice_number && "font-mono")}>
+                    {invoiceNumberLabel(inv.invoice_number)}{inv.subject ? ` · ${inv.subject}` : ""}
                   </span>
                 </span>
                 <span className="flex shrink-0 flex-col items-end gap-1">

@@ -12,6 +12,7 @@
  * Montants calculés à partir des lignes (HT, TVA, TTC toujours cohérents).
  */
 import type { InvoiceStatus, QuoteStatus } from "@/types"
+import type { ReminderSettings } from "@/lib/reminders/settings"
 
 /** « Aujourd'hui » de la démo (jeudi 1er octobre 2026, comme le canevas). */
 export const DEMO_TODAY = "2026-10-01"
@@ -145,7 +146,8 @@ function totals(lines: DemoLine[]) {
 
 export interface DemoInvoice {
   id: string
-  invoice_number: string
+  /** Vide pour un brouillon : le numéro est attribué à l'émission. */
+  invoice_number: string | null
   client_id: string
   client: DemoClient
   /** Objet du chantier (sous-titre des listes). */
@@ -161,6 +163,8 @@ export interface DemoInvoice {
   total_ttc: number
   notes?: string
   quote_number?: string
+  /** Relances déjà parties (journal), selon DEMO_REMINDER_SETTINGS. */
+  reminders?: { stage: string; origin: string; sent_at: string }[]
 }
 
 function invoice(
@@ -173,14 +177,22 @@ function invoice(
   }
 }
 
+/** Brouillon : pas encore de numéro, il sera attribué à l'émission (lib/utils/document-numbering.ts). */
+function draftInvoice(
+  id: string, clientId: string, subject: string, issue: string, due: string, lines: DemoLine[],
+): DemoInvoice {
+  return { ...invoice(id, clientId, subject, "draft", issue, due, lines), id, invoice_number: null }
+}
+
 /** Du plus récent au plus ancien. */
 export const DEMO_INVOICES: DemoInvoice[] = [
-  invoice("F-2026-0146", "clos", "Ravalement intérieur · solde", "sent", "2026-10-01", "2026-10-31",
-    [line("1", "main-oeuvre", 38), line("2", "bandes", 64), line("3", "echafaudage", 2)], { sent_at: "2026-10-01", quote_number: "D-2026-029" }),
-  invoice("F-2026-0145", "morel", "Reprise de plafond et finitions", "draft", "2026-10-01", "2026-10-31",
+  // Brouillons : sans numéro tant qu'ils ne sont pas envoyés
+  draftInvoice("brouillon-morel", "morel", "Reprise de plafond et finitions", "2026-10-01", "2026-10-31",
     [line("1", "lissage", 24), line("2", "bandes", 24), line("3", "deplacement", 1)]),
-  invoice("F-2026-0144", "bati-ouest", "Résidence Les Tilleuls · lot 4", "draft", "2026-10-01", "2026-10-31",
+  draftInvoice("brouillon-bati-ouest", "bati-ouest", "Résidence Les Tilleuls · lot 4", "2026-09-29", "2026-10-29",
     [line("1", "doublage", 120), line("2", "cloison", 72), line("3", "bandes", 192)]),
+  invoice("F-2026-0144", "clos", "Ravalement intérieur · solde", "sent", "2026-10-01", "2026-10-31",
+    [line("1", "main-oeuvre", 38), line("2", "bandes", 64), line("3", "echafaudage", 2)], { sent_at: "2026-10-01", quote_number: "D-2026-029" }),
   invoice("F-2026-0143", "habitat-loire", "Extension maison individuelle", "sent", "2026-09-30", "2026-10-30",
     [line("1", "cloison", 54), line("2", "bandes", 54), line("3", "deplacement", 1)], { sent_at: "2026-09-30", quote_number: "D-2026-028" }),
   invoice("F-2026-0142", "bati-ouest", "Résidence Les Tilleuls · lot 3", "sent", "2026-09-12", "2026-10-12",
@@ -190,9 +202,18 @@ export const DEMO_INVOICES: DemoInvoice[] = [
   invoice("F-2026-0140", "mercier", "Cage d'escalier B", "sent", "2026-09-09", "2026-10-09",
     [line("1", "ba13", 86), line("2", "bandes", 86), line("3", "echafaudage", 3)], { sent_at: "2026-09-09" }),
   invoice("F-2026-0139", "arvel", "Lot cloisons et doublages", "overdue", "2026-08-20", "2026-09-19",
-    [line("1", "cloison", 28), line("2", "doublage", 22), line("3", "bandes", 50)], { sent_at: "2026-08-20", quote_number: "D-2026-027" }),
+    [line("1", "cloison", 28), line("2", "doublage", 22), line("3", "bandes", 50)], {
+      sent_at: "2026-08-20", quote_number: "D-2026-027",
+      reminders: [
+        { stage: "before_3", origin: "auto", sent_at: "2026-09-16T07:05:00Z" },
+        { stage: "after_7", origin: "auto", sent_at: "2026-09-26T07:05:00Z" },
+      ],
+    }),
   invoice("F-2026-0136", "morel", "Reprise de plafond", "overdue", "2026-08-27", "2026-09-26",
-    [line("1", "lissage", 10), line("2", "deplacement", 1)], { sent_at: "2026-08-27" }),
+    [line("1", "lissage", 10), line("2", "deplacement", 1)], {
+      sent_at: "2026-08-27",
+      reminders: [{ stage: "before_3", origin: "auto", sent_at: "2026-09-23T07:05:00Z" }],
+    }),
   invoice("F-2026-0135", "clos", "Ravalement intérieur · acompte 30 %", "sent", "2026-09-05", "2026-10-05",
     [line("1", "main-oeuvre", 26)], { sent_at: "2026-09-05", quote_number: "D-2026-029" }),
   invoice("F-2026-0134", "bati-ouest", "Résidence Les Tilleuls · lot 2", "sent", "2026-08-12", "2026-10-11",
@@ -371,7 +392,8 @@ const OPEN_STATUSES: InvoiceStatus[] = ["sent", "pending", "received", "accepted
 
 /** Factures émises non réglées. */
 export const demoOpenInvoices = () => DEMO_INVOICES.filter((i) => OPEN_STATUSES.includes(i.status))
-export const demoOverdueInvoices = () => DEMO_INVOICES.filter((i) => i.status === "overdue")
+/** En retard : émises, non réglées et échues (statut « En retard » posé ou non). */
+export const demoOverdueInvoices = () => DEMO_INVOICES.filter((i) => OPEN_STATUSES.includes(i.status) && i.due_date < DEMO_TODAY)
 export const demoSum = (list: { total_ttc: number }[]) => round2(list.reduce((s, x) => s + x.total_ttc, 0))
 
 /** Encaissements par mois (factures payées, date de paiement), d'avril à septembre 2026. */
@@ -383,3 +405,17 @@ export const DEMO_MONTHLY_PAID: { month: string; label: string; value: number }[
   { month: "2026-08", label: "Août", value: 8600 },
   { month: "2026-09", label: "Sept.", value: 14280 },
 ]
+
+/* ------------------------------------------------------------------ */
+/* Relances (Paramètres › Relances)                                    */
+/* ------------------------------------------------------------------ */
+
+/** Réglages d'exemple : rappel 3 jours avant l'échéance, relances à J+7, J+30 et J+45, devis relancés une fois après 7 jours. */
+export const DEMO_REMINDER_SETTINGS: ReminderSettings = {
+  invoiceRemindersEnabled: true,
+  beforeDueDays: 3,
+  afterDueDays: [7, 30, 45],
+  quoteFollowupEnabled: true,
+  quoteFollowupDays: 7,
+  quoteFollowupMax: 1,
+}

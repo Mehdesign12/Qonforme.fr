@@ -13,6 +13,7 @@ import {
   clientMeta, draftItem, isInvoiceOverdue, mergeAttention, normalizeText, overdueItem, quoteItem, shiftDays,
   type AttentionData, type ClientHit, type SearchResults,
 } from "@/components/search/model"
+import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
 
 const isOpen = (status: string) => (OPEN_INVOICE_STATUSES as readonly string[]).includes(status)
 
@@ -35,7 +36,7 @@ export function demoSearch(query: string): SearchResults {
     invoices: DEMO_INVOICES
       .filter((i) => has(i.invoice_number) || has(i.client.name))
       .slice(0, SEARCH_LIMIT)
-      .map((i) => ({ id: i.id, number: i.invoice_number, client: i.client.name, amount: i.total_ttc, status: i.status, href: `/demo/invoices/${i.id}` })),
+      .map((i) => ({ id: i.id, number: invoiceNumberLabel(i.invoice_number), client: i.client.name, amount: i.total_ttc, status: i.status, href: `/demo/invoices/${i.id}` })),
     quotes: DEMO_QUOTES
       .filter((d) => has(d.quote_number) || has(d.client.name))
       .slice(0, SEARCH_LIMIT)
@@ -55,7 +56,7 @@ export function demoAttention(): AttentionData {
   const overdue = DEMO_INVOICES
     .filter((i) => isInvoiceOverdue(i.status, i.due_date, today))
     .sort((a, b) => a.due_date.localeCompare(b.due_date))
-    .map((i) => overdueItem({ id: i.id, number: i.invoice_number, client: i.client.name, amount: i.total_ttc, dueDate: i.due_date }, today, `/demo/invoices/${i.id}`))
+    .map((i) => overdueItem({ id: i.id, number: invoiceNumberLabel(i.invoice_number), client: i.client.name, amount: i.total_ttc, dueDate: i.due_date }, today, `/demo/invoices/${i.id}`))
   const quotes = DEMO_QUOTES
     .filter((d) => d.status === "sent" && d.issue_date < cutoff)
     .sort((a, b) => a.issue_date.localeCompare(b.issue_date))

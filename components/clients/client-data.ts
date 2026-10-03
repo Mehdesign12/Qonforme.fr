@@ -7,6 +7,7 @@
  * mêmes documents (règle « Mode démo » de CLAUDE.md).
  */
 import type { InvoiceStatus, QuoteStatus } from "@/types"
+import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -32,7 +33,8 @@ export interface ClientRecord {
 export interface MetricInvoice {
   id: string
   client_id: string
-  invoice_number: string
+  /** Vide pour un brouillon (numéro attribué à l'émission). */
+  invoice_number: string | null
   status: InvoiceStatus
   issue_date: string
   due_date: string | null
@@ -199,7 +201,7 @@ export function buildClientDocs(
   const numberOf = new Map(invoices.map((i) => [i.id, i.invoice_number]))
   const docs: ClientDoc[] = [
     ...invoices.map((i) => ({
-      key: `invoice-${i.id}`, type: "invoice" as const, number: i.invoice_number,
+      key: `invoice-${i.id}`, type: "invoice" as const, number: invoiceNumberLabel(i.invoice_number),
       title: firstLine(i.lines) ?? "Facture", issue_date: i.issue_date, amount: i.total_ttc || 0,
       status: i.status, href: href.invoice(i.id),
     })),

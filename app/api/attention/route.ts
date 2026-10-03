@@ -5,6 +5,7 @@ import {
   draftItem, mergeAttention, overdueItem, quoteItem, shiftDays, todayParis,
   type AttentionData,
 } from "@/components/search/model"
+import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
 
 export const dynamic = "force-dynamic"
 
@@ -72,7 +73,7 @@ export async function GET() {
 
   const overdue = (overdueRes.data ?? []).map((r) => overdueItem({
     id: r.id as string,
-    number: r.invoice_number as string,
+    number: invoiceNumberLabel(r.invoice_number as string | null),
     client: clientName(r.client),
     amount: Number(r.total_ttc ?? 0),
     dueDate: (r.due_date as string | null) ?? null,
@@ -88,7 +89,7 @@ export async function GET() {
   const drafts = [
     ...(invDraftsRes.data ?? []).map((r) => ({
       day: String(r.created_at).slice(0, 10),
-      item: draftItem({ id: r.id as string, kind: "invoice", number: r.invoice_number as string, client: clientName(r.client), createdDay: String(r.created_at).slice(0, 10) }, today, `/invoices/${r.id}`),
+      item: draftItem({ id: r.id as string, kind: "invoice", number: (r.invoice_number as string | null) ?? null, client: clientName(r.client), createdDay: String(r.created_at).slice(0, 10) }, today, `/invoices/${r.id}`),
     })),
     ...(quoteDraftsRes.data ?? []).map((r) => ({
       day: String(r.created_at).slice(0, 10),

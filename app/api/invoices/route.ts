@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { INITIAL_STATUS } from "@/lib/utils/document-status"
-import { insertWithSequentialNumber } from "@/lib/utils/document-numbering"
+import { insertDraftInvoice } from "@/lib/utils/document-numbering"
+import { todayInParis } from "@/lib/utils/paris-date"
 
 // GET /api/invoices
 export async function GET(request: NextRequest) {
@@ -35,7 +36,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ invoices: data })
 }
 
-// POST /api/invoices — crée une facture brouillon avec numérotation automatique
+// POST /api/invoices — crée une facture brouillon, sans numéro : le numéro est
+// attribué à l'émission (lib/utils/document-numbering.ts, issueDraftInvoice)
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -46,16 +48,13 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
 
-  // Récupérer le préfixe configuré par l'entreprise
+  // Préfixe de l'entreprise : sert seulement si la base exige encore un numéro
+  // à la création (migration 20261003 pas encore appliquée)
   const { data: company } = await supabase
     .from("companies")
     .select("invoice_prefix")
     .eq("user_id", user.id)
     .single()
-
-  const prefix = company?.invoice_prefix || "F"
-  const year   = new Date().getFullYear()
-  const pfx    = `${prefix}-${year}-`
 
   // Calculer les totaux
   const lines       = body.lines || []
@@ -63,17 +62,14 @@ export async function POST(request: NextRequest) {
   const total_vat   = lines.reduce((sum: number, l: { total_vat: number }) => sum + (l.total_vat || 0), 0)
   const total_ttc   = subtotal_ht + total_vat
 
-  // Créer la facture — numérotation robuste (voir lib/utils/document-numbering.ts)
-  const { data: invoice, error } = await insertWithSequentialNumber(supabase, {
-    table: "invoices",
-    numberColumn: "invoice_number",
+  const { data: invoice, error } = await insertDraftInvoice(supabase, {
     userId: user.id,
-    prefix: pfx,
+    companyPrefix: company?.invoice_prefix,
+    today: todayInParis(),
     selectClause: `*, client:clients(id, name, email)`,
-    buildRow: (invoice_number) => ({
+    row: {
       user_id: user.id,
       client_id: body.client_id,
-      invoice_number,
       status: INITIAL_STATUS, // jamais un statut fourni par la requête (avoir, annulée…)
       issue_date: body.issue_date,
       due_date: body.due_date,
@@ -83,7 +79,7 @@ export async function POST(request: NextRequest) {
       total_ttc,
       notes: body.notes || null,
       payment_terms: body.payment_terms || null,
-    }),
+    },
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

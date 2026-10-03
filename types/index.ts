@@ -79,7 +79,7 @@ export interface Invoice {
   user_id: string
   client_id: string
   client?: Client
-  invoice_number: string   // ex: F-2025-001
+  invoice_number: string | null  // ex: F-2025-001 ; vide pour un brouillon (numéro attribué à l'émission)
   status: InvoiceStatus
   issue_date: string
   due_date: string

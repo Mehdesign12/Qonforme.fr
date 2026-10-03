@@ -19,6 +19,8 @@ import { PaywallDialog, isSubscriptionRequired } from "@/components/billing/Payw
 import { EmptyState } from "@/components/app/kit"
 import { InvoiceDetailView } from "@/components/invoices/InvoiceDetailView"
 import { type CompanyView, todayISO } from "@/components/invoices/invoice-view"
+import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
+import { describeInvoiceSchedule } from "@/lib/reminders/settings"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -36,7 +38,8 @@ interface InvoiceLine {
 
 interface Invoice {
   id: string
-  invoice_number: string
+  /** Vide pour un brouillon : le numéro est attribué à l'envoi. */
+  invoice_number: string | null
   status: InvoiceStatus
   is_archived: boolean
   issue_date: string
@@ -54,6 +57,8 @@ interface Invoice {
   paid_at?: string | null
   reminder_1_sent_at: string | null
   reminder_2_sent_at: string | null
+  /** Journal des relances (null tant qu'il n'est pas en place). */
+  reminders?: { stage: string; origin: string; sent_at: string }[] | null
   client: {
     id: string
     name: string
@@ -90,8 +95,10 @@ const CREDIT_REASONS = [
  * les champs déjà chargés pour que l'aperçu ne perde pas ses coordonnées.
  */
 function mergeInvoice(prev: Invoice | null, next: Invoice): Invoice {
-  if (!prev?.client || !next.client) return { ...next, client: next.client ?? prev?.client ?? null }
-  return { ...next, client: { ...prev.client, ...next.client } }
+  // Le journal des relances n'est renvoyé que par GET : on garde celui déjà chargé
+  const reminders = next.reminders !== undefined ? next.reminders : prev?.reminders
+  if (!prev?.client || !next.client) return { ...next, reminders, client: next.client ?? prev?.client ?? null }
+  return { ...next, reminders, client: { ...prev.client, ...next.client } }
 }
 
 /* En-tête et pied communs des fenêtres (canevas : titre Bricolage 22 px, pied grisé) */
@@ -328,9 +335,16 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [remindLoading, setRemindLoading]       = useState(false)
   // Mur de paiement : ouvert quand l'émission est refusée faute de formule (402)
   const [paywall, setPaywall]                   = useState<null | "send" | "remind">(null)
+  // Calendrier des relances automatiques du compte (Paramètres › Relances)
+  const [autoReminders, setAutoReminders]       = useState<string | null | undefined>(undefined)
 
   useEffect(() => {
     setToday(todayISO())
+    // Réglages des relances : sans réponse (ou avant la migration), le calendrier par défaut
+    fetch("/api/reminder-settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => { if (json?.available && json.settings) setAutoReminders(describeInvoiceSchedule(json.settings)) })
+      .catch(() => {})
     const supabase = createClient()
     Promise.all([
       fetch(`/api/invoices/${invoiceId}`).then(r => r.json()),
@@ -381,7 +395,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       const blob = await res.blob()
       const url  = URL.createObjectURL(blob)
       const a    = document.createElement("a")
-      a.href = url; a.download = `${invoice.status === "draft" ? "brouillon-" : ""}${invoice.invoice_number}.pdf`
+      a.href = url; a.download = `${invoice.status === "draft" ? `brouillon-${invoice.invoice_number ?? "facture"}` : invoice.invoice_number}.pdf`
       document.body.appendChild(a); a.click()
       document.body.removeChild(a); URL.revokeObjectURL(url)
       toast.success("PDF téléchargé")
@@ -407,7 +421,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   }
 
   const deleteInvoice = async () => {
-    if (!invoice || !confirm(`Supprimer le brouillon ${invoice.invoice_number} ?`)) return
+    if (!invoice || !confirm(invoice.invoice_number ? `Supprimer le brouillon ${invoice.invoice_number} ?` : "Supprimer ce brouillon ?")) return
     setDeleteLoading(true)
     try {
       const res = await fetch(`/api/invoices/${invoiceId}`, { method: "DELETE" })
@@ -443,8 +457,15 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       const res = await fetch(`/api/invoices/${invoiceId}/send`, { method: "POST" })
       const json = await res.json()
       if (isSubscriptionRequired(res.status, json)) { setShowSendModal(false); setPaywall("send"); return }
-      if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return }
-      setInvoice({ ...invoice, status: "sent" as InvoiceStatus, sent_at: new Date().toISOString() })
+      if (!res.ok) {
+        // Facture émise (numérotée) mais email non parti : elle reste émise, à renvoyer
+        if (json.issued && json.invoice) { setInvoice(prev => mergeInvoice(prev, json.invoice)); setShowSendModal(false) }
+        toast.error(json.error ?? "Erreur lors de l'envoi")
+        return
+      }
+      setInvoice(prev => json.invoice
+        ? mergeInvoice(prev, json.invoice)
+        : { ...invoice, status: "sent" as InvoiceStatus, sent_at: new Date().toISOString() })
       toast.success(`Facture envoyée à ${json.sentTo}`)
       setShowSendModal(false)
     } catch { toast.error("Erreur réseau") }
@@ -465,7 +486,11 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       const json = await res.json()
       if (isSubscriptionRequired(res.status, json)) { setPaywall("remind"); return }
       if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi de la relance"); return }
-      setInvoice(prev => mergeInvoice(prev, json.invoice))
+      setInvoice(prev => {
+        const next = mergeInvoice(prev, json.invoice)
+        // Relance notée au journal : on l'ajoute à l'historique affiché
+        return json.reminder && Array.isArray(next.reminders) ? { ...next, reminders: [...next.reminders, json.reminder] } : next
+      })
       toast.success(`Relance ${json.reminderNumber} envoyée à ${json.sentTo}`)
     } catch { toast.error("Erreur réseau") }
     finally { setRemindLoading(false) }
@@ -503,7 +528,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         open={paywall !== null}
         onOpenChange={(o) => { if (!o) setPaywall(null) }}
         invoiceId={invoice.id}
-        invoiceNumber={invoice.invoice_number}
+        invoiceNumber={invoice.invoice_number ?? undefined}
         reason={paywall ?? "send"}
       />
 
@@ -511,8 +536,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       <Dialog open={showSendModal} onOpenChange={(o) => { if (!o && !sendLoading) setShowSendModal(false) }}>
         <DialogContent showCloseButton={!sendLoading} className="gap-0 overflow-hidden p-0 sm:max-w-[500px]">
           <DialogHead
-            title="Envoyer la facture"
-            sub={<><span className="font-mono">{invoice.invoice_number}</span>{invoice.client ? ` · ${invoice.client.name}` : ""}</>}
+            title={invoice.status === "draft" ? "Envoyer la facture" : "Renvoyer la facture"}
+            sub={<><span className={cn(invoice.invoice_number && "font-mono")}>{invoiceNumberLabel(invoice.invoice_number)}</span>{invoice.client ? ` · ${invoice.client.name}` : ""}</>}
           />
           <div className="flex flex-col gap-3.5 px-[22px] pb-5 pt-[18px]">
             <div className="q-inset px-4 py-3.5 text-sm leading-relaxed text-[var(--q-text-2)]">
@@ -521,14 +546,22 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
               ) : (
                 <span className="mb-1.5 block text-xs text-[var(--q-danger)]">Aucune adresse email : ajoutez-en une dans la fiche client</span>
               )}
-              Objet : <span className="font-medium text-[var(--q-ink)]">Facture {invoice.invoice_number} — {company?.name ?? "votre entreprise"}</span>
+              Objet : <span className="font-medium text-[var(--q-ink)]">Facture {invoice.invoice_number ?? "(numéro attribué à l’envoi)"} — {company?.name ?? "votre entreprise"}</span>
             </div>
             <div className="q-banner text-[13px] leading-normal">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
-              <p>
-                Le PDF de la facture est joint à l&apos;email et une copie vous est adressée.
-                La facture passe au statut <strong>Envoyée</strong> : elle ne pourra plus être modifiée.
-              </p>
+              {invoice.status === "draft" ? (
+                <p>
+                  Le PDF de la facture est joint à l&apos;email et une copie vous est adressée.
+                  {!invoice.invoice_number && " La facture reçoit son numéro définitif, à la date du jour."}
+                  {" "}Elle passe au statut <strong>Envoyée</strong> : elle ne pourra plus être modifiée.
+                </p>
+              ) : (
+                <p>
+                  Une copie de la facture et de son PDF est renvoyée à votre client, avec une copie pour vous.
+                  Son numéro et son statut ne changent pas.
+                </p>
+              )}
             </div>
           </div>
           <DialogFoot>
@@ -537,7 +570,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             </Button>
             <Button onClick={sendByEmail} disabled={sendLoading || !invoice.client?.email}>
               <Send />
-              {sendLoading ? "Envoi en cours…" : "Envoyer"}
+              {sendLoading ? "Envoi en cours…" : invoice.status === "draft" ? "Envoyer" : "Renvoyer"}
             </Button>
           </DialogFoot>
         </DialogContent>
@@ -562,6 +595,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         quote={quote ? { number: quote.quote_number, href: `/quotes/${quote.id}` } : null}
         creditNotesHref="/credit-notes"
         settingsCompanyHref="/settings/company"
+        autoReminders={autoReminders}
         handlers={{
           downloadPdf: downloadPDF,
           pdfLoading,

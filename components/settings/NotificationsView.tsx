@@ -1,13 +1,12 @@
 /**
- * Paramètres › Notifications (planche « Paramètres — Notifications »),
- * version honnête : les alertes ne se règlent pas encore une à une. La page
- * dit ce que Qonforme envoie réellement et à quelle adresse :
+ * Paramètres › Relances (planche « Paramètres — Notifications »). La page dit
+ * ce que Qonforme envoie réellement et à quelle adresse :
+ *   - relances automatiques des factures impayées et des devis sans réponse,
+ *     réglables (components/settings/ReminderSettingsForm.tsx, cron
+ *     app/api/cron/send-reminders), pour les comptes qui ont une formule ;
  *   - copie (CC) de chaque devis, facture et relance envoyés à un client,
  *     à l'adresse de l'entreprise, sinon à celle du compte
- *     (app/api/{invoices,quotes}/[id]/send, app/api/invoices/[id]/remind) ;
- *   - relances automatiques 30 et 45 jours après l'échéance, pour les comptes
- *     qui ont une formule, en copie à l'adresse de l'entreprise si elle est
- *     renseignée (app/api/cron/send-reminders).
+ *     (app/api/{invoices,quotes}/[id]/send, app/api/invoices/[id]/remind).
  * Pas de notification sur le téléphone, pas de résumé hebdomadaire (non livrés).
  * Partagé par l'application et la démo.
  */
@@ -17,29 +16,39 @@ import { PageHeader, StatusPill } from "@/components/app/kit"
 import type { ShellMode } from "@/components/layout/nav"
 import { settingsHref } from "@/components/settings/sections"
 import { SettingsCard } from "@/components/settings/ui"
+import { ReminderSettingsForm } from "@/components/settings/ReminderSettingsForm"
+import type { ReminderSettings } from "@/lib/reminders/settings"
 
 export function NotificationsView({
   mode,
   companyEmail,
   accountEmail,
   hasPlan,
+  company,
+  demoSettings,
 }: {
   mode: ShellMode
   companyEmail: string
   accountEmail: string
   /** Formule qui permet d'émettre (les relances automatiques en dépendent). */
   hasPlan: boolean
+  /** Entreprise, pour l'aperçu des relances. */
+  company: { name: string; iban?: string | null; accentColor?: string | null }
+  /** Démo : réglages d'exemple. */
+  demoSettings?: ReminderSettings
 }) {
   const address = companyEmail || accountEmail
 
   return (
     <>
       <PageHeader
-        title="Notifications"
+        title="Relances et notifications"
         subtitle="Les e-mails que Qonforme envoie pour vous"
         backHref={settingsHref("/settings", mode)}
         backLabel="Paramètres"
       />
+
+      <ReminderSettingsForm mode={mode} hasPlan={hasPlan} company={company} demoSettings={demoSettings} />
 
       <SettingsCard id="envois" title="Ce que vous recevez">
         <div className="-mx-5 -mb-5">
@@ -50,15 +59,8 @@ export function NotificationsView({
           <ul className="q-list">
             <Row
               title="Copie de chaque envoi"
-              text="Devis, factures et relances que vous envoyez à vos clients : vous êtes en copie, et vos clients vous répondent directement."
+              text="Devis, factures et relances que vous envoyez à vos clients, à la main ou automatiquement : vous êtes en copie, et vos clients vous répondent directement."
               status={<StatusPill tone="ok">Toujours</StatusPill>}
-            />
-            <Row
-              title="Relances automatiques des impayés"
-              text="30 puis 45 jours après l'échéance, Qonforme relance par e-mail le client d'une facture impayée. Copie à l'adresse de votre entreprise, si elle est renseignée."
-              status={hasPlan
-                ? <StatusPill tone="ok">Actives</StatusPill>
-                : <StatusPill tone="info">Avec Essentiel</StatusPill>}
             />
           </ul>
         </div>
