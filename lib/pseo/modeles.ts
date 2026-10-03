@@ -34,7 +34,7 @@ export const MODELES: Modele[] = [
       "Utilisez une numérotation continue et chronologique (ex : F-2026-001, F-2026-002)",
       "Conservez toutes vos factures pendant 10 ans",
       "Envoyez vos factures dans les 15 jours suivant la prestation",
-      "Surveillez vos seuils de franchise de TVA (36 800 € pour les services, 91 900 € pour la vente)",
+      "Surveillez vos seuils de franchise de TVA (en 2026 : 37 500 € pour les services, 85 000 € pour la vente)",
     ],
     mentionsSpecifiques: [
       "TVA non applicable, article 293 B du CGI",
