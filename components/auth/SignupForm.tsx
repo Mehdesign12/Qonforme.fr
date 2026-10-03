@@ -186,6 +186,9 @@ export default function SignupForm() {
         <a href="/cgu" className="q-link !font-medium">conditions d’utilisation</a>{" "}
         et la{" "}
         <a href="/confidentialite" className="q-link !font-medium">politique de confidentialité</a>.
+        {/* Information à la collecte (CPCE art. L34-5, CNIL) : voir lib/onboarding/unsubscribe.ts */}
+        {" "}Qonforme peut vous envoyer quelques conseils de démarrage par e-mail pendant vos 30 premiers jours&nbsp;; un
+        lien dans chacun permet de les arrêter.
       </p>
     </form>
   )

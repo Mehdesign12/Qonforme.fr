@@ -3,7 +3,7 @@
  * Génération PDF pour les devis.
  * Réutilisé par la route GET /api/quotes/[id]/pdf ET par la route POST /send.
  */
-import { PDFDocument, rgb, PageSizes } from "pdf-lib"
+import { PDFDocument, rgb, PageSizes, degrees } from "pdf-lib"
 import fontkit from "@pdf-lib/fontkit"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 import { withDocumentMentions } from "@/lib/legal/mentions"
@@ -57,6 +57,11 @@ export interface QuotePdfInput {
     accent_color?: string
     logo_url?: string
   } | null
+  /**
+   * Devis d'essai envoyé à soi-même (lib/onboarding/trial-quote.ts) : filigrane
+   * « EXEMPLE » et bandeau en haut de page ; jamais enregistré ni numéroté.
+   */
+  watermark?: "EXEMPLE"
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -85,7 +90,7 @@ function fmtDate(d: string): string {
 
 // ── Générateur principal ─────────────────────────────────────────────────────
 
-export async function generateQuotePdf({ quote, company: companyInput }: QuotePdfInput): Promise<Buffer> {
+export async function generateQuotePdf({ quote, company: companyInput, watermark }: QuotePdfInput): Promise<Buffer> {
   // Mentions de l'entreprise : figées à l'émission, ou réglages actuels pour un brouillon
   const company = withDocumentMentions(companyInput, quote, "quote")
   const doc = await PDFDocument.create()
@@ -289,6 +294,22 @@ export async function generateQuotePdf({ quote, company: companyInput }: QuotePd
   hLine(32, mL, mR, 0.5, separator)
   draw(`${company?.name ?? "Qonforme"} — ${quote.quote_number}`, mL, 20, { size: 7, color: grayLight })
   draw("Généré par Qonforme", mR, 20, { size: 7, color: quoteGreen, align: "right" })
+
+  // Filigrane du devis d'essai — dessiné en dernier pour rester au-dessus du contenu
+  if (watermark) {
+    const size = 92
+    const tw = fontBold.widthOfTextAtSize(watermark, size)
+    const angle = 35 * Math.PI / 180
+    page.drawText(watermark, {
+      x: width / 2 - (tw / 2) * Math.cos(angle) + (size / 3) * Math.sin(angle),
+      y: height / 2 - (tw / 2) * Math.sin(angle) - (size / 3) * Math.cos(angle),
+      size, font: fontBold, color: rgb(0.86, 0.15, 0.15), opacity: 0.14, rotate: degrees(35),
+    })
+    const notice = "Exemple : ce devis n'a pas de numéro et n'engage personne."
+    const nw = fontBold.widthOfTextAtSize(notice, 9)
+    page.drawText(notice, { x: (width - nw) / 2, y: height - 24, size: 9, font: fontBold, color: rgb(0.73, 0.11, 0.11) })
+    doc.setTitle("Exemple de devis")
+  }
 
   const pdfBytes = await doc.save()
   return Buffer.from(pdfBytes)

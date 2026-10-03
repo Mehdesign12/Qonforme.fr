@@ -13,16 +13,26 @@
  */
 import { PLANS, FREE_FEATURES, formatEuros } from "@/lib/stripe/plans"
 import { GUARANTEE_DAYS } from "@/lib/stripe/access"
+import { escapeHtml } from "@/lib/email/templates/onboarding"
 
 const ACCENT = "#2563EB"
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.qonforme.fr"
 
 export function buildWelcomeEmail({
-  firstName,
+  firstName: rawFirstName,
+  unsubscribeUrl,
 }: {
   firstName: string
+  /**
+   * Lien signé de désinscription des conseils de démarrage (premier email de la
+   * séquence, lib/onboarding/sequence.ts) ; absent tant que la séquence n'est
+   * pas active (migration 20261003_onboarding_emails.sql).
+   */
+  unsubscribeUrl?: string | null
 }): { subject: string; html: string } {
-  const subject = `Bienvenue sur Qonforme, ${firstName} 👋`
+  const subject = `Bienvenue sur Qonforme, ${rawFirstName} 👋`
+  // Saisi à l'inscription : échappé avant d'entrer dans le HTML
+  const firstName = escapeHtml(rawFirstName)
 
   const preheader = `Votre espace est prêt : vos devis sont gratuits et illimités.`
 
@@ -86,7 +96,7 @@ export function buildWelcomeEmail({
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${subject}</title>
+  <title>${escapeHtml(subject)}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#F1F5F9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 
@@ -204,7 +214,11 @@ export function buildWelcomeEmail({
               </p>
               <p style="margin:6px 0 0;font-size:11px;color:#CBD5E1;">
                 Une formule se résilie à tout moment, depuis Paramètres › Abonnement.
-              </p>
+              </p>${unsubscribeUrl ? `
+              <p style="margin:10px 0 0;font-size:12px;color:#94A3B8;line-height:1.55;">
+                Pendant vos 30 premiers jours, Qonforme vous enverra quelques conseils de démarrage.
+                <a href="${escapeHtml(unsubscribeUrl)}" style="color:#64748B;text-decoration:underline;">Ne plus recevoir ces conseils</a>
+              </p>` : ""}
             </td>
           </tr>
 
