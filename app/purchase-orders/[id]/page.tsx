@@ -16,6 +16,8 @@ import { todayISO } from "@/components/quotes/QuoteListHelpers"
 import { PaywallDialog } from "@/components/billing/PaywallDialog"
 import { SignaturePanel } from "@/components/signature/SignaturePanel"
 import { useSignaturePanel } from "@/components/signature/useSignaturePanel"
+import { selectCompanyWithProfile } from "@/lib/legal/db"
+import { snapshotOf } from "@/lib/legal/mentions"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -36,6 +38,8 @@ interface ApiPurchaseOrder {
   sent_at:       string | null
   confirmed_at:  string | null
   created_at:    string
+  /** Mentions figées à l'envoi (lib/legal/mentions.ts) ; absent avant la migration. */
+  legal_snapshot?: unknown
   client: {
     id:        string
     name:      string
@@ -69,6 +73,7 @@ function toDetail(p: ApiPurchaseOrder): PurchaseOrderDetailData {
     confirmed_at: p.confirmed_at,
     created_at: p.created_at,
     client: p.client ? { ...p.client, href: `/clients/${p.client.id}`, editHref: `/clients/${p.client.id}/edit` } : null,
+    legal_snapshot: p.legal_snapshot,
   }
 }
 
@@ -93,13 +98,11 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
     const supabase = createClient()
     Promise.all([
       fetch(`/api/purchase-orders/${params.id}`).then(r => r.json()),
-      supabase
-        .from("companies")
-        .select("name,address,zip_code,city,siret,siren,vat_number")
-        .single(),
+      // Mentions libres et profil légal (s'il existe) : pied de l'aperçu, comme le PDF
+      selectCompanyWithProfile(supabase, "name,address,zip_code,city,siret,siren,vat_number,legal_notice"),
     ]).then(([json, { data: comp }]) => {
       if (json.purchase_order) setPo(toDetail(json.purchase_order))
-      if (comp) setCompany(comp)
+      if (comp) setCompany(comp as PaperParty)
     }).finally(() => setLoading(false))
   }, [params.id])
 
@@ -182,7 +185,13 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
       const json = await res.json()
       if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return false }
       // Un brouillon passe à « Envoyé » ; un bon déjà envoyé garde son statut
-      setPo(prev => prev ? { ...prev, status: prev.status === "draft" ? "sent" : prev.status, sent_at: new Date().toISOString() } : prev)
+      // Un brouillon envoyé a désormais ses mentions figées (relues au prochain chargement)
+      setPo(prev => prev ? {
+        ...prev,
+        status: prev.status === "draft" ? "sent" : prev.status,
+        sent_at: new Date().toISOString(),
+        legal_snapshot: prev.legal_snapshot ?? (prev.status === "draft" ? snapshotOf(company) : undefined),
+      } : prev)
       toast.success(`Bon de commande envoyé à ${json.sentTo}`)
       void sig.reload()
       return true

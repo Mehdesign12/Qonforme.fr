@@ -18,6 +18,7 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { fmtAmount, fmtQty, fmtRate, fmtSiren, fmtUnit, vatBreakdown } from "@/components/quotes/QuoteListHelpers"
+import { PaperMentions } from "@/components/documents/PaperMentions"
 
 /** Montant d'avoir : « − 2 400,00 € » (signe moins typographique, espace insécable). */
 export function negCurrency(n: number): string {
@@ -38,6 +39,9 @@ export interface PaperParty {
   siret?: string | null
   vat_number?: string | null
   email?: string | null
+  /** Émetteur : mentions libres et profil légal (lib/legal/mentions.ts). */
+  legal_notice?: string | null
+  legal_profile?: unknown
 }
 
 export interface PaperLine {
@@ -65,6 +69,7 @@ export function DocPaper({
   totalLabel = "Total TTC",
   notes,
   notesLabel = "NOTES / CONDITIONS",
+  mentions = [],
 }: {
   title: string
   /** Lignes sous le titre (la première en DM Mono : numéro et date). */
@@ -83,6 +88,8 @@ export function DocPaper({
   totalLabel?: string
   notes?: string | null
   notesLabel?: string
+  /** Mentions légales du pied, comme sur le PDF (lib/legal/mentions.ts). */
+  mentions?: string[]
 }) {
   const label = "block text-[11px] font-semibold tracking-[.04em] text-[#64748B]"
   const cols = "grid grid-cols-[minmax(0,1fr)_64px_72px_48px_84px] gap-2"
@@ -162,6 +169,8 @@ export function DocPaper({
           <span className="whitespace-pre-line">{notes}</span>
         </div>
       )}
+
+      <PaperMentions lines={mentions} />
     </div>
   )
 }

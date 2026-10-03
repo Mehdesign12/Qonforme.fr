@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { CatalogueView, type CatalogueProduct } from "@/components/products/CatalogueView"
 import { DEMO_PRODUCTS } from "@/lib/demo/data"
+import { DEMO_LEGAL_PROFILE } from "@/lib/demo/legal-profile"
 
 /** Démo : invitation à créer un compte à la place des actions qui enregistrent. */
 const demoCta = (message: string) =>
@@ -46,6 +47,11 @@ export default function DemoProductsPage() {
       onSave={() => { demoCta("Créez un compte pour enregistrer vos prestations"); return true }}
       onToggleActive={() => { demoCta("Créez un compte pour gérer votre catalogue"); return false }}
       quoteHref="/demo/quotes/new"
+      importer={{
+        trade: DEMO_LEGAL_PROFILE.trade,
+        vatRegime: DEMO_LEGAL_PROFILE.vat_regime,
+        onImport: () => { demoCta("Créez un compte pour importer les prestations de votre métier"); return true },
+      }}
     />
   )
 }

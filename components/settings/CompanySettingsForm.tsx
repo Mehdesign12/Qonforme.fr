@@ -6,9 +6,11 @@
  * 13616 ; titulaire et BIC pour la page de règlement, lib/payment-link, dès que
  * la migration 20261003_payment_links.sql a ajouté leurs colonnes).
  *
- * Seuls les champs qui existent en base sont proposés : pas de forme
- * juridique, de téléphone, d'assurance décennale, de régime de TVA ni
- * d'autoliquidation (non livrés, DECISIONS § 10). La numérotation et les
+ * Profil légal (métier, forme juridique, régime de TVA, assurance décennale et
+ * RC pro) dès que la migration 20261003_legal_profile_btp.sql a ajouté la
+ * colonne `legal_profile` : il alimente les mentions imprimées d'office sur
+ * les documents (components/settings/LegalProfileCards.tsx). Pas de téléphone
+ * ni d'autoliquidation (non livrés, DECISIONS § 10). La numérotation et les
  * conditions de paiement se règlent dans Paramètres › Modèles de documents.
  *
  * Même composant pour la démo (`mode="demo"`) : rien n'est lu ni enregistré.
@@ -24,6 +26,11 @@ import type { ShellMode } from "@/components/layout/nav"
 import { settingsHref } from "@/components/settings/sections"
 import { DirtyHint, Field, FieldGrid, MobileSaveBar, SaveButton, SettingsCard } from "@/components/settings/ui"
 import { LogoDocPreview, LogoDropzone, useCompanyLogo } from "@/components/settings/LogoField"
+import {
+  ActivityCard, InsuranceCard, MentionsPreviewCard, VatRegimeField,
+  formErrors, formFromProfile, profileFromForm, type LegalProfileForm,
+} from "@/components/settings/LegalProfileCards"
+import { EMPTY_LEGAL_PROFILE, legalProfileErrors, parseLegalProfile, type LegalProfile, type LegalProfileField } from "@/lib/legal/profile"
 
 export interface CompanyFields {
   name: string
@@ -63,10 +70,12 @@ export function CompanySettingsForm({
 }: {
   mode?: ShellMode
   /** Démo : valeurs affichées (aucune lecture en base). */
-  initial?: Partial<CompanyFields> & { logo_url?: string | null }
+  initial?: Partial<CompanyFields> & { logo_url?: string | null; legal_profile?: LegalProfile | null; legal_notice?: string | null }
 }) {
   const demo = mode === "demo"
-  const start: CompanyFields = { ...EMPTY, ...(initial ?? {}) }
+  const { logo_url: initialLogo, legal_profile: initialProfile, legal_notice: initialNotice, ...initialFields } = initial ?? {}
+  const start: CompanyFields = { ...EMPTY, ...initialFields }
+  const startProfile = formFromProfile(initialProfile)
 
   const [loading, setLoading]       = useState(!demo)
   const [saving, setSaving]         = useState(false)
@@ -74,10 +83,17 @@ export function CompanySettingsForm({
   const [fields, setFields]         = useState<CompanyFields>(start)
   const [saved, setSaved]           = useState<CompanyFields>(start)   // copie au dernier enregistrement / chargement
   const [errors, setErrors]         = useState<Partial<Record<keyof CompanyFields, string>>>({})
-  const [loadedLogo, setLoadedLogo] = useState<string | null>(initial?.logo_url ?? null)
+  const [loadedLogo, setLoadedLogo] = useState<string | null>(initialLogo ?? null)
   // Titulaire et BIC : colonnes ajoutées par la migration du lien de paiement. Tant
   // qu'elles n'existent pas, les champs sont masqués et jamais envoyés.
   const [bankExtras, setBankExtras] = useState(demo)
+  // Profil légal : colonne ajoutée par la migration des mentions du bâtiment. Tant
+  // qu'elle n'existe pas, les cartes sont masquées et rien n'est envoyé.
+  const [profileAvailable, setProfileAvailable] = useState(demo)
+  const [profile, setProfile]           = useState<LegalProfileForm>(startProfile)
+  const [savedProfile, setSavedProfile] = useState<LegalProfileForm>(startProfile)
+  const [profileErrors, setProfileErrors] = useState<Partial<Record<LegalProfileField, string>>>({})
+  const [legalNotice, setLegalNotice]   = useState(initialNotice ?? "")
 
   const [sirenSearch, setSirenSearch]   = useState("")
   const [sirenLoading, setSirenLoading] = useState(false)
@@ -86,6 +102,7 @@ export function CompanySettingsForm({
   const logo = useCompanyLogo({ mode, initialUrl: loadedLogo })
 
   const isDirty = JSON.stringify(fields) !== JSON.stringify(saved)
+    || (profileAvailable && JSON.stringify(profile) !== JSON.stringify(savedProfile))
 
   /* ───────────────────────────── Chargement ───────────────────── */
   useEffect(() => {
@@ -127,6 +144,17 @@ export function CompanySettingsForm({
         setCompanyId(company.id)
         setLoadedLogo(company.logo_url ?? null)
         setBankExtras("bic" in company && "bank_account_holder" in company)
+        if ("legal_profile" in company) {
+          const loadedProfile = formFromProfile(parseLegalProfile(company.legal_profile))
+          setProfile(loadedProfile)
+          setSavedProfile(loadedProfile)
+          setProfileAvailable(true)
+        }
+        setLegalNotice(company.legal_notice ?? "")
+      } else {
+        // Pas encore d'entreprise : le profil s'enregistre avec elle si la colonne existe
+        const { error: probe } = await supabase.from("companies").select("legal_profile").limit(1)
+        setProfileAvailable(!probe)
       }
       setLoading(false)
     })
@@ -139,6 +167,11 @@ export function CompanySettingsForm({
     setFields(prev => ({ ...prev, [key]: e.target.value }))
     // effacer l'erreur dès que l'utilisateur modifie le champ
     if (errors[key]) setErrors(prev => { const n = { ...prev }; delete n[key]; return n })
+  }
+
+  const changeProfile = (patch: Partial<LegalProfileForm>) => {
+    setProfile(prev => ({ ...prev, ...patch }))
+    if (Object.keys(profileErrors).length) setProfileErrors({})
   }
 
   /* ─────────────────── Recherche SIREN (INSEE) ─────────────────── */
@@ -199,8 +232,12 @@ export function CompanySettingsForm({
     e.preventDefault()
     if (demo) { demoToast(); return }
     const errs = validate(fields)
-    if (Object.keys(errs).length > 0) {
+    const pErrs = profileAvailable
+      ? { ...legalProfileErrors(profileFromForm(profile) ?? EMPTY_LEGAL_PROFILE), ...formErrors(profile) }
+      : {}
+    if (Object.keys(errs).length > 0 || Object.keys(pErrs).length > 0) {
       setErrors(errs)
+      setProfileErrors(pErrs)
       toast.error("Certains champs sont à compléter")
       return
     }
@@ -227,6 +264,7 @@ export function CompanySettingsForm({
           bank_account_holder: fields.account_holder.trim() || null,
           bic:                 normalizeBic(fields.bic)     || null,
         } : {}),
+        ...(profileAvailable ? { legal_profile: profileFromForm(profile) } : {}),
       }
 
       let dbError
@@ -257,6 +295,7 @@ export function CompanySettingsForm({
       }
 
       setSaved({ ...fields })
+      setSavedProfile(profile)
       toast.success("Informations enregistrées")
     } catch (err) {
       console.error(err)
@@ -276,7 +315,7 @@ export function CompanySettingsForm({
     <>
       <PageHeader
         title="Entreprise"
-        subtitle="Identité, TVA et coordonnées bancaires"
+        subtitle={profileAvailable ? "Identité, statut, TVA, assurance et coordonnées bancaires" : "Identité, TVA et coordonnées bancaires"}
         backHref={settingsHref("/settings", mode)}
         backLabel="Paramètres"
         actions={
@@ -387,13 +426,20 @@ export function CompanySettingsForm({
             </Field>
           </SettingsCard>
 
+          {profileAvailable && (
+            <ActivityCard value={profile} onChange={changeProfile} errors={profileErrors} companyName={fields.name} />
+          )}
+
           {/* ── TVA ── */}
           <SettingsCard id="tva" title="TVA">
+            {profileAvailable && <VatRegimeField value={profile.vat_regime} onChange={changeProfile} />}
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
               <Field
                 label="N° de TVA intracommunautaire"
                 htmlFor="vat_number"
-                hint="Mentionné sur toutes vos factures. En franchise en base, laissez vide et ajoutez la mention de l'article 293 B du CGI dans vos modèles."
+                hint={profileAvailable
+                  ? "Mentionné sur toutes vos factures. En franchise en base, vous pouvez le laisser vide."
+                  : "Mentionné sur toutes vos factures. En franchise en base, laissez vide et ajoutez la mention de l'article 293 B du CGI dans vos modèles."}
                 className="flex-1 sm:max-w-[calc(50%-6px)]"
               >
                 <input id="vat_number" className="q-input font-mono" placeholder="FR12123456789"
@@ -411,6 +457,8 @@ export function CompanySettingsForm({
               )}
             </div>
           </SettingsCard>
+
+          {profileAvailable && <InsuranceCard value={profile} onChange={changeProfile} errors={profileErrors} />}
 
           {/* ── Coordonnées bancaires ── */}
           <SettingsCard
@@ -448,6 +496,10 @@ export function CompanySettingsForm({
               </FieldGrid>
             )}
           </SettingsCard>
+
+          {profileAvailable && (
+            <MentionsPreviewCard value={profile} companyName={fields.name} legalNotice={legalNotice} mode={mode} />
+          )}
 
           <MobileSaveBar show={isDirty} form={FORM_ID} saving={saving} />
         </form>

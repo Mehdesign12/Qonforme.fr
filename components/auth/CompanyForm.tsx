@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Check, Loader2, Search } from "lucide-react"
@@ -8,6 +8,12 @@ import { isValidSiren, sirenToVAT } from "@/lib/utils/invoice"
 import { trackEvent } from "@/lib/meta-pixel"
 import { AUTH_INPUT, AuthSubmit, Field } from "@/components/auth/fields"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import { legalProfileAvailable } from "@/lib/legal/db"
+import { TRADES, VAT_REGIMES, isTradeId, type TradeId, type VatRegime } from "@/lib/legal/profile"
+
+/** Liste déroulante : la flèche native reste visible (pas d'appearance:none). */
+const AUTH_SELECT = "q-input !h-12 !rounded-xl !px-3.5 !text-base"
 
 /** Carte de section (canevas « Onb-2-Entreprise ») : rayon 18, ombre portée douce. */
 const CARD = "q-card !rounded-[18px] p-5 sm:p-6 shadow-[0_1px_2px_rgba(10,17,34,.04),0_12px_32px_-24px_rgba(10,17,34,.18)]"
@@ -52,6 +58,15 @@ export default function CompanyForm() {
     vat_number: "",
     iban: "",
   })
+
+  // Métier et régime de TVA (profil légal) : proposés seulement si la colonne
+  // `legal_profile` existe (migration 20261003_legal_profile_btp.sql)
+  const [profileOn, setProfileOn] = useState(false)
+  const [trade, setTrade] = useState<TradeId | "">("")
+  const [vatRegime, setVatRegime] = useState<VatRegime | "">("")
+  useEffect(() => {
+    legalProfileAvailable(createClient()).then(setProfileOn, () => setProfileOn(false))
+  }, [])
 
   const set = (key: keyof Fields) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFields(prev => ({ ...prev, [key]: e.target.value }))
@@ -116,6 +131,9 @@ export default function CompanyForm() {
           city:       fields.city.trim(),
           vat_number: fields.vat_number.trim() || null,
           iban:       fields.iban.trim() || null,
+          ...(profileOn && (trade || vatRegime)
+            ? { legal_profile: { trade: trade || null, vat_regime: vatRegime || null } }
+            : {}),
         }),
       })
       if (!res.ok) {
@@ -214,6 +232,25 @@ export default function CompanyForm() {
             <input {...input("city")} placeholder="Angers" autoComplete="address-level2" />
           </Field>
         </div>
+
+        {profileOn && (
+          <Field
+            id="trade"
+            label={<>Métier principal <span className="font-normal text-q-text-4">(facultatif)</span></>}
+            hint="Votre catalogue vous proposera les prestations courantes de ce métier, prix à compléter."
+          >
+            <select
+              id="trade"
+              className={AUTH_SELECT}
+              value={trade}
+              disabled={loading}
+              onChange={(e) => setTrade(isTradeId(e.target.value) ? e.target.value : "")}
+            >
+              <option value="">Choisir un métier</option>
+              {TRADES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select>
+          </Field>
+        )}
       </section>
 
       {/* ── TVA et paiement ── */}
@@ -222,6 +259,27 @@ export default function CompanyForm() {
           <h2 id="company-payment" className="m-0 text-[17px] font-semibold text-q-ink">TVA et paiement</h2>
           <p className="mt-1 text-[14px] text-q-text-3">Repris sur vos devis et vos factures. Modifiables ensuite dans les paramètres.</p>
         </div>
+
+        {profileOn && (
+          <Field
+            id="vat_regime"
+            label={<>Régime de TVA <span className="font-normal text-q-text-4">(facultatif)</span></>}
+            hint={vatRegime === "franchise"
+              ? "« TVA non applicable, art. 293 B du CGI » sera ajoutée d'office à vos documents."
+              : "Vos assurances et votre statut se complètent ensuite dans Paramètres › Entreprise."}
+          >
+            <select
+              id="vat_regime"
+              className={AUTH_SELECT}
+              value={vatRegime}
+              disabled={loading}
+              onChange={(e) => setVatRegime(e.target.value === "franchise" || e.target.value === "assujetti" ? e.target.value : "")}
+            >
+              <option value="">Choisir</option>
+              {VAT_REGIMES.map((r) => <option key={r.id} value={r.id}>{r.id === "franchise" ? "Franchise en base (pas de TVA facturée)" : r.label}</option>)}
+            </select>
+          </Field>
+        )}
 
         <Field
           id="vat_number"

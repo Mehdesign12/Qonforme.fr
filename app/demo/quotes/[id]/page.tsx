@@ -9,6 +9,7 @@ import { DEMO_COMPANY, DEMO_TODAY, demoInvoice, demoQuote } from "@/lib/demo/dat
 import { SignaturePanel } from "@/components/signature/SignaturePanel"
 import { demoSignatureActions } from "@/components/signature/demo-actions"
 import { demoPublicHref, demoSignaturePanel } from "@/lib/demo/signature"
+import { DEMO_LEGAL_NOTICE, DEMO_LEGAL_PROFILE, demoLegalSnapshot } from "@/lib/demo/legal-profile"
 
 /** La démo n'enregistre rien : chaque action invite à créer un compte. */
 const ctaToast = (what: string) => toast(`Créez un compte pour ${what}`, {
@@ -48,6 +49,7 @@ export default function DemoQuoteDetailPage({ params }: { params: { id: string }
     converted_invoice: q.converted_invoice_number
       ? { number: q.converted_invoice_number, status: invoice?.status ?? null, href: `/demo/invoices/${q.converted_invoice_number.toLowerCase()}` }
       : null,
+    legal_snapshot: demoLegalSnapshot(q.status),
   }
 
   const signature = (
@@ -73,7 +75,7 @@ export default function DemoQuoteDetailPage({ params }: { params: { id: string }
   return (
     <QuoteDetailView
       quote={data}
-      company={DEMO_COMPANY}
+      company={{ ...DEMO_COMPANY, legal_notice: DEMO_LEGAL_NOTICE, legal_profile: DEMO_LEGAL_PROFILE }}
       today={DEMO_TODAY}
       demo
       signature={signature}

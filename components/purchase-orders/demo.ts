@@ -7,6 +7,7 @@ import { DEMO_COMPANY, DEMO_PURCHASE_ORDERS, type DemoPurchaseOrder } from "@/li
 import type { PurchaseOrderListItem } from "@/components/purchase-orders/PurchaseOrderListView"
 import type { PurchaseOrderDetailData } from "@/components/purchase-orders/PurchaseOrderDetailView"
 import type { PaperParty } from "@/components/purchase-orders/detail-bits"
+import { DEMO_LEGAL_NOTICE, DEMO_LEGAL_PROFILE, demoLegalSnapshot } from "@/lib/demo/legal-profile"
 
 export const DEMO_PO_COMPANY: PaperParty = {
   name: DEMO_COMPANY.name,
@@ -15,6 +16,8 @@ export const DEMO_PO_COMPANY: PaperParty = {
   city: DEMO_COMPANY.city,
   siren: DEMO_COMPANY.siren,
   vat_number: DEMO_COMPANY.vat_number,
+  legal_notice: DEMO_LEGAL_NOTICE,
+  legal_profile: DEMO_LEGAL_PROFILE,
 }
 
 const EXTRA: Record<string, { created_at: string; sent_at?: string; confirmed_at?: string; notes?: string }> = {
@@ -63,6 +66,7 @@ function toDetail(p: DemoPurchaseOrder): PurchaseOrderDetailData {
     confirmed_at: extra?.confirmed_at ?? null,
     created_at: extra?.created_at ?? null,
     client: { ...p.client, href: `/demo/clients/${p.client.id}`, editHref: `/demo/clients/${p.client.id}/edit` },
+    legal_snapshot: demoLegalSnapshot(p.status),
   }
 }
 

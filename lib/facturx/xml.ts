@@ -63,6 +63,11 @@ export interface FxSeller extends FxParty {
   iban?: string | null
   /** Mentions de l'entreprise imprimées en pied de document. */
   legal_notice?: string | null
+  /**
+   * Régime de TVA déclaré dans Paramètres › Entreprise (lib/legal/profile.ts).
+   * Absent : la franchise se déduit de la mention 293 B des mentions ou des notes.
+   */
+  vat_regime?: "franchise" | "assujetti" | null
 }
 
 export interface FxLine {
@@ -147,10 +152,17 @@ export interface FxTotals {
 const toCents = (n: number | null | undefined): number => Math.round((Number(n) || 0) * 100)
 const fromCents = (c: number): number => c / 100
 
-/** Traitement du document : celui demandé, sinon franchise si la mention 293 B est présente. */
+/**
+ * Traitement du document : celui demandé, sinon le régime de TVA déclaré par
+ * l'entreprise, sinon (régime non renseigné) franchise si la mention 293 B est
+ * présente dans les mentions ou les notes.
+ */
 export function documentVatTreatment(doc: Pick<FxDocument, "vat_treatment" | "seller" | "notes">): VatTreatment {
-  return parseVatTreatment(doc.vat_treatment)
-    ?? (declaresVatFranchise(doc.seller.legal_notice, doc.notes) ? "franchise" : "standard")
+  const requested = parseVatTreatment(doc.vat_treatment)
+  if (requested) return requested
+  if (doc.seller.vat_regime === "franchise") return "franchise"
+  if (doc.seller.vat_regime === "assujetti") return "standard"
+  return declaresVatFranchise(doc.seller.legal_notice, doc.notes) ? "franchise" : "standard"
 }
 
 /**
@@ -333,7 +345,7 @@ export function buildFacturX(doc: FxDocument): FacturXResult {
 
   const categories = new Set(totals.lines.map((l) => l.category))
   if (categories.has("S") && !sellerVat) warnings.push("La facture applique la TVA mais l'entreprise n'a pas de n° de TVA intracommunautaire (BT-31).")
-  if (categories.has("Z")) warnings.push("Ligne à 0 % sans motif d'exonération : déclarée au taux zéro (Z). En franchise en base, ajoutez la mention de l'article 293 B du CGI à vos modèles.")
+  if (categories.has("Z")) warnings.push("Ligne à 0 % sans motif d'exonération : déclarée au taux zéro (Z). En franchise en base, choisissez ce régime dans Paramètres › Entreprise (ou ajoutez la mention de l'article 293 B du CGI à vos modèles).")
   if (categories.has("AE") && !(buyerVat || buyerSiren)) warnings.push("Autoliquidation : le n° de TVA ou le SIREN du client est obligatoire (BR-AE-02).")
   if ((categories.has("K") || categories.has("G")) && !sellerVat) warnings.push("Exonération intracommunautaire ou à l'export : le n° de TVA de l'entreprise est obligatoire (BR-IC-02, BR-G-02).")
   if (categories.has("K") && !buyerVat) warnings.push("Livraison intracommunautaire : le n° de TVA du client est obligatoire (BR-IC-02).")

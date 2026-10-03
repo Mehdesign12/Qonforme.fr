@@ -12,6 +12,7 @@ import { FileText, Info, RotateCcw, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
+import { selectCompanyWithProfile } from "@/lib/legal/db"
 import { cn } from "@/lib/utils"
 import { formatCurrency, INVOICE_STATUS_LABELS } from "@/lib/utils/invoice"
 import { InvoiceStatus } from "@/types"
@@ -353,10 +354,11 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     const supabase = createClient()
     Promise.all([
       fetch(`/api/invoices/${invoiceId}`).then(r => r.json()),
-      supabase.from("companies").select("name,address,zip_code,city,siret,siren,vat_number,iban,legal_notice").single(),
+      // Profil légal compris s'il existe : mentions automatiques d'un brouillon
+      selectCompanyWithProfile(supabase, "name,address,zip_code,city,siret,siren,vat_number,iban,legal_notice"),
     ]).then(([json, { data: comp }]) => {
       if (json.invoice) setInvoice(json.invoice)
-      if (comp) setCompany(comp)
+      if (comp) setCompany(comp as CompanyView)
     }).finally(() => setLoading(false))
     // Devis d'origine (conversion devis → facture), simple lien : rien n'est affiché en cas d'erreur
     supabase.from("quotes").select("id,quote_number").eq("converted_invoice_id", invoiceId).maybeSingle()

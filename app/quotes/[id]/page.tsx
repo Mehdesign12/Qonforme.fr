@@ -16,6 +16,8 @@ import { addDays, daysBetween, todayISO, type QuoteStatus } from "@/components/q
 import { PaywallDialog } from "@/components/billing/PaywallDialog"
 import { SignaturePanel } from "@/components/signature/SignaturePanel"
 import { useSignaturePanel } from "@/components/signature/useSignaturePanel"
+import { selectCompanyWithProfile } from "@/lib/legal/db"
+import { snapshotOf } from "@/lib/legal/mentions"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -46,6 +48,8 @@ interface Quote {
   converted_invoice_id: string | null
   created_at: string
   sent_at?: string | null
+  /** Mentions figées à l'envoi (lib/legal/mentions.ts) ; absent avant la migration. */
+  legal_snapshot?: unknown
   client: {
     id: string
     name: string
@@ -83,10 +87,11 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
     const supabase = createClient()
     Promise.all([
       fetch(`/api/quotes/${params.id}`).then(r => r.json()),
-      supabase.from("companies").select("name,address,zip_code,city,siret,siren,vat_number").single(),
+      // Mentions libres et profil légal (s'il existe) : pied de l'aperçu, comme le PDF
+      selectCompanyWithProfile(supabase, "name,address,zip_code,city,siret,siren,vat_number,legal_notice"),
     ]).then(([json, { data: comp }]) => {
       if (json.quote) setQuote(json.quote)
-      if (comp) setCompany(comp)
+      if (comp) setCompany(comp as QuoteDetailCompany)
     }).finally(() => setLoading(false))
   }, [params.id])
 
@@ -176,6 +181,8 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
         ...quote,
         status: quote.status === "draft" ? "sent" : quote.status,
         sent_at: new Date().toISOString(),
+        // Un brouillon envoyé a désormais ses mentions figées (relues au prochain chargement)
+        legal_snapshot: quote.legal_snapshot ?? (quote.status === "draft" ? snapshotOf(company) : undefined),
       })
       toast.success(`Devis envoyé à ${json.sentTo}`)
       void sig.reload()
@@ -272,6 +279,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
     converted_invoice: quote.converted_invoice_id
       ? { number: invoice?.invoice_number ?? null, status: invoice?.status ?? null, href: `/invoices/${quote.converted_invoice_id}` }
       : null,
+    legal_snapshot: quote.legal_snapshot,
   }
 
   const signature = sig.data?.available ? (

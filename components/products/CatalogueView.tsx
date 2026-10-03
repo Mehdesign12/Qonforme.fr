@@ -6,17 +6,21 @@
  * (lib/demo/data.ts) : la page fournit les lignes, la recherche et les actions.
  *
  * Écarts avec la planche : pas de catégories ni de « Utilisée dans N devis »
- * (le produit n'a pas ces champs), pas d'« Importer » (non livré), et pas de
- * catalogue « préparé à l'inscription » (rien n'est prérempli à l'inscription).
+ * (le produit n'a pas ces champs). « Importer » propose les prestations
+ * courantes du métier, cochées par l'artisan, sans prix
+ * (components/products/TradeImportDialog.tsx) ; une prestation à 0 € est
+ * signalée « Prix à compléter ».
  */
 import { useState } from "react"
 import Link from "next/link"
-import { Archive, ArchiveRestore, Check, FileCheck2, Loader2, Package, Pencil, Plus, X } from "lucide-react"
+import { Archive, ArchiveRestore, Check, FileCheck2, ListPlus, Loader2, Package, Pencil, Plus, X } from "lucide-react"
 import { EmptyState, PageHeader, SearchField } from "@/components/app/kit"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { formatCurrency, VAT_RATES } from "@/lib/utils/invoice"
 import { cn } from "@/lib/utils"
+import type { TradeId, VatRegime } from "@/lib/legal/profile"
+import { TradeImportDialog, type TradeImportRequest } from "@/components/products/TradeImportDialog"
 
 export interface CatalogueProduct {
   id: string
@@ -51,6 +55,13 @@ export const formatVat = (rate: number) => `${String(rate).replace(".", ",")} %
 
 const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`
 
+
+/** Prix d'une prestation : « Prix à compléter » à 0 € (prestation importée sans prix). */
+function PriceCell({ value, className }: { value: number; className?: string }) {
+  if (Number(value) > 0) return <span className={className}>{formatCurrency(value)}</span>
+  return <span className="q-pill q-pill-warn">Prix à compléter</span>
+}
+
 /** Prix saisi à la française (« 1 250,50 ») → nombre, ou NaN. */
 function parsePrice(raw: string): number {
   const clean = raw.replace(/[\s  €]/g, "").replace(",", ".")
@@ -74,6 +85,7 @@ export function CatalogueView({
   quoteHref,
   error,
   onRetry,
+  importer,
 }: {
   /** null pendant le premier chargement. Déjà filtrées par la recherche. */
   products: CatalogueProduct[] | null
@@ -89,12 +101,19 @@ export function CatalogueView({
   quoteHref: string
   error?: string | null
   onRetry?: () => void
+  /** Import des prestations courantes du métier (profil de Paramètres › Entreprise). */
+  importer?: {
+    trade: TradeId | null
+    vatRegime: VatRegime | null
+    onImport: (request: TradeImportRequest) => Promise<boolean> | boolean
+  }
 }) {
   const [tab, setTab] = useState<Tab>("active")
   /** Fenêtre de saisie : "new", une prestation, ou fermée. */
   const [editing, setEditing] = useState<CatalogueProduct | "new" | null>(null)
   const [confirming, setConfirming] = useState<CatalogueProduct | null>(null)
   const [toggling, setToggling] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
 
   async function runToggle(p: CatalogueProduct) {
     setToggling(true)
@@ -122,6 +141,22 @@ export function CatalogueView({
 
   const headerActions = (
     <>
+      {importer && (
+        <>
+          <Button variant="outline" className="hidden md:inline-flex" onClick={() => setImportOpen(true)}>
+            <ListPlus aria-hidden />
+            Importer
+          </Button>
+          <button
+            type="button"
+            aria-label="Importer les prestations de votre métier"
+            onClick={() => setImportOpen(true)}
+            className="q-btn q-btn-secondary q-btn-icon !size-11 !rounded-[14px] md:hidden"
+          >
+            <ListPlus className="!size-5" strokeWidth={2} aria-hidden />
+          </button>
+        </>
+      )}
       <Button className="hidden md:inline-flex" onClick={() => setEditing("new")}>
         <Plus strokeWidth={2.25} aria-hidden />
         Nouvelle prestation
@@ -139,6 +174,17 @@ export function CatalogueView({
 
   const dialogs = (
     <>
+      {importer && (
+        <TradeImportDialog
+          key={importOpen ? `import-${importer.trade ?? ""}-${importer.vatRegime ?? ""}` : "import-closed"}
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          trade={importer.trade}
+          vatRegime={importer.vatRegime}
+          existingNames={(products ?? []).map((p) => p.name)}
+          onImport={importer.onImport}
+        />
+      )}
       <ProductDialog
         key={editing === null ? "closed" : editing === "new" ? "new" : editing.id}
         product={editing}
@@ -210,12 +256,22 @@ export function CatalogueView({
           <EmptyState
             icon={<Package className="size-6" strokeWidth={1.75} />}
             title="Votre catalogue est vide"
-            text="Ajoutez vos prestations et fournitures courantes avec leur unité, leur prix net HT et leur taux de TVA."
+            text={importer
+              ? "Partez des prestations courantes de votre métier : désignation, unité et taux de TVA proposés, vos prix à compléter. Ou ajoutez les vôtres une à une."
+              : "Ajoutez vos prestations et fournitures courantes avec leur unité, leur prix net HT et leur taux de TVA."}
             action={
-              <Button onClick={() => setEditing("new")}>
-                <Plus strokeWidth={2.25} aria-hidden />
-                Nouvelle prestation
-              </Button>
+              <div className="flex flex-col items-center gap-2 sm:flex-row">
+                {importer && (
+                  <Button onClick={() => setImportOpen(true)}>
+                    <ListPlus aria-hidden />
+                    Importer les prestations de votre métier
+                  </Button>
+                )}
+                <Button variant={importer ? "outline" : "default"} onClick={() => setEditing("new")}>
+                  <Plus strokeWidth={2.25} aria-hidden />
+                  Nouvelle prestation
+                </Button>
+              </div>
             }
           />
         </section>
@@ -326,7 +382,7 @@ export function CatalogueView({
                     </td>
                     <td className="whitespace-nowrap font-mono text-[13px] text-[var(--q-text-3)]">{p.reference || "—"}</td>
                     <td className="whitespace-nowrap text-[var(--q-text-3)]">{p.unit || "—"}</td>
-                    <td className="is-num whitespace-nowrap font-semibold">{formatCurrency(p.unit_price_ht)}</td>
+                    <td className="is-num whitespace-nowrap font-semibold"><PriceCell value={p.unit_price_ht} /></td>
                     <td className="whitespace-nowrap tabular-nums text-[var(--q-text-3)]">{formatVat(p.vat_rate)}</td>
                     <td>
                       <div className="flex items-center justify-end gap-0.5">
@@ -385,7 +441,7 @@ export function CatalogueView({
               </span>
             </span>
             <span className="flex shrink-0 flex-col items-end gap-1">
-              <span className="text-[15px] font-semibold tabular-nums">{formatCurrency(p.unit_price_ht)}</span>
+              <PriceCell value={p.unit_price_ht} className="text-[15px] font-semibold tabular-nums" />
               <span className="text-[11px] tabular-nums text-[var(--q-text-4)]">TVA {formatVat(p.vat_rate)}</span>
             </span>
           </button>
