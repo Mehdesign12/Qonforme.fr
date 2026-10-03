@@ -24,7 +24,7 @@ function toInvoice(row: any): DashInvoice {
   const client = one(row.client)
   return {
     id: row.id,
-    invoice_number: row.invoice_number ?? "",
+    invoice_number: row.invoice_number ?? null, // brouillon : numéro attribué à l'envoi
     status: row.status,
     issue_date: row.issue_date,
     due_date: row.due_date ?? null,

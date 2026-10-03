@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { generateInvoicePdf } from "@/lib/pdf/invoice"
-import { getNextDocumentNumber } from "@/lib/utils/document-numbering"
+import { DRAFT_INVOICE_LABEL } from "@/lib/utils/document-numbering"
 
 // POST /api/invoices/preview-pdf — génère un aperçu PDF SANS créer de facture.
 //
@@ -35,10 +35,9 @@ export async function POST(request: NextRequest) {
     client = data
   }
 
-  const prefix = company?.invoice_prefix || "F"
-  const year   = new Date().getFullYear()
-  // Lecture seule : reflète le prochain numéro réel sans rien réserver ni écrire.
-  const invoice_number = await getNextDocumentNumber(supabase, "invoices", "invoice_number", user.id, `${prefix}-${year}-`)
+  // Pas de numéro dans l'aperçu : il n'est attribué qu'à l'émission de la
+  // facture (lib/utils/document-numbering.ts), « Brouillon » en tient lieu.
+  const invoice_number = DRAFT_INVOICE_LABEL
 
   const lines       = body.lines || []
   const subtotal_ht = lines.reduce((s: number, l: { total_ht: number }) => s + (l.total_ht || 0), 0)
@@ -66,7 +65,7 @@ export async function POST(request: NextRequest) {
       status: 200,
       headers: {
         "Content-Type":        "application/pdf",
-        "Content-Disposition": `inline; filename="apercu-${invoice_number}.pdf"`,
+        "Content-Disposition": `inline; filename="apercu-facture.pdf"`,
         "Cache-Control":       "no-store",
       },
     })

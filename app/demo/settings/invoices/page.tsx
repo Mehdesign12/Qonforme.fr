@@ -30,7 +30,7 @@ export default function DemoInvoiceSettingsPage() {
             payment_terms: "Paiement par virement bancaire sous 30 jours.",
           },
           logo_url: null,
-          invoiceNumbers: DEMO_INVOICES.map((i) => i.invoice_number),
+          invoiceNumbers: DEMO_INVOICES.flatMap((i) => (i.invoice_number ? [i.invoice_number] : [])),
           quoteNumbers: DEMO_QUOTES.map((q) => q.quote_number),
         }}
       />

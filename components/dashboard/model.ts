@@ -10,6 +10,7 @@
  * des factures en cours dont l'échéance tombe dans les 30 jours, pas une prévision.
  */
 import { canRemindInvoice } from "@/lib/utils/document-status"
+import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
 
 export type DashMode = "app" | "demo"
 
@@ -35,7 +36,8 @@ export const ISSUED_INVOICE_STATUSES = [...OPEN_INVOICE_STATUSES, "paid"] as con
 
 export interface DashInvoice {
   id: string
-  invoice_number: string
+  /** Vide pour un brouillon (numéro attribué à l'émission). */
+  invoice_number: string | null
   status: string
   issue_date: string
   due_date: string | null
@@ -389,7 +391,7 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
       meta: `${fmt(inv.total_ttc)} · échue depuis ${days}\u00a0j`,
       href: href(`/invoices/${inv.id}`),
       action: canRemind
-        ? { kind: "remind", invoiceId: inv.id, invoiceNumber: inv.invoice_number, clientName: client }
+        ? { kind: "remind", invoiceId: inv.id, invoiceNumber: invoiceNumberLabel(inv.invoice_number), clientName: client }
         : { kind: "link", label: "Ouvrir" },
     })
   }
@@ -454,7 +456,7 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
       key: `draft-${d.id}`,
       tone: "neutral",
       icon: "draft",
-      title: `Facture ${d.invoice_number} en brouillon`,
+      title: d.invoice_number ? `Facture ${d.invoice_number} en brouillon` : "Facture en brouillon",
       meta: `${d.client_name ?? "Client"} · ${fmt(d.total_ttc)}`,
       href: href(`/invoices/${d.id}/edit`),
       action: { kind: "link", label: "Finaliser" },
@@ -518,7 +520,7 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
     recent: input.recent.map((inv) => ({
       id: inv.id,
       href: href(`/invoices/${inv.id}`),
-      number: inv.invoice_number,
+      number: invoiceNumberLabel(inv.invoice_number),
       clientName: inv.client_name,
       clientCity: inv.client_city,
       dueDate: inv.due_date,

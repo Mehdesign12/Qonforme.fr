@@ -29,8 +29,12 @@ interface CronLog {
   job_name: string
   status: string
   results: {
+    // Mode historique (J+30 / J+45) du cron des relances
     reminder_1?: { sent: number; skipped: number; errors: string[] }
     reminder_2?: { sent: number; skipped: number; errors: string[] }
+    // Mode réglages (Paramètres › Relances) : factures et devis
+    invoices?: { sent: number; skipped: number; errors: string[] }
+    quotes?: { sent: number; skipped: number; errors: string[] }
   } | null
   duration_ms: number | null
 }
@@ -185,10 +189,9 @@ function ServiceCard({
 
 function CronRow({ log }: { log: CronLog }) {
   const ok = log.status === "ok"
-  const r1 = log.results?.reminder_1
-  const r2 = log.results?.reminder_2
-  const totalSent = (r1?.sent ?? 0) + (r2?.sent ?? 0)
-  const totalErrors = (r1?.errors?.length ?? 0) + (r2?.errors?.length ?? 0)
+  const parts = [log.results?.reminder_1, log.results?.reminder_2, log.results?.invoices, log.results?.quotes]
+  const totalSent = parts.reduce((n, r) => n + (r?.sent ?? 0), 0)
+  const totalErrors = parts.reduce((n, r) => n + (r?.errors?.length ?? 0), 0)
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/60 dark:hover:bg-[#162032]/40 transition-colors">

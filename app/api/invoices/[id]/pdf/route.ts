@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createClientWithToken } from "@/lib/supabase/server"
 import { generateInvoicePdf } from "@/lib/pdf/invoice"
+import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -35,15 +36,24 @@ export async function GET(request: NextRequest, { params }: Params) {
       .eq("user_id", user.id)
       .single()
 
-    // Une facture pas encore émise sort filigranée « BROUILLON », sans XML Factur-X
+    // Une facture pas encore émise sort filigranée « BROUILLON », sans XML Factur-X.
+    // Elle n'a pas encore de numéro (attribué à l'émission) : « Brouillon » à la place.
     const isDraft = invoice.status === "draft"
-    const buffer = await generateInvoicePdf({ invoice, company, watermark: isDraft ? "BROUILLON" : undefined })
+    const number  = invoiceNumberLabel(invoice.invoice_number)
+    const buffer = await generateInvoicePdf({
+      invoice: { ...invoice, invoice_number: number },
+      company,
+      watermark: isDraft ? "BROUILLON" : undefined,
+    })
+    const filename = isDraft
+      ? (invoice.invoice_number ? `brouillon-${invoice.invoice_number}` : `brouillon-facture-${String(invoice.id).slice(0, 8)}`)
+      : number
 
     return new Response(buffer.buffer as ArrayBuffer, {
       status: 200,
       headers: {
         "Content-Type":        "application/pdf",
-        "Content-Disposition": `attachment; filename="${isDraft ? "brouillon-" : ""}${invoice.invoice_number}.pdf"`,
+        "Content-Disposition": `attachment; filename="${filename}.pdf"`,
         "Cache-Control":       "no-store",
         // Brouillon : PDF simple, sans XML (voir lib/pdf/invoice.ts)
         ...(isDraft ? {} : { "X-Facturx-Profile": "EN 16931" }),

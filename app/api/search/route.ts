@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
 import {
   EMPTY_RESULTS, OPEN_INVOICE_STATUSES, SEARCH_LIMIT, SEARCH_MIN,
   clientMeta, type DocHit, type SearchResults,
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
   const results: SearchResults = {
     invoices: (invRes.data ?? []).map((r): DocHit => ({
       id: r.id as string,
-      number: r.invoice_number as string,
+      number: invoiceNumberLabel(r.invoice_number as string | null),
       client: clientName(r.client),
       amount: Number(r.total_ttc ?? 0),
       status: r.status as string,

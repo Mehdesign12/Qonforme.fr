@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { insertWithSequentialNumber } from "@/lib/utils/document-numbering"
+import { insertDraftInvoice } from "@/lib/utils/document-numbering"
+import { todayInParis } from "@/lib/utils/paris-date"
 import { canConvertQuote } from "@/lib/utils/document-status"
 
 interface Params { params: Promise<{ id: string }> }
@@ -31,40 +32,34 @@ export async function POST(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Seul un devis envoyé ou accepté peut être converti en facture" }, { status: 400 })
   }
 
-  // 2. Numérotation facture — même compteur (MAX robuste sur la table invoices,
-  //    voir lib/utils/document-numbering.ts) que la création directe, pour ne
-  //    plus jamais produire de doublon avec les factures déjà émises hors
-  //    conversion de devis (ancien bug : ce compteur relisait companies.invoice_sequence,
-  //    un compteur séparé jamais incrémenté par la création directe de facture).
+  // 2. La facture naît brouillon, sans numéro : elle le reçoit à son émission,
+  //    dans la même série que les factures directes (lib/utils/document-numbering.ts).
+  //    Le préfixe ne sert que si la base exige encore un numéro à la création.
   const { data: company } = await supabase
     .from("companies")
     .select("invoice_prefix")
     .eq("user_id", user.id)
     .single()
 
-  const prefix = company?.invoice_prefix || "F"
-  const year   = new Date().getFullYear()
-  const pfx    = `${prefix}-${year}-`
+  const today = todayInParis()
 
   // 3. Créer la facture à partir du devis
-  const { data: invoice, error: invErr } = await insertWithSequentialNumber<{ id: string }>(supabase, {
-    table: "invoices",
-    numberColumn: "invoice_number",
+  const { data: invoice, error: invErr } = await insertDraftInvoice<{ id: string }>(supabase, {
     userId: user.id,
-    prefix: pfx,
-    buildRow: (invoice_number) => ({
+    companyPrefix: company?.invoice_prefix,
+    today,
+    row: {
       user_id:     user.id,
       client_id:   quote.client_id,
-      invoice_number,
       status:      "draft",
-      issue_date:  new Date().toISOString().split("T")[0],
+      issue_date:  today,
       due_date:    quote.valid_until,
       lines:       quote.lines,
       subtotal_ht: quote.subtotal_ht,
       total_vat:   quote.total_vat,
       total_ttc:   quote.total_ttc,
       notes:       quote.notes,
-    }),
+    },
   })
 
   if (invErr || !invoice) return NextResponse.json({ error: invErr?.message ?? "Erreur création facture" }, { status: 500 })

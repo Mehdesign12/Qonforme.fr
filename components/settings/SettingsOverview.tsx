@@ -127,9 +127,9 @@ export function SettingsOverview({
         <Row href={href("/settings/exports")} icon={Download} title="Exports comptables" sub="Fichier des écritures comptables (FEC)" />
       </Group>
 
-      {/* ── Notifications ── */}
-      <Group title="Notifications">
-        <Row href={href("/settings/notifications")} icon={Bell} title="E-mails envoyés" sub="Copie de vos envois, relances automatiques" />
+      {/* ── Relances et notifications ── */}
+      <Group title="Relances">
+        <Row href={href("/settings/notifications")} icon={Bell} title="Relances et e-mails" sub="Relances des factures et des devis, copie de vos envois" />
       </Group>
 
       {/* ── Abonnement ── */}

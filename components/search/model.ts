@@ -149,14 +149,15 @@ export function quoteItem(
 }
 
 export function draftItem(
-  d: { id: string; kind: "invoice" | "quote"; number: string; client: string | null; createdDay: string },
+  d: { id: string; kind: "invoice" | "quote"; number: string | null; client: string | null; createdDay: string },
   today: string,
   href: string,
 ): AttentionItem {
   return {
     id: `draft-${d.kind}-${d.id}`,
     kind: "draft",
-    title: `${d.kind === "invoice" ? "Facture" : "Devis"} ${d.number} en brouillon`,
+    // Un brouillon de facture n'a pas encore de numéro (attribué à l'émission)
+    title: `${d.kind === "invoice" ? "Facture" : "Devis"}${d.number ? ` ${d.number}` : ""} en brouillon`,
     meta: `${d.client ?? "Client"} · créé il y a ${days(daysBetween(d.createdDay, today))}`,
     href,
   }

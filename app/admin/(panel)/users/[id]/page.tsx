@@ -242,7 +242,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
               <tbody className="divide-y divide-slate-50 dark:divide-[#1E3A5F]">
                 {recentInvoices.map(inv => (
                   <tr key={inv.id} className="hover:bg-slate-50/60 dark:hover:bg-[#162032]/40 transition-colors">
-                    <td className="px-4 py-2.5 font-mono text-[12px] text-foreground">{inv.invoice_number}</td>
+                    <td className="px-4 py-2.5 font-mono text-[12px] text-foreground">{inv.invoice_number ?? "Brouillon"}</td>
                     <td className="px-4 py-2.5 text-[12px] text-slate-400">{inv.issue_date ? new Date(inv.issue_date).toLocaleDateString('fr-FR') : '—'}</td>
                     <td className="px-4 py-2.5 font-mono text-[12px] text-right text-foreground">
                       {inv.total_ttc?.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) ?? '—'}
