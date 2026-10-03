@@ -4,6 +4,7 @@ import { canRemindInvoice } from "@/lib/utils/document-status"
 import { requireIssuingAccess } from "@/lib/stripe/subscription"
 import { sendEmail } from "@/lib/email/resend"
 import { buildReminderEmail } from "@/lib/email/templates/reminder"
+import { paymentLinkFor } from "@/lib/payment-link/server"
 import { daysBetween, parisDayOf, todayInParis } from "@/lib/utils/paris-date"
 import { loadReminderLog, recordManualReminder } from "@/lib/reminders/store"
 
@@ -94,6 +95,8 @@ export async function POST(_req: NextRequest, { params }: Params) {
     // 4. Construire et envoyer l'email de relance (rappel si l'échéance n'est pas passée)
     const dueDay = String(invoice.due_date ?? "").slice(0, 10)
     const late = dueDay ? daysBetween(dueDay, today) : 0
+    // Page de règlement par virement (null sans IBAN, lien désactivé ou migration absente)
+    const paymentUrl = await paymentLinkFor({ invoiceId: invoice.id, userId: user.id })
     const { subject, html } = buildReminderEmail({
       reminderNumber,
       kind:          late > 0 ? "after_due" : "before_due",
@@ -112,6 +115,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       accentColor,
       clientName:    invoice.client?.name ?? "",
       clientIsProfessional: Boolean(invoice.client?.siren?.trim()),
+      paymentUrl: paymentUrl ?? undefined,
     })
 
     await sendEmail({

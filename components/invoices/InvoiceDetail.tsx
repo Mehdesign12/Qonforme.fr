@@ -21,6 +21,9 @@ import { InvoiceDetailView } from "@/components/invoices/InvoiceDetailView"
 import { type CompanyView, todayISO } from "@/components/invoices/invoice-view"
 import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
 import { describeInvoiceSchedule } from "@/lib/reminders/settings"
+import { DeclarationBanner, PaymentLinkPanel } from "@/components/payment-link/PaymentLinkPanel"
+import { usePaymentLink } from "@/components/payment-link/usePaymentLink"
+import { isPayableStatus } from "@/lib/payment-link/rules"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -337,6 +340,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [paywall, setPaywall]                   = useState<null | "send" | "remind">(null)
   // Calendrier des relances automatiques du compte (Paramètres › Relances)
   const [autoReminders, setAutoReminders]       = useState<string | null | undefined>(undefined)
+  // Lien de paiement par virement : relu quand la facture change de statut (envoi, paiement)
+  const payLink = usePaymentLink(invoiceId, invoice?.status)
 
   useEffect(() => {
     setToday(todayISO())
@@ -596,6 +601,23 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         creditNotesHref="/credit-notes"
         settingsCompanyHref="/settings/company"
         autoReminders={autoReminders}
+        payment={payLink.state?.available ? (
+          <PaymentLinkPanel
+            status={invoice.status}
+            state={payLink.state}
+            iban={company?.iban ?? null}
+            settingsHref="/settings/company#banque"
+            handlers={{ create: payLink.create, disable: payLink.disable, enable: payLink.enable, busy: payLink.busy }}
+          />
+        ) : undefined}
+        paymentBanner={payLink.state?.declaration?.status === "open" && isPayableStatus(invoice.status) ? (
+          <DeclarationBanner
+            declaration={payLink.state.declaration}
+            onMarkPaid={() => changeStatus("paid" as InvoiceStatus)}
+            onDismiss={() => payLink.dismiss(payLink.state!.declaration!.id)}
+            busy={payLink.busy || statusLoading}
+          />
+        ) : null}
         handlers={{
           downloadPdf: downloadPDF,
           pdfLoading,
