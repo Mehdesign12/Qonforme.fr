@@ -4,6 +4,7 @@ import { statusAfterSend } from "@/lib/utils/document-status"
 import { sendEmail } from "@/lib/email/resend"
 import { buildQuoteEmail } from "@/lib/email/templates/quote"
 import { generateQuotePdf } from "@/lib/pdf/quote"
+import { markShareLinkSent, shareLinkForEmail } from "@/lib/signature/share"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -44,6 +45,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
     // 3. Générer le PDF via la lib partagée — identique au téléchargement (logo, SIRET, etc.)
     const pdfBuffer = await generateQuotePdf({ quote, company })
 
+    // Lien en ligne : signature (formule active) ou consultation (compte gratuit) ;
+    // null tant que la migration de la signature n'est pas appliquée
+    const share = await shareLinkForEmail(supabase, user.id, "quote", id)
+
     // 4. Construire et envoyer l'email
     const { subject, html } = buildQuoteEmail({
       quoteNumber:  quote.quote_number,
@@ -57,6 +62,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       accentColor,
       clientName,
       appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://qonforme.fr",
+      link: share ? { url: share.url, mode: share.mode } : null,
     })
 
     const cc        = senderEmail ? [senderEmail] : []
@@ -80,7 +86,9 @@ export async function POST(_req: NextRequest, { params }: Params) {
       .eq("id", id)
       .eq("user_id", user.id)
 
-    return NextResponse.json({ success: true, sentTo: clientEmail })
+    await markShareLinkSent(share, clientEmail)
+
+    return NextResponse.json({ success: true, sentTo: clientEmail, link: share?.mode ?? null })
   } catch (err) {
     console.error("Quote send error:", err)
     const message = err instanceof Error ? err.message : "Erreur inconnue"

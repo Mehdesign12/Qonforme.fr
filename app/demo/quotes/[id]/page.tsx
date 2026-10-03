@@ -6,6 +6,9 @@ import { FileX2 } from "lucide-react"
 import { EmptyState } from "@/components/app/kit"
 import { QuoteDetailView, type QuoteDetailData } from "@/components/quotes/QuoteDetailView"
 import { DEMO_COMPANY, DEMO_TODAY, demoInvoice, demoQuote } from "@/lib/demo/data"
+import { SignaturePanel } from "@/components/signature/SignaturePanel"
+import { demoSignatureActions } from "@/components/signature/demo-actions"
+import { demoPublicHref, demoSignaturePanel } from "@/lib/demo/signature"
 
 /** La démo n'enregistre rien : chaque action invite à créer un compte. */
 const ctaToast = (what: string) => toast(`Créez un compte pour ${what}`, {
@@ -47,12 +50,34 @@ export default function DemoQuoteDetailPage({ params }: { params: { id: string }
       : null,
   }
 
+  const signature = (
+    <SignaturePanel
+      docType="quote"
+      docNumber={q.quote_number}
+      docStatus={q.status}
+      totalTtc={q.total_ttc}
+      validUntil={q.valid_until}
+      today={DEMO_TODAY}
+      clientName={q.client.name}
+      clientEmail={q.client.email}
+      clientHref={`/demo/clients/${q.client.id}`}
+      data={demoSignaturePanel("quote", q.id)}
+      busy={null}
+      settingsHref="/demo/settings/invoices"
+      demo
+      previewHref={demoPublicHref(q.quote_number)}
+      actions={demoSignatureActions(q.quote_number)}
+    />
+  )
+
   return (
     <QuoteDetailView
       quote={data}
       company={DEMO_COMPANY}
       today={DEMO_TODAY}
       demo
+      signature={signature}
+      sendNote="L'email contient aussi un lien pour lire et signer le devis en ligne."
       links={{ list: "/demo/quotes", newQuote: "/demo/quotes/new", companySettings: "/demo/settings/company" }}
       actions={{
         onDownloadPdf: () => ctaToast("télécharger vos devis en PDF"),

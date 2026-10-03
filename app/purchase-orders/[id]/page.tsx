@@ -13,6 +13,9 @@ import { PurchaseOrderDetailView, type PurchaseOrderDetailData } from "@/compone
 import { poSubject, type POStatus } from "@/components/purchase-orders/PurchaseOrderListView"
 import type { PaperParty } from "@/components/purchase-orders/detail-bits"
 import { todayISO } from "@/components/quotes/QuoteListHelpers"
+import { PaywallDialog } from "@/components/billing/PaywallDialog"
+import { SignaturePanel } from "@/components/signature/SignaturePanel"
+import { useSignaturePanel } from "@/components/signature/useSignaturePanel"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -100,6 +103,17 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
     }).finally(() => setLoading(false))
   }, [params.id])
 
+  /* ── Signature en ligne (masquée tant que la migration n'est pas appliquée) ── */
+  const sig = useSignaturePanel("purchase_order", params.id, (reason) => {
+    if (reason === "sent") {
+      setPo(prev => prev && prev.status === "draft" ? { ...prev, status: "sent" } : prev)
+      return
+    }
+    fetch(`/api/purchase-orders/${params.id}`).then(r => r.json()).then((json) => {
+      if (json.purchase_order) setPo(toDetail(json.purchase_order))
+    }).catch(() => {})
+  })
+
   /* ── Changement de statut (liste blanche côté serveur : lib/utils/document-status.ts) ── */
   const changeStatus = async (newStatus: POStatus): Promise<boolean> => {
     if (!po) return false
@@ -170,6 +184,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
       // Un brouillon passe à « Envoyé » ; un bon déjà envoyé garde son statut
       setPo(prev => prev ? { ...prev, status: prev.status === "draft" ? "sent" : prev.status, sent_at: new Date().toISOString() } : prev)
       toast.success(`Bon de commande envoyé à ${json.sentTo}`)
+      void sig.reload()
       return true
     } catch { toast.error("Erreur réseau"); return false }
     finally { setSendLoading(false) }
@@ -192,13 +207,33 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
     </div>
   )
 
+  const signature = sig.data?.available ? (
+    <SignaturePanel
+      docType="purchase_order"
+      docNumber={po.po_number}
+      docStatus={po.status}
+      totalTtc={po.total_ttc}
+      today={today}
+      clientName={po.client?.name ?? null}
+      clientEmail={po.client?.email ?? null}
+      clientHref={po.client?.editHref ?? po.client?.href ?? null}
+      data={sig.data}
+      busy={sig.busy}
+      actions={sig.actions}
+      settingsHref="/settings/invoices"
+    />
+  ) : undefined
+
   return (
+    <>
+    <PaywallDialog open={sig.paywall} onOpenChange={sig.setPaywall} reason="signature" nextPath={`/purchase-orders/${params.id}`} />
     <PurchaseOrderDetailView
       po={po}
       company={company}
       today={today}
       listHref="/purchase-orders"
       companySettingsHref="/settings/company"
+      signature={signature}
       actions={{
         onDownloadPdf: downloadPDF,
         onSend: sendByEmail,
@@ -208,5 +243,6 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
         busy: { pdf: pdfLoading, send: sendLoading, status: statusLoading, delete: deleteLoading },
       }}
     />
+    </>
   )
 }

@@ -8,9 +8,11 @@
  * par la page : appels d'API réels (statuts contrôlés côté serveur par
  * lib/utils/document-status.ts), ou invitation à créer un compte en démo.
  *
- * Écarts volontaires avec la planche : pas de confirmation en ligne (signature
- * non livrée), pas de « Facturer l'acompte » ni de devis lié (le code ne
- * rattache le bon ni à un devis ni à une facture), pas de notes internes.
+ * Confirmation en ligne : panneau « Signature en ligne » fourni par la page
+ * (`signature`) ; sans lui (migration pas encore appliquée), la confirmation
+ * s'enregistre à la main. Écarts volontaires avec la planche : pas de
+ * « Facturer l'acompte » ni de devis lié (le code ne rattache le bon ni à un
+ * devis ni à une facture), pas de notes internes.
  */
 import { useState } from "react"
 import Link from "next/link"
@@ -70,7 +72,10 @@ export function PurchaseOrderDetailView({
   listHref,
   companySettingsHref,
   actions,
+  signature,
 }: {
+  /** Panneau « Signature en ligne », quand la fonction est disponible. */
+  signature?: React.ReactNode
   po: PurchaseOrderDetailData
   company: PaperParty | null
   /** « Aujourd'hui » (AAAA-MM-JJ) : date du navigateur, ou date fixe de la démo. */
@@ -313,8 +318,23 @@ export function PurchaseOrderDetailView({
             <Timeline events={events} />
           </section>
 
+          {signature}
+
+          {/* Avec la signature en ligne, la confirmation reçue par écrit reste possible */}
+          {signature && s === "sent" && (
+            <section aria-label="Confirmation sur papier" className="q-card hidden flex-col gap-3 p-[18px] lg:flex">
+              <h2 className="q-h2">Confirmation sur papier</h2>
+              <p className="text-[13px] leading-normal text-[var(--q-text-3)]">
+                Votre client vous a retourné le bon signé, ou a confirmé la commande par écrit ? Marquez-le comme confirmé.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Act label="Confirmer la commande" icon={Check} size="sm" onClick={() => setStatus("confirmed")} loading={busy.status} />
+              </div>
+            </section>
+          )}
+
           {/* Accord du client : sans signature en ligne, la confirmation s'enregistre à la main */}
-          {(s === "draft" || s === "sent") && (
+          {(s === "draft" || (!signature && s === "sent")) && (
             <section aria-label="Confirmation du client" className="q-card hidden flex-col gap-3 p-[18px] lg:flex">
               <h2 className="q-h2">Confirmation du client</h2>
               <p className="text-[13px] leading-normal text-[var(--q-text-3)]">

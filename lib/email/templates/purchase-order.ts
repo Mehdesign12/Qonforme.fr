@@ -1,4 +1,4 @@
-import { emailBase, fmtEur, fmtDate, amountBlock } from "./base"
+import { emailBase, fmtEur, fmtDate, amountBlock, ctaButton } from "./base"
 
 interface PurchaseOrderEmailData {
   poNumber:      string
@@ -13,6 +13,8 @@ interface PurchaseOrderEmailData {
   accentColor:   string
   clientName:    string
   appUrl:        string
+  /** Lien en ligne (lib/signature/share.ts) : « sign » pour confirmer en ligne, « view » pour consulter. */
+  link?:         { url: string; mode: "sign" | "view" } | null
 }
 
 export function buildPurchaseOrderEmail(d: PurchaseOrderEmailData): { subject: string; html: string } {
@@ -62,9 +64,12 @@ export function buildPurchaseOrderEmail(d: PurchaseOrderEmailData): { subject: s
       <p style="margin:0;font-size:13px;color:#3730A3;line-height:1.5;">${d.notes}</p>
     </div>` : ""}
 
+    ${d.link ? ctaButton(d.link.mode === "sign" ? "Consulter et signer" : "Consulter en ligne", d.link.url.replace(/"/g, "&quot;"), d.accentColor) : ""}
+
     <p style="margin:28px 0 0;font-size:13px;color:#64748B;line-height:1.6;">
-      Le bon de commande est joint à cet email en format PDF.
-      Pour confirmer la commande ou nous contacter, répondez simplement à cet email.
+      ${d.link?.mode === "sign"
+        ? "Le bon de commande est joint à cet email en format PDF. Vous pouvez aussi le lire en entier et le signer en ligne pour confirmer la commande : ce lien vous est personnel."
+        : "Le bon de commande est joint à cet email en format PDF. Pour confirmer la commande ou nous contacter, répondez simplement à cet email."}
     </p>
 
     <p style="margin:20px 0 0;font-size:14px;color:#475569;">

@@ -94,7 +94,8 @@ export function InstallPrompt() {
     setVisible(false)
   }, [deferredPrompt])
 
-  if (!visible) return null
+  // Page de signature : elle s'adresse au client de l'artisan, pas à un utilisateur de Qonforme
+  if (!visible || pathname.startsWith('/signer')) return null
 
   const hasBottomNav = ROUTES_WITH_BOTTOM_NAV.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),

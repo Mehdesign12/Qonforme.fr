@@ -1,4 +1,4 @@
-import { emailBase, fmtEur, fmtDate, amountBlock } from "./base"
+import { emailBase, fmtEur, fmtDate, amountBlock, ctaButton } from "./base"
 
 interface QuoteEmailData {
   quoteNumber:   string
@@ -12,6 +12,11 @@ interface QuoteEmailData {
   accentColor:   string
   clientName:    string
   appUrl:        string
+  /**
+   * Lien en ligne (lib/signature/share.ts) : « sign » pour consulter et signer
+   * (Essentiel, Artisan), « view » pour consulter seulement (compte gratuit).
+   */
+  link?:         { url: string; mode: "sign" | "view" } | null
 }
 
 export function buildQuoteEmail(d: QuoteEmailData): { subject: string; html: string } {
@@ -57,8 +62,14 @@ export function buildQuoteEmail(d: QuoteEmailData): { subject: string; html: str
       <p style="margin:0;font-size:13px;color:#78350F;line-height:1.5;">${d.notes}</p>
     </div>` : ""}
 
+    ${d.link ? ctaButton(d.link.mode === "sign" ? "Consulter et signer" : "Consulter le devis en ligne", d.link.url.replace(/"/g, "&quot;"), d.accentColor) : ""}
+
     <p style="margin:28px 0 0;font-size:13px;color:#64748B;line-height:1.6;">
-      Le devis est joint à cet email en format PDF. Pour l'accepter ou nous contacter, répondez simplement à cet email.
+      ${d.link?.mode === "sign"
+        ? "Le devis est joint à cet email en format PDF. Vous pouvez aussi le lire en entier et le signer en ligne, depuis votre ordinateur ou votre téléphone : ce lien vous est personnel."
+        : d.link?.mode === "view"
+          ? "Le devis est joint à cet email en format PDF, et consultable en ligne. Pour l'accepter, retournez-le daté et signé avec la mention « Bon pour accord », par exemple en répondant à cet email."
+          : "Le devis est joint à cet email en format PDF. Pour l'accepter ou nous contacter, répondez simplement à cet email."}
     </p>
 
     <p style="margin:20px 0 0;font-size:14px;color:#475569;">

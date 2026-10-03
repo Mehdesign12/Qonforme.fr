@@ -9,10 +9,12 @@
  * la page réelle appelle les routes (statuts filtrés côté serveur par
  * lib/utils/document-status.ts), la démo affiche « Créez un compte… ».
  *
- * Honnêteté (DECISIONS-STRATEGIQUES.md) : pas de signature en ligne, de suivi
- * d'ouverture, de relance automatique ni d'acompte, fonctions non livrées.
- * L'accord du client se fait sur papier ou par retour d'email, puis l'artisan
- * marque le devis comme accepté. L'historique ne montre que des dates réelles.
+ * Signature en ligne : la page fournit le panneau (`signature`,
+ * components/signature/SignaturePanel.tsx) ; sans lui (migration pas encore
+ * appliquée), l'accord se fait sur papier ou par retour d'email, puis
+ * l'artisan marque le devis comme accepté. Avec lui, l'accord sur papier
+ * reste la solution de secours. Pas de relance automatique ni d'acompte,
+ * fonctions non livrées. L'historique ne montre que des dates réelles.
  */
 import { useEffect, useState } from "react"
 import Link from "next/link"
@@ -122,7 +124,13 @@ export function QuoteDetailView({
   busy = {},
   links,
   demo = false,
+  signature,
+  sendNote,
 }: {
+  /** Panneau « Signature en ligne », quand la fonction est disponible. */
+  signature?: React.ReactNode
+  /** Précision de la fenêtre d'envoi (lien de signature ou de consultation joint à l'email). */
+  sendNote?: string
   quote: QuoteDetailData
   company: QuoteDetailCompany | null
   /** « Aujourd'hui » (AAAA-MM-JJ) : date du navigateur, ou date fixe de la démo. */
@@ -424,7 +432,22 @@ export function QuoteDetailView({
             <Timeline events={events} />
           </section>
 
-          {/* Accord du client : la signature en ligne n'existe pas, l'accord se donne sur le devis signé */}
+          {signature}
+
+          {/* Accord sur papier : seul moyen sans signature en ligne, solution de secours avec elle */}
+          {signature && s === "sent" && (
+            <section aria-label="Accord sur papier" className="q-card hidden flex-col gap-3 p-[18px] lg:flex">
+              <h2 className="q-h2">Accord sur papier</h2>
+              <p className="text-[13px] leading-normal text-[var(--q-text-3)]">
+                Votre client préfère signer sur papier ? Dès réception du devis daté et signé avec la mention « Bon pour accord », marquez-le comme accepté.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Act label="Marquer accepté" icon={Check} size="sm" onClick={openModal("accept")} loading={busy.status} />
+                <Act label="Refusé ?" size="sm" onClick={openModal("reject")} />
+              </div>
+            </section>
+          )}
+          {!signature && (
           <section aria-label="Accord du client" className="q-card hidden flex-col gap-3 p-[18px] lg:flex">
             <div className="flex items-center justify-between gap-2.5">
               <h2 className="q-h2">Accord du client</h2>
@@ -451,6 +474,7 @@ export function QuoteDetailView({
               </div>
             )}
           </section>
+          )}
 
           {canConvert && (
             <section aria-label="Suite du devis" className="q-card hidden flex-col gap-3 p-[18px] lg:flex">
@@ -578,6 +602,7 @@ export function QuoteDetailView({
             ? <>Le devis <strong className="font-semibold text-[var(--q-ink)]">{quote.quote_number}</strong> part par email avec son PDF en pièce jointe. Il passe au statut <strong className="font-semibold text-[var(--q-ink)]">Envoyé</strong> et ne se modifie plus.</>
             : <>Le devis <strong className="font-semibold text-[var(--q-ink)]">{quote.quote_number}</strong> est renvoyé par email avec son PDF, sans changer de statut.</>}
         </p>
+        {sendNote && <p className="text-[13px] leading-normal text-[var(--q-text-3)]">{sendNote}</p>}
         {s === "draft" && (
           <p className="text-[13px] leading-normal text-[var(--q-text-4)]">
             Remis en main propre ? «&nbsp;Marquer comme envoyé&nbsp;» le passe au statut Envoyé sans email.
