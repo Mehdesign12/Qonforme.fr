@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { hasDossiers } from '@/lib/accountant/server'
 import DashboardClient from '@/components/dashboard/DashboardClient'
 import { DashboardBody } from '@/components/dashboard/DashboardBody'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
@@ -48,8 +49,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     // Non bloquant
   }
 
-  // Hors du try/catch : redirect() lève une exception que le catch avalait
-  if (companyMissing) redirect('/signup/company')
+  // Hors du try/catch : redirect() lève une exception que le catch avalait.
+  // Un comptable invité n'a pas d'entreprise : il va à son espace (lib/accountant).
+  if (companyMissing) redirect(userId && (await hasDossiers(userId)) ? '/comptable' : '/signup/company')
 
   return (
     <Suspense fallback={<DashboardSkeleton />}>
