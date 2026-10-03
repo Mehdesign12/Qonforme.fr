@@ -144,3 +144,28 @@ describe("recherche Sirene via l'INSEE", () => {
     expect(r?.city).toBe("MEYZIEU")
   })
 })
+
+describe("recherche Sirene : panne et numéro non attribué", () => {
+  const fetchMock = vi.fn()
+  beforeEach(() => {
+    vi.stubEnv("INSEE_API_KEY", "")
+    vi.stubGlobal("fetch", fetchMock)
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+    fetchMock.mockReset()
+  })
+
+  it("les deux sources indisponibles : « indisponible », pas « introuvable »", async () => {
+    const { lookupSiren } = await import("@/lib/utils/sirene")
+    fetchMock.mockImplementation(() => reply(503))
+    expect(await lookupSiren("801339748")).toEqual({ status: "unavailable" })
+  })
+
+  it("fiche vide de l'annuaire : introuvable", async () => {
+    const { lookupSiren } = await import("@/lib/utils/sirene")
+    fetchMock.mockImplementation(() => reply(200, { results: [{ siren: "123456782", nom_complet: "", siege: {} }] }))
+    expect(await lookupSiren("123456782")).toEqual({ status: "notfound" })
+  })
+})

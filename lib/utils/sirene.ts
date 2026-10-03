@@ -156,6 +156,8 @@ async function recherche(numero: string): Promise<Lookup> {
   if (!body) return { unavailable: true }
   const r = (body.results as Json[] | undefined)?.find((x) => str(x.siren) === numero.slice(0, 9))
   if (!r) return status === 200 ? { notFound: true } : { unavailable: true }
+  // Fiche sans nom ni siège : numéro non attribué, pas une entreprise
+  if (!nomRecherche(r) && !str((r.siege as Json | undefined)?.siret)) return { notFound: true }
 
   let etab = r.siege as Json | undefined
   if (numero.length === 14) {
@@ -179,31 +181,49 @@ async function recherche(numero: string): Promise<Lookup> {
 /* API publique du module                                              */
 /* ------------------------------------------------------------------ */
 
-async function chercher(numero: string, viaInsee: (h: Record<string, string>) => Promise<Lookup>): Promise<SireneResult | null> {
+/** Issue d'une recherche : une panne des deux sources n'est pas un « introuvable ». */
+export type SireneOutcome =
+  | { status: 'found'; result: SireneResult }
+  | { status: 'notfound' }
+  | { status: 'unavailable' }
+
+async function chercher(numero: string, viaInsee: (h: Record<string, string>) => Promise<Lookup>): Promise<SireneOutcome> {
   const headers = inseeHeaders()
   if (headers) {
     try {
       const r = await viaInsee(headers)
-      if ('found' in r) return r.found
-      if ('notFound' in r) return null
+      if ('found' in r) return { status: 'found', result: r.found }
+      if ('notFound' in r) return { status: 'notfound' }
     } catch {
       // Réseau, délai dépassé : on passe au repli
     }
   }
   try {
     const r = await recherche(numero)
-    return 'found' in r ? r.found : null
+    if ('found' in r) return { status: 'found', result: r.found }
+    return 'notFound' in r ? { status: 'notfound' } : { status: 'unavailable' }
   } catch {
-    return null
+    return { status: 'unavailable' }
   }
 }
 
 /** Entreprise par SIREN (9 chiffres), avec l'adresse de son siège. */
-export function searchBySiren(siren: string): Promise<SireneResult | null> {
+export function lookupSiren(siren: string): Promise<SireneOutcome> {
   return chercher(siren, (h) => inseeSiren(siren, h))
 }
 
 /** Établissement par SIRET (14 chiffres). */
-export function searchBySiret(siret: string): Promise<SireneResult | null> {
+export function lookupSiret(siret: string): Promise<SireneOutcome> {
   return chercher(siret, (h) => inseeSiret(siret, h))
+}
+
+/** Raccourcis : le résultat, ou null si introuvable ou indisponible. */
+export async function searchBySiren(siren: string): Promise<SireneResult | null> {
+  const o = await lookupSiren(siren)
+  return o.status === 'found' ? o.result : null
+}
+
+export async function searchBySiret(siret: string): Promise<SireneResult | null> {
+  const o = await lookupSiret(siret)
+  return o.status === 'found' ? o.result : null
 }

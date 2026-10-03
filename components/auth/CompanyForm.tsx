@@ -65,6 +65,10 @@ export default function CompanyForm() {
     setSirenLoading(true)
     try {
       const res = await fetch(`/api/sirene?siren=${siren}`)
+      if (res.status === 503) {
+        toast.error("Le répertoire Sirene ne répond pas. Réessayez dans un instant ou remplissez les champs à la main.")
+        return
+      }
       if (!res.ok) throw new Error()
       const data = await res.json()
       setFields(prev => ({

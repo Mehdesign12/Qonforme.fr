@@ -17,6 +17,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { generateBlogPost, generateCoverImage } from "@/lib/ai/gemini"
+import { auditArticle } from "@/lib/blog-audit"
 import { getNextTopic } from "@/lib/ai/seo-topics"
 
 export const runtime = "nodejs"
@@ -89,6 +90,10 @@ export async function GET(request: NextRequest) {
     if (setting) {
       autoPublish = setting.value === "true"
     }
+    // Un article qui cite une valeur obsolète ou une affirmation interdite reste en
+    // brouillon, à relire dans /admin/blog/verification
+    const findings = auditArticle([post.title, post.excerpt, post.content].join("\n\n"))
+    if (findings.length > 0) autoPublish = false
     const now = new Date().toISOString()
 
     // ── Insert into blog_posts ──────────────────────────────────────────────
@@ -123,6 +128,7 @@ export async function GET(request: NextRequest) {
         slug: inserted.slug,
         title: inserted.title,
         auto_published: autoPublish,
+        audit_findings: findings.map((f) => f.rule.id),
         has_cover: !!coverUrl,
         topic: topic.topic,
       },
