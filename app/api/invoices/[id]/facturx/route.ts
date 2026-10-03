@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { generateFacturXml } from "@/lib/facturx/xml"
+import { buildFacturX } from "@/lib/facturx/xml"
+import { invoiceToFacturX } from "@/lib/facturx/records"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     const { data: invoice, error: invErr } = await supabase
       .from("invoices")
-      .select("*, client:clients(id,name,email,address,zip_code,city,siren,vat_number)")
+      .select("*, client:clients(id,name,email,address,zip_code,city,country,siren,vat_number)")
       .eq("id", id)
       .eq("user_id", user.id)
       .single()
@@ -27,57 +28,14 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     const { data: company } = await supabase
       .from("companies")
-      .select("name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice")
+      .select("name,siren,siret,vat_number,address,zip_code,city,country,iban,legal_notice,email")
       .eq("user_id", user.id)
       .single()
 
-    const xml = generateFacturXml({
-      invoice_number: invoice.invoice_number,
-      issue_date:     invoice.issue_date,
-      due_date:       invoice.due_date,
-      seller: {
-        name:         company?.name         ?? "Mon entreprise",
-        address:      company?.address      ?? "",
-        zip_code:     company?.zip_code     ?? "",
-        city:         company?.city         ?? "",
-        siren:        company?.siren        ?? undefined,
-        siret:        company?.siret        ?? undefined,
-        vat_number:   company?.vat_number   ?? undefined,
-        iban:         company?.iban         ?? undefined,
-        legal_notice: company?.legal_notice ?? undefined,
-      },
-      buyer: {
-        name:       invoice.client?.name       ?? "Client",
-        address:    invoice.client?.address    ?? undefined,
-        zip_code:   invoice.client?.zip_code   ?? undefined,
-        city:       invoice.client?.city       ?? undefined,
-        siren:      invoice.client?.siren      ?? undefined,
-        vat_number: invoice.client?.vat_number ?? undefined,
-        email:      invoice.client?.email      ?? undefined,
-      },
-      lines: (invoice.lines ?? []).map((l: {
-        description: string
-        quantity: number
-        unit_price_ht: number
-        vat_rate: number
-        total_ht: number
-        total_vat: number
-        total_ttc: number
-      }, i: number) => ({
-        id:            i + 1,
-        description:   l.description,
-        quantity:      l.quantity,
-        unit_price_ht: l.unit_price_ht,
-        vat_rate:      l.vat_rate,
-        total_ht:      l.total_ht,
-        total_vat:     l.total_vat,
-        total_ttc:     l.total_ttc,
-      })),
-      subtotal_ht: invoice.subtotal_ht,
-      total_vat:   invoice.total_vat,
-      total_ttc:   invoice.total_ttc,
-      notes:       invoice.notes ?? null,
-    })
+    // Même modèle que le PDF (lib/pdf/invoice.ts) : le XML seul et le XML
+    // embarqué dans le PDF sont identiques
+    const { xml, warnings } = buildFacturX(invoiceToFacturX(invoice, company))
+    if (warnings.length) console.warn(`[facturx] ${invoice.invoice_number} : ${warnings.join(" | ")}`)
 
     const filename = `${invoice.invoice_number}-facturx.xml`
 
@@ -87,7 +45,7 @@ export async function GET(request: NextRequest, { params }: Params) {
         "Content-Type":        "application/xml; charset=utf-8",
         "Content-Disposition": `attachment; filename="${filename}"`,
         "Cache-Control":       "no-store",
-        "X-Facturx-Profile":   "EN 16931 EXTENDED",
+        "X-Facturx-Profile":   "EN 16931",
       },
     })
   } catch (err) {

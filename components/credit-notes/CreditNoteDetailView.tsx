@@ -9,8 +9,8 @@
  * créer un compte dans la démo.
  *
  * Un avoir n'a pas de statut dans le code : pas d'« imputé » ni de
- * « remboursé », pas de reste dû calculé, pas de Factur-X (le PDF d'avoir
- * est un PDF simple). Le suivi ne montre que ce qui est enregistré.
+ * « remboursé », pas de reste dû calculé. Le PDF d'avoir embarque son XML
+ * Factur-X (lib/pdf/credit-note.ts). Le suivi ne montre que ce qui est enregistré.
  */
 import { useState } from "react"
 import Link from "next/link"

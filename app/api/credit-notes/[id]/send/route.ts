@@ -21,7 +21,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       .from("credit_notes")
       .select(`
         *,
-        client:clients(id,name,email,address,zip_code,city,siren,vat_number),
+        client:clients(id,name,email,address,zip_code,city,country,siren,vat_number),
         original_invoice:invoices(id,invoice_number,issue_date,total_ttc),
         invoice:invoices(invoice_number)
       `)
@@ -36,7 +36,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
     // 2. Entreprise
     const { data: company } = await supabase
       .from("companies")
-      .select("name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color,logo_url,email")
+      .select("name,siren,siret,vat_number,address,zip_code,city,country,iban,legal_notice,accent_color,logo_url,email")
       .eq("user_id", user.id)
       .single()
 

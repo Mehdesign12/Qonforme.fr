@@ -2,11 +2,16 @@
  * lib/pdf/invoice.ts
  * Génération PDF Factur-X pour les factures.
  * Réutilisé par la route GET /api/invoices/[id]/pdf ET par la route POST /send.
+ *
+ * Facture émise : PDF/A-3 avec le XML Factur-X (profil EN 16931) embarqué
+ * (lib/facturx). Montants et mentions imprimés sont ceux que déclare le XML.
+ * Brouillon ou aperçu : PDF simple filigrané, sans XML.
  */
 import { PDFDocument, rgb, PageSizes, degrees } from "pdf-lib"
 import fontkit from "@pdf-lib/fontkit"
-import { generateFacturXml } from "@/lib/facturx/xml"
-import type { FxInvoice } from "@/lib/facturx/xml"
+import { buildFacturX, documentMentions } from "@/lib/facturx/xml"
+import { invoiceToFacturX, type LineRecord } from "@/lib/facturx/records"
+import { pdfSafeText, saveAsFacturX } from "@/lib/facturx/pdfa"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 import path from "path"
 import fs from "fs"
@@ -30,6 +35,11 @@ function fmt(n: number): string {
   return `${intPart},${parts[1]}\u00A0€`
 }
 
+/** Taux de TVA à la française : « 5,5 », « 20 ». */
+function fmtRate(r: number): string {
+  return String(Math.round(Number(r) * 100) / 100).replace(".", ",")
+}
+
 function fmtDate(d: string): string {
   try { return new Intl.DateTimeFormat("fr-FR").format(new Date(d)) }
   catch { return d }
@@ -46,7 +56,9 @@ export interface InvoicePdfInput {
     total_vat: number
     total_ttc: number
     notes?: string | null
-    lines?: {
+    /** Traitement de TVA du document, s'il est enregistré (voir lib/facturx/vat.ts). */
+    vat_treatment?: string | null
+    lines?: (LineRecord & {
       description: string
       quantity: number
       unit_price_ht: number
@@ -54,13 +66,14 @@ export interface InvoicePdfInput {
       total_ht: number
       total_vat: number
       total_ttc: number
-    }[]
+    })[]
     client?: {
       name?: string
       email?: string
       address?: string
       zip_code?: string
       city?: string
+      country?: string
       siren?: string
       vat_number?: string
     } | null
@@ -73,8 +86,10 @@ export interface InvoicePdfInput {
     address?: string
     zip_code?: string
     city?: string
+    country?: string
     iban?: string
     legal_notice?: string
+    email?: string
     accent_color?: string
     logo_url?: string
   } | null
@@ -91,50 +106,14 @@ export interface InvoicePdfInput {
 // ── Générateur principal ─────────────────────────────────────────────────────
 
 export async function generateInvoicePdf({ invoice, company, watermark }: InvoicePdfInput): Promise<Uint8Array> {
-  // XML Factur-X
-  const fxData: FxInvoice = {
-    invoice_number: invoice.invoice_number,
-    issue_date:     invoice.issue_date,
-    due_date:       invoice.due_date,
-    currency:       "EUR",
-    seller: {
-      name:         company?.name        ?? "",
-      address:      company?.address     ?? "",
-      zip_code:     company?.zip_code    ?? "",
-      city:         company?.city        ?? "",
-      country:      "FR",
-      siren:        company?.siren       ?? undefined,
-      siret:        company?.siret       ?? undefined,
-      vat_number:   company?.vat_number  ?? undefined,
-      iban:         company?.iban        ?? undefined,
-      legal_notice: company?.legal_notice ?? undefined,
-    },
-    buyer: {
-      name:       invoice.client?.name      ?? "Client inconnu",
-      address:    invoice.client?.address   ?? undefined,
-      zip_code:   invoice.client?.zip_code  ?? undefined,
-      city:       invoice.client?.city      ?? undefined,
-      country:    "FR",
-      siren:      invoice.client?.siren     ?? undefined,
-      vat_number: invoice.client?.vat_number ?? undefined,
-      email:      invoice.client?.email     ?? undefined,
-    },
-    lines: (invoice.lines ?? []).map((l, i) => ({
-      id:            i + 1,
-      description:   l.description,
-      quantity:      l.quantity,
-      unit_price_ht: l.unit_price_ht,
-      vat_rate:      l.vat_rate,
-      total_ht:      l.total_ht,
-      total_vat:     l.total_vat,
-      total_ttc:     l.total_ttc,
-    })),
-    subtotal_ht: invoice.subtotal_ht,
-    total_vat:   invoice.total_vat,
-    total_ttc:   invoice.total_ttc,
-    notes:       invoice.notes ?? null,
+  // Facture au modèle Factur-X : XML, montants et mentions viennent du même calcul
+  const fxDoc = invoiceToFacturX(invoice, company)
+  const fx = buildFacturX(fxDoc)
+  const totals = fx.totals
+  const extraMentions = documentMentions(fxDoc, totals)
+  if (!watermark && fx.warnings.length) {
+    console.warn(`[facturx] ${invoice.invoice_number} : ${fx.warnings.join(" | ")}`)
   }
-  const xmlContent = generateFacturXml(fxData)
 
   // PDF visuel
   const doc = await PDFDocument.create()
@@ -166,10 +145,12 @@ export async function generateInvoicePdf({ invoice, company, watermark }: Invoic
   ) => {
     const { size = 9, bold: isBold = false, color = black, align = "left", maxWidth } = opts
     const font = isBold ? fontBold : fontRegular
-    let str = text ?? ""
+    // Aucun glyphe absent de la police (exigence PDF/A, et pas de carré à l'impression)
+    const full = pdfSafeText(font, text ?? "")
+    let str = full
     if (maxWidth) {
       while (str.length > 0 && font.widthOfTextAtSize(str, size) > maxWidth) str = str.slice(0, -1)
-      if (str.length < (text ?? "").length) str = str.slice(0, -1) + "…"
+      if (str.length < full.length) str = str.slice(0, -1) + "…"
     }
     const tw = font.widthOfTextAtSize(str, size)
     const drawX = align === "right" ? x - tw : align === "center" ? x - tw / 2 : x
@@ -214,9 +195,12 @@ export async function generateInvoicePdf({ invoice, company, watermark }: Invoic
   draw(`Émission : ${fmtDate(invoice.issue_date)}`, mR, curY - 36, { size: 8.5, color: grayDark, align: "right" })
   draw(`Échéance : ${fmtDate(invoice.due_date)}`,   mR, curY - 50, { size: 8.5, color: grayDark, align: "right" })
 
-  const badgeY = curY - 66
-  rect(mR - 64, badgeY - 4, 64, 14, rgb(0.94, 0.97, 1.0))
-  draw("✓ Factur-X", mR - 4, badgeY + 2, { size: 7, bold: true, color: accent, align: "right" })
+  // Pastille seulement quand le XML est réellement embarqué (jamais sur un brouillon)
+  if (!watermark) {
+    const badgeY = curY - 66
+    rect(mR - 52, badgeY - 4, 52, 14, rgb(0.94, 0.97, 1.0))
+    draw("Factur-X", mR - 6, badgeY + 2, { size: 7, bold: true, color: accent, align: "right" })
+  }
 
   let infoY = curY - logoMaxH - 12
   if (company?.address)    { draw(company.address, mL, infoY, { size: 8.5, color: grayDark }); infoY -= 14 }
@@ -287,27 +271,38 @@ export async function generateInvoicePdf({ invoice, company, watermark }: Invoic
     draw(line.description,        colDesc,  curY + 2, { size: 8.5, color: black, maxWidth: 240 })
     draw(String(line.quantity),   colQty,   curY + 2, { size: 8.5, color: grayDark, align: "right" })
     draw(fmt(line.unit_price_ht), colPU,    curY + 2, { size: 8.5, color: grayDark, align: "right" })
-    draw(`${line.vat_rate} %`,    colTVA,   curY + 2, { size: 8.5, color: grayDark, align: "right" })
+    draw(`${fmtRate(line.vat_rate)} %`, colTVA, curY + 2, { size: 8.5, color: grayDark, align: "right" })
     draw(fmt(line.total_ht),      colTotal, curY + 2, { size: 8.5, bold: true, color: black, align: "right" })
     curY -= rowH
     hLine(curY + 2, mL, mR, 0.3, rgb(0.92, 0.93, 0.95))
   })
   curY -= 16
 
-  // TOTAUX
+  // TOTAUX — ceux du XML Factur-X, calculés au centime depuis les lignes
   const totBlockW = 210, totX = mR - totBlockW, totValX = mR
   draw("Sous-total HT", totX, curY, { size: 8.5, color: grayDark })
-  draw(fmt(invoice.subtotal_ht), totValX, curY, { size: 8.5, color: black, align: "right" })
+  draw(fmt(totals.taxBasis), totValX, curY, { size: 8.5, color: black, align: "right" })
   curY -= 14
-  draw("TVA", totX, curY, { size: 8.5, color: grayDark })
-  draw(fmt(invoice.total_vat), totValX, curY, { size: 8.5, color: black, align: "right" })
-  curY -= 8
+  // Plusieurs taux : base et TVA par taux (CGI, art. 242 nonies A)
+  const vatRows = totals.breakdown.filter((b) => b.category === "S")
+  if (vatRows.length > 1) {
+    for (const b of vatRows) {
+      draw(`TVA ${fmtRate(b.rate)} % sur ${fmt(b.base)}`, totX, curY, { size: 8.5, color: grayDark })
+      draw(fmt(b.tax), totValX, curY, { size: 8.5, color: black, align: "right" })
+      curY -= 14
+    }
+    curY += 6
+  } else {
+    draw(vatRows.length === 1 ? `TVA ${fmtRate(vatRows[0].rate)} %` : "TVA", totX, curY, { size: 8.5, color: grayDark })
+    draw(fmt(totals.taxTotal), totValX, curY, { size: 8.5, color: black, align: "right" })
+    curY -= 8
+  }
   hLine(curY, totX, mR, 0.8, grayLight)
   curY -= 16
   hLine(curY, totX, mR, 1.5, accent)
   curY -= 14
   draw("TOTAL TTC",            totX,    curY, { size: 10, bold: true, color: accent })
-  draw(fmt(invoice.total_ttc), totValX, curY, { size: 14, bold: true, color: accent, align: "right" })
+  draw(fmt(totals.grandTotal), totValX, curY, { size: 14, bold: true, color: accent, align: "right" })
   curY -= 18
 
   if (company?.iban) {
@@ -331,13 +326,18 @@ export async function generateInvoicePdf({ invoice, company, watermark }: Invoic
     curY -= 10
   }
 
-  // MENTIONS LÉGALES
-  if (company?.legal_notice?.trim()) {
+  // MENTIONS LÉGALES — celles de l'entreprise, puis celles que le XML déclare en
+  // plus (motif d'absence de TVA, conditions de règlement entre professionnels)
+  const legalLines = [
+    ...(company?.legal_notice?.trim() ? company.legal_notice.trim().split("\n").slice(0, 8) : []),
+    ...extraMentions,
+  ]
+  if (legalLines.length) {
     hLine(curY, mL, mR, 0.5, separator)
     curY -= 12
-    company.legal_notice.trim().split("\n").slice(0, 4).forEach((l: string) => {
-      const tw = fontRegular.widthOfTextAtSize(l, 7)
-      draw(l, Math.max(mL, (width - tw) / 2), curY, { size: 7, color: grayLight })
+    legalLines.forEach((l: string) => {
+      const tw = Math.min(cW, fontRegular.widthOfTextAtSize(pdfSafeText(fontRegular, l), 7))
+      draw(l, Math.max(mL, (width - tw) / 2), curY, { size: 7, color: grayLight, maxWidth: cW })
       curY -= 10
     })
   }
@@ -368,25 +368,23 @@ export async function generateInvoicePdf({ invoice, company, watermark }: Invoic
     page.drawText(notice, { x: (width - nw) / 2, y: height - 24, size: 9, font: fontBold, color: rgb(0.73, 0.11, 0.11) })
   }
 
-  // Métadonnées
-  doc.setTitle(watermark ? `${watermark === "BROUILLON" ? "Brouillon" : "Aperçu"} — facture ${invoice.invoice_number}` : `Facture ${invoice.invoice_number}`)
-  doc.setAuthor(company?.name ?? "Qonforme")
-  doc.setSubject(`Facture electronique Factur-X — ${invoice.invoice_number}`)
-  doc.setProducer("Qonforme — pdf-lib + Factur-X")
-  doc.setCreator("Qonforme Factur-X Generator")
-  doc.setKeywords(["facture", "factur-x", "EN 16931", invoice.invoice_number])
+  const author = company?.name?.trim() || "Qonforme"
 
-  // Attacher XML Factur-X — jamais sur un brouillon ou un aperçu
-  if (!watermark) {
-    const xmlBytes = new TextEncoder().encode(xmlContent)
-    await doc.attach(xmlBytes, "factur-x.xml", {
-      mimeType:         "application/xml",
-      description:      "Factur-X EN 16931",
-      creationDate:     new Date(),
-      modificationDate: new Date(),
-    })
+  // Brouillon ou aperçu : PDF simple, jamais de XML Factur-X
+  if (watermark) {
+    doc.setTitle(`${watermark === "BROUILLON" ? "Brouillon" : "Aperçu"} — facture ${invoice.invoice_number}`)
+    doc.setAuthor(author)
+    doc.setProducer("Qonforme (pdf-lib)")
+    doc.setCreator("Qonforme")
+    return doc.save()
   }
 
-  const pdfBytes = await doc.save()
-  return pdfBytes
+  // Facture émise : PDF/A-3 avec le XML embarqué
+  return saveAsFacturX(doc, {
+    xml:      fx.xml,
+    title:    `Facture ${invoice.invoice_number}`,
+    author,
+    subject:  `Facture ${invoice.invoice_number}${invoice.client?.name ? ` — ${invoice.client.name}` : ""}`,
+    keywords: ["facture", "Factur-X", invoice.invoice_number],
+  })
 }

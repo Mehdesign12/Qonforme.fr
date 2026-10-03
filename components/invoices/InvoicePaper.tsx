@@ -10,6 +10,8 @@
  */
 import Link from "next/link"
 import { formatCurrency } from "@/lib/utils/invoice"
+import { documentMentions } from "@/lib/facturx/xml"
+import { invoiceToFacturX } from "@/lib/facturx/records"
 import { initialsOf } from "@/components/app/kit"
 import {
   type CompanyView, type InvoiceView, formatIban, formatSiren, mediumDate,
@@ -37,6 +39,11 @@ export function InvoicePaper({
     vatByRate.set(l.vat_rate, (vatByRate.get(l.vat_rate) ?? 0) + (l.total_ttc - l.total_ht))
   }
   const vatRows = Array.from(vatByRate.entries()).sort((a, b) => b[0] - a[0])
+
+  // Mentions que le PDF ajoute à celles de l'entreprise (motif d'absence de TVA,
+  // conditions de règlement entre professionnels) : même calcul que le PDF
+  const extraMentions = documentMentions(invoiceToFacturX(invoice, company))
+  const footer = [company?.legal_notice?.trim(), ...extraMentions].filter(Boolean).join("\n")
 
   return (
     <article
@@ -166,9 +173,9 @@ export function InvoicePaper({
         </div>
       )}
 
-      {company?.legal_notice?.trim() && (
+      {footer && (
         <p className="whitespace-pre-line border-t border-[#F1F4F8] pt-3 text-[10px] leading-[1.55] text-[#64748B]">
-          {company.legal_notice.trim()}
+          {footer}
         </p>
       )}
     </article>
