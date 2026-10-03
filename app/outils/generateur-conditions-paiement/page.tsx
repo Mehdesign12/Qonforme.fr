@@ -6,6 +6,9 @@ import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 import { Field, JsonLd, Prose, ToolArea, ToolCta, ToolFaq, ToolGuide, ToolLinks, ToolPanel, ToolShell, faqJsonLd, toolJsonLd } from "@/components/outils/kit"
 import { ChoiceGroup, CopyButton, SwitchRow } from "@/components/outils/controls"
+import { SEMESTRE_REFERENCE, TAUX_PENALITES_DEFAUT, TAUX_PENALITES_PLANCHER } from "@/lib/outils/penalites"
+
+const fmtPct = (n: number) => `${n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`
 
 const DELAIS = [
   { id: "30", label: "30 jours date de facture", text: "à 30 jours date de facture" },
@@ -15,22 +18,35 @@ const DELAIS = [
   { id: "comptant", label: "Comptant (à réception)", text: "à réception de la facture" },
 ]
 
+/**
+ * Taux de pénalités proposés (Code de commerce, art. L441-10 II) : un taux prévu
+ * ne peut pas être inférieur à 3 × le taux d'intérêt légal ; sans taux prévu,
+ * c'est le taux BCE + 10 points. Valeurs du semestre dans lib/outils/penalites.ts.
+ */
 const TAUX_OPTIONS = [
-  { id: "3xbce", label: "3 × BCE (12 %)", value: "trois (3) fois le taux d'intérêt légal appliqué par la Banque Centrale Européenne, soit 12,00 % l'an" },
-  { id: "1xbce", label: "1 × BCE (4 %)", value: "le taux d'intérêt légal appliqué par la Banque Centrale Européenne, soit 4,00 % l'an" },
-  { id: "15", label: "15 % (taux fixe)", value: "un taux fixe de 15,00 % l'an" },
-  { id: "10", label: "10 % (taux fixe)", value: "un taux fixe de 10,00 % l'an" },
+  {
+    id: "bce10",
+    label: `BCE + 10 points (${fmtPct(TAUX_PENALITES_DEFAUT)})`,
+    value: "au taux d'intérêt appliqué par la Banque centrale européenne à son opération de refinancement la plus récente, majoré de 10 points de pourcentage",
+  },
+  {
+    id: "3xlegal",
+    label: `3 × taux légal (${fmtPct(TAUX_PENALITES_PLANCHER)})`,
+    value: "à un taux égal à trois fois le taux d'intérêt légal",
+  },
+  { id: "15", label: "15 % (taux fixe)", value: "au taux fixe de 15,00 % l'an" },
+  { id: "10", label: "10 % (taux fixe)", value: "au taux fixe de 10,00 % l'an" },
 ]
 
 const FAQ = [
-  { q: "Le délai de 60 jours est-il un maximum ?", a: "Oui, sauf accord dérogatoire interprofessionnel. Le délai par défaut (sans mention) est de 30 jours." },
-  { q: "Puis-je choisir n'importe quel taux de pénalités ?", a: "Le taux ne peut pas être inférieur au taux directeur BCE × 1 (4 % en 2026). Par défaut, c'est BCE × 3 = 12 %." },
+  { q: "Le délai de 60 jours est-il un maximum ?", a: "Oui : le délai convenu ne peut pas dépasser 60 jours après la date de la facture, ou 45 jours fin de mois s'il est prévu au contrat. Sans délai convenu, c'est 30 jours après la réception des marchandises ou l'exécution de la prestation (art. L441-10 I du Code de commerce)." },
+  { q: "Puis-je choisir n'importe quel taux de pénalités ?", a: `Non : le taux prévu ne peut pas être inférieur à trois fois le taux d'intérêt légal, soit ${fmtPct(TAUX_PENALITES_PLANCHER)} au ${SEMESTRE_REFERENCE.libelle}. Sans taux prévu, c'est le taux de la BCE majoré de 10 points, soit ${fmtPct(TAUX_PENALITES_DEFAUT)} au ${SEMESTRE_REFERENCE.libelle} (art. L441-10 du Code de commerce).` },
   { q: "La mention escompte est-elle obligatoire ?", a: "Oui. Si vous n'accordez pas d'escompte, la mention « Pas d'escompte accordé pour paiement anticipé » est requise." },
 ]
 
 export default function GenerateurConditionsPaiementPage() {
   const [delai, setDelai] = useState("30")
-  const [taux, setTaux] = useState("3xbce")
+  const [taux, setTaux] = useState("bce10")
   const [escompte, setEscompte] = useState(false)
   const [tauxEscompte, setTauxEscompte] = useState("2")
   const [rib, setRib] = useState(false)
@@ -40,7 +56,7 @@ export default function GenerateurConditionsPaiementPage() {
 
   const generatedText = `Conditions de paiement : ${delaiObj.text}.
 
-En cas de retard de paiement, des pénalités de retard seront appliquées au taux de ${tauxObj.value}. Ces pénalités sont exigibles de plein droit, sans qu'un rappel soit nécessaire, conformément à l'article L441-10 du Code de commerce.
+En cas de retard de paiement, des pénalités de retard seront appliquées ${tauxObj.value}. Ces pénalités sont exigibles de plein droit, sans qu'un rappel soit nécessaire, conformément à l'article L441-10 du Code de commerce.
 
 Une indemnité forfaitaire pour frais de recouvrement de 40 € sera due de plein droit en cas de retard de paiement (art. D441-5 du Code de commerce).
 
@@ -99,10 +115,10 @@ ${rib ? "\nMode de paiement : virement bancaire. RIB joint à la facture." : ""}
 
       <ToolGuide title="Conditions de paiement :" accent="ce que dit la loi.">
         <Prose>
-          <p>L&apos;article L441-10 du Code de commerce impose d&apos;indiquer sur chaque facture :</p>
+          <p>Les articles L441-9 et L441-10 du Code de commerce imposent d&apos;indiquer sur chaque facture entre professionnels :</p>
           <ul>
-            <li><strong>Le délai de paiement</strong> : maximum 60 jours date de facture ou 45 jours fin de mois</li>
-            <li><strong>Le taux de pénalités de retard</strong> : minimum taux directeur BCE × 1 (4 %), par défaut BCE × 3 (12 %)</li>
+            <li><strong>La date de paiement</strong> : au plus 60 jours après la date de la facture, ou 45 jours fin de mois</li>
+            <li><strong>Le taux de pénalités de retard</strong> : jamais moins de trois fois le taux d&apos;intérêt légal ({fmtPct(TAUX_PENALITES_PLANCHER)} au {SEMESTRE_REFERENCE.libelle}) ; sans taux prévu, taux de la BCE majoré de 10 points ({fmtPct(TAUX_PENALITES_DEFAUT)})</li>
             <li><strong>L&apos;indemnité forfaitaire de recouvrement</strong> : 40 €, mentionnée obligatoirement</li>
             <li><strong>Les conditions d&apos;escompte</strong> : ou la mention « Pas d&apos;escompte accordé »</li>
           </ul>

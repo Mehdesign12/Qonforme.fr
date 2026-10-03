@@ -180,7 +180,7 @@ export default function CalculateurTvaPage() {
           </Formula>
           <h3>Auto-entrepreneurs et TVA</h3>
           <p>
-            Les auto-entrepreneurs bénéficient de la <strong>franchise en base de TVA</strong> tant que leur CA ne dépasse pas les seuils (188 700 € vente, 77 700 € services).
+            Les auto-entrepreneurs bénéficient de la <strong>franchise en base de TVA</strong> tant que leur chiffre d&apos;affaires ne dépasse pas les seuils de l&apos;article 293 B du CGI : en 2026, 85 000 € pour la vente et 37 500 € pour les services (seuils majorés : 93 500 € et 41 250 €).
           </p>
         </Prose>
 

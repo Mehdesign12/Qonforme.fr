@@ -16,7 +16,7 @@ const fmtInt = (n: number) => new Intl.NumberFormat("fr-FR").format(n)
 
 const FAQ = [
   { q: "Quand payer mes cotisations URSSAF ?", a: "Chaque mois ou trimestre sur autoentrepreneur.urssaf.fr. Déclaration obligatoire même si CA = 0 €." },
-  { q: "Que se passe-t-il si je dépasse le plafond ?", a: "Si dépassement 2 ans consécutifs, basculement vers le régime réel." },
+  { q: "Que se passe-t-il si je dépasse le plafond ?", a: "Vous quittez le régime au 1er janvier qui suit deux années civiles consécutives de dépassement (plafonds 2026 : 203 100 € pour la vente, 83 600 € pour les services)." },
   { q: "Le versement libératoire est-il intéressant ?", a: "Intéressant si votre taux marginal d'imposition dépasse 1 % à 2,2 %." },
 ]
 

@@ -10,12 +10,17 @@ import { ACTIVITES, calculerCharges, type ActiviteId } from "@/lib/outils/charge
 
 function fmtEur(n: number) { return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n) }
 
+/**
+ * Barème de l'impôt sur le revenu 2026 (revenus 2025, loi de finances pour 2026),
+ * pour une part : service-public.gouv.fr, fiche F1419 (vérifiée le 15 avril 2026).
+ * Le barème qui s'appliquera aux revenus 2026 n'est pas encore connu.
+ */
 const TRANCHES_IR = [
-  { min: 0, max: 11294, taux: 0 },
-  { min: 11294, max: 28797, taux: 11 },
-  { min: 28797, max: 82341, taux: 30 },
-  { min: 82341, max: 177106, taux: 41 },
-  { min: 177106, max: Infinity, taux: 45 },
+  { min: 0, max: 11600, taux: 0 },
+  { min: 11600, max: 29579, taux: 11 },
+  { min: 29579, max: 84577, taux: 30 },
+  { min: 84577, max: 181917, taux: 41 },
+  { min: 181917, max: Infinity, taux: 45 },
 ]
 
 function calculerIR(revenuImposable: number): number {
@@ -172,7 +177,7 @@ export default function SimulateurRevenuNetPage() {
         <Prose>
           <p>Le revenu net d&apos;un auto-entrepreneur se calcule en <strong>3 étapes</strong> :</p>
           <ol>
-            <li><strong>Cotisations sociales</strong> : un pourcentage du CA (12,3 % à 23,2 % selon l&apos;activité)</li>
+            <li><strong>Cotisations sociales</strong> : un pourcentage du CA (12,3 % à 25,6 % selon l&apos;activité en 2026)</li>
             <li><strong>Abattement fiscal</strong> : le fisc applique un abattement forfaitaire sur le CA (34 % à 71 %) pour déterminer le revenu imposable</li>
             <li><strong>Impôt sur le revenu</strong> : barème progressif appliqué au revenu imposable (0 % à 45 %)</li>
           </ol>

@@ -41,7 +41,7 @@ const CATEGORIES: { title: string; accent: string; tools: Tool[] }[] = [
       { title: "Simulateur charges auto-entrepreneur", desc: "Cotisations URSSAF, CFP, versement libératoire. Barèmes 2026.", href: "/outils/simulateur-charges-auto-entrepreneur", icon: TrendingUp },
       { title: "Simulateur revenus net", desc: "De votre CA brut à votre revenu net après charges et IR.", href: "/outils/simulateur-revenu-net", icon: TrendingUp },
       { title: "Simulateur seuil TVA", desc: "Franchise de TVA dépassée ? Seuils 2026, jauge et alertes.", href: "/outils/simulateur-seuil-tva", icon: Calculator },
-      { title: "Calculateur pénalités de retard", desc: "Intérêts de retard + indemnité forfaitaire de 40 €. Taux BCE 2026.", href: "/outils/calculateur-penalites-retard", icon: Scale },
+      { title: "Calculateur pénalités de retard", desc: "Intérêts de retard + indemnité forfaitaire de 40 €. Taux du 2ᵉ semestre 2026.", href: "/outils/calculateur-penalites-retard", icon: Scale },
     ],
   },
   {

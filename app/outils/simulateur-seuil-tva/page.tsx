@@ -6,22 +6,18 @@ import { OutilsHero } from "@/components/outils/OutilsHero"
 import { OutilsCtaBar } from "@/components/outils/OutilsCtaBar"
 import { Callout, Field, Gauge, JsonLd, Prose, RateTable, ToolArea, ToolCta, ToolFaq, ToolGuide, ToolLinks, ToolPanel, ToolShell, faqJsonLd, toolJsonLd } from "@/components/outils/kit"
 import { AmountInput, ChoiceGroup, ResetButton } from "@/components/outils/controls"
-
-const SEUILS = [
-  { id: "vente", label: "Vente de marchandises (BIC)", seuilBase: 91900, seuilMajore: 101000, plafond: 188700 },
-  { id: "services", label: "Prestations de services (BIC/BNC)", seuilBase: 36800, seuilMajore: 39100, plafond: 77700 },
-]
+import { SEUILS_FRANCHISE_TVA as SEUILS, situationFranchise, type ActiviteFranchise } from "@/lib/outils/franchise-tva"
 
 function fmtEur(n: number) { return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n) }
 
 const FAQ = [
-  { q: "Quand dois-je commencer à facturer la TVA ?", a: "Dès le 1er jour du mois de dépassement du seuil majoré. Si vous dépassez le seuil de base 2 ans de suite, dès le 1er janvier de la 2e année." },
-  { q: "Dois-je rembourser la TVA sur mes anciennes factures ?", a: "Non, les factures émises avant le dépassement restent sans TVA." },
+  { q: "Quand dois-je commencer à facturer la TVA ?", a: "Dès que votre chiffre d'affaires de l'année dépasse le seuil majoré (93 500 € pour la vente, 41 250 € pour les services) : la TVA s'applique aux opérations réalisées à partir de la date du dépassement. Si vous dépassez seulement le seuil de base, la franchise continue jusqu'au 31 décembre et la TVA s'applique au 1er janvier suivant (art. 293 B du CGI)." },
+  { q: "Dois-je rembourser la TVA sur mes anciennes factures ?", a: "Non, les opérations réalisées avant le dépassement restent en franchise." },
   { q: "Puis-je récupérer la TVA sur mes achats ?", a: "Seulement une fois assujetti. En franchise, vous ne facturez ni ne récupérez la TVA." },
 ]
 
 export default function SimulateurSeuilTvaPage() {
-  const [activite, setActivite] = useState("services")
+  const [activite, setActivite] = useState<ActiviteFranchise>("services")
   const [ca, setCa] = useState("")
   const resultRef = useRef<HTMLDivElement>(null)
 
@@ -30,9 +26,10 @@ export default function SimulateurSeuilTvaPage() {
 
   const status = useMemo(() => {
     if (numCa <= 0) return null
-    if (numCa <= seuil.seuilBase) return { level: "ok" as const, label: "Franchise en base", icon: CheckCircle2, message: `Vous restez sous le seuil de ${fmtEur(seuil.seuilBase)}. Pas de TVA à facturer.` }
-    if (numCa <= seuil.seuilMajore) return { level: "warn" as const, label: "Seuil majoré atteint", icon: AlertTriangle, message: `Vous dépassez le seuil de base (${fmtEur(seuil.seuilBase)}) mais restez sous le seuil majoré (${fmtEur(seuil.seuilMajore)}). Si vous dépassez 2 années consécutives, la TVA devient obligatoire.` }
-    return { level: "danger" as const, label: "TVA obligatoire", icon: AlertTriangle, message: `Vous dépassez le seuil majoré de ${fmtEur(seuil.seuilMajore)}. Vous devez facturer la TVA dès le 1er jour du mois de dépassement.` }
+    const situation = situationFranchise(numCa, seuil.id)
+    if (situation === "franchise") return { level: "ok" as const, label: "Franchise en base", icon: CheckCircle2, message: `Vous restez sous le seuil de ${fmtEur(seuil.seuilBase)}. Pas de TVA à facturer.` }
+    if (situation === "fin-au-31-decembre") return { level: "warn" as const, label: "Seuil de base dépassé", icon: AlertTriangle, message: `Vous dépassez le seuil de base (${fmtEur(seuil.seuilBase)}) sans dépasser le seuil majoré (${fmtEur(seuil.seuilMajore)}). La franchise continue jusqu'au 31 décembre ; la TVA s'appliquera au 1er janvier suivant.` }
+    return { level: "danger" as const, label: "TVA obligatoire", icon: AlertTriangle, message: `Vous dépassez le seuil majoré de ${fmtEur(seuil.seuilMajore)}. La franchise cesse à la date du dépassement : la TVA s'applique aux opérations réalisées à partir de ce jour.` }
   }, [numCa, seuil])
 
   const gaugePercent = numCa > 0 ? Math.min((numCa / seuil.seuilMajore) * 100, 120) : 0
@@ -59,7 +56,7 @@ export default function SimulateurSeuilTvaPage() {
             <ChoiceGroup
               label="Type d'activité"
               value={activite}
-              onChange={setActivite}
+              onChange={(v) => setActivite(v as ActiviteFranchise)}
               options={SEUILS.map((s) => ({ value: s.id, label: s.label, desc: `Seuil ${fmtEur(s.seuilBase)} · Majoré ${fmtEur(s.seuilMajore)}` }))}
             />
           </Field>
@@ -101,11 +98,11 @@ export default function SimulateurSeuilTvaPage() {
       <ToolGuide title="Seuils de franchise" accent="de TVA en 2026.">
         <Prose>
           <p>
-            La <strong>franchise en base de TVA</strong> dispense les auto-entrepreneurs de facturer la TVA tant que leur CA annuel reste sous certains seuils :
+            La <strong>franchise en base de TVA</strong> (article 293 B du CGI) dispense de facturer la TVA tant que le chiffre d&apos;affaires reste sous deux seuils : le seuil de base, apprécié sur l&apos;année précédente, et le seuil majoré, sur l&apos;année en cours.
           </p>
-          <RateTable head={["Activité", "Seuil base", "Seuil majoré"]} rows={SEUILS.map((s) => [s.label, fmtEur(s.seuilBase), fmtEur(s.seuilMajore)])} />
+          <RateTable head={["Activité", "Seuil de base", "Seuil majoré"]} rows={SEUILS.map((s) => [s.label, fmtEur(s.seuilBase), fmtEur(s.seuilMajore)])} />
           <Callout tone="info" icon={Info}>
-            Si vous dépassez le seuil de base mais restez sous le seuil majoré, la franchise est maintenue pour l&apos;année en cours. Si le dépassement se répète l&apos;année suivante, la TVA s&apos;applique dès le 1er janvier.
+            Si vous dépassez le seuil de base sans dépasser le seuil majoré, la franchise continue jusqu&apos;au 31 décembre et la TVA s&apos;applique au 1er janvier suivant. Depuis le 1er mars 2025, la franchise n&apos;est plus conservée une seconde année.
           </Callout>
         </Prose>
 
