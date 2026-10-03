@@ -2,9 +2,16 @@
  * lib/pdf/credit-note.ts
  * Génération PDF pour les avoirs.
  * Réutilisé par la route GET /api/credit-notes/[id]/pdf ET par la route POST /send.
+ *
+ * Un avoir est émis dès sa création (il n'a pas de brouillon) : PDF/A-3 avec le
+ * XML Factur-X embarqué, type de document 381 et référence à la facture
+ * d'origine (lib/facturx). Montants et mentions imprimés sont ceux du XML.
  */
 import { PDFDocument, rgb, PageSizes } from "pdf-lib"
 import fontkit from "@pdf-lib/fontkit"
+import { buildFacturX, documentMentions } from "@/lib/facturx/xml"
+import { creditNoteToFacturX, type LineRecord } from "@/lib/facturx/records"
+import { pdfSafeText, saveAsFacturX } from "@/lib/facturx/pdfa"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 import path from "path"
 import fs from "fs"
@@ -20,19 +27,22 @@ export interface CreditNotePdfInput {
     total_vat: number
     total_ttc: number
     notes?: string | null
-    lines?: {
+    /** Traitement de TVA du document, s'il est enregistré (voir lib/facturx/vat.ts). */
+    vat_treatment?: string | null
+    lines?: (LineRecord & {
       description: string
       quantity: number
       unit_price_ht: number
       vat_rate: number
       total_ht: number
-    }[]
+    })[]
     client?: {
       name?: string
       email?: string
       address?: string
       zip_code?: string
       city?: string
+      country?: string
       siren?: string
       vat_number?: string
     } | null
@@ -51,8 +61,10 @@ export interface CreditNotePdfInput {
     address?: string
     zip_code?: string
     city?: string
+    country?: string
     iban?: string
     legal_notice?: string
+    email?: string
     accent_color?: string
     logo_url?: string
   } | null
@@ -77,6 +89,11 @@ function fmt(n: number): string {
   return `${intPart},${parts[1]}\u00A0EUR`
 }
 
+/** Taux de TVA à la française : « 5,5 », « 20 ». */
+function fmtRate(r: number): string {
+  return String(Math.round(Number(r) * 100) / 100).replace(".", ",")
+}
+
 function fmtDate(d: string): string {
   try { return new Intl.DateTimeFormat("fr-FR").format(new Date(d)) }
   catch { return d }
@@ -85,6 +102,13 @@ function fmtDate(d: string): string {
 // ── Générateur principal ─────────────────────────────────────────────────────
 
 export async function generateCreditNotePdf({ creditNote, company }: CreditNotePdfInput): Promise<Buffer> {
+  // Avoir au modèle Factur-X : XML, montants et mentions viennent du même calcul
+  const fxDoc = creditNoteToFacturX(creditNote, company)
+  const fx = buildFacturX(fxDoc)
+  const totals = fx.totals
+  const extraMentions = documentMentions(fxDoc, totals)
+  if (fx.warnings.length) console.warn(`[facturx] ${creditNote.credit_note_number} : ${fx.warnings.join(" | ")}`)
+
   const doc = await PDFDocument.create()
   doc.registerFontkit(fontkit)
 
@@ -113,11 +137,13 @@ export async function generateCreditNotePdf({ creditNote, company }: CreditNoteP
   } = {}) => {
     const { size = 9, bold: isBold = false, color = black, align = "left", maxWidth } = opts
     const font = isBold ? fontBold : fontRegular
-    let str = text ?? ""
+    // Aucun glyphe absent de la police (exigence PDF/A, et pas de carré à l'impression)
+    const full = pdfSafeText(font, text ?? "")
+    let str = full
     if (maxWidth) {
       while (str.length > 0 && font.widthOfTextAtSize(str, size) > maxWidth)
         str = str.slice(0, -1)
-      if (str.length < (text ?? "").length) str = str.slice(0, -1) + "..."
+      if (str.length < full.length) str = str.slice(0, -1) + "..."
     }
     const tw = font.widthOfTextAtSize(str, size)
     const drawX = align === "right" ? x - tw : align === "center" ? x - tw / 2 : x
@@ -164,8 +190,9 @@ export async function generateCreditNotePdf({ creditNote, company }: CreditNoteP
   draw(`Émis le : ${fmtDate(creditNote.issue_date)}`, mR, curY - 36, { size: 8.5, color: grayDark, align: "right" })
 
   if (creditNote.original_invoice) {
+    const original = creditNote.original_invoice
     draw(
-      `Avoir sur la facture ${creditNote.original_invoice.invoice_number}`,
+      `Avoir sur la facture ${original.invoice_number}${original.issue_date ? ` du ${fmtDate(original.issue_date)}` : ""}`,
       mR, curY - 50, { size: 8, color: grayDark, align: "right" }
     )
   }
@@ -249,38 +276,53 @@ export async function generateCreditNotePdf({ creditNote, company }: CreditNoteP
     draw(line.description,           colDesc,  curY + 2, { size: 8.5, color: black,       maxWidth: 240 })
     draw(String(line.quantity),      colQty,   curY + 2, { size: 8.5, color: grayDark,    align: "right" })
     draw(fmt(line.unit_price_ht),    colPU,    curY + 2, { size: 8.5, color: grayDark,    align: "right" })
-    draw(`${line.vat_rate} %`,       colTVA,   curY + 2, { size: 8.5, color: grayDark,    align: "right" })
+    draw(`${fmtRate(line.vat_rate)} %`, colTVA, curY + 2, { size: 8.5, color: grayDark,   align: "right" })
     draw(`-${fmt(line.total_ht)}`,   colTotal, curY + 2, { size: 8.5, bold: true, color: creditOrange, align: "right" })
     curY -= rowH
     hLine(curY + 2, mL, mR, 0.3, rgb(0.92, 0.93, 0.95))
   })
   curY -= 16
 
-  // ── TOTAUX ───────────────────────────────────────────────────────────────
+  // ── TOTAUX — ceux du XML Factur-X, calculés au centime depuis les lignes ──
   const totBlockW = 210; const totX = mR - totBlockW; const totValX = mR
 
   draw("Sous-total HT", totX, curY, { size: 8.5, color: grayDark })
-  draw(`-${fmt(creditNote.subtotal_ht)}`, totValX, curY, { size: 8.5, color: grayDark, align: "right" })
+  draw(`-${fmt(totals.taxBasis)}`, totValX, curY, { size: 8.5, color: grayDark, align: "right" })
   curY -= 14
 
-  draw("TVA", totX, curY, { size: 8.5, color: grayDark })
-  draw(`-${fmt(creditNote.total_vat)}`, totValX, curY, { size: 8.5, color: grayDark, align: "right" })
-  curY -= 8
+  // Plusieurs taux : base et TVA par taux (CGI, art. 242 nonies A)
+  const vatRows = totals.breakdown.filter((b) => b.category === "S")
+  if (vatRows.length > 1) {
+    for (const b of vatRows) {
+      draw(`TVA ${fmtRate(b.rate)} % sur ${fmt(b.base)}`, totX, curY, { size: 8.5, color: grayDark })
+      draw(`-${fmt(b.tax)}`, totValX, curY, { size: 8.5, color: grayDark, align: "right" })
+      curY -= 14
+    }
+    curY += 6
+  } else {
+    draw(vatRows.length === 1 ? `TVA ${fmtRate(vatRows[0].rate)} %` : "TVA", totX, curY, { size: 8.5, color: grayDark })
+    draw(`-${fmt(totals.taxTotal)}`, totValX, curY, { size: 8.5, color: grayDark, align: "right" })
+    curY -= 8
+  }
   hLine(curY, totX, mR, 0.8, grayLight)
   curY -= 16
 
   hLine(curY, totX, mR, 1.5, creditOrange)
   curY -= 14
-  draw("TOTAL AVOIR TTC",                   totX,    curY, { size: 10, bold: true, color: creditOrange })
-  draw(`-${fmt(creditNote.total_ttc)}`, totValX, curY, { size: 14, bold: true, color: creditOrange, align: "right" })
+  draw("TOTAL AVOIR TTC",              totX,    curY, { size: 10, bold: true, color: creditOrange })
+  draw(`-${fmt(totals.grandTotal)}`, totValX, curY, { size: 14, bold: true, color: creditOrange, align: "right" })
   curY -= 24
 
-  // ── MENTIONS LÉGALES ─────────────────────────────────────────────────────
-  if (company?.legal_notice?.trim()) {
+  // ── MENTIONS LÉGALES — de l'entreprise, puis celles que déclare le XML ─────
+  const legalLines = [
+    ...(company?.legal_notice?.trim() ? company.legal_notice.trim().split("\n").slice(0, 8) : []),
+    ...extraMentions,
+  ]
+  if (legalLines.length) {
     hLine(curY, mL, mR, 0.5, separator); curY -= 12
-    company.legal_notice.trim().split("\n").slice(0, 4).forEach((l: string) => {
-      const tw = fontRegular.widthOfTextAtSize(l, 7)
-      draw(l, Math.max(mL, (width - tw) / 2), curY, { size: 7, color: grayLight }); curY -= 10
+    legalLines.forEach((l: string) => {
+      const tw = Math.min(cW, fontRegular.widthOfTextAtSize(pdfSafeText(fontRegular, l), 7))
+      draw(l, Math.max(mL, (width - tw) / 2), curY, { size: 7, color: grayLight, maxWidth: cW }); curY -= 10
     })
   }
 
@@ -289,6 +331,13 @@ export async function generateCreditNotePdf({ creditNote, company }: CreditNoteP
   draw(`${company?.name ?? "Qonforme"} — ${creditNote.credit_note_number}`, mL, 20, { size: 7, color: grayLight })
   draw("Généré par Qonforme", mR, 20, { size: 7, color: creditOrange, align: "right" })
 
-  const pdfBytes = await doc.save()
+  // PDF/A-3 avec le XML Factur-X de l'avoir embarqué
+  const pdfBytes = await saveAsFacturX(doc, {
+    xml:      fx.xml,
+    title:    `Avoir ${creditNote.credit_note_number}`,
+    author:   company?.name?.trim() || "Qonforme",
+    subject:  `Avoir ${creditNote.credit_note_number}${creditNote.original_invoice?.invoice_number ? ` sur la facture ${creditNote.original_invoice.invoice_number}` : ""}`,
+    keywords: ["avoir", "Factur-X", creditNote.credit_note_number],
+  })
   return Buffer.from(pdfBytes)
 }

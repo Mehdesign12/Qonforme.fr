@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     const { data: invoice, error: invErr } = await supabase
       .from("invoices")
-      .select("*, client:clients(id,name,email,address,zip_code,city,siren,vat_number)")
+      .select("*, client:clients(id,name,email,address,zip_code,city,country,siren,vat_number)")
       .eq("id", id)
       .eq("user_id", user.id)
       .single()
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     const { data: company } = await supabase
       .from("companies")
-      .select("name,siren,siret,vat_number,address,zip_code,city,iban,legal_notice,accent_color,logo_url")
+      .select("name,siren,siret,vat_number,address,zip_code,city,country,iban,legal_notice,accent_color,logo_url,email")
       .eq("user_id", user.id)
       .single()
 
@@ -45,7 +45,8 @@ export async function GET(request: NextRequest, { params }: Params) {
         "Content-Type":        "application/pdf",
         "Content-Disposition": `attachment; filename="${isDraft ? "brouillon-" : ""}${invoice.invoice_number}.pdf"`,
         "Cache-Control":       "no-store",
-        "X-Facturx-Profile":   "EN 16931",
+        // Brouillon : PDF simple, sans XML (voir lib/pdf/invoice.ts)
+        ...(isDraft ? {} : { "X-Facturx-Profile": "EN 16931" }),
       },
     })
   } catch (err) {
