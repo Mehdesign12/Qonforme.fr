@@ -26,6 +26,11 @@ export async function updateSession(request: NextRequest) {
     '/api/og',
     '/api/cron',
     '/api/outils',
+    // Page de règlement d'une facture et ses routes (accès par jeton, sans
+    // connexion). Publique mais propre à une facture : volontairement absente
+    // des pages mises en cache par le service worker (public/sw.js).
+    '/regler',
+    '/api/regler',
   ]
 
   const isPurePublic = purePublicPaths.some((path) =>

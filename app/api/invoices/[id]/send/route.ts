@@ -5,6 +5,7 @@ import { requireIssuingAccess } from "@/lib/stripe/subscription"
 import { sendEmail } from "@/lib/email/resend"
 import { buildInvoiceEmail } from "@/lib/email/templates/invoice"
 import { generateInvoicePdf } from "@/lib/pdf/invoice"
+import { paymentLinkFor } from "@/lib/payment-link/server"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -60,6 +61,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const pdfBuffer = Buffer.from(pdfBytes)
     console.log(`[invoice-send] PDF généré (${pdfBuffer.length} bytes)`)
 
+    // Lien de la page de règlement par virement (null sans IBAN valide ou si
+    // l'artisan l'a désactivé ; ne fait jamais échouer l'envoi)
+    const paymentUrl = await paymentLinkFor({ invoiceId: id, userId: user.id, issuing: true })
+
     // 4. Construire et envoyer l'email
     const { subject, html } = buildInvoiceEmail({
       invoiceNumber: invoice.invoice_number,
@@ -75,6 +80,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       clientName,
       clientEmail,
       appUrl:        process.env.NEXT_PUBLIC_APP_URL ?? "https://qonforme.fr",
+      paymentUrl,
     })
 
     const cc        = senderEmail ? [senderEmail] : []

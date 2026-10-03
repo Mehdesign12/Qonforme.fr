@@ -2,9 +2,12 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import {
   ATTENTION_LIMIT, STALE_DAYS,
-  draftItem, mergeAttention, overdueItem, quoteItem, shiftDays, todayParis,
-  type AttentionData,
+  draftItem, mergeAttention, overdueItem, quoteItem, shiftDays, todayParis, transferItem,
+  type AttentionData, type AttentionItem,
 } from "@/components/search/model"
+import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
+import { PAYABLE_STATUSES } from "@/lib/payment-link/rules"
+import { DECLARATIONS_TABLE } from "@/lib/payment-link/types"
 
 export const dynamic = "force-dynamic"
 
@@ -15,9 +18,57 @@ function clientName(rel: unknown): string | null {
   return c && typeof c === "object" && "name" in c ? String((c as { name: unknown }).name ?? "") || null : null
 }
 
+type Supabase = Awaited<ReturnType<typeof createClient>>
+
+/**
+ * Virements déclarés par un client sur la page de règlement, pas encore
+ * écartés, sur une facture toujours à encaisser. Facultatif : table absente
+ * (migration pas encore appliquée) ou erreur → rien, la cloche reste utilisable.
+ */
+async function loadTransfers(supabase: Supabase, userId: string): Promise<{ items: AttentionItem[]; count: number }> {
+  // Au plus une déclaration ouverte par facture (index unique) : 50 suffisent largement
+  const { data: decls, error } = await supabase
+    .from(DECLARATIONS_TABLE)
+    .select("id, invoice_id, amount, transfer_date")
+    .eq("user_id", userId)
+    .eq("status", "open")
+    .order("created_at", { ascending: false })
+    .limit(50)
+  if (error) {
+    if (!isMissingSchemaError(error)) console.error("[attention] virements déclarés", error)
+    return { items: [], count: 0 }
+  }
+  if (!decls?.length) return { items: [], count: 0 }
+
+  const { data: invoices, error: invErr } = await supabase
+    .from("invoices")
+    .select("id, invoice_number, client:clients(name)")
+    .eq("user_id", userId)
+    .in("id", Array.from(new Set(decls.map((d) => d.invoice_id as string))))
+    .in("status", [...PAYABLE_STATUSES])
+  if (invErr) {
+    console.error("[attention] factures des virements déclarés", invErr)
+    return { items: [], count: 0 }
+  }
+  const byId = new Map((invoices ?? []).map((i) => [i.id as string, i]))
+  const open = decls.filter((d) => byId.has(d.invoice_id as string))
+  const items = open.slice(0, ATTENTION_LIMIT).map((d) => {
+    const inv = byId.get(d.invoice_id as string)!
+    return transferItem({
+      id: d.id as string,
+      number: String(inv.invoice_number ?? "Facture"),
+      client: clientName(inv.client),
+      amount: Number(d.amount ?? 0),
+      transferDate: String(d.transfer_date),
+    }, `/invoices/${d.invoice_id}`)
+  })
+  return { items, count: open.length }
+}
+
 // GET /api/attention — ce qui demande l'attention de l'utilisateur (cloche) :
-// factures en retard, devis envoyés sans réponse depuis plus de 7 jours,
-// brouillons de plus de 7 jours. 8 éléments au plus, avec les totaux.
+// virements déclarés par un client, factures en retard, devis envoyés sans
+// réponse depuis plus de 7 jours, brouillons de plus de 7 jours. 8 éléments au
+// plus, avec les totaux.
 export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -27,6 +78,7 @@ export async function GET() {
 
   const today = todayParis()
   const cutoff = shiftDays(today, -STALE_DAYS)
+  const transfersPromise = loadTransfers(supabase, user.id).catch(() => ({ items: [] as AttentionItem[], count: 0 }))
 
   const [overdueRes, quotesRes, invDraftsRes, quoteDraftsRes] = await Promise.all([
     // En retard : marquée « overdue », ou émise, non réglée et échue (heure de Paris)
@@ -96,15 +148,17 @@ export async function GET() {
     })),
   ].sort((a, b) => a.day.localeCompare(b.day)).map((x) => x.item)
 
+  const transfers = await transfersPromise
   const counts = {
     overdue: overdueRes.count ?? overdue.length,
     quotes: quotesRes.count ?? quotes.length,
     drafts: (invDraftsRes.count ?? 0) + (quoteDraftsRes.count ?? 0),
+    transfers: transfers.count,
   }
   const body: AttentionData = {
-    items: mergeAttention(overdue, quotes, drafts),
+    items: mergeAttention(overdue, quotes, drafts, transfers.items),
     counts,
-    total: counts.overdue + counts.quotes + counts.drafts,
+    total: counts.overdue + counts.quotes + counts.drafts + counts.transfers,
   }
   return NextResponse.json(body, { headers: NO_STORE })
 }

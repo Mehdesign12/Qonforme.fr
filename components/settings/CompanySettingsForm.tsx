@@ -2,7 +2,9 @@
 
 /**
  * Paramètres › Entreprise (planche « Paramètres — Entreprise ») : logo avec
- * aperçu, identité, TVA, coordonnées bancaires.
+ * aperçu, identité, TVA, coordonnées bancaires (IBAN contrôlé par sa clé ISO
+ * 13616 ; titulaire et BIC pour la page de règlement, lib/payment-link, dès que
+ * la migration 20261003_payment_links.sql a ajouté leurs colonnes).
  *
  * Seuls les champs qui existent en base sont proposés : pas de forme
  * juridique, de téléphone, d'assurance décennale, de régime de TVA ni
@@ -16,6 +18,7 @@ import { toast } from "sonner"
 import { Loader2, Search, CheckCircle2, Wand2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { isValidSiren, sirenToVAT } from "@/lib/utils/invoice"
+import { bicError, formatIbanGroups, ibanError, normalizeBic, normalizeIban } from "@/lib/payment-link/iban"
 import { PageHeader } from "@/components/app/kit"
 import type { ShellMode } from "@/components/layout/nav"
 import { settingsHref } from "@/components/settings/sections"
@@ -32,6 +35,9 @@ export interface CompanyFields {
   city: string
   country: string
   iban: string
+  /** Titulaire du compte (page de règlement) ; colonne `bank_account_holder`. */
+  account_holder: string
+  bic: string
   email: string
 }
 
@@ -41,7 +47,7 @@ const DEFAULT_PAYMENT_TERMS =
 const EMPTY: CompanyFields = {
   name: "", siren: "", siret: "", vat_number: "",
   address: "", zip_code: "", city: "", country: "FR",
-  iban: "", email: "",
+  iban: "", account_holder: "", bic: "", email: "",
 }
 
 const FORM_ID = "company-form"
@@ -69,6 +75,9 @@ export function CompanySettingsForm({
   const [saved, setSaved]           = useState<CompanyFields>(start)   // copie au dernier enregistrement / chargement
   const [errors, setErrors]         = useState<Partial<Record<keyof CompanyFields, string>>>({})
   const [loadedLogo, setLoadedLogo] = useState<string | null>(initial?.logo_url ?? null)
+  // Titulaire et BIC : colonnes ajoutées par la migration du lien de paiement. Tant
+  // qu'elles n'existent pas, les champs sont masqués et jamais envoyés.
+  const [bankExtras, setBankExtras] = useState(demo)
 
   const [sirenSearch, setSirenSearch]   = useState("")
   const [sirenLoading, setSirenLoading] = useState(false)
@@ -107,7 +116,9 @@ export function CompanySettingsForm({
           zip_code:   company.zip_code   ?? "",
           city:       company.city       ?? "",
           country:    company.country    ?? "FR",
-          iban:       company.iban       ?? "",
+          iban:       company.iban ? formatIbanGroups(company.iban) : "",
+          account_holder: company.bank_account_holder ?? "",
+          bic:        company.bic        ?? "",
           // Si pas d'email entreprise enregistré, pré-remplir avec l'email de connexion
           email:      company.email      ?? user.email ?? "",
         }
@@ -115,6 +126,7 @@ export function CompanySettingsForm({
         setSaved(loaded)
         setCompanyId(company.id)
         setLoadedLogo(company.logo_url ?? null)
+        setBankExtras("bic" in company && "bank_account_holder" in company)
       }
       setLoading(false)
     })
@@ -173,6 +185,10 @@ export function CompanySettingsForm({
     if (!f.address.trim())              e.address  = "Requis"
     if (!f.zip_code.trim())             e.zip_code = "Requis"
     if (!f.city.trim())                 e.city     = "Requis"
+    const ibanErr = ibanError(f.iban)
+    if (ibanErr)                        e.iban     = ibanErr
+    const bicErr = bankExtras ? bicError(f.bic) : null
+    if (bicErr)                         e.bic      = bicErr
     return e
   }
 
@@ -203,8 +219,12 @@ export function CompanySettingsForm({
         zip_code:   fields.zip_code.trim(),
         city:       fields.city.trim(),
         country:    fields.country           || "FR",
-        iban:       fields.iban.trim()       || null,
+        iban:       normalizeIban(fields.iban) || null,
         email:      fields.email.trim()      || null,
+        ...(bankExtras ? {
+          bank_account_holder: fields.account_holder.trim() || null,
+          bic:                 normalizeBic(fields.bic)     || null,
+        } : {}),
       }
 
       let dbError
@@ -391,16 +411,40 @@ export function CompanySettingsForm({
           </SettingsCard>
 
           {/* ── Coordonnées bancaires ── */}
-          <SettingsCard id="banque" title="Coordonnées bancaires">
+          <SettingsCard
+            id="banque"
+            title="Coordonnées bancaires"
+            description={bankExtras
+              ? "Sur vos factures et sur la page de règlement : vos clients vous paient par virement, sur votre compte."
+              : undefined}
+          >
             <Field
               label="IBAN"
               htmlFor="iban"
+              error={errors.iban}
               hint="Affiché sous le total de vos factures : vos clients vous règlent par virement."
               className="sm:max-w-[calc(50%-6px)]"
             >
               <input id="iban" className="q-input font-mono" placeholder="FR76 3000 6000 0112 3456 7890 189" autoComplete="off"
-                value={fields.iban} onChange={set("iban")} />
+                value={fields.iban} onChange={set("iban")} aria-invalid={!!errors.iban}
+                onBlur={() => { if (fields.iban.trim() && !ibanError(fields.iban)) setFields(prev => ({ ...prev, iban: formatIbanGroups(prev.iban) })) }} />
             </Field>
+            {bankExtras && (
+              <FieldGrid>
+                <Field
+                  label="Titulaire du compte"
+                  htmlFor="account_holder"
+                  hint="Tel qu'il figure sur votre RIB. Vide : la raison sociale est utilisée."
+                >
+                  <input id="account_holder" className="q-input" placeholder={fields.name || "Mon Entreprise SARL"} autoComplete="off"
+                    value={fields.account_holder} onChange={set("account_holder")} maxLength={70} />
+                </Field>
+                <Field label="BIC" htmlFor="bic" error={errors.bic} hint="Facultatif : 8 ou 11 caractères, sur votre RIB.">
+                  <input id="bic" className="q-input font-mono" placeholder="BNPAFRPPXXX" autoComplete="off" maxLength={14}
+                    value={fields.bic} onChange={set("bic")} aria-invalid={!!errors.bic} />
+                </Field>
+              </FieldGrid>
+            )}
           </SettingsCard>
 
           <MobileSaveBar show={isDirty} form={FORM_ID} saving={saving} />

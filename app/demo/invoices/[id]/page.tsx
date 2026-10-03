@@ -8,6 +8,9 @@ import { EmptyState } from "@/components/app/kit"
 import { InvoiceDetailView } from "@/components/invoices/InvoiceDetailView"
 import type { CompanyView, InvoiceView } from "@/components/invoices/invoice-view"
 import { DEMO_COMPANY, DEMO_TODAY, demoInvoice } from "@/lib/demo/data"
+import { DeclarationBanner, PaymentLinkPanel } from "@/components/payment-link/PaymentLinkPanel"
+import { demoPaymentLinkState } from "@/lib/demo/payment-link"
+import { isPayableStatus } from "@/lib/payment-link/rules"
 
 /** Miroir de /invoices/[id] : même fiche, données de démo, rien n'est enregistré ni envoyé. */
 const COMPANY: CompanyView = {
@@ -42,6 +45,7 @@ export default function DemoInvoiceDetailPage() {
     )
   }
 
+  const payState = demoPaymentLinkState(data.id)
   const invoice: InvoiceView = {
     id: data.id,
     invoice_number: data.invoice_number,
@@ -79,6 +83,26 @@ export default function DemoInvoiceDetailPage() {
       quote={data.quote_number ? { number: data.quote_number, href: `/demo/quotes/${data.quote_number.toLowerCase()}` } : null}
       creditNotesHref="/demo/credit-notes"
       settingsCompanyHref="/demo/settings"
+      payment={
+        <PaymentLinkPanel
+          status={data.status}
+          state={payState}
+          iban={COMPANY.iban ?? null}
+          settingsHref="/demo/settings/company#banque"
+          handlers={{
+            create: () => signupToast("créer vos liens de paiement"),
+            disable: () => signupToast("gérer vos liens de paiement"),
+            enable: () => signupToast("gérer vos liens de paiement"),
+          }}
+        />
+      }
+      paymentBanner={payState.declaration?.status === "open" && isPayableStatus(data.status) ? (
+        <DeclarationBanner
+          declaration={payState.declaration}
+          onMarkPaid={() => signupToast("suivre vos paiements")}
+          onDismiss={() => signupToast("suivre vos paiements")}
+        />
+      ) : null}
       handlers={{
         downloadPdf: () => signupToast("télécharger vos factures en PDF"),
         downloadFacturX: () => signupToast("télécharger le XML Factur-X"),

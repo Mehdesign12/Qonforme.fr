@@ -10,9 +10,10 @@ import {
 } from "@/lib/demo/data"
 import {
   OPEN_INVOICE_STATUSES, SEARCH_LIMIT, STALE_DAYS,
-  clientMeta, draftItem, isInvoiceOverdue, mergeAttention, normalizeText, overdueItem, quoteItem, shiftDays,
+  clientMeta, draftItem, isInvoiceOverdue, mergeAttention, normalizeText, overdueItem, quoteItem, shiftDays, transferItem,
   type AttentionData, type ClientHit, type SearchResults,
 } from "@/components/search/model"
+import { demoOpenDeclarations } from "@/lib/demo/payment-link"
 
 const isOpen = (status: string) => (OPEN_INVOICE_STATUSES as readonly string[]).includes(status)
 
@@ -67,6 +68,13 @@ export function demoAttention(): AttentionData {
       .map((d) => ({ day: d.issue_date, item: draftItem({ id: d.id, kind: "quote", number: d.quote_number, client: d.client.name, createdDay: d.issue_date }, today, `/demo/quotes/${d.id}`) })),
   ].sort((a, b) => a.day.localeCompare(b.day)).map((x) => x.item)
 
-  const counts = { overdue: overdue.length, quotes: quotes.length, drafts: drafts.length }
-  return { items: mergeAttention(overdue, quotes, drafts), counts, total: counts.overdue + counts.quotes + counts.drafts }
+  const transfers = demoOpenDeclarations().map(({ declaration: d, invoice: i }) =>
+    transferItem({ id: d.id, number: i.invoice_number, client: i.client.name, amount: d.amount, transferDate: d.transferDate }, `/demo/invoices/${i.id}`))
+
+  const counts = { overdue: overdue.length, quotes: quotes.length, drafts: drafts.length, transfers: transfers.length }
+  return {
+    items: mergeAttention(overdue, quotes, drafts, transfers),
+    counts,
+    total: counts.overdue + counts.quotes + counts.drafts + counts.transfers,
+  }
 }

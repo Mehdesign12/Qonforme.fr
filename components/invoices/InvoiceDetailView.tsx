@@ -10,9 +10,10 @@
  * (lib/utils/document-status.ts) ; ici on n'affiche que les actions permises.
  *
  * Écarts volontaires avec le canevas (fonctions non livrées, DECISIONS § 10) :
- * pas de cycle de vie « plateforme agréée », pas de paiement partiel ni de lien
- * de paiement, pas de relances programmables par facture. L'historique ne
- * montre que des dates réellement enregistrées.
+ * pas de cycle de vie « plateforme agréée », pas de paiement partiel, pas de
+ * relances programmables par facture. L'historique ne montre que des dates
+ * réellement enregistrées. Le lien de paiement par virement arrive par les
+ * emplacements `payment` et `paymentBanner` (components/payment-link).
  */
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -108,6 +109,10 @@ export interface InvoiceDetailViewProps {
   creditNotesHref: string
   settingsCompanyHref: string
   handlers: InvoiceDetailHandlers
+  /** Contenu du panneau « Paiement » sous l'état et l'échéance (lien de paiement) ; à défaut, l'IBAN seul. */
+  payment?: React.ReactNode
+  /** Bandeau en tête de fiche (virement déclaré par le client). */
+  paymentBanner?: React.ReactNode
 }
 
 /* ------------------------------------------------------------------ */
@@ -116,6 +121,7 @@ export interface InvoiceDetailViewProps {
 
 export function InvoiceDetailView({
   invoice, company, today, backHref, clientHref, quote, creditNotesHref, settingsCompanyHref, handlers: h,
+  payment, paymentBanner,
 }: InvoiceDetailViewProps) {
   const router = useRouter()
   const status = invoice.status
@@ -279,6 +285,7 @@ export function InvoiceDetailView({
       </section>
 
       {/* ---- Bandeaux ---- */}
+      {paymentBanner}
       {invoice.is_archived && (
         <Banner icon={Archive} title="Facture archivée" action={<ActionButton action={{ ...archive, label: "Désarchiver" }} run={run} size="sm" />}>
           Elle n&apos;apparaît plus dans la liste principale. Vous pouvez la désarchiver à tout moment.
@@ -350,7 +357,7 @@ export function InvoiceDetailView({
                 <span className={cn(late && "font-semibold text-[var(--q-warn)]")}>{mediumDate(invoice.due_date)}</span>
               </Row>
             </dl>
-            {company?.iban ? (
+            {payment ?? (company?.iban ? (
               <div className="flex flex-col gap-2">
                 <div className="q-inset flex items-center gap-2 py-1.5 pl-3 pr-1.5">
                   <span className="flex min-w-0 flex-1 flex-col">
@@ -376,7 +383,7 @@ export function InvoiceDetailView({
               <p className="text-[13px] text-[var(--q-text-3)]">
                 Aucun IBAN renseigné. <Link href={settingsCompanyHref} className="q-link">Ajoutez-le</Link> pour qu&apos;il figure sur vos factures.
               </p>
-            ) : null}
+            ) : null)}
           </Panel>
 
           {invoice.client && (

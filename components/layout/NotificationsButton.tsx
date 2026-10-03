@@ -2,13 +2,13 @@
 
 /**
  * Cloche de la barre supérieure (canevas « Tableau de bord ») : ce qui demande
- * votre attention. Factures en retard, devis envoyés sans réponse depuis plus
- * de 7 jours, brouillons oubliés. Réel : GET /api/attention ; démo : calcul
+ * votre attention. Virements déclarés par un client (à vérifier), factures en
+ * retard, devis envoyés sans réponse depuis plus de 7 jours, brouillons oubliés. Réel : GET /api/attention ; démo : calcul
  * local sur lib/demo/data. Le point bleu signale au moins un élément.
  */
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { Bell, Clock, FileClock, FilePen } from "lucide-react"
+import { Bell, Clock, FileClock, FilePen, Landmark } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import type { ShellIdentity } from "@/components/layout/shell"
@@ -18,6 +18,7 @@ const KIND_STYLE: Record<AttentionKind, { icon: React.ElementType; tile: string 
   overdue: { icon: Clock, tile: "bg-[var(--q-warn-bg)] text-[var(--q-warn)]" },
   quote: { icon: FileClock, tile: "bg-[var(--q-wash)] text-[var(--q-accent-strong)]" },
   draft: { icon: FilePen, tile: "bg-[var(--q-neutral-bg)] text-[var(--q-neutral)]" },
+  transfer: { icon: Landmark, tile: "bg-[var(--q-ok-bg)] text-[var(--q-ok)]" },
 }
 
 type LoadState = { status: "idle" | "loading" | "done" | "error"; data: AttentionData | null }
