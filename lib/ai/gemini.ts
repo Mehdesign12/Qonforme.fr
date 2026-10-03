@@ -482,7 +482,7 @@ const DEFAULT_BRAND_GUIDELINES = {
   accent_colors: ["#3B82F6", "#EFF6FF"],
   mood: "Professional yet approachable. Modern, clean, trustworthy.",
   target: "French artisans, craftsmen, small business owners.",
-  visual_identity: "Clean lines, blue gradients, warm human touches, French business aesthetic.",
+  visual_identity: "Clean lines, light neutral backgrounds with blue accents (no blue gradient backgrounds), warm human touches, French business aesthetic.",
 }
 
 export type BrandGuidelines = typeof DEFAULT_BRAND_GUIDELINES

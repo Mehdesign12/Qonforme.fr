@@ -1,104 +1,120 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { FileText, Plus, Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, FileText, Pencil, Plus } from 'lucide-react'
+import { EmptyState, PageHeader, StatusPill } from '@/components/app/kit'
+import { LoadError, fmtDate, plural } from '@/components/admin/ui'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin — Blog' }
 
 async function getPosts() {
   const admin = createAdminClient()
-  const { data } = await admin
+  const { data, error } = await admin
     .from('blog_posts')
     .select('id, slug, title, excerpt, is_published, published_at, created_at, updated_at')
     .order('created_at', { ascending: false })
-  return data ?? []
+  return { posts: data ?? [], error: !!error }
+}
+
+function PublishPill({ published }: { published: boolean }) {
+  return published ? (
+    <StatusPill tone="ok" icon={<Eye strokeWidth={2.25} aria-hidden />}>Publié</StatusPill>
+  ) : (
+    <StatusPill tone="neutral" icon={<EyeOff strokeWidth={2.25} aria-hidden />}>Brouillon</StatusPill>
+  )
+}
+
+function dateLine(post: { is_published: boolean; published_at: string | null; updated_at: string }): string {
+  return post.is_published && post.published_at
+    ? `Publié le ${fmtDate(post.published_at)}`
+    : `Modifié le ${fmtDate(post.updated_at)}`
 }
 
 export default async function AdminBlogPage() {
-  const posts = await getPosts()
+  const { posts, error } = await getPosts()
 
   const published = posts.filter(p => p.is_published).length
   const drafts    = posts.filter(p => !p.is_published).length
 
+  const newButton = (
+    <Link href="/admin/blog/new" className="q-btn q-btn-primary">
+      <Plus strokeWidth={2.25} aria-hidden />
+      Nouvel article
+    </Link>
+  )
+
   return (
-    <div className="space-y-5 max-w-[960px] mx-auto">
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        title="Blog"
+        subtitle={error ? 'Lecture impossible' : `${plural(published, 'article publié', 'articles publiés')} · ${plural(drafts, 'brouillon')}`}
+        actions={newButton}
+      />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[22px] font-extrabold text-[#0F172A] dark:text-[#E2E8F0] leading-tight">Blog</h1>
-          <p className="text-[13px] text-slate-400 mt-0.5">{published} publié(s) · {drafts} brouillon(s)</p>
+      {error ? (
+        <LoadError what="les articles" />
+      ) : posts.length === 0 ? (
+        <div className="q-card">
+          <EmptyState
+            icon={<FileText className="size-5" aria-hidden />}
+            title="Aucun article"
+            text="Rédigez un premier article, ou générez-en un depuis la page Génération IA."
+            action={newButton}
+          />
         </div>
-        <Link
-          href="/admin/blog/new"
-          className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-[#1d4ed8] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Nouvel article
-        </Link>
-      </div>
+      ) : (
+        <>
+          {/* Tableau (ordinateur) */}
+          <section aria-label="Articles" className="q-card hidden overflow-hidden md:block">
+            <div className="overflow-x-auto">
+              <table className="q-table min-w-[720px] [&_th]:border-t-0">
+                <thead>
+                  <tr className="bg-[var(--q-surface-2)]">
+                    <th scope="col">Article</th>
+                    <th scope="col">Statut</th>
+                    <th scope="col">Date</th>
+                    <th scope="col"><span className="sr-only">Modifier</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {posts.map((post) => (
+                    <tr key={post.id}>
+                      <td className="max-w-[560px] !py-3">
+                        <span className="flex min-w-0 flex-col gap-0.5">
+                          <span className="font-semibold">{post.title}</span>
+                          {post.excerpt && <span className="line-clamp-1 text-[13px] text-[var(--q-text-3)]">{post.excerpt}</span>}
+                          <span className="truncate font-mono text-xs text-[var(--q-text-4)]">/blog/{post.slug}</span>
+                        </span>
+                      </td>
+                      <td className="!py-3"><PublishPill published={post.is_published} /></td>
+                      <td className="!py-3 whitespace-nowrap text-[13px] text-[var(--q-text-3)]">{dateLine(post)}</td>
+                      <td className="w-px !py-3 text-right">
+                        <Link href={`/admin/blog/${post.id}`} className="q-btn q-btn-ghost q-btn-sm">
+                          <Pencil aria-hidden />
+                          Modifier
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-      {/* Table */}
-      <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] overflow-hidden">
-        {posts.length === 0 ? (
-          <div className="px-4 py-12 text-center">
-            <FileText className="w-10 h-10 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-            <p className="text-sm font-medium text-foreground mb-1">Aucun article</p>
-            <p className="text-[13px] text-slate-400 mb-4">Créez votre premier article de blog.</p>
-            <Link
-              href="/admin/blog/new"
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-[#1d4ed8] transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Créer un article
-            </Link>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 dark:border-[#1E3A5F] bg-slate-50/80 dark:bg-[#162032]/60">
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Titre</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Statut</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-[#1E3A5F]">
-              {posts.map((post) => (
-                <tr key={post.id} className="hover:bg-slate-50/60 dark:hover:bg-[#162032]/40 transition-colors">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-foreground">{post.title}</p>
-                    {post.excerpt && <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{post.excerpt}</p>}
-                    <p className="text-[11px] font-mono text-slate-300 dark:text-slate-600 mt-0.5">/{post.slug}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    {post.is_published ? (
-                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                        <Eye className="w-3 h-3" /> Publié
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                        <EyeOff className="w-3 h-3" /> Brouillon
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-[12px] text-slate-400">
-                    {post.is_published && post.published_at
-                      ? `Publié le ${new Date(post.published_at).toLocaleDateString('fr-FR')}`
-                      : `Modifié le ${new Date(post.updated_at).toLocaleDateString('fr-FR')}`
-                    }
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link href={`/admin/blog/${post.id}`} className="text-[12px] font-medium text-[#2563EB] hover:underline">
-                      Éditer →
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+          {/* Liste (mobile) */}
+          <section aria-label="Articles" className="q-card q-list overflow-hidden !rounded-[18px] md:hidden">
+            {posts.map((post) => (
+              <Link key={post.id} href={`/admin/blog/${post.id}`} className="q-list-row !items-start !gap-3 !px-3.5 !py-3">
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="line-clamp-2 text-[15px] font-semibold">{post.title}</span>
+                  <span className="truncate text-[13px] text-[var(--q-text-4)]">{dateLine(post)}</span>
+                </span>
+                <PublishPill published={post.is_published} />
+              </Link>
+            ))}
+          </section>
+        </>
+      )}
     </div>
   )
 }

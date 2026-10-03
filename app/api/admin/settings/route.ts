@@ -27,10 +27,14 @@ export async function GET(request: NextRequest) {
     .from("app_settings")
     .select("value, updated_at")
     .eq("key", key)
-    .single()
+    .maybeSingle()
 
+  // Une lecture en échec n'est pas « aucun réglage » : l'admin doit le voir
   if (error) {
-    return NextResponse.json({ key, value: null }, { status: 200 })
+    return NextResponse.json({ error: "Lecture du réglage impossible. Réessayez." }, { status: 503 })
+  }
+  if (!data) {
+    return NextResponse.json({ key, value: null })
   }
 
   return NextResponse.json({ key, value: data.value, updated_at: data.updated_at })

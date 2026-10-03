@@ -1,16 +1,11 @@
 import { isAdminAuthenticated } from "@/lib/admin-require"
 import { redirect } from "next/navigation"
 import { createAdminClient } from "@/lib/supabase/server"
-import {
-  CheckCircle,
-  XCircle,
-  Clock,
-  Users,
-  CreditCard,
-  UserPlus,
-  RefreshCw,
-} from "lucide-react"
+import { CircleCheck, CircleX, Clock, RefreshCw } from "lucide-react"
 import Stripe from "stripe"
+import { EmptyState, Kpi, KpiGrid, PageHeader, Panel, StatusPill } from "@/components/app/kit"
+import { LoadError, fmtDateTime, fmtInt } from "@/components/admin/ui"
+import { RefreshButton } from "@/components/admin/RefreshButton"
 
 export const dynamic = "force-dynamic"
 export const metadata = { title: "Admin — Santé système" }
@@ -35,6 +30,7 @@ interface CronLog {
     // Mode réglages (Paramètres › Relances) : factures et devis
     invoices?: { sent: number; skipped: number; errors: string[] }
     quotes?: { sent: number; skipped: number; errors: string[] }
+    error?: string
   } | null
   duration_ms: number | null
 }
@@ -49,7 +45,7 @@ async function pingSupabase(
     const { error } = await admin
       .from("cron_logs")
       .select("id", { head: true, count: "exact" })
-    return { status: error ? "error" : "ok", latencyMs: Date.now() - t0 }
+    return { status: error ? "error" : "ok", latencyMs: Date.now() - t0, error: error?.message || undefined }
   } catch (e) {
     return { status: "error", latencyMs: Date.now() - t0, error: String(e) }
   }
@@ -100,7 +96,7 @@ async function getHealthData() {
       .from("cron_logs")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(20),
     admin.auth.admin.listUsers({ perPage: 1 }),
     admin
       .from("companies")
@@ -125,6 +121,7 @@ async function getHealthData() {
     checkedAt: new Date(),
     services: { supabase, stripe, resend },
     cronLogs: (cronLogsRes.data ?? []) as CronLog[],
+    cronLogsError: !!cronLogsRes.error,
     users: {
       total: totalUsers,
       totalError: !!usersRes.error,
@@ -138,101 +135,61 @@ async function getHealthData() {
 
 // ── Composants ────────────────────────────────────────────────────────────────
 
-function StatusIcon({ status }: { status: "ok" | "error" }) {
-  return status === "ok" ? (
-    <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+/** Tâches planifiées qui écrivent dans cron_logs (app/api/cron/*). */
+const JOB_LABELS: Record<string, string> = {
+  "send-reminders": "Relances de factures",
+  "generate-blog": "Article de blog (IA)",
+  "outreach-sequence": "Séquence de démarchage",
+  "scraping-sirene": "Extraction Sirene",
+  "enrich-prospects": "Enrichissement des prospects",
+}
+
+/** Tâches liées au démarchage, désactivé par décision (DECISIONS-STRATEGIQUES.md § 3). */
+const PROSPECTING_JOBS = new Set(["outreach-sequence", "scraping-sirene", "enrich-prospects"])
+
+function OkPill({ ok, okLabel = "Opérationnel", errorLabel = "En erreur" }: { ok: boolean; okLabel?: string; errorLabel?: string }) {
+  return ok ? (
+    <StatusPill tone="ok" icon={<CircleCheck strokeWidth={2.25} aria-hidden />}>{okLabel}</StatusPill>
   ) : (
-    <XCircle className="w-5 h-5 text-red-500 shrink-0" />
+    <StatusPill tone="danger" icon={<CircleX strokeWidth={2.25} aria-hidden />}>{errorLabel}</StatusPill>
   )
 }
 
-function ServiceCard({
-  name,
-  check,
-}: {
-  name: string
-  check: ServiceCheck
-}) {
+function ServiceCard({ name, role, check }: { name: string; role: string; check: ServiceCheck }) {
   const ok = check.status === "ok"
   return (
-    <div
-      className={`rounded-2xl border p-4 ${
-        ok
-          ? "bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]"
-          : "bg-red-50/80 dark:bg-red-900/10 border-red-200 dark:border-red-900/40"
-      }`}
-    >
-      <div className="flex items-center gap-3 mb-2">
-        <StatusIcon status={check.status} />
-        <span className="font-semibold text-[#0F172A] dark:text-[#E2E8F0] text-sm">{name}</span>
-        <span
-          className={`ml-auto text-[11px] font-bold rounded-full px-2 py-0.5 ${
-            ok
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-          }`}
-        >
-          {ok ? "OK" : "ERREUR"}
+    <div className={`q-card flex flex-col gap-2 p-4 ${ok ? "" : "!border-[var(--q-danger-line)]"}`}>
+      <div className="flex items-start justify-between gap-3">
+        <span className="flex min-w-0 flex-col">
+          <span className="q-h2">{name}</span>
+          <span className="text-[13px] text-[var(--q-text-4)]">{role}</span>
         </span>
+        <OkPill ok={ok} />
       </div>
       {check.latencyMs !== undefined && (
-        <p className="text-[12px] text-slate-400 dark:text-slate-500">
-          Latence : {check.latencyMs} ms
-        </p>
+        <p className="text-[13px] tabular-nums text-[var(--q-text-3)]">Temps de réponse : {fmtInt(check.latencyMs)} ms</p>
       )}
       {check.error && (
-        <p className="text-[12px] text-red-500 dark:text-red-400 mt-1 truncate">{check.error}</p>
+        <p className="line-clamp-3 break-words text-[13px] text-[var(--q-danger)]" title={check.error}>{check.error}</p>
       )}
     </div>
   )
 }
 
-function CronRow({ log }: { log: CronLog }) {
-  const ok = log.status === "ok"
-  const parts = [log.results?.reminder_1, log.results?.reminder_2, log.results?.invoices, log.results?.quotes]
-  const totalSent = parts.reduce((n, r) => n + (r?.sent ?? 0), 0)
-  const totalErrors = parts.reduce((n, r) => n + (r?.errors?.length ?? 0), 0)
-
-  return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/60 dark:hover:bg-[#162032]/40 transition-colors">
-      <div className="shrink-0">
-        {ok ? (
-          <CheckCircle className="w-4 h-4 text-emerald-500" />
-        ) : (
-          <XCircle className="w-4 h-4 text-red-500" />
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-[#0F172A] dark:text-[#E2E8F0]">
-          {new Date(log.created_at).toLocaleString("fr-FR", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </p>
-        <p className="text-[11px] text-slate-400">
-          {totalSent > 0 ? `${totalSent} relance${totalSent > 1 ? "s" : ""} envoyée${totalSent > 1 ? "s" : ""}` : "Aucune relance"}
-          {totalErrors > 0 && (
-            <span className="text-red-500 ml-1">· {totalErrors} erreur{totalErrors > 1 ? "s" : ""}</span>
-          )}
-          {log.duration_ms != null && (
-            <span className="ml-1">· {log.duration_ms} ms</span>
-          )}
-        </p>
-      </div>
-      <span
-        className={`text-[11px] font-bold rounded-full px-2 py-0.5 shrink-0 ${
-          ok
-            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-            : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-        }`}
-      >
-        {ok ? "OK" : "ERREUR"}
-      </span>
-    </div>
-  )
+function cronSummary(log: CronLog): string {
+  const parts: string[] = []
+  if (log.job_name === "send-reminders") {
+    // Anciennes relances J+30/J+45 et, une fois les réglages activés, relances de factures et de devis
+    const runs = [log.results?.reminder_1, log.results?.reminder_2, log.results?.invoices, log.results?.quotes]
+    const sent = runs.reduce((n, r) => n + (r?.sent ?? 0), 0)
+    const errors = runs.reduce((n, r) => n + (r?.errors?.length ?? 0), 0)
+    parts.push(sent > 0 ? `${fmtInt(sent)} relance${sent > 1 ? "s" : ""} envoyée${sent > 1 ? "s" : ""}` : "Aucune relance envoyée")
+    if (errors > 0) parts.push(`${fmtInt(errors)} erreur${errors > 1 ? "s" : ""}`)
+  } else if (log.results?.error) {
+    parts.push(String(log.results.error))
+  }
+  if (log.duration_ms != null) parts.push(`${fmtInt(log.duration_ms)} ms`)
+  return parts.join(" · ")
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -242,144 +199,105 @@ export default async function HealthPage() {
 
   const d = await getHealthData()
   const statsOk = !d.users.totalError && !d.users.newThisWeekError && !d.users.activeSubscriptionsError
-  const allOk = Object.values(d.services).every((s) => s.status === "ok") && statsOk
+  const allOk = Object.values(d.services).every((s) => s.status === "ok") && statsOk && !d.cronLogsError
+  const prospectingRuns = d.cronLogs.filter((l) => PROSPECTING_JOBS.has(l.job_name))
 
   return (
-    <div className="space-y-6 max-w-[1000px] mx-auto">
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        title="Santé du système"
+        subtitle={`Vérifié le ${fmtDateTime(d.checkedAt)} (heure de Paris)`}
+        actions={
+          <>
+            <OkPill ok={allOk} okLabel="Tout est opérationnel" errorLabel="Incident détecté" />
+            <RefreshButton label="Vérifier à nouveau" />
+          </>
+        }
+      />
 
-      {/* Header */}
-      <div className="flex items-center justify-between pt-1">
-        <div>
-          <h1 className="text-[22px] sm:text-[26px] font-extrabold text-[#0F172A] dark:text-[#E2E8F0] leading-tight tracking-tight">
-            Santé système
-          </h1>
-          <p className="text-[13px] text-slate-400 dark:text-slate-500 mt-0.5">
-            Vérifié à {d.checkedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+      <section aria-labelledby="health-services" className="flex flex-col gap-3">
+        <h2 id="health-services" className="q-h2">Services externes</h2>
+        <div className="grid gap-3 md:grid-cols-3">
+          <ServiceCard name="Supabase" role="Base de données" check={d.services.supabase} />
+          <ServiceCard name="Stripe" role="Abonnements et paiements" check={d.services.stripe} />
+          <ServiceCard name="Resend" role="Envoi des emails" check={d.services.resend} />
+        </div>
+      </section>
+
+      <section aria-labelledby="health-users" className="flex flex-col gap-3">
+        <h2 id="health-users" className="q-h2">Comptes</h2>
+        <KpiGrid className="sm:!grid-cols-3">
+          <Kpi
+            label="Utilisateurs inscrits"
+            value={d.users.totalError ? "—" : fmtInt(d.users.total)}
+            sub={d.users.totalError ? "Données indisponibles (API d'authentification)" : "au total"}
+            tone={d.users.totalError ? "warn" : "default"}
+          />
+          <Kpi
+            label="Inscriptions sur 7 jours"
+            value={d.users.newThisWeekError ? "—" : `+${fmtInt(d.users.newThisWeek)}`}
+            sub={d.users.newThisWeekError ? "Données indisponibles" : "nouvelles entreprises"}
+            tone={d.users.newThisWeekError ? "warn" : "default"}
+          />
+          <Kpi
+            className="col-span-2 sm:col-span-1"
+            label="Abonnés actifs"
+            value={d.users.activeSubscriptionsError ? "—" : fmtInt(d.users.activeSubscriptions)}
+            sub={d.users.activeSubscriptionsError ? "Données indisponibles" : "abonnements actifs"}
+            tone={d.users.activeSubscriptionsError ? "warn" : "default"}
+          />
+        </KpiGrid>
+      </section>
+
+      <section aria-labelledby="health-cron" className="flex flex-col gap-3">
+        <h2 id="health-cron" className="q-h2">Tâches planifiées — 20 dernières exécutions</h2>
+        {prospectingRuns.length > 0 && (
+          <p role="status" className="q-banner q-banner-warn">
+            Des tâches de prospection ont tourné récemment ({prospectingRuns.map((l) => JOB_LABELS[l.job_name]).filter((v, i, a) => a.indexOf(v) === i).join(", ")}),
+            alors que le démarchage est désactivé par décision. Coupez leur déclenchement dans le service de tâches planifiées.
           </p>
-        </div>
-        {/* Indicateur global */}
-        <div
-          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ${
-            allOk
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-          }`}
-        >
-          {allOk ? (
-            <CheckCircle className="w-4 h-4" />
-          ) : (
-            <XCircle className="w-4 h-4" />
-          )}
-          {allOk ? "Tout est opérationnel" : "Incident détecté"}
-        </div>
-      </div>
-
-      {/* Services externes */}
-      <div>
-        <h2 className="text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-3">
-          Services externes
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <ServiceCard name="Supabase (base de données)" check={d.services.supabase} />
-          <ServiceCard name="Stripe (paiements)" check={d.services.stripe} />
-          <ServiceCard name="Resend (emails)" check={d.services.resend} />
-        </div>
-      </div>
-
-      {/* Stats utilisateurs */}
-      <div>
-        <h2 className="text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-3">
-          Utilisateurs
-        </h2>
-        <div className="grid grid-cols-3 gap-3">
-          <div className={`rounded-2xl border p-4 ${d.users.totalError ? "bg-red-50/80 dark:bg-red-900/10 border-red-200 dark:border-red-900/40" : "bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]"}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <Users className="w-4 h-4 text-[#2563EB]" />
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total</span>
-            </div>
-            {d.users.totalError ? (
-              <>
-                <p className="font-mono text-2xl font-extrabold text-red-500 dark:text-red-400">—</p>
-                <p className="text-[11px] text-red-500 dark:text-red-400 mt-0.5">Données indisponibles</p>
-              </>
-            ) : (
-              <>
-                <p className="font-mono text-2xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0]">
-                  {d.users.total.toLocaleString("fr-FR")}
-                </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">inscrits</p>
-              </>
-            )}
+        )}
+        {d.cronLogsError ? (
+          <LoadError what="l'historique des tâches planifiées" healthLink={false} />
+        ) : d.cronLogs.length === 0 ? (
+          <div className="q-card">
+            <EmptyState
+              icon={<Clock className="size-5" aria-hidden />}
+              title="Aucune exécution enregistrée"
+              text="Les tâches planifiées n'ont pas encore tourné, ou le journal est vide."
+            />
           </div>
-          <div className={`rounded-2xl border p-4 ${d.users.newThisWeekError ? "bg-red-50/80 dark:bg-red-900/10 border-red-200 dark:border-red-900/40" : "bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]"}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <UserPlus className="w-4 h-4 text-emerald-500" />
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">7 derniers jours</span>
-            </div>
-            {d.users.newThisWeekError ? (
-              <>
-                <p className="font-mono text-2xl font-extrabold text-red-500 dark:text-red-400">—</p>
-                <p className="text-[11px] text-red-500 dark:text-red-400 mt-0.5">Données indisponibles</p>
-              </>
-            ) : (
-              <>
-                <p className="font-mono text-2xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0]">
-                  +{d.users.newThisWeek}
-                </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">nouvelles inscriptions</p>
-              </>
-            )}
-          </div>
-          <div className={`rounded-2xl border p-4 ${d.users.activeSubscriptionsError ? "bg-red-50/80 dark:bg-red-900/10 border-red-200 dark:border-red-900/40" : "bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F]"}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <CreditCard className="w-4 h-4 text-violet-500" />
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Abonnés actifs</span>
-            </div>
-            {d.users.activeSubscriptionsError ? (
-              <>
-                <p className="font-mono text-2xl font-extrabold text-red-500 dark:text-red-400">—</p>
-                <p className="text-[11px] text-red-500 dark:text-red-400 mt-0.5">Données indisponibles</p>
-              </>
-            ) : (
-              <>
-                <p className="font-mono text-2xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0]">
-                  {d.users.activeSubscriptions}
-                </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">abonnements actifs</p>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+        ) : (
+          <Panel>
+            <ul className="q-list">
+              {d.cronLogs.map((log) => {
+                const ok = log.status === "ok"
+                return (
+                  <li key={log.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 sm:px-5">
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="text-sm font-semibold text-[var(--q-ink)]">
+                        {JOB_LABELS[log.job_name] ?? log.job_name}
+                        <span className="font-normal text-[var(--q-text-4)]"> · {fmtDateTime(log.created_at)}</span>
+                      </span>
+                      {cronSummary(log) && (
+                        <span className={`line-clamp-2 break-words text-[13px] ${ok ? "text-[var(--q-text-4)]" : "text-[var(--q-danger)]"}`}>
+                          {cronSummary(log)}
+                        </span>
+                      )}
+                    </span>
+                    <OkPill ok={ok} okLabel="Réussie" errorLabel="Échec" />
+                  </li>
+                )
+              })}
+            </ul>
+          </Panel>
+        )}
+      </section>
 
-      {/* Historique cron */}
-      <div>
-        <h2 className="text-[13px] font-bold text-slate-400 uppercase tracking-wider mb-3">
-          Historique cron — relances automatiques (10 derniers runs)
-        </h2>
-        <div className="rounded-2xl border bg-white/95 dark:bg-[#0F1E35] border-slate-100 dark:border-[#1E3A5F] overflow-hidden">
-          {d.cronLogs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-              <Clock className="w-8 h-8 mb-3 opacity-40" />
-              <p className="text-sm font-medium">Aucun run enregistré</p>
-              <p className="text-xs mt-1">Le cron n&apos;a pas encore tourné ou la table est vide</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-50 dark:divide-[#1E3A5F]">
-              {d.cronLogs.map((log) => (
-                <CronRow key={log.id} log={log} />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Note refresh */}
-      <p className="text-[11px] text-slate-300 dark:text-slate-600 flex items-center gap-1.5 pb-4">
-        <RefreshCw className="w-3 h-3" />
-        Cette page se recharge à chaque visite. Actualisez la fenêtre pour voir les données en temps réel.
+      <p className="flex items-center gap-1.5 text-xs text-[var(--q-text-4)]">
+        <RefreshCw className="size-3" aria-hidden />
+        Les vérifications sont refaites à chaque ouverture de la page.
       </p>
-
     </div>
   )
 }

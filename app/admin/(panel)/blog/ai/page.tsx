@@ -2,20 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import {
-  Bot,
-  Play,
-  Loader2,
-  Eye,
-  EyeOff,
-  RefreshCw,
-  BarChart3,
-  FileText,
-  Sparkles,
-  ExternalLink,
-  Settings2,
-} from 'lucide-react'
+import { Bot, Eye, EyeOff, Loader2, Pencil, RefreshCw, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
+import { EmptyState, Kpi, KpiGrid, PageHeader, Panel, StatusPill, Switch } from '@/components/app/kit'
+import { LoadError, fmtDate, plural } from '@/components/admin/ui'
 
 interface AiPost {
   id: string
@@ -29,9 +19,18 @@ interface AiPost {
   created_at: string
 }
 
+function PublishPill({ published }: { published: boolean }) {
+  return published ? (
+    <StatusPill tone="ok" icon={<Eye strokeWidth={2.25} aria-hidden />}>Publié</StatusPill>
+  ) : (
+    <StatusPill tone="neutral" icon={<EyeOff strokeWidth={2.25} aria-hidden />}>Brouillon</StatusPill>
+  )
+}
+
 export default function AdminBlogAiPage() {
   const [posts, setPosts] = useState<AiPost[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [generating, setGenerating] = useState(false)
 
   // Controls
@@ -39,18 +38,21 @@ export default function AdminBlogAiPage() {
   const [customKeywords, setCustomKeywords] = useState('')
   const [autoPublish, setAutoPublish] = useState(false)
   const [globalAutoPublish, setGlobalAutoPublish] = useState(false)
+  // Tant que le réglage n'est pas lu, l'interrupteur reste inactif (il affichait « désactivé » à tort)
+  const [globalLoaded, setGlobalLoaded] = useState(false)
   const [savingGlobal, setSavingGlobal] = useState(false)
 
   // Load global auto_publish setting from DB
   useEffect(() => {
     fetch('/api/admin/settings?key=blog_auto_publish')
-      .then(res => res.json())
+      .then(res => { if (!res.ok) throw new Error(); return res.json() })
       .then(data => {
         const val = data.value === 'true'
         setGlobalAutoPublish(val)
         setAutoPublish(val) // sync the per-generation checkbox
+        setGlobalLoaded(true)
       })
-      .catch(() => {})
+      .catch(() => toast.error('Réglage de publication automatique illisible. Rechargez la page.'))
   }, [])
 
   const handleToggleGlobalAutoPublish = async () => {
@@ -65,9 +67,9 @@ export default function AdminBlogAiPage() {
       if (!res.ok) throw new Error()
       setGlobalAutoPublish(newValue)
       setAutoPublish(newValue)
-      toast.success(newValue ? 'Auto-publication activée (cron inclus)' : 'Auto-publication désactivée — les articles seront en brouillon')
+      toast.success(newValue ? 'Publication automatique activée (tâche quotidienne comprise)' : 'Publication automatique désactivée : les articles restent en brouillon')
     } catch {
-      toast.error('Erreur lors de la sauvegarde')
+      toast.error('Erreur lors de l\'enregistrement')
     } finally {
       setSavingGlobal(false)
     }
@@ -76,12 +78,12 @@ export default function AdminBlogAiPage() {
   const fetchPosts = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/blog/ai-posts')
-      if (res.ok) {
-        const data = await res.json()
-        setPosts(data.posts ?? [])
-      }
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setPosts(data.posts ?? [])
+      setLoadError(false)
     } catch {
-      // silent
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -111,9 +113,9 @@ export default function AdminBlogAiPage() {
       }
 
       if (data.has_cover === false) {
-        toast.success(`Article généré : "${data.post.title}"`, { description: 'Image de couverture non générée — vérifiez les logs Gemini.' })
+        toast.success(`Article généré : « ${data.post.title} »`, { description: 'Image de couverture non générée : vérifiez les journaux Gemini.' })
       } else {
-        toast.success(`Article généré : "${data.post.title}"`)
+        toast.success(`Article généré : « ${data.post.title} »`)
       }
       setCustomTopic('')
       setCustomKeywords('')
@@ -163,7 +165,7 @@ export default function AdminBlogAiPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur')
 
-      toast.success(`Article régénéré : "${data.post.title}"`)
+      toast.success(`Article régénéré : « ${data.post.title} »`)
       fetchPosts()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erreur lors de la régénération')
@@ -177,254 +179,180 @@ export default function AdminBlogAiPage() {
   const publishedAi = posts.filter(p => p.is_published).length
   const draftsAi = totalAi - publishedAi
   const lastPost = posts[0] ?? null
+  const statsReady = !loading && !loadError
+
+  const rowActions = (post: AiPost) => (
+    <>
+      <Link href={`/admin/blog/${post.id}`} className="q-btn q-btn-ghost q-btn-sm">
+        <Pencil aria-hidden />
+        Ouvrir
+      </Link>
+      <button type="button" onClick={() => handleTogglePublish(post.id, !post.is_published)} className="q-btn q-btn-ghost q-btn-sm">
+        {post.is_published ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
+        {post.is_published ? 'Dépublier' : 'Publier'}
+      </button>
+      <button type="button" onClick={() => handleRegenerate(post.id)} disabled={generating} className="q-btn q-btn-ghost q-btn-sm">
+        <RefreshCw aria-hidden />
+        Régénérer
+      </button>
+    </>
+  )
 
   return (
-    <div className="space-y-6 max-w-[960px] mx-auto">
+    <div className="flex flex-col gap-5">
+      <PageHeader title="Génération IA" subtitle="Articles de blog générés avec Gemini, à relire avant publication." />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[22px] font-extrabold text-[#0F172A] dark:text-[#E2E8F0] leading-tight flex items-center gap-2">
-            <Bot className="w-6 h-6 text-[#2563EB]" />
-            Génération IA
-          </h1>
-          <p className="text-[13px] text-slate-400 mt-0.5">
-            Générez des articles de blog optimisés SEO avec Gemini
-          </p>
-        </div>
-        <Link
-          href="/admin/blog"
-          className="text-sm text-slate-500 hover:text-foreground transition-colors"
-        >
-          ← Tous les articles
-        </Link>
-      </div>
+      <KpiGrid className="sm:!grid-cols-3">
+        <Kpi label="Articles générés" value={statsReady ? totalAi : '—'} />
+        <Kpi label="Publiés" value={statsReady ? publishedAi : '—'} sub={statsReady ? plural(draftsAi, 'brouillon') : undefined} />
+        <Kpi
+          className="col-span-2 sm:col-span-1"
+          label="Dernier article"
+          value={<span className="line-clamp-2 text-base font-semibold leading-snug tracking-normal">{statsReady ? (lastPost?.title ?? 'Aucun') : '—'}</span>}
+          sub={statsReady && lastPost ? fmtDate(lastPost.created_at) : undefined}
+        />
+      </KpiGrid>
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <BarChart3 className="w-4 h-4 text-[#2563EB]" />
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total IA</span>
-          </div>
-          <p className="text-2xl font-extrabold text-foreground">{totalAi}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Eye className="w-4 h-4 text-green-500" />
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Publiés</span>
-          </div>
-          <p className="text-2xl font-extrabold text-foreground">{publishedAi}</p>
-          <p className="text-[11px] text-slate-400">{draftsAi} brouillon(s)</p>
-        </div>
-        <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Dernier article</span>
-          </div>
-          {lastPost ? (
-            <>
-              <p className="text-sm font-medium text-foreground line-clamp-1">{lastPost.title}</p>
-              <p className="text-[11px] text-slate-400">
-                {new Date(lastPost.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-              </p>
-            </>
-          ) : (
-            <p className="text-sm text-slate-400">Aucun article</p>
-          )}
-        </div>
-      </div>
+      <Panel bodyClassName="flex items-center justify-between gap-4 p-4 sm:p-5">
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <label htmlFor="ai-auto-publish" className="q-h2">Publication automatique</label>
+          <span className="text-[13px] text-[var(--q-text-4)]">
+            S&apos;applique à la tâche quotidienne et sert de valeur par défaut pour la génération manuelle.
+          </span>
+        </span>
+        <Switch
+          id="ai-auto-publish"
+          checked={globalAutoPublish}
+          onCheckedChange={handleToggleGlobalAutoPublish}
+          disabled={savingGlobal || !globalLoaded}
+        />
+      </Panel>
 
-      {/* Global auto-publish toggle */}
-      <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Settings2 className="w-5 h-5 text-[#2563EB]" />
-            <div>
-              <p className="text-sm font-bold text-foreground">Publication automatique</p>
-              <p className="text-[12px] text-slate-400 mt-0.5">
-                S&apos;applique au cron quotidien et comme valeur par défaut pour la génération manuelle
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleToggleGlobalAutoPublish}
-            disabled={savingGlobal}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-              globalAutoPublish ? 'bg-[#2563EB]' : 'bg-slate-200 dark:bg-slate-700'
-            } ${savingGlobal ? 'opacity-50' : ''}`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                globalAutoPublish ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
-        </div>
-      </div>
-
-      {/* Generate controls */}
-      <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] p-5 space-y-4">
-        <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-          <Play className="w-4 h-4 text-[#2563EB]" />
-          Générer un article
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-              Sujet (optionnel)
-            </label>
+      <Panel title="Générer un article" bodyClassName="flex flex-col gap-4 px-5 pb-5 pt-2">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-[7px]">
+            <label htmlFor="ai-topic" className="q-label">Sujet <span className="font-normal text-[var(--q-text-4)]">(facultatif)</span></label>
             <input
+              id="ai-topic"
               value={customTopic}
               onChange={e => setCustomTopic(e.target.value)}
-              placeholder="Laisser vide pour sélection auto…"
+              placeholder="Vide : sujet choisi automatiquement"
               disabled={generating}
-              className="w-full h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              className="q-input"
             />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-              Mots-clés SEO (optionnel)
-            </label>
+          <div className="flex flex-col gap-[7px]">
+            <label htmlFor="ai-keywords" className="q-label">Mots-clés <span className="font-normal text-[var(--q-text-4)]">(facultatif)</span></label>
             <input
+              id="ai-keywords"
               value={customKeywords}
               onChange={e => setCustomKeywords(e.target.value)}
-              placeholder="mot-clé 1, mot-clé 2, …"
+              placeholder="mot-clé 1, mot-clé 2…"
               disabled={generating}
-              className="w-full h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              className="q-input"
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 cursor-pointer">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[var(--q-ink)]">
             <input
               type="checkbox"
               checked={autoPublish}
               onChange={e => setAutoPublish(e.target.checked)}
               disabled={generating}
-              className="w-4 h-4 rounded border-slate-300 text-[#2563EB] focus:ring-[#2563EB]"
+              className="size-[18px] accent-[var(--q-accent)]"
             />
-            <span className="text-sm text-foreground">Publier automatiquement</span>
+            Publier dès la génération
           </label>
 
-          <button
-            onClick={handleGenerate}
-            disabled={generating}
-            className="inline-flex items-center gap-2 h-9 px-5 rounded-lg bg-[#2563EB] text-white text-sm font-medium hover:bg-[#1d4ed8] transition-colors disabled:opacity-50"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Génération en cours…
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Générer maintenant
-              </>
-            )}
+          <button type="button" onClick={handleGenerate} disabled={generating} className="q-btn q-btn-primary">
+            {generating ? <Loader2 className="animate-spin" aria-hidden /> : <Sparkles aria-hidden />}
+            {generating ? 'Génération en cours…' : 'Générer maintenant'}
           </button>
         </div>
-      </div>
+      </Panel>
 
-      {/* AI posts table */}
-      <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 dark:border-[#1E3A5F]">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <FileText className="w-4 h-4 text-[#2563EB]" />
-            Articles générés par l&apos;IA
-          </h2>
-        </div>
-
+      <section aria-labelledby="ai-posts-title" className="flex flex-col gap-3">
+        <h2 id="ai-posts-title" className="q-h2">Articles générés</h2>
         {loading ? (
-          <div className="px-4 py-12 text-center">
-            <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-slate-300" />
-            <p className="text-sm text-slate-400">Chargement…</p>
+          <div className="q-card grid place-items-center py-16" role="status" aria-label="Chargement des articles">
+            <Loader2 className="size-6 animate-spin text-[var(--q-accent)]" aria-hidden />
           </div>
+        ) : loadError ? (
+          <LoadError
+            what="les articles générés"
+            action={<button type="button" onClick={() => { setLoading(true); fetchPosts() }} className="q-btn q-btn-secondary">Réessayer</button>}
+          />
         ) : posts.length === 0 ? (
-          <div className="px-4 py-12 text-center">
-            <Bot className="w-10 h-10 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-            <p className="text-sm font-medium text-foreground mb-1">Aucun article IA</p>
-            <p className="text-[13px] text-slate-400">Utilisez le bouton ci-dessus pour générer votre premier article.</p>
+          <div className="q-card">
+            <EmptyState
+              icon={<Bot className="size-5" aria-hidden />}
+              title="Aucun article généré"
+              text="Lancez une première génération avec le bouton ci-dessus."
+            />
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 dark:border-[#1E3A5F] bg-slate-50/80 dark:bg-[#162032]/60">
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Titre</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Mots-clés</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Statut</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Date</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-[#1E3A5F]">
+          <>
+            {/* Tableau (ordinateur) */}
+            <div className="q-card hidden overflow-hidden md:block">
+              <div className="overflow-x-auto">
+                <table className="q-table min-w-[800px] [&_th]:border-t-0">
+                  <thead>
+                    <tr className="bg-[var(--q-surface-2)]">
+                      <th scope="col">Article</th>
+                      <th scope="col">Mots-clés</th>
+                      <th scope="col">Statut</th>
+                      <th scope="col">Date</th>
+                      <th scope="col"><span className="sr-only">Actions</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {posts.map((post) => (
+                      <tr key={post.id}>
+                        <td className="max-w-[300px] !py-3">
+                          <span className="flex min-w-0 flex-col gap-0.5">
+                            <span className="line-clamp-2 font-semibold">{post.title}</span>
+                            <span className="truncate font-mono text-xs text-[var(--q-text-4)]">/blog/{post.slug}</span>
+                          </span>
+                        </td>
+                        <td className="!py-3">
+                          <span className="flex flex-wrap gap-1">
+                            {(post.ai_keywords ?? []).slice(0, 3).map((kw, i) => (
+                              <span key={i} className="q-tag">{kw}</span>
+                            ))}
+                          </span>
+                        </td>
+                        <td className="!py-3"><PublishPill published={post.is_published} /></td>
+                        <td className="!py-3 whitespace-nowrap text-[13px] text-[var(--q-text-3)]">{fmtDate(post.created_at)}</td>
+                        <td className="w-px !py-3">
+                          <span className="flex items-center justify-end gap-0.5">{rowActions(post)}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Liste (mobile) */}
+            <ul className="q-card q-list overflow-hidden !rounded-[18px] md:hidden" aria-label="Articles générés">
               {posts.map((post) => (
-                <tr key={post.id} className="hover:bg-slate-50/60 dark:hover:bg-[#162032]/40 transition-colors">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-foreground line-clamp-1">{post.title}</p>
-                    <p className="text-[11px] font-mono text-slate-300 dark:text-slate-600 mt-0.5">/{post.slug}</p>
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <div className="flex flex-wrap gap-1">
-                      {(post.ai_keywords ?? []).slice(0, 3).map((kw, i) => (
-                        <span key={i} className="inline-block rounded-full px-2 py-0.5 text-[10px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                          {kw}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    {post.is_published ? (
-                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                        <Eye className="w-3 h-3" /> Publié
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                        <EyeOff className="w-3 h-3" /> Brouillon
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-[12px] text-slate-400 hidden sm:table-cell">
-                    {new Date(post.created_at).toLocaleDateString('fr-FR')}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Link
-                        href={`/admin/blog/${post.id}`}
-                        className="inline-flex items-center gap-1 h-7 px-2 rounded text-[11px] font-medium text-[#2563EB] hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                        title="Éditer"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        Voir
-                      </Link>
-                      <button
-                        onClick={() => handleTogglePublish(post.id, !post.is_published)}
-                        className="inline-flex items-center gap-1 h-7 px-2 rounded text-[11px] font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                        title={post.is_published ? 'Dépublier' : 'Publier'}
-                      >
-                        {post.is_published ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                        {post.is_published ? 'Dépublier' : 'Publier'}
-                      </button>
-                      <button
-                        onClick={() => handleRegenerate(post.id)}
-                        disabled={generating}
-                        className="inline-flex items-center gap-1 h-7 px-2 rounded text-[11px] font-medium text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors disabled:opacity-50"
-                        title="Régénérer"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        Régénérer
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <li key={post.id} className="flex flex-col gap-2 px-3.5 py-3">
+                  <div className="flex items-start gap-3">
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="line-clamp-2 text-[15px] font-semibold text-[var(--q-ink)]">{post.title}</span>
+                      <span className="text-[13px] text-[var(--q-text-4)]">{fmtDate(post.created_at)}</span>
+                    </span>
+                    <PublishPill published={post.is_published} />
+                  </div>
+                  <div className="-ml-2 flex flex-wrap gap-0.5">{rowActions(post)}</div>
+                </li>
               ))}
-            </tbody>
-          </table>
+            </ul>
+          </>
         )}
-      </div>
+      </section>
     </div>
   )
 }

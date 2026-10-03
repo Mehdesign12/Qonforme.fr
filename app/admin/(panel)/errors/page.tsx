@@ -1,37 +1,32 @@
 import { createAdminClient } from '@/lib/supabase/server'
-import { AlertTriangle, CheckCircle, Link as LinkIcon } from 'lucide-react'
 import Link from 'next/link'
+import { CircleCheck, TriangleAlert } from 'lucide-react'
+import { EmptyState, PageHeader, StatusPill, type Tone } from '@/components/app/kit'
+import { FilterBar, FilterSelect, LoadError, StatLink, fmtDateTime, fmtInt, plural } from '@/components/admin/ui'
 import { ErrorActions } from '@/components/admin/ErrorActions'
+import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin — Erreurs système' }
 
-const ERROR_TYPES = [
-  'webhook_stripe',
-  'payment_failed',
-  'invoice_create',
-  'invoice_send',
-  'invoice_pdf',
-  'auth_signup',
-  'company_create',
-  'subscription_check',
-]
+/** Types enregistrés par lib/logError.ts, avec un libellé lisible. */
+const ERROR_TYPES: Record<string, string> = {
+  webhook_stripe:     'Webhook Stripe',
+  payment_failed:     'Paiement échoué',
+  invoice_create:     'Création de facture',
+  invoice_send:       'Envoi de facture',
+  invoice_pdf:        'PDF de facture',
+  auth_signup:        'Inscription',
+  company_create:     'Création d\'entreprise',
+  subscription_check: 'Vérification d\'abonnement',
+}
 
-function TypeBadge({ type }: { type: string }) {
-  const isRed    = type === 'webhook_stripe' || type === 'payment_failed'
-  const isOrange = type.startsWith('invoice_')
-
-  const className = isRed
-    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-    : isOrange
-    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-
+function TypePill({ type }: { type: string }) {
+  const tone: Tone = type === 'webhook_stripe' || type === 'payment_failed' ? 'danger' : type.startsWith('invoice_') ? 'warn' : 'info'
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${className}`}>
-      <AlertTriangle className="w-3 h-3" />
-      {type}
-    </span>
+    <StatusPill tone={tone} icon={<TriangleAlert strokeWidth={2.25} aria-hidden />}>
+      {ERROR_TYPES[type] ?? type}
+    </StatusPill>
   )
 }
 
@@ -50,8 +45,21 @@ async function getErrors(typeFilter: string, resolvedFilter: string) {
   if (resolvedFilter === 'no')  query = query.is('resolved_at', null)
   if (resolvedFilter === 'yes') query = query.not('resolved_at', 'is', null)
 
-  const { data } = await query
-  return data ?? []
+  const { data, error } = await query
+  return { errors: data ?? [], failed: !!error }
+}
+
+/** Compteurs sur toute la table (et non sur la liste filtrée). */
+async function getCounts() {
+  const admin = createAdminClient()
+  const head = () => admin.from('error_logs').select('id', { count: 'exact', head: true })
+  const [all, unresolved, resolved] = await Promise.all([
+    head(),
+    head().is('resolved_at', null),
+    head().not('resolved_at', 'is', null),
+  ])
+  const n = (r: { count: number | null; error: unknown }) => (r.error ? null : r.count ?? 0)
+  return { all: n(all), unresolved: n(unresolved), resolved: n(resolved) }
 }
 
 export default async function AdminErrorsPage({
@@ -62,142 +70,95 @@ export default async function AdminErrorsPage({
   const params         = await searchParams
   const typeFilter     = params.type ?? ''
   const resolvedFilter = params.resolved ?? ''
+  const filtered       = !!(typeFilter || resolvedFilter)
 
-  const errors = await getErrors(typeFilter, resolvedFilter)
+  const [{ errors, failed }, counts] = await Promise.all([
+    getErrors(typeFilter, resolvedFilter),
+    getCounts(),
+  ])
 
-  const totalCount    = errors.length
-  const unresolvedCount = errors.filter(e => !e.resolved_at).length
-  const resolvedCount   = errors.filter(e => e.resolved_at).length
+  const subtitle = counts.unresolved === null
+    ? 'Compteur indisponible'
+    : counts.unresolved > 0
+      ? plural(counts.unresolved, 'erreur non résolue', 'erreurs non résolues')
+      : 'Aucune erreur non résolue'
 
   return (
-    <div className="space-y-5 max-w-[1100px] mx-auto">
+    <div className="flex flex-col gap-5">
+      <PageHeader title="Erreurs système" subtitle={subtitle} />
 
-      {/* Header */}
-      <div>
-        <h1 className="text-[22px] font-extrabold text-[#0F172A] dark:text-[#E2E8F0] leading-tight">
-          Erreurs système
-        </h1>
-        <p className="text-[13px] text-slate-400 mt-0.5">
-          {unresolvedCount > 0
-            ? `${unresolvedCount} erreur(s) non résolue(s)`
-            : 'Aucune erreur non résolue'}
-        </p>
-      </div>
+      <nav aria-label="Résumé des erreurs" className="grid grid-cols-3 gap-3">
+        <StatLink label="Toutes" value={counts.all === null ? '—' : fmtInt(counts.all)} href="/admin/errors" active={!filtered} />
+        <StatLink
+          label="Non résolues"
+          value={counts.unresolved === null ? '—' : fmtInt(counts.unresolved)}
+          href="/admin/errors?resolved=no"
+          active={resolvedFilter === 'no' && !typeFilter}
+          tone={counts.unresolved ? 'danger' : 'default'}
+        />
+        <StatLink label="Résolues" value={counts.resolved === null ? '—' : fmtInt(counts.resolved)} href="/admin/errors?resolved=yes" active={resolvedFilter === 'yes' && !typeFilter} />
+      </nav>
 
-      {/* Cartes stats */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Total',         count: totalCount,      href: '/admin/errors',              icon: '📋' },
-          { label: 'Non résolues',  count: unresolvedCount, href: '/admin/errors?resolved=no',  icon: '🔴' },
-          { label: 'Résolues',      count: resolvedCount,   href: '/admin/errors?resolved=yes', icon: '✅' },
-        ].map(({ label, count, href, icon }) => (
-          <a
-            key={label}
-            href={href}
-            className="rounded-xl border border-slate-100 dark:border-[#1E3A5F] p-3 text-center bg-white/95 dark:bg-[#0F1E35] hover:border-[#2563EB] dark:hover:border-[#3B82F6] transition-colors"
-          >
-            <p className="text-lg">{icon}</p>
-            <p className="font-mono text-2xl font-extrabold text-[#0F172A] dark:text-[#E2E8F0]">{count}</p>
-            <p className="text-[11px] text-slate-400 mt-0.5">{label}</p>
-          </a>
-        ))}
-      </div>
-
-      {/* Filtres */}
-      <form method="GET" className="flex flex-wrap gap-2">
-        <select
+      <FilterBar resetHref="/admin/errors" active={filtered} label="Filtrer les erreurs">
+        <FilterSelect
           name="type"
+          label="Type d'erreur"
           defaultValue={typeFilter}
-          className="h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="">Tous les types</option>
-          {ERROR_TYPES.map(t => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-        <select
+          options={[{ value: '', label: 'Tous les types' }, ...Object.entries(ERROR_TYPES).map(([value, label]) => ({ value, label }))]}
+        />
+        <FilterSelect
           name="resolved"
+          label="État"
           defaultValue={resolvedFilter}
-          className="h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="">Toutes</option>
-          <option value="no">Non résolues</option>
-          <option value="yes">Résolues</option>
-        </select>
-        <button
-          type="submit"
-          className="h-9 px-4 text-sm font-medium rounded-lg bg-[#2563EB] text-white hover:bg-[#1d4ed8] transition-colors"
-        >
-          Filtrer
-        </button>
-        {(typeFilter || resolvedFilter) && (
-          <a
-            href="/admin/errors"
-            className="h-9 px-4 text-sm font-medium rounded-lg border border-border text-foreground hover:bg-muted flex items-center transition-colors"
-          >
-            Effacer
-          </a>
-        )}
-      </form>
+          options={[
+            { value: '', label: 'Toutes' },
+            { value: 'no', label: 'Non résolues' },
+            { value: 'yes', label: 'Résolues' },
+          ]}
+        />
+      </FilterBar>
 
-      {/* Liste */}
-      <div className="space-y-3">
-        {errors.length === 0 ? (
-          <div className="rounded-2xl border border-slate-100 dark:border-[#1E3A5F] bg-white/95 dark:bg-[#0F1E35] px-4 py-10 text-center">
-            <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500 opacity-60" />
-            <p className="text-sm text-slate-400">Aucune erreur trouvée</p>
-          </div>
-        ) : errors.map((err) => (
-          <div
-            key={err.id}
-            className={`rounded-2xl border bg-white/95 dark:bg-[#0F1E35] overflow-hidden transition-colors ${
-              !err.resolved_at
-                ? 'border-red-200 dark:border-red-900/50'
-                : 'border-slate-100 dark:border-[#1E3A5F]'
-            }`}
-          >
-            {/* Header card */}
-            <div className="px-4 py-3 border-b border-slate-50 dark:border-[#1E3A5F] flex flex-wrap items-center gap-2">
-              <TypeBadge type={err.type} />
-              <span className="text-[11px] text-slate-400 ml-auto">
-                {new Date(err.created_at).toLocaleDateString('fr-FR', {
-                  day: 'numeric', month: 'short', year: 'numeric',
-                  hour: '2-digit', minute: '2-digit',
-                })}
-              </span>
-            </div>
+      {failed ? (
+        <LoadError what="le journal des erreurs" />
+      ) : errors.length === 0 ? (
+        <div className="q-card">
+          <EmptyState
+            icon={<CircleCheck className="size-5" aria-hidden />}
+            title={filtered ? 'Aucune erreur ne correspond' : 'Aucune erreur enregistrée'}
+            text={filtered ? 'Modifiez les filtres ou effacez-les.' : 'Les erreurs métier enregistrées par l\'application apparaîtront ici.'}
+          />
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-3" aria-label="Erreurs">
+          {errors.map((err) => (
+            <li key={err.id} className={cn('q-card overflow-hidden', !err.resolved_at && '!border-[var(--q-danger-line)]')}>
+              <div className="flex flex-wrap items-center gap-2 border-b border-[var(--q-line-soft)] px-4 py-3 sm:px-5">
+                <TypePill type={err.type} />
+                <span className="ml-auto text-xs text-[var(--q-text-4)]">{fmtDateTime(err.created_at)}</span>
+              </div>
 
-            {/* Contenu */}
-            <div className="px-4 py-3 space-y-2">
-              <p className="font-semibold text-[#0F172A] dark:text-[#E2E8F0]">{err.message}</p>
+              <div className="flex flex-col gap-2 px-4 py-3.5 sm:px-5">
+                <p className="break-words font-semibold text-[var(--q-ink)]">{err.message}</p>
+                {err.user_id && (
+                  <p className="text-[13px] text-[var(--q-text-4)]">
+                    Compte :{' '}
+                    <Link href={`/admin/users/${err.user_id}`} className="q-link break-all font-mono !font-medium">{err.user_id}</Link>
+                  </p>
+                )}
+                {err.context && (
+                  <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-xl border border-[var(--q-line)] bg-[var(--q-surface-2)] p-3 font-mono text-xs leading-relaxed text-[var(--q-text-2)]">
+                    {JSON.stringify(err.context, null, 2)}
+                  </pre>
+                )}
+              </div>
 
-              {err.user_id && (
-                <p className="text-[12px] text-slate-400">
-                  Utilisateur :{' '}
-                  <Link
-                    href={`/admin/users/${err.user_id}`}
-                    className="inline-flex items-center gap-1 font-mono text-[#2563EB] hover:underline"
-                  >
-                    <LinkIcon className="w-3 h-3" />
-                    {err.user_id}
-                  </Link>
-                </p>
-              )}
-
-              {err.context && (
-                <pre className="mt-2 p-2 rounded-lg bg-slate-50 dark:bg-[#162032] text-[11px] font-mono text-slate-600 dark:text-slate-300 overflow-x-auto whitespace-pre-wrap break-all">
-                  {JSON.stringify(err.context, null, 2)}
-                </pre>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="px-4 py-2 border-t border-slate-50 dark:border-[#1E3A5F] flex items-center gap-2">
-              <ErrorActions id={err.id} resolvedAt={err.resolved_at} />
-            </div>
-          </div>
-        ))}
-      </div>
+              <div className="border-t border-[var(--q-line-soft)] bg-[var(--q-surface-2)] px-4 py-2.5 sm:px-5">
+                <ErrorActions id={err.id} resolvedAt={err.resolved_at} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

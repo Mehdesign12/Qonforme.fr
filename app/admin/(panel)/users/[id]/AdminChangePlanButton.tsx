@@ -2,7 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeftRight, Loader2, X, AlertTriangle } from 'lucide-react'
+import { ArrowLeftRight, Check, Loader2, TriangleAlert } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { StatusPill } from '@/components/app/kit'
+import { planLabel } from '@/components/admin/ui'
 
 interface Props {
   userId: string
@@ -25,8 +28,8 @@ export default function AdminChangePlanButton({
   const [confirmedNewPlan, setConfirmedNewPlan] = useState<'starter' | 'pro' | null>(null)
 
   const newPlan = currentPlan === 'starter' ? 'pro' : 'starter'
-  const newPlanLabel    = newPlan    === 'pro' ? 'Artisan' : 'Essentiel'
-  const currentPlanLabel = currentPlan === 'pro' ? 'Artisan' : 'Essentiel'
+  const newPlanLabel     = planLabel(newPlan)
+  const currentPlanLabel = planLabel(currentPlan)
 
   const handleConfirm = async () => {
     setLoading(true)
@@ -47,7 +50,7 @@ export default function AdminChangePlanButton({
       setOpen(false)
       router.refresh()
     } catch {
-      setError('Erreur réseau. Réessaie.')
+      setError('Erreur réseau. Réessayez.')
     } finally {
       setLoading(false)
     }
@@ -55,116 +58,61 @@ export default function AdminChangePlanButton({
 
   if (done) {
     return (
-      <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#1E3A5F]">
-        <p className="text-[12px] text-green-600 dark:text-green-400 font-medium">
-          ✓ Formule changée vers {confirmedNewPlan === 'pro' ? 'Artisan' : 'Essentiel'}
-        </p>
-      </div>
+      <p role="status" className="flex items-center gap-2 text-[13px] font-semibold text-[var(--q-ok)]">
+        <Check className="size-4" strokeWidth={2.5} aria-hidden />
+        Formule changée : {planLabel(confirmedNewPlan)}
+      </p>
     )
   }
 
   return (
     <>
-      {/* ── Bouton déclencheur ─────────────────────────────────────────── */}
-      <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#1E3A5F]">
-        <button
-          onClick={() => { setError(null); setOpen(true) }}
-          className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#2563EB] dark:text-[#3B82F6] hover:underline transition-colors"
-        >
-          <ArrowLeftRight className="w-3.5 h-3.5" />
+      <div>
+        <button type="button" onClick={() => { setError(null); setOpen(true) }} className="q-btn q-btn-secondary q-btn-sm">
+          <ArrowLeftRight aria-hidden />
           Passer en {newPlanLabel}
         </button>
       </div>
 
-      {/* ── Modal de confirmation ──────────────────────────────────────── */}
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 md:backdrop-blur-sm px-4"
-          onClick={(e) => { if (e.target === e.currentTarget && !loading) setOpen(false) }}
-        >
-          <div className="bg-white dark:bg-[#0F1E35] rounded-2xl border border-slate-200 dark:border-[#1E3A5F] shadow-2xl w-full max-w-sm p-6">
+      <Dialog open={open} onOpenChange={(o) => { if (!loading) setOpen(o) }}>
+        <DialogContent className="gap-4 sm:max-w-md">
+          <DialogTitle className="q-display pr-8 text-[22px] font-semibold leading-tight">Changer la formule</DialogTitle>
+          <DialogDescription className="sr-only">
+            Passage de {currentPlanLabel} à {newPlanLabel}.
+          </DialogDescription>
 
-            {/* Entête */}
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-bold text-[#0F172A] dark:text-[#E2E8F0]">
-                Changer le plan
-              </h2>
-              <button
-                onClick={() => !loading && setOpen(false)}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-[#162032] transition-colors"
-                aria-label="Fermer"
-                disabled={loading}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Résumé plan actuel → nouveau */}
-            <div className="flex items-center justify-center gap-3 mb-5">
-              <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-[#162032] text-slate-600 dark:text-slate-300">
-                {currentPlanLabel}
-              </span>
-              <ArrowLeftRight className="w-4 h-4 text-slate-400" />
-              <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-                newPlan === 'pro'
-                  ? 'bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#3B82F6]'
-                  : 'bg-slate-100 dark:bg-[#162032] text-slate-600 dark:text-slate-300'
-              }`}>
-                {newPlanLabel}
-              </span>
-            </div>
-
-            {/* Notes contextuelles */}
-            <div className="flex flex-col gap-2 mb-5">
-              {hasStripeSubscription ? (
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#162032]/60 rounded-lg px-3 py-2">
-                  L&apos;abonnement Stripe sera modifié sans facturation immédiate.
-                  Le prochain renouvellement sera au tarif {newPlanLabel}.
-                </p>
-              ) : (
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#162032]/60 rounded-lg px-3 py-2">
-                  Seule la base de données sera mise à jour (pas d&apos;abonnement Stripe actif).
-                </p>
-              )}
-
-              {isDowngrade && (
-                <div className="flex items-start gap-2 text-[12px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                  <span>
-                    Passage Artisan → Essentiel : les fonctions propres à Artisan ne seront plus
-                    disponibles.
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Erreur */}
-            {error && (
-              <p className="text-[12px] text-red-600 dark:text-red-400 mb-4">{error}</p>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => !loading && setOpen(false)}
-                disabled={loading}
-                className="flex-1 h-9 rounded-xl border border-slate-200 dark:border-[#1E3A5F] text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#162032] transition-colors disabled:opacity-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleConfirm}
-                disabled={loading}
-                className="flex-1 h-9 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-              >
-                {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                {loading ? 'En cours…' : 'Confirmer'}
-              </button>
-            </div>
-
+          <div className="flex items-center justify-center gap-3">
+            <StatusPill tone="neutral">{currentPlanLabel}</StatusPill>
+            <ArrowLeftRight className="size-4 text-[var(--q-text-4)]" aria-hidden />
+            <StatusPill tone="info">{newPlanLabel}</StatusPill>
           </div>
-        </div>
-      )}
+
+          <p className="rounded-xl bg-[var(--q-surface-2)] px-3.5 py-3 text-[13px] leading-relaxed text-[var(--q-text-3)]">
+            {hasStripeSubscription
+              ? `L'abonnement Stripe sera modifié sans facturation immédiate. Le prochain renouvellement se fera au tarif ${newPlanLabel}.`
+              : 'Seule la base de données sera mise à jour (aucun abonnement Stripe actif).'}
+          </p>
+
+          {isDowngrade && (
+            <p className="q-banner q-banner-warn !gap-2 !px-3.5 !py-3 !text-[13px]">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+              Passage d&apos;Artisan à Essentiel : les fonctions propres à Artisan ne seront plus disponibles.
+            </p>
+          )}
+
+          {error && <p role="alert" className="text-[13px] text-[var(--q-danger)]">{error}</p>}
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => setOpen(false)} disabled={loading} className="q-btn q-btn-ghost">
+              Annuler
+            </button>
+            <button type="button" onClick={handleConfirm} disabled={loading} className="q-btn q-btn-primary">
+              {loading && <Loader2 className="animate-spin" aria-hidden />}
+              {loading ? 'En cours…' : 'Confirmer'}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
