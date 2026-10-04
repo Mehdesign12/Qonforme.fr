@@ -65,6 +65,9 @@ export function DashboardBody({ view }: { view: DashboardView }) {
 
   return (
     <div className="flex flex-col gap-4 md:gap-5">
+      {/* Seul h1 de la page, sur mobile comme sur ordinateur (PushRank : un h1 par page) */}
+      <h1 className="sr-only">{view.mode === "demo" ? "Démo du tableau de bord de facturation" : "Tableau de bord"}</h1>
+
       {/* En-tête mobile : date et entreprise */}
       <header className="flex items-center gap-2.5 md:hidden">
         <Image src={LOGO_Q} alt="" width={28} height={28} className="size-7 shrink-0" sizes="28px" />
@@ -74,7 +77,6 @@ export function DashboardBody({ view }: { view: DashboardView }) {
             {view.companyName ?? "Tableau de bord"}
           </span>
         </span>
-        <h1 className="sr-only">Tableau de bord</h1>
         {/* Cloche : factures à surveiller (point si une facture est en retard) */}
         <Link
           href={view.remindHref}
@@ -91,6 +93,7 @@ export function DashboardBody({ view }: { view: DashboardView }) {
         className="hidden md:flex"
         eyebrow={view.dateLong}
         title={`Bonjour, voici votre ${noun}.`}
+        headingAs="h2"
         actions={<PeriodSwitch view={view} />}
       />
 

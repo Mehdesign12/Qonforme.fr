@@ -8,7 +8,7 @@ import { TRADE_PHOTOS } from "@/components/content/metier"
 
 export const metadata: Metadata = {
   title: "Logiciel de facturation par métier",
-  description: "Découvrez un logiciel de facturation adapté à votre métier : bâtiment, services, santé, artisanat, transport. Devis gratuits et illimités, mentions obligatoires.",
+  description: "Devis et factures adaptés à votre métier, du bâtiment aux services, avec les mentions obligatoires propres à chaque activité. Devis gratuits et illimités.",
   keywords: ["logiciel facturation", "facturation par metier", "facture BTP", "facture freelance", "facture artisan"],
   alternates: { canonical: "/facturation" },
   openGraph: {
@@ -78,7 +78,7 @@ export default function FacturationIndexPage() {
           <div className={WRAP}>
             <SectionHeading id="cat-batiment" title="Les métiers" accent="du bâtiment." className="mb-8" />
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
-              {btp.slugs.map((slug) => {
+              {btp.slugs.map((slug, i) => {
                 const m = metiersBySlug[slug]
                 if (!m) return null
                 const photo = TRADE_PHOTOS[slug]
@@ -94,6 +94,8 @@ export default function FacturationIndexPage() {
                           alt=""
                           fill
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 232px"
+                          // Première rangée sur mobile : visible au chargement, c'est l'élément LCP (PushRank)
+                          priority={i < 2}
                           className="object-cover transition-transform duration-700 group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                         />
                       ) : (

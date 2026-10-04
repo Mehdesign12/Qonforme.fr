@@ -22,6 +22,7 @@ export async function updateSession(request: NextRequest) {
     '/pricing',
     '/demo',
     '/outils',
+    '/plan-du-site',
     '/api/webhooks/stripe',
     '/api/og',
     '/api/cron',

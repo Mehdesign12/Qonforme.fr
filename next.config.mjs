@@ -85,4 +85,13 @@ export default withSentryConfig(nextConfig, {
 
   // Pas besoin des cron monitors Vercel pour l'instant
   automaticVercelMonitors: false,
+
+  // JavaScript plus léger sur chaque page (LCP mobile, PushRank) : sans le code
+  // de débogage du SDK ni l'enregistrement des iframes et du Shadow DOM, que
+  // le site n'utilise pas.
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+  },
 })

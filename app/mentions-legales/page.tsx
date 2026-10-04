@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Mentions légales",
-  description: "Mentions légales du site Qonforme — éditeur, hébergeur, propriété intellectuelle et données personnelles.",
+  description: "Mentions légales du site Qonforme : éditeur, hébergement, propriété intellectuelle, données personnelles, cookies, liens et droit applicable.",
   alternates: { canonical: "/mentions-legales" },
 }
 

@@ -14,6 +14,7 @@ import { ThemeColorSync } from "@/components/pwa/ThemeColorSync";
 import { StandaloneFlag } from "@/components/pwa/StandaloneFlag";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { SentryReplay } from "@/components/shared/SentryReplay";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -22,11 +23,14 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
+/* Références et numéros (application) : jamais au-dessus de la ligne de flottaison
+   des pages publiques, donc pas préchargée sur chaque page (LCP mobile, PushRank). */
 const dmMono = DM_Mono({
   variable: "--font-dm-mono",
   subsets: ["latin"],
   weight: ["300", "400", "500"],
   display: "swap",
+  preload: false,
 });
 
 const bricolageGrotesque = Bricolage_Grotesque({
@@ -210,16 +214,17 @@ export default function RootLayout({
         className={`${dmSans.variable} ${dmMono.variable} ${bricolageGrotesque.variable} ${instrumentSerif.variable} font-sans antialiased bg-background text-foreground`}
       >
         {/* Meta Pixel — noscript fallback */}
-        <noscript>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            height="1"
-            width="1"
-            style={{ display: "none" }}
-            src="https://www.facebook.com/tr?id=1280812480690943&ev=PageView&noscript=1"
-            alt=""
-          />
-        </noscript>
+        {/*
+         * En HTML brut : rendue par React, l'image était préchargée dans le
+         * <head> de chaque page (<link rel="preload">), donc envoyée à Meta
+         * même avec JavaScript actif, y compris sur les pages exclues plus bas,
+         * et en concurrence avec le contenu principal (LCP mobile, PushRank).
+         */}
+        <noscript
+          dangerouslySetInnerHTML={{
+            __html: '<img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1280812480690943&ev=PageView&noscript=1" alt="" />',
+          }}
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
@@ -231,6 +236,7 @@ export default function RootLayout({
           <ThemeColorSync />
           <StandaloneFlag />
           <ServiceWorkerRegister />
+          <SentryReplay />
           <PostHogProvider>
             <ReduxProvider>
               <OfflineBanner />

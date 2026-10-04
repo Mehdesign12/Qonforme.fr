@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Générateur de facture gratuit en ligne — PDF",
-  description: "Créez une facture en PDF gratuitement : TVA ventilée par taux, conditions de paiement, franchise de TVA, assurance des artisans. Sans inscription ni stockage.",
+  description: "Créez une facture en PDF gratuitement : TVA ventilée par taux, conditions de paiement, mentions des artisans. Sans inscription ni stockage.",
   keywords: ["générateur facture gratuit", "créer facture en ligne", "facture pdf gratuit", "faire une facture", "modèle facture"],
   alternates: { canonical: "/outils/generateur-facture-gratuite" },
   openGraph: {

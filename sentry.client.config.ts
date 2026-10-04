@@ -10,7 +10,9 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
   replaysSessionSampleRate: 0.0,
 
-  integrations: [Sentry.replayIntegration()],
+  // Replay ajouté après l'affichage, hors des pages de contenu :
+  // components/shared/SentryReplay.tsx (LCP mobile, PushRank).
+  integrations: [],
 
   // Désactivé hors production
   enabled: process.env.NODE_ENV === 'production',

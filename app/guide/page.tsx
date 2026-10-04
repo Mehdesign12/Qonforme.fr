@@ -5,7 +5,7 @@ import { ContentCta, ContentHero, ContentPage, LinkCard, WRAP } from "@/componen
 
 export const metadata: Metadata = {
   title: "Guides pratiques facturation",
-  description: "Guides complets sur la facturation en France : mentions obligatoires, TVA, délais de paiement, facture électronique 2026. Tout savoir pour être en conformité.",
+  description: "Guides pratiques de la facturation en France : mentions obligatoires, TVA, délais de paiement, devis, avoirs, impayés et facture électronique.",
   keywords: ["guide facturation", "mentions obligatoires facture", "facture electronique 2026", "TVA facture"],
   alternates: { canonical: "/guide" },
   openGraph: {

@@ -27,8 +27,11 @@ export function PageHeader({
   backHref,
   backLabel,
   className,
+  headingAs: Heading = "h1",
 }: {
   title: React.ReactNode
+  /** h2 quand la page porte déjà son h1 ailleurs (un seul h1 par page). */
+  headingAs?: "h1" | "h2"
   eyebrow?: React.ReactNode
   subtitle?: React.ReactNode
   actions?: React.ReactNode
@@ -48,7 +51,7 @@ export function PageHeader({
           </Link>
         )}
         {eyebrow && <span className="text-sm text-[var(--q-text-4)]">{eyebrow}</span>}
-        <h1 className="q-h1">{title}</h1>
+        <Heading className="q-h1">{title}</Heading>
         {subtitle && <p className="text-sm text-[var(--q-text-4)] md:text-[15px]">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
