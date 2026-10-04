@@ -16,6 +16,8 @@ const KEYWORD_LINKS: { pattern: RegExp; href: string }[] = [
   { pattern: /facture?\s+d['']acompte/i, href: "/guide/facture-acompte" },
   { pattern: /avoir\s+(ou\s+)?note\s+de\s+cr[eé]dit/i, href: "/guide/avoir-facture" },
   { pattern: /conservation\s+des?\s+factures?/i, href: "/guide/conservation-factures" },
+  { pattern: /plateformes?\s+agr[eé]{2}es?/i, href: "/guide/plateforme-agreee" },
+  { pattern: /\bPDP\b/, href: "/guide/plateforme-agreee" },
   // Modèles
   { pattern: /mod[eè]le\s+de\s+facture\s+classique/i, href: "/modele/facture-classique" },
   { pattern: /mod[eè]le\s+de\s+devis\s+travaux/i, href: "/modele/devis-travaux" },

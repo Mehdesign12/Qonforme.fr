@@ -1,34 +1,158 @@
+export interface GuideSection {
+  titre: string
+  contenu: string
+  /** Liste à puces affichée sous le paragraphe. */
+  liste?: string[]
+}
+
 export interface Guide {
   slug: string
+  /** Titre affiché (h1). */
   titre: string
+  /** Balise <title>, quand elle doit viser une autre formulation que le h1. */
+  titreSeo?: string
   description: string
   motsCles: string[]
-  sections: { titre: string; contenu: string }[]
+  /** « L'essentiel » : la réponse directe, en tête de page. */
+  essentiel?: string[]
+  sections: GuideSection[]
   faq: { question: string; reponse: string }[]
+  /** Liens internes affichés en premier dans « Aller plus loin ». */
+  liens?: { href: string; label: string }[]
+  /** Textes officiels sur lesquels repose le guide. */
+  sources?: { label: string; href?: string }[]
+  /** Date de la dernière vérification du contenu sur les sources (AAAA-MM-JJ). */
+  verifieLe?: string
 }
 
 export const GUIDES: Guide[] = [
   {
     slug: "mentions-obligatoires-facture",
-    titre: "Mentions obligatoires sur une facture en 2026",
-    description: "Guide complet des mentions obligatoires sur une facture en France : informations vendeur, acheteur, TVA, paiement. Tout ce qu'il faut savoir pour 2026.",
-    motsCles: ["mentions obligatoires facture", "que doit contenir une facture", "facture conforme"],
+    titre: "Mentions obligatoires d'une facture : la liste complète",
+    titreSeo: "Mentions obligatoires d'une facture : liste complète 2026",
+    description: "Les mentions obligatoires d'une facture en 2026 : vendeur, client, numéro, TVA, paiement, nouvelles mentions de la réforme et mentions du bâtiment.",
+    motsCles: ["mentions obligatoires facture", "factures mentions obligatoires", "mentions obligatoires facture artisan", "que doit contenir une facture", "facture conforme"],
+    essentiel: [
+      "Un numéro unique, pris dans une suite chronologique et continue, et la date d'émission.",
+      "Votre identité : nom ou dénomination, adresse, SIREN, forme juridique, et votre numéro de TVA intracommunautaire si vous en avez un.",
+      "L'identité du client : nom ou dénomination et adresse de facturation.",
+      "La date de la vente ou de la prestation, si elle diffère de la date d'émission.",
+      "Pour chaque ligne : désignation précise, quantité, prix unitaire hors taxe et taux de TVA.",
+      "Les totaux HT, la TVA par taux et le total TTC, ou la mention qui justifie l'absence de TVA.",
+      "La date d'échéance, les conditions d'escompte et le taux des pénalités de retard.",
+      "Pour un client professionnel : l'indemnité forfaitaire de 40 € pour frais de recouvrement.",
+      "Pour un artisan : son assurance professionnelle (assureur, contrat, couverture géographique).",
+      "Au passage à la facture électronique (1er septembre 2027 pour une TPE ou une PME) : le SIREN du client, l'adresse de livraison, la nature des opérations et, le cas échéant, l'option pour la TVA sur les débits.",
+    ],
     sections: [
-      { titre: "Les mentions d'identification du vendeur", contenu: "Toute facture doit comporter les informations complètes du vendeur : nom ou raison sociale, adresse du siège social, numéro SIREN ou SIRET, forme juridique et montant du capital social (pour les sociétés), numéro de TVA intracommunautaire, et numéro RCS suivi du nom de la ville d'immatriculation." },
-      { titre: "Les mentions d'identification de l'acheteur", contenu: "L'acheteur doit être identifié par : son nom ou sa raison sociale, son adresse de facturation, et son numéro de TVA intracommunautaire pour les opérations intracommunautaires." },
-      { titre: "Les mentions relatives à la facture", contenu: "La facture doit porter un numéro unique basé sur une séquence chronologique continue (pas de trous), la date d'émission, et la date de la vente ou de la prestation si elle diffère de la date d'émission." },
-      { titre: "Le détail des prestations", contenu: "Chaque prestation ou produit doit être décrit avec : sa désignation précise, la quantité, le prix unitaire hors taxe, le taux de TVA applicable, et le montant total HT. Les réductions de prix (remises, rabais) doivent aussi figurer." },
-      { titre: "Les mentions de TVA", contenu: "La facture doit indiquer pour chaque taux de TVA : la base HT, le taux appliqué, et le montant de TVA correspondant. Le total HT, le total TVA et le total TTC doivent apparaître clairement. En cas de franchise de TVA, la mention « TVA non applicable, article 293 B du CGI » est obligatoire." },
-      { titre: "Les conditions de paiement", contenu: "Doivent figurer : la date d'échéance du paiement, les conditions d'escompte en cas de paiement anticipé (ou la mention « Pas d'escompte pour paiement anticipé »), et le taux des pénalités de retard (minimum : 3 fois le taux d'intérêt légal). L'indemnité forfaitaire de recouvrement de 40 € doit être mentionnée." },
-      { titre: "Facture électronique 2026", contenu: "Depuis le 1er septembre 2026, toutes les entreprises assujetties à la TVA doivent pouvoir recevoir des factures électroniques au format structuré (Factur-X, UBL, CII). L'obligation d'émission suit la taille de l'entreprise : depuis le 1er septembre 2026 pour les grandes entreprises et les ETI, à partir du 1er septembre 2027 pour les PME et les micro-entreprises. Qonforme joint un fichier XML Factur-X au PDF de vos factures ; l'envoi par une plateforme agréée depuis Qonforme est en préparation." },
+      {
+        titre: "Ce qui identifie le vendeur",
+        contenu: "La facture doit permettre d'identifier sans ambiguïté l'entreprise qui l'émet. Les mentions dépendent de votre forme juridique.",
+        liste: [
+          "Votre nom ou votre dénomination sociale, et l'adresse de votre siège ou de votre établissement.",
+          "Votre numéro SIREN (ou SIRET).",
+          "Entrepreneur individuel, micro-entreprise comprise : votre nom précédé ou suivi de « entrepreneur individuel » ou « EI » (code de commerce, art. R526-27).",
+          "Société : la forme juridique et le montant du capital social, et « RCS » suivi de la ville du greffe si elle est immatriculée au registre du commerce.",
+          "Votre numéro de TVA intracommunautaire, si vous êtes identifié à la TVA.",
+        ],
+      },
+      {
+        titre: "Ce qui identifie le client",
+        contenu: "Indiquez le nom ou la dénomination du client et son adresse de facturation. Pour un client professionnel, ajoutez son numéro de TVA intracommunautaire, sauf sur une facture de 150 € HT ou moins. Si l'adresse du chantier ou de livraison diffère, notez-la : elle deviendra obligatoire avec la facture électronique.",
+      },
+      {
+        titre: "Le numéro et les dates",
+        contenu: "Chaque facture porte un numéro unique, attribué dans une suite chronologique et continue, sans trou ni doublon. Plusieurs séries sont possibles (une par année, par exemple) si chacune reste continue. Une facture émise ne se modifie pas et ne se supprime pas : une erreur se corrige par un avoir.",
+        liste: [
+          "La date d'émission de la facture.",
+          "La date de la vente ou de la fin de la prestation, si elle diffère de la date d'émission.",
+          "Pour une facture d'acompte : la date du versement, si elle diffère de la date d'émission.",
+        ],
+      },
+      {
+        titre: "Le détail des travaux et des prix",
+        contenu: "Chaque ligne décrit précisément ce qui est facturé : votre client doit pouvoir comprendre la facture sans avoir le devis sous les yeux.",
+        liste: [
+          "La désignation précise : fournitures, main-d'œuvre, déplacement…",
+          "La quantité et son unité : heure, m², mètre linéaire, forfait…",
+          "Le prix unitaire hors taxe.",
+          "Le taux de TVA de la ligne : 20 %, 10 % ou 5,5 % selon la nature des travaux.",
+          "Les rabais, remises ou ristournes acquis à la date de la facture.",
+        ],
+      },
+      {
+        titre: "La TVA et les totaux",
+        contenu: "Pour chaque taux, la facture indique la base hors taxe et le montant de la TVA, puis les totaux HT, TVA et TTC. Quand la TVA n'est pas facturée, une mention en donne la raison.",
+        liste: [
+          "Franchise en base : « TVA non applicable, art. 293 B du CGI ».",
+          "Sous-traitance dans le bâtiment : « Autoliquidation ». L'entreprise principale déclare elle-même la TVA.",
+          "Taux réduit de 10 % ou 5,5 % pour des travaux chez un particulier : depuis le 1er mars 2025, le client certifie sur le devis ou la facture que les conditions sont remplies (logement achevé depuis plus de deux ans, travaux non exclus). L'attestation séparée n'existe plus.",
+        ],
+      },
+      {
+        titre: "Les conditions de paiement",
+        contenu: "Ces mentions fixent les règles du paiement. Pour un client particulier, l'indemnité de 40 € ne s'applique pas ; pour la vente de certains biens à un particulier, la facture rappelle en revanche l'existence et la durée de la garantie légale de conformité.",
+        liste: [
+          "La date d'échéance du paiement.",
+          "Les conditions d'escompte en cas de paiement anticipé, ou « Pas d'escompte pour paiement anticipé ».",
+          "Le taux des pénalités de retard. Sans taux prévu, c'est le taux de la BCE majoré de 10 points ; un taux prévu ne peut pas être inférieur à trois fois le taux d'intérêt légal.",
+          "Pour un client professionnel : l'indemnité forfaitaire de 40 € pour frais de recouvrement.",
+        ],
+      },
+      {
+        titre: "Les mentions propres aux artisans du bâtiment",
+        contenu: "Un artisan dont l'activité exige une assurance professionnelle l'indique sur ses devis et ses factures (code de l'artisanat, art. L132-1).",
+        liste: [
+          "L'assurance souscrite : garantie décennale, responsabilité civile professionnelle…",
+          "Les coordonnées de l'assureur ou du garant.",
+          "Les références du contrat.",
+          "La couverture géographique du contrat.",
+          "Pour la garantie décennale, le code des assurances (art. L243-2) demande aussi de joindre l'attestation d'assurance aux devis et aux factures.",
+        ],
+      },
+      {
+        titre: "Les nouvelles mentions de la facture électronique",
+        contenu: "Quatre mentions s'ajoutent quand votre entreprise passe à l'émission de factures électroniques : le 1er septembre 2026 pour les grandes entreprises et les ETI, le 1er septembre 2027 pour les PME, les TPE et les micro-entreprises. La facture circule alors au format structuré, par une plateforme agréée.",
+        liste: [
+          "Le numéro SIREN du client, quand c'est une entreprise.",
+          "L'adresse de livraison des biens, si elle diffère de l'adresse du client.",
+          "La nature des opérations : livraison de biens, prestation de services, ou les deux.",
+          "La mention « Option pour le paiement de la taxe d'après les débits », si vous avez choisi cette option.",
+        ],
+      },
+      {
+        titre: "Ce que coûte une mention manquante",
+        contenu: "Une facture incomplète expose à deux sanctions distinctes, qui peuvent s'ajouter.",
+        liste: [
+          "Une amende fiscale de 15 € par mention manquante ou inexacte, plafonnée au quart du montant de la facture (CGI, art. 1737).",
+          "Une amende administrative pouvant atteindre 75 000 € pour une personne physique et 375 000 € pour une société, montants doublés en cas de récidive dans les deux ans (code de commerce, art. L441-16).",
+        ],
+      },
     ],
     faq: [
-      { question: "Que risque-t-on si une mention obligatoire manque sur une facture ?", reponse: "L'absence d'une mention obligatoire est passible d'une amende de 15 € par mention manquante et par facture, plafonnée à 25% du montant de la facture. En cas de récidive, l'amende peut atteindre 75 000 € pour une personne physique." },
-      { question: "Faut-il un numéro de TVA intracommunautaire sur une facture ?", reponse: "Oui, le numéro de TVA intracommunautaire du vendeur est obligatoire dès que la facture comporte de la TVA. Il est aussi obligatoire pour les opérations intracommunautaires (ventes ou prestations à des clients dans d'autres pays de l'UE)." },
-      { question: "Comment numéroter ses factures ?", reponse: "La numérotation doit être chronologique et continue, sans trous. Vous pouvez utiliser un préfixe (ex : F-2026-001) tant que la séquence est respectée. Il est interdit de revenir en arrière ou de supprimer un numéro." },
-      { question: "Peut-on envoyer une facture par email ?", reponse: "Oui, l'envoi de facture par email est parfaitement légal depuis la loi de finances 2013, à condition que le destinataire l'accepte. La facture envoyée par email doit comporter les mêmes mentions obligatoires qu'une facture papier et garantir l'authenticité de l'origine et l'intégrité du contenu." },
-      { question: "Faut-il signer une facture ?", reponse: "Non, la signature n'est pas une mention obligatoire sur une facture en France. Aucun texte légal (article 242 nonies A de l'annexe II du CGI) n'exige de signature. Cependant, un cachet ou une signature électronique peut renforcer l'authenticité du document, notamment dans le cadre de la facturation électronique." },
+      { question: "Quelles sont les mentions obligatoires d'une facture ?", reponse: "Le numéro et la date de la facture, votre identité et votre SIREN, le nom et l'adresse du client, la date de la prestation, le détail des lignes (quantité, prix unitaire HT, taux de TVA), les totaux HT, TVA et TTC, la date d'échéance, l'escompte et le taux des pénalités de retard, et, pour un client professionnel, l'indemnité de 40 €. S'y ajoutent les mentions propres à votre situation : franchise de TVA, autoliquidation, assurance d'artisan, mention « EI »." },
+      { question: "Que risque-t-on si une mention manque sur une facture ?", reponse: "Une amende fiscale de 15 € par mention manquante ou inexacte, plafonnée au quart du montant de la facture (CGI, art. 1737). Le code de commerce prévoit en plus une amende administrative jusqu'à 75 000 € pour une personne physique et 375 000 € pour une société (art. L441-16)." },
+      { question: "Un micro-entrepreneur doit-il indiquer un numéro de TVA ?", reponse: "Pas s'il est en franchise de TVA et n'a pas de numéro : il indique alors « TVA non applicable, art. 293 B du CGI ». Il doit en revanche indiquer son SIREN et la mention « EI » ou « entrepreneur individuel » à côté de son nom." },
+      { question: "Une facture d'acompte porte-t-elle les mêmes mentions ?", reponse: "Oui. C'est une facture à part entière, numérotée dans la même suite que les autres, avec la date du versement. Pour une prestation de services, la TVA est due sur l'acompte encaissé. La facture finale déduit ensuite les acomptes déjà facturés." },
+      { question: "Peut-on encore envoyer une facture en PDF par email ?", reponse: "Oui, tant que votre entreprise n'est pas passée à l'émission électronique (le 1er septembre 2027 pour une TPE ou une PME) et si le client l'accepte. Ensuite, une facture adressée à une entreprise établie en France passe par une plateforme agréée, au format structuré. Pour un client particulier, le PDF reste possible : ce sont les données de la vente qui sont transmises à l'administration." },
+      { question: "Faut-il signer une facture ?", reponse: "Non. Aucune signature n'est exigée : l'article 242 nonies A de l'annexe II du code général des impôts, qui liste les mentions obligatoires, n'en prévoit pas." },
     ],
+    liens: [
+      { href: "/outils/verificateur-mentions-facture", label: "Vérifier les mentions de ma facture" },
+      { href: "/modele/facture-classique", label: "Modèle de facture gratuit" },
+      { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
+      { href: "/guide/plateforme-agreee", label: "Plateforme agréée" },
+      { href: "/guide/delai-paiement-facture", label: "Délais de paiement" },
+    ],
+    sources: [
+      { label: "Service-public.gouv.fr, « Mentions obligatoires sur une facture » (fiche F31808, mise à jour le 11 août 2026)", href: "https://entreprendre.service-public.gouv.fr/vosdroits/F31808" },
+      { label: "Code général des impôts, annexe II, article 242 nonies A (mentions des factures) et article 1737 (amende de 15 € par mention)" },
+      { label: "Code de commerce, articles L441-9 (règles de facturation), L441-16 (amende administrative) et R526-27 (mention de l'entrepreneur individuel)" },
+      { label: "Code de l'artisanat, article L132-1 (assurance de l'artisan)", href: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000047362294" },
+      { label: "Code des assurances, article L243-2 (attestation de garantie décennale)", href: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000031010272" },
+      { label: "Code général des impôts, article 279-0 bis (taux réduit des travaux, certification par le client)", href: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051215062" },
+    ],
+    verifieLe: "2026-10-04",
   },
   {
     slug: "facture-auto-entrepreneur",
@@ -89,7 +213,9 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: "facture-electronique-2026",
-    titre: "Facture électronique obligatoire 2026 : ce qui change",
+    // Les artisans (TPE, micro) émettent en 2027 : le titre vise aussi cette échéance
+    titre: "Facture électronique obligatoire : ce qui change en 2026 et 2027",
+    titreSeo: "Facture électronique obligatoire : calendrier 2026-2027",
     description: "Réforme de la facturation électronique : calendrier, formats acceptés (Factur-X, UBL, CII), plateformes agréées et obligations selon votre entreprise.",
     motsCles: ["facture electronique 2026", "facture electronique obligatoire", "factur-x"],
     sections: [
@@ -105,6 +231,91 @@ export const GUIDES: Guide[] = [
       { question: "Une facture PDF envoyée par email est-elle une facture électronique ?", reponse: "Non, un simple PDF envoyé par email n'est pas considéré comme une facture électronique au sens de la réforme 2026. Une facture électronique doit être émise dans un format structuré (Factur-X, UBL ou CII) et transmise par une plateforme agréée. Le PDF classique ne contient pas les données structurées exigées par la norme EN 16931." },
       { question: "Quelles sanctions en cas de non-conformité ?", reponse: "Le non-respect de l'obligation de facturation électronique est sanctionné par une amende de 15 € par facture non conforme, plafonnée à 15 000 € par an (article 1737-II du CGI). Le défaut de e-reporting est sanctionné par une amende de 250 € par transmission manquante, plafonnée à 15 000 € par an." },
     ],
+    liens: [
+      { href: "/guide/plateforme-agreee", label: "Choisir sa plateforme agréée" },
+      { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires d'une facture" },
+      { href: "/glossaire/e-reporting", label: "E-reporting" },
+      { href: "/glossaire/factur-x", label: "Factur-X" },
+    ],
+  },
+  {
+    slug: "plateforme-agreee",
+    titre: "Plateforme agréée : à quoi elle sert et comment la choisir",
+    titreSeo: "Plateforme agréée de facturation électronique : le guide",
+    description: "Plateforme agréée (ex-PDP) : son rôle dans la facture électronique, le calendrier 2026-2027, comment la choisir et ce qu'elle change pour un artisan.",
+    motsCles: ["plateforme agréée", "plateforme agréée facturation électronique", "pdp facture électronique", "liste des plateformes agréées", "choisir sa plateforme agréée", "plateforme agréée gratuite"],
+    essentiel: [
+      "Une plateforme agréée est un prestataire immatriculé par la DGFiP pour échanger les factures électroniques entre entreprises et transmettre les données de facturation à l'administration.",
+      "C'est le nouveau nom des « PDP » (plateformes de dématérialisation partenaires).",
+      "Depuis le 1er septembre 2026, toute entreprise assujettie à la TVA doit pouvoir recevoir ses factures électroniques.",
+      "Les PME, les TPE et les micro-entreprises émettent les leurs à partir du 1er septembre 2027.",
+      "Votre logiciel de facturation peut rester le même : s'il est « solution compatible », il se raccorde à une plateforme agréée, qui fait la transmission.",
+      "La liste officielle des plateformes agréées est publiée par la DGFiP sur impots.gouv.fr.",
+    ],
+    sections: [
+      {
+        titre: "Ce qu'est une plateforme agréée",
+        contenu: "Une plateforme agréée est une solution informatique immatriculée par la Direction générale des Finances publiques (DGFiP). Elle répond à un cahier des charges réglementaire, fiscal et technique, et a passé des tests d'interopérabilité avec les autres plateformes. C'est l'intermédiaire indispensable entre les entreprises pour l'échange des factures électroniques. Elle reçoit aussi les données de transaction et de paiement de ses clients, et les transmet périodiquement à l'administration. On parlait auparavant de « plateforme de dématérialisation partenaire » (PDP).",
+      },
+      {
+        titre: "Plateforme agréée, solution compatible, PPF : qui fait quoi",
+        contenu: "Trois acteurs se partagent le dispositif. Seule la plateforme agréée transmet les factures et les données.",
+        liste: [
+          "La plateforme agréée échange les factures entre entreprises et envoie les données à l'administration. Elle porte le logo « Plateforme agréée – Facturation électronique ».",
+          "La solution compatible (logiciel de facturation, de comptabilité, de caisse, application bancaire…) produit des factures conformes, mais n'est pas immatriculée : elle ne transmet rien seule et doit être raccordée à une plateforme agréée. Elle porte le label « Solution compatible – Facturation électronique ».",
+          "Le portail public de facturation (PPF), géré par l'État, tient l'annuaire des entreprises et centralise les données destinées à l'administration. Il ne transmet pas les factures entre entreprises.",
+        ],
+      },
+      {
+        titre: "Le calendrier",
+        contenu: "Les dates sont fixées par la loi de finances pour 2024 (article 91). Les micro-entrepreneurs en franchise de TVA sont concernés : ils restent assujettis à la TVA, même s'ils ne la facturent pas.",
+        liste: [
+          "1er septembre 2026 : toutes les entreprises assujetties à la TVA doivent pouvoir recevoir des factures électroniques. Les grandes entreprises et les ETI doivent aussi les émettre.",
+          "1er septembre 2027 : les PME, les TPE et les micro-entreprises émettent à leur tour leurs factures électroniques et transmettent les données de leurs ventes aux particuliers (e-reporting).",
+        ],
+      },
+      {
+        titre: "Ce que la plateforme change pour un artisan",
+        contenu: "Entre entreprises établies en France, une facture ne partira plus en simple PDF par email : elle sera émise dans un format structuré (Factur-X, UBL ou CII) et transmise par votre plateforme agréée à celle de votre client. C'est le cas d'un sous-traitant qui facture l'entreprise principale. Pour vos clients particuliers, vous remettez la facture comme aujourd'hui ; votre plateforme transmet seulement les données de la vente à l'administration. Vos devis ne sont pas concernés : un devis, même signé, n'est pas une facture.",
+      },
+      {
+        titre: "Comment choisir sa plateforme",
+        contenu: "Vérifiez d'abord qu'elle figure dans la liste officielle publiée par la DGFiP sur impots.gouv.fr. Si vous utilisez déjà un logiciel, demandez à son éditeur à quelle plateforme il est raccordé : c'est le premier conseil de l'administration. Comparez ensuite les offres sur ces points :",
+        liste: [
+          "Ce qui est inclus : réception, émission, e-reporting, suivi des statuts des factures, archivage.",
+          "Le raccordement à votre logiciel de facturation : vos factures doivent y arriver sans ressaisie.",
+          "Le prix : les tarifs sont libres, au nombre de factures ou au forfait.",
+          "Les formats acceptés (Factur-X, UBL, CII) et la récupération de vos factures si vous changez de plateforme.",
+          "L'assistance proposée et le lieu d'hébergement de vos données.",
+        ],
+      },
+      {
+        titre: "Et avec Qonforme ?",
+        contenu: "Qonforme produit déjà vos factures au format Factur-X : un PDF lisible qui contient les données structurées de la facture. Le raccordement de Qonforme à une plateforme agréée est en préparation, et Qonforme n'est pas encore « solution compatible ». D'ici là, choisissez votre plateforme agréée pour recevoir vos factures fournisseurs : cette obligation s'applique depuis le 1er septembre 2026.",
+      },
+    ],
+    faq: [
+      { question: "Quelle différence entre une plateforme agréée et une PDP ?", reponse: "Aucune : « plateforme agréée » est le nouveau nom des plateformes de dématérialisation partenaires (PDP). C'est désormais le terme officiel." },
+      { question: "Une plateforme agréée est-elle obligatoire ?", reponse: "Oui. Pour recevoir puis émettre des factures électroniques, chaque entreprise passe par une plateforme agréée, directement ou par un logiciel « solution compatible » raccordé à l'une d'elles. Le portail public de facturation ne transmet pas les factures entre entreprises." },
+      { question: "Existe-t-il une plateforme agréée gratuite ?", reponse: "Les prix sont libres et varient d'une plateforme à l'autre ; des offres gratuites existent, souvent limitées en volume ou en services. Comparez ce qui est inclus (réception, émission, e-reporting, archivage) plutôt que le seul prix." },
+      { question: "Un micro-entrepreneur doit-il choisir une plateforme agréée ?", reponse: "Oui. Depuis le 1er septembre 2026, il doit pouvoir recevoir des factures électroniques, et il émettra les siennes à partir du 1er septembre 2027, même en franchise de TVA." },
+      { question: "Où trouver la liste des plateformes agréées ?", reponse: "Sur impots.gouv.fr, dans l'espace professionnel : « Gérer mon entreprise/association », puis « Je passe à la facturation électronique » et « Je consulte la liste des plateformes agréées ». La DGFiP la met à jour au fil des immatriculations." },
+      { question: "Mes devis doivent-ils passer par une plateforme agréée ?", reponse: "Non. La réforme vise les factures. Un devis, même signé, n'est pas une facture : vous continuez à l'envoyer comme aujourd'hui." },
+    ],
+    liens: [
+      { href: "/guide/facture-electronique-2026", label: "Calendrier de la facture électronique" },
+      { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires d'une facture" },
+      { href: "/glossaire/ppf", label: "Portail public de facturation (PPF)" },
+      { href: "/glossaire/e-reporting", label: "E-reporting" },
+      { href: "/glossaire/factur-x", label: "Factur-X" },
+    ],
+    sources: [
+      { label: "DGFiP, « Présentation de la marque Plateforme agréée et du label Solution compatible » (septembre 2025)", href: "https://www.impots.gouv.fr/presentation-des-logos-plateforme-agreee-et-solution-compatible" },
+      { label: "impots.gouv.fr, « Facturation électronique : publication de la liste des plateformes agréées » (16 janvier 2026)", href: "https://www.impots.gouv.fr/actualite/facturation-electronique-publication-de-la-liste-des-plateformes-agreees" },
+      { label: "Service-public.gouv.fr, « Mentions obligatoires sur une facture » (fiche F31808), calendrier de la facturation électronique", href: "https://entreprendre.service-public.gouv.fr/vosdroits/F31808" },
+      { label: "Loi n° 2023-1322 du 29 décembre 2023 de finances pour 2024, article 91" },
+    ],
+    verifieLe: "2026-10-04",
   },
   {
     slug: "devis-obligatoire",

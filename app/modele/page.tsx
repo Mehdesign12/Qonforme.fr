@@ -156,6 +156,7 @@ export default function ModeleIndexPage() {
                   { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
                   { href: "/guide/devis-obligatoire", label: "Quand le devis est obligatoire" },
                   { href: "/guide/difference-devis-facture", label: "Devis ou facture ?" },
+                  { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires d'une facture" },
                 ]}
               />
             </div>

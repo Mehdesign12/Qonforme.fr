@@ -93,3 +93,31 @@ it("ne laisse jamais une parenthèse ouverte en fin de description", async () =>
     expect((d.match(/\(/g) ?? []).length, t.slug).toBe((d.match(/\)/g) ?? []).length)
   }
 })
+
+describe("guides : titres et descriptions (PushRank, 04/10/2026)", () => {
+  it("chaque guide a un title sous 70 caractères et une description de 120 à 155 caractères", async () => {
+    const { GUIDES } = await import("@/lib/pseo/guides")
+    for (const g of GUIDES) {
+      const title = rendered(fitTitle(g.titreSeo ?? g.titre))
+      expect(title.length, g.slug).toBeLessThanOrEqual(TITLE_MAX)
+      expect(fitDescription(g.description).length, g.slug).toBeLessThanOrEqual(DESCRIPTION_MAX)
+    }
+  })
+
+  it("les guides refondus visent leur requête et citent leurs sources", async () => {
+    const { getGuideBySlug } = await import("@/lib/pseo/guides")
+    const mentions = getGuideBySlug("mentions-obligatoires-facture")!
+    expect(mentions.titreSeo).toMatch(/^Mentions obligatoires d'une facture/)
+    const pa = getGuideBySlug("plateforme-agreee")!
+    expect(pa.titreSeo).toMatch(/^Plateforme agréée/)
+    for (const g of [mentions, pa]) {
+      expect(g.description.length, g.slug).toBeGreaterThanOrEqual(120)
+      expect(g.essentiel?.length, g.slug).toBeGreaterThan(3)
+      expect(g.sources?.some((s) => s.href?.startsWith("https://")), g.slug).toBe(true)
+      expect(g.verifieLe, g.slug).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      // Aucun concurrent ni promesse invérifiable (DECISIONS-STRATEGIQUES.md)
+      const text = JSON.stringify(g)
+      expect(text, g.slug).not.toMatch(/certifi[ée] par|homologu|n°\s?1|leader|meilleur/i)
+    }
+  })
+})
