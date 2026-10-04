@@ -121,3 +121,81 @@ describe("guides : titres et descriptions (PushRank, 04/10/2026)", () => {
     }
   })
 })
+
+describe("devis et installation par métier (PushRank, 04/10/2026)", () => {
+  it("le guide des mentions d'un devis vise sa requête, cite ses sources et ne reprend pas l'ancien seuil de 150 €", async () => {
+    const { getGuideBySlug } = await import("@/lib/pseo/guides")
+    const g = getGuideBySlug("mentions-obligatoires-devis")!
+    expect(g.titreSeo).toMatch(/^Mentions obligatoires d'un devis/)
+    const description = fitDescription(g.description)
+    expect(description.length).toBeGreaterThanOrEqual(120)
+    expect(description.length).toBeLessThanOrEqual(DESCRIPTION_MAX)
+    expect(g.essentiel?.length).toBeGreaterThan(5)
+    expect(g.sources?.some((s) => s.href?.includes("F31144"))).toBe(true)
+    expect(g.verifieLe).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    // Le devis est dû dès le premier euro depuis le 1er avril 2017 (arrêté du 24 janvier 2017)
+    const devis = getGuideBySlug("devis-obligatoire")!
+    for (const guide of [g, devis]) {
+      expect(JSON.stringify(guide), guide.slug).not.toMatch(/(au-delà|au-dessus|à partir) de 150 €/)
+    }
+    // Les deux guides ne se disputent pas la même requête
+    expect(devis.motsCles).not.toContain("mentions obligatoires devis")
+  })
+
+  it("chaque page « Devenir … à son compte » a un title, une description et un contenu qui lui sont propres", async () => {
+    const { INSTALLATIONS, etapes } = await import("@/lib/pseo/installation")
+    const { getMetierBySlug } = await import("@/lib/pseo/metiers")
+    const { TRADE_PHOTOS } = await import("@/components/content/metier")
+    expect(INSTALLATIONS.length).toBeGreaterThanOrEqual(9)
+
+    const seen = { titres: new Set<string>(), descriptions: new Set<string>(), questions: new Set<string>(), intros: new Set<string>() }
+    for (const i of INSTALLATIONS) {
+      const title = rendered(fitTitle(i.titreSeo))
+      expect(title.length, i.slug).toBeLessThanOrEqual(TITLE_MAX)
+      expect(i.titreSeo.toLowerCase(), i.slug).toContain(`devenir ${i.metier.split(" ")[0]}`)
+      expect(i.description.length, i.slug).toBeGreaterThanOrEqual(120)
+      expect(i.description.length, i.slug).toBeLessThanOrEqual(DESCRIPTION_MAX)
+      // Même slug que la page « Logiciel de facturation pour … » et une photo du métier
+      expect(getMetierBySlug(i.slug), i.slug).toBeTruthy()
+      expect(i.slug in TRADE_PHOTOS, i.slug).toBe(true)
+      expect(i.fiche.href, i.slug).toMatch(/^https:\/\/entreprendre\.service-public\.gouv\.fr\//)
+      expect(i.specificites.length, i.slug).toBeGreaterThanOrEqual(3)
+      expect(i.faq.length, i.slug).toBeGreaterThanOrEqual(3)
+      expect(etapes(i).length, i.slug).toBe(6)
+
+      for (const [set, value] of [[seen.titres, i.titreSeo], [seen.descriptions, i.description], [seen.intros, i.intro]] as const) {
+        expect(set.has(value), `${i.slug} : ${value}`).toBe(false)
+        set.add(value)
+      }
+      for (const f of i.faq) {
+        expect(seen.questions.has(f.question), `${i.slug} : ${f.question}`).toBe(false)
+        seen.questions.add(f.question)
+      }
+      // Aucune promesse invérifiable ni concurrent (DECISIONS-STRATEGIQUES.md)
+      expect(JSON.stringify(i), i.slug).not.toMatch(/certifi[ée] par|homologu|n°\s?1|leader|meilleur|un humain|rendez-vous/i)
+    }
+  })
+
+  it("les chiffres des pages d'installation viennent des constantes vérifiées des outils", async () => {
+    const { CHIFFRES } = await import("@/lib/pseo/installation")
+    const { ACTIVITES } = await import("@/lib/outils/charges")
+    const { SEUILS_FRANCHISE_TVA } = await import("@/lib/outils/franchise-tva")
+    const services = ACTIVITES.find((a) => a.id === "prestations-bic")!
+    const franchise = SEUILS_FRANCHISE_TVA.find((s) => s.id === "services")!
+    const digits = (s: string) => Number(s.replace(/\D/g, ""))
+    expect(digits(CHIFFRES.plafondServices)).toBe(services.plafondCA)
+    expect(digits(CHIFFRES.franchiseServices)).toBe(franchise.seuilBase)
+    expect(CHIFFRES.cotisationsServices.replace(/\s/g, " ")).toBe(`${services.tauxCotisations.toLocaleString("fr-FR")} %`)
+  })
+})
+
+it("un montant n'est jamais coupé en fin de ligne", async () => {
+  const { fr } = await import("@/components/content/text")
+  const nb = " "
+  expect(fr("une amende de 7 500 € et 75 000 €")).toBe(`une amende de 7${nb}500${nb}€ et 75${nb}000${nb}€`)
+  expect(fr("cotisations de 21,2 % du chiffre")).toBe(`cotisations de 21,2${nb}% du chiffre`)
+  expect(fr("jusqu'à 1 000 000 €")).toBe(`jusqu'à 1${nb}000${nb}000${nb}€`)
+  // Les dates et les références ne sont pas touchées
+  expect(fr("arrêté du 24 janvier 2017, décret n° 2020-1817")).toBe("arrêté du 24 janvier 2017, décret n° 2020-1817")
+  expect(fr("le 1er avril 2017 : 10 jours")).toBe(`le 1er avril 2017${nb}: 10 jours`)
+})

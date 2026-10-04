@@ -4,13 +4,8 @@ import { notFound } from "next/navigation"
 import { ArrowRight, BookOpen, Check, ExternalLink } from "lucide-react"
 import { GUIDES, getGuideBySlug } from "@/lib/pseo/guides"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, FaqList, SectionHeading, WRAP } from "@/components/content/ui"
-import { fr } from "@/components/content/text"
+import { dateFr, fr } from "@/components/content/text"
 import { fitDescription, fitTitle } from "@/lib/seo/meta"
-
-/** « 2026-10-04 » → « 4 octobre 2026 ». */
-function dateFr(iso: string): string {
-  return new Date(`${iso}T12:00:00Z`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" })
-}
 
 export function generateStaticParams() {
   return GUIDES.map(g => ({ slug: g.slug }))

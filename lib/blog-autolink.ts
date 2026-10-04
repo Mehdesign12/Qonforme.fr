@@ -9,6 +9,8 @@
 const KEYWORD_LINKS: { pattern: RegExp; href: string }[] = [
   // Guides
   { pattern: /mentions?\s+obligatoires?\s+(sur\s+une\s+)?facture/i, href: "/guide/mentions-obligatoires-facture" },
+  { pattern: /mentions?\s+obligatoires?\s+(d['’]un|du|sur\s+un)\s+devis/i, href: "/guide/mentions-obligatoires-devis" },
+  { pattern: /(s['’]installer|se\s+mettre)\s+à\s+son\s+compte/i, href: "/devenir-a-son-compte" },
   { pattern: /facture?\s+[eé]lectronique\s+2026/i, href: "/guide/facture-electronique-2026" },
   { pattern: /facture?\s+auto[- ]?entrepreneur/i, href: "/guide/facture-auto-entrepreneur" },
   { pattern: /d[eé]lais?\s+de\s+paiement/i, href: "/guide/delai-paiement-facture" },

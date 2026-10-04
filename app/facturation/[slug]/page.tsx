@@ -1,8 +1,9 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { Briefcase } from "lucide-react"
+import { ArrowRight, Briefcase } from "lucide-react"
 import { METIERS, getMetierBySlug } from "@/lib/pseo/metiers"
+import { getInstallationBySlug } from "@/lib/pseo/installation"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, FaqList, SectionHeading, WRAP } from "@/components/content/ui"
 import { MetierFeatures, MetierObligations, tradeHeroPhoto } from "@/components/content/metier"
 import { lcFirst } from "@/components/content/text"
@@ -58,6 +59,7 @@ export default async function MetierPage({ params }: { params: Promise<{ slug: s
     },
   ]
 
+  const installation = getInstallationBySlug(metier.slug)
   const proches = metier.metiersProches.map((slug) => getMetierBySlug(slug)).filter((m): m is NonNullable<typeof m> => m !== undefined)
 
   return (
@@ -79,6 +81,31 @@ export default async function MetierPage({ params }: { params: Promise<{ slug: s
 
         <MetierFeatures metier={metier} />
         <MetierObligations metier={metier} />
+
+        {/* Intention « je démarre » : guide d'installation du même métier */}
+        {installation && (
+          <section aria-labelledby="installation" className="px-4 pt-16 sm:px-6 sm:pt-20">
+            <div className={WRAP}>
+              <Link
+                href={`/devenir-a-son-compte/${installation.slug}`}
+                className="group flex flex-col gap-3 rounded-[20px] border border-q-wash-line bg-q-wash p-6 transition-colors hover:border-q-accent sm:flex-row sm:items-center sm:justify-between sm:p-8"
+              >
+                <div className="flex flex-col gap-1">
+                  <h2 id="installation" className="font-display text-[20px] font-semibold tracking-[-0.02em] text-q-ink-strong">
+                    Vous vous installez ?
+                  </h2>
+                  <span className="text-[15px] leading-[1.55] text-q-text-3">
+                    Devenir {installation.metier} à son compte : qualification, assurance, TVA et premiers devis, étape par étape.
+                  </span>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-1.5 text-[14px] font-semibold text-q-accent-strong">
+                  Voir les étapes
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+                </span>
+              </Link>
+            </div>
+          </section>
+        )}
 
         {faq.length > 0 && (
           <section aria-labelledby="faq" className="px-4 pt-16 sm:px-6 sm:pt-20">
