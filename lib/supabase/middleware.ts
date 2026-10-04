@@ -23,6 +23,7 @@ export async function updateSession(request: NextRequest) {
     '/demo',
     '/outils',
     '/plan-du-site',
+    '/devenir-a-son-compte',
     '/api/webhooks/stripe',
     '/api/og',
     '/api/cron',

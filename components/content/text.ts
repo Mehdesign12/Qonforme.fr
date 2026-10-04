@@ -11,9 +11,17 @@ import { GLOSSAIRE } from "@/lib/pseo/glossaire"
  * DECISIONS-STRATEGIQUES.md § 2 et § 10). Les pages les affichent telles quelles.
  */
 
-/** Typographie française : espace insécable avant « ? », « : », « ; » et « ! ». */
+/**
+ * Typographie française : espace insécable avant « ? », « : », « ; » et « ! »,
+ * dans les milliers (« 7 500 ») et avant « € » et « % », pour qu'un montant ne
+ * soit jamais coupé en fin de ligne.
+ */
 export function fr(s: string): string {
-  return s.replace(/ ([?:;!»])/g, " $1").replace(/« /g, "« ")
+  return s
+    .replace(/ ([?:;!»])/g, " $1")
+    .replace(/« /g, "« ")
+    .replace(/(\d) (?=\d{3}(?!\d))/g, "$1 ")
+    .replace(/(\d) ([€%])/g, "$1 $2")
 }
 
 /** Première lettre en minuscule (« Plombier » → « plombier », « Chauffeur VTC » → « chauffeur VTC »). */
@@ -48,4 +56,9 @@ export function resolveContentLink(href: string): { href: string; label: string 
     default:
       return null
   }
+}
+
+/** « 2026-10-04 » → « 4 octobre 2026 » (date de vérification d'un contenu). */
+export function dateFr(iso: string): string {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" })
 }

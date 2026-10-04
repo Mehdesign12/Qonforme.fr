@@ -4,6 +4,7 @@ import { METIERS } from "@/lib/pseo/metiers";
 import { GUIDES } from "@/lib/pseo/guides";
 import { MODELES } from "@/lib/pseo/modeles";
 import { GLOSSAIRE } from "@/lib/pseo/glossaire";
+import { INSTALLATIONS } from "@/lib/pseo/installation";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://qonforme.fr";
@@ -159,6 +160,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...metierEntries,
     ...guideEntries,
     ...modeleEntries,
+    // S'installer à son compte (métiers du bâtiment)
+    {
+      url: `${baseUrl}/devenir-a-son-compte`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    },
+    ...INSTALLATIONS.map((i) => ({
+      url: `${baseUrl}/devenir-a-son-compte/${i.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
     // Glossaire
     {
       url: `${baseUrl}/glossaire`,

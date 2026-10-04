@@ -18,6 +18,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Blog", href: "/blog" },
       { label: "Réforme 2027", href: "/guide/facture-electronique-2026" },
       { label: "Plateforme agréée", href: "/guide/plateforme-agreee" },
+      { label: "S'installer à son compte", href: "/devenir-a-son-compte" },
       { label: "Facturation par métier", href: "/facturation" },
       { label: "Guides pratiques", href: "/guide" },
       { label: "Modèles gratuits", href: "/modele" },

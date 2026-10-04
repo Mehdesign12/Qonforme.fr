@@ -5,6 +5,7 @@ import { METIERS } from "@/lib/pseo/metiers"
 import { GUIDES } from "@/lib/pseo/guides"
 import { MODELES } from "@/lib/pseo/modeles"
 import { GLOSSAIRE } from "@/lib/pseo/glossaire"
+import { INSTALLATIONS } from "@/lib/pseo/installation"
 import { OUTILS_CATEGORIES } from "@/components/layout/public-links"
 import { ContentHero, ContentPage, WRAP } from "@/components/content/ui"
 import { fr } from "@/components/content/text"
@@ -88,6 +89,12 @@ export default async function PlanDuSitePage() {
       id: "plan-guides",
       title: "Guides pratiques",
       items: [{ href: "/guide", label: "Tous les guides" }, ...GUIDES.map((g) => ({ href: `/guide/${g.slug}`, label: g.titre }))],
+    },
+    {
+      id: "plan-installation",
+      title: "S'installer à son compte",
+      columns: 3,
+      items: [{ href: "/devenir-a-son-compte", label: "Dans le bâtiment : le guide" }, ...INSTALLATIONS.map((i) => ({ href: `/devenir-a-son-compte/${i.slug}`, label: `Devenir ${i.metier} à son compte` }))],
     },
     {
       id: "plan-metiers",
