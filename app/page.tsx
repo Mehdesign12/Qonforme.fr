@@ -748,6 +748,7 @@ const GUIDES = [
   { href: "/guide/premiere-facture", label: "Faire sa première facture" },
   { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires sur une facture" },
   { href: "/guide/facture-electronique-2026", label: "La facture électronique" },
+  { href: "/guide/plateforme-agreee", label: "Choisir sa plateforme agréée" },
   { href: "/guide", label: "Tous les guides" },
 ]
 

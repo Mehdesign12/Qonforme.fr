@@ -1,10 +1,16 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowRight, BookOpen } from "lucide-react"
+import { ArrowRight, BookOpen, Check, ExternalLink } from "lucide-react"
 import { GUIDES, getGuideBySlug } from "@/lib/pseo/guides"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, FaqList, SectionHeading, WRAP } from "@/components/content/ui"
 import { fr } from "@/components/content/text"
+import { fitDescription, fitTitle } from "@/lib/seo/meta"
+
+/** « 2026-10-04 » → « 4 octobre 2026 ». */
+function dateFr(iso: string): string {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" })
+}
 
 export function generateStaticParams() {
   return GUIDES.map(g => ({ slug: g.slug }))
@@ -15,8 +21,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const guide = getGuideBySlug(slug)
   if (!guide) return {}
   return {
-    title: guide.titre,
-    description: guide.description,
+    title: fitTitle(guide.titreSeo ?? guide.titre),
+    description: fitDescription(guide.description),
     keywords: guide.motsCles,
     alternates: { canonical: `/guide/${guide.slug}` },
     openGraph: {
@@ -39,7 +45,6 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     "facture-acompte",
     "facture-impayee",
     "avoir-facture",
-    "mentions-obligatoires-facture",
     "facture-auto-entrepreneur",
   ])
 
@@ -54,7 +59,11 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
       "@type": "Article",
       headline: guide.titre,
       description: guide.description,
+      mainEntityOfPage: `https://qonforme.fr/guide/${guide.slug}`,
+      ...(guide.verifieLe ? { dateModified: guide.verifieLe } : {}),
+      author: { "@type": "Organization", name: "Qonforme", url: "https://qonforme.fr" },
       publisher: { "@type": "Organization", name: "Qonforme", url: "https://qonforme.fr" },
+      ...(guide.sources?.some((src) => src.href) ? { citation: guide.sources.filter((src) => src.href).map((src) => src.href) } : {}),
     },
     ...(faq.length > 0 ? [{
       "@context": "https://schema.org",
@@ -74,7 +83,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         "@type": "HowToStep",
         position: i + 1,
         name: s.titre,
-        text: s.contenu,
+        text: [s.contenu, ...(s.liste ?? [])].join(" "),
       })),
     }] : []),
     {
@@ -89,8 +98,22 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   ]
 
   const toc = [
+    ...(guide.essentiel ? [{ href: "#essentiel", label: "L'essentiel" }] : []),
     ...sections.map((sec, i) => ({ href: `#section-${i}`, label: sec.titre })),
     ...(faq.length > 0 ? [{ href: "#faq", label: "Questions fréquentes" }] : []),
+    ...(guide.sources ? [{ href: "#sources", label: "Sources officielles" }] : []),
+  ]
+
+  // Liens propres au guide d'abord, puis les autres guides (sans doublon)
+  const ownLinks = guide.liens ?? []
+  const moreLinks = [
+    ...ownLinks,
+    ...GUIDES.filter((g) => g.slug !== guide.slug && !ownLinks.some((l) => l.href === `/guide/${g.slug}`))
+      .slice(0, Math.max(2, 6 - ownLinks.length))
+      .map((g) => ({ href: `/guide/${g.slug}`, label: g.titre.replace(/ :.*$/, "").replace(/ —.*$/, "") })),
+    ...(ownLinks.length ? [] : [{ href: "/modele/facture-classique", label: "Modèle de facture gratuit" }]),
+    { href: "/glossaire", label: "Glossaire" },
+    { href: "/pricing", label: "Voir les tarifs" },
   ]
 
   return (
@@ -104,7 +127,13 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           eyebrow={<><BookOpen className="h-3.5 w-3.5" aria-hidden />Guide pratique</>}
           title={fr(guide.titre)}
           sub={fr(guide.description)}
-        />
+        >
+          {guide.verifieLe && (
+            <p className="mt-4 text-[14px] text-q-text-4">
+              Vérifié sur les textes officiels le <time dateTime={guide.verifieLe}>{dateFr(guide.verifieLe)}</time>
+            </p>
+          )}
+        </ContentHero>
 
         <div className="px-4 sm:px-6">
           <div className={`${WRAP} lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-14`}>
@@ -118,11 +147,37 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                 <TocList items={toc} className="border-t border-q-line-soft px-5 pb-4 pt-3" />
               </details>
 
+              {/* Réponse directe en tête de page (extrait de recherche) */}
+              {guide.essentiel && (
+                <section aria-labelledby="essentiel" className="mb-12 rounded-[20px] border border-q-wash-line bg-q-wash p-6 sm:p-7">
+                  <h2 id="essentiel" className="scroll-mt-28 font-display text-[22px] font-semibold tracking-[-0.02em] text-q-ink-strong">
+                    L&apos;essentiel
+                  </h2>
+                  <ul className="mt-4 flex flex-col gap-3">
+                    {guide.essentiel.map((item) => (
+                      <li key={item} className="flex items-start gap-3 text-[15px] leading-[1.55] text-q-text-2">
+                        <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-q-surface text-q-accent-strong">
+                          <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
+                        </span>
+                        {fr(item)}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
               <div className="blog-prose">
                 {sections.map((sec, i) => (
                   <section key={i}>
                     <h2 id={`section-${i}`}>{fr(sec.titre)}</h2>
                     <p>{fr(sec.contenu)}</p>
+                    {sec.liste && (
+                      <ul>
+                        {sec.liste.map((item) => (
+                          <li key={item}>{fr(item)}</li>
+                        ))}
+                      </ul>
+                    )}
                   </section>
                 ))}
               </div>
@@ -139,17 +194,30 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                 <h2 id="aller-plus-loin" className="q-eyebrow mb-4">
                   Aller plus loin
                 </h2>
-                <ChipLinks
-                  links={[
-                    ...GUIDES.filter((g) => g.slug !== guide.slug)
-                      .slice(0, 4)
-                      .map((g) => ({ href: `/guide/${g.slug}`, label: g.titre.replace(/ :.*$/, "").replace(/ —.*$/, "") })),
-                    { href: "/modele/facture-classique", label: "Modèle de facture gratuit" },
-                    { href: "/glossaire", label: "Glossaire" },
-                    { href: "/pricing", label: "Voir les tarifs" },
-                  ]}
-                />
+                <ChipLinks links={moreLinks} />
               </section>
+
+              {guide.sources && (
+                <section aria-labelledby="sources" className="mt-12 max-w-[68ch]">
+                  <h2 id="sources" className="q-eyebrow mb-4 scroll-mt-28">
+                    Sources officielles
+                  </h2>
+                  <ul className="flex flex-col gap-2.5 text-[14px] leading-[1.55] text-q-text-3">
+                    {guide.sources.map((src) => (
+                      <li key={src.label}>
+                        {src.href ? (
+                          <a href={src.href} target="_blank" rel="noopener noreferrer" className="q-link inline-flex items-start gap-1.5">
+                            {fr(src.label)}
+                            <ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0" aria-hidden />
+                          </a>
+                        ) : (
+                          fr(src.label)
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
             </article>
 
             {/* Colonne : sommaire collé au défilement + rappel de l'offre */}

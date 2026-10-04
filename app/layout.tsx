@@ -52,7 +52,8 @@ const instrumentSerif = Instrument_Serif({
 export const metadata: Metadata = {
   metadataBase: new URL("https://qonforme.fr"),
   title: {
-    default: "Qonforme — Logiciel de facturation des artisans du bâtiment",
+    // Accueil : requête visée d'abord (« logiciel devis facturation », 1 600 recherches/mois), marque à la fin
+    default: "Logiciel de devis et facturation pour artisans du bâtiment | Qonforme",
     template: "%s | Qonforme",
   },
   description:
