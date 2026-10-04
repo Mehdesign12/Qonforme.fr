@@ -23,6 +23,21 @@ export interface Guide {
   sources?: { label: string; href?: string }[]
   /** Date de la dernière vérification du contenu sur les sources (AAAA-MM-JJ). */
   verifieLe?: string
+  /** Exemple de devis chiffré, affiché après les étapes (totaux calculés par lib/outils/document.ts). */
+  exemple?: ExempleDevis
+}
+
+/** Devis d'exemple : prix fictifs, qui illustrent la méthode et ne sont pas des prix de marché. */
+export interface ExempleDevis {
+  titre: string
+  /** Situation de l'exemple (client, logement, taux de TVA). */
+  contexte: string
+  lignes: { designation: string; quantite: number; unite: string; prixUnitaireHT: number }[]
+  /** Un seul taux pour tout le devis. */
+  tauxTva: number
+  /** Acompte demandé à la signature, en pourcentage du TTC. */
+  acomptePourcent?: number
+  conditions: string[]
 }
 
 export const GUIDES: Guide[] = [
@@ -340,6 +355,7 @@ export const GUIDES: Guide[] = [
     ],
     liens: [
       { href: "/guide/mentions-obligatoires-devis", label: "Mentions obligatoires d'un devis" },
+      { href: "/guide/comment-faire-un-devis", label: "Comment faire un devis" },
       { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
       { href: "/outils/generateur-devis-gratuit", label: "Générateur de devis gratuit" },
       { href: "/guide/difference-devis-facture", label: "Devis ou facture ?" },
@@ -437,6 +453,7 @@ export const GUIDES: Guide[] = [
       { question: "Faut-il numéroter ses devis ?", reponse: "Ce n'est pas exigé par la loi, contrairement aux factures. Un numéro relie toutefois le devis à sa facture et facilite le suivi de vos relances." },
     ],
     liens: [
+      { href: "/guide/comment-faire-un-devis", label: "Comment faire un devis" },
       { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
       { href: "/outils/generateur-devis-gratuit", label: "Générateur de devis gratuit" },
       { href: "/guide/devis-obligatoire", label: "Quand le devis est obligatoire" },
@@ -452,6 +469,159 @@ export const GUIDES: Guide[] = [
       { label: "Code général des impôts, article 279-0 bis (taux réduit des travaux, certification par le client)", href: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051215062" },
       { label: "Code de l'environnement, article L541-21-2-3 (déchets mentionnés sur les devis de travaux)", href: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000041570415" },
       { label: "Décret n° 2020-1817 du 29 décembre 2020 (informations des devis sur l'enlèvement et la gestion des déchets)", href: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000042841880" },
+    ],
+    verifieLe: "2026-10-04",
+  },
+  {
+    slug: "comment-faire-un-devis",
+    titre: "Comment faire un devis d'artisan : la méthode pas à pas",
+    titreSeo: "Comment faire un devis artisan : la méthode en 8 étapes",
+    description: "Comment faire un devis d'artisan, de la visite à la signature : description, chiffrage, TVA, acompte, mentions et envoi, avec un exemple de devis chiffré.",
+    motsCles: ["comment faire un devis artisan", "comment faire un devis", "faire un devis", "rédiger un devis", "faire un devis travaux", "chiffrer un devis"],
+    essentiel: [
+      "Visitez le chantier : mesures, état de l'existant, accès, et ce que le client attend.",
+      "Décrivez chaque prestation : ce qui est fait, avec quels matériaux, en quelle quantité, et ce qui n'est pas compris.",
+      "Chiffrez ligne par ligne : fournitures, main-d'œuvre, déplacement, évacuation des déchets.",
+      "Appliquez le bon taux de TVA : 20 %, 10 % ou 5,5 % selon les travaux et le logement, ou la mention de franchise.",
+      "Fixez la durée de validité, le délai des travaux et les conditions de paiement, en écrivant « acompte » si c'en est un.",
+      "Ajoutez les mentions obligatoires et joignez l'attestation de garantie décennale.",
+      "Envoyez le devis en PDF sans tarder, puis relancez le client avant la fin de sa validité.",
+      "Faites signer avec « Bon pour accord » ; tout changement passe par un avenant signé.",
+    ],
+    sections: [
+      {
+        titre: "1. Visiter le chantier et cerner le besoin",
+        contenu: "Un devis juste se prépare sur place : un support abîmé ou un accès difficile découvert pendant les travaux se paie ensuite en temps ou en litige. Pour un dépannage, une réparation ou un entretien chez un particulier, le devis est remis avant toute intervention, quel qu'en soit le montant.",
+        liste: [
+          "Les mesures et les quantités : surfaces, longueurs, nombre d'appareils, hauteur sous plafond.",
+          "L'état de l'existant : supports, réseaux, installation en place.",
+          "Les conditions d'accès : étage, stationnement, protection des lieux, évacuation des gravats.",
+          "Les attentes du client : gamme de matériaux, délai souhaité, budget, présence pendant les travaux.",
+          "Des photos, pour chiffrer au calme et justifier vos choix plus tard.",
+        ],
+      },
+      {
+        titre: "2. Décrire les travaux sans ambiguïté",
+        contenu: "Signé, le devis vaut contrat : ce qui y est écrit vous engage, ce qui n'y est pas écrit se discutera. Décrivez chaque prestation comme si un autre artisan devait la réaliser.",
+        liste: [
+          "Un poste par prestation, dans l'ordre du chantier : dépose, préparation, pose, finitions.",
+          "La nature exacte des travaux et des fournitures : matériau, dimensions, marque et référence, ou « équivalent ».",
+          "Ce qui n'est pas compris : reprises de peinture, raccordements par un autre corps de métier, évacuation des encombrants.",
+          "Le lieu d'exécution, s'il diffère de l'adresse du client.",
+        ],
+      },
+      {
+        titre: "3. Chiffrer chaque ligne",
+        contenu: "Chaque ligne porte une quantité, une unité et un prix unitaire hors taxes. Vos prix sont libres (code de commerce, art. L410-2) : partez de vos coûts réels, cotisations et heures non facturables comprises, pour fixer votre taux horaire et vos marges.",
+        liste: [
+          "Les fournitures : prix d'achat, frais d'approvisionnement et votre marge.",
+          "La main-d'œuvre : le nombre d'heures estimé multiplié par votre taux horaire. Chez un particulier, le devis indique le taux horaire TTC et la façon de décompter le temps.",
+          "Le déplacement, s'il est facturé, sur une ligne à part.",
+          "La location de matériel (échafaudage, nacelle, benne) et l'autorisation d'occuper la voie publique, s'il en faut une.",
+          "Les déchets : sur un devis de construction, de rénovation ou de démolition, la quantité estimée, leur gestion, le point de collecte prévu et le coût.",
+        ],
+      },
+      {
+        titre: "4. Appliquer le bon taux de TVA",
+        contenu: "Le taux se choisit ligne par ligne, selon la nature des travaux et l'âge du logement. Les fournitures que vous facturez et posez suivent le taux des travaux.",
+        liste: [
+          "20 % : construction neuve, locaux professionnels, logement achevé depuis moins de deux ans.",
+          "10 % : travaux d'amélioration, de transformation, d'aménagement et d'entretien d'un logement achevé depuis plus de deux ans.",
+          "5,5 % : travaux de rénovation énergétique éligibles dans ce même logement.",
+          "Depuis le 1er mars 2025, le client certifie sur le devis ou sur la facture que les conditions du taux réduit sont remplies : prévoyez la mention à côté de sa signature.",
+          "Franchise en base : aucune TVA, mais la mention « TVA non applicable, art. 293 B du CGI ».",
+          "Sous-traitance pour une autre entreprise du bâtiment : un prix hors taxes, la TVA étant autoliquidée par l'entreprise principale.",
+        ],
+      },
+      {
+        titre: "5. Fixer la validité, le délai et le paiement",
+        contenu: "Ces conditions préviennent les désaccords sur le prix et sur le calendrier.",
+        liste: [
+          "La durée de validité : aucune durée légale, à vous de l'écrire (un à trois mois est courant), d'autant plus quand le prix des matériaux bouge.",
+          "Pour un particulier, la date ou le délai d'exécution des travaux (code de la consommation, art. L111-1).",
+          "L'acompte demandé et son montant. Écrivez bien « acompte » : pour un particulier, une somme versée d'avance sans précision est considérée comme des arrhes, qui lui permettent d'annuler en les perdant, et vous obligent à rendre le double si c'est vous qui renoncez.",
+          "Sur un chantier long, un échéancier : acompte, paiements à l'avancement, solde à la fin des travaux.",
+          "Devis signé au domicile du client : aucun paiement avant sept jours (code de la consommation, art. L221-10), sauf pour un dépannage urgent qu'il vous a demandé, limité au strict nécessaire.",
+          "Pour un client professionnel : le délai de paiement, le taux des pénalités de retard et l'indemnité forfaitaire de 40 € pour frais de recouvrement.",
+        ],
+      },
+      {
+        titre: "6. Ajouter les mentions obligatoires",
+        contenu: "Relisez avant d'envoyer : un devis incomplet affaiblit votre position en cas de litige, et l'absence de devis là où il est obligatoire expose à une amende administrative pouvant atteindre 3 000 € (15 000 € pour une société).",
+        liste: [
+          "La date, votre nom ou dénomination (avec « EI » si vous êtes entrepreneur individuel), votre adresse et votre SIREN, le nom et l'adresse du client.",
+          "Le caractère gratuit ou payant du devis, et son prix s'il est payant, annoncé au client avant de l'établir.",
+          "Votre assurance professionnelle : assureur, contrat, couverture géographique, avec l'attestation de garantie décennale jointe.",
+          "La place de la signature du client, précédée de « Bon pour accord » ou « Bon pour travaux ».",
+        ],
+      },
+      {
+        titre: "7. Envoyer le devis et le suivre",
+        contenu: "Un devis clair, envoyé en PDF, se lit et se compare facilement. Numérotez-le : la loi ne l'exige pas, mais le numéro relie le devis à sa facture et à vos relances.",
+        liste: [
+          "Envoyez-le par email, avec un message court qui rappelle l'objet des travaux et la date de fin de validité.",
+          "Notez la date d'envoi et prévoyez une relance quelques jours plus tard, puis une autre avant la fin de validité.",
+          "Si le client hésite, proposez une variante (autre gamme, travaux en deux temps) dans un nouveau devis plutôt que de corriger l'ancien.",
+          "Un devis expiré se refait à la date du jour, avec les prix du moment.",
+        ],
+      },
+      {
+        titre: "8. Faire signer, puis gérer les changements",
+        contenu: "Le client n'est engagé qu'à partir de sa signature, précédée de « Bon pour accord » ou « Bon pour travaux ». Une signature électronique a la même valeur qu'une signature manuscrite si elle identifie le signataire et garantit le lien avec le document (code civil, art. 1366 et 1367).",
+        liste: [
+          "Signé chez un particulier ou à distance, le devis lui laisse 14 jours pour se rétracter (code de la consommation, art. L221-18) : remettez-lui le formulaire de rétractation, et ne commencez avant la fin du délai qu'à sa demande expresse.",
+          "Un changement en cours de chantier (travaux en plus, autre matériau) se règle par un avenant ou un nouveau devis, signé avant d'être exécuté.",
+          "À l'encaissement de l'acompte, émettez une facture d'acompte ; la facture finale reprend les postes du devis et déduit les acomptes.",
+          "Gardez le devis signé : c'est la preuve de l'accord sur le prix et sur les travaux.",
+        ],
+      },
+    ],
+    exemple: {
+      titre: "Remplacement d'un chauffe-eau électrique",
+      contexte: "Exemple fictif : devis envoyé par email à un particulier, pour une maison achevée depuis plus de deux ans, donc TVA à 10 %. Les prix illustrent la méthode ; ce ne sont pas des prix de marché.",
+      lignes: [
+        { designation: "Chauffe-eau électrique 200 litres, vertical mural (marque et référence, ou équivalent), fourni", quantite: 1, unite: "u", prixUnitaireHT: 520 },
+        { designation: "Groupe de sécurité, raccords et petites fournitures", quantite: 1, unite: "forfait", prixUnitaireHT: 45 },
+        { designation: "Main-d'œuvre : vidange et dépose de l'ancien appareil, pose, raccordement et mise en service (taux horaire 55,00 € TTC)", quantite: 3, unite: "h", prixUnitaireHT: 50 },
+        { designation: "Déplacement", quantite: 1, unite: "forfait", prixUnitaireHT: 30 },
+        { designation: "Enlèvement de l'ancien appareil et dépôt en point de collecte", quantite: 1, unite: "forfait", prixUnitaireHT: 20 },
+      ],
+      tauxTva: 10,
+      acomptePourcent: 30,
+      conditions: [
+        "Devis gratuit, valable deux mois.",
+        "Travaux réalisés dans les 30 jours qui suivent la signature.",
+        "Acompte de 30 % à la signature, solde à la fin des travaux. Signé au domicile du client, l'acompte ne pourrait être encaissé qu'au bout de sept jours.",
+        "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit.",
+        "Assurance décennale : assureur, numéro de contrat et couverture géographique, attestation jointe.",
+        "Signature du client précédée de « Bon pour accord ».",
+      ],
+    },
+    faq: [
+      { question: "Comment faire un devis quand on débute ?", reponse: "Partez d'un modèle qui contient déjà les mentions obligatoires, visitez le chantier, décrivez chaque prestation sur une ligne, puis chiffrez à partir de vos coûts réels. Un logiciel de devis reprend vos coordonnées, calcule les totaux et la TVA par taux, et prépare la facture une fois le devis signé." },
+      { question: "Comment calculer son taux horaire d'artisan ?", reponse: "Additionnez ce que l'activité doit couvrir sur un an (votre rémunération, les cotisations, les assurances, le véhicule, l'outillage, le local, les logiciels), puis divisez par le nombre d'heures réellement facturables, une fois retirés les déplacements, les devis, l'administratif et les congés. Le taux obtenu est un plancher hors taxes ; chez un particulier, le devis l'affiche toutes taxes comprises." },
+      { question: "Quelle différence entre un acompte et des arrhes sur un devis ?", reponse: "Un acompte engage définitivement les deux parties : celle qui renonce peut devoir des dommages et intérêts. Des arrhes permettent au client de renoncer en les perdant, et à vous de renoncer en lui rendant le double. Pour un particulier, une somme versée d'avance sans précision est considérée comme des arrhes : écrivez « acompte » sur le devis." },
+      { question: "Faut-il faire un devis pour un client professionnel ?", reponse: "Aucun texte général ne l'impose entre professionnels, mais le devis signé prouve simplement la commande, le prix et les conditions de paiement : il vaut commande. Indiquez-y le délai de paiement, les pénalités de retard et l'indemnité de 40 € pour frais de recouvrement." },
+      { question: "Peut-on modifier un devis déjà signé ?", reponse: "Pas seul : signé, il engage les deux parties. Les travaux en plus ou les changements de matériaux passent par un avenant ou un nouveau devis, signé par le client avant d'être exécutés. Sans cet accord écrit, il peut refuser de payer ce qui dépasse le devis." },
+      { question: "Faut-il un logiciel pour faire ses devis ?", reponse: "Non : un devis peut se faire sur papier ou dans un tableur, tant qu'il porte les mentions obligatoires. Un logiciel évite surtout les oublis et les erreurs de calcul, garde l'historique et prépare la facture. Pour les factures entre entreprises, le format électronique deviendra en revanche obligatoire, le 1er septembre 2027 pour une TPE ou une PME." },
+    ],
+    liens: [
+      { href: "/guide/mentions-obligatoires-devis", label: "Mentions obligatoires d'un devis" },
+      { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
+      { href: "/outils/generateur-devis-gratuit", label: "Générateur de devis gratuit" },
+      { href: "/guide/devis-obligatoire", label: "Quand le devis est obligatoire" },
+      { href: "/guide/facture-acompte", label: "Facture d'acompte" },
+      { href: "/outils/simulateur-charges-auto-entrepreneur", label: "Simuler mes cotisations" },
+    ],
+    sources: [
+      { label: "Service-public.gouv.fr, « Devis obligatoire : activités concernées » (fiche F31144)", href: "https://entreprendre.service-public.gouv.fr/vosdroits/F31144" },
+      { label: "Arrêté du 24 janvier 2017 relatif à la publicité des prix des prestations de dépannage, de réparation et d'entretien dans le secteur du bâtiment et de l'équipement de la maison" },
+      { label: "Code de commerce, article L410-2 (liberté des prix)" },
+      { label: "Code de la consommation, articles L111-1 (information du client), L221-10 (aucun paiement avant sept jours hors établissement) et L221-18 (délai de rétractation)", href: "https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000006069565/LEGISCTA000032226870/" },
+      { label: "Code civil, articles 1366 et 1367 (signature électronique)" },
+      { label: "Code général des impôts, articles 279-0 bis et 278-0 bis A (taux réduits des travaux), 293 B (franchise) et 283-2 nonies (autoliquidation en sous-traitance)" },
+      { label: "Code de l'environnement, article L541-21-2-3 (déchets mentionnés sur les devis de travaux)", href: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000041570415" },
+      { label: "Code des assurances, article L243-2 (attestation de garantie décennale)", href: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000031010272" },
     ],
     verifieLe: "2026-10-04",
   },
@@ -577,14 +747,14 @@ export const GUIDES: Guide[] = [
     sections: [
       { titre: "Définition juridique du devis", contenu: "Le devis est un document commercial pré-contractuel qui décrit les prestations à réaliser et leur prix. Il constitue une offre de prix et n'a pas de valeur comptable. Une fois signé par le client, il vaut engagement contractuel et lie les deux parties. Le devis n'est pas enregistré en comptabilité tant qu'il n'est pas transformé en facture." },
       { titre: "Définition juridique de la facture", contenu: "La facture est un document comptable obligatoire qui constate la réalisation d'une vente ou d'une prestation. Elle crée une obligation de paiement pour le client et doit être enregistrée en comptabilité. Elle est régie par les articles 289 et suivants du CGI et doit comporter des mentions obligatoires strictes sous peine d'amende." },
-      { titre: "Quand utiliser l'un ou l'autre", contenu: "Le devis est émis avant les travaux pour informer le client du prix et obtenir son accord. La facture est émise après la réalisation de la prestation ou la livraison du bien. Dans certains cas, le devis est obligatoire (travaux > 150 €, déménagements, services à la personne). La facture est toujours obligatoire pour les transactions B2B." },
+      { titre: "Quand utiliser l'un ou l'autre", contenu: "Le devis est émis avant les travaux pour informer le client du prix et obtenir son accord. La facture est émise après la réalisation de la prestation ou la livraison du bien. Dans certains cas, le devis est obligatoire : dépannage, réparation ou entretien chez un particulier dans le bâtiment, quel qu'en soit le montant, déménagement, services à la personne. La facture est toujours obligatoire pour les transactions B2B." },
       { titre: "Le devis vaut-il contrat ?", contenu: "Un devis signé par le client vaut contrat au sens de l'article 1113 du Code civil. Le professionnel est tenu de respecter les prix et prestations indiqués. Toute modification doit faire l'objet d'un avenant signé par les deux parties. Un devis non signé n'engage personne et peut être librement modifié." },
       { titre: "Transformer un devis en facture", contenu: "La transformation d'un devis en facture consiste à créer une facture reprenant les éléments du devis accepté. La facture doit porter son propre numéro chronologique et peut différer du devis si des travaux supplémentaires ont été réalisés (avec accord du client). Le devis signé doit être conservé comme pièce justificative." },
     ],
     faq: [
       { question: "Un devis peut-il remplacer une facture ?", reponse: "Non, jamais. Le devis est un document commercial sans valeur comptable, tandis que la facture est un document comptable obligatoire. Même si le devis est signé et payé, une facture doit être émise pour constater la vente et permettre la comptabilisation." },
-      { question: "Un devis doit-il être signé ?", reponse: "La signature n'est pas obligatoire pour la validité du devis, mais elle est fortement recommandée. Un devis signé vaut contrat et protège les deux parties. La mention manuscrite « Devis reçu avant l'exécution des travaux » suivie de la date et de la signature est la pratique standard." },
-      { question: "Peut-on facturer sans avoir fait de devis ?", reponse: "Oui, dans de nombreux cas le devis n'est pas obligatoire (ventes en magasin, prestations < 150 €, accords verbaux entre professionnels). Cependant, pour les travaux du bâtiment > 150 €, les déménagements et les services à la personne, le devis préalable est obligatoire." },
+      { question: "Un devis doit-il être signé ?", reponse: "La signature n'est pas obligatoire pour la validité du devis, mais elle est fortement recommandée. Un devis signé vaut contrat et protège les deux parties. Le client la fait précéder de « Bon pour accord » ou « Bon pour travaux » : il n'est engagé qu'à partir de sa signature." },
+      { question: "Peut-on facturer sans avoir fait de devis ?", reponse: "Oui, quand le devis n'est pas obligatoire (vente en magasin, accord entre professionnels, par exemple). En revanche, pour un dépannage, une réparation ou un entretien chez un particulier dans le bâtiment, le devis préalable est obligatoire quel qu'en soit le montant, comme pour un déménagement ou des services à la personne." },
       { question: "Que faire si le montant final diffère du devis ?", reponse: "Si des travaux supplémentaires sont nécessaires, vous devez obtenir l'accord écrit du client (avenant au devis) avant de les réaliser. La facture finale peut alors mentionner les travaux supplémentaires acceptés. Sans accord, le client n'est redevable que du montant du devis initial." },
       { question: "Une facture pro forma est-elle un devis ?", reponse: "Non, la facture pro forma est un document informatif qui ressemble à une facture mais n'a pas de valeur comptable. Elle est utilisée dans le commerce international pour les formalités douanières ou bancaires. Contrairement au devis, elle ne constitue pas une offre de prix engageante." },
     ],

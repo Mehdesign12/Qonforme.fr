@@ -154,6 +154,7 @@ export default function ModeleIndexPage() {
               <ChipLinks
                 links={[
                   { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
+                  { href: "/guide/comment-faire-un-devis", label: "Comment faire un devis" },
                   { href: "/guide/devis-obligatoire", label: "Quand le devis est obligatoire" },
                   { href: "/guide/difference-devis-facture", label: "Devis ou facture ?" },
                   { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires d'une facture" },

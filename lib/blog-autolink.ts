@@ -10,6 +10,7 @@ const KEYWORD_LINKS: { pattern: RegExp; href: string }[] = [
   // Guides
   { pattern: /mentions?\s+obligatoires?\s+(sur\s+une\s+)?facture/i, href: "/guide/mentions-obligatoires-facture" },
   { pattern: /mentions?\s+obligatoires?\s+(d['’]un|du|sur\s+un)\s+devis/i, href: "/guide/mentions-obligatoires-devis" },
+  { pattern: /(?:comment\s+)?(?:faire|r[ée]diger|[ée]tablir|chiffrer)\s+(?:un|son|ses|vos|votre)\s+devis/i, href: "/guide/comment-faire-un-devis" },
   { pattern: /(s['’]installer|se\s+mettre)\s+à\s+son\s+compte/i, href: "/devenir-a-son-compte" },
   { pattern: /facture?\s+[eé]lectronique\s+2026/i, href: "/guide/facture-electronique-2026" },
   { pattern: /facture?\s+auto[- ]?entrepreneur/i, href: "/guide/facture-auto-entrepreneur" },
@@ -40,8 +41,10 @@ export function autoLinkPseo(html: string): string {
   let result = html
   const usedHrefs = new Set<string>()
 
-  for (const { pattern, href } of KEYWORD_LINKS) {
+  for (const { pattern: keyword, href } of KEYWORD_LINKS) {
     if (usedHrefs.has(href)) continue
+    // Jamais à l'intérieur d'une balise (attribut alt, title…) : le texte trouvé ne doit pas être suivi d'un « > » avant le prochain « < »
+    const pattern = new RegExp(`(?:${keyword.source})(?![^<]*>)`, keyword.flags)
 
     // Only replace if not already inside an <a> tag
     // Strategy: split by <a...>...</a>, only replace in non-link segments

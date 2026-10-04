@@ -80,6 +80,12 @@ export const AUDIT_RULES: AuditRule[] = [
     correction: "Aucun avis ni note ne doit être cité sans source vérifiable.",
   },
   {
+    id: "devis-seuil-150",
+    label: "Ancien seuil de 150 € pour le devis obligatoire",
+    pattern: /devis[^.\n]{0,80}\b150\s?(?:€|euros?)|\b150\s?(?:€|euros?)[^.\n]{0,60}devis/gi,
+    correction: "Depuis le 1er avril 2017 (arrêté du 24 janvier 2017), le devis détaillé est obligatoire chez un particulier avant tout dépannage, toute réparation ou tout entretien dans le bâtiment, quel qu'en soit le montant. Le seuil de 150 € n'existe plus.",
+  },
+  {
     id: "pdp",
     label: "Ancien nom des plateformes agréées (PDP)",
     pattern: /\bPDP\b|plateformes? de dématérialisation partenaires?/g,

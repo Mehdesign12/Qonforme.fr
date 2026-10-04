@@ -16,6 +16,13 @@ describe("auditArticle", () => {
     expect(ids("mention « Autoliquidation — article 283-1 du CGI »")).toEqual(["autoliquidation-283-1"])
   })
 
+  it("repère l'ancien seuil de 150 € du devis obligatoire", () => {
+    expect(ids("Le devis est obligatoire pour les travaux de plus de 150 € TTC.")).toEqual(["devis-seuil-150"])
+    expect(ids("Au-delà de 150 euros, un devis détaillé est exigé.")).toEqual(["devis-seuil-150"])
+    // Le n° de TVA du client au-delà de 150 € HT concerne la facture, pas le devis
+    expect(ids("Sur la facture, le numéro de TVA du client est exigé au-delà de 150 € HT.")).toEqual([])
+  })
+
   it("laisse passer les valeurs justes", () => {
     const juste = "Seuils 2026 : 37 500 € pour les services, 85 000 € pour la vente. Pénalités : jamais moins de 3 fois le taux d'intérêt légal ; à défaut, taux BCE + 10 points. Plateforme agréée."
     expect(auditArticle(juste)).toEqual([])
