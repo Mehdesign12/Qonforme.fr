@@ -10,12 +10,12 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Fonctionnalités", href: "/#features" },
       { label: "Tarifs", href: "/pricing" },
       { label: "Démo interactive", href: "/demo" },
-      { label: "Blog", href: "/blog" },
     ],
   },
   {
     title: "Ressources",
     links: [
+      { label: "Blog", href: "/blog" },
       { label: "Réforme 2027", href: "/guide/facture-electronique-2026" },
       { label: "Facturation par métier", href: "/facturation" },
       { label: "Guides pratiques", href: "/guide" },
@@ -39,6 +39,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Mentions légales", href: "/mentions-legales" },
       { label: "CGU", href: "/cgu" },
       { label: "Confidentialité", href: "/confidentialite" },
+      { label: "Plan du site", href: "/plan-du-site" },
     ],
   },
 ]

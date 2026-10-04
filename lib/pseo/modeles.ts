@@ -69,7 +69,7 @@ export const MODELES: Modele[] = [
   {
     slug: "facture-acompte",
     titre: "Modèle de facture d'acompte gratuit",
-    description: "Modèle de facture d'acompte gratuit, avec les mentions obligatoires. Idéal pour le BTP et les prestations de services qui demandent un paiement partiel avant travaux.",
+    description: "Modèle de facture d'acompte gratuit, avec les mentions obligatoires, pour le BTP et les prestations payées en partie avant le début des travaux.",
     motsCles: ["modele facture acompte", "facture acompte gratuit", "exemple facture acompte"],
     type: "facture",
     pourQui: "Artisans, entreprises du BTP et prestataires de services qui demandent un acompte avant le début des travaux.",

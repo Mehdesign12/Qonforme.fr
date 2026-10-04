@@ -9,6 +9,7 @@
  * démo : DemoHeader.tsx la rend en mode « demo ».
  */
 import Link from "next/link"
+import dynamic from "next/dynamic"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
@@ -20,13 +21,15 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { BugReportModal, ContactModal } from "@/components/layout/SupportModals"
-import { CommandPalette } from "@/components/layout/CommandPalette"
 import { NotificationsButton } from "@/components/layout/NotificationsButton"
 import { useCrumbLabel } from "@/components/layout/crumb"
 import { CREATE_LINKS, OPEN_SEARCH_EVENT, crumbsFor, hrefFor } from "@/components/layout/nav"
 import { type ShellIdentity, fullNameOf } from "@/components/layout/shell"
 import { useLogout } from "@/components/layout/useLogout"
 import { initialsOf } from "@/components/app/kit"
+
+/** Recherche ⌘K : chargée à sa première ouverture, hors du JavaScript initial de chaque page (PushRank). */
+const CommandPalette = dynamic(() => import("@/components/layout/CommandPalette").then((m) => m.CommandPalette), { ssr: false })
 
 /* ------------------------------------------------------------------ */
 /* Menu « Nouveau »                                                    */
@@ -179,6 +182,11 @@ export function Header({ identity }: { identity: ShellIdentity }) {
   const pageLabel = useCrumbLabel()
   const current = crumbs.current ?? pageLabel ?? (pathname.endsWith("/edit") ? "Modifier" : "Détail")
   const [searchOpen, setSearchOpen] = useState(false)
+  // Montée à la première ouverture, puis gardée (animation de fermeture, saisie conservée)
+  const [searchMounted, setSearchMounted] = useState(false)
+  useEffect(() => {
+    if (searchOpen) setSearchMounted(true)
+  }, [searchOpen])
 
   // ⌘K / Ctrl+K ouvre la recherche partout dans l'application
   useEffect(() => {
@@ -237,7 +245,7 @@ export function Header({ identity }: { identity: ShellIdentity }) {
           <AccountMenu identity={identity} />
         </div>
       </header>
-      <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} identity={identity} />
+      {searchMounted && <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} identity={identity} />}
     </>
   )
 }

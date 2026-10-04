@@ -10,6 +10,7 @@ import {
   extractFaqItems,
 } from "@/lib/blog-utils"
 import ArticleView from "@/components/blog/ArticleView"
+import { fitDescription, fitTitle } from "@/lib/seo/meta"
 
 export const revalidate = 60
 
@@ -76,12 +77,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!post) return { title: "Article introuvable" }
 
   return {
-    title: post.title,
-    description: post.excerpt || `${post.title} — Guide facturation électronique par Qonforme.`,
+    title: fitTitle(post.title),
+    description: fitDescription(post.excerpt || `${post.title} — Guide facturation électronique par Qonforme.`),
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
       title: post.title,
-      description: post.excerpt || undefined,
+      description: post.excerpt ? fitDescription(post.excerpt) : undefined,
       type: "article",
       publishedTime: post.published_at || undefined,
       images: [{ url: `/api/og?title=${encodeURIComponent(post.title)}&subtitle=Blog%20Qonforme`, width: 1200, height: 630 }],

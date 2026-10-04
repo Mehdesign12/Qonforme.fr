@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Conditions Générales d'Utilisation",
-  description: "Conditions Générales d'Utilisation du service Qonforme — facturation électronique pour artisans et TPE.",
+  description: "Conditions générales d'utilisation de Qonforme, logiciel de devis et de facturation des artisans : compte, formules et tarifs, données, responsabilité.",
   alternates: { canonical: "/cgu" },
 }
 

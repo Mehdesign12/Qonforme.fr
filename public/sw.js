@@ -60,6 +60,7 @@ const CACHEABLE_PAGE_PREFIXES = [
   '/pricing',
   '/demo',
   '/outils',
+  '/plan-du-site',
 ]
 
 /** Nombre maximum de pages publiques conservées, pour borner le stockage. */

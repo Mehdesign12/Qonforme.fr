@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
-  description: "Politique de confidentialité de Qonforme — traitement des données personnelles, droits RGPD, cookies et sous-traitants.",
+  description: "Politique de confidentialité de Qonforme : données collectées, finalités, durée de conservation, sous-traitants, cookies et vos droits sur vos données.",
   alternates: { canonical: "/confidentialite" },
   openGraph: {
     images: [{ url: "/api/og?title=Politique%20de%20confidentialit%C3%A9&subtitle=Traitement%20des%20donn%C3%A9es%20personnelles%20et%20droits%20RGPD", width: 1200, height: 630 }],

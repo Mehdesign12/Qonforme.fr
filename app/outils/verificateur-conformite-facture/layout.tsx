@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Vérificateur de conformité de facture 2026",
-  description: "Passez votre facture en revue : mentions obligatoires, TVA par taux, facture électronique selon votre entreprise et la date, conservation. Gratuit, sans compte.",
+  description: "Passez votre facture en revue : mentions obligatoires, TVA par taux, facture électronique selon votre entreprise, conservation. Gratuit, sans compte.",
   keywords: ["conformité facture", "vérifier facture", "facture conforme", "réglementation facture 2026", "Factur-X"],
   alternates: { canonical: "/outils/verificateur-conformite-facture" },
   openGraph: {

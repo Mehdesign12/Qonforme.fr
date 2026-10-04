@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Vérificateur SIREN et SIRET gratuit — répertoire Sirene",
-  description: "Vérifiez une entreprise à partir de son SIREN ou de son SIRET : raison sociale, adresse, entreprise active ou fermée, d'après le répertoire Sirene de l'INSEE.",
+  description: "Vérifiez une entreprise par son SIREN ou son SIRET : raison sociale, adresse, entreprise active ou fermée, d'après le répertoire Sirene de l'INSEE.",
   keywords: ["vérifier siret", "recherche siren", "vérificateur siret", "répertoire sirene", "entreprise fermée"],
   alternates: { canonical: "/outils/verification-siret" },
   openGraph: {

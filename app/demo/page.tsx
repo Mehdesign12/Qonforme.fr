@@ -1,24 +1,31 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, BookOpen, Compass } from "lucide-react"
+import { ArrowRight, BookOpen, Compass, FileText, UserPlus } from "lucide-react"
 import { DashboardBody } from "@/components/dashboard/DashboardBody"
 import { buildDemoDashboardView } from "@/components/dashboard/demo-data"
 import { parsePeriod } from "@/components/dashboard/model"
 import { MetaPixelEvent } from "@/components/shared/MetaPixelEvent"
 
+/* Titre centré sur la requête visée, « tableau de bord de facturation » (PushRank, 04/10/2026). */
 export const metadata: Metadata = {
-  title: "Démo interactive",
-  description: "Explorez la démo de Qonforme : devis, factures, clients et bons de commande d'un artisan du bâtiment, avec des données d'exemple, et sans inscription.",
+  title: "Démo du tableau de bord de facturation, sans inscription",
+  description: "Essayez le tableau de bord de facturation de Qonforme sans inscription : devis, factures, relances et clients d'un artisan, avec des données d'exemple.",
   alternates: { canonical: "/demo" },
   openGraph: {
-    images: [{ url: "/api/og?title=D%C3%A9mo%20interactive&subtitle=Devis%2C%20factures%20et%20clients%20d%27un%20artisan%20%E2%80%94%20sans%20inscription", width: 1200, height: 630 }],
+    title: "Démo du tableau de bord de facturation | Qonforme",
+    images: [{ url: "/api/og?title=D%C3%A9mo%20du%20tableau%20de%20bord&subtitle=Devis%2C%20factures%20et%20relances%20d%27un%20artisan%20%E2%80%94%20sans%20inscription", width: 1200, height: 630 }],
   },
 }
 
-/** Liens de maillage interne (premiers pas, tarifs, blog), sous le tableau de bord de la démo. */
+/**
+ * Sous le tableau de bord de la démo : l'inscription d'abord (PushRank : page
+ * qui attire, à renforcer par un appel à l'action), puis le maillage interne.
+ */
 const CROSS_LINKS = [
+  { href: "/signup", Icon: UserPlus, title: "Créer mon compte", text: "Devis gratuits et illimités, sans carte bancaire" },
   { href: "/demo/demarrer", Icon: Compass, title: "Premiers pas d'un compte neuf", text: "L'écran « Par quoi commencer ? »" },
   { href: "/pricing", Icon: ArrowRight, title: "Prêt à démarrer\u00a0?", text: "Voir les tarifs\u00a0: devis gratuits" },
+  { href: "/modele", Icon: FileText, title: "Modèles gratuits", text: "Devis et factures avec les mentions obligatoires" },
   { href: "/blog", Icon: BookOpen, title: "Guides et conseils", text: "Tout savoir sur la facturation électronique" },
 ]
 

@@ -40,8 +40,17 @@ const COMMON_FEATURES = [
   { titre: "Export comptable FEC", texte: "Exportez vos factures et vos avoirs au format FEC (Fichier des écritures comptables) pour votre expert-comptable." },
 ]
 
+/**
+ * Titre de page propre à un métier, quand la recherche qui y mène le demande
+ * (PushRank, 04/10/2026 : « comptabilité pour fleuriste », page en baisse).
+ * Sinon : « Logiciel de facturation pour … ».
+ */
+const TITRES: Record<string, string> = {
+  fleuriste: "Facturation fleuriste : TVA à 10 %, devis, export comptable",
+}
+
 const DESCRIPTIONS: Record<string, string> = {
-  plombier: "Logiciel de facturation pour plombier : devis détaillés, TVA par ligne (5,5, 10 ou 20 %), assurance décennale sur vos documents. Devis gratuits et illimités.",
+  plombier: "Logiciel de facturation pour plombier : devis détaillés, TVA par ligne (5,5, 10 ou 20 %), assurance décennale sur vos documents. Devis gratuits.",
   electricien: "Facturez vos travaux d'électricité avec les mentions NF C 15-100, l'attestation Consuel et l'assurance décennale. Devis gratuits et illimités.",
   macon: "Logiciel de facturation maçonnerie : devis gros œuvre, TVA 10 % rénovation / 20 % neuf, export FEC comptable. Devis gratuits et illimités.",
   peintre: "Créez vos devis peinture au m² avec le détail des couches, de la sous-couche et des fournitures. TVA 10 % rénovation. Devis gratuits et illimités.",
@@ -59,13 +68,13 @@ const DESCRIPTIONS: Record<string, string> = {
   formateur: "Factures de formation : numéro de déclaration d'activité (NDA), exonération de TVA art. 261-4-4° du CGI, OPCO, Qualiopi. Devis gratuits et illimités.",
   coach: "Facturez vos séances de coaching professionnel : forfait, séance unique, présentiel ou visio. Devis gratuits et illimités.",
   "community-manager": "Facturez vos prestations de community management : forfait mensuel, création de contenu, reporting. Devis gratuits et illimités.",
-  traducteur: "Facturez vos traductions au mot ou au feuillet : langues, spécialité, cession de droits. Devis gratuits et illimités.",
+  traducteur: "Facturez vos traductions au mot ou au feuillet, avec la langue, la spécialité et la cession de droits sur vos devis. Devis gratuits et illimités.",
   coiffeur: "Facturation pour salon de coiffure : note au-delà de 25 €, factures aux clients professionnels, TVA à 20 %, affichage des prix obligatoire.",
   estheticienne: "Facturez vos soins esthétiques : prestations détaillées, forfaits, TVA à 20 %, note obligatoire au-delà de 25 €. Devis gratuits et illimités.",
   paysagiste: "Devis et factures d'entretien de jardin et d'aménagement paysager : crédit d'impôt SAP, RC pro, TVA. Devis gratuits et illimités.",
   "architecte-interieur": "Facturez vos honoraires d'architecture intérieure : pourcentage des travaux, forfait ou régie. Devis gratuits et illimités.",
   traiteur: "Devis de traiteur détaillés : menu, convives, personnel, matériel, livraison, TVA à 5,5, 10 ou 20 %. Devis gratuits et illimités.",
-  fleuriste: "Facturez vos compositions florales avec une TVA à 10 % sur les fleurs et à 20 % sur les accessoires. Devis gratuits et illimités.",
+  fleuriste: "Facturez vos compositions florales (TVA à 10 % sur les fleurs, 20 % sur les accessoires) et exportez vos ventes pour votre comptable. Devis gratuits.",
   osteopathe: "Facturation pour ostéopathe : exonération de TVA (art. 261-4-1° du CGI), numéro ADELI ou RPPS, mentions obligatoires de la note d'honoraires.",
   kinesitherapeute: "Facturation pour kinésithérapeute : actes hors nomenclature, numéro RPPS, exonération de TVA, et les règles de la feuille de soins et du tiers payant.",
   "infirmier-liberal": "Facturation des infirmiers libéraux : règles Sesam-Vitale, majorations, indemnités de déplacement, et factures des prestations hors nomenclature.",
@@ -95,7 +104,7 @@ function metier(
   return {
     slug,
     nom,
-    titre: `Logiciel de facturation pour ${nom}`,
+    titre: TITRES[slug] ?? `Logiciel de facturation pour ${nom}`,
     description: DESCRIPTIONS[slug] ?? `Créez et envoyez vos devis et factures de ${nom.toLowerCase()} en quelques clics, avec les mentions obligatoires. Devis gratuits et illimités.`,
     motsCles: [`facturation ${nom.toLowerCase()}`, `facture ${nom.toLowerCase()}`, `devis ${nom.toLowerCase()}`, `logiciel facturation ${nom.toLowerCase()}`, ...motsCles],
     features: [...catFeatures, ...COMMON_FEATURES],
@@ -403,6 +412,7 @@ export const METIERS: Metier[] = [
     ["facture fleuriste", "devis fleuriste mariage"],
     ["Affichage des prix obligatoire", "TVA à 10% sur certaines plantes"],
     [
+      { question: "Comment tenir la comptabilité d'un fleuriste ?", reponse: "Qonforme prépare vos devis et vos factures ; il ne tient pas votre comptabilité. Vous téléchargez le fichier des écritures comptables (FEC) de vos ventes pour votre comptable. En micro-entreprise, tenez aussi le livre des recettes et, pour la vente de fleurs, le registre des achats." },
       { question: "Quel taux de TVA pour un fleuriste ?", reponse: "Le taux de TVA est de 10% pour les fleurs coupées, plantes vivantes et compositions florales. Le taux de 20% s'applique aux accessoires et contenants décoratifs." },
       { question: "Un fleuriste doit-il faire une facture ou une note ?", reponse: "Pour les particuliers, une note (ticket de caisse) suffit en dessous de 25 € TTC. Au-delà, une note détaillée est obligatoire. Pour les clients professionnels (entreprises, hôtels, événementiel), une facture complète est toujours requise." },
       { question: "Comment afficher les prix en boutique de fleurs ?", reponse: "L'affichage des prix TTC est obligatoire pour chaque produit proposé à la vente (arrêté du 3 décembre 1987). Pour les compositions sur mesure, affichez un prix indicatif au budget ou le prix à la tige pour les principales variétés." },

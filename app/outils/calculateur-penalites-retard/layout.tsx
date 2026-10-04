@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Calculateur de pénalités de retard de facture",
-  description: "Calculez les intérêts de retard d'une facture impayée, semestre par semestre au taux BCE + 10 points, et l'indemnité forfaitaire de 40 €. Gratuit, sans compte.",
+  description: "Calculez les intérêts de retard d'une facture impayée au taux BCE + 10 points, semestre par semestre, et l'indemnité forfaitaire de 40 €.",
   keywords: ["pénalités retard facture", "intérêts de retard", "calcul pénalités", "indemnité forfaitaire recouvrement", "facture impayée"],
   alternates: { canonical: "/outils/calculateur-penalites-retard" },
   openGraph: {

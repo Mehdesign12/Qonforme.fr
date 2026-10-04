@@ -5,6 +5,7 @@ import { ArrowRight, Library } from "lucide-react"
 import { GLOSSAIRE, getTermeBySlug } from "@/lib/pseo/glossaire"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, SectionHeading } from "@/components/content/ui"
 import { fr, resolveContentLink } from "@/components/content/text"
+import { composeDescription, fitTitle } from "@/lib/seo/meta"
 
 export function generateStaticParams() {
   return GLOSSAIRE.map(t => ({ slug: t.slug }))
@@ -14,14 +15,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const terme = getTermeBySlug(slug)
   if (!terme) return {}
+  const description = composeDescription([terme.definition, terme.explication])
   return {
-    title: `${terme.terme} — Définition facturation`,
-    description: terme.definition,
+    title: fitTitle(`${terme.terme} : définition`),
+    description,
     keywords: [terme.slug, `definition ${terme.slug}`, `${terme.slug} facturation`],
     alternates: { canonical: `/glossaire/${terme.slug}` },
     openGraph: {
-      title: `${terme.terme} — Définition | Qonforme`,
-      description: terme.definition,
+      title: `${terme.terme} : définition | Qonforme`,
+      description,
       url: `https://qonforme.fr/glossaire/${terme.slug}`,
       images: [{ url: `/api/og?title=${encodeURIComponent(terme.terme)}&subtitle=${encodeURIComponent("Glossaire facturation")}`, width: 1200, height: 630 }],
     },

@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Calculateur TVA HT TTC gratuit en ligne",
-  description: "Convertissez vos montants HT en TTC et inversement, au centime près, avec les taux de TVA français : 20 %, 10 %, 5,5 % et 2,1 %. Gratuit et sans inscription.",
+  description: "Passez du HT au TTC et inversement, au centime près, avec les taux de TVA français : 20 %, 10 %, 5,5 % et 2,1 %. Gratuit, sans inscription.",
   keywords: ["calculateur tva", "calcul tva", "ht ttc", "convertisseur tva", "tva gratuit", "calcul tva en ligne"],
   alternates: { canonical: "/outils/calculateur-tva" },
   openGraph: {

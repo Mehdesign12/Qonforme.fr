@@ -90,7 +90,7 @@ export const GUIDES: Guide[] = [
   {
     slug: "facture-electronique-2026",
     titre: "Facture électronique obligatoire 2026 : ce qui change",
-    description: "Tout comprendre sur la réforme de la facturation électronique 2026 : calendrier, formats acceptés (Factur-X, UBL, CII), plateformes agréées, obligations par taille d'entreprise.",
+    description: "Réforme de la facturation électronique : calendrier, formats acceptés (Factur-X, UBL, CII), plateformes agréées et obligations selon votre entreprise.",
     motsCles: ["facture electronique 2026", "facture electronique obligatoire", "factur-x"],
     sections: [
       { titre: "Le calendrier de la réforme", contenu: "Depuis le 1er septembre 2026, toutes les entreprises assujetties à la TVA doivent pouvoir recevoir des factures électroniques (obligation de réception). L'obligation d'émettre est progressive : depuis le 1er septembre 2026 pour les grandes entreprises et les ETI, à partir du 1er septembre 2027 pour les PME et les micro-entreprises." },
