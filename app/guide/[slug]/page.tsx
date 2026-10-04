@@ -5,6 +5,7 @@ import { ArrowRight, BookOpen, Check, ExternalLink } from "lucide-react"
 import { GUIDES, getGuideBySlug } from "@/lib/pseo/guides"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, FaqList, SectionHeading, WRAP } from "@/components/content/ui"
 import { dateFr, fr } from "@/components/content/text"
+import { ExempleDevisCard } from "@/components/content/ExempleDevis"
 import { fitDescription, fitTitle } from "@/lib/seo/meta"
 
 export function generateStaticParams() {
@@ -41,6 +42,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     "facture-impayee",
     "avoir-facture",
     "facture-auto-entrepreneur",
+    "comment-faire-un-devis",
   ])
 
   const isHowTo = HOWTO_SLUGS.has(guide.slug)
@@ -95,6 +97,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   const toc = [
     ...(guide.essentiel ? [{ href: "#essentiel", label: "L'essentiel" }] : []),
     ...sections.map((sec, i) => ({ href: `#section-${i}`, label: sec.titre })),
+    ...(guide.exemple ? [{ href: "#exemple", label: "Exemple de devis chiffré" }] : []),
     ...(faq.length > 0 ? [{ href: "#faq", label: "Questions fréquentes" }] : []),
     ...(guide.sources ? [{ href: "#sources", label: "Sources officielles" }] : []),
   ]
@@ -176,6 +179,8 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                   </section>
                 ))}
               </div>
+
+              {guide.exemple && <ExempleDevisCard exemple={guide.exemple} id="exemple" />}
 
               {faq.length > 0 && (
                 <section aria-labelledby="faq" className="mt-16 max-w-[68ch]">

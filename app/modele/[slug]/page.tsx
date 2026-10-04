@@ -182,7 +182,12 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
                     ...MODELES.filter((m) => m.slug !== modele.slug)
                       .slice(0, 5)
                       .map((m) => ({ href: `/modele/${m.slug}`, label: m.titre.replace(/^Modèle d(e |')/, "").replace(" gratuit", "") })),
-                    { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires" },
+                    ...(modele.type === "devis"
+                      ? [
+                          { href: "/guide/comment-faire-un-devis", label: "Comment faire un devis" },
+                          { href: "/guide/mentions-obligatoires-devis", label: "Mentions obligatoires d'un devis" },
+                        ]
+                      : [{ href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires" }]),
                   ]}
                 />
               </section>

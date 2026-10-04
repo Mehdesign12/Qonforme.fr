@@ -4,7 +4,7 @@ import { JsonLd, Prose, ToolArea, ToolCta, ToolFaq, ToolGuide, ToolLinks, ToolSh
 import { DocumentGenerator } from "@/components/outils/doc-generator"
 
 const FAQ = [
-  { q: "Un devis est-il obligatoire ?", a: "Oui dans certains secteurs (BTP > 150 €, dépannage, déménagement). Dans les autres cas, il est fortement recommandé." },
+  { q: "Un devis est-il obligatoire ?", a: "Oui dans certains cas : dépannage, réparation ou entretien chez un particulier dans le bâtiment, quel qu'en soit le montant, déménagement, services à la personne. Dans les autres cas, il est fortement recommandé." },
   { q: "Quelle est la durée de validité d'un devis ?", a: "Il n'y a pas de durée légale. En pratique, 30 jours est le standard. Précisez-la toujours sur le devis." },
   { q: "Un devis signé engage-t-il le client ?", a: "Oui, un devis signé avec la mention « Bon pour accord » a valeur de contrat." },
 ]
@@ -33,7 +33,7 @@ export default function GenerateurDevisPage() {
       <ToolGuide title="Comment créer" accent="un devis conforme ?">
         <Prose>
           <p>
-            Un devis doit contenir : l&apos;identité de l&apos;émetteur et du client, la date, un numéro unique, la description détaillée des prestations, les prix unitaires HT, le montant total HT et TTC, la durée de validité, et les conditions de paiement. En franchise de TVA, ajoutez « TVA non applicable, art. 293 B du CGI » ; si vous êtes artisan, votre assurance professionnelle, son assureur et sa couverture géographique.
+            Un devis doit contenir : l&apos;identité de l&apos;émetteur et du client, la date, la description détaillée des prestations, les prix unitaires HT, le montant total HT et TTC, la durée de validité, et les conditions de paiement. En franchise de TVA, ajoutez « TVA non applicable, art. 293 B du CGI » ; si vous êtes artisan, votre assurance professionnelle, son assureur et sa couverture géographique. Le numéro n&apos;est pas obligatoire, mais il relie le devis à sa facture.
           </p>
           <p>Un devis signé par le client a <strong>valeur contractuelle</strong> et engage les deux parties.</p>
         </Prose>
@@ -42,6 +42,8 @@ export default function GenerateurDevisPage() {
 
         <ToolLinks
           links={[
+            { href: "/guide/comment-faire-un-devis", label: "Comment faire un devis" },
+            { href: "/guide/mentions-obligatoires-devis", label: "Mentions obligatoires d'un devis" },
             { href: "/outils/generateur-facture-gratuite", label: "Générateur de facture gratuit" },
             { href: "/outils/calculateur-tva", label: "Calculateur TVA HT/TTC" },
             { href: "/outils/verificateur-mentions-facture", label: "Vérificateur mentions facture" },

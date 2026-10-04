@@ -100,6 +100,7 @@ const FAITS_DE_REFERENCE = `FAITS DE RÉFÉRENCE (vérifiés ; si tu cites l'un 
 - Micro-entreprise en 2026 : plafonds de chiffre d'affaires 203 100 € (vente, hébergement) et 83 600 € (services, libéral) ; cotisations ${ACTIVITES.map((a) => `${fmtPct(a.tauxCotisations)} (${a.label})`).join(", ")}.
 - Facturation électronique : depuis le 1er septembre 2026, toutes les entreprises assujetties à la TVA doivent pouvoir recevoir des factures électroniques ; l'émission est obligatoire depuis cette date pour les grandes entreprises et les ETI, et le sera le 1er septembre 2027 pour les PME et les micro-entreprises. Les factures passent par une « plateforme agréée » (ne dis plus « PDP »).
 - Vente de biens à un professionnel de l'UE : « Exonération de TVA, article 262 ter I du CGI » ; prestation de services à un professionnel de l'UE : mention « Autoliquidation » ; sous-traitance dans le BTP : autoliquidation (art. 283-2 nonies du CGI).
+- Devis : chez un particulier, un devis détaillé est obligatoire avant tout dépannage, toute réparation ou tout entretien dans le bâtiment, quel qu'en soit le montant (arrêté du 24 janvier 2017, en vigueur depuis le 1er avril 2017 : il n'y a plus de montant minimal) ; signé avec « Bon pour accord », il vaut contrat.
 - Si tu n'es pas sûr d'un chiffre ou d'un article de loi, ne le cite pas.`
 
 function pickRandom<T>(arr: T[]): T {

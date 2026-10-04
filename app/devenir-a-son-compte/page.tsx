@@ -156,6 +156,7 @@ export default function InstallationIndexPage() {
           title="Votre activité démarre,"
           accent="vos devis aussi."
           links={[
+            { href: "/guide/comment-faire-un-devis", label: "Comment faire un devis" },
             { href: "/guide/mentions-obligatoires-devis", label: "Mentions obligatoires d'un devis" },
             { href: "/guide/premiere-facture", label: "Faire sa première facture" },
             { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },

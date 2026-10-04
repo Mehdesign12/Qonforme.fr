@@ -199,3 +199,43 @@ it("un montant n'est jamais coupé en fin de ligne", async () => {
   expect(fr("arrêté du 24 janvier 2017, décret n° 2020-1817")).toBe("arrêté du 24 janvier 2017, décret n° 2020-1817")
   expect(fr("le 1er avril 2017 : 10 jours")).toBe(`le 1er avril 2017${nb}: 10 jours`)
 })
+
+describe("guide « Comment faire un devis » (PushRank, 04/10/2026)", () => {
+  it("vise sa requête, cite ses sources et reste dans les limites de Google", async () => {
+    const { getGuideBySlug } = await import("@/lib/pseo/guides")
+    const g = getGuideBySlug("comment-faire-un-devis")!
+    expect(g.titreSeo).toMatch(/^Comment faire un devis/)
+    expect(rendered(fitTitle(g.titreSeo!)).length).toBeLessThanOrEqual(TITLE_MAX)
+    expect(g.description.length).toBeGreaterThanOrEqual(120)
+    expect(g.description.length).toBeLessThanOrEqual(DESCRIPTION_MAX)
+    expect(g.sources?.some((s) => s.href?.includes("F31144"))).toBe(true)
+    expect(g.verifieLe).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    // Une étape par section, dans l'ordre
+    g.sections.forEach((s, i) => expect(s.titre.startsWith(`${i + 1}. `), s.titre).toBe(true))
+    expect(JSON.stringify(g)).not.toMatch(/certifi[ée] par|homologu|n°\s?1|leader|meilleur|un humain|rendez-vous/i)
+  })
+
+  it("l'exemple chiffré est calculé, et son taux horaire TTC correspond au prix HT", async () => {
+    const { getGuideBySlug } = await import("@/lib/pseo/guides")
+    const { totauxExemple } = await import("@/lib/pseo/exemple-devis")
+    const e = getGuideBySlug("comment-faire-un-devis")!.exemple!
+    const t = totauxExemple(e)
+    expect(t.htCentimes).toBe(76_500)
+    expect(t.tvaCentimes).toBe(7_650)
+    expect(t.ttcCentimes).toBe(84_150)
+    expect(t.acompteCentimes).toBe(25_245)
+    for (const l of e.lignes) {
+      const ttc = l.designation.match(/taux horaire ([\d,]+) € TTC/)
+      if (ttc) expect(Number(ttc[1].replace(",", "."))).toBeCloseTo(l.prixUnitaireHT * (1 + e.tauxTva / 100), 2)
+    }
+  })
+
+  it("plus aucune page ne reprend l'ancien seuil de 150 € du devis", async () => {
+    const { GUIDES } = await import("@/lib/pseo/guides")
+    const { METIERS } = await import("@/lib/pseo/metiers")
+    const { GLOSSAIRE } = await import("@/lib/pseo/glossaire")
+    const { INSTALLATIONS } = await import("@/lib/pseo/installation")
+    const text = JSON.stringify([GUIDES, METIERS, GLOSSAIRE, INSTALLATIONS])
+    expect(text).not.toMatch(/(?:>|<|au-delà de|plus de|dépasse|inférieur à|supérieur à)\s*150\s?€\s?(?:TTC)?[^"]{0,40}devis|devis[^"]{0,60}(?:>|<|au-delà de|plus de|dépasse|inférieur à|supérieur à)\s*150\s?€/i)
+  })
+})
