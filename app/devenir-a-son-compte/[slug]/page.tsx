@@ -173,6 +173,7 @@ export default async function InstallationPage({ params }: { params: Promise<{ s
                   links={[
                     ...(metierPage ? [{ href: `/facturation/${inst.slug}`, label: `Facturation pour ${inst.metier}` }] : []),
                     { href: "/guide/comment-faire-un-devis", label: "Comment faire un devis" },
+                    { href: "/guide/tva-travaux", label: "TVA des travaux" },
                     { href: "/guide/mentions-obligatoires-devis", label: "Mentions obligatoires d'un devis" },
                     { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
                     { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires d'une facture" },

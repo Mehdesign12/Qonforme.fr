@@ -27,16 +27,21 @@ export interface Guide {
   exemple?: ExempleDevis
 }
 
-/** Devis d'exemple : prix fictifs, qui illustrent la méthode et ne sont pas des prix de marché. */
+/** Devis ou facture d'exemple : prix fictifs, qui illustrent la méthode et ne sont pas des prix de marché. */
 export interface ExempleDevis {
+  /** Devis (acompte demandé à la signature) ou facture (acompte déjà versé, déduit). Devis par défaut. */
+  document?: "devis" | "facture"
   titre: string
   /** Situation de l'exemple (client, logement, taux de TVA). */
   contexte: string
-  lignes: { designation: string; quantite: number; unite: string; prixUnitaireHT: number }[]
-  /** Un seul taux pour tout le devis. */
+  /** `tauxTva` d'une ligne remplace le taux du document (devis à plusieurs taux). */
+  lignes: { designation: string; quantite: number; unite: string; prixUnitaireHT: number; tauxTva?: number }[]
+  /** Taux du document, appliqué aux lignes qui n'en précisent pas. */
   tauxTva: number
-  /** Acompte demandé à la signature, en pourcentage du TTC. */
+  /** Devis : acompte demandé à la signature. Facture : acompte déjà versé et déduit. En pourcentage du TTC. */
   acomptePourcent?: number
+  /** Facture : référence de l'acompte déduit (« facture d'acompte F-2026-014 »). */
+  acompteReference?: string
   conditions: string[]
 }
 
@@ -153,6 +158,8 @@ export const GUIDES: Guide[] = [
       { question: "Faut-il signer une facture ?", reponse: "Non. Aucune signature n'est exigée : l'article 242 nonies A de l'annexe II du code général des impôts, qui liste les mentions obligatoires, n'en prévoit pas." },
     ],
     liens: [
+      { href: "/guide/premiere-facture", label: "Comment faire une facture" },
+      { href: "/guide/tva-travaux", label: "TVA des travaux" },
       { href: "/outils/verificateur-mentions-facture", label: "Vérifier les mentions de ma facture" },
       { href: "/modele/facture-classique", label: "Modèle de facture gratuit" },
       { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
@@ -457,6 +464,7 @@ export const GUIDES: Guide[] = [
       { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
       { href: "/outils/generateur-devis-gratuit", label: "Générateur de devis gratuit" },
       { href: "/guide/devis-obligatoire", label: "Quand le devis est obligatoire" },
+      { href: "/guide/tva-travaux", label: "TVA des travaux" },
       { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires d'une facture" },
       { href: "/devenir-a-son-compte", label: "S'installer à son compte" },
     ],
@@ -610,8 +618,9 @@ export const GUIDES: Guide[] = [
       { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
       { href: "/outils/generateur-devis-gratuit", label: "Générateur de devis gratuit" },
       { href: "/guide/devis-obligatoire", label: "Quand le devis est obligatoire" },
+      { href: "/guide/tva-travaux", label: "TVA des travaux" },
+      { href: "/guide/premiere-facture", label: "Comment faire une facture" },
       { href: "/guide/facture-acompte", label: "Facture d'acompte" },
-      { href: "/outils/simulateur-charges-auto-entrepreneur", label: "Simuler mes cotisations" },
     ],
     sources: [
       { label: "Service-public.gouv.fr, « Devis obligatoire : activités concernées » (fiche F31144)", href: "https://entreprendre.service-public.gouv.fr/vosdroits/F31144" },
@@ -624,6 +633,125 @@ export const GUIDES: Guide[] = [
       { label: "Code des assurances, article L243-2 (attestation de garantie décennale)", href: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000031010272" },
     ],
     verifieLe: "2026-10-04",
+  },
+  {
+    slug: "tva-travaux",
+    titre: "TVA des travaux : 20 %, 10 % ou 5,5 %, quel taux appliquer ?",
+    titreSeo: "TVA travaux 2026 : 10 %, 5,5 % ou 20 %, quel taux appliquer ?",
+    description: "Quel taux de TVA pour vos travaux en 2026 : 10 % en rénovation, 5,5 % en rénovation énergétique, 20 % dans le neuf, exclusions et certification du client.",
+    motsCles: ["tva travaux", "tva travaux rénovation 10 %", "tva 5,5 % travaux rénovation énergétique", "taux tva travaux", "tva 10 % travaux", "tva artisan bâtiment"],
+    essentiel: [
+      "10 % : travaux d'amélioration, de transformation, d'aménagement et d'entretien d'un logement achevé depuis plus de deux ans.",
+      "5,5 % : rénovation énergétique de ce même logement, quand le matériau ou l'équipement atteint les critères de performance fixés par arrêté.",
+      "20 % : construction neuve, logement achevé depuis moins de deux ans, locaux professionnels, et tout ce qui est exclu des taux réduits.",
+      "Exclus même dans un logement ancien : chaudière qui peut fonctionner au gaz ou au fioul (depuis le 1er mars 2025), espaces verts, nettoyage, électroménager, climatisation, fourniture sans pose.",
+      "Travaux qui rendent l'immeuble neuf ou augmentent la surface de plancher de plus de 10 % : 20 %.",
+      "Le taux se choisit ligne par ligne ; la facture indique le montant de TVA de chaque taux.",
+      "Depuis le 1er mars 2025, le client certifie sur le devis ou la facture que les conditions du taux réduit sont remplies : l'attestation papier n'existe plus.",
+      "Sous-traitance : facture hors taxes avec la mention « Autoliquidation ». Franchise en base : « TVA non applicable, art. 293 B du CGI ».",
+    ],
+    sections: [
+      {
+        titre: "Le taux de 10 % : les travaux dans un logement de plus de deux ans",
+        contenu: "Le taux intermédiaire s'applique aux travaux d'amélioration, de transformation, d'aménagement et d'entretien de locaux à usage d'habitation achevés depuis plus de deux ans (code général des impôts, art. 279-0 bis). Le logement peut être une résidence principale ou secondaire, occupée par son propriétaire ou louée.",
+        liste: [
+          "Les travaux courants du second œuvre : peinture, carrelage, plomberie, électricité, menuiserie intérieure, plâtrerie.",
+          "Les fournitures et équipements que vous facturez et posez vous-même suivent le taux des travaux.",
+          "La main-d'œuvre seule, quand le client a acheté le matériel, reste à 10 % ; le matériel qu'il a acheté de son côté a été payé à 20 %.",
+          "Le logement doit être achevé depuis plus de deux ans à la date des travaux : en dessous, c'est 20 %.",
+        ],
+      },
+      {
+        titre: "Le taux de 5,5 % : la rénovation énergétique",
+        contenu: "Le taux réduit s'applique aux travaux d'amélioration de la qualité énergétique de ces mêmes logements, quand le matériau ou l'équipement atteint les critères de performance fixés par arrêté, ainsi qu'aux travaux qui leur sont indissociablement liés (code général des impôts, art. 278-0 bis A). Vérifiez les caractéristiques de chaque produit avant de choisir le taux.",
+        liste: [
+          "Isolation des murs, des combles, de la toiture ou des planchers, si la résistance thermique de l'isolant atteint le seuil fixé.",
+          "Fenêtres, portes d'entrée et fenêtres de toit, si leur performance thermique atteint le seuil fixé ; à défaut, 10 %.",
+          "Pompe à chaleur, chaudière à bois ou à granulés, chauffe-eau thermodynamique ou solaire, équipements de régulation du chauffage, s'ils atteignent les critères fixés.",
+          "Une chaudière qui peut fonctionner au gaz ou au fioul n'y a plus droit depuis le 1er mars 2025, même très performante.",
+        ],
+      },
+      {
+        titre: "Le taux de 20 % : le neuf, les locaux professionnels et les exclusions",
+        contenu: "Le taux normal s'applique dès qu'une condition des taux réduits manque, et à certains travaux exclus quel que soit l'âge du logement.",
+        liste: [
+          "La construction neuve et les travaux dans un logement achevé depuis moins de deux ans.",
+          "Les travaux qui rendent l'immeuble à l'état neuf (reprise de la majorité des fondations, de la structure ou des façades, ou de la plus grande partie du second œuvre) ou qui augmentent la surface de plancher de plus de 10 %.",
+          "Les locaux professionnels et commerciaux : bureaux, boutiques, ateliers.",
+          "La fourniture ou l'installation d'une chaudière qui peut fonctionner au gaz ou au fioul, depuis le 1er mars 2025.",
+          "Les travaux de nettoyage, l'aménagement et l'entretien des espaces verts.",
+          "Les équipements ménagers, même encastrés (four, réfrigérateur), et les gros équipements fixés par arrêté : chauffage collectif d'un immeuble, ascenseur, cabine de sauna ou de hammam, climatisation.",
+          "La fourniture sans pose : du matériel que vous vendez sans l'installer.",
+        ],
+      },
+      {
+        titre: "Un devis à plusieurs taux",
+        contenu: "Un même chantier mélange souvent les taux : une fenêtre performante à 5,5 %, la peinture de la pièce à 10 %. Indiquez le taux de chaque ligne sur le devis ; la facture reprend les lignes et donne, pour chaque taux, la base hors taxes et le montant de TVA. L'exemple plus bas montre un devis à deux taux.",
+      },
+      {
+        titre: "La certification du client, depuis le 1er mars 2025",
+        contenu: "Les attestations papier (formulaires 1300-SD et 1301-SD) ont été supprimées par la loi de finances pour 2025. Pour un taux de 10 % ou de 5,5 %, le client certifie désormais, directement sur le devis ou sur la facture, que les conditions du taux réduit sont remplies.",
+        liste: [
+          "Prévoyez la mention à côté de sa signature : le logement est achevé depuis plus de deux ans, et les travaux ne relèvent d'aucune exclusion du taux réduit.",
+          "Pour le 5,5 %, la mention vise aussi les conditions propres à la rénovation énergétique.",
+          "Conservez le devis ou la facture certifiés : c'est votre justificatif en cas de contrôle.",
+        ],
+      },
+      {
+        titre: "Sous-traitance et franchise : pas de TVA sur votre facture",
+        contenu: "Deux situations courantes font disparaître la TVA de votre facture, sans changer le taux des travaux.",
+        liste: [
+          "Sous-traitant d'une autre entreprise du bâtiment : vous facturez hors taxes avec la mention « Autoliquidation » ; l'entreprise principale déclare la TVA au taux des travaux (CGI, art. 283-2 nonies).",
+          "Franchise en base : vous ne facturez pas de TVA, quel que soit le chantier, et indiquez « TVA non applicable, art. 293 B du CGI ».",
+        ],
+      },
+      {
+        titre: "Ce que coûte un mauvais taux",
+        contenu: "C'est l'entreprise qui facture qui doit la TVA. Un taux réduit appliqué à tort expose à un rappel de la différence, avec des intérêts de retard. En cas de doute sur un produit ou sur l'âge du logement, vérifiez avant de signer le devis : le prix TTC annoncé au client en dépend.",
+      },
+    ],
+    exemple: {
+      titre: "Rénovation d'une chambre",
+      contexte: "Exemple fictif : devis pour un particulier, dans une maison achevée depuis plus de deux ans. La fenêtre et l'isolant atteignent les critères de performance fixés par arrêté (5,5 %) ; le reste des travaux est à 10 %. Les prix illustrent la méthode ; ce ne sont pas des prix de marché.",
+      lignes: [
+        { designation: "Fenêtre PVC double vitrage, fournie et posée (critères de performance atteints)", quantite: 1, unite: "u", prixUnitaireHT: 650, tauxTva: 5.5 },
+        { designation: "Isolation du mur par l'intérieur, doublage isolant fourni et posé (résistance thermique au seuil)", quantite: 10, unite: "m²", prixUnitaireHT: 55, tauxTva: 5.5 },
+        { designation: "Peinture des murs et du plafond, deux couches", quantite: 30, unite: "m²", prixUnitaireHT: 22 },
+        { designation: "Remplacement des prises et des interrupteurs", quantite: 4, unite: "u", prixUnitaireHT: 35 },
+      ],
+      tauxTva: 10,
+      acomptePourcent: 30,
+      conditions: [
+        "Devis gratuit, valable deux mois.",
+        "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus des taux réduits.",
+        "Acompte de 30 % à la signature, solde à la fin des travaux.",
+        "Signature du client précédée de « Bon pour accord ».",
+      ],
+    },
+    faq: [
+      { question: "Quel taux de TVA pour une rénovation de salle de bains ?", reponse: "10 % dans un logement achevé depuis plus de deux ans, pour la plomberie, le carrelage et les sanitaires que vous fournissez et posez. Une cabine de sauna ou de hammam reste à 20 %, comme tout le chantier si le logement a moins de deux ans." },
+      { question: "Une chaudière gaz est-elle encore à 5,5 % ou à 10 % ?", reponse: "Non. Depuis le 1er mars 2025, la fourniture et l'installation d'une chaudière qui peut fonctionner au gaz ou au fioul sont exclues des deux taux réduits, même si elle est très performante : elles sont à 20 %." },
+      { question: "Les matériaux achetés par le client sont-ils à 10 % ?", reponse: "Non. Le client paie 20 % au magasin sur le matériel qu'il achète lui-même ; seule votre main-d'œuvre de pose est à 10 %. Le matériel que vous fournissez et posez suit le taux des travaux." },
+      { question: "Quel taux pour des travaux dans un bureau ou un commerce ?", reponse: "20 %. Les taux réduits ne concernent que les locaux à usage d'habitation achevés depuis plus de deux ans." },
+      { question: "Faut-il encore faire remplir l'attestation de TVA 1300-SD ?", reponse: "Non. Depuis le 1er mars 2025, le client certifie directement sur le devis ou sur la facture que les conditions du taux réduit sont remplies. Conservez ce document signé." },
+      { question: "Un auto-entrepreneur facture-t-il la TVA à 10 % ?", reponse: "Pas en franchise en base : il ne facture aucune TVA et indique « TVA non applicable, art. 293 B du CGI ». Dès qu'il devient redevable de la TVA, il applique les taux des travaux comme toute entreprise." },
+    ],
+    liens: [
+      { href: "/guide/comment-faire-un-devis", label: "Comment faire un devis" },
+      { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires d'une facture" },
+      { href: "/guide/tva-autoliquidation-sous-traitance", label: "Autoliquidation en sous-traitance" },
+      { href: "/guide/facture-sans-tva", label: "Facture sans TVA" },
+      { href: "/outils/calculateur-tva", label: "Calculateur de TVA" },
+    ],
+    sources: [
+      { label: "Code général des impôts, articles 278-0 bis A (5,5 %) et 279-0 bis (10 %)", href: "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006191654" },
+      { label: "BOFiP, BOI-TVA-LIQ-30-20-90-20 (taux réduits des travaux dans les logements)", href: "https://bofip.impots.gouv.fr/bofip/1666-PGP.html/identifiant=BOI-TVA-LIQ-30-20-90-20-20251022" },
+      { label: "BOFiP, actualité du 22 octobre 2025 : certification sur le devis ou la facture, exclusion des chaudières à combustibles fossiles", href: "https://bofip.impots.gouv.fr/bofip/14835-PGP.html/ACTU-2025-00165" },
+      { label: "Loi n° 2025-127 du 14 février 2025 de finances pour 2025, articles 32 et 41" },
+      { label: "Code général des impôts, annexe IV, article 30-00 A (gros équipements exclus)" },
+      { label: "Code général des impôts, articles 283-2 nonies (autoliquidation en sous-traitance) et 293 B (franchise en base)" },
+    ],
+    verifieLe: "2026-10-05",
   },
   {
     slug: "facture-acompte",
@@ -681,23 +809,142 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: "premiere-facture",
-    titre: "Comment créer sa première facture : guide pas à pas",
-    description: "Créez votre première facture conforme en 5 étapes : format, mentions obligatoires, numérotation, envoi. Guide pratique pour débutants 2026.",
-    motsCles: ["première facture", "créer une facture", "comment facturer", "faire une facture"],
+    titre: "Comment faire une facture d'artisan : la méthode pas à pas",
+    titreSeo: "Comment faire une facture artisan : la méthode et un exemple",
+    description: "Comment faire une facture d'artisan, de la première à la facture de solde : moment, numéro, mentions, TVA, acompte, envoi, avec un exemple chiffré.",
+    motsCles: ["comment faire une facture artisan", "première facture auto entrepreneur", "faire une facture", "créer une facture", "facture artisan", "comment facturer"],
+    essentiel: [
+      "Émettez la facture dès la fin des travaux ; pour plusieurs interventions chez un même client dans le mois, une facture récapitulative au plus tard en fin de mois.",
+      "Donnez-lui un numéro unique, dans une suite chronologique et continue, sans trou ni retour en arrière.",
+      "Reprenez les lignes du devis signé : désignation, quantité, prix unitaire hors taxes, taux de TVA.",
+      "Ajoutez les mentions obligatoires : votre identité (avec « EI » si vous êtes entrepreneur individuel), le client, les dates, les totaux, la TVA par taux, votre assurance.",
+      "Déduisez les acomptes déjà facturés et indiquez le reste à payer.",
+      "Pour un client professionnel : la date d'échéance, le taux des pénalités de retard et l'indemnité de 40 € pour frais de recouvrement.",
+      "Envoyez-la en PDF et conservez-en une copie pendant dix ans.",
+      "Une facture émise ne se modifie pas : une erreur se corrige par un avoir.",
+    ],
     sections: [
-      { titre: "Choisir le bon format", contenu: "Vous pouvez créer votre facture sur Word, Excel, un logiciel de facturation ou en ligne. Attention : à partir du 1er septembre 2027, les TPE et PME devront émettre leurs factures entre entreprises dans un format structuré (Factur-X, UBL ou CII), ce qu'un fichier Word ou Excel ne permet pas. Qonforme joint un fichier XML Factur-X au PDF de vos factures ; l'envoi par une plateforme agréée y est en préparation." },
-      { titre: "Les mentions obligatoires", contenu: "Votre facture doit comporter : vos coordonnées complètes (SIRET, adresse, forme juridique), celles du client, un numéro unique et chronologique, la date d'émission, le détail des prestations (désignation, quantité, prix unitaire HT), le taux de TVA, les totaux HT/TVA/TTC, et les conditions de paiement avec pénalités de retard." },
-      { titre: "La numérotation", contenu: "La première facture de l'année peut porter le numéro F-2026-001 ou tout autre format, tant que la séquence est chronologique et continue. Il est interdit de supprimer un numéro ou de revenir en arrière. Choisissez un format de numérotation et conservez-le toute l'année." },
-      { titre: "L'envoi au client", contenu: "Envoyez votre facture par email (format PDF) ou par courrier. L'envoi par email est recommandé car il constitue une preuve d'envoi. À partir du 1er septembre 2027, les TPE et PME devront transmettre leurs factures entre entreprises par une plateforme agréée." },
-      { titre: "Les erreurs courantes à éviter", contenu: "Les erreurs les plus fréquentes : oublier le numéro de TVA intracommunautaire, ne pas mentionner les pénalités de retard (obligatoire), utiliser une numérotation non chronologique, ne pas conserver les factures 10 ans, et facturer sans SIRET. Chaque mention manquante expose à une amende de 15 € par mention et par facture." },
+      {
+        titre: "1. Facturer au bon moment",
+        contenu: "La facture se délivre dès la réalisation de la prestation, c'est-à-dire à la fin des travaux (code de commerce, art. L441-9). Pour plusieurs interventions chez un même client au cours d'un mois, vous pouvez établir une facture récapitulative, au plus tard à la fin de ce mois.",
+        liste: [
+          "Client professionnel : la facture est toujours obligatoire.",
+          "Client particulier : elle est obligatoire au-delà de 25 € TTC pour une prestation de services, et à sa demande en dessous. Dans le bâtiment, établissez-la systématiquement.",
+          "Administration ou collectivité : la facture passe par la plateforme publique Chorus Pro.",
+        ],
+      },
+      {
+        titre: "2. Numéroter sans trou",
+        contenu: "Chaque facture porte un numéro unique, pris dans une suite chronologique et continue. Le format est libre (F-2026-001, par exemple), mais un numéro attribué ne se réutilise jamais et la suite ne saute aucun numéro.",
+        liste: [
+          "Pour votre première facture, commencez simplement à 001.",
+          "Un brouillon n'a pas besoin de numéro : le numéro se pose au moment où la facture est émise, ce qui évite les trous.",
+          "Le devis n'a pas besoin d'être numéroté, mais rappeler son numéro sur la facture relie les deux documents.",
+        ],
+      },
+      {
+        titre: "3. Reprendre les lignes du devis",
+        contenu: "La facture reprend les postes du devis signé, avec les mêmes désignations, quantités, prix unitaires hors taxes et taux de TVA. Le client retrouve ce qu'il a accepté, et vous évitez la contestation.",
+        liste: [
+          "Les travaux supplémentaires ne s'ajoutent que s'ils ont fait l'objet d'un avenant ou d'un nouveau devis signé : présentez-les sur des lignes à part.",
+          "Si le devis prévoyait un métré au réel, facturez les quantités réellement mises en œuvre.",
+          "Chaque ligne garde son taux de TVA ; la facture donne, pour chaque taux, la base hors taxes et le montant de TVA.",
+        ],
+      },
+      {
+        titre: "4. Ajouter les mentions obligatoires",
+        contenu: "Une facture incomplète expose à une amende de 15 € par mention manquante, plafonnée au quart du montant de la facture. Vérifiez les essentielles avant chaque envoi.",
+        liste: [
+          "Vous : nom ou dénomination, adresse, SIREN, « EI » à côté du nom d'un entrepreneur individuel, forme et capital d'une société, numéro de TVA si vous en avez un.",
+          "Le client : nom et adresse ; pour un professionnel, son numéro de TVA si la facture dépasse 150 € HT.",
+          "La date d'émission, et la date des travaux si elle est différente.",
+          "Les totaux hors taxes, la TVA par taux et le total toutes taxes comprises, ou la mention qui justifie l'absence de TVA (« TVA non applicable, art. 293 B du CGI », « Autoliquidation »).",
+          "Votre assurance professionnelle (assureur, contrat, couverture géographique), avec l'attestation de garantie décennale.",
+          "Taux réduit de 10 % ou 5,5 % : la certification du client, si elle ne figure pas déjà sur le devis signé.",
+        ],
+      },
+      {
+        titre: "5. Déduire les acomptes",
+        contenu: "Encaissez un acompte avec une facture d'acompte, obligatoire pour un client professionnel. Pour des travaux, qui sont des prestations de services, la TVA est due à l'encaissement : celle de l'acompte est déclarée quand vous le recevez.",
+        liste: [
+          "La facture de solde reprend le total des travaux, puis déduit chaque acompte déjà facturé, avec son numéro et son montant.",
+          "Elle indique le reste à payer : c'est la somme que le client doit encore régler.",
+        ],
+      },
+      {
+        titre: "6. Fixer l'échéance et le règlement",
+        contenu: "La date d'échéance et le moyen de paiement évitent les relances inutiles. Indiquez votre IBAN pour un virement.",
+        liste: [
+          "Entre professionnels, sans accord : paiement 30 jours après l'exécution des travaux. Le délai convenu ne peut pas dépasser 60 jours après la date de la facture, ou 45 jours fin de mois s'il est prévu au contrat (code de commerce, art. L441-10).",
+          "Entre professionnels, la facture indique aussi le taux des pénalités de retard (à défaut, taux de la BCE majoré de 10 points) et l'indemnité forfaitaire de 40 € pour frais de recouvrement.",
+          "Chez un particulier, l'échéance est celle prévue au devis, souvent à réception de la facture.",
+        ],
+      },
+      {
+        titre: "7. Envoyer, conserver, corriger",
+        contenu: "Envoyez la facture en PDF par email, ou sur papier en deux exemplaires : l'original au client, le double pour vous.",
+        liste: [
+          "Conservez vos factures dix ans (code de commerce, art. L123-22) ; l'administration fiscale peut les demander pendant six ans.",
+          "Une facture émise ne se modifie ni ne se supprime : une erreur se corrige par un avoir, puis une nouvelle facture si besoin.",
+          "Depuis le 1er septembre 2026, toute entreprise doit pouvoir recevoir des factures électroniques ; une TPE ou une PME devra en émettre pour ses clients professionnels à partir du 1er septembre 2027.",
+        ],
+      },
+      {
+        titre: "8. Votre première facture d'auto-entrepreneur",
+        contenu: "En micro-entreprise, la méthode est la même, avec trois points d'attention.",
+        liste: [
+          "En franchise en base de TVA : aucun montant de TVA, et la mention « TVA non applicable, art. 293 B du CGI ».",
+          "Votre nom suivi de « EI » ou « entrepreneur individuel », et votre SIREN.",
+          "Votre assurance décennale si vos travaux l'exigent : l'activité n'en dispense pas.",
+        ],
+      },
     ],
+    exemple: {
+      document: "facture",
+      titre: "Remplacement d'un chauffe-eau électrique",
+      contexte: "Exemple fictif : la facture de solde du devis donné en exemple dans notre guide « Comment faire un devis », pour un particulier, dans une maison achevée depuis plus de deux ans (TVA à 10 %). L'acompte de 30 % a déjà été facturé et encaissé. Les prix illustrent la méthode ; ce ne sont pas des prix de marché.",
+      lignes: [
+        { designation: "Chauffe-eau électrique 200 litres, vertical mural (marque et référence), fourni", quantite: 1, unite: "u", prixUnitaireHT: 520 },
+        { designation: "Groupe de sécurité, raccords et petites fournitures", quantite: 1, unite: "forfait", prixUnitaireHT: 45 },
+        { designation: "Main-d'œuvre : vidange et dépose de l'ancien appareil, pose, raccordement et mise en service (taux horaire 55,00 € TTC)", quantite: 3, unite: "h", prixUnitaireHT: 50 },
+        { designation: "Déplacement", quantite: 1, unite: "forfait", prixUnitaireHT: 30 },
+        { designation: "Enlèvement de l'ancien appareil et dépôt en point de collecte", quantite: 1, unite: "forfait", prixUnitaireHT: 20 },
+      ],
+      tauxTva: 10,
+      acomptePourcent: 30,
+      acompteReference: "Facture d'acompte F-2026-014",
+      conditions: [
+        "Facture F-2026-018, émise à la fin des travaux, qui rappelle le devis signé.",
+        "Le client a certifié sur le devis signé que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit.",
+        "Paiement à réception, par virement sur l'IBAN indiqué.",
+        "Assurance décennale : assureur, numéro de contrat et couverture géographique, attestation jointe.",
+        "Nom de l'artisan suivi de « EI », adresse et SIREN en tête de facture.",
+      ],
+    },
     faq: [
-      { question: "Peut-on créer une facture sur Word ou Excel ?", reponse: "Techniquement oui, mais ce n'est pas recommandé. Un fichier Word ou Excel ne permettra pas d'émettre les factures électroniques exigées des TPE et PME à partir du 1er septembre 2027. De plus, il ne garantit ni l'intégrité du document ni la numérotation automatique. Utilisez un logiciel de facturation." },
-      { question: "Faut-il un logiciel de facturation ?", reponse: "Avec la réforme de la facturation électronique, un logiciel devient quasi indispensable. Il reprend les mentions obligatoires, numérote les factures dans l'ordre et prépare le format structuré exigé des TPE et PME pour leurs échanges entre entreprises à partir du 1er septembre 2027." },
-      { question: "Quel numéro donner à ma première facture ?", reponse: "Vous êtes libre du format : F-2026-001, FA001, 2026-0001, etc. L'important est que la séquence soit chronologique et continue, sans trous. Vous ne pouvez pas commencer à F-100 pour paraître plus expérimenté." },
-      { question: "Quand envoyer une facture ?", reponse: "La facture doit être émise dès la réalisation de la prestation ou la livraison du bien. Pour les prestations de services, la TVA est exigible à l'encaissement (sauf option pour les débits). Un délai de facturation supérieur à 15 jours peut être sanctionné." },
-      { question: "Que faire si j'ai fait une erreur sur ma facture ?", reponse: "Il est interdit de modifier ou supprimer une facture émise. Vous devez émettre un avoir (note de crédit) qui annule la facture erronée, puis créer une nouvelle facture corrigée avec un nouveau numéro." },
+      { question: "Quand faut-il faire la facture après les travaux ?", reponse: "Dès la fin des travaux. Pour plusieurs interventions chez un même client au cours d'un mois, une facture récapitulative peut être établie, au plus tard à la fin du mois." },
+      { question: "Une facture est-elle obligatoire pour un particulier ?", reponse: "Oui au-delà de 25 € TTC pour une prestation de services, et à tout moment si le client la demande. Dans le bâtiment, faites-la systématiquement : elle reprend le devis signé et prouve le paiement dû." },
+      { question: "Peut-on modifier une facture déjà envoyée ?", reponse: "Non. Une facture émise ne se modifie ni ne se supprime : vous émettez un avoir qui l'annule en tout ou partie, puis une nouvelle facture corrigée, avec un nouveau numéro." },
+      { question: "Comment facturer des travaux supplémentaires ?", reponse: "Seulement s'ils ont été acceptés par écrit, par un avenant ou un nouveau devis signé. Faites-les apparaître sur des lignes distinctes de celles du devis d'origine." },
+      { question: "Quel numéro donner à sa première facture ?", reponse: "Le format est libre : F-2026-001, 2026-001… L'essentiel est que la suite soit chronologique et continue, sans numéro sauté ni réutilisé." },
+      { question: "À partir de quand la facture électronique est-elle obligatoire pour un artisan ?", reponse: "Depuis le 1er septembre 2026, toute entreprise doit pouvoir recevoir des factures électroniques. Une TPE ou une PME devra en émettre pour ses clients professionnels à partir du 1er septembre 2027 ; pour les particuliers, un PDF reste possible." },
     ],
+    liens: [
+      { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires d'une facture" },
+      { href: "/guide/comment-faire-un-devis", label: "Comment faire un devis" },
+      { href: "/guide/tva-travaux", label: "TVA des travaux" },
+      { href: "/guide/facture-acompte", label: "Facture d'acompte" },
+      { href: "/modele/facture-auto-entrepreneur", label: "Modèle de facture auto-entrepreneur" },
+      { href: "/outils/generateur-facture-gratuite", label: "Générateur de facture gratuit" },
+    ],
+    sources: [
+      { label: "Service-public.gouv.fr, « Facturation : tout savoir » (fiche F23208)", href: "https://entreprendre.service-public.gouv.fr/vosdroits/F23208" },
+      { label: "Service-public.gouv.fr, « Mentions obligatoires d'une facture » (fiche F31808)", href: "https://entreprendre.service-public.gouv.fr/vosdroits/F31808" },
+      { label: "Code de commerce, articles L441-9 (facture), L441-10 (délais de paiement) et L123-22 (conservation)" },
+      { label: "Code général des impôts, articles 289 (facturation), 242 nonies A de l'annexe II (mentions), 1737 (amende) et 269-2 (TVA des prestations à l'encaissement)" },
+      { label: "BOFiP, BOI-TVA-DECLA-30-20-10 (délivrance des factures)", href: "https://bofip.impots.gouv.fr/bofip/1525-PGP.html/identifiant=BOI-TVA-DECLA-30-20-10-20190925" },
+    ],
+    verifieLe: "2026-10-05",
   },
   {
     slug: "facture-sans-tva",

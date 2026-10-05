@@ -239,3 +239,62 @@ describe("guide « Comment faire un devis » (PushRank, 04/10/2026)", () => {
     expect(text).not.toMatch(/(?:>|<|au-delà de|plus de|dépasse|inférieur à|supérieur à)\s*150\s?€\s?(?:TTC)?[^"]{0,40}devis|devis[^"]{0,60}(?:>|<|au-delà de|plus de|dépasse|inférieur à|supérieur à)\s*150\s?€/i)
   })
 })
+
+describe("guides TVA des travaux et facture d'artisan, modèle de devis travaux (05/10/2026)", () => {
+  const interdits = /certifi[ée] par|homologu|n°\s?1|leader|meilleur|un humain|rendez-vous|\bPDP\b/i
+
+  it("les deux guides visent leur requête, restent dans les limites de Google et citent leurs sources", async () => {
+    const { getGuideBySlug } = await import("@/lib/pseo/guides")
+    for (const [slug, debut] of [["tva-travaux", /^TVA travaux/], ["premiere-facture", /^Comment faire une facture/]] as const) {
+      const g = getGuideBySlug(slug)!
+      expect(g.titreSeo, slug).toMatch(debut)
+      expect(rendered(fitTitle(g.titreSeo!)).length, slug).toBeLessThanOrEqual(TITLE_MAX)
+      expect(g.description.length, slug).toBeGreaterThanOrEqual(120)
+      expect(g.description.length, slug).toBeLessThanOrEqual(DESCRIPTION_MAX)
+      expect(g.sources?.filter((s) => s.href?.startsWith("https://")).length, slug).toBeGreaterThanOrEqual(2)
+      expect(g.verifieLe, slug).toBe("2026-10-05")
+      expect(JSON.stringify(g), slug).not.toMatch(interdits)
+    }
+    // Plus de délai de facturation inventé (« dans les 15 jours »)
+    expect(JSON.stringify(getGuideBySlug("premiere-facture"))).not.toMatch(/15 jours/)
+  })
+
+  it("le devis à deux taux est ventilé par taux et calculé", async () => {
+    const { getGuideBySlug } = await import("@/lib/pseo/guides")
+    const { totauxExemple } = await import("@/lib/pseo/exemple-devis")
+    const t = totauxExemple(getGuideBySlug("tva-travaux")!.exemple!)
+    expect(t.ventilation.map((v) => [v.taux, v.baseCentimes, v.tvaCentimes])).toEqual([
+      [10, 80_000, 8_000],
+      [5.5, 120_000, 6_600],
+    ])
+    expect(t.ttcCentimes).toBe(214_600)
+    expect(t.acompteCentimes).toBe(64_380)
+  })
+
+  it("la facture de solde déduit l'acompte du devis d'exemple", async () => {
+    const { getGuideBySlug } = await import("@/lib/pseo/guides")
+    const { totauxExemple } = await import("@/lib/pseo/exemple-devis")
+    const devis = totauxExemple(getGuideBySlug("comment-faire-un-devis")!.exemple!)
+    const facture = totauxExemple(getGuideBySlug("premiere-facture")!.exemple!)
+    expect(facture.ttcCentimes).toBe(devis.ttcCentimes)
+    expect(facture.acompteCentimes).toBe(devis.acompteCentimes)
+    expect(facture.resteCentimes).toBe(84_150 - 25_245)
+  })
+
+  it("le modèle de devis travaux vise « modèle de devis artisan » et son exemple est calculé", async () => {
+    const { getModeleBySlug, MODELES } = await import("@/lib/pseo/modeles")
+    const { totauxExemple } = await import("@/lib/pseo/exemple-devis")
+    const m = getModeleBySlug("devis-travaux")!
+    expect(m.titreSeo).toMatch(/^Modèle de devis artisan/)
+    expect(rendered(fitTitle(m.titreSeo!)).length).toBeLessThanOrEqual(TITLE_MAX)
+    expect(m.description.length).toBeGreaterThanOrEqual(120)
+    expect(m.description.length).toBeLessThanOrEqual(DESCRIPTION_MAX)
+    const t = totauxExemple(m.exemple!)
+    expect([t.htCentimes, t.tvaCentimes, t.ttcCentimes, t.acompteCentimes]).toEqual([138_900, 13_890, 152_790, 45_837])
+    // Mention périmée remplacée par « Bon pour accord » ; plus de délai de facturation inventé
+    const tout = JSON.stringify(MODELES)
+    expect(tout).not.toMatch(/Devis reçu avant l'exécution/)
+    expect(tout).not.toMatch(/dans les 15 jours suivant la prestation/)
+    for (const modele of MODELES) expect(rendered(fitTitle(modele.titreSeo ?? modele.titre)).length, modele.slug).toBeLessThanOrEqual(TITLE_MAX)
+  })
+})
