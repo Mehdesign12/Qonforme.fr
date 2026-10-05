@@ -158,7 +158,8 @@ export default function InstallationIndexPage() {
           links={[
             { href: "/guide/comment-faire-un-devis", label: "Comment faire un devis" },
             { href: "/guide/mentions-obligatoires-devis", label: "Mentions obligatoires d'un devis" },
-            { href: "/guide/premiere-facture", label: "Faire sa première facture" },
+            { href: "/guide/premiere-facture", label: "Comment faire une facture" },
+            { href: "/guide/tva-travaux", label: "TVA des travaux" },
             { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
             { href: "/outils/simulateur-charges-auto-entrepreneur", label: "Simuler mes cotisations" },
             { href: "/facturation", label: "Facturation par métier" },

@@ -11,6 +11,8 @@ const KEYWORD_LINKS: { pattern: RegExp; href: string }[] = [
   { pattern: /mentions?\s+obligatoires?\s+(sur\s+une\s+)?facture/i, href: "/guide/mentions-obligatoires-facture" },
   { pattern: /mentions?\s+obligatoires?\s+(d['’]un|du|sur\s+un)\s+devis/i, href: "/guide/mentions-obligatoires-devis" },
   { pattern: /(?:comment\s+)?(?:faire|r[ée]diger|[ée]tablir|chiffrer)\s+(?:un|son|ses|vos|votre)\s+devis/i, href: "/guide/comment-faire-un-devis" },
+  { pattern: /(?:comment\s+)?(?:faire|r[ée]diger|[ée]tablir|[ée]mettre)\s+(?:une|sa|ses|vos|votre)\s+(?:premi[èe]re\s+)?facture/i, href: "/guide/premiere-facture" },
+  { pattern: /taux\s+de\s+TVA\s+(?:des|pour\s+les|sur\s+les|applicables?\s+aux)\s+travaux|TVA\s+(?:à|de)\s+(?:10|5,5)\s?%/i, href: "/guide/tva-travaux" },
   { pattern: /(s['’]installer|se\s+mettre)\s+à\s+son\s+compte/i, href: "/devenir-a-son-compte" },
   { pattern: /facture?\s+[eé]lectronique\s+2026/i, href: "/guide/facture-electronique-2026" },
   { pattern: /facture?\s+auto[- ]?entrepreneur/i, href: "/guide/facture-auto-entrepreneur" },

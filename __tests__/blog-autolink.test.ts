@@ -19,3 +19,12 @@ describe("liens automatiques du blog", () => {
     expect(html).not.toContain("/guide/mentions-obligatoires-devis")
   })
 })
+
+describe("liens automatiques vers les guides facture et TVA (05/10/2026)", () => {
+  it("relie « faire une facture » et le taux de TVA des travaux", () => {
+    const html = autoLinkPseo("<p>Pour faire une facture conforme, choisissez le taux de TVA des travaux : la TVA à 10 % s'applique en rénovation.</p>")
+    expect(html).toContain('href="/guide/premiere-facture"')
+    expect(html).toContain('href="/guide/tva-travaux"')
+    expect(html.match(/tva-travaux/g)).toHaveLength(1)
+  })
+})

@@ -5,6 +5,8 @@ import { MODELES, getModeleBySlug } from "@/lib/pseo/modeles"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
 import { fr } from "@/components/content/text"
 import ModelePaper from "@/components/content/ModelePaper"
+import { ExempleDevisCard } from "@/components/content/ExempleDevis"
+import { fitDescription, fitTitle } from "@/lib/seo/meta"
 
 const TYPE_LABELS: Record<string, string> = {
   facture: "Facture",
@@ -32,8 +34,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const modele = getModeleBySlug(slug)
   if (!modele) return {}
   return {
-    title: modele.titre,
-    description: modele.description,
+    title: fitTitle(modele.titreSeo ?? modele.titre),
+    description: fitDescription(modele.description),
     keywords: modele.motsCles,
     alternates: { canonical: `/modele/${modele.slug}` },
     openGraph: {
@@ -144,6 +146,8 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
                 <SectionHeading id="pour-qui" title="À qui s'adresse" accent="ce modèle&nbsp;?" className="mb-4" />
                 <p className="max-w-[68ch] text-[17px] leading-[1.75] text-q-text-2">{fr(modele.pourQui)}</p>
               </section>
+
+              {modele.exemple && <ExempleDevisCard exemple={modele.exemple} id="exemple" />}
 
               {modele.mentionsSpecifiques.length > 0 && (
                 <section aria-labelledby="mentions" className="mt-14">

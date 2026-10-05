@@ -1,6 +1,11 @@
+import type { ExempleDevis } from "@/lib/pseo/guides"
+
 export interface Modele {
   slug: string
+  /** Titre affiché (h1). */
   titre: string
+  /** Balise <title>, quand elle doit viser une autre formulation que le h1. */
+  titreSeo?: string
   description: string
   motsCles: string[]
   type: "facture" | "devis" | "avoir" | "bon-de-commande" | "relance"
@@ -8,6 +13,8 @@ export interface Modele {
   contenu: string[]
   conseils: string[]
   mentionsSpecifiques: string[]
+  /** Exemple chiffré affiché sous le modèle (totaux calculés par lib/pseo/exemple-devis.ts). */
+  exemple?: ExempleDevis
 }
 
 export const MODELES: Modele[] = [
@@ -33,7 +40,7 @@ export const MODELES: Modele[] = [
     conseils: [
       "Utilisez une numérotation continue et chronologique (ex : F-2026-001, F-2026-002)",
       "Conservez toutes vos factures pendant 10 ans",
-      "Envoyez vos factures dans les 15 jours suivant la prestation",
+      "Émettez la facture dès la fin de la prestation (une facture récapitulative par mois au plus tard en fin de mois)",
       "Surveillez vos seuils de franchise de TVA (en 2026 : 37 500 € pour les services, 85 000 € pour la vente)",
     ],
     mentionsSpecifiques: [
@@ -94,36 +101,63 @@ export const MODELES: Modele[] = [
   },
   {
     slug: "devis-travaux",
-    titre: "Modèle de devis travaux gratuit",
-    description: "Modèle de devis travaux gratuit pour les artisans du BTP : mentions obligatoires, détail de la main-d'œuvre et des matériaux, assurance décennale incluse.",
-    motsCles: ["modele devis travaux", "devis travaux gratuit", "exemple devis batiment"],
+    titre: "Modèle de devis travaux gratuit pour artisan",
+    titreSeo: "Modèle de devis artisan gratuit et exemple de devis travaux",
+    description: "Modèle de devis artisan gratuit pour vos travaux : mentions obligatoires, matériaux et main-d'œuvre détaillés, TVA, et un exemple de devis chiffré.",
+    motsCles: ["modele devis travaux", "modele devis artisan", "devis exemple", "exemple devis travaux", "devis matériaux", "devis travaux gratuit"],
     type: "devis",
-    pourQui: "Artisans et entreprises du bâtiment qui veulent établir des devis détaillés et conformes pour leurs clients.",
+    pourQui: "Artisans et entreprises du bâtiment qui veulent établir des devis détaillés et conformes pour leurs clients, particuliers ou professionnels.",
     contenu: [
       "Mention « Devis » en titre",
       "Date et durée de validité",
-      "Coordonnées de l'entreprise (SIRET, assurance décennale)",
+      "Coordonnées de l'entreprise (SIREN ou SIRET, « EI » pour un entrepreneur individuel)",
       "Coordonnées du client et adresse du chantier",
       "Description détaillée des travaux",
-      "Détail des fournitures et des matériaux",
-      "Détail de la main-d'œuvre (heures, taux horaire)",
-      "Prix unitaires et totaux par poste",
-      "Taux de TVA (5,5 %, 10 % ou 20 %)",
+      "Détail des fournitures et des matériaux (quantité, unité, prix unitaire)",
+      "Détail de la main-d'œuvre (heures ou mètres carrés, taux horaire TTC chez un particulier)",
+      "Frais de déplacement, s'il y en a",
+      "Évacuation des déchets du chantier : gestion, point de collecte et coût",
+      "Taux de TVA de chaque ligne (5,5 %, 10 % ou 20 %)",
       "Montant total HT et TTC",
       "Conditions de paiement (acompte, échéances)",
-      "Mention de l'assurance décennale (nom de l'assureur, n° de contrat)",
-      "Emplacement pour la signature du client et sa mention manuscrite",
+      "Assurance décennale : assureur, n° de contrat, couverture géographique",
+      "Emplacement pour la signature du client, précédée de « Bon pour accord »",
     ],
     conseils: [
-      "Détaillez au maximum les postes pour éviter les litiges",
-      "Indiquez une durée de validité (1 à 3 mois)",
-      "Prévoyez une clause pour les travaux supplémentaires",
-      "Mentionnez les délais d'exécution",
+      "Détaillez les postes ligne par ligne : fournitures, main-d'œuvre, déplacement, déchets",
+      "Indiquez une durée de validité (un à trois mois est courant) : aucune durée n'est fixée par la loi",
+      "Prévoyez qu'un travail supplémentaire se fera sur avenant signé",
+      "Mentionnez la date ou le délai d'exécution, obligatoire chez un particulier",
+      "Écrivez « acompte » pour la somme demandée à la signature : sans précision, celle d'un particulier est considérée comme des arrhes",
     ],
     mentionsSpecifiques: [
-      "Devis reçu avant l'exécution des travaux (mention manuscrite du client)",
-      "Assurance décennale : [Assureur] - Contrat n° [X]",
+      "Bon pour accord, le [date] (mention du client avant sa signature)",
+      "Assurance décennale : [Assureur], contrat n° [X], couverture : France métropolitaine",
+      "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit",
     ],
+    exemple: {
+      titre: "Pose de carrelage dans une salle de bains",
+      contexte: "Exemple fictif : devis pour un particulier, dans une maison achevée depuis plus de deux ans, donc TVA à 10 %. Les prix illustrent la méthode ; ce ne sont pas des prix de marché.",
+      lignes: [
+        { designation: "Carrelage sol grès cérame 60 × 60 (référence, ou équivalent), fourni, chutes comprises", quantite: 13, unite: "m²", prixUnitaireHT: 32 },
+        { designation: "Mortier-colle, joints et profilés de finition", quantite: 1, unite: "forfait", prixUnitaireHT: 85 },
+        { designation: "Dépose de l'ancien carrelage", quantite: 12, unite: "m²", prixUnitaireHT: 15 },
+        { designation: "Préparation du support : ragréage", quantite: 12, unite: "m²", prixUnitaireHT: 12 },
+        { designation: "Pose du carrelage et des joints", quantite: 12, unite: "m²", prixUnitaireHT: 42 },
+        { designation: "Évacuation des gravats et dépôt en déchèterie professionnelle", quantite: 1, unite: "forfait", prixUnitaireHT: 60 },
+      ],
+      tauxTva: 10,
+      acomptePourcent: 30,
+      conditions: [
+        "Devis gratuit, valable deux mois.",
+        "Travaux réalisés en trois jours, dans les 30 jours qui suivent la signature.",
+        "Taux horaire pour un travail supplémentaire accepté par avenant : 50,00 € HT, soit 55,00 € TTC.",
+        "Déchets : environ 0,5 m³ de gravats, triés et déposés en déchèterie professionnelle (nom et adresse à indiquer), coût compris dans la ligne d'évacuation.",
+        "Acompte de 30 % à la signature, solde à la fin des travaux. Signé au domicile du client, l'acompte ne pourrait être encaissé qu'au bout de sept jours.",
+        "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit.",
+        "Signature du client précédée de « Bon pour accord ».",
+      ],
+    },
   },
   {
     slug: "devis-prestation-service",
