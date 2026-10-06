@@ -180,6 +180,8 @@
 3. **Facturer un chantier terminé** : la préparation est gratuite, le choix de la formule arrive à l'envoi. Le numéro de facture n'est attribué qu'à l'envoi, pour garder une numérotation continue.
 4. **Je le ferai plus tard** : un rappel par email au moment choisi (ce soir 19 h, demain 7 h 30, samedi 9 h, autre moment).
 
+**Inscription en deux champs (validé le 06/10/2026, canevas « Inscription en deux champs »).** La page d'inscription ne demande plus que l'adresse email et le mot de passe (plus de prénom, de nom ni de confirmation du mot de passe), avec une photo d'artisan à droite. L'artisan arrive directement sur le tableau de bord, où une fenêtre termine l'inscription en trois étapes : son entreprise (recherche par nom, SIREN ou SIRET au répertoire Sirene, saisie à la main si elle est introuvable ou sans SIREN), son métier et son régime de TVA (métier présélectionné d'après le code APE, catalogue prérempli au choix), son prénom ; puis les quatre choix ci-dessous, dans la fenêtre. « Passer au tableau de bord » à chaque étape ; la tuile « Terminer votre inscription » reprend où il s'est arrêté. Aucun devis ni aucune facture ne part tant que le SIREN et l'adresse de l'entreprise manquent.
+
 **Accès libre au tableau de bord (validé le 01/10/2026).** L'artisan qui veut seulement regarder n'est jamais bloqué :
 - « Explorer le tableau de bord » sous les quatre choix ;
 - « Passer au tableau de bord » dans l'en-tête de chaque étape, dès l'étape 2 ;
