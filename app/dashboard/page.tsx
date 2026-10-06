@@ -95,7 +95,8 @@ export default async function DashboardPage({
         if (row) {
           company = { name: row.name, siren: row.siren, address: row.address, zip_code: row.zip_code, city: row.city }
           // Premiers pas pas encore vus (fenêtre de bienvenue d'un compte qui a déjà des documents)
-          showWelcome = !row.onboarding_seen_at
+          // Ancienne fenêtre de premiers pas : jamais pour un compte de l'inscription en deux champs
+          showWelcome = !row.onboarding_seen_at && meta.signup_wizard !== true
         }
         const profile = row && read.profileAvailable ? parseLegalProfile(row.legal_profile) : null
         inscription = {

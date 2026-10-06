@@ -24,7 +24,7 @@ import {
   type CompanyField, type InscriptionCompany,
 } from "@/components/onboarding/inscription/model"
 import {
-  STEP_PAD, Serif, StepError, StepFooter, StepHeader, StepLead, StepTitle, useInitialFocus,
+  FIELD_FOCUS_QUERY, STEP_PAD, Serif, StepError, StepFooter, StepHeader, StepLead, StepTitle, useInitialFocus,
 } from "@/components/onboarding/inscription/ui"
 
 type SearchStatus = "idle" | "loading" | "ok" | "empty" | "error"
@@ -170,9 +170,14 @@ function SearchCompany({
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !(active >= 0 && rows[active]) && (searching || !current)) {
       // Touche « Rechercher » du clavier du téléphone : rien de choisi dans la liste,
-      // l'étape n'est pas validée et le clavier se range pour laisser voir les résultats
+      // l'étape n'est pas validée et le clavier se range pour laisser voir les résultats.
+      // Sur ordinateur, le focus reste dans le champ et la première entreprise s'active.
       e.preventDefault()
-      e.currentTarget.blur()
+      if (window.matchMedia(FIELD_FOCUS_QUERY).matches) {
+        if (enabledIndexes.length) setActive(enabledIndexes[0])
+      } else {
+        e.currentTarget.blur()
+      }
       return
     }
     if (!rows.length) return

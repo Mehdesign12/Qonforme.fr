@@ -11,7 +11,7 @@
  * remplace les 12 puces tant qu'il n'y a rien à changer. Boutons radio natifs
  * (flèches du clavier comprises), puces et cartes dessinées autour.
  */
-import { useId, useState } from "react"
+import { useId, useState, useRef } from "react"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { TRADES, tradeLabel, type TradeId, type VatRegime } from "@/lib/legal/profile"
@@ -104,6 +104,7 @@ export function TradeStep({
   const apeTrade = tradeFromApe(activityCode)
   const [trade, setTrade] = useState<TradeId | null>(savedTrade ?? apeTrade)
   const [expanded, setExpanded] = useState(false)
+  const chipsRef = useRef<HTMLDivElement>(null)
   const [vat, setVat] = useState<VatRegime | null>(savedVat ?? (legalForm === "societe" ? "assujetti" : null))
   const [catalogue, setCatalogue] = useState(true)
   const [site, setSite] = useState<VatContext>("renovation")
@@ -151,7 +152,15 @@ export function TradeStep({
               <span className="flex-1 text-base font-semibold text-[var(--q-ink-strong)]">{label}</span>
               <button
                 type="button"
-                onClick={() => setExpanded(true)}
+                onClick={() => {
+                  setExpanded(true)
+                  // Le bouton disparaît : le focus passe au métier coché de la liste dépliée
+                  requestAnimationFrame(() => {
+                    const list = chipsRef.current
+                    const target = list?.querySelector<HTMLInputElement>("input:checked") ?? list?.querySelector<HTMLInputElement>("input")
+                    target?.focus()
+                  })
+                }}
                 aria-label={`Modifier le métier (${label})`}
                 className="h-10 shrink-0 rounded-[9px] bg-[var(--q-sunken)] px-3 text-[14px] font-semibold text-[var(--q-text-2)] touch-manipulation"
               >
@@ -165,14 +174,15 @@ export function TradeStep({
             </p>
           )}
 
-          <div className={cn("mt-2.5 flex flex-wrap gap-2", trade && !expanded && "max-sm:hidden")}>
+          <div ref={chipsRef} className={cn("mt-2.5 flex flex-wrap gap-2", trade && !expanded && "max-sm:hidden")}>
             {TRADES.map((t, i) => (
               <Chip
                 key={t.id}
                 name={`${uid}-trade`}
                 autofocus={trade ? trade === t.id : i === 0}
                 checked={trade === t.id}
-                onSelect={() => { setTrade(t.id); setError(null) }}
+                // Un choix fait dans la liste la garde ouverte (le focus reste sur le métier choisi)
+                onSelect={() => { setTrade(t.id); setExpanded(true); setError(null) }}
               >
                 {t.label}
               </Chip>

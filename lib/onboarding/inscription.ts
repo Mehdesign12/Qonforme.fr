@@ -242,9 +242,29 @@ export function parseInscriptionPatch(body: unknown): Parsed<InscriptionPatch> {
  * gardé. Sans forme connue (saisie à la main), le profil ne change pas.
  * Une micro-entreprise reste une micro-entreprise : le répertoire ne la
  * distingue pas d'un entrepreneur individuel.
+ *
+ * Autre entreprise (`sirenChanged` : choisie puis remplacée dans la fenêtre) :
+ * forme, type de société, capital et RCS de l'ancienne ne passent jamais à la
+ * nouvelle — sinon « Thomas Garnier, SARL » s'imprimerait sur ses documents.
+ * Seuls le métier, le régime de TVA et les assurances, propres à l'artisan,
+ * sont gardés.
  */
-export function mergeCompanyProfile(existing: unknown, input: CompanyInput): LegalProfile | null {
+export function mergeCompanyProfile(
+  existing: unknown,
+  input: CompanyInput,
+  opts: { sirenChanged?: boolean } = {},
+): LegalProfile | null {
   const current = parseLegalProfile(existing)
+  if (opts.sirenChanged) {
+    const legal_form = input.legal_form ?? null
+    return parseLegalProfile({
+      ...current,
+      legal_form,
+      company_type: legal_form === "societe" ? input.company_type ?? null : null,
+      share_capital: null,
+      rcs_city: null,
+    })
+  }
   if (!input.legal_form) return current
   const legal_form = input.legal_form === "ei" && current?.legal_form === "micro" ? "micro" : input.legal_form
   const company_type = legal_form === "societe"

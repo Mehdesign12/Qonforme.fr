@@ -27,6 +27,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { trackEvent } from "@/lib/meta-pixel"
 import { tradeLabel, type TradeId, type VatRegime } from "@/lib/legal/profile"
 import type { CompanyInput, InscriptionPatch, InscriptionStep, TradeInput } from "@/lib/onboarding/inscription"
 import type { SireneCandidate } from "@/lib/utils/sirene"
@@ -224,10 +225,13 @@ function InscriptionWindow({
       goTo(nextView("company", profileAvailable))
       return null
     }
+    const firstCompany = company === null
     setBusy(true)
     const result = await send({ step: "company", company: input })
     setBusy(false)
     if (!result.ok) return result.error
+    // Conversion « inscription terminée » du pixel Meta, comme l'ancien formulaire d'entreprise
+    if (mode === "app" && firstCompany) trackEvent("CompleteRegistration", { currency: "EUR", value: 0 })
     const saved = (result.json.company ?? {}) as Partial<Record<keyof InscriptionCompany, string | null>>
     setCompany({
       name: saved.name || input.name,

@@ -13,7 +13,7 @@ import { ArrowLeft, ArrowRight, Loader2, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 /** Ordinateur avec souris : le premier champ prend le focus. Sur écran tactile, le clavier ne doit pas s'ouvrir seul. */
-const FIELD_FOCUS_QUERY = "(min-width: 640px) and (hover: hover) and (pointer: fine)"
+export const FIELD_FOCUS_QUERY = "(min-width: 640px) and (hover: hover) and (pointer: fine)"
 
 /**
  * Focus à l'affichage d'un écran de la fenêtre : premier champ (`data-autofocus`)

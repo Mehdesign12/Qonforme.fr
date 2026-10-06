@@ -77,7 +77,9 @@ export function hrefFor(link: { href: string; demoHref?: string }, mode: ShellMo
 
 /** Vrai si `pathname` appartient à la section `href` (le tableau de bord n'englobe pas les autres). */
 export function isActivePath(pathname: string, href: string): boolean {
-  if (href === "/dashboard" || href === "/demo") return pathname === href
+  if (href === "/dashboard") return pathname === href
+  // /demo/bienvenue : tableau de bord d'un compte neuf de la démo
+  if (href === "/demo") return pathname === href || pathname === "/demo/bienvenue"
   if (href === "/settings" || href === "/demo/settings") {
     return pathname.startsWith(href) && !pathname.startsWith(href + "/exports")
   }

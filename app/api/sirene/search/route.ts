@@ -42,13 +42,13 @@ export async function GET(request: NextRequest) {
   if (/^\d+$/.test(digits) && !isValidSiren(digits.slice(0, 9))) {
     if (digits.length === 9) {
       return NextResponse.json(
-        { error: "Ce numéro ne correspond à aucun SIREN : vérifiez les 9 chiffres." },
+        { error: "Ce numéro ne correspond à aucun SIREN : vérifiez les 9 chiffres." },
         { status: 400, headers: NO_STORE },
       )
     }
     if (digits.length === 14) {
       return NextResponse.json(
-        { error: "Ce numéro ne correspond à aucun SIRET : vérifiez les 14 chiffres." },
+        { error: "Ce numéro ne correspond à aucun SIRET : vérifiez les 14 chiffres." },
         { status: 400, headers: NO_STORE },
       )
     }

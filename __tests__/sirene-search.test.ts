@@ -439,7 +439,7 @@ describe("GET /api/sirene/search", () => {
   it("SIREN dont la clé est fausse : 400", async () => {
     expect(await get("801 339 749")).toMatchObject({
       status: 400,
-      body: { error: "Ce numéro ne correspond à aucun SIREN : vérifiez les 9 chiffres." },
+      body: { error: "Ce numéro ne correspond à aucun SIREN : vérifiez les 9 chiffres." },
     })
     expect((await get("80133974900031")).status).toBe(400)
     expect(fetchMock).not.toHaveBeenCalled()

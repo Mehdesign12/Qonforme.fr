@@ -217,6 +217,23 @@ describe("profil légal et n° de TVA", () => {
       .toMatchObject({ legal_form: "ei", company_type: null, share_capital: null })
   })
 
+  it("autre entreprise (SIREN changé) : rien de l'ancienne forme, métier et assurances gardés", () => {
+    const existing = {
+      legal_form: "societe", company_type: "SARL", share_capital: 1000, rcs_city: "Angers",
+      trade: "plaquiste", vat_regime: "assujetti",
+      decennale: { insurer: "Assureur", address: "Paris", policy_number: "D-1", coverage: "France" },
+    }
+    // Saisie à la main sans SIREN après avoir choisi une SARL
+    expect(mergeCompanyProfile(existing, { ...input, siren: null, legal_form: null, company_type: null }, { sirenChanged: true }))
+      .toMatchObject({ legal_form: null, company_type: null, share_capital: null, rcs_city: null, trade: "plaquiste", vat_regime: "assujetti" })
+    // Société du répertoire sans forme précise : pas de « SARL » hérité
+    expect(mergeCompanyProfile(existing, { ...input, legal_form: "societe", company_type: null }, { sirenChanged: true }))
+      .toMatchObject({ legal_form: "societe", company_type: null, share_capital: null })
+    // Entrepreneur individuel du répertoire
+    expect(mergeCompanyProfile({ ...existing, legal_form: "micro" }, { ...input, legal_form: "ei", company_type: null }, { sirenChanged: true }))
+      .toMatchObject({ legal_form: "ei", company_type: null, decennale: { policy_number: "D-1" } })
+  })
+
   it("métier et régime fusionnés, le reste gardé", () => {
     const p = mergeTradeProfile({ legal_form: "societe", company_type: "SARL", vat_regime: "franchise" }, { trade: "electricien", vat_regime: "assujetti" })
     expect(p).toMatchObject({ trade: "electricien", vat_regime: "assujetti", legal_form: "societe", company_type: "SARL" })

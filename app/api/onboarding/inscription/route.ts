@@ -71,6 +71,8 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
+const digitsOnly = (v: unknown): string => (typeof v === "string" ? v.replace(/\D/g, "") : "")
+
 /** Étape 1 : création de l'entreprise, ou mise à jour de son identité seulement. */
 async function saveCompany(supabase: SupabaseClient, userId: string, input: CompanyInput, retried = false): Promise<NextResponse> {
   const read = await selectCompanyWithProfile(supabase, "id,siren,vat_number", userId)
@@ -94,6 +96,8 @@ async function saveCompany(supabase: SupabaseClient, userId: string, input: Comp
       country: "FR",
       invoice_prefix: "F",
       invoice_sequence: 1,
+      // La fenêtre « Bienvenue » remplace l'ancienne fenêtre de premiers pas (WelcomeModal)
+      onboarding_seen_at: new Date().toISOString(),
     }
     const profile = profileAvailable ? mergeCompanyProfile(null, input) : null
     let { error } = await supabase.from("companies").insert(profile ? { ...row, legal_profile: profile } : row)
@@ -112,7 +116,11 @@ async function saveCompany(supabase: SupabaseClient, userId: string, input: Comp
     // Un n° de TVA calculé depuis l'ancien SIREN suit le nouveau
     const vat = vatNumberAfterSirenChange(read.data.siren, input.siren, read.data.vat_number)
     if (vat !== undefined) update.vat_number = vat
-    if (profileAvailable && input.legal_form) update.legal_profile = mergeCompanyProfile(read.data.legal_profile, input)
+    // Autre entreprise que celle enregistrée : son profil ne reprend rien de l'ancienne
+    const sirenChanged = digitsOnly(read.data.siren) !== digitsOnly(input.siren)
+    if (profileAvailable && (input.legal_form || sirenChanged)) {
+      update.legal_profile = mergeCompanyProfile(read.data.legal_profile, input, { sirenChanged })
+    }
 
     let { error } = await supabase.from("companies").update(update).eq("user_id", userId)
     if (error && "legal_profile" in update && isMissingSchemaError(error)) {
