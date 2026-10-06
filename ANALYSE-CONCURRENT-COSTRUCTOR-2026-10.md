@@ -221,8 +221,8 @@ Ces points servent à **positionner Qonforme sans le citer** : dire ce que fait 
 C'est le seul écart qui peut faire perdre un artisan **à coup sûr** : depuis le 1er septembre 2026, il doit pouvoir recevoir ses factures fournisseurs par une plateforme agréée. Un logiciel gratuit qui le fait déjà gagnera contre un logiciel payant qui ne le fait pas.
 
 - **Super PDP**, déjà repéré (`STRATEGIE-CROISSANCE-2026-10.md` § 3.1, `DECISIONS-STRATEGIQUES.md` § 7.3), est l'un des deux partenaires de Costructor : la voie est prouvée pour un logiciel du bâtiment. Repères publics : 0,01 € HT par facture par API, 2 € HT de vérification d'identité par entreprise.
-- Côté code, il ne manque qu'un fichier : `lib/pa/adapters/superpdp.ts` branché dans `lib/pa/index.ts` (interface, webhook, cycle de vie et réception déjà construits).
-- Puis : inscription à l'annuaire, émission par la plateforme (obligatoire pour les TPE au 1er septembre 2027), e-reporting.
+- Côté code, **corrigé le 06/10/2026** : il ne suffit pas d'un fichier. Super PDP raccorde chaque artisan par OAuth (un jeton par entreprise) et n'a pas encore de webhook, alors que l'interface `lib/pa` supposait des clés globales et un webhook. Il faut compter environ 50 à 70 h pour la réception, puis 55 à 75 h pour l'émission. Plan détaillé : `PLAN-PLATEFORME-AGREEE-2026-10.md`.
+- Puis : émission par la plateforme (obligatoire pour les TPE au 1er septembre 2027), e-reporting. L'inscription à l'annuaire se fait pendant le parcours de raccordement de l'artisan, chez Super PDP.
 - Décision liée (§ 7.6 de `DECISIONS-STRATEGIQUES.md`) : **garder la réception gratuite pour tous**. Le concurrent la donne gratuitement ; la faire payer serait un argument contre nous.
 
 ### 2. Mettre en production ce qui est construit
