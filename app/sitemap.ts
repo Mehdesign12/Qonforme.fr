@@ -16,7 +16,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .select("slug, updated_at")
     .eq("is_published", true);
 
-  const blogPostEntries: MetadataRoute.Sitemap = (posts ?? []).map((post) => ({
+  // Articles marqués « noindex » par PushRank (colonne robots, migration 20261006) : hors du sitemap.
+  // Sans la migration, la requête échoue et aucun article n'est retiré.
+  const { data: noindex } = await admin
+    .from("blog_posts")
+    .select("slug")
+    .eq("is_published", true)
+    .eq("robots->>index", "false");
+  const hidden = new Set((noindex ?? []).map((p) => p.slug));
+
+  const blogPostEntries: MetadataRoute.Sitemap = (posts ?? []).filter((post) => !hidden.has(post.slug)).map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
     lastModified: new Date(post.updated_at),
     changeFrequency: "monthly" as const,

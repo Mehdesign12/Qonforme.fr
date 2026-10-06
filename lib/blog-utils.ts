@@ -4,6 +4,7 @@
 
 import { SEO_TOPICS } from "@/lib/ai/seo-topics"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
+import { decodeEntities } from "@/lib/html-entities"
 
 // ── Reading time ────────────────────────────────────────────────────────────
 
@@ -82,7 +83,7 @@ export function extractFaqItems(content: string): FaqItem[] {
     const headingMatch = lines[i].match(/^#{2,3}\s+(.+\?)\s*$/)
     if (!headingMatch) continue
 
-    const question = headingMatch[1].trim()
+    const question = decodeEntities(headingMatch[1].trim())
 
     // Collect answer lines until next heading, code block, or end
     const answerLines: string[] = []
@@ -100,10 +101,11 @@ export function extractFaqItems(content: string): FaqItem[] {
       .replace(/\*(.+?)\*/g, "$1")
       .replace(/`([^`]+)`/g, "$1")
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      .slice(0, 500)
+      .replace(/<[^>]+>/g, " ")
+    const answerText = decodeEntities(answer).replace(/\s+/g, " ").trim().slice(0, 500)
 
-    if (answer.length > 20) {
-      items.push({ question, answer })
+    if (answerText.length > 20) {
+      items.push({ question, answer: answerText })
     }
   }
 
@@ -127,7 +129,8 @@ export function extractHeadings(content: string): { id: string; text: string; le
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "")
-    headings.push({ id, text, level })
+    // L'id suit le texte brut (comme lib/markdown.ts) ; l'affichage, le texte décodé
+    headings.push({ id, text: decodeEntities(text), level })
   }
 
   return headings

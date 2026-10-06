@@ -63,7 +63,7 @@ export function markdownToHtml(md: string): string {
     .map(block => {
       const trimmed = block.trim()
       if (!trimmed) return ''
-      if (/^<(h[1-4]|ul|ol|pre|hr|blockquote)/.test(trimmed)) return trimmed
+      if (/^<(h[1-4]|ul|ol|pre|hr|blockquote|table)/.test(trimmed)) return trimmed
       return `<p>${trimmed.replace(/\n/g, '<br />')}</p>`
     })
     .join('\n\n')
