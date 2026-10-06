@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils"
  *  - par défaut (« Connexion », « Onb-1-Inscription ») : colonne blanche avec
  *    le logo et le formulaire, `aside` à droite sur fond #F6F8FB (≥ lg) ;
  *    sans `aside`, une seule colonne centrée ;
+ *  - avec `asideVariant="photo"` (inscription, maquette validée le 06/10/2026) :
+ *    page blanche, `aside` en photo pleine hauteur dans un cadre arrondi (marge
+ *    16 px, sans bord ni fond), fixe au défilement ; sous 1024 px, `mobileBand`
+ *    (bande photo) sous le logo et `topRight` (lien) à droite du logo ;
  *  - avec `bar` (« Onb-2-Entreprise », « Onb-7-Bienvenue ») : barre blanche en
  *    haut (logo, étapes, lien à droite), contenu centré sur le fond.
  * Ni backdrop-filter ni will-change (règle iOS de CLAUDE.md) ; couleurs par
@@ -17,6 +21,15 @@ interface AuthLayoutProps {
   children: React.ReactNode
   /** Colonne de droite, affichée à partir de 1024 px. */
   aside?: React.ReactNode
+  /**
+   * « panel » (défaut) : `aside` centré sur le fond, trait à gauche.
+   * « photo » : `aside` remplit la colonne (photo dans un cadre), page blanche.
+   */
+  asideVariant?: "panel" | "photo"
+  /** Sous 1024 px, sous le logo (bande photo de l'inscription). */
+  mobileBand?: React.ReactNode
+  /** À droite du logo (« Se connecter » sur téléphone). */
+  topRight?: React.ReactNode
   /** Barre du haut : étapes de l'inscription et lien à droite. */
   bar?: {
     steps?: { label: string }[]
@@ -57,7 +70,11 @@ function Glow({ className }: { className?: string }) {
   )
 }
 
-export default function AuthLayout({ children, aside, bar, maxWidth = "md" }: AuthLayoutProps) {
+export default function AuthLayout({
+  children, aside, asideVariant = "panel", mobileBand, topRight, bar, maxWidth = "md",
+}: AuthLayoutProps) {
+  const photo = Boolean(aside) && asideVariant === "photo"
+
   /* ── Barre du haut + contenu centré ─────────────────────────────────── */
   if (bar) {
     return (
@@ -84,30 +101,48 @@ export default function AuthLayout({ children, aside, bar, maxWidth = "md" }: Au
   /* ── Colonne du formulaire (+ colonne de droite) ────────────────────── */
   return (
     <div
-      className={cn("relative bg-q-bg", aside && "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]")}
+      className={cn(
+        "relative",
+        photo ? "bg-q-surface" : "bg-q-bg",
+        aside && "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]",
+      )}
       style={SAFE_AREA}
     >
       <div
         className={cn(
           "relative flex min-h-[100dvh] flex-col px-4 pb-10 pt-6 sm:px-8 lg:pb-8 lg:pt-7",
           aside && "lg:bg-q-surface lg:px-[clamp(20px,5vw,72px)]",
+          photo && "pt-[18px]",
         )}
       >
-        <Glow className={aside ? "lg:hidden" : undefined} />
-        <div className={cn("relative", !aside && "flex justify-center sm:justify-start")}>
+        {!photo && <Glow className={aside ? "lg:hidden" : undefined} />}
+        <div
+          className={cn(
+            "relative",
+            topRight ? "flex min-h-8 items-center justify-between gap-4 lg:min-h-0" : !aside && "flex justify-center sm:justify-start",
+          )}
+        >
           <AuthLogo height={20} />
+          {topRight}
         </div>
+        {mobileBand && <div className="relative mt-4 lg:hidden">{mobileBand}</div>}
         <main
           className={cn(
-            "relative mx-auto flex w-full flex-1 flex-col pt-9 sm:justify-center sm:py-12",
+            "relative mx-auto flex w-full flex-1 flex-col sm:justify-center sm:py-12",
+            mobileBand ? "pt-[26px]" : "pt-9",
             aside ? "max-w-[400px]" : widthMap[maxWidth],
           )}
         >
           {children}
         </main>
       </div>
-      {aside && (
+      {aside && !photo && (
         <aside className="hidden items-center justify-center border-l border-q-line bg-q-bg px-[clamp(24px,4vw,64px)] py-14 lg:flex">
+          {aside}
+        </aside>
+      )}
+      {photo && (
+        <aside className="hidden min-w-0 lg:sticky lg:top-0 lg:block lg:h-[100dvh] lg:self-start lg:py-4 lg:pr-4">
           {aside}
         </aside>
       )}

@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import SignupForm from "@/components/auth/SignupForm"
 import AuthLayout from "@/components/auth/AuthLayout"
-import QuotePreview from "@/components/auth/QuotePreview"
+import SignupPhotoPanel, { SignupPhotoBand } from "@/components/auth/SignupPhotoPanel"
 import { safeNextPath } from "@/lib/stripe/access"
 import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
 
@@ -16,9 +16,17 @@ export const metadata: Metadata = {
 }
 export const dynamic = "force-dynamic"
 
+/**
+ * Inscription en deux champs (maquettes « Main » et « Mobile-Inscription »,
+ * validées le 06/10/2026) : adresse email et mot de passe ; photo d'artisan à
+ * droite (≥ 1024 px) ou en bande sous le logo (téléphone). Le reste de
+ * l'inscription se fait dans la fenêtre « Bienvenue » du tableau de bord.
+ */
 export default function SignupPage({ searchParams }: { searchParams?: { next?: string } }) {
   // Retour après inscription (SignupForm) ; l'invitation d'un comptable a son propre titre
   const next = safeNextPath(searchParams?.next)
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : "/login"
+
   if (next?.startsWith("/invitation-comptable")) {
     return (
       <AuthLayout>
@@ -27,13 +35,19 @@ export default function SignupPage({ searchParams }: { searchParams?: { next?: s
         <SignupForm />
         <p className="mt-6 text-[14px] text-q-text-3">
           Déjà un compte ?{" "}
-          <Link href={`/login?next=${encodeURIComponent(next)}`} className="q-link">Se connecter</Link>
+          <Link href={loginHref} className="q-link">Se connecter</Link>
         </p>
       </AuthLayout>
     )
   }
+
   return (
-    <AuthLayout aside={<QuotePreview />}>
+    <AuthLayout
+      aside={<SignupPhotoPanel />}
+      asideVariant="photo"
+      mobileBand={<SignupPhotoBand />}
+      topRight={<Link href={loginHref} className="q-link text-[14px] lg:hidden">Se connecter</Link>}
+    >
       <AuthTitle>Votre premier <Serif>devis</Serif>, sans attendre.</AuthTitle>
       <AuthLead>
         Devis gratuits et illimités. Vous ne choisissez une formule qu’à l’envoi de votre première facture.
@@ -41,9 +55,10 @@ export default function SignupPage({ searchParams }: { searchParams?: { next?: s
 
       <SignupForm />
 
-      <p className="mt-6 text-[14px] text-q-text-3">
-        Déjà un compte ?{" "}
-        <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="q-link">Se connecter</Link>
+      {/* Sur téléphone, « Se connecter » est en haut à droite */}
+      <p className="mt-[26px] hidden text-[14px] text-q-text-3 lg:block">
+        Déjà un compte ?{" "}
+        <Link href={loginHref} className="q-link">Se connecter</Link>
       </p>
     </AuthLayout>
   )

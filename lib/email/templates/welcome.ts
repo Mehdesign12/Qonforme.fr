@@ -1,8 +1,14 @@
 /**
  * Email de bienvenue envoyé immédiatement après la création d'un compte.
  *
+ * Depuis l'inscription en deux champs (06/10/2026), le compte n'a en général
+ * pas encore de prénom : objet « Bienvenue sur Qonforme », titre « Bienvenue ! »,
+ * et la première étape renvoie au tableau de bord, où la fenêtre « Bienvenue »
+ * termine l'inscription (entreprise, métier et TVA, prénom). Un prénom fourni
+ * (API, ancien parcours) personnalise encore l'objet et le titre.
+ *
  * Règles appliquées :
- * - Sujet court, personnalisé, <55 caractères
+ * - Sujet court, <55 caractères
  * - Preheader distinct du sujet (visible dans la boîte de réception avant ouverture)
  * - Un seul CTA principal — pas de dispersion
  * - 3 étapes d'onboarding intégrées dans l'email
@@ -22,7 +28,8 @@ export function buildWelcomeEmail({
   firstName: rawFirstName,
   unsubscribeUrl,
 }: {
-  firstName: string
+  /** Facultatif : absent depuis l'inscription en deux champs. */
+  firstName?: string | null
   /**
    * Lien signé de désinscription des conseils de démarrage (premier email de la
    * séquence, lib/onboarding/sequence.ts) ; absent tant que la séquence n'est
@@ -30,24 +37,25 @@ export function buildWelcomeEmail({
    */
   unsubscribeUrl?: string | null
 }): { subject: string; html: string } {
-  const subject = `Bienvenue sur Qonforme, ${rawFirstName} 👋`
-  // Saisi à l'inscription : échappé avant d'entrer dans le HTML
-  const firstName = escapeHtml(rawFirstName)
+  const name = rawFirstName?.trim() || ""
+  const subject = name ? `Bienvenue sur Qonforme, ${name}` : "Bienvenue sur Qonforme"
+  // Saisi par l'utilisateur : échappé avant d'entrer dans le HTML
+  const title = name ? `Bienvenue, ${escapeHtml(name)}&nbsp;!` : "Bienvenue&nbsp;!"
 
-  const preheader = `Votre espace est prêt : vos devis sont gratuits et illimités.`
+  const preheader = "Votre compte est créé&nbsp;: vos devis sont gratuits et illimités."
 
   const steps = [
     {
       n: "1",
-      title: "Renseignez votre entreprise",
-      desc: "Nom, adresse, SIREN, TVA. Ces informations figureront sur tous vos devis et vos factures.",
-      href: `${APP_URL}/settings/company`,
-      cta: "Configurer mon entreprise →",
+      title: "Terminez votre inscription",
+      desc: "Votre entreprise, votre métier et votre régime de TVA, en une minute&nbsp;: ils figurent sur tous vos devis et vos factures.",
+      href: `${APP_URL}/dashboard`,
+      cta: "Terminer mon inscription →",
     },
     {
       n: "2",
       title: "Ajoutez votre premier client",
-      desc: "Saisissez son numéro SIREN : ses coordonnées se remplissent seules.",
+      desc: "Saisissez son numéro SIREN&nbsp;: ses coordonnées se remplissent seules.",
       href: `${APP_URL}/clients`,
       cta: "Ajouter un client →",
     },
@@ -128,7 +136,7 @@ export function buildWelcomeEmail({
 
               <!-- Accroche -->
               <h2 style="margin:0 0 12px;font-size:22px;font-weight:700;color:#0F172A;letter-spacing:-0.3px;">
-                Bienvenue, ${firstName}&nbsp;!
+                ${title}
               </h2>
               <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.65;">
                 Votre compte est actif. Vos devis sont gratuits et illimités, et vous pouvez préparer vos factures dès maintenant. Vous choisissez une formule seulement au moment d'envoyer votre première facture.
