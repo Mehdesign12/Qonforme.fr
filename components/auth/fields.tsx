@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
  * ────────────────────────────────────────────────────────────────────────── */
 export const AUTH_INPUT = "q-input !h-12 !rounded-xl !px-3.5 !text-base [-webkit-appearance:none]"
 
-/** Libellé, champ, puis erreur ou aide. */
+/** Libellé, champ, puis erreur ou aide (aide d'identifiant `${id}-hint`, à relier au champ par aria-describedby). */
 export function Field({
   id, label, aside, error, hint, children,
 }: {
@@ -32,14 +32,17 @@ export function Field({
       {children}
       {error
         ? <p id={`${id}-error`} className="q-field-error">{error}</p>
-        : hint ? <div className="q-field-hint">{hint}</div> : null}
+        : hint ? <div id={`${id}-hint`} className="q-field-hint">{hint}</div> : null}
     </div>
   )
 }
 
-/** Champ mot de passe avec le bouton texte « Afficher » / « Masquer ». */
+/**
+ * Champ mot de passe avec le bouton texte « Afficher » / « Masquer », atteignable
+ * au clavier (Tab depuis le champ) : son libellé dit l'action qu'il fera.
+ */
 export function PasswordInput({
-  id, value, onChange, error, disabled, autoComplete, autoFocus, placeholder,
+  id, value, onChange, error, disabled, autoComplete, autoFocus, placeholder, hint,
 }: {
   id: string
   value: string
@@ -49,6 +52,8 @@ export function PasswordInput({
   autoComplete: "current-password" | "new-password"
   autoFocus?: boolean
   placeholder?: string
+  /** Le `Field` parent affiche une aide (`hint`) : le champ la référence tant qu'aucune erreur ne la remplace. */
+  hint?: boolean
 }) {
   const [show, setShow] = useState(false)
   return (
@@ -62,18 +67,17 @@ export function PasswordInput({
         inputMode="text"
         className={cn(AUTH_INPUT, "!pr-[96px]")}
         aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
+        aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
         value={value}
         onChange={onChange}
         disabled={disabled}
       />
       <button
         type="button"
-        tabIndex={-1}
         onClick={() => setShow((v) => !v)}
         aria-label={show ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-        aria-pressed={show}
-        className="absolute right-1.5 top-1.5 h-9 rounded-lg bg-q-sunken px-3 text-[13px] font-semibold text-q-text-2 transition-colors hover:bg-q-hover hover:text-q-ink touch-manipulation"
+        aria-controls={id}
+        className="absolute right-1.5 top-1.5 h-9 rounded-lg bg-q-sunken px-3 text-[13px] font-semibold text-q-text-2 transition-colors hover:bg-q-hover hover:text-q-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-q-accent touch-manipulation"
       >
         {show ? "Masquer" : "Afficher"}
       </button>

@@ -22,6 +22,7 @@ import { generateQuotePdf } from "@/lib/pdf/quote"
 import { claimTrialQuoteSend, releaseTrialQuoteSend, TRIAL_QUOTE_DAILY_LIMIT } from "@/lib/onboarding/store"
 import { buildTrialQuote, TRIAL_QUOTE_FILENAME, type TrialProduct } from "@/lib/onboarding/trial-quote"
 import { todayInParis } from "@/lib/utils/paris-date"
+import { selectCompanyWithProfile } from "@/lib/legal/db"
 
 export const runtime = "nodejs"
 export const maxDuration = 30
@@ -39,11 +40,9 @@ export async function POST() {
     const to = user.email?.trim()
     if (!to) return NextResponse.json({ error: "Votre compte n'a pas d'adresse e-mail." }, { status: 422 })
 
-    const { data: company, error: companyError } = await supabase
-      .from("companies")
-      .select(COMPANY_FIELDS)
-      .eq("user_id", user.id)
-      .maybeSingle()
+    // Profil légal compris, s'il existe : le régime de TVA déclaré fixe la TVA du
+    // devis et les mentions du PDF (franchise : « TVA non applicable, art. 293 B du CGI »)
+    const { data: company, error: companyError } = await selectCompanyWithProfile(supabase, COMPANY_FIELDS, user.id)
     if (companyError) return NextResponse.json({ error: "Lecture de votre entreprise impossible. Réessayez." }, { status: 503 })
     if (!company) return NextResponse.json({ error: "Renseignez d'abord votre entreprise." }, { status: 409 })
 

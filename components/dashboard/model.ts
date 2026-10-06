@@ -11,6 +11,9 @@
  */
 import { canRemindInvoice } from "@/lib/utils/document-status"
 import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
+import {
+  inscriptionSteps, pendingInscriptionStep, type InscriptionState, type InscriptionStep,
+} from "@/lib/onboarding/inscription"
 
 export type DashMode = "app" | "demo"
 
@@ -88,6 +91,8 @@ export interface DashboardInput {
   quotes: DashQuote[]
   /** Clients actifs sans SIREN (null si inconnu). */
   clientsWithoutSiren: number | null
+  /** Inscription à terminer : tuile « Terminer votre inscription » d'un compte neuf. */
+  inscription?: DashInscription | null
 }
 
 /* ------------------------------------------------------------------ */
@@ -162,6 +167,53 @@ export interface DashboardView {
   reform: { sirenOk: boolean; addressOk: boolean; clientsWithoutSiren: number | null }
   /** Tuile « Relancer » (mobile) : la facture en retard, la liste filtrée ou la liste. */
   remindHref: string
+  /** Inscription à terminer (fenêtre « Bienvenue » passée), sinon null. */
+  inscription: DashInscription | null
+}
+
+/* ------------------------------------------------------------------ */
+/* Inscription en deux champs : fenêtre « Bienvenue » et tuile          */
+/* ------------------------------------------------------------------ */
+
+/** Étape restante de l'inscription, pour la tuile « Terminer votre inscription ». */
+export interface DashInscription {
+  step: InscriptionStep
+  /** Numéro de l'étape restante (à partir de 1) et nombre d'étapes affichées. */
+  number: number
+  total: number
+}
+
+/** Ce que la page sait du compte pour décider d'ouvrir la fenêtre « Bienvenue ». */
+export interface InscriptionFacts extends InscriptionState {
+  /** Compte créé par l'inscription en deux champs (`user_metadata.signup_wizard`). */
+  wizard: boolean
+  /** Fenêtre fermée par « Passer au tableau de bord » (`user_metadata.signup_window_closed`). */
+  windowClosed: boolean
+  /** Réouverture demandée par la tuile (`?inscription=reprendre`). */
+  resume: boolean
+}
+
+/**
+ * Étape restante qui concerne le tableau de bord : toujours pour un compte sans
+ * entreprise ; pour un compte de l'inscription en deux champs, l'étape métier
+ * ou prénom qui manque. Un compte plus ancien n'est jamais relancé ici.
+ */
+export function inscriptionTile(f: InscriptionFacts): DashInscription | null {
+  const step = pendingInscriptionStep(f)
+  if (!step || (f.company && !f.wizard)) return null
+  const steps = inscriptionSteps(f.profileAvailable)
+  return { step, number: Math.max(1, steps.indexOf(step) + 1), total: steps.length }
+}
+
+/**
+ * Ouverture de la fenêtre : étape restante, compte sans document (ou sans
+ * entreprise), et fenêtre jamais fermée, sauf réouverture par la tuile.
+ * `isNewAccount` : ni devis ni facture (faux si la lecture a échoué).
+ */
+export function inscriptionWindowOpen(f: InscriptionFacts, isNewAccount: boolean): boolean {
+  if (!inscriptionTile(f)) return false
+  if (f.company && !isNewAccount) return false
+  return f.resume || !f.windowClosed
 }
 
 /* ------------------------------------------------------------------ */
@@ -544,5 +596,6 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
       clientsWithoutSiren: input.clientsWithoutSiren,
     },
     remindHref,
+    inscription: input.inscription ?? null,
   }
 }

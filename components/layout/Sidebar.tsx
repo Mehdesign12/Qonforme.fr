@@ -164,11 +164,12 @@ export function Sidebar({ identity }: { identity: ShellIdentity }) {
         <Link href={home} className="flex" aria-label="Qonforme, tableau de bord">
           <Logo />
         </Link>
+        {/* Compte sans formule : pas de pastille (l'encart « Version gratuite » du bas suffit) */}
         {mode === "demo" ? (
           <span className="q-tag !border-[var(--q-warn-line)] !bg-[var(--q-warn-bg)] !text-[var(--q-warn)]">Démo</span>
-        ) : (
-          <span className="q-tag">{identity.planName ?? "Gratuit"}</span>
-        )}
+        ) : identity.planName ? (
+          <span className="q-tag">{identity.planName}</span>
+        ) : null}
       </div>
 
       <CompanyCard identity={identity} />

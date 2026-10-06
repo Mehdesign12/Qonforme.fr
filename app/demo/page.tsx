@@ -23,7 +23,7 @@ export const metadata: Metadata = {
  */
 const CROSS_LINKS = [
   { href: "/signup", Icon: UserPlus, title: "Créer mon compte", text: "Devis gratuits et illimités, sans carte bancaire" },
-  { href: "/demo/demarrer", Icon: Compass, title: "Premiers pas d'un compte neuf", text: "L'écran « Par quoi commencer ? »" },
+  { href: "/demo/bienvenue", Icon: Compass, title: "Premiers pas d'un compte neuf", text: "Entreprise, métier, puis premier devis" },
   { href: "/pricing", Icon: ArrowRight, title: "Prêt à démarrer\u00a0?", text: "Voir les tarifs\u00a0: devis gratuits" },
   { href: "/modele", Icon: FileText, title: "Modèles gratuits", text: "Devis et factures avec les mentions obligatoires" },
   { href: "/blog", Icon: BookOpen, title: "Guides et conseils", text: "Tout savoir sur la facturation électronique" },

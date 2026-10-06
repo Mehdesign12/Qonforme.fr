@@ -7,24 +7,20 @@ import { createClient } from "@/lib/supabase/client"
 import { safeNextPath } from "@/lib/stripe/access"
 import { trackEvent } from "@/lib/meta-pixel"
 import { AUTH_INPUT, AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
+import { SIGNUP_EMAIL_PATTERN, SIGNUP_PASSWORD_MIN } from "@/lib/auth/signup-input"
 
-function validate(fields: {
-  first_name: string; last_name: string
-  email: string; password: string; confirm_password: string
-}) {
+/**
+ * Inscription en deux champs (maquette validée le 06/10/2026) : adresse email
+ * et mot de passe. L'entreprise, le métier, la TVA et le prénom se renseignent
+ * ensuite dans la fenêtre « Bienvenue » du tableau de bord, ouverte d'office
+ * à l'arrivée (`?bienvenue=1`). Mêmes seuils que la route (lib/auth/signup-input.ts).
+ */
+function validate(fields: { email: string; password: string }) {
   const errs: Record<string, string> = {}
-  if (!fields.first_name || fields.first_name.trim().length < 2)
-    errs.first_name = "Prénom requis (2 caractères min.)"
-  if (!fields.last_name || fields.last_name.trim().length < 2)
-    errs.last_name = "Nom requis (2 caractères min.)"
-  if (!fields.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email))
+  if (!fields.email.trim() || !SIGNUP_EMAIL_PATTERN.test(fields.email.trim()))
     errs.email = "Adresse email invalide"
-  if (!fields.password || fields.password.length < 8)
-    errs.password = "8 caractères minimum"
-  if (!fields.confirm_password)
-    errs.confirm_password = "Confirmation requise"
-  else if (fields.password !== fields.confirm_password)
-    errs.confirm_password = "Les mots de passe ne correspondent pas"
+  if (!fields.password || fields.password.length < SIGNUP_PASSWORD_MIN)
+    errs.password = `${SIGNUP_PASSWORD_MIN} caractères minimum`
   return errs
 }
 
@@ -35,15 +31,9 @@ export default function SignupForm() {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors]   = useState<Record<string, string>>({})
 
-  const [fields, setFields] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    password: "",
-    confirm_password: "",
-  })
+  const [fields, setFields] = useState({ email: "", password: "" })
 
-  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const set = (key: keyof typeof fields) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFields(prev => ({ ...prev, [key]: e.target.value }))
     if (errors[key]) setErrors(prev => { const n = { ...prev }; delete n[key]; return n })
   }
@@ -61,13 +51,11 @@ export default function SignupForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email:      fields.email.trim(),
-          password:   fields.password,
-          first_name: fields.first_name.trim(),
-          last_name:  fields.last_name.trim(),
+          email:    fields.email.trim(),
+          password: fields.password,
         }),
       })
-      const json = await res.json()
+      const json = await res.json().catch(() => ({}))
 
       if (!res.ok) {
         if (res.status === 409 || json.error === "already_exists") {
@@ -90,11 +78,17 @@ export default function SignupForm() {
         return
       }
 
-      // Retour à la page qui a demandé l'inscription (invitation d'un comptable : pas d'entreprise à créer)
-      const next = safeNextPath(new URLSearchParams(window.location.search).get("next"))
-      toast.success(next ? "Compte créé." : "Compte créé. Il reste votre entreprise.")
       trackEvent("Lead", { currency: "EUR", value: 0 })
-      router.push(next ?? "/signup/company")
+      // Retour à la page qui a demandé l'inscription (invitation d'un comptable :
+      // pas d'entreprise à créer) ; sinon le tableau de bord, où la fenêtre
+      // « Bienvenue » s'ouvre avec la mention « Compte créé »
+      const next = safeNextPath(new URLSearchParams(window.location.search).get("next"))
+      if (next) {
+        toast.success("Compte créé.")
+        router.push(next)
+      } else {
+        router.push("/dashboard?bienvenue=1")
+      }
     } catch {
       toast.error("Une erreur inattendue s'est produite. Réessayez.", { duration: 8000 })
       setLoading(false)
@@ -102,37 +96,7 @@ export default function SignupForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-4" noValidate>
-
-      {/* Prénom + Nom */}
-      <div className="grid grid-cols-2 gap-3">
-        <Field id="first_name" label="Prénom" error={errors.first_name}>
-          <input
-            id="first_name"
-            placeholder="Thomas"
-            autoComplete="given-name"
-            className={AUTH_INPUT}
-            aria-invalid={errors.first_name ? true : undefined}
-            aria-describedby={errors.first_name ? "first_name-error" : undefined}
-            value={fields.first_name}
-            onChange={set("first_name")}
-            disabled={loading}
-          />
-        </Field>
-        <Field id="last_name" label="Nom" error={errors.last_name}>
-          <input
-            id="last_name"
-            placeholder="Garnier"
-            autoComplete="family-name"
-            className={AUTH_INPUT}
-            aria-invalid={errors.last_name ? true : undefined}
-            aria-describedby={errors.last_name ? "last_name-error" : undefined}
-            value={fields.last_name}
-            onChange={set("last_name")}
-            disabled={loading}
-          />
-        </Field>
-      </div>
+    <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4 sm:mt-8 sm:gap-[18px]" noValidate>
 
       {/* Email */}
       <Field id="email" label="Adresse email" error={errors.email}>
@@ -152,42 +116,31 @@ export default function SignupForm() {
       </Field>
 
       {/* Mot de passe */}
-      <Field id="password" label="Mot de passe" error={errors.password} hint="8 caractères minimum">
+      <Field id="password" label="Mot de passe" error={errors.password} hint="8&nbsp;caractères minimum">
         <PasswordInput
           id="password"
           autoComplete="new-password"
           error={errors.password}
+          hint
           value={fields.password}
           onChange={set("password")}
           disabled={loading}
         />
       </Field>
 
-      {/* Confirmation */}
-      <Field id="confirm_password" label="Confirmer le mot de passe" error={errors.confirm_password}>
-        <PasswordInput
-          id="confirm_password"
-          autoComplete="new-password"
-          error={errors.confirm_password}
-          value={fields.confirm_password}
-          onChange={set("confirm_password")}
-          disabled={loading}
-        />
-      </Field>
-
       {/* CTA */}
-      <AuthSubmit loading={loading} loadingLabel="Création en cours…" className="mt-1.5">
+      <AuthSubmit loading={loading} loadingLabel="Création en cours…" className="mt-1 sm:mt-1.5">
         Créer mon compte
       </AuthSubmit>
 
       {/* CGU */}
-      <p className="mt-2 text-[13px] leading-[1.55] text-q-text-4">
+      <p className="m-0 text-[13px] leading-[1.55] text-q-text-4">
         En créant un compte, vous acceptez les{" "}
         <a href="/cgu" className="q-link !font-medium">conditions d’utilisation</a>{" "}
         et la{" "}
         <a href="/confidentialite" className="q-link !font-medium">politique de confidentialité</a>.
         {/* Information à la collecte (CPCE art. L34-5, CNIL) : voir lib/onboarding/unsubscribe.ts */}
-        {" "}Qonforme peut vous envoyer quelques conseils de démarrage par e-mail pendant vos 30 premiers jours&nbsp;; un
+        {" "}Qonforme peut vous envoyer quelques conseils de démarrage par email pendant vos 30&nbsp;premiers jours&nbsp;; un
         lien dans chacun permet de les arrêter.
       </p>
     </form>

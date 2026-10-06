@@ -4,44 +4,49 @@ import { sendEmail } from "@/lib/email/resend"
 import { buildWelcomeEmail } from "@/lib/email/templates/welcome"
 import { claimSequenceStep, enrollInOnboarding } from "@/lib/onboarding/store"
 import { listUnsubscribeHeaders, unsubscribePageUrl } from "@/lib/onboarding/unsubscribe"
+import {
+  isAlreadyRegistered,
+  parseSignupInput,
+  signupAuthErrorMessage,
+  signupMetadata,
+  SIGNUP_REQUIRED_ERROR,
+} from "@/lib/auth/signup-input"
 
 /**
- * POST /api/auth/signup
+ * POST /api/auth/signup — `{ email, password, first_name?, last_name? }`
+ *
+ * Inscription en deux champs (06/10/2026) : adresse email et mot de passe ;
+ * prénom et nom facultatifs, renseignés ensuite dans la fenêtre « Bienvenue »
+ * du tableau de bord (validation : lib/auth/signup-input.ts).
  *
  * Crée un compte utilisateur côté serveur via le client admin Supabase.
  * - email_confirm: true → bypass de la confirmation email (pas d'envoi SMTP)
  *   Évite le 500 de auth/v1/signup causé par les rate limits ou la
  *   misconfiguration SMTP du projet Supabase.
+ * - user_metadata : `signup_wizard: true` (+ prénom et nom s'ils sont fournis).
  * - Retourne { success: true } — le client signe ensuite avec signInWithPassword.
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { email, password, first_name, last_name } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: SIGNUP_REQUIRED_ERROR }, { status: 400 })
+    }
 
-    // Validation minimale côté serveur
-    if (!email || !password || !first_name || !last_name) {
-      return NextResponse.json(
-        { error: "Tous les champs sont requis." },
-        { status: 400 }
-      )
+    const parsed = parseSignupInput(body)
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Le mot de passe doit faire au moins 8 caractères." },
-        { status: 400 }
-      )
-    }
+    const input = parsed.value
 
     const admin = createAdminClient()
 
     const { data, error } = await admin.auth.admin.createUser({
-      email: email.trim().toLowerCase(),
-      password,
-      user_metadata: {
-        first_name: first_name.trim(),
-        last_name:  last_name.trim(),
-      },
+      email: input.email,
+      password: input.password,
+      user_metadata: signupMetadata(input),
       email_confirm: true, // bypass confirmation email → pas de SMTP → pas de 500
     })
 
@@ -54,12 +59,7 @@ export async function POST(request: NextRequest) {
       })
 
       // Compte déjà existant
-      if (
-        error.message.includes("already registered") ||
-        error.message.includes("already exists") ||
-        error.message.includes("duplicate") ||
-        error.message.includes("User already registered")
-      ) {
+      if (isAlreadyRegistered(error as { message?: string; code?: string })) {
         return NextResponse.json({ error: "already_exists" }, { status: 409 })
       }
 
@@ -71,12 +71,16 @@ export async function POST(request: NextRequest) {
           "dans le SQL Editor du dashboard Supabase."
         )
         return NextResponse.json(
-          { error: "Erreur de configuration base de données. Contactez le support." },
+          { error: "La création du compte a échoué. Réessayez dans un instant." },
           { status: 500 }
         )
       }
 
-      return NextResponse.json({ error: error.message }, { status: 400 })
+      // Supabase répond en anglais : message français, jamais le texte brut
+      return NextResponse.json(
+        { error: signupAuthErrorMessage(error as { message?: string; code?: string }) ?? "La création du compte a échoué. Vérifiez votre adresse email et réessayez." },
+        { status: 400 }
+      )
     }
 
     // Séquence de démarrage : seul un compte créé ici y entre (jamais les comptes
@@ -84,11 +88,12 @@ export async function POST(request: NextRequest) {
     // l'email de bienvenue part comme avant, sans lien de désinscription.
     const userId = data.user?.id
     const enrolled = userId ? await enrollInOnboarding(admin, userId) : false
-    const to = email.trim().toLowerCase()
+    const to = input.email
 
-    // Email de bienvenue — fire & forget (ne bloque pas la réponse)
+    // Email de bienvenue — fire & forget (ne bloque pas la réponse) ; sans
+    // prénom, le cas normal depuis l'inscription en deux champs
     const { subject, html } = buildWelcomeEmail({
-      firstName: first_name.trim(),
+      firstName: input.first_name ?? null,
       unsubscribeUrl: enrolled && userId ? unsubscribePageUrl(userId) : null,
     })
     sendEmail({

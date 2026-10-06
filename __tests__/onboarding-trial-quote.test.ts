@@ -9,7 +9,7 @@ import { PDFDocument } from "pdf-lib"
 import { fakeOnboardingDb, type FakeOnboardingDb } from "./helpers/fake-onboarding-db"
 
 let db: FakeOnboardingDb
-const sent: { to: string; subject: string; attachments?: { filename: string; content: Buffer }[]; fromName?: string }[] = []
+const sent: { to: string; subject: string; html?: string; attachments?: { filename: string; content: Buffer }[]; fromName?: string }[] = []
 
 vi.mock("@/lib/supabase/server", () => ({ createAdminClient: () => db.client, createClient: () => db.client }))
 vi.mock("@/lib/email/resend", () => ({
@@ -18,6 +18,7 @@ vi.mock("@/lib/email/resend", () => ({
 
 import { buildTrialQuote, TRIAL_QUOTE_LABEL } from "@/lib/onboarding/trial-quote"
 import { generateQuotePdf } from "@/lib/pdf/quote"
+import { FRANCHISE_MENTION, resolveDocumentMentions } from "@/lib/legal/mentions"
 import { POST } from "@/app/api/onboarding/trial-quote/route"
 
 const USER = "3f2b8c1e-5a4d-4e7f-9b2a-1c0d9e8f7a6b"
@@ -61,6 +62,27 @@ describe("contenu du devis d'essai", () => {
     expect(q.lines?.every((l) => l.vat_rate === 0)).toBe(true)
   })
 
+  it("franchise déclarée dans le profil légal (fenêtre « Bienvenue ») : pas de TVA, mention 293 B sur le PDF", () => {
+    const company = { ...COMPANY, legal_notice: null, legal_profile: { trade: "plaquiste", vat_regime: "franchise" } }
+    const q = buildTrialQuote({
+      company,
+      today: "2026-10-03",
+      products: [{ name: "Pose de plaque BA13", unit_price_ht: 32.5, vat_rate: 10 }],
+    })
+    expect(q.total_vat).toBe(0)
+    expect(q.total_ttc).toBe(32.5)
+    expect(q.lines?.every((l) => l.vat_rate === 0)).toBe(true)
+    // Le PDF lit les mêmes mentions (lib/pdf/quote.ts → withDocumentMentions) : brouillon, réglages actuels
+    expect(resolveDocumentMentions(company, q, "quote").lines).toContain(FRANCHISE_MENTION)
+  })
+
+  it("TVA facturée déclarée dans le profil : l'ancienne mention 293 B ne retire plus la TVA", () => {
+    const company = { ...COMPANY, legal_notice: "TVA non applicable, art. 293 B du CGI", legal_profile: { vat_regime: "assujetti" } }
+    const q = buildTrialQuote({ company, today: "2026-10-03" })
+    expect(q.total_vat).toBe(169)
+    expect(resolveDocumentMentions(company, q, "quote").lines).not.toContain(FRANCHISE_MENTION)
+  })
+
   it("PDF généré en mémoire, filigrane « EXEMPLE »", async () => {
     const quote = buildTrialQuote({ company: COMPANY, today: "2026-10-03" })
     const pdf = await generateQuotePdf({ quote, company: { name: COMPANY.name, city: COMPANY.city }, watermark: "EXEMPLE" })
@@ -91,6 +113,13 @@ describe("POST /api/onboarding/trial-quote", () => {
     expect(db.ops.some((o) => o.table === "quotes" || o.table === "invoices")).toBe(false)
     expect(db.tables.quotes).toBeUndefined()
     expect(db.tables.trial_quote_sends).toHaveLength(1)
+  })
+
+  it("franchise du profil légal lue en base : devis d'essai sans TVA", async () => {
+    db.tables.companies = [{ ...COMPANY, legal_profile: { vat_regime: "franchise" } }]
+    expect((await POST()).status).toBe(200)
+    expect(sent[0].html).toMatch(/845,00/)
+    expect(sent[0].html).not.toMatch(/1\s?014,00/)
   })
 
   it("3 par 24 heures, puis 429 sans email", async () => {

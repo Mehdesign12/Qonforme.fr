@@ -12,6 +12,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
+import { toastCompanyRequired } from "@/components/shared/company-required"
 import { isSubscriptionRequired } from "@/components/billing/PaywallDialog"
 import type { SignatureDocType, SignaturePanelData } from "@/lib/signature/types"
 
@@ -63,6 +64,7 @@ export function useSignaturePanel(type: SignatureDocType, id: string, onDocChang
       })
       const json = await res.json().catch(() => ({}))
       if (isSubscriptionRequired(res.status, json)) { setPaywall(true); return null }
+      if (toastCompanyRequired(res.status, json)) return null
       if (!res.ok) { toast.error(json.error ?? "L'action n'a pas abouti. Réessayez."); return null }
       apply(json)
       return json

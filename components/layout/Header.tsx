@@ -94,6 +94,10 @@ function AccountMenu({ identity }: { identity: ShellIdentity }) {
   const [bugOpen, setBugOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
   const name = fullNameOf(identity)
+  // Sans prénom ni nom (inscription en deux champs) : initiales de l'entreprise,
+  // sinon de l'adresse email — jamais « MC » tiré du libellé « Mon compte »
+  const hasName = Boolean(identity.firstName || identity.lastName)
+  const initials = initialsOf(hasName ? name : identity.companyName || identity.email.split("@")[0] || name)
   const demo = identity.mode === "demo"
 
   return (
@@ -104,12 +108,12 @@ function AccountMenu({ identity }: { identity: ShellIdentity }) {
           aria-label="Menu du compte"
           title={name}
         >
-          {initialsOf(name)}
+          {initials}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={10} className="w-[272px]">
           <div className="mb-1 flex items-center gap-3 rounded-[10px] bg-[var(--q-surface-2)] p-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--q-accent)] text-[13px] font-semibold text-white dark:bg-[#2563EB]">
-              {initialsOf(name)}
+              {initials}
             </span>
             <span className="flex min-w-0 flex-col">
               <span className="truncate text-[13px] font-semibold text-[var(--q-ink)]">{name}</span>

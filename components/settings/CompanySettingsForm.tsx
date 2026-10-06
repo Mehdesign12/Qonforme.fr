@@ -214,9 +214,10 @@ export function CompanySettingsForm({
     const e: Partial<Record<keyof CompanyFields, string>> = {}
     const siren = f.siren.trim()
     if (!f.name.trim())                 e.name     = "Requis"
-    if (!siren)                         e.siren    = "Requis"
-    else if (!/^\d{9}$/.test(siren))    e.siren    = "9 chiffres exactement"
-    else if (!isValidSiren(siren))      e.siren    = "SIREN invalide : vérifiez les 9 chiffres (clé de contrôle)"
+    // SIREN facultatif ici (entreprise saisie sans SIREN depuis la fenêtre d'inscription) :
+    // l'envoi d'un document le réclame (lib/legal/issuer.ts, 409 COMPANY_REQUIRED)
+    if (siren && !/^\d{9}$/.test(siren))    e.siren    = "9 chiffres exactement"
+    else if (siren && !isValidSiren(siren)) e.siren    = "SIREN invalide : vérifiez les 9 chiffres (clé de contrôle)"
     if (!f.address.trim())              e.address  = "Requis"
     if (!f.zip_code.trim())             e.zip_code = "Requis"
     if (!f.city.trim())                 e.city     = "Requis"
@@ -390,7 +391,10 @@ export function CompanySettingsForm({
                 <input id="name" className="q-input" placeholder="Mon Entreprise SARL" autoComplete="organization"
                   value={fields.name} onChange={set("name")} aria-invalid={!!errors.name} />
               </Field>
-              <Field label="SIREN" htmlFor="siren" error={errors.siren} ok={sirenOk ? "Numéro valide" : undefined}>
+              <Field
+                label="SIREN" htmlFor="siren" error={errors.siren} ok={sirenOk ? "Numéro valide" : undefined}
+                hint={fields.siren.trim() ? undefined : "Obligatoire avant le premier envoi d’un devis ou d’une facture."}
+              >
                 <input id="siren" className="q-input font-mono" placeholder="123456789" inputMode="numeric" maxLength={9}
                   value={fields.siren} onChange={set("siren")} aria-invalid={!!errors.siren} />
               </Field>

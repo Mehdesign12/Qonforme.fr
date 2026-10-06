@@ -8,6 +8,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import { toastCompanyRequired } from "@/components/shared/company-required"
 import { FileText, Info, RotateCcw, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
@@ -403,6 +404,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       const json = await res.json()
       if (isSubscriptionRequired(res.status, json)) { setPaywall("send"); return }
       if (isArtisanPaywall(res.status, json)) { setPaywall("artisan"); return }
+      if (toastCompanyRequired(res.status, json)) return
       if (!res.ok) { toast.error(json.error); return }
       setInvoice(prev => mergeInvoice(prev, json.invoice))
       toast.success(`Statut mis à jour : ${STATUS_LABELS[newStatus] ?? newStatus}`)
@@ -482,6 +484,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       const json = await res.json()
       if (isSubscriptionRequired(res.status, json)) { setShowSendModal(false); setPaywall("send"); return }
       if (isArtisanPaywall(res.status, json)) { setShowSendModal(false); setPaywall("artisan"); return }
+      if (toastCompanyRequired(res.status, json)) { setShowSendModal(false); return }
       if (!res.ok) {
         // Facture émise (numérotée) mais email non parti : elle reste émise, à renvoyer
         if (json.issued && json.invoice) { setInvoice(prev => mergeInvoice(prev, json.invoice)); setShowSendModal(false) }

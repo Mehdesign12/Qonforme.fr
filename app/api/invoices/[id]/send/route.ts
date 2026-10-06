@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { statusAfterSend } from "@/lib/utils/document-status"
 import { requireIssuingAccess } from "@/lib/stripe/subscription"
+import { requireIssuerIdentity } from "@/lib/legal/issuer"
 import { sendEmail } from "@/lib/email/resend"
 import { buildInvoiceEmail } from "@/lib/email/templates/invoice"
 import { generateInvoicePdf } from "@/lib/pdf/invoice"
@@ -37,6 +38,12 @@ export async function POST(_req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
     }
     let invoice = loaded
+
+    // Identité de l'émetteur (SIREN, adresse), obligatoire sur la facture :
+    // vérifiée AVANT le mur de paiement, pour qu'un artisan ne paie jamais une
+    // formule et se voie ensuite refuser l'envoi (lib/legal/issuer.ts)
+    const noIdentity = await requireIssuerIdentity(supabase, user.id)
+    if (noIdentity) return noIdentity
 
     // Envoyer une facture demande une formule active (devis gratuits, factures
     // payantes). Acompte, situation ou solde à émettre : la formule Artisan

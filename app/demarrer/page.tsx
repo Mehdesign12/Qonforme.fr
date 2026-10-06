@@ -19,11 +19,13 @@ const STEPS = [{ label: "Compte" }, { label: "Entreprise" }, { label: "Démarrer
 
 /**
  * Étape « Par quoi voulez-vous commencer ? » (DECISIONS-STRATEGIQUES.md § 8),
- * après l'entreprise. Le tableau de bord d'un compte neuf y renvoie une fois
- * (app/dashboard/page.tsx) ; l'afficher marque les premiers pas comme vus, et
- * « Passer au tableau de bord » ne revient jamais ici.
+ * après l'entreprise. La fenêtre « Bienvenue » du tableau de bord y mène pour
+ * le devis d'essai et le rappel (`?choix=essai`, `?choix=plus-tard`) ;
+ * l'afficher marque les premiers pas comme vus, et « Passer au tableau de
+ * bord » ne revient jamais ici.
  *
- * Accès : compte connecté avec son entreprise (sinon connexion, puis entreprise).
+ * Accès : compte connecté avec son entreprise (sinon connexion, ou tableau de
+ * bord et sa fenêtre « Bienvenue » pour créer l'entreprise).
  */
 export default async function StartPage({ searchParams }: { searchParams: { choix?: string } }) {
   let userId: string | null = null
@@ -67,7 +69,8 @@ export default async function StartPage({ searchParams }: { searchParams: { choi
 
   // Hors du try/catch : redirect() lève une exception interne de Next.js
   if (!userId) redirect("/login")
-  if (companyMissing) redirect("/signup/company")
+  // Sans entreprise : le tableau de bord ouvre la fenêtre « Bienvenue » (étape entreprise)
+  if (companyMissing) redirect("/dashboard")
 
   const initialPanel: StartPanel | null =
     searchParams?.choix === "essai" ? "essai" : searchParams?.choix === "plus-tard" ? "plus-tard" : null

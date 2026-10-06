@@ -6,6 +6,7 @@ import { buildPurchaseOrderEmail } from "@/lib/email/templates/purchase-order"
 import { generatePurchaseOrderPdf } from "@/lib/pdf/purchase-order"
 import { markShareLinkSent, shareLinkForEmail } from "@/lib/signature/share"
 import { selectCompanyWithProfile } from "@/lib/legal/db"
+import { requireIssuerIdentity } from "@/lib/legal/issuer"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -27,6 +28,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
       .eq("user_id", user.id)
       .single()
     if (poErr || !po) return NextResponse.json({ error: "Bon de commande introuvable" }, { status: 404 })
+
+    // Identité de l'émetteur (SIREN, adresse) : obligatoire sur le bon de commande envoyé
+    const noIdentity = await requireIssuerIdentity(supabase, user.id)
+    if (noIdentity) return noIdentity
 
     const clientEmail = po.client?.email
     if (!clientEmail) return NextResponse.json({ error: "Le client n'a pas d'adresse email" }, { status: 422 })

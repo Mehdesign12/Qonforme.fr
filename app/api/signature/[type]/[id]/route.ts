@@ -3,6 +3,7 @@ import { createAdminClient, createClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/resend"
 import { buildSignatureRequestEmail } from "@/lib/email/templates/signature"
 import { hasSignatureAccess, requireSignatureAccess } from "@/lib/signature/access"
+import { requireIssuerIdentity } from "@/lib/legal/issuer"
 import { decryptToken, tokenMatches } from "@/lib/signature/crypto"
 import { canCreateLink, clientKindOf, computeLinkState, isValidEmail, linkExpiry } from "@/lib/signature/rules"
 import {
@@ -20,8 +21,9 @@ import type { SignatureDocType, SignaturePanelData, SignaturePanelLink, Signatur
  *   - send   : envoie au client l'email « Consulter et signer » avec le PDF ;
  *   - renew  : remplace le lien actif par un nouveau (l'ancien devient caduc) ;
  *   - disable: désactive le lien actif.
- * Créer, envoyer ou renouveler demande une formule (402 SUBSCRIPTION_REQUIRED) ;
- * désactiver reste toujours possible.
+ * Créer, envoyer ou renouveler demande l'identité complète de l'émetteur
+ * (409 COMPANY_REQUIRED, lib/legal/issuer.ts), puis une formule
+ * (402 SUBSCRIPTION_REQUIRED) ; désactiver reste toujours possible.
  */
 export const dynamic = "force-dynamic"
 export const maxDuration = 30
@@ -137,6 +139,11 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (action !== "link" && action !== "send" && action !== "renew") {
       return NextResponse.json({ error: "Action inconnue" }, { status: 400 })
     }
+
+    // Partager le document, c'est l'émettre : identité de l'émetteur (SIREN,
+    // adresse) d'abord, avant le mur de paiement (lib/legal/issuer.ts)
+    const noIdentity = await requireIssuerIdentity(supabase, user.id)
+    if (noIdentity) return noIdentity
 
     const paywall = await requireSignatureAccess(supabase, user.id)
     if (paywall) return paywall

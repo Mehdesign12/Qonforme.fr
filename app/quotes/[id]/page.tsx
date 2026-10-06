@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import { toastCompanyRequired } from "@/components/shared/company-required"
 import { FileX2, Loader2 } from "lucide-react"
 import { EmptyState } from "@/components/app/kit"
 import { createClient } from "@/lib/supabase/client"
@@ -182,6 +183,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
     try {
       const res  = await fetch(`/api/quotes/${params.id}/send`, { method: "POST" })
       const json = await res.json()
+      if (toastCompanyRequired(res.status, json)) return false
       if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return false }
       setQuote({
         ...quote,

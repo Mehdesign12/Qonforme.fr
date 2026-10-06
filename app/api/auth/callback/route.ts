@@ -33,18 +33,8 @@ export async function GET(request: NextRequest) {
   }
 
   // ── Redirection post-auth normale ────────────────────────────────────────
-  const { data: { user } } = await supabase.auth.getUser()
-  if (user) {
-    const { data: company } = await supabase
-      .from("companies")
-      .select("id")
-      .eq("user_id", user.id)
-      .single()
-
-    if (!company) {
-      return NextResponse.redirect(`${origin}/signup/company`)
-    }
-  }
-
+  // Toujours le tableau de bord : un compte sans entreprise y trouve la fenêtre
+  // « Bienvenue » (components/onboarding/InscriptionDialog.tsx), un comptable
+  // invité est renvoyé vers son espace par app/dashboard/page.tsx.
   return NextResponse.redirect(`${origin}/dashboard`)
 }

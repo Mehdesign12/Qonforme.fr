@@ -77,7 +77,9 @@ export function hrefFor(link: { href: string; demoHref?: string }, mode: ShellMo
 
 /** Vrai si `pathname` appartient à la section `href` (le tableau de bord n'englobe pas les autres). */
 export function isActivePath(pathname: string, href: string): boolean {
-  if (href === "/dashboard" || href === "/demo") return pathname === href
+  if (href === "/dashboard") return pathname === href
+  // /demo/bienvenue : tableau de bord d'un compte neuf de la démo
+  if (href === "/demo") return pathname === href || pathname === "/demo/bienvenue"
   if (href === "/settings" || href === "/demo/settings") {
     return pathname.startsWith(href) && !pathname.startsWith(href + "/exports")
   }
@@ -126,6 +128,8 @@ export function crumbsFor(rawPath: string): Crumbs {
   const path = isDemo ? (rawPath === "/demo" ? "/dashboard" : rawPath.slice("/demo".length)) : rawPath
   const prefix = (href: string) => (isDemo ? (href === "/dashboard" ? "/demo" : "/demo" + href) : href)
 
+  // Tableau de bord d'un compte neuf de la démo (fenêtre « Bienvenue »)
+  if (path === "/bienvenue") return { current: "Tableau de bord" }
   const section = SECTION_TITLES.find((s) => path === s.prefix || path.startsWith(s.prefix + "/"))
   if (!section) return { current: "Qonforme" }
   if (path === section.prefix) return { current: section.title }

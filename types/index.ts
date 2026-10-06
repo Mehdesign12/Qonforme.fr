@@ -161,4 +161,8 @@ export interface SireneResult {
   activity_code?: string
   /** Vrai si l'entreprise est fermée (état administratif « cessée » au répertoire Sirene). */
   closed?: boolean
+  /** Catégorie juridique Sirene (4 chiffres, « 1000 » = entrepreneur individuel), voir lib/legal/from-sirene.ts. */
+  legal_category?: string
+  /** Entrepreneur individuel : prénom usuel, initiale en capitale (« Ouassim » ; le répertoire ne porte pas les accents). */
+  first_name?: string
 }

@@ -9,7 +9,7 @@ import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import type { createClient } from "@/lib/supabase/server"
 import {
   ISSUED_INVOICE_STATUSES, OPEN_INVOICE_STATUSES, buildDashboardView, issuedSince,
-  type DashInvoice, type DashPeriod, type DashQuote, type DashboardInput, type DashboardView,
+  type DashInscription, type DashInvoice, type DashPeriod, type DashQuote, type DashboardInput, type DashboardView,
 } from "@/components/dashboard/model"
 
 type ClientJoin = { name?: string | null; city?: string | null; email?: string | null } | null
@@ -48,13 +48,17 @@ export async function getDashboardView({
   company,
   today,
   period,
+  inscription = null,
 }: {
   supabase: Awaited<ReturnType<typeof createClient>>
   userId: string | null
   firstName: string
+  /** Null pour un compte sans entreprise (fenêtre « Bienvenue » à l'étape entreprise). */
   company: DashboardInput["company"]
   today: string
   period: DashPeriod
+  /** Étape d'inscription restante (tuile « Terminer votre inscription »). */
+  inscription?: DashInscription | null
 }): Promise<DashboardView> {
   const empty: DashboardInput = {
     mode: "app",
@@ -62,6 +66,7 @@ export async function getDashboardView({
     today,
     firstName,
     company,
+    inscription,
     counts: { invoices: null, quotes: null },
     issued: [],
     open: [],

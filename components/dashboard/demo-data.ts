@@ -9,7 +9,7 @@ import {
 } from "@/lib/demo/data"
 import {
   ISSUED_INVOICE_STATUSES, OPEN_INVOICE_STATUSES, buildDashboardView,
-  type DashInvoice, type DashPeriod, type DashboardView,
+  type DashInscription, type DashInvoice, type DashPeriod, type DashboardView,
 } from "@/components/dashboard/model"
 
 /**
@@ -70,5 +70,27 @@ export function buildDemoDashboardView(period: DashPeriod = "mois"): DashboardVi
         total_ttc: q.total_ttc, client_name: q.client.name,
       })),
     clientsWithoutSiren: DEMO_CLIENTS.filter((c) => !c.siren).length,
+  })
+}
+
+/**
+ * Tableau de bord d'un compte neuf de la démo (/demo/bienvenue), derrière la
+ * fenêtre « Bienvenue » : aucune entreprise, aucun document, mêmes calculs.
+ */
+export function buildNewDemoDashboardView(inscription: DashInscription | null): DashboardView {
+  return buildDashboardView({
+    mode: "demo",
+    today: DEMO_TODAY,
+    firstName: "",
+    company: null,
+    counts: { invoices: 0, quotes: 0 },
+    issued: [],
+    open: [],
+    paid: [],
+    drafts: [],
+    recent: [],
+    quotes: [],
+    clientsWithoutSiren: 0,
+    inscription,
   })
 }
