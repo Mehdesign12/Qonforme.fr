@@ -18,7 +18,8 @@ async function getPost(slug: string) {
   const admin = createAdminClient()
   const { data } = await admin
     .from("blog_posts")
-    .select("slug, title, excerpt, content, cover_url, published_at, ai_prompt, ai_keywords")
+    // « * » : seo_title, seo_description et robots (migration 20261006) sont lus s'ils existent, sans casser la page sinon
+    .select("*")
     .eq("slug", slug)
     .eq("is_published", true)
     .single()
@@ -76,10 +77,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const post = await getPost(slug)
   if (!post) return { title: "Article introuvable" }
 
+  // Articles PushRank : titre et description SEO fournis, directives d'indexation respectées
+  const seoTitle = (post.seo_title as string | null | undefined) || post.title
+  const seoDescription = (post.seo_description as string | null | undefined) || post.excerpt
+  const robots = (post.robots ?? {}) as { index?: boolean; follow?: boolean; noSnippet?: boolean; noArchive?: boolean }
+  const hasRobots = Object.keys(robots).length > 0
+
   return {
-    title: fitTitle(post.title),
-    description: fitDescription(post.excerpt || `${post.title} — Guide facturation électronique par Qonforme.`),
+    title: fitTitle(seoTitle),
+    description: fitDescription(seoDescription || `${post.title} — Guide facturation électronique par Qonforme.`),
     alternates: { canonical: `/blog/${post.slug}` },
+    ...(hasRobots
+      ? { robots: { index: robots.index !== false, follow: robots.follow !== false, nosnippet: robots.noSnippet === true, noarchive: robots.noArchive === true } }
+      : {}),
     openGraph: {
       title: post.title,
       description: post.excerpt ? fitDescription(post.excerpt) : undefined,
