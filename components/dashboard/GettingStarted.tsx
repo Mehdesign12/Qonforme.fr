@@ -6,13 +6,19 @@
  * Tuiles limitées aux écrans qui existent : les tuiles « factures
  * fournisseurs » et « importer vos clients » du canevas ne sont pas livrées
  * (DECISIONS § 10), le logo se règle dans Paramètres › Modèles de documents.
+ *
+ * Inscription en deux champs (canevas « Plus-tard ») : tant qu'une étape de la
+ * fenêtre « Bienvenue » reste à faire, la tuile « Terminer votre inscription »
+ * vient en premier, à la place de « Compléter votre entreprise », et rouvre la
+ * fenêtre à cette étape. Sur téléphone, le logo long Qonforme coiffe la page.
  */
 import Link from "next/link"
 import { ArrowRight, Building2, FileCheck2, FileText, ImagePlus, UserPlus } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { cn } from "@/lib/utils"
-import { hrefFor, type DashboardView } from "@/components/dashboard/model"
+import { hrefFor, type DashInscription, type DashMode, type DashboardView } from "@/components/dashboard/model"
 import { KPI_GRID } from "@/components/dashboard/ui"
+import { BrandLogo } from "@/components/dashboard/BrandLogo"
 
 const TILES = [
   { key: "quote", path: "/quotes/new", Icon: FileCheck2, title: "Faire votre premier devis", text: "Gratuit et sans limite de nombre." },
@@ -20,6 +26,56 @@ const TILES = [
   { key: "company", path: "/settings/company", Icon: Building2, title: "Compléter votre entreprise", text: "SIREN, adresse et IBAN, repris sur vos documents." },
   { key: "client", path: "/clients/new", Icon: UserPlus, title: "Ajouter votre premier client", text: "Par son SIREN ou à la main." },
 ]
+
+/** Ce que l'étape restante apporte, sous « Terminer votre inscription ». */
+const RESUME_TEXT: Record<DashInscription["step"], string> = {
+  company: "Votre entreprise, reprise sur vos devis et vos factures.",
+  trade: "Votre métier prépare votre catalogue.",
+  name: "Votre prénom, pour vous accueillir.",
+}
+
+const TILE = cn(
+  "group flex flex-col gap-2 rounded-[20px] border border-[var(--q-line)] bg-[var(--q-surface)] p-5 text-[var(--q-ink-strong)] md:p-6",
+  "shadow-[0_1px_2px_rgba(10,17,34,.04),0_12px_32px_-24px_rgba(10,17,34,.18)]",
+  "transition-[border-color,box-shadow,transform] duration-200",
+  "hover:-translate-y-0.5 hover:border-[var(--q-field)] hover:shadow-[0_2px_4px_rgba(10,17,34,.05),0_22px_44px_-26px_rgba(10,17,34,.32)]",
+  "active:scale-[.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[var(--q-accent)]",
+  "motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100",
+)
+
+/** Lien de la tuile : rouvre la fenêtre « Bienvenue » à l'étape restante. */
+function resumeHref(mode: DashMode): string {
+  return mode === "demo" ? "/demo/bienvenue?inscription=reprendre" : "/dashboard?inscription=reprendre"
+}
+
+function ResumeTile({ inscription, mode }: { inscription: DashInscription; mode: DashMode }) {
+  const done = inscription.number - 1
+  return (
+    <Link href={resumeHref(mode)} className={cn(TILE, "!border-[var(--q-wash-line)]")}>
+      <span className="mb-2.5 flex items-start">
+        <Building2 className="size-[26px] shrink-0" strokeWidth={1.25} aria-hidden />
+      </span>
+      <span className="text-lg font-semibold tracking-[-0.01em]">Terminer votre inscription</span>
+      <span className="text-[15px] leading-normal text-[var(--q-text-3)]">{RESUME_TEXT[inscription.step]}</span>
+      <span className="mt-1.5 flex items-center gap-2.5">
+        <span className="flex gap-1" aria-hidden>
+          {Array.from({ length: inscription.total }, (_, i) => (
+            <span
+              key={i}
+              className={cn("h-1 w-[22px] rounded-full", i < done ? "bg-[var(--q-accent)]" : "bg-[var(--q-line)]")}
+            />
+          ))}
+        </span>
+        <span className="whitespace-nowrap text-[13px] text-[var(--q-text-4)]">
+          Étape {inscription.number} sur {inscription.total}
+        </span>
+        <span className="ml-auto whitespace-nowrap text-[14px] font-semibold text-[var(--q-accent-strong)]">
+          Reprendre <span aria-hidden>→</span>
+        </span>
+      </span>
+    </Link>
+  )
+}
 
 function ZeroKpi({ label, value }: { label: string; value: string }) {
   return (
@@ -32,8 +88,17 @@ function ZeroKpi({ label, value }: { label: string; value: string }) {
 
 export function GettingStarted({ view }: { view: DashboardView }) {
   const zero = formatCurrency(0)
+  const inscription = view.inscription
+  // L'inscription à terminer remplace « Compléter votre entreprise »
+  const tiles = inscription ? TILES.filter((t) => t.key !== "company") : TILES
+
   return (
     <div className="flex flex-col gap-6 md:gap-7">
+      {/* Téléphone et tablette : logo long centré (pas de barre supérieure sous 1024 px) */}
+      <div className="-mb-1 flex justify-center pt-1 lg:hidden">
+        <BrandLogo />
+      </div>
+
       <div className="flex flex-col gap-1.5">
         <span className="text-sm text-[var(--q-text-4)]">{view.dateLong}</span>
         <h1 className="q-h1">{view.firstName ? `Bienvenue, ${view.firstName}.` : "Bienvenue."}</h1>
@@ -43,19 +108,9 @@ export function GettingStarted({ view }: { view: DashboardView }) {
       <section aria-labelledby="dash-start" className="flex flex-col gap-3">
         <h2 id="dash-start" className="q-h2">Pour commencer</h2>
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))]">
-          {TILES.map(({ key, path, Icon, title, text }) => (
-            <Link
-              key={key}
-              href={hrefFor(view.mode, path)}
-              className={cn(
-                "group flex flex-col gap-2 rounded-[20px] border border-[var(--q-line)] bg-[var(--q-surface)] p-5 text-[var(--q-ink-strong)] md:p-6",
-                "shadow-[0_1px_2px_rgba(10,17,34,.04),0_12px_32px_-24px_rgba(10,17,34,.18)]",
-                "transition-[border-color,box-shadow,transform] duration-200",
-                "hover:-translate-y-0.5 hover:border-[var(--q-field)] hover:shadow-[0_2px_4px_rgba(10,17,34,.05),0_22px_44px_-26px_rgba(10,17,34,.32)]",
-                "active:scale-[.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[var(--q-accent)]",
-                "motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100",
-              )}
-            >
+          {inscription && <ResumeTile inscription={inscription} mode={view.mode} />}
+          {tiles.map(({ key, path, Icon, title, text }) => (
+            <Link key={key} href={hrefFor(view.mode, path)} className={TILE}>
               <span className="mb-2.5 flex items-start justify-between">
                 <Icon className="size-[26px] shrink-0" strokeWidth={1.25} aria-hidden />
                 <ArrowRight

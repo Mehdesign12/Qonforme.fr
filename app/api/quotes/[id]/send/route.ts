@@ -6,6 +6,7 @@ import { buildQuoteEmail } from "@/lib/email/templates/quote"
 import { generateQuotePdf } from "@/lib/pdf/quote"
 import { markShareLinkSent, shareLinkForEmail } from "@/lib/signature/share"
 import { selectCompanyWithProfile } from "@/lib/legal/db"
+import { requireIssuerIdentity } from "@/lib/legal/issuer"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -27,6 +28,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
       .eq("user_id", user.id)
       .single()
     if (qErr || !quote) return NextResponse.json({ error: "Devis introuvable" }, { status: 404 })
+
+    // Identité de l'émetteur (SIREN, adresse) : obligatoire sur le devis envoyé
+    const noIdentity = await requireIssuerIdentity(supabase, user.id)
+    if (noIdentity) return noIdentity
 
     const clientEmail = quote.client?.email
     if (!clientEmail) return NextResponse.json({ error: "Le client n'a pas d'adresse email" }, { status: 422 })

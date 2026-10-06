@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic"
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { toast } from "sonner"
+import { toastCompanyRequired } from "@/components/shared/company-required"
 import { Loader2 } from "lucide-react"
 import { PaywallDialog, isArtisanPaywall, isSubscriptionRequired } from "@/components/billing/PaywallDialog"
 import { useArtisanPlan } from "@/components/artisan/useArtisanPlan"
@@ -101,7 +102,7 @@ export default function EditInvoicePage() {
         if (isSubscriptionRequired(sendRes.status, sendJson)) { setShowPaywall(true); return }
         if (isArtisanPaywall(sendRes.status, sendJson)) { setArtisanPaywall(true); return }
         if (!sendRes.ok) {
-          toast.error(sendJson.error ?? "Brouillon enregistré, mais l'envoi par email a échoué")
+          if (!toastCompanyRequired(sendRes.status, sendJson)) toast.error(sendJson.error ?? "Brouillon enregistré, mais l'envoi par email a échoué")
           router.push(`/invoices/${id}`)
           router.refresh()
           return

@@ -51,7 +51,8 @@ export interface StartScreenProps {
 
 const hrefFor = startHref
 
-const CARD = cn(
+/** Carte d'un choix de départ (aussi dans la fenêtre « Bienvenue », components/onboarding/InscriptionDialog.tsx). */
+export const CARD = cn(
   "group flex h-full w-full flex-col gap-2 rounded-[20px] border border-[var(--q-line)] bg-[var(--q-surface)] p-5 text-left text-[var(--q-ink-strong)]",
   "shadow-[0_1px_2px_rgba(10,17,34,.04),0_12px_32px_-24px_rgba(10,17,34,.18)]",
   "transition-[border-color,box-shadow,transform] duration-200",
@@ -60,7 +61,7 @@ const CARD = cn(
   "motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100 touch-manipulation",
 )
 
-function CardBody({ Icon, title, text }: { Icon: LucideIcon; title: string; text: string }) {
+export function CardBody({ Icon, title, text }: { Icon: LucideIcon; title: string; text: string }) {
   return (
     <>
       <span className="mb-1.5 flex items-start justify-between">
@@ -141,7 +142,7 @@ export function StartScreen({ mode, firstName, email, available, initialPanel = 
         {available && (
           <li>
             <button type="button" className={CARD} onClick={() => setPanel("plus-tard")}>
-              <CardBody Icon={AlarmClock} title="Je le ferai plus tard" text="Un rappel par e-mail au moment de votre choix : ce soir, demain matin, samedi…" />
+              <CardBody Icon={AlarmClock} title="Je le ferai plus tard" text="Un rappel par email au moment de votre choix : ce soir, demain matin, samedi…" />
             </button>
           </li>
         )}
@@ -222,7 +223,7 @@ function TrialPanel({ mode, email, onBack }: { mode: ShellMode; email: string; o
       const res = await fetch("/api/onboarding/trial-quote", { method: "POST" })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(json.error ?? "L'e-mail n'est pas parti. Réessayez.")
+        setError(json.error ?? "L'email n'est pas parti. Réessayez.")
         setState("idle")
         return
       }
@@ -250,7 +251,7 @@ function TrialPanel({ mode, email, onBack }: { mode: ShellMode; email: string; o
         <Done mode={mode}>
           {mode === "demo"
             ? "Démo : rien n'est parti. Avec votre compte, le devis d'essai arrive sur votre adresse en une minute."
-            : `C'est parti : regardez votre boîte de réception (${email}). L'e-mail peut mettre une minute à arriver.`}
+            : `C'est parti : regardez votre boîte de réception (${email}). L'email peut mettre une minute à arriver.`}
         </Done>
       ) : (
         <>
@@ -344,7 +345,7 @@ function LaterPanel({
   return (
     <PanelFrame
       title={<>Je le ferai <Serif>plus tard</Serif></>}
-      lead="Choisissez le moment : vous recevez un e-mail avec un lien direct vers l'étape choisie. Rien d'autre ne part."
+      lead="Choisissez le moment : vous recevez un email avec un lien direct vers l'étape choisie. Rien d'autre ne part."
       onBack={onBack}
     >
       {saved && reminder ? (

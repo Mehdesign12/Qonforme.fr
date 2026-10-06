@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { toastCompanyRequired } from "@/components/shared/company-required"
 import { PaywallDialog, isArtisanPaywall, isSubscriptionRequired } from "@/components/billing/PaywallDialog"
 import { useArtisanPlan } from "@/components/artisan/useArtisanPlan"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
@@ -114,7 +115,7 @@ export default function NewInvoiceForm() {
           return
         }
         if (!sendRes.ok) {
-          toast.error(sendJson.error ?? "Facture créée mais l'envoi par email a échoué")
+          if (!toastCompanyRequired(sendRes.status, sendJson)) toast.error(sendJson.error ?? "Facture créée mais l'envoi par email a échoué")
           router.push(`/invoices/${json.invoice.id}`)
           router.refresh()
           return

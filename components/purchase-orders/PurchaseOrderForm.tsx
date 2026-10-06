@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { toastCompanyRequired } from "@/components/shared/company-required"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { useDocumentForm, usePreselectedClient } from "@/components/documents/useDocumentForm"
 import { isoDateIn, lineFromSaved, newLine, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
@@ -118,7 +119,7 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
         const sendRes  = await fetch(`/api/purchase-orders/${po_id}/send`, { method: "POST" })
         const sendJson = await sendRes.json()
         if (!sendRes.ok) {
-          toast.warning(`Bon de commande sauvegardé mais envoi échoué : ${sendJson.error}`)
+          if (!toastCompanyRequired(sendRes.status, sendJson)) toast.warning(`Bon de commande sauvegardé mais envoi échoué : ${sendJson.error}`)
         } else {
           toast.success(`Envoyé à ${sendJson.sentTo}`)
         }

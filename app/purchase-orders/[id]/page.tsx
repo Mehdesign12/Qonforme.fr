@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import { toastCompanyRequired } from "@/components/shared/company-required"
 import { Loader2 } from "lucide-react"
 import { EmptyState, PURCHASE_ORDER_PILLS } from "@/components/app/kit"
 import { createClient } from "@/lib/supabase/client"
@@ -183,6 +184,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
     try {
       const res  = await fetch(`/api/purchase-orders/${params.id}/send`, { method: "POST" })
       const json = await res.json()
+      if (toastCompanyRequired(res.status, json)) return false
       if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return false }
       // Un brouillon passe à « Envoyé » ; un bon déjà envoyé garde son statut
       // Un brouillon envoyé a désormais ses mentions figées (relues au prochain chargement)

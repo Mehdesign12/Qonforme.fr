@@ -23,6 +23,20 @@ export const DEMO_IDENTITY: ShellIdentity = {
   siren: "948211375",
 }
 
+/**
+ * Compte neuf de la démo (/demo/bienvenue) : ni entreprise, ni prénom, ni
+ * formule, comme le voit un artisan qui vient de s'inscrire.
+ */
+export const DEMO_NEW_IDENTITY: ShellIdentity = {
+  mode: "demo",
+  firstName: "",
+  lastName: "",
+  email: "demo@qonforme.fr",
+  planName: null,
+  companyName: null,
+  siren: null,
+}
+
 export function fullNameOf(id: ShellIdentity): string {
   return [id.firstName, id.lastName].filter(Boolean).join(" ") || "Mon compte"
 }

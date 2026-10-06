@@ -3,23 +3,79 @@ import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { hasDossiers } from '@/lib/accountant/server'
-import DashboardClient from '@/components/dashboard/DashboardClient'
+import { isMissingSchemaError } from '@/lib/supabase/schema-guard'
+import { parseLegalProfile, type TradeId, type VatRegime } from '@/lib/legal/profile'
+import { loadPendingReminder } from '@/lib/onboarding/store'
+import DashboardClient, { type InscriptionLaunch } from '@/components/dashboard/DashboardClient'
 import { DashboardBody } from '@/components/dashboard/DashboardBody'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
 import { getDashboardView } from '@/components/dashboard/data'
-import { parsePeriod, todayInParis, type DashPeriod, type DashboardInput } from '@/components/dashboard/model'
+import {
+  inscriptionTile, inscriptionWindowOpen, parsePeriod, todayInParis,
+  type DashPeriod, type DashboardInput, type InscriptionFacts,
+} from '@/components/dashboard/model'
 
 export const metadata: Metadata = { title: 'Tableau de bord' }
 export const dynamic = 'force-dynamic'
 
-export default async function DashboardPage({ searchParams }: { searchParams: { periode?: string; depuis?: string } }) {
+type Supabase = Awaited<ReturnType<typeof createClient>>
+
+interface CompanyRow {
+  name: string | null
+  siren: string | null
+  address: string | null
+  zip_code: string | null
+  city: string | null
+  onboarding_seen_at: string | null
+  legal_profile?: unknown
+}
+
+const COMPANY_FIELDS = 'name, siren, address, zip_code, city, onboarding_seen_at'
+
+/**
+ * Entreprise du compte, avec son profil légal quand la colonne existe
+ * (migration 20261003_legal_profile_btp.sql) : sans elle, la fenêtre
+ * « Bienvenue » n'a pas d'étape métier.
+ */
+async function readCompany(supabase: Supabase, userId: string) {
+  const withProfile = await supabase
+    .from('companies')
+    .select(`${COMPANY_FIELDS}, legal_profile`)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (!withProfile.error) {
+    return { row: (withProfile.data as CompanyRow | null) ?? null, profileAvailable: true, failed: false }
+  }
+  if (!isMissingSchemaError(withProfile.error)) return { row: null, profileAvailable: false, failed: true }
+  const plain = await supabase.from('companies').select(COMPANY_FIELDS).eq('user_id', userId).maybeSingle()
+  return { row: (plain.data as CompanyRow | null) ?? null, profileAvailable: false, failed: !!plain.error }
+}
+
+/** Ce que la fenêtre « Bienvenue » reçoit en plus des faits qui décident de son ouverture. */
+interface InscriptionContext {
+  facts: InscriptionFacts
+  justCreated: boolean
+  email: string
+  firstName: string
+  company: InscriptionLaunch['company']
+  trade: TradeId | null
+  vatRegime: VatRegime | null
+}
+
+const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: { periode?: string; bienvenue?: string; inscription?: string }
+}) {
   const period = parsePeriod(searchParams?.periode)
   let userId: string | null = null
   let firstName = ''
   let company: DashboardInput['company'] = null
   let showWelcome = false
   let companyMissing = false
-  let startScreen = false
+  let inscription: InscriptionContext | null = null
 
   try {
     const supabase = await createClient()
@@ -27,31 +83,45 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
 
     if (user) {
       userId = user.id
+      const meta = (user.user_metadata ?? {}) as Record<string, unknown>
       // Prénom depuis user_metadata (titre d'accueil d'un compte neuf)
-      firstName = (user.user_metadata?.first_name as string) || ''
+      firstName = str(meta.first_name)
 
-      // Vérifier que la société existe — si non, renvoyer vers la création
-      const { data, error: companyError } = await supabase
-        .from('companies')
-        .select('name, siren, address, zip_code, city, onboarding_seen_at')
-        .eq('user_id', user.id)
-        .single()
-
-      // PGRST116 = aucune ligne → société jamais créée ; une autre erreur (réseau) ne redirige pas
-      if (!data && (!companyError || companyError.code === 'PGRST116')) companyMissing = true
-
-      if (data) {
-        company = { name: data.name, siren: data.siren, address: data.address, zip_code: data.zip_code, city: data.city }
-        // Premiers pas pas encore vus
-        showWelcome = !data.onboarding_seen_at
-        // Compte neuf (ni devis ni facture), premier passage : écran « Par quoi
-        // commencer ? » (app/demarrer), une seule fois, jamais depuis cet écran
-        if (showWelcome && searchParams?.depuis !== 'demarrer') {
-          const [quotes, invoices] = await Promise.all([
-            supabase.from('quotes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-            supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-          ])
-          startScreen = !quotes.error && !invoices.error && quotes.count === 0 && invoices.count === 0
+      const read = await readCompany(supabase, user.id)
+      // Aucune ligne → entreprise jamais créée ; une erreur (réseau) n'ouvre rien et ne redirige pas
+      if (!read.failed) {
+        const row = read.row
+        companyMissing = !row
+        if (row) {
+          company = { name: row.name, siren: row.siren, address: row.address, zip_code: row.zip_code, city: row.city }
+          // Premiers pas pas encore vus (fenêtre de bienvenue d'un compte qui a déjà des documents)
+          showWelcome = !row.onboarding_seen_at
+        }
+        const profile = row && read.profileAvailable ? parseLegalProfile(row.legal_profile) : null
+        inscription = {
+          facts: {
+            company: !!row,
+            trade: !!(profile?.trade && profile?.vat_regime),
+            firstName: !!firstName,
+            profileAvailable: read.profileAvailable,
+            wizard: meta.signup_wizard === true,
+            windowClosed: meta.signup_window_closed === true,
+            resume: searchParams?.inscription === 'reprendre',
+          },
+          justCreated: searchParams?.bienvenue === '1',
+          email: user.email ?? '',
+          firstName,
+          company: row
+            ? {
+              name: str(row.name),
+              siren: str(row.siren) || null,
+              address: str(row.address),
+              zip_code: str(row.zip_code),
+              city: str(row.city),
+            }
+            : null,
+          trade: profile?.trade ?? null,
+          vatRegime: profile?.vat_regime ?? null,
         }
       }
     }
@@ -61,12 +131,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
 
   // Hors du try/catch : redirect() lève une exception que le catch avalait.
   // Un comptable invité n'a pas d'entreprise : il va à son espace (lib/accountant).
-  if (companyMissing) redirect(userId && (await hasDossiers(userId)) ? '/comptable' : '/signup/company')
-  if (startScreen) redirect('/demarrer')
+  // Tout autre compte sans entreprise reste ici : la fenêtre « Bienvenue » la demande.
+  if (companyMissing && userId && (await hasDossiers(userId))) redirect('/comptable')
 
   return (
     <Suspense fallback={<DashboardSkeleton />}>
-      <DashboardContent userId={userId} firstName={firstName} company={company} showWelcome={showWelcome} period={period} />
+      <DashboardContent
+        userId={userId}
+        firstName={firstName}
+        company={company}
+        showWelcome={showWelcome}
+        period={period}
+        inscription={inscription}
+      />
     </Suspense>
   )
 }
@@ -78,18 +155,49 @@ async function DashboardContent({
   company,
   showWelcome,
   period,
+  inscription,
 }: {
   userId: string | null
   firstName: string
   company: DashboardInput['company']
   showWelcome: boolean
   period: DashPeriod
+  inscription: InscriptionContext | null
 }) {
   const supabase = await createClient()
-  const view = await getDashboardView({ supabase, userId, firstName, company, today: todayInParis(), period })
+  const tile = inscription ? inscriptionTile(inscription.facts) : null
+  const view = await getDashboardView({
+    supabase, userId, firstName, company, today: todayInParis(), period, inscription: tile,
+  })
+
+  // Fenêtre « Bienvenue » : jamais pour un compte qui a déjà des documents et son entreprise
+  let launch: InscriptionLaunch | null = null
+  if (inscription && tile && userId) {
+    const open = inscriptionWindowOpen(inscription.facts, view.isNewAccount)
+    let startAvailable = false
+    if (open) {
+      // Devis d'essai et rappel : seulement une fois la migration des emails de démarrage appliquée
+      const pending = await loadPendingReminder(supabase, userId).catch(() => null)
+      startAvailable = !!pending?.available && !pending.error
+    }
+    launch = {
+      mode: 'app',
+      open,
+      resume: inscription.facts.resume,
+      justCreated: inscription.justCreated,
+      initialStep: tile.step,
+      profileAvailable: inscription.facts.profileAvailable,
+      startAvailable,
+      email: inscription.email,
+      firstName: inscription.firstName,
+      company: inscription.company,
+      trade: inscription.trade,
+      vatRegime: inscription.vatRegime,
+    }
+  }
 
   return (
-    <DashboardClient showWelcome={showWelcome} inline={view.isNewAccount}>
+    <DashboardClient showWelcome={showWelcome} inline={view.isNewAccount} inscription={launch}>
       <DashboardBody view={view} />
     </DashboardClient>
   )

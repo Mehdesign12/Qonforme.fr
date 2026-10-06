@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { toastCompanyRequired } from "@/components/shared/company-required"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { PaywallDialog, isArtisanPaywall } from "@/components/billing/PaywallDialog"
 import { useArtisanPlan } from "@/components/artisan/useArtisanPlan"
@@ -69,7 +70,7 @@ export default function NewQuoteForm() {
         const sendRes = await fetch(`/api/quotes/${json.quote.id}/send`, { method: "POST" })
         const sendJson = await sendRes.json()
         if (!sendRes.ok) {
-          toast.error(sendJson.error ?? "Devis créé mais l'envoi par email a échoué")
+          if (!toastCompanyRequired(sendRes.status, sendJson)) toast.error(sendJson.error ?? "Devis créé mais l'envoi par email a échoué")
           router.push(`/quotes/${json.quote.id}`)
           router.refresh()
           return

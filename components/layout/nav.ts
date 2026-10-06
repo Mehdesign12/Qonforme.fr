@@ -126,6 +126,8 @@ export function crumbsFor(rawPath: string): Crumbs {
   const path = isDemo ? (rawPath === "/demo" ? "/dashboard" : rawPath.slice("/demo".length)) : rawPath
   const prefix = (href: string) => (isDemo ? (href === "/dashboard" ? "/demo" : "/demo" + href) : href)
 
+  // Tableau de bord d'un compte neuf de la démo (fenêtre « Bienvenue »)
+  if (path === "/bienvenue") return { current: "Tableau de bord" }
   const section = SECTION_TITLES.find((s) => path === s.prefix || path.startsWith(s.prefix + "/"))
   if (!section) return { current: "Qonforme" }
   if (path === section.prefix) return { current: section.title }

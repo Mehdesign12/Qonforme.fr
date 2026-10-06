@@ -12,6 +12,7 @@
  * et, s'il y en a, quelques prestations de son catalogue.
  */
 import type { QuotePdfInput } from "@/lib/pdf/quote"
+import { parseLegalProfile } from "@/lib/legal/profile"
 import { addDays } from "@/lib/utils/paris-date"
 
 /** Au plus 3 devis d'essai par période de 24 heures glissantes. */
@@ -34,14 +35,23 @@ export interface TrialCompany {
   zip_code?: string | null
   city?: string | null
   legal_notice?: string | null
+  /** Profil légal (colonne JSON, absente avant la migration) : régime de TVA déclaré. */
+  legal_profile?: unknown
 }
 
 type Line = NonNullable<QuotePdfInput["quote"]["lines"]>[number]
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
-/** Franchise en base de TVA (art. 293 B du CGI) déclarée dans les mentions : pas de TVA. */
+/**
+ * Franchise en base de TVA (art. 293 B du CGI) : pas de TVA. Le régime déclaré
+ * dans le profil légal (Paramètres › Entreprise, fenêtre « Bienvenue ») fait
+ * foi, comme pour les mentions du PDF (lib/legal/mentions.ts) ; sans régime
+ * déclaré, la mention « 293 B » des mentions libres.
+ */
 export function isVatExempt(company: TrialCompany | null | undefined): boolean {
+  const regime = parseLegalProfile(company?.legal_profile)?.vat_regime
+  if (regime) return regime === "franchise"
   return /293\s*B/i.test(company?.legal_notice ?? "")
 }
 

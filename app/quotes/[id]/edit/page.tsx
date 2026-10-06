@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic"
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { toast } from "sonner"
+import { toastCompanyRequired } from "@/components/shared/company-required"
 import { Loader2 } from "lucide-react"
 import { SetCrumb } from "@/components/layout/crumb"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
@@ -99,7 +100,7 @@ export default function EditQuotePage() {
         const sendRes  = await fetch(`/api/quotes/${id}/send`, { method: "POST" })
         const sendJson = await sendRes.json()
         if (!sendRes.ok) {
-          toast.error(sendJson.error ?? "Brouillon enregistré, mais l'envoi par email a échoué")
+          if (!toastCompanyRequired(sendRes.status, sendJson)) toast.error(sendJson.error ?? "Brouillon enregistré, mais l'envoi par email a échoué")
           router.push(`/quotes/${id}`)
           router.refresh()
           return

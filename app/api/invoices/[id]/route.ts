@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { canTransition, isContentLocked, transitionError } from "@/lib/utils/document-status"
 import { requireIssuingAccess } from "@/lib/stripe/subscription"
+import { requireIssuerIdentity } from "@/lib/legal/issuer"
 import { issueDraftInvoice } from "@/lib/utils/document-numbering"
 import { todayInParis } from "@/lib/utils/paris-date"
 import { loadReminderLog } from "@/lib/reminders/store"
@@ -103,6 +104,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     // même mur de paiement que l'envoi par email (formule Artisan pour un
     // acompte, une situation ou un solde).
     if (issuing) {
+      // Identité de l'émetteur (SIREN, adresse) d'abord : jamais payer pour être bloqué ensuite
+      const noIdentity = await requireIssuerIdentity(supabase, user.id)
+      if (noIdentity) return noIdentity
       const blocked = artisanDoc
         ? await requireArtisanAccess(supabase, user.id)
         : await requireIssuingAccess(supabase, user.id)
