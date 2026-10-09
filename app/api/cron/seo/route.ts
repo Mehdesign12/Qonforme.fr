@@ -5,10 +5,18 @@
  * « Authorization: Bearer {CRON_SECRET} ». Chaque tâche décide elle-même si
  * elle est due ; `?task=<nom>` force une seule tâche (essai, rattrapage).
  *
+ * cron-job.org coupe la connexion au bout de 30 secondes, alors qu'une
+ * rédaction d'article ou une exploration du site dure plusieurs minutes : la
+ * route répond aussitôt (202) et poursuit le travail après la réponse
+ * (`waitUntil`, même durée maximale que la fonction). Le résultat de chaque
+ * tâche est dans cron_logs (Santé du système). `?wait=1` attend la fin et rend
+ * le détail (essai à la main avec curl).
+ *
  * Tant que la migration 20261009_seo_admin.sql n'est pas appliquée, répond
  * 200 « migration_pending » sans rien faire (pas d'alerte en boucle).
  */
 import { NextRequest, NextResponse } from "next/server"
+import { waitUntil } from "@vercel/functions"
 import { seoDb, failureOf } from "@/lib/seo/db"
 import { readJob, runDueTasks } from "@/lib/seo/cron"
 import { SEO_TASKS } from "@/lib/seo/tasks"
@@ -46,7 +54,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Base injoignable" }, { status: 503 })
   }
 
-  const results = await runDueTasks(db, SEO_TASKS, { budgetMs: BUDGET_MS, only })
-  const failed = results.filter((r) => r.status === "error")
-  return NextResponse.json({ ok: failed.length === 0, results }, { status: failed.length > 0 ? 207 : 200 })
+  const run = runDueTasks(db, SEO_TASKS, { budgetMs: BUDGET_MS, only })
+
+  if (request.nextUrl.searchParams.get("wait") === "1") {
+    const results = await run
+    const failed = results.filter((r) => r.status === "error")
+    return NextResponse.json({ ok: failed.length === 0, results }, { status: failed.length > 0 ? 207 : 200 })
+  }
+
+  waitUntil(
+    run.catch((error) => {
+      console.error("[cron/seo] passage en échec", error)
+    }),
+  )
+  return NextResponse.json({ ok: true, accepted: true, only: only ?? null }, { status: 202 })
 }
