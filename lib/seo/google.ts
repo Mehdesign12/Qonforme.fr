@@ -194,7 +194,11 @@ export type PageSpeedStrategy = "mobile" | "desktop"
  * `url` doit déjà être une URL du site (lib/seo/site.ts : siteUrl) : la
  * fonction refuse toute autre origine.
  */
-export async function runPageSpeed(url: string, strategy: PageSpeedStrategy): Promise<Record<string, unknown>> {
+export async function runPageSpeed(
+  url: string,
+  strategy: PageSpeedStrategy,
+  opts: { timeoutMs?: number } = {},
+): Promise<Record<string, unknown>> {
   const target = new URL(url)
   if (target.hostname !== "qonforme.fr" || target.protocol !== "https:") {
     throw new GoogleApiError(400, "PageSpeed ne mesure que les pages de qonforme.fr.")
@@ -205,7 +209,7 @@ export async function runPageSpeed(url: string, strategy: PageSpeedStrategy): Pr
   const res = await fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params}`, {
     cache: "no-store",
     // Une mesure Lighthouse prend souvent 20 à 40 s
-    signal: AbortSignal.timeout(90_000),
+    signal: AbortSignal.timeout(opts.timeoutMs ?? 90_000),
   })
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown> & { error?: { message?: string } }
   if (!res.ok) throw new GoogleApiError(res.status, `PageSpeed : ${json.error?.message ?? `erreur ${res.status}`}`)
