@@ -25,7 +25,6 @@ export async function updateSession(request: NextRequest) {
     '/plan-du-site',
     '/devenir-a-son-compte',
     '/api/webhooks/stripe',
-    '/api/pushrank/webhook',
     '/api/og',
     '/api/cron',
     '/api/outils',

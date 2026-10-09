@@ -18,7 +18,6 @@ export type ConnectionKey =
   | "anthropic"
   | "dataforseo"
   | "resend"
-  | "pushrank"
 
 export interface ConnectionDef {
   key: ConnectionKey
@@ -58,14 +57,6 @@ export const CONNECTIONS: ConnectionDef[] = [
     optional: true,
   },
   { key: "resend", name: "Resend", purpose: "Envoi du résumé hebdomadaire par email", env: ["RESEND_API_KEY"] },
-  {
-    key: "pushrank",
-    name: "Webhook PushRank",
-    purpose: "Réception des articles de PushRank",
-    env: ["PUSHRANK_WEBHOOK_SECRET"],
-    optional: true,
-    note: "Sera retiré à la résiliation de PushRank.",
-  },
 ]
 
 function present(name: string): boolean {

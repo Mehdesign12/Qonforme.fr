@@ -1,6 +1,6 @@
 /**
- * Décodage des entités HTML (nommées courantes et numériques), partagé par la
- * conversion des articles PushRank et le sommaire des articles du blog.
+ * Décodage des entités HTML (nommées courantes et numériques), partagé par le
+ * sommaire et la FAQ des articles du blog.
  */
 const NAMED: Record<string, string> = {
   amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", thinsp: " ", narrownbsp: " ",
