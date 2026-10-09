@@ -94,6 +94,16 @@ sources officielles dans la consigne, **toujours un brouillon relu**. L'autre vo
 3. **Résumé hebdomadaire par email** : facultatif (écran Paramètres › Rapports).
 4. **Rédaction automatique d'articles** : brouillon à relire, jamais de publication directe sans contrôle.
 
+## 6 bis. Choix des IA du blog (09/10/2026)
+Analyse des benchmarks en ligne (rédaction, français, fiabilité, prix, images), chiffres clés revérifiés : `ANALYSE-IA-BLOG-2026-10.md`.
+- **Texte, par passe** : plan et contrôle par Gemini 3.8 Flash (meilleur respect des consignes mesuré, autre famille que l'auteur), rédaction par
+  Claude Opus 5.5 (dans le premier groupe des quatre classements d'écriture, le moins de tournures toutes faites). Environ 1,3 $ par mois pour 8 articles
+  (1,5 à 1,8 $ en 2027). Repli : Gemini 3.8 Flash pour les trois passes si la clé Anthropic manque.
+- **Images** : Nano Banana 2.1 (remplaçant désigné par Google, 0,05 $ l'image en 2K), repli sur Gemini 3.1 Flash Image ; GPT Image 2 en secours possible
+  (meilleur sur les portraits, clé OpenAI) après un essai sur 10 scènes de chantier.
+- **Le risque principal reste factuel**, quel que soit le modèle : faits de référence vérifiés dans chaque consigne, relecture par une autre famille de
+  modèles, contrôle `lib/blog-audit.ts` et brouillon à relire.
+
 ## 7. Défauts constatés sur l'article PushRank du 07/10 (à corriger au lot 0)
 - Absent du plan du site : `app/sitemap.ts` est mis en cache (environ 28 h) et le webhook ne rafraîchit que `/blog` et `/blog/<slug>`. Les articles générés par Gemini avaient le même retard.
   Correction : `revalidatePath("/sitemap.xml")` dans le webhook et `revalidate` horaire dans `app/sitemap.ts`.

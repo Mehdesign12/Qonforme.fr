@@ -16,7 +16,9 @@ import { ACTIVITES } from "@/lib/outils/charges"
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta"
 const TEXT_MODEL = "gemini-2.5-flash"
-const IMAGE_MODEL = "gemini-3.1-flash-image-preview"
+// Code stable (sans date d'arrêt annoncée) : la préversion « -preview » pouvait être
+// retirée à tout moment depuis le 25/06/2026 (https://ai.google.dev/gemini-api/docs/deprecations, 09/10/2026)
+const IMAGE_MODEL = "gemini-3.1-flash-image"
 
 function getApiKey(): string {
   const key = process.env.GEMINI_API_KEY
