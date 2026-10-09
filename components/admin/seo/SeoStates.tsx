@@ -63,10 +63,10 @@ export function NotConnected({ title, text, className }: { title: string; text: 
 }
 
 /** Ligne d'information discrète (pas un encart empilé). */
-export function InfoLine({ children, tone = "info", className }: { children: React.ReactNode; tone?: "info" | "warn"; className?: string }) {
+export function InfoLine({ children, tone = "info", className, id }: { children: React.ReactNode; tone?: "info" | "warn"; className?: string; id?: string }) {
   const Icon = tone === "warn" ? CircleAlert : Info
   return (
-    <p className={cn("flex items-start gap-2 text-sm", tone === "warn" ? "text-[var(--q-warn)]" : "text-[var(--q-text-3)]", className)}>
+    <p id={id} className={cn("flex items-start gap-2 text-sm", tone === "warn" ? "text-[var(--q-warn)]" : "text-[var(--q-text-3)]", className)}>
       <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
       <span>{children}</span>
     </p>
