@@ -53,6 +53,7 @@ export function SeoChart({
   source,
   note,
   height = 230,
+  mobileHeight,
   className,
 }: {
   /** Jours AAAA-MM-JJ, dans l'ordre. */
@@ -66,6 +67,8 @@ export function SeoChart({
   /** Mention à droite de la source (« 2 à 3 jours de décalage »). */
   note?: React.ReactNode
   height?: number
+  /** Hauteur sous 768 px (planches téléphone : 170). */
+  mobileHeight?: number
   className?: string
 }) {
   const n = Math.max(days.length, 1)
@@ -94,7 +97,11 @@ export function SeoChart({
         ))}
       </div>
 
-      <div className="flex gap-2" style={{ height }} aria-hidden>
+      <div
+        className="flex h-[var(--seo-chart-h-sm)] gap-2 md:h-[var(--seo-chart-h)]"
+        style={{ "--seo-chart-h": `${height}px`, "--seo-chart-h-sm": `${mobileHeight ?? height}px` } as React.CSSProperties}
+        aria-hidden
+      >
         <Axis ticks={scales[0]?.ticks ?? []} format={left?.format} align="right" />
         <div className="relative min-w-0 flex-1">
           {[0, 0.5, 1].map((f) => (

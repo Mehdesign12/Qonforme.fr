@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils"
 import type { SeoReadFailure } from "@/lib/seo/db"
 
 /** Migration 20261009_seo_admin.sql pas encore appliquée. */
-export function MigrationPending({ className }: { className?: string }) {
+export function MigrationPending({ className, bare }: { className?: string; bare?: boolean }) {
   return (
-    <div role="status" className={cn("q-card", className)}>
+    <div role="status" className={cn(!bare && "q-card", className)}>
       <EmptyState
         className="py-10"
         icon={<DatabaseZap className="size-5" aria-hidden />}
@@ -24,9 +24,9 @@ export function MigrationPending({ className }: { className?: string }) {
 }
 
 /** Lecture en échec : jamais affichée comme une liste vide. */
-export function ReadFailed({ what, className, retryHref }: { what: string; className?: string; retryHref?: string }) {
+export function ReadFailed({ what, className, retryHref, bare }: { what: string; className?: string; retryHref?: string; bare?: boolean }) {
   return (
-    <div role="alert" className={cn("q-card", className)}>
+    <div role="alert" className={cn(!bare && "q-card", className)}>
       <EmptyState
         className="py-10"
         icon={<CloudOff className="size-5 text-[var(--q-danger)]" aria-hidden />}
@@ -39,18 +39,31 @@ export function ReadFailed({ what, className, retryHref }: { what: string; class
 }
 
 /** Rend l'état d'échec d'une lecture (`load()` de lib/seo/db.ts). */
-export function FailureState({ failure, what, className, retryHref }: { failure: SeoReadFailure; what: string; className?: string; retryHref?: string }) {
+export function FailureState({
+  failure,
+  what,
+  className,
+  retryHref,
+  bare,
+}: {
+  failure: SeoReadFailure
+  what: string
+  className?: string
+  retryHref?: string
+  /** Sans cadre de carte (à l'intérieur d'une carte existante). */
+  bare?: boolean
+}) {
   return failure === "migration_pending" ? (
-    <MigrationPending className={className} />
+    <MigrationPending className={className} bare={bare} />
   ) : (
-    <ReadFailed what={what} className={className} retryHref={retryHref} />
+    <ReadFailed what={what} className={className} retryHref={retryHref} bare={bare} />
   )
 }
 
 /** Service non connecté (Search Console, DataForSEO…) : lien vers Paramètres › Connexions. */
-export function NotConnected({ title, text, className }: { title: string; text: string; className?: string }) {
+export function NotConnected({ title, text, className, bare }: { title: string; text: string; className?: string; bare?: boolean }) {
   return (
-    <div className={cn("q-card", className)}>
+    <div className={cn(!bare && "q-card", className)}>
       <EmptyState
         className="py-10"
         icon={<Plug className="size-5" aria-hidden />}
