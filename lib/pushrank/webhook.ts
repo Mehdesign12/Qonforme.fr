@@ -14,7 +14,7 @@
  */
 import crypto from "node:crypto"
 import { auditArticle } from "@/lib/blog-audit"
-import { htmlToMarkdown, plainText } from "@/lib/pushrank/html-to-markdown"
+import { htmlToMarkdown, plainText, stripLeadingTitle } from "@/lib/pushrank/html-to-markdown"
 
 export const PUSHRANK_CONTRACT_VERSION = "2026-07"
 /** Âge maximal d'une requête signée (rejeu), en secondes. */
@@ -162,7 +162,7 @@ export function toBlogPost(a: PushrankArticle): BlogPostFields {
     title,
     slug: blogSlug(a.slug, title),
     excerpt,
-    content: htmlToMarkdown(a.content),
+    content: stripLeadingTitle(htmlToMarkdown(a.content), title),
     seo_title: plainText(a.meta_title, 200) || null,
     seo_description: plainText(a.meta_description, 400) || null,
     cover_alt: plainText(a.featured_image_alt, 300) || null,

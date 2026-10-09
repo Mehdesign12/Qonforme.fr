@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { isAdminAuthenticated } from "@/lib/admin-require"
+import { revalidateBlog } from "@/lib/blog-revalidate"
 
 /** PATCH /api/admin/blog/[id] — Mettre à jour un article */
 export async function PATCH(
@@ -41,6 +42,7 @@ export async function PATCH(
       throw error
     }
 
+    revalidateBlog(typeof updates.slug === 'string' ? updates.slug : null)
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('admin/blog PATCH error:', err)
@@ -64,6 +66,7 @@ export async function DELETE(
     const { error } = await admin.from('blog_posts').delete().eq('id', id)
     if (error) throw error
 
+    revalidateBlog()
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('admin/blog DELETE error:', err)

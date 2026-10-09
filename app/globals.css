@@ -997,6 +997,7 @@ html[data-standalone="true"] [role="button"] {
   .dark .q-banner { color: var(--q-ink); }
   .q-banner-ok { background: var(--q-ok-bg); border-color: var(--q-ok-line); color: var(--q-ok); }
   .q-banner-warn { background: var(--q-warn-bg); border-color: var(--q-warn-line); color: var(--q-warn); }
+  .q-banner-danger { background: var(--q-danger-bg); border-color: var(--q-danger-line); color: var(--q-danger); }
 
   /* Raccourci clavier */
   .q-kbd {

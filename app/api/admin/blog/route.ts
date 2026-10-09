@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { isAdminAuthenticated } from "@/lib/admin-require"
+import { revalidateBlog } from "@/lib/blog-revalidate"
 
 /** POST /api/admin/blog — Créer un article */
 export async function POST(request: NextRequest) {
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
       throw error
     }
 
+    if (is_published) revalidateBlog(slug)
     return NextResponse.json({ success: true, id: data.id }, { status: 201 })
   } catch (err) {
     console.error('admin/blog POST error:', err)
