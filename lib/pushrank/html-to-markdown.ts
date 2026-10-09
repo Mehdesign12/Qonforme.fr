@@ -292,6 +292,25 @@ export function htmlToMarkdown(html: string): string {
   return blocks(parseHtml(html)).join("\n\n").replace(/\n{3,}/g, "\n\n").trim()
 }
 
+const comparable = (s: string) =>
+  decodeEntities(s)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+
+/**
+ * Retire un premier titre identique au titre de l'article : la page l'affiche
+ * déjà en h1, et PushRank le répète en tête du contenu (constaté le 07/10/2026).
+ */
+export function stripLeadingTitle(markdown: string, title: string): string {
+  const m = /^(#{1,6})[ \t]+([^\n]*)(?:\n+|$)/.exec(markdown)
+  if (!m || !title.trim()) return markdown
+  if (comparable(m[2]) !== comparable(title)) return markdown
+  return markdown.slice(m[0].length).trimStart()
+}
+
 /** Texte simple (titre, extrait, description) : sans balise, espaces fusionnés. */
 export function plainText(s: string | undefined | null, max = 500): string {
   if (!s) return ""

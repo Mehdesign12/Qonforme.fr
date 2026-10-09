@@ -6,6 +6,7 @@
 import {
   LayoutDashboard, Users, CreditCard, MessageSquare, TriangleAlert, Activity,
   ChartColumn, FileText, Bot, ShieldAlert, Palette, UserSearch, Megaphone,
+  Gauge, ListChecks, KeyRound, Newspaper, Sparkles, Settings2, TrendingUp,
   type LucideIcon,
 } from "lucide-react"
 
@@ -56,6 +57,19 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     ],
   },
   {
+    key: "seo",
+    label: "SEO",
+    links: [
+      { key: "seo", label: "Vue d'ensemble", href: "/admin/seo", icon: TrendingUp, hint: "Clics, impressions, priorités" },
+      { key: "seo-performance", label: "Performance", href: "/admin/seo/performance", icon: Gauge, hint: "Recherche Google, PageSpeed, audit" },
+      { key: "seo-actions", label: "Actions SEO", href: "/admin/seo/actions", icon: ListChecks, hint: "Pages à améliorer" },
+      { key: "seo-keywords", label: "Mots-clés", href: "/admin/seo/mots-cles", icon: KeyRound, hint: "Requêtes suivies et statuts" },
+      { key: "seo-articles", label: "Articles", href: "/admin/seo/articles", icon: Newspaper, hint: "Calendrier, sujets, préférences" },
+      { key: "seo-visibility", label: "Visibilité IA", href: "/admin/seo/visibilite-ia", icon: Sparkles, hint: "Mentions et citations par moteur" },
+      { key: "seo-settings", label: "Paramètres", href: "/admin/seo/parametres", icon: Settings2, hint: "Marque, stratégie, ciblage, connexions" },
+    ],
+  },
+  {
     key: "content",
     label: "Contenu",
     links: [
@@ -78,9 +92,10 @@ export const ADMIN_NAV: AdminNavGroup[] = [
 
 const ALL_LINKS: AdminNavLink[] = ADMIN_NAV.flatMap((g) => g.links)
 
-/** Vrai si `pathname` relève de l'entrée `href` (la vue d'ensemble et le blog n'englobent pas leurs voisins). */
+/** Vrai si `pathname` relève de l'entrée `href` (les vues d'ensemble et le blog n'englobent pas leurs voisins). */
 export function isAdminActive(pathname: string, href: string): boolean {
   if (href === "/admin") return pathname === "/admin"
+  if (href === "/admin/seo") return pathname === "/admin/seo"
   if (href === "/admin/blog") {
     return (pathname === href || pathname.startsWith(href + "/"))
       && !pathname.startsWith("/admin/blog/ai")
@@ -92,6 +107,19 @@ export function isAdminActive(pathname: string, href: string): boolean {
 /** Entrée de navigation de la page courante. */
 export function adminLinkFor(pathname: string): AdminNavLink | undefined {
   return ALL_LINKS.find((l) => isAdminActive(pathname, l.href))
+}
+
+/** Sous-pages de l'onglet SEO (fil d'Ariane : « Performance › PageSpeed Insights »). */
+const SEO_SUBPAGES: Record<string, string> = {
+  "/admin/seo/performance/pagespeed": "PageSpeed Insights",
+  "/admin/seo/performance/audit": "Audit du site",
+  "/admin/seo/articles/liste": "Articles",
+  "/admin/seo/articles/sujets": "Sujets",
+  "/admin/seo/articles/preferences": "Préférences",
+  "/admin/seo/parametres/strategie": "Stratégie SEO",
+  "/admin/seo/parametres/ciblage": "Ciblage",
+  "/admin/seo/parametres/connexions": "Connexions",
+  "/admin/seo/parametres/rapports": "Rapports",
 }
 
 export interface AdminCrumbs {
@@ -107,6 +135,8 @@ export function adminCrumbsFor(pathname: string): AdminCrumbs {
   if (pathname === link.href) return { current: link.label }
   const parent = { label: link.label, href: link.href }
   if (pathname === "/admin/blog/new") return { parent, current: "Nouvel article" }
+  const seoSub = SEO_SUBPAGES[pathname]
+  if (seoSub) return { parent, current: seoSub }
   if (pathname.startsWith("/admin/blog/")) return { parent, current: "Modifier l'article" }
   return { parent, current: null }
 }

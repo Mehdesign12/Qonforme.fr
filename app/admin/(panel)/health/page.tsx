@@ -6,6 +6,7 @@ import Stripe from "stripe"
 import { EmptyState, Kpi, KpiGrid, PageHeader, Panel, StatusPill } from "@/components/app/kit"
 import { LoadError, fmtDateTime, fmtInt } from "@/components/admin/ui"
 import { RefreshButton } from "@/components/admin/RefreshButton"
+import { SEO_JOB_LABELS } from "@/lib/seo/types"
 
 export const dynamic = "force-dynamic"
 export const metadata = { title: "Admin — Santé système" }
@@ -142,6 +143,7 @@ const JOB_LABELS: Record<string, string> = {
   "outreach-sequence": "Séquence de démarchage",
   "scraping-sirene": "Extraction Sirene",
   "enrich-prospects": "Enrichissement des prospects",
+  ...SEO_JOB_LABELS,
 }
 
 /** Tâches liées au démarchage, désactivé par décision (DECISIONS-STRATEGIQUES.md § 3). */

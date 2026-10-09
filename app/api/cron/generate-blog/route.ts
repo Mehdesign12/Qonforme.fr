@@ -19,6 +19,7 @@ import { createAdminClient } from "@/lib/supabase/server"
 import { generateBlogPost, generateCoverImage } from "@/lib/ai/gemini"
 import { auditArticle } from "@/lib/blog-audit"
 import { getNextTopic } from "@/lib/ai/seo-topics"
+import { revalidateBlog } from "@/lib/blog-revalidate"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -117,6 +118,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (insertError) throw insertError
+    if (autoPublish) revalidateBlog(inserted.slug)
 
     // ── Log success ─────────────────────────────────────────────────────────
     const duration = Date.now() - startedAt

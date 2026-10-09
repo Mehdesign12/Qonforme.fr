@@ -6,6 +6,12 @@ import { MODELES } from "@/lib/pseo/modeles";
 import { GLOSSAIRE } from "@/lib/pseo/glossaire";
 import { INSTALLATIONS } from "@/lib/pseo/installation";
 
+/**
+ * Recalculé au plus toutes les heures, et aussitôt après une publication
+ * (lib/blog-revalidate.ts). Sans cette durée, la page restait figée environ 28 h.
+ */
+export const revalidate = 3600
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://qonforme.fr";
 

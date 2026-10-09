@@ -16,7 +16,7 @@
  * Migration : supabase/migrations/20261006_pushrank_webhook.sql.
  */
 import { NextResponse, type NextRequest } from "next/server"
-import { revalidatePath } from "next/cache"
+import { revalidateBlog } from "@/lib/blog-revalidate"
 import { createAdminClient } from "@/lib/supabase/server"
 import { rehostCover } from "@/lib/pushrank/cover"
 import {
@@ -53,12 +53,7 @@ function storageResponse(err: StorageError) {
 }
 
 function revalidate(slug: string) {
-  try {
-    revalidatePath("/blog")
-    revalidatePath(`/blog/${slug}`)
-  } catch {
-    // Hors requête (tests) : sans effet
-  }
+  revalidateBlog(slug)
 }
 
 async function findByCreateKey(admin: Admin, key: string) {
