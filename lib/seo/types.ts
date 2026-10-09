@@ -36,6 +36,7 @@ export const SEO_SECTIONS: SeoSection[] = [
 export const SEO_JOB_LABELS: Record<string, string> = {
   "seo:search-console": "SEO · Search Console",
   "seo:keywords": "SEO · Mots-clés",
+  "seo:keywords-metrics": "SEO · Volumes des mots-clés",
   "seo:findings": "SEO · Actions",
   "seo:articles": "SEO · Articles",
   "seo:digest": "SEO · Résumé hebdomadaire",
