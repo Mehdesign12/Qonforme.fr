@@ -22,14 +22,27 @@ export async function PATCH(
     if (body?.content  !== undefined) updates.content     = body.content.trim()
     if (body?.excerpt  !== undefined) updates.excerpt     = body.excerpt?.trim() || null
     if (body?.cover_url !== undefined) updates.cover_url  = body.cover_url?.trim() || null
+    if (typeof body?.seo_title === 'string') updates.seo_title = body.seo_title.trim().slice(0, 200) || null
+    if (typeof body?.seo_description === 'string') updates.seo_description = body.seo_description.trim().slice(0, 400) || null
+
+    const admin = createAdminClient()
+
     if (body?.is_published !== undefined) {
       updates.is_published = !!body.is_published
       if (body.is_published) {
-        updates.published_at = new Date().toISOString()
+        // La date de publication ne change qu'au passage en ligne : réenregistrer un
+        // article publié ne doit pas le dater du jour (plan du site, date affichée)
+        const { data: current, error: readError } = await admin
+          .from('blog_posts')
+          .select('is_published, published_at')
+          .eq('id', id)
+          .maybeSingle()
+        if (readError) throw readError
+        if (!current) return NextResponse.json({ error: 'Article introuvable' }, { status: 404 })
+        if (!current.is_published || !current.published_at) updates.published_at = new Date().toISOString()
       }
     }
 
-    const admin = createAdminClient()
     const { error } = await admin
       .from('blog_posts')
       .update(updates)

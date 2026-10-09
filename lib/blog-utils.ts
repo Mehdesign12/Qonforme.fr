@@ -135,3 +135,22 @@ export function extractHeadings(content: string): { id: string; text: string; le
 
   return headings
 }
+
+const comparableTitle = (s: string) =>
+  decodeEntities(s)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+
+/**
+ * Retire un premier titre identique au titre de l'article : la page l'affiche
+ * déjà en h1. Appliqué à l'affichage, pour tous les articles (l'article reçu de
+ * PushRank le 07/10/2026 commençait par son titre en h2).
+ */
+export function stripLeadingTitle(markdown: string, title: string): string {
+  const m = /^\s*(#{1,6})[ \t]+([^\n]*)(?:\n+|$)/.exec(markdown)
+  if (!m || !title.trim() || comparableTitle(m[2]) !== comparableTitle(title)) return markdown
+  return markdown.slice(m[0].length).trimStart()
+}

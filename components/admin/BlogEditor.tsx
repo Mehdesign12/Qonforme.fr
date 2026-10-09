@@ -17,6 +17,9 @@ interface Post {
   is_published: boolean
   ai_generated?: boolean
   ai_keywords?:  string[] | null
+  /** Balises propres à Google (migration 20261006) : absentes avant la migration. */
+  seo_title?:       string | null
+  seo_description?: string | null
 }
 
 interface BlogEditorProps {
@@ -53,6 +56,8 @@ export function BlogEditor({ mode, post }: BlogEditorProps) {
   const [content,   setContent]   = useState(post?.content   ?? '')
   const [coverUrl,  setCoverUrl]  = useState(post?.cover_url ?? '')
   const [published, setPublished] = useState(post?.is_published ?? false)
+  const [seoTitle,  setSeoTitle]  = useState(post?.seo_title ?? '')
+  const [seoDescription, setSeoDescription] = useState(post?.seo_description ?? '')
   const [saving,    setSaving]    = useState(false)
   const [deleting,  setDeleting]  = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -77,7 +82,12 @@ export function BlogEditor({ mode, post }: BlogEditorProps) {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, slug, excerpt, content, cover_url: coverUrl, is_published: published }),
+        body: JSON.stringify({
+          title, slug, excerpt, content, cover_url: coverUrl, is_published: published,
+          // Envoyés seulement s'ils existent déjà ou sont saisis (colonnes absentes avant la migration 20261006)
+          ...(post?.seo_title !== undefined || seoTitle ? { seo_title: seoTitle } : {}),
+          ...(post?.seo_description !== undefined || seoDescription ? { seo_description: seoDescription } : {}),
+        }),
       })
 
       if (!res.ok) {
@@ -215,6 +225,37 @@ export function BlogEditor({ mode, post }: BlogEditorProps) {
             value={excerpt}
             onChange={e => setExcerpt(e.target.value)}
             placeholder="Courte description…"
+            className="q-input"
+          />
+        </Field>
+
+        <Field
+          id="blog-seo-title"
+          label="Titre pour Google (facultatif)"
+          hint={`${seoTitle.length} / 70 caractères. Vide : le titre de l'article.`}
+        >
+          <input
+            id="blog-seo-title"
+            value={seoTitle}
+            onChange={e => setSeoTitle(e.target.value)}
+            maxLength={120}
+            placeholder={title || 'Titre affiché dans les résultats de Google'}
+            className="q-input"
+          />
+        </Field>
+
+        <Field
+          id="blog-seo-description"
+          label="Description pour Google (facultatif)"
+          hint={`${seoDescription.length} caractères, 120 à 155 conseillés. Vide : l'extrait.`}
+        >
+          <textarea
+            id="blog-seo-description"
+            value={seoDescription}
+            onChange={e => setSeoDescription(e.target.value)}
+            rows={2}
+            maxLength={400}
+            placeholder={excerpt || 'Description affichée sous le lien dans Google'}
             className="q-input"
           />
         </Field>

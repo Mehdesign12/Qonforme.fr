@@ -8,6 +8,7 @@ import {
   getCategoryFromPrompt,
   extractHeadings,
   extractFaqItems,
+  stripLeadingTitle,
 } from "@/lib/blog-utils"
 import ArticleView from "@/components/blog/ArticleView"
 import { fitDescription, fitTitle } from "@/lib/seo/meta"
@@ -105,13 +106,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const post = await getPost(slug)
   if (!post) notFound()
 
-  const contentHtml = autoLinkPseo(markdownToHtml(post.content))
-  const readingTime = getReadingTime(post.content)
+  // Sans un premier titre qui répète le h1 de la page
+  const content = stripLeadingTitle(post.content ?? "", post.title)
+  const contentHtml = autoLinkPseo(markdownToHtml(content))
+  const readingTime = getReadingTime(content)
   const category = getCategoryFromPrompt(post.ai_prompt)
-  const headings = extractHeadings(post.content)
+  const headings = extractHeadings(content)
   const keywords = (post.ai_keywords as string[] | null) ?? []
 
-  const faqItems = extractFaqItems(post.content)
+  const faqItems = extractFaqItems(content)
 
   const [similar, adjacent] = await Promise.all([
     getSimilarPosts(post.slug, post.ai_prompt),
