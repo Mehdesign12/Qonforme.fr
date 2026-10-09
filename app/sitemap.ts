@@ -22,7 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .select("slug, updated_at")
     .eq("is_published", true);
 
-  // Articles marqués « noindex » par PushRank (colonne robots, migration 20261006) : hors du sitemap.
+  // Articles marqués « noindex » (colonne robots, migration 20261006) : hors du sitemap.
   // Sans la migration, la requête échoue et aucun article n'est retiré.
   const { data: noindex } = await admin
     .from("blog_posts")

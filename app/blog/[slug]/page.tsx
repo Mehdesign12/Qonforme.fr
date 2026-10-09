@@ -77,7 +77,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const post = await getPost(slug)
   if (!post) return { title: "Article introuvable" }
 
-  // Articles PushRank : titre et description SEO fournis, directives d'indexation respectées
+  // Titre et description SEO propres à l'article quand ils existent, directives d'indexation respectées
   const seoTitle = (post.seo_title as string | null | undefined) || post.title
   const seoDescription = (post.seo_description as string | null | undefined) || post.excerpt
   const robots = (post.robots ?? {}) as { index?: boolean; follow?: boolean; noSnippet?: boolean; noArchive?: boolean }

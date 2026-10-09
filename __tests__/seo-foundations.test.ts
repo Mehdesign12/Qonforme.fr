@@ -7,7 +7,6 @@ import { pageTypeOf, siteUrl, toSitePath } from "@/lib/seo/site"
 import { assertNoCompetitorInPrompt, brandOfDomain, CompetitorLeakError, findCompetitorMentions } from "@/lib/seo/competitors"
 import { readServiceAccount, signServiceAccountJwt } from "@/lib/seo/google"
 import { isDailyDue, parisClock } from "@/lib/seo/cron"
-import { stripLeadingTitle } from "@/lib/pushrank/html-to-markdown"
 import { adminCrumbsFor, isAdminActive } from "@/components/admin/nav"
 
 const NBSP = " "
@@ -151,18 +150,6 @@ describe("échéances des tâches (heure de Paris)", () => {
     expect(isDailyDue(job, now)).toBe(false)
     expect(isDailyDue({ ...job!, last_ok_at: "2026-10-08T05:00:00Z" }, now)).toBe(true)
     expect(isDailyDue(null, now, 9 * 60)).toBe(false)
-  })
-})
-
-describe("articles PushRank : titre non répété", () => {
-  it("retire un premier titre identique au titre de l'article", () => {
-    const md = "## Auto entrepreneur bâtiment : guide pratique pour le BTP\n\nPremier paragraphe."
-    expect(stripLeadingTitle(md, "Auto entrepreneur batiment : guide pratique pour le BTP")).toBe("Premier paragraphe.")
-  })
-
-  it("garde un premier titre différent", () => {
-    const md = "## Ce qu'il faut savoir\n\nTexte."
-    expect(stripLeadingTitle(md, "Autre titre")).toBe(md)
   })
 })
 

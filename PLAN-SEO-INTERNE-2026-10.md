@@ -4,6 +4,8 @@
 > puis résilier l'abonnement PushRank. Ordre voulu : plan consigné → design sur un canevas → validation du design et des fonctionnalités → code.
 > Canevas de design : https://claude.ai/artifact/4UtSAdhRw8xFW1BTLmGypz (29 planches, à valider).
 > Document vivant : à mettre à jour à chaque lot livré.
+> 09/10/2026 : le fondateur abandonne PushRank ; le webhook (route, code, test, variable) est supprimé. Les articles déjà reçus restent publiés
+> et les colonnes de la migration 20261006 restent (la page article et le plan du site les lisent).
 
 ## 1. Constat
 
@@ -64,7 +66,7 @@ Sur téléphone, le groupe se trouve dans la feuille « Plus » et un sélecteur
 - **Mots-clés** : 63 mots-clés suivis, statuts (candidat, ciblé, couvert, ignoré), page cible, volumes, délai avant la prochaine recherche (2 novembre).
 - **Articles** : Calendrier · Articles · Sujets · Préférences ; fenêtre « Générer un article ».
 - **Visibilité IA** : score par moteur, comparaison aux concurrents (interne), questions suivies, détail d'une question, « Gérer le suivi ».
-- **Paramètres** : Contexte de marque (avec « Preuves ») · Stratégie SEO · Ciblage · Connexions (Search Console, PageSpeed, moteurs IA, volumes, webhook PushRank) · Rapports (résumé hebdomadaire, facultatif).
+- **Paramètres** : Contexte de marque (avec « Preuves ») · Stratégie SEO · Ciblage · Connexions (Search Console, PageSpeed, moteurs IA, volumes ; le webhook PushRank a été retiré le 09/10/2026) · Rapports (résumé hebdomadaire, facultatif).
 - Ce qu'on ne reprend pas : quotas d'essai, crédits IA, formule payante, Maillage, Google Business Profile, Backlinks, mascotte et fonds dégradés.
 
 ## 5. Lots de construction
@@ -76,7 +78,7 @@ Sur téléphone, le groupe se trouve dans la feuille « Plus » et un sélecteur
 | 2 | Mots-clés, Actions SEO, Audit du site (exploration du sitemap par paquets) | Migration SQL |
 | 3 | Articles : calendrier, sujets, préférences, génération pilotée par les paramètres, publication planifiée | Migration SQL |
 | 4 | Visibilité IA | Migration SQL ; clés des moteurs |
-| 5 | Résiliation de PushRank : export, retrait de la route du webhook et de `PUSHRANK_WEBHOOK_SECRET`, déconnexion du CMS | Résilier avant la fin d'essai |
+| 5 | Résiliation de PushRank : export, retrait de la route du webhook et de `PUSHRANK_WEBHOOK_SECRET`, déconnexion du CMS | **Code retiré le 09/10/2026** (décision du fondateur : PushRank abandonné). Reste côté fondateur : supprimer la variable dans Vercel, déconnecter le CMS et résilier chez PushRank |
 
 Chaque lot ajoute des tables en RLS sans politique (lecture et écriture par le serveur seul, comme les autres tables sensibles) et des tâches planifiées sur cron-job.org (`CRON_SECRET`).
 Contraintes de `CLAUDE.md` à respecter : kit `q-*`, aucun `backdrop-filter` ni `will-change` sur téléphone, champs à 16 px, pages admin derrière `isAdminAuthenticated`, aucune affirmation invérifiable, aucun concurrent dans un contenu public.
