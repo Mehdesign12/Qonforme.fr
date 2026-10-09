@@ -73,7 +73,7 @@ Sur téléphone, le groupe se trouve dans la feuille « Plus » et un sélecteur
 
 | Lot | Contenu | Prérequis côté fondateur |
 |---|---|---|
-| 0 | Accès Google et comptes d'API ; correctifs du plan du site et du titre répété (tâche ci-dessous) | Compte de service Google Cloud (Search Console + PageSpeed), ajouté comme utilisateur de la propriété `sc-domain:qonforme.fr` ; variables dans Vercel ; comptes d'API selon décision 1 et 2 |
+| 0 | Accès Google et comptes d'API ; correctifs du plan du site et du titre répété (faits le 09/10/2026, § 7) | Compte de service Google Cloud (Search Console + PageSpeed), ajouté comme utilisateur de la propriété `sc-domain:qonforme.fr` ; variables dans Vercel ; comptes d'API selon décision 1 et 2 |
 | 1 | Paramètres, Vue d'ensemble, Performance (Recherche Google, PageSpeed) ; synchronisation quotidienne de Search Console avec reprise de 16 mois | Migration SQL à coller dans Supabase |
 | 2 | Mots-clés, Actions SEO, Audit du site (exploration du sitemap par paquets) | Migration SQL |
 | 3 | Articles : calendrier, sujets, préférences, génération pilotée par les paramètres, publication planifiée | Migration SQL |
@@ -104,10 +104,11 @@ Analyse des benchmarks en ligne (rédaction, français, fiabilité, prix, images
 - **Le risque principal reste factuel**, quel que soit le modèle : faits de référence vérifiés dans chaque consigne, relecture par une autre famille de
   modèles, contrôle `lib/blog-audit.ts` et brouillon à relire.
 
-## 7. Défauts constatés sur l'article PushRank du 07/10 (à corriger au lot 0)
-- Absent du plan du site : `app/sitemap.ts` est mis en cache (environ 28 h) et le webhook ne rafraîchit que `/blog` et `/blog/<slug>`. Les articles générés par Gemini avaient le même retard.
-  Correction : `revalidatePath("/sitemap.xml")` dans le webhook et `revalidate` horaire dans `app/sitemap.ts`.
-- Titre répété : le contenu de PushRank commence par le titre, que la page affiche déjà ; le convertisseur (`lib/pushrank/html-to-markdown.ts`) doit retirer un premier titre identique à celui de l'article.
+## 7. Défauts constatés sur l'article PushRank du 07/10 (corrigés le 09/10/2026)
+- Absent du plan du site : `app/sitemap.ts` était mis en cache (environ 28 h). Corrigé : recalcul horaire et `revalidateBlog()` (`lib/blog-revalidate.ts`)
+  après chaque publication, modification ou suppression d'article (admin du blog, générateurs).
+- Titre répété : le contenu commençait par le titre que la page affiche déjà. Corrigé à l'affichage pour tous les articles (`stripLeadingTitle`
+  dans `lib/blog-utils.ts`), y compris cet article reçu avant le correctif.
 
 ## 8. Sources
 - Anthropic, recherche web : https://simonwillison.net/2025/May/7/anthropic-api-search
