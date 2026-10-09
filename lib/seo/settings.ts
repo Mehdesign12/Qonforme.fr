@@ -98,8 +98,16 @@ export const articlesSchema = z.object({
   faqMax: z.number().int().min(1).max(12),
   officialSources: z.boolean(),
   alternateAngles: z.boolean(),
-  /** Identifiant du modèle de rédaction (lib/seo/articles/models.ts). */
+  /**
+   * Modèles par passe (lib/seo/articles/model-registry.ts) : plan et contrôle
+   * par un modèle, rédaction par un autre (relecture par une autre famille).
+   * Choix du 09/10/2026 d'après l'analyse des benchmarks
+   * (scratchpad benchmark-ia/RAPPORT.md, résumé dans PLAN-SEO-INTERNE-2026-10.md).
+   */
+  planModel: text(80).min(1),
+  /** Rédaction. */
   textModel: text(80).min(1),
+  reviewModel: text(80).min(1),
   coverImage: z.boolean(),
   /** Identifiant du modèle d'image (lib/seo/articles/models.ts). */
   imageModel: text(80).min(1),
@@ -248,9 +256,11 @@ export const SETTINGS_DEFAULTS: { [K in SettingsKey]: SettingsValue<K> } = {
     faqMax: 5,
     officialSources: true,
     alternateAngles: true,
-    textModel: "gemini-2.5-flash",
+    planModel: "gemini-3.8-flash",
+    textModel: "claude-opus-5-5",
+    reviewModel: "gemini-3.8-flash",
     coverImage: true,
-    imageModel: "gemini-3.1-flash-image-preview",
+    imageModel: "gemini-nano-banana-2.1",
     autoLinks: true,
   },
   geo: {

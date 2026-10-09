@@ -16,6 +16,10 @@ export interface ArticleViewProps {
     excerpt: string | null
     cover_url: string | null
     published_at: string | null
+    /** Texte alternatif de la couverture (vide : image décorative). */
+    cover_alt?: string | null
+    /** Article et couverture produits par une IA : la couverture porte la mention « Illustration générée par IA ». */
+    ai_generated?: boolean | null
   }
   category: TopicCategory
   readingTime: number
@@ -89,13 +93,19 @@ export default function ArticleView({ post, category, readingTime, keywords, hea
               )}
             </header>
 
-            <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-[20px] border border-q-line bg-q-sunken">
-              {post.cover_url ? (
-                <Image src={post.cover_url} alt="" fill className="object-cover" sizes="(max-width: 760px) 100vw, 700px" priority />
-              ) : (
-                <CoverFallback size={96} />
+            <figure className="mt-8">
+              <div className="relative aspect-[16/9] overflow-hidden rounded-[20px] border border-q-line bg-q-sunken">
+                {post.cover_url ? (
+                  <Image src={post.cover_url} alt={post.cover_alt ?? ""} fill className="object-cover" sizes="(max-width: 760px) 100vw, 700px" priority />
+                ) : (
+                  <CoverFallback size={96} />
+                )}
+              </div>
+              {/* Transparence sur les images de synthèse (AI Act, art. 50) */}
+              {post.cover_url && post.ai_generated && (
+                <figcaption className="mt-2 text-[13px] text-q-text-4">Illustration générée par IA</figcaption>
               )}
-            </div>
+            </figure>
 
             {/* Contenu : typographie .blog-prose (app/globals.css) */}
             <div className="blog-prose mt-10" dangerouslySetInnerHTML={{ __html: contentHtml }} />
