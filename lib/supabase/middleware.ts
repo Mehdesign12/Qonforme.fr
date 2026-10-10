@@ -154,8 +154,11 @@ export async function updateSession(request: NextRequest) {
     '/products',
     '/credit-notes',
     '/purchase-orders',
-    '/tresorerie',
-    '/relances',
+    // Espace comptable : compte connecté, sans entreprise exigée (l'accès à
+    // chaque dossier est vérifié par lib/accountant/server.ts)
+    '/comptable',
+    '/received-invoices',
+    // Chantiers (formule Artisan)
     '/chantiers',
   ]
 

@@ -1,48 +1,59 @@
 'use client'
 
-import { useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { ChantierDetailView } from "@/components/chantiers/ChantierDetailView"
-import { DEMO_ATTACHABLE, DEMO_CHANTIERS } from "@/lib/demo/chantiers"
-import type { Chantier } from "@/lib/chantiers/metrics"
+export const dynamic = "force-dynamic"
 
-const wait = () => new Promise((r) => setTimeout(r, 300))
+import Link from "next/link"
+import { toast } from "sonner"
+import { HardHat } from "lucide-react"
+import { EmptyState } from "@/components/app/kit"
+import { ChantierDetailView } from "@/components/artisan/ChantierDetailView"
+import { DEMO_TODAY } from "@/lib/demo/data"
+import { demoChantier, demoChantierDocs, demoChantierSummary } from "@/lib/demo/chantiers"
+import type { ChantierDoc } from "@/lib/artisan/chantier"
 
-export default function DemoChantierPage() {
-  const { id } = useParams<{ id: string }>()
-  const router = useRouter()
-  const [chantier, setChantier] = useState<Chantier>(() => DEMO_CHANTIERS.find((c) => c.id === id) ?? DEMO_CHANTIERS[0])
-  const [attachable, setAttachable] = useState(DEMO_ATTACHABLE)
+const ctaToast = (what: string) => toast(`Créez un compte pour ${what}`, {
+  action: { label: "S'inscrire", onClick: () => { window.location.href = "/signup" } },
+})
+
+const DOC_PATHS: Record<ChantierDoc["type"], string> = {
+  quote: "/demo/quotes", invoice: "/demo/invoices", credit_note: "/demo/credit-notes", purchase_order: "/demo/purchase-orders",
+}
+
+/** Miroir de /chantiers/[id] : même fiche, chantier fictif, rien n'est enregistré. */
+export default function DemoChantierPage({ params }: { params: { id: string } }) {
+  const c = demoChantier(params.id)
+  if (!c) return (
+    <div className="q-card">
+      <EmptyState
+        icon={<HardHat className="size-5" aria-hidden />}
+        title="Chantier introuvable"
+        text="Ce chantier n'existe pas dans la démo."
+        action={<Link href="/demo/chantiers" className="q-btn q-btn-secondary">Retour aux chantiers</Link>}
+      />
+    </div>
+  )
 
   return (
     <ChantierDetailView
-      chantier={chantier}
-      attachable={attachable}
-      hrefs={{
-        list: "/demo/chantiers",
-        quote: (q) => `/demo/quotes/${q}`,
-        invoice: (i) => `/demo/invoices/${i}`,
-        newQuote: "/demo/quotes/new",
-        newInvoice: "/demo/invoices/new",
+      chantier={c}
+      documents={demoChantierDocs(c.id)}
+      summary={demoChantierSummary(c.id)}
+      today={DEMO_TODAY}
+      artisan
+      backHref="/demo/chantiers"
+      docHref={(d) => `${DOC_PATHS[d.type]}/${d.id}`}
+      clientHref={c.client_id ? `/demo/clients/${c.client_id}` : null}
+      newQuoteHref="/demo/quotes/new"
+      actions={{
+        onEdit: () => ctaToast("modifier vos chantiers"),
+        onAttach: () => ctaToast("rattacher vos documents à un chantier"),
+        onDetach: () => ctaToast("organiser vos chantiers"),
+        onFreeDeposit: () => ctaToast("facturer des acomptes"),
+        onSaveReception: () => ctaToast("suivre la réception de vos chantiers"),
+        onMarkReleased: () => ctaToast("suivre vos retenues de garantie"),
+        onRetentionRequest: () => ctaToast("demander la libération de vos retenues de garantie"),
+        onDelete: () => ctaToast("gérer vos chantiers"),
       }}
-      onStatus={async (status) => { await wait(); setChantier((c) => ({ ...c, status })); return { ok: true } }}
-      onAttach={async (type, docId, attach) => {
-        await wait()
-        const key = type === "quote" ? "quotes" : "invoices"
-        if (attach) {
-          const d = attachable[key].find((x) => x.id === docId)
-          if (d) {
-            setChantier((c) => ({ ...c, [key]: [{ ...d, subtotal_ht: Math.round((d.total_ttc / 1.2) * 100) / 100 }, ...c[key]] }))
-            setAttachable((a) => ({ ...a, [key]: a[key].filter((x) => x.id !== docId) }))
-          }
-        } else {
-          const d = chantier[key].find((x) => x.id === docId)
-          setChantier((c) => ({ ...c, [key]: c[key].filter((x) => x.id !== docId) }))
-          if (d) setAttachable((a) => ({ ...a, [key]: [d, ...a[key]] }))
-        }
-        return { ok: true }
-      }}
-      onDelete={async () => { await wait(); router.push("/demo/chantiers"); return { ok: true } }}
     />
   )
 }
