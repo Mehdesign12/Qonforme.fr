@@ -35,6 +35,13 @@ describe("réglages SEO", () => {
 
     const goals = parseSettings("strategy", { ...SETTINGS_DEFAULTS.strategy, mainGoal: "conversions" })
     expect(goals.ok).toBe(false)
+
+    const noSection = parseSettings("reports", {
+      ...SETTINGS_DEFAULTS.reports,
+      weeklyDigest: true,
+      sections: { kpis: false, pages: false, articles: false, geo: false },
+    })
+    expect(noSection.ok).toBe(false)
   })
 
   it("les réglages par défaut passent leur propre schéma", () => {

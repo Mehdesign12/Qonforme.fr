@@ -337,6 +337,12 @@ function crossCheck<K extends SettingsKey>(key: K, value: SettingsValue<K>): { f
     if (v.lengthMin > v.lengthMax) return { field: "lengthMax", message: "La longueur maximale doit dépasser la longueur minimale" }
     if (v.faqMin > v.faqMax) return { field: "faqMax", message: "Le nombre maximal de questions doit dépasser le minimum" }
   }
+  if (key === "reports") {
+    const v = value as ReportSettings
+    if (v.weeklyDigest && !Object.values(v.sections).some(Boolean)) {
+      return { field: "sections", message: "Cochez au moins une section du résumé" }
+    }
+  }
   if (key === "strategy") {
     const v = value as StrategySettings
     if (!v.goals.includes(v.mainGoal)) return { field: "goals", message: "L'objectif principal doit faire partie des objectifs cochés" }
