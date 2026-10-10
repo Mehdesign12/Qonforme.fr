@@ -18,6 +18,7 @@ import { generateCreditNotePdf } from "@/lib/pdf/credit-note"
 import type { InvoiceLine } from "@/types"
 import { buildSalesCsv, type CsvCreditNote, type CsvInvoice } from "@/lib/accountant/csv"
 import { createZip, type ZipEntry } from "@/lib/accountant/zip"
+import { loadDocumentTemplates } from "@/lib/legal/db"
 import { ZIP_MAX_DOCUMENTS, paymentState, type VatLine } from "@/lib/accountant/rules"
 import {
   COMPANY_PDF_COLUMNS, CREDIT_LIST_COLUMNS, CREDIT_PDF_COLUMNS, INVOICE_LIST_COLUMNS, INVOICE_PDF_COLUMNS,
@@ -147,7 +148,8 @@ export async function buildCsvExport(db: Db, ownerId: string, period: Period, to
 
 export async function buildPdfZipExport(db: Db, ownerId: string, period: Period): Promise<ExportFile | ExportError> {
   const [company, rawInvoices, rawCredits] = await Promise.all([
-    companyOf(db, ownerId, COMPANY_PDF_COLUMNS),
+    // Avec les modèles de documents : mêmes PDF que ceux de l'artisan (lib/pdf/theme.ts)
+    companyOf(db, ownerId, COMPANY_PDF_COLUMNS).then(async (c): Promise<Raw | null> => (c ? { ...c, document_templates: await loadDocumentTemplates(db, ownerId) } : c)),
     fetchIssuedInvoices(db, ownerId, period, INVOICE_PDF_COLUMNS),
     fetchCreditNotes(db, ownerId, period, CREDIT_PDF_COLUMNS),
   ])

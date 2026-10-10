@@ -9,6 +9,7 @@
  */
 import { PDFDocument, rgb, PageSizes, degrees } from "pdf-lib"
 import { addUriLink } from "@/lib/pdf/link"
+import { drawDivider, drawHeaderBand, drawLogoBacking, drawPartiesFill, drawTableHead, drawTotalBox, pdfTheme, templateOf, tint } from "@/lib/pdf/theme"
 import { poweredByUrl } from "@/lib/utils/powered-by"
 import fontkit from "@pdf-lib/fontkit"
 import { buildFacturX, documentMentions } from "@/lib/facturx/xml"
@@ -157,6 +158,12 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   const mL = 48
   const mR = width - 48
   const cW = mR - mL
+  // Modèle de mise en page (Paramètres › Modèles de documents) ; Classique = rendu d'avant
+  const theme = pdfTheme(templateOf(company, "invoice"), {
+    docColor: accent, classicTitle: black, classicHeadFill: rgb(0.95, 0.97, 1.00), brand: accent,
+  })
+  const barY = height - 155
+  drawHeaderBand(page, theme, barY - 8)
 
   const draw = (
     text: string, x: number, y: number,
@@ -204,7 +211,9 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   const logoMaxH = 52, logoMaxW = 130
   if (logoImg) {
     const scale = Math.min(logoMaxW / logoImg.width, logoMaxH / logoImg.height, 1)
-    page.drawImage(logoImg, { x: mL, y: curY - logoImg.height * scale + 4, width: logoImg.width * scale, height: logoImg.height * scale })
+    const box = { x: mL, y: curY - logoImg.height * scale + 4, width: logoImg.width * scale, height: logoImg.height * scale }
+    drawLogoBacking(page, theme, box)
+    page.drawImage(logoImg, box)
   }
 
   // Titre : « FACTURE », ou la nature d'une facture de la formule Artisan
@@ -213,43 +222,51 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   const kind = ctx?.kind ?? parseInvoiceKind(invoice.invoice_kind)
   const docTitle = invoiceTitle(kind, ctx?.situation ? { situation: { ...ctx.situation, final: false } } : null).toUpperCase()
   const titleSize = docTitle.length <= 10 ? 22 : 15
-  draw(docTitle, mR, curY, { size: titleSize, bold: true, color: black, align: "right" })
+  draw(docTitle, mR, curY, { size: titleSize, bold: true, color: theme.title, align: "right" })
   if (!logoImg) {
     const titleW = fontBold.widthOfTextAtSize(pdfSafeText(fontBold, docTitle), titleSize)
-    draw(company?.name ?? "Votre entreprise", mL, curY, { size: 16, bold: true, color: accent, maxWidth: Math.max(120, cW - titleW - 16) })
+    draw(company?.name ?? "Votre entreprise", mL, curY, { size: 16, bold: true, color: theme.band ? theme.head.text : theme.primary, maxWidth: Math.max(120, cW - titleW - 16) })
   }
-  draw(invoice.invoice_number, mR, curY - 20, { size: 11, bold: true, color: accent, align: "right" })
-  draw(`Émission : ${fmtDate(invoice.issue_date)}`, mR, curY - 36, { size: 8.5, color: grayDark, align: "right" })
-  draw(`Échéance : ${fmtDate(invoice.due_date)}`,   mR, curY - 50, { size: 8.5, color: grayDark, align: "right" })
+  draw(invoice.invoice_number, mR, curY - 20, { size: 11, bold: true, color: theme.head.number, align: "right" })
+  draw(`Émission : ${fmtDate(invoice.issue_date)}`, mR, curY - 36, { size: 8.5, color: theme.head.sub, align: "right" })
+  draw(`Échéance : ${fmtDate(invoice.due_date)}`,   mR, curY - 50, { size: 8.5, color: theme.head.sub, align: "right" })
 
   // Pastille seulement quand le XML est réellement embarqué (jamais sur un brouillon)
   if (!watermark) {
     const badgeY = curY - 66
-    rect(mR - 52, badgeY - 4, 52, 14, rgb(0.94, 0.97, 1.0))
-    draw("Factur-X", mR - 6, badgeY + 2, { size: 7, bold: true, color: accent, align: "right" })
+    rect(mR - 52, badgeY - 4, 52, 14, theme.id === "classique" ? rgb(0.94, 0.97, 1.0) : tint(theme.primary, 0.1))
+    draw("Factur-X", mR - 6, badgeY + 2, { size: 7, bold: true, color: theme.primary, align: "right" })
   }
 
   let infoY = curY - logoMaxH - 12
-  if (company?.address)    { draw(company.address, mL, infoY, { size: 8.5, color: grayDark }); infoY -= 14 }
+  if (company?.address)    { draw(company.address, mL, infoY, { size: 8.5, color: theme.head.sub }); infoY -= 14 }
   const cityLine = [company?.zip_code, company?.city].filter(Boolean).join(" ")
-  if (cityLine)            { draw(cityLine, mL, infoY, { size: 8.5, color: grayDark }); infoY -= 14 }
-  if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 8, color: grayLight }); infoY -= 13 }
-  else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 8, color: grayLight }); infoY -= 13 }
-  if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 8, color: grayLight }) }
+  if (cityLine)            { draw(cityLine, mL, infoY, { size: 8.5, color: theme.head.sub }); infoY -= 14 }
+  if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
+  else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
+  if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 8, color: theme.head.faint }) }
 
-  const barY = height - 155
-  rect(mL, barY, cW, 3, accent)
+  drawDivider(page, theme, mL, cW, barY)
 
   // ÉMETTEUR / FACTURÉ À
   curY = barY - 20
   const col2  = mL + cW / 2 + 8
   const colW2 = cW / 2 - 8
 
-  draw("ÉMETTEUR",  mL,   curY, { size: 7, bold: true, color: accent })
-  draw("FACTURÉ À", col2, curY, { size: 7, bold: true, color: accent })
+  // Fond des parties (modèle Moderne) : hauteur calculée comme les lignes ci-dessous
+  {
+    let y = curY - 4 - 13 - 14
+    if (company?.address || invoice.client?.address) y -= 13
+    if ([company?.zip_code, company?.city, invoice.client?.zip_code, invoice.client?.city].some(Boolean)) y -= 13
+    y -= 13
+    if (company?.vat_number || invoice.client?.siren) y -= 13
+    drawPartiesFill(page, theme, mL, cW, barY - 8, y + 6)
+  }
+  draw("ÉMETTEUR",  mL,   curY, { size: 7, bold: true, color: theme.primary })
+  draw("FACTURÉ À", col2, curY, { size: 7, bold: true, color: theme.primary })
   curY -= 4
-  hLine(curY, mL, mL + 80, 0.8, accent)
-  hLine(curY, col2, col2 + 80, 0.8, accent)
+  hLine(curY, mL, mL + 80, 0.8, theme.primary)
+  hLine(curY, col2, col2 + 80, 0.8, theme.primary)
   curY -= 13
 
   draw(company?.name ?? "—", mL,   curY, { size: 10, bold: true, color: black, maxWidth: colW2 })
@@ -299,12 +316,12 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   // TABLEAU
   const colDesc = mL, colQty = mL + 250, colPU = mL + 300, colTVA = mL + 378, colTotal = mR
   const tableHeaderH = 20
-  rect(mL, curY - 4, cW, tableHeaderH, rgb(0.95, 0.97, 1.00))
-  draw("Désignation", colDesc,  curY + 4, { size: 7.5, bold: true, color: grayDark })
-  draw("Qté",         colQty,   curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
-  draw("P.U. HT",     colPU,    curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
-  draw("TVA",         colTVA,   curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
-  draw("Total HT",    colTotal, curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
+  drawTableHead(page, theme, mL, curY - 4, cW, tableHeaderH)
+  draw("Désignation", colDesc,  curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text })
+  draw("Qté",         colQty,   curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
+  draw("P.U. HT",     colPU,    curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
+  draw("TVA",         colTVA,   curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
+  draw("Total HT",    colTotal, curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
   curY -= tableHeaderH + 2
 
   const lines = invoice.lines ?? []
@@ -330,7 +347,7 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
     const s = ctx.situation
     const valX = totX - 24
     let y = curY
-    draw("RÉCAPITULATIF DE LA SITUATION", mL, y, { size: 7, bold: true, color: accent })
+    draw("RÉCAPITULATIF DE LA SITUATION", mL, y, { size: 7, bold: true, color: theme.primary })
     y -= 13
     const deducted = ctx.deductions.reduce((t, d) => t + toCents(d.ht), 0) / 100
     const rows: [string, number, boolean?][] = [
@@ -366,11 +383,10 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
     curY -= 8
   }
   hLine(curY, totX, mR, 0.8, grayLight)
-  curY -= 16
-  hLine(curY, totX, mR, 1.5, accent)
-  curY -= 14
-  draw("TOTAL TTC",            totX,    curY, { size: 10, bold: true, color: accent })
-  draw(fmt(totals.grandTotal), totValX, curY, { size: 14, bold: true, color: accent, align: "right" })
+  curY -= 30
+  drawTotalBox(page, theme, totX, mR - totX, curY)
+  draw("TOTAL TTC",            totX,    curY, { size: 10, bold: true, color: theme.total.text })
+  draw(fmt(totals.grandTotal), totValX, curY, { size: 14, bold: true, color: theme.total.text, align: "right" })
   curY -= 18
 
   // Retenue de garantie : le total TTC (et le montant dû du XML) ne change
@@ -401,7 +417,7 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
 
   // NOTES
   if (invoice.notes?.trim()) {
-    rect(mL, curY - 2, 3, 28, accent)
+    rect(mL, curY - 2, 3, 28, theme.primary)
     draw("CONDITIONS DE PAIEMENT / NOTES", mL + 10, curY + 14, { size: 7.5, bold: true, color: grayDark })
     invoice.notes.trim().split("\n").slice(0, 3).forEach((l: string) => {
       draw(l, mL + 10, curY, { size: 8, color: grayDark, maxWidth: cW - 20 })
@@ -429,7 +445,7 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   // FOOTER
   hLine(32, mL, mR, 0.5, separator)
   draw(`${company?.name ?? "Qonforme"} — ${invoice.invoice_number}`, mL, 20, { size: 7, color: grayLight })
-  draw("Généré par Qonforme", mR, 20, { size: 7, color: accent, align: "right" })
+  draw("Généré par Qonforme", mR, 20, { size: 7, color: theme.primary, align: "right" })
   {
     // « Propulsé par Qonforme » cliquable, avec sa provenance (lib/utils/powered-by.ts)
     const tw = fontRegular.widthOfTextAtSize("Généré par Qonforme", 7)

@@ -30,6 +30,7 @@ import { DirtyHint, Field, MobileSaveBar, SaveButton, SettingsCard } from "@/com
 import { LogoInline, useCompanyLogo } from "@/components/settings/LogoField"
 import { DocumentPreview, type PreviewCompany } from "@/components/settings/DocumentPreview"
 import { SignatureSettingsCard } from "@/components/signature/SignatureSettingsCard"
+import { DocumentTemplatesCard } from "@/components/settings/DocumentTemplatesCard"
 import { composeMentions, type ComposedMentions } from "@/lib/legal/mentions"
 import { parseLegalProfile, type LegalProfile } from "@/lib/legal/profile"
 
@@ -416,10 +417,13 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
         </form>
       )}
 
-      {/* Hors du formulaire : la signature en ligne s'enregistre à part */}
+      {/* Hors du formulaire : modèle de mise en page et signature en ligne s'enregistrent à part */}
       {!loading && (
-        <div className="grid items-start gap-5 min-[1360px]:grid-cols-[minmax(0,1fr)_minmax(340px,440px)]">
-          <SignatureSettingsCard mode={mode} />
+        <div className="flex flex-col gap-5">
+          <DocumentTemplatesCard mode={mode} accent={accentColor || "#2563EB"} />
+          <div className="grid items-start gap-5 min-[1360px]:grid-cols-[minmax(0,1fr)_minmax(340px,440px)]">
+            <SignatureSettingsCard mode={mode} />
+          </div>
         </div>
       )}
     </>

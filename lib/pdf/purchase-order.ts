@@ -6,6 +6,7 @@
  */
 import { PDFDocument, rgb, PageSizes } from "pdf-lib"
 import { addUriLink } from "@/lib/pdf/link"
+import { drawDivider, drawHeaderBand, drawLogoBacking, drawPartiesFill, drawTableHead, drawTotalBox, pdfTheme, templateOf } from "@/lib/pdf/theme"
 import { poweredByUrl } from "@/lib/utils/powered-by"
 import fontkit from "@pdf-lib/fontkit"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
@@ -155,52 +156,69 @@ export async function generatePurchaseOrderPdf({ po, company: companyInput }: Pu
   }
 
   // ── HEADER ────────────────────────────────────────────────────────────
+  // Modèle de mise en page (Paramètres › Modèles de documents) ; Classique = rendu d'avant
+  const theme = pdfTheme(templateOf(company, "purchase_order"), {
+    docColor: poBlue, classicTitle: poBlue, classicHeadFill: rgb(0.94, 0.94, 0.99), brand: accent,
+  })
+  const barY = height - 155
+  drawHeaderBand(page, theme, barY - 8)
+
   let curY = height - 44
   const logoMaxH = 52; const logoMaxW = 130
 
   if (logoImg) {
     const scale = Math.min(logoMaxW / logoImg.width, logoMaxH / logoImg.height, 1)
-    page.drawImage(logoImg, {
+    const logoBox = {
       x: mL, y: curY - logoImg.height * scale + 4,
       width: logoImg.width * scale, height: logoImg.height * scale,
-    })
+    }
+    drawLogoBacking(page, theme, logoBox)
+    page.drawImage(logoImg, logoBox)
   } else {
-    draw(company?.name ?? "Votre entreprise", mL, curY, { size: 16, bold: true, color: accent })
+    draw(company?.name ?? "Votre entreprise", mL, curY, { size: 16, bold: true, color: theme.band ? theme.head.text : theme.id === "classique" ? accent : theme.primary })
   }
 
   // Titre + numéro à droite
-  draw("BON DE COMMANDE", mR, curY,      { size: 18, bold: true, color: poBlue, align: "right" })
-  draw(po.po_number,       mR, curY - 20, { size: 11, bold: true, color: poBlue, align: "right" })
-  draw(`Émis le : ${fmtDate(po.issue_date)}`, mR, curY - 36, { size: 8.5, color: grayDark, align: "right" })
+  draw("BON DE COMMANDE", mR, curY,      { size: 18, bold: true, color: theme.title, align: "right" })
+  draw(po.po_number,       mR, curY - 20, { size: 11, bold: true, color: theme.head.number, align: "right" })
+  draw(`Émis le : ${fmtDate(po.issue_date)}`, mR, curY - 36, { size: 8.5, color: theme.head.sub, align: "right" })
   if (po.delivery_date) {
-    draw(`Livraison souhaitée : ${fmtDate(po.delivery_date)}`, mR, curY - 50, { size: 8.5, color: grayDark, align: "right" })
+    draw(`Livraison souhaitée : ${fmtDate(po.delivery_date)}`, mR, curY - 50, { size: 8.5, color: theme.head.sub, align: "right" })
   }
   if (po.reference) {
-    draw(`Réf. client : ${po.reference}`, mR, curY - (po.delivery_date ? 64 : 50), { size: 8, color: grayDark, align: "right" })
+    draw(`Réf. client : ${po.reference}`, mR, curY - (po.delivery_date ? 64 : 50), { size: 8, color: theme.head.sub, align: "right" })
   }
 
   // Infos entreprise sous le logo
   let infoY = curY - logoMaxH - 12
-  if (company?.address)    { draw(company.address, mL, infoY, { size: 8.5, color: grayDark }); infoY -= 14 }
+  if (company?.address)    { draw(company.address, mL, infoY, { size: 8.5, color: theme.head.sub }); infoY -= 14 }
   const cityLine = [company?.zip_code, company?.city].filter(Boolean).join(" ")
-  if (cityLine)            { draw(cityLine, mL, infoY, { size: 8.5, color: grayDark }); infoY -= 14 }
-  if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 8, color: grayLight }); infoY -= 13 }
-  else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 8, color: grayLight }); infoY -= 13 }
-  if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 8, color: grayLight }) }
+  if (cityLine)            { draw(cityLine, mL, infoY, { size: 8.5, color: theme.head.sub }); infoY -= 14 }
+  if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
+  else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
+  if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 8, color: theme.head.faint }) }
 
   // Barre de couleur horizontale
-  const barY = height - 155
-  rect(mL, barY, cW, 3, poBlue)
+  drawDivider(page, theme, mL, cW, barY)
 
   // ── ÉMETTEUR / DESTINATAIRE ───────────────────────────────────────────
   curY = barY - 20
   const col2 = mL + cW / 2 + 8; const colW2 = cW / 2 - 8
 
-  draw("ÉMETTEUR",     mL,   curY, { size: 7, bold: true, color: poBlue })
-  draw("DESTINATAIRE", col2, curY, { size: 7, bold: true, color: poBlue })
+  // Fond des parties (modèle Moderne) : hauteur calculée comme les lignes ci-dessous
+  {
+    let y = curY - 4 - 13 - 14
+    if (company?.address || po.client?.address) y -= 13
+    if ([company?.zip_code, company?.city, po.client?.zip_code, po.client?.city].some(Boolean)) y -= 13
+    y -= 13
+    if (company?.vat_number || po.client?.siren) y -= 13
+    drawPartiesFill(page, theme, mL, cW, barY - 8, y + 6)
+  }
+  draw("ÉMETTEUR",     mL,   curY, { size: 7, bold: true, color: theme.primary })
+  draw("DESTINATAIRE", col2, curY, { size: 7, bold: true, color: theme.primary })
   curY -= 4
-  hLine(curY, mL,   mL   + 80, 0.8, poBlue)
-  hLine(curY, col2, col2 + 80, 0.8, poBlue)
+  hLine(curY, mL,   mL   + 80, 0.8, theme.primary)
+  hLine(curY, col2, col2 + 80, 0.8, theme.primary)
   curY -= 13
 
   draw(company?.name ?? "—",      mL,   curY, { size: 10, bold: true, color: black, maxWidth: colW2 })
@@ -237,12 +255,12 @@ export async function generatePurchaseOrderPdf({ po, company: companyInput }: Pu
   const colDesc = mL; const colQty = mL + 250; const colPU = mL + 300
   const colTVA  = mL + 378; const colTotal = mR; const tableHeaderH = 20
 
-  rect(mL, curY - 4, cW, tableHeaderH, rgb(0.94, 0.94, 0.99))
-  draw("Désignation", colDesc,  curY + 4, { size: 7.5, bold: true, color: grayDark })
-  draw("Qté",         colQty,   curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
-  draw("P.U. HT",     colPU,    curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
-  draw("TVA",         colTVA,   curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
-  draw("Total HT",    colTotal, curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
+  drawTableHead(page, theme, mL, curY - 4, cW, tableHeaderH)
+  draw("Désignation", colDesc,  curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text })
+  draw("Qté",         colQty,   curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
+  draw("P.U. HT",     colPU,    curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
+  draw("TVA",         colTVA,   curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
+  draw("Total HT",    colTotal, curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
   curY -= tableHeaderH + 2
 
   const lines = po.lines ?? []
@@ -272,15 +290,15 @@ export async function generatePurchaseOrderPdf({ po, company: companyInput }: Pu
   hLine(curY, totX, mR, 0.8, grayLight)
   curY -= 16
 
-  hLine(curY, totX, mR, 1.5, poBlue)
   curY -= 14
-  draw("TOTAL TTC",       totX,    curY, { size: 10, bold: true, color: poBlue })
-  draw(fmt(po.total_ttc), totValX, curY, { size: 14, bold: true, color: poBlue, align: "right" })
+  drawTotalBox(page, theme, totX, mR - totX, curY)
+  draw("TOTAL TTC",       totX,    curY, { size: 10, bold: true, color: theme.total.text })
+  draw(fmt(po.total_ttc), totValX, curY, { size: 14, bold: true, color: theme.total.text, align: "right" })
   curY -= 24
 
   // ── NOTES ─────────────────────────────────────────────────────────────
   if (po.notes?.trim()) {
-    rect(mL, curY - 2, 3, 28, poBlue)
+    rect(mL, curY - 2, 3, 28, theme.primary)
     draw("NOTES / CONDITIONS", mL + 10, curY + 14, { size: 7.5, bold: true, color: grayDark })
     po.notes.trim().split("\n").slice(0, 3).forEach((l: string) => {
       draw(l, mL + 10, curY, { size: 8, color: grayDark, maxWidth: cW - 20 }); curY -= 13
@@ -302,7 +320,7 @@ export async function generatePurchaseOrderPdf({ po, company: companyInput }: Pu
   // ── FOOTER ────────────────────────────────────────────────────────────
   hLine(32, mL, mR, 0.5, separator)
   draw(`${company?.name ?? "Qonforme"} — ${po.po_number}`, mL, 20, { size: 7, color: grayLight })
-  draw("Généré par Qonforme", mR, 20, { size: 7, color: poBlue, align: "right" })
+  draw("Généré par Qonforme", mR, 20, { size: 7, color: theme.primary, align: "right" })
   {
     // « Propulsé par Qonforme » cliquable, avec sa provenance (lib/utils/powered-by.ts)
     const tw = fontRegular.widthOfTextAtSize("Généré par Qonforme", 7)
