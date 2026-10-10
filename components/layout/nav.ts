@@ -9,7 +9,7 @@
  */
 import {
   LayoutDashboard, FileText, FileCheck2, Users, Package, ShoppingCart,
-  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox, HardHat, Wallet,
+  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox, HardHat, Wallet, BellRing,
   type LucideIcon,
 } from "lucide-react"
 
@@ -44,6 +44,7 @@ export const NAV_MAIN: NavLink[] = [
 
 export const NAV_PILOTAGE: NavLink[] = [
   { key: "tresorerie", label: "Trésorerie", href: "/tresorerie", demoHref: "/demo/tresorerie", icon: Wallet, hint: "Ce qui doit rentrer et sortir" },
+  { key: "relances", label: "Relances", href: "/relances", demoHref: "/demo/relances", icon: BellRing, hint: "Ce qui part tout seul, et ce qui est parti" },
   { key: "exports", label: "Exports comptables", href: "/settings/exports", demoHref: "/demo/settings/exports", icon: Download, hint: "Fichier des écritures comptables" },
 ]
 
@@ -98,6 +99,7 @@ const SECTION_TITLES: { prefix: string; title: string; href: string }[] = [
   { prefix: "/credit-notes", title: "Avoirs", href: "/credit-notes" },
   { prefix: "/received-invoices", title: "Factures reçues", href: "/received-invoices" },
   { prefix: "/tresorerie", title: "Trésorerie", href: "/tresorerie" },
+  { prefix: "/relances", title: "Relances", href: "/relances" },
   { prefix: "/settings/exports", title: "Exports comptables", href: "/settings/exports" },
   { prefix: "/settings", title: "Paramètres", href: "/settings" },
   { prefix: "/dashboard", title: "Tableau de bord", href: "/dashboard" },

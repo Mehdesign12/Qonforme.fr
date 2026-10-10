@@ -5,6 +5,8 @@ import { requireIssuingAccess } from "@/lib/stripe/subscription"
 import { requireIssuerIdentity } from "@/lib/legal/issuer"
 import { issueDraftInvoice } from "@/lib/utils/document-numbering"
 import { todayInParis } from "@/lib/utils/paris-date"
+import { paidAtChange } from "@/lib/utils/payment-date"
+import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { loadReminderLog } from "@/lib/reminders/store"
 import { isArtisanKind } from "@/lib/artisan/billing"
 import { requireArtisanAccess } from "@/lib/artisan/access"
@@ -64,11 +66,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const touchesContent = contentFields.some((f) => body[f] !== undefined)
 
   let issuing = false
+  // Date de paiement (« encaissé » du tableau de bord) : posée au passage à
+  // « payée », effacée au retour (lib/utils/payment-date.ts)
+  let paidAt: string | null | undefined
 
   if (touchesContent || body.status !== undefined) {
     const { data: current } = await supabase
       .from("invoices")
-      .select("status")
+      .select("status, issue_date")
       .eq("id", id)
       .eq("user_id", user.id)
       .single()
@@ -88,6 +93,15 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         { error: transitionError("invoice", current.status, body.status) },
         { status: 403 }
       )
+    }
+
+    if (body.status !== undefined) {
+      const change = paidAtChange({
+        from: current.status, to: body.status, requested: body.paid_at,
+        issueDate: current.issue_date, today: todayInParis(), now: new Date(),
+      })
+      if (!change.ok) return NextResponse.json({ error: change.error, field: "paid_at" }, { status: 400 })
+      paidAt = change.value
     }
 
     // Acompte, situation, solde (formule Artisan) : contenu calculé depuis le
@@ -135,6 +149,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   if (body.status && !issuing) updateData.status = body.status
+  if (paidAt !== undefined && !issuing) updateData.paid_at = paidAt
   if (body.is_archived !== undefined) updateData.is_archived = body.is_archived
   if (body.client_id) updateData.client_id = body.client_id
   if (body.issue_date) updateData.issue_date = body.issue_date
@@ -146,13 +161,20 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   let data: Record<string, unknown> | null = null
 
   if (Object.keys(updateData).length > 0 || !issuing) {
-    const res = await supabase
+    const update = (values: Record<string, unknown>) => supabase
       .from("invoices")
-      .update(updateData)
+      .update(values)
       .eq("id", id)
       .eq("user_id", user.id)
       .select(select)
       .single()
+    let res = await update(updateData)
+    // Colonne paid_at absente (migration 20261010_invoice_paid_at.sql) : le statut change quand même
+    if (res.error && "paid_at" in updateData && isMissingSchemaError(res.error)) {
+      const { paid_at: _skipped, ...rest } = updateData
+      void _skipped
+      res = await update(rest)
+    }
     if (res.error) return NextResponse.json({ error: res.error.message }, { status: 500 })
     data = res.data
   }

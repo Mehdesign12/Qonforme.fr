@@ -196,6 +196,7 @@ export function buildReminderEmail(d: ReminderEmailData): { subject: string; htm
   return {
     subject,
     html: emailBase({
+      source: "email-relance",
       accentColor: accent,
       companyName: company,
       preheader:   esc(preheader),

@@ -92,8 +92,14 @@ export async function getDashboardView({
         const withRetention = await run(", retention_amount")
         return withRetention.error && isMissingSchemaError(withRetention.error) ? run("") : withRetention
       })(),
-      supabase.from("invoices").select("total_ttc, client_id, client:clients(name)")
-        .eq("user_id", userId).eq("status", "paid"),
+      // Avec la date de paiement quand sa colonne existe (migration 20261010_invoice_paid_at.sql)
+      (async () => {
+        const run = (extra: string) => supabase.from("invoices")
+          .select(`total_ttc, client_id${extra}, client:clients(name)`)
+          .eq("user_id", userId).eq("status", "paid")
+        const withDate = await run(", paid_at")
+        return withDate.error && isMissingSchemaError(withDate.error) ? run("") : withDate
+      })(),
       supabase.from("invoices").select(INVOICE_FIELDS)
         .eq("user_id", userId).eq("status", "draft").order("created_at", { ascending: false }),
       supabase.from("invoices").select(INVOICE_FIELDS)
@@ -117,10 +123,11 @@ export async function getDashboardView({
       },
       issued: (issued.data ?? []).map((r) => ({ issue_date: r.issue_date, total_ttc: Number(r.total_ttc) || 0 })),
       open: (open.data ?? []).map(toInvoice),
-      paid: (paid.data ?? []).map((r) => ({
+      paid: ((paid.data ?? []) as unknown as Record<string, unknown>[]).map((r) => ({
         total_ttc: Number(r.total_ttc) || 0,
         client_id: (r.client_id as string | null) ?? null,
-        client_name: one(r.client)?.name ?? null,
+        client_name: one(r.client as never)?.name ?? null,
+        paid_at: (r.paid_at as string | null | undefined) ?? null,
       })),
       drafts: (drafts.data ?? []).map(toInvoice),
       recent: (recent.data ?? []).map(toInvoice),

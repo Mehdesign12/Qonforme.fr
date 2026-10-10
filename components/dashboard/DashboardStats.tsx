@@ -3,8 +3,10 @@
  * - ordinateur : quatre cartes (canevas « Tableau de bord ») ;
  * - mobile : la carte « À encaisser » (canevas « Mobile — accueil »).
  *
- * Libellés fidèles à ce qui est calculé : « Facturé », pas « Encaissé »
- * (date de paiement non enregistrée), « À échoir sous 30 jours », pas « Prévision ».
+ * Libellés fidèles à ce qui est calculé : « Facturé » par date d'émission ;
+ * « encaissé » sous « À encaisser », seulement d'après les dates de paiement
+ * saisies (une facture payée sans date n'est comptée nulle part) ;
+ * « À échoir sous 30 jours », pas « Prévision » (elle est à /tresorerie).
  */
 import { Clock } from "lucide-react"
 import { Kpi } from "@/components/app/kit"
@@ -38,8 +40,9 @@ function periodSub({ amount, count, prevAmount, prevLabel, deltaPct }: Kpis["per
   return NONE[period]
 }
 
-function openSub({ count }: Kpis["open"]): string {
-  return count > 0 ? `${count}\u00a0${plural(count, "facture en cours", "factures en cours")}` : "Aucune facture en attente"
+function openSub({ count }: Kpis["open"], collected?: Kpis["collected"]): string {
+  const base = count > 0 ? `${count}\u00a0${plural(count, "facture en cours", "factures en cours")}` : "Aucune facture en attente"
+  return collected && collected.amount > 0 ? `${base} · ${formatCurrency(collected.amount)} encaissés ${collected.label}` : base
 }
 
 function dueSoonSub({ count, untilLabel }: Kpis["dueSoon"]): string {
@@ -56,7 +59,7 @@ export function DashboardStats({ kpi, period }: { kpi: Kpis; period: DashPeriod 
   return (
     <section aria-label="Indicateurs" className={cn(KPI_GRID, "hidden md:grid")}>
       <Kpi label={kpi.period.label} value={formatCurrency(kpi.period.amount)} sub={periodSub(kpi.period, period)} />
-      <Kpi label="À encaisser" value={formatCurrency(kpi.open.amount)} sub={openSub(kpi.open)} />
+      <Kpi label="À encaisser" value={formatCurrency(kpi.open.amount)} sub={openSub(kpi.open, kpi.collected)} />
       {late.count > 0 ? (
         <Kpi
           tone="warn"
@@ -97,10 +100,17 @@ export function MobileHero({ kpi }: { kpi: Kpis }) {
           <span className="text-xs text-[var(--q-text-4)]">Facturé ce mois</span>
           <span className="text-base font-semibold text-[var(--q-ink)] tabular-nums">{formatCurrency(kpi.month.amount)}</span>
         </span>
-        <span className="flex flex-col gap-0.5">
-          <span className="text-xs text-[var(--q-text-4)]">À échoir sous 30 jours</span>
-          <span className="text-base font-semibold text-[var(--q-ink)] tabular-nums">{formatCurrency(kpi.dueSoon.amount)}</span>
-        </span>
+        {kpi.collected && kpi.collected.amount > 0 ? (
+          <span className="flex flex-col gap-0.5">
+            <span className="text-xs text-[var(--q-text-4)]">Encaissé {kpi.collected.label}</span>
+            <span className="text-base font-semibold text-[var(--q-ink)] tabular-nums">{formatCurrency(kpi.collected.amount)}</span>
+          </span>
+        ) : (
+          <span className="flex flex-col gap-0.5">
+            <span className="text-xs text-[var(--q-text-4)]">À échoir sous 30 jours</span>
+            <span className="text-base font-semibold text-[var(--q-ink)] tabular-nums">{formatCurrency(kpi.dueSoon.amount)}</span>
+          </span>
+        )}
       </div>
     </section>
   )

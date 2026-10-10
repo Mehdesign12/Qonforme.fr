@@ -195,6 +195,48 @@ export async function paymentLinkState(params: { invoiceId: string; userId: stri
       : null,
     disabledAt: row?.disabled_at ?? null,
     declaration: decl ? toArtisanDeclaration(decl) : null,
+    views: row ? await linkViews(db, row.id) : null,
+  }
+}
+
+/** Ouvertures de la page de règlement ; null tant que les colonnes manquent (migration 20261010_payment_link_views.sql). */
+async function linkViews(db: Db, linkId: string): Promise<PaymentLinkState["views"]> {
+  const { data, error } = await db.from(LINKS_TABLE).select("view_count, first_viewed_at, last_viewed_at").eq("id", linkId).maybeSingle()
+  if (error || !data) return null
+  return { count: Number(data.view_count) || 0, first: data.first_viewed_at ?? null, last: data.last_viewed_at ?? null }
+}
+
+/** Une consultation par tranche de 10 minutes : un rechargement de la page ne compte pas. */
+export const VIEW_DEBOUNCE_MS = 10 * 60 * 1000
+
+/**
+ * Compte une ouverture de la page de règlement (appelée par la page elle-même,
+ * dans le navigateur du client). Ne lève jamais d'erreur : le suivi n'empêche
+ * rien. Lien désactivé, jeton inconnu ou colonnes absentes : rien n'est écrit.
+ */
+export async function recordPaymentLinkView(token: string, now: Date = new Date()): Promise<void> {
+  if (!isTokenShape(token)) return
+  try {
+    const db = createAdminClient()
+    const { data, error } = await db
+      .from(LINKS_TABLE)
+      .select("id, disabled_at, view_count, first_viewed_at, last_viewed_at")
+      .eq("token_hash", hashToken(token))
+      .maybeSingle()
+    if (error || !data || data.disabled_at) return
+    const nowIso = now.toISOString()
+    if (data.last_viewed_at && now.getTime() - new Date(data.last_viewed_at).getTime() < VIEW_DEBOUNCE_MS) {
+      await db.from(LINKS_TABLE).update({ last_viewed_at: nowIso }).eq("id", data.id)
+      return
+    }
+    // Même valeur relue : deux ouvertures simultanées n'en font qu'une
+    await db.from(LINKS_TABLE).update({
+      view_count: (Number(data.view_count) || 0) + 1,
+      first_viewed_at: data.first_viewed_at ?? nowIso,
+      last_viewed_at: nowIso,
+    }).eq("id", data.id).eq("view_count", Number(data.view_count) || 0)
+  } catch (err) {
+    console.error("[payment-link] consultation :", err)
   }
 }
 

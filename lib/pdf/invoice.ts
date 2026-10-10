@@ -8,6 +8,8 @@
  * Brouillon ou aperçu : PDF simple filigrané, sans XML.
  */
 import { PDFDocument, rgb, PageSizes, degrees } from "pdf-lib"
+import { addUriLink } from "@/lib/pdf/link"
+import { poweredByUrl } from "@/lib/utils/powered-by"
 import fontkit from "@pdf-lib/fontkit"
 import { buildFacturX, documentMentions } from "@/lib/facturx/xml"
 import { invoiceToFacturX, type LineRecord } from "@/lib/facturx/records"
@@ -428,6 +430,11 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   hLine(32, mL, mR, 0.5, separator)
   draw(`${company?.name ?? "Qonforme"} — ${invoice.invoice_number}`, mL, 20, { size: 7, color: grayLight })
   draw("Généré par Qonforme", mR, 20, { size: 7, color: accent, align: "right" })
+  {
+    // « Propulsé par Qonforme » cliquable, avec sa provenance (lib/utils/powered-by.ts)
+    const tw = fontRegular.widthOfTextAtSize("Généré par Qonforme", 7)
+    addUriLink(doc, page, { x: mR - tw, y: 18, width: tw, height: 9 }, poweredByUrl("pdf-facture"))
+  }
 
   // Filigrane (brouillon, aperçu) — dessiné en dernier pour rester au-dessus du contenu
   if (watermark) {

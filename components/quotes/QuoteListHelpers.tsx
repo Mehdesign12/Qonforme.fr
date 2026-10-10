@@ -10,6 +10,8 @@
  * de la date de validité d'un devis envoyé.
  */
 
+import { parisDayOf } from "@/lib/utils/paris-date"
+
 export type QuoteStatus = "draft" | "sent" | "accepted" | "rejected" | "withdrawn"
 
 const MS_DAY = 86_400_000
@@ -166,9 +168,22 @@ export interface QuoteNextStep {
   tone: "default" | "warn"
 }
 
+/** Consultations de la page en ligne du devis (lien de signature ou de consultation). */
+export interface QuoteViews {
+  count: number
+  /** Dernière consultation (horodatage ISO). */
+  last: string | null
+}
+
+/** « Ouvert 2 fois, dernière le 9 oct. » / « Pas encore ouvert ». */
+export function viewsLabel(v: QuoteViews): string {
+  if (v.count <= 0 || !v.last) return "Pas encore ouvert"
+  return `Ouvert ${v.count === 1 ? "1 fois" : `${v.count} fois`}, ${v.count === 1 ? "le" : "dernière le"} ${shortDate(parisDayOf(v.last))}`
+}
+
 /** Colonne « Suite » de la liste : la prochaine étape, calculée. */
 export function quoteNextStep(
-  q: { status: QuoteStatus; valid_until: string; converted: boolean; converted_invoice_number?: string | null },
+  q: { status: QuoteStatus; valid_until: string; converted: boolean; converted_invoice_number?: string | null; views?: QuoteViews | null },
   today: string,
 ): QuoteNextStep {
   switch (q.status) {
@@ -176,7 +191,9 @@ export function quoteNextStep(
       return { text: "Terminer et envoyer", tone: "default" }
     case "sent": {
       const hint = expiryHint(q, today)
-      return hint ? { text: hint, tone: "warn" } : { text: "En attente de réponse", tone: "default" }
+      if (hint) return { text: hint, tone: "warn" }
+      // Suivi d'ouverture : seulement quand le devis a une page en ligne (signature ou consultation)
+      return q.views ? { text: viewsLabel(q.views), tone: "default" } : { text: "En attente de réponse", tone: "default" }
     }
     case "accepted":
       if (q.converted) return { text: q.converted_invoice_number ? `Facturé ${q.converted_invoice_number}` : "Facturé", tone: "default" }

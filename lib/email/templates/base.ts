@@ -1,19 +1,28 @@
 /**
  * Template de base commun à tous les emails Qonforme.
  * Rendu en HTML inline-styles pour compatibilité maximale avec les clients mail.
+ *
+ * « Propulsé par Qonforme » est un lien vers le site avec sa provenance
+ * (lib/utils/powered-by.ts), sans traceur dans l'email.
  */
+import { poweredByUrl } from "@/lib/utils/powered-by"
 
 export function emailBase({
   accentColor = "#2563EB",
   companyName,
   preheader,
   body,
+  source = "email",
 }: {
   accentColor?: string
   companyName: string
   preheader: string
   body: string
+  /** Provenance du lien « Propulsé par Qonforme » (« email-facture », « email-devis »…). */
+  source?: string
 }): string {
+  const qonforme = (color: string) =>
+    `<a href="${poweredByUrl(source)}" style="color:${color};font-weight:700;text-decoration:underline;" target="_blank" rel="noopener">Qonforme</a>`
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -39,7 +48,7 @@ export function emailBase({
                 ${companyName}
               </h1>
               <p style="margin:4px 0 0;color:rgba(255,255,255,0.80);font-size:13px;">
-                Propulsé par <strong>Qonforme</strong>
+                Propulsé par ${qonforme("#FFFFFF")}
               </p>
             </td>
           </tr>
@@ -55,7 +64,7 @@ export function emailBase({
           <tr>
             <td style="background-color:#F8FAFC;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 12px 12px;padding:20px 40px;text-align:center;">
               <p style="margin:0;font-size:12px;color:#94A3B8;">
-                Cet email a été envoyé par <strong>${companyName}</strong> via Qonforme.
+                Cet email a été envoyé par <strong>${companyName}</strong> via ${qonforme("#64748B")}.
               </p>
               <p style="margin:6px 0 0;font-size:11px;color:#CBD5E1;">
                 Si vous avez des questions, répondez directement à cet email.

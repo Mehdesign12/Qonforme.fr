@@ -86,6 +86,6 @@ export function buildQuoteFollowupEmail(d: QuoteFollowupEmailData): { subject: s
 
   return {
     subject,
-    html: emailBase({ accentColor: accent, companyName: company, preheader: esc(preheader), body }),
+    html: emailBase({ source: "email-relance-devis", accentColor: accent, companyName: company, preheader: esc(preheader), body }),
   }
 }

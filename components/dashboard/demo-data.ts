@@ -59,7 +59,7 @@ export function buildDemoDashboardView(period: DashPeriod = "mois"): DashboardVi
     monthlyHistory: DEMO_MONTHLY_PAID.map((m) => ({ month: m.month, value: m.value, count: DEMO_MONTHLY_COUNTS[m.month] })),
     open: DEMO_INVOICES.filter((i) => has(OPEN_INVOICE_STATUSES, i.status)).map(toDash),
     paid: DEMO_INVOICES.filter((i) => i.status === "paid").map((i) => ({
-      total_ttc: i.total_ttc, client_id: i.client_id, client_name: i.client.name,
+      total_ttc: i.total_ttc, client_id: i.client_id, client_name: i.client.name, paid_at: i.paid_at ?? null,
     })),
     drafts: DEMO_INVOICES.filter((i) => i.status === "draft").map(toDash),
     recent: DEMO_INVOICES.slice(0, 5).map(toDash),

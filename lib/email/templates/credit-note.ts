@@ -69,6 +69,7 @@ export function buildCreditNoteEmail(d: CreditNoteEmailData): { subject: string;
   return {
     subject,
     html: emailBase({
+      source: "email-avoir",
       accentColor: "#EA580C",
       companyName: d.companyName,
       preheader:   `Avoir ${d.creditNoteNumber} — ${fmtEur(Math.abs(d.totalTtc))} — ${d.companyName}`,

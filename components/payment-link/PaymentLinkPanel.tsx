@@ -11,7 +11,7 @@
  */
 import Link from "next/link"
 import { toast } from "sonner"
-import { AlertTriangle, Ban, Copy, CreditCard, ExternalLink, Landmark, Link2, Loader2, XCircle } from "lucide-react"
+import { AlertTriangle, Ban, Copy, CreditCard, ExternalLink, Eye, Landmark, Link2, Loader2, XCircle } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/invoice"
 import type { InvoiceStatus } from "@/types"
 import type { ArtisanDeclaration, PaymentLinkState } from "@/lib/payment-link/types"
@@ -27,6 +27,12 @@ export interface PaymentLinkHandlers {
 }
 
 /** Adresse absolue (la démo fournit un chemin relatif). */
+/** « 9 oct. à 18:12 » (heure de Paris). */
+function shortDayTime(iso: string): string {
+  const t = parisTime(iso)
+  return `${shortDate(parisDay(iso))}${t ? ` à ${t}` : ""}`
+}
+
 function absolute(url: string): string {
   if (/^https?:\/\//.test(url) || typeof window === "undefined") return url
   return `${window.location.origin}${url}`
@@ -117,6 +123,14 @@ export function PaymentLinkPanel({
               Copier
             </button>
           </div>
+          {state.views && (
+            <p className="flex items-center gap-1.5 text-[13px] text-[var(--q-text-2)]">
+              <Eye className="size-4 shrink-0 text-[var(--q-text-4)]" aria-hidden />
+              {state.views.count > 0 && state.views.last
+                ? <>Ouverte par votre client {state.views.count === 1 ? "1 fois" : `${state.views.count} fois`}, {state.views.count === 1 ? "le" : "dernière le"} {shortDayTime(state.views.last)}</>
+                : <>Pas encore ouverte par votre client</>}
+            </p>
+          )}
           <p className="q-field-hint">
             Votre client y trouve l&apos;IBAN, le montant et la référence, et peut vous signaler son virement.
             Le lien figure dans l&apos;email d&apos;envoi.{" "}

@@ -5,6 +5,8 @@
  * Réutilisé par GET /api/purchase-orders/[id]/pdf ET POST /send.
  */
 import { PDFDocument, rgb, PageSizes } from "pdf-lib"
+import { addUriLink } from "@/lib/pdf/link"
+import { poweredByUrl } from "@/lib/utils/powered-by"
 import fontkit from "@pdf-lib/fontkit"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 import { withDocumentMentions } from "@/lib/legal/mentions"
@@ -301,6 +303,11 @@ export async function generatePurchaseOrderPdf({ po, company: companyInput }: Pu
   hLine(32, mL, mR, 0.5, separator)
   draw(`${company?.name ?? "Qonforme"} — ${po.po_number}`, mL, 20, { size: 7, color: grayLight })
   draw("Généré par Qonforme", mR, 20, { size: 7, color: poBlue, align: "right" })
+  {
+    // « Propulsé par Qonforme » cliquable, avec sa provenance (lib/utils/powered-by.ts)
+    const tw = fontRegular.widthOfTextAtSize("Généré par Qonforme", 7)
+    addUriLink(doc, page, { x: mR - tw, y: 18, width: tw, height: 9 }, poweredByUrl("pdf-commande"))
+  }
 
   const pdfBytes = await doc.save()
   return Buffer.from(pdfBytes)

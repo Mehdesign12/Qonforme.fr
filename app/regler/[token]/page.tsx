@@ -1,6 +1,7 @@
 import { cache } from "react"
 import type { Metadata } from "next"
 import { PaymentPage } from "@/components/payment-link/PaymentPage"
+import { ViewBeacon } from "@/components/payment-link/ViewBeacon"
 import { todayParis } from "@/components/search/model"
 import { resolvePaymentToken } from "@/lib/payment-link/server"
 
@@ -38,12 +39,16 @@ export default async function PaymentLinkPage({ params }: Props) {
   const { data } = await resolve(token)
   const usable = data.state === "payable" || data.state === "paid" || data.state === "credited" || data.state === "closed"
   return (
-    <PaymentPage
-      data={data}
-      mode="live"
-      pdfHref={usable ? `/api/regler/${token}/pdf` : null}
-      declareUrl={data.state === "payable" ? `/api/regler/${token}/declaration` : null}
-      today={todayParis()}
-    />
+    <>
+      <PaymentPage
+        data={data}
+        mode="live"
+        pdfHref={usable ? `/api/regler/${token}/pdf` : null}
+        declareUrl={data.state === "payable" ? `/api/regler/${token}/declaration` : null}
+        today={todayParis()}
+      />
+      {/* Suivi d'ouverture de la facture, montré à l'artisan sur sa fiche */}
+      {usable && <ViewBeacon url={`/api/regler/${token}/view`} />}
+    </>
   )
 }

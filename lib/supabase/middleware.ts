@@ -161,6 +161,7 @@ export async function updateSession(request: NextRequest) {
     // Chantiers (formule Artisan)
     '/chantiers',
     '/tresorerie',
+    '/relances',
   ]
 
   const isProtected = protectedPaths.some((path) =>

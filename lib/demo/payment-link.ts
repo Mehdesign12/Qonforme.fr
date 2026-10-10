@@ -57,6 +57,12 @@ export function demoPaymentLinkState(invoiceId: string): PaymentLinkState {
     link: emitted && inv ? { url: demoPaymentPath(inv.id), createdAt: inv.sent_at ?? inv.issue_date } : null,
     disabledAt: null,
     declaration,
+    // Suivi d'ouverture : la page de règlement des factures en retard a été ouverte, les autres pas encore
+    views: emitted && inv
+      ? inv.status === "overdue"
+        ? { count: 3, first: `${inv.due_date}T08:10:00Z`, last: "2026-09-30T17:42:00Z" }
+        : inv.status === "paid" ? { count: 1, first: `${inv.issue_date}T10:00:00Z`, last: `${inv.issue_date}T10:00:00Z` } : { count: 0, first: null, last: null }
+      : null,
   }
 }
 

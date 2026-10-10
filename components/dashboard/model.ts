@@ -5,12 +5,15 @@
  * calculés de la même façon (règle « Mode démo » de CLAUDE.md).
  *
  * Ne montre que des chiffres vrais : « Facturé » (factures émises, par date
- * d'émission) et non « Encaissé », car la date de paiement (`paid_at`) n'est
- * écrite par aucune route aujourd'hui ; « À échoir sous 30 jours » est la somme
- * des factures en cours dont l'échéance tombe dans les 30 jours, pas une prévision.
+ * d'émission) ; « encaissé » seulement pour les paiements datés (`paid_at`,
+ * écrit depuis le 10/10/2026 quand l'artisan marque une facture payée,
+ * lib/utils/payment-date.ts) — une facture payée sans date n'est comptée dans
+ * aucune période ; « À échoir sous 30 jours » est la somme des factures en
+ * cours dont l'échéance tombe dans les 30 jours (la prévision est à /tresorerie).
  */
 import { canRemindInvoice } from "@/lib/utils/document-status"
 import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
+import { parisDayOf as parisDay } from "@/lib/utils/paris-date"
 import {
   inscriptionSteps, pendingInscriptionStep, type InscriptionState, type InscriptionStep,
 } from "@/lib/onboarding/inscription"
@@ -83,7 +86,8 @@ export interface DashboardInput {
   /** Démo : historique mensuel fourni pour les mois passés (le mois en cours reste calculé). */
   monthlyHistory?: { month: string; value: number; count?: number }[]
   open: DashInvoice[]
-  paid: { total_ttc: number; client_id: string | null; client_name: string | null }[]
+  /** `paid_at` : date du paiement saisie (absente pour les paiements marqués avant le 10/10/2026). */
+  paid: { total_ttc: number; client_id: string | null; client_name: string | null; paid_at?: string | null }[]
   drafts: DashInvoice[]
   /** Cinq dernières factures créées. */
   recent: DashInvoice[]
@@ -154,6 +158,8 @@ export interface DashboardView {
     /** Premier indicateur selon la période choisie (« Facturé ce mois | ce trimestre | cette année »). */
     period: { label: string; amount: number; count: number; prevAmount: number; prevLabel: string | null; deltaPct: number | null }
     open: { amount: number; count: number }
+    /** Encaissé sur la période choisie, d'après les dates de paiement saisies ; null sans aucune date. */
+    collected: { amount: number; count: number; label: string } | null
     late: { amount: number; count: number; oldestDays: number }
     dueSoon: { amount: number; count: number; untilLabel: string }
     quotesPending: number
@@ -430,6 +436,25 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
   )
   const oldestDays = late.reduce((max, i) => Math.max(max, lateDaysOf(i) ?? 0), 0)
 
+  /* ── Encaissé sur la période : paiements datés seulement (heure de Paris) ── */
+  const periodStart = period === "annee"
+    ? `${today.slice(0, 4)}-01-01`
+    : period === "trimestre"
+      ? `${today.slice(0, 4)}-${String(monthIndex - (monthIndex % 3) + 1).padStart(2, "0")}-01`
+      : `${today.slice(0, 7)}-01`
+  const dated = input.paid.filter((p) => p.paid_at)
+  const inPeriod = dated.filter((p) => {
+    const day = parisDay(p.paid_at!)
+    return day >= periodStart && day <= today
+  })
+  const collected = dated.length === 0
+    ? null
+    : {
+        amount: sum(inPeriod),
+        count: inPeriod.length,
+        label: period === "annee" ? "cette année" : period === "trimestre" ? "ce trimestre" : "ce mois",
+      }
+
   /* ── Recouvrement : part réglée du montant émis (payé + en cours) ── */
   const paidTotal = sum(input.paid)
   const openTotal = sumDue(open)
@@ -571,6 +596,7 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
       },
       period: periodKpi,
       open: { amount: openTotal, count: open.length },
+      collected,
       late: { amount: sumDue(late), count: late.length, oldestDays },
       dueSoon: { amount: sumDue(dueSoon), count: dueSoon.length, untilLabel: formatShortDate(limit30) },
       quotesPending: input.quotes.filter((q) => q.status === "sent").length,

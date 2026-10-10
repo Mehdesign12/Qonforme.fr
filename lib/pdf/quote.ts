@@ -4,6 +4,8 @@
  * Réutilisé par la route GET /api/quotes/[id]/pdf ET par la route POST /send.
  */
 import { PDFDocument, rgb, PageSizes, degrees } from "pdf-lib"
+import { addUriLink } from "@/lib/pdf/link"
+import { poweredByUrl } from "@/lib/utils/powered-by"
 import fontkit from "@pdf-lib/fontkit"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 import { withDocumentMentions } from "@/lib/legal/mentions"
@@ -299,6 +301,11 @@ export async function generateQuotePdf({ quote, company: companyInput, watermark
   hLine(32, mL, mR, 0.5, separator)
   draw(`${company?.name ?? "Qonforme"} — ${quote.quote_number}`, mL, 20, { size: 7, color: grayLight })
   draw("Généré par Qonforme", mR, 20, { size: 7, color: quoteGreen, align: "right" })
+  {
+    // « Propulsé par Qonforme » cliquable, avec sa provenance (lib/utils/powered-by.ts)
+    const tw = fontRegular.widthOfTextAtSize("Généré par Qonforme", 7)
+    addUriLink(doc, page, { x: mR - tw, y: 18, width: tw, height: 9 }, poweredByUrl("pdf-devis"))
+  }
 
   // Filigrane du devis d'essai — dessiné en dernier pour rester au-dessus du contenu
   if (watermark) {
