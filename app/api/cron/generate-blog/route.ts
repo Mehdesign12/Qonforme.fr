@@ -12,6 +12,12 @@
  * 5. Generate cover image via Nano Banana 2
  * 6. Insert into blog_posts with AI metadata
  * 7. Log result in cron_logs
+ *
+ * Remplacé par l'onglet SEO de l'admin (rédaction en plusieurs passes et
+ * publication planifiée, /api/cron/seo, lib/seo/articles/task.ts) : dès que la
+ * migration 20261009_seo_admin.sql est appliquée (table seo_settings), cette
+ * route ne génère plus rien et le journalise, pour éviter deux générateurs et
+ * la publication automatique de l'ancien. Sans la migration, comportement inchangé.
  */
 
 import { NextRequest, NextResponse } from "next/server"
@@ -20,6 +26,7 @@ import { generateBlogPost, generateCoverImage } from "@/lib/ai/gemini"
 import { auditArticle } from "@/lib/blog-audit"
 import { getNextTopic } from "@/lib/ai/seo-topics"
 import { revalidateBlog } from "@/lib/blog-revalidate"
+import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -39,6 +46,17 @@ export async function GET(request: NextRequest) {
 
   const startedAt = Date.now()
   const admin = createAdminClient()
+
+  // ── Remplacé par l'onglet SEO dès que sa migration est appliquée ────────────
+  const seo = await admin.from("seo_settings").select("key").limit(1)
+  if (!seo.error || !isMissingSchemaError(seo.error)) {
+    // Table présente, ou lecture en échec (on ne sait pas) : jamais deux générateurs
+    const results = seo.error
+      ? { skipped: "remplacé par l'onglet SEO (/api/cron/seo)", note: "lecture de seo_settings en échec" }
+      : { skipped: "remplacé par l'onglet SEO (/api/cron/seo)" }
+    await admin.from("cron_logs").insert({ job_name: "generate-blog", status: "ok", results, duration_ms: Date.now() - startedAt })
+    return NextResponse.json({ ok: true, ...results })
+  }
 
   try {
     // ── Get existing prompts to match against topics ─────────────────────────

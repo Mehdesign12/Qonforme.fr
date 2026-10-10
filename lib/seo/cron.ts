@@ -13,6 +13,7 @@
  * visible dans Santé du système.
  */
 import { must, type SeoDb } from "@/lib/seo/db"
+import { redact } from "@/lib/seo/redact"
 
 export interface SeoJobRow {
   name: string
@@ -128,7 +129,8 @@ export async function runTask(
     await releaseJob(db, task.name, { ok: true, result })
     outcome = { task: task.name, status: "ok", durationMs: Date.now() - started, result }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+    // Masqué avant d'être enregistré (seo_jobs, cron_logs) : jamais de clé ni de mot de passe
+    const message = redact(error instanceof Error ? error.message : String(error))
     console.error(`[seo-cron] ${task.name}`, error)
     await releaseJob(db, task.name, { ok: false, error: message })
     outcome = { task: task.name, status: "error", durationMs: Date.now() - started, error: message }
@@ -176,7 +178,7 @@ export async function runDueTasks(
       }
       results.push(await runTask(db, task, { trigger: "cron", deadline, now }))
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
+      const message = redact(error instanceof Error ? error.message : String(error))
       console.error(`[seo-cron] ${task.name} (avant lancement)`, error)
       results.push({ task: task.name, status: "error", error: message })
     }

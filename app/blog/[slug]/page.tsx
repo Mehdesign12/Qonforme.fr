@@ -187,7 +187,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <script
           key={i}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+          // « < » échappé : un titre ou une description ne peut jamais fermer la balise script
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }}
         />
       ))}
       <ArticleView

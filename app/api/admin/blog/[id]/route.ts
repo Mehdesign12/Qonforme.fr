@@ -2,6 +2,51 @@ import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { isAdminAuthenticated } from "@/lib/admin-require"
 import { revalidateBlog } from "@/lib/blog-revalidate"
+import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
+import type { SeoDb } from "@/lib/seo/db"
+import { loadCheckContext, publishNow, readPublishablePost } from "@/lib/seo/articles/publish"
+
+/**
+ * Article rédigé par l'onglet SEO (review_status ou audit_result présents) qui
+ * passe en ligne : les modifications sont enregistrées, puis la publication
+ * passe par publishNow (lib/seo/articles/publish.ts), qui refuse tant qu'une
+ * valeur périmée, une affirmation interdite ou un concurrent reste dans le
+ * texte (409 avec les passages). Rend null pour un article manuel ou ancien,
+ * un article déjà publié, ou avant la migration de l'onglet SEO : comportement
+ * habituel.
+ */
+async function publishWithSeoGuard(admin: SeoDb, id: string, updates: Record<string, unknown>): Promise<NextResponse | null> {
+  const { data, error } = await admin.from('blog_posts').select('is_published, review_status, audit_result').eq('id', id).maybeSingle()
+  if (error) {
+    if (isMissingSchemaError(error)) return null
+    throw error
+  }
+  if (!data) return NextResponse.json({ error: 'Article introuvable' }, { status: 404 })
+  if (data.is_published || (!data.review_status && !data.audit_result)) return null
+
+  if (Object.keys(updates).length > 0) {
+    const { error: saveError } = await admin.from('blog_posts').update(updates).eq('id', id)
+    if (saveError) {
+      if (saveError.code === '23505') return NextResponse.json({ error: 'Ce slug est déjà utilisé' }, { status: 409 })
+      throw saveError
+    }
+  }
+  const post = await readPublishablePost(admin, id)
+  if (!post) return NextResponse.json({ error: 'Article introuvable' }, { status: 404 })
+  const result = await publishNow(admin, post, await loadCheckContext(admin))
+  if (!result.ok) {
+    return NextResponse.json(
+      {
+        error: `Publication refusée par le contrôle : ${Array.from(new Set(result.blockers.map((b) => b.label))).join(' ; ')}. Les modifications sont enregistrées ; corrigez ces passages puis publiez.`,
+        code: 'check_failed',
+        issues: result.blockers.map((b) => ({ label: b.label, excerpt: b.excerpt ?? null, detail: b.detail ?? null })),
+      },
+      { status: 409 },
+    )
+  }
+  revalidateBlog(post.slug)
+  return NextResponse.json({ success: true })
+}
 
 /** PATCH /api/admin/blog/[id] — Mettre à jour un article */
 export async function PATCH(
@@ -28,6 +73,11 @@ export async function PATCH(
     const admin = createAdminClient()
 
     if (body?.is_published !== undefined) {
+      // Article de l'onglet SEO passé en ligne : même garde serveur que « Publier maintenant »
+      if (body.is_published) {
+        const guarded = await publishWithSeoGuard(admin, id, updates)
+        if (guarded) return guarded
+      }
       updates.is_published = !!body.is_published
       if (body.is_published) {
         // La date de publication ne change qu'au passage en ligne : réenregistrer un

@@ -38,8 +38,11 @@ export function markdownToHtml(md: string): string {
   // Inline code
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
 
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+  // Links — http(s), chemins du site et ancres seulement (jamais javascript:, data:…)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, text: string, href: string) => {
+    const url = safeHref(href)
+    return url ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>` : text
+  })
 
   // Unordered lists
   html = html.replace(/((?:^- .+\n?)+)/gm, (block) => {
@@ -85,4 +88,11 @@ function slugify(text: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
+}
+
+/** Adresse de lien sûre : http(s), chemin du site (pas « // ») ou ancre ; null sinon. */
+export function safeHref(raw: string): string | null {
+  const href = raw.trim()
+  if (!/^(https?:\/\/|\/(?!\/)|#)/i.test(href)) return null
+  return href.replace(/"/g, "%22").replace(/</g, "%3C").replace(/>/g, "%3E")
 }

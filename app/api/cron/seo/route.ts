@@ -20,6 +20,7 @@ import { waitUntil } from "@vercel/functions"
 import { seoDb, failureOf } from "@/lib/seo/db"
 import { readJob, runDueTasks } from "@/lib/seo/cron"
 import { SEO_TASKS } from "@/lib/seo/tasks"
+import { createHash, timingSafeEqual } from "node:crypto"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -28,13 +29,20 @@ export const maxDuration = 300
 /** Marge laissée à Vercel avant maxDuration. */
 const BUDGET_MS = 270_000
 
+/** Comparaison en temps constant (condensés de même longueur). */
+function sameSecret(received: string, expected: string): boolean {
+  const a = createHash("sha256").update(received).digest()
+  const b = createHash("sha256").update(expected).digest()
+  return timingSafeEqual(a, b)
+}
+
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET
   if (!cronSecret) {
     console.error("[cron/seo] CRON_SECRET non défini")
     return NextResponse.json({ error: "Configuration manquante" }, { status: 500 })
   }
-  if (request.headers.get("Authorization") !== `Bearer ${cronSecret}`) {
+  if (!sameSecret(request.headers.get("Authorization") ?? "", `Bearer ${cronSecret}`)) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
   }
 
