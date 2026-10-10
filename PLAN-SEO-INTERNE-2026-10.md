@@ -6,6 +6,8 @@
 > Document vivant : à mettre à jour à chaque lot livré.
 > 09/10/2026 : le fondateur abandonne PushRank ; le webhook (route, code, test, variable) est supprimé. Les articles déjà reçus restent publiés
 > et les colonnes de la migration 20261006 restent (la page article et le plan du site les lisent).
+> 10/10/2026 : **onglet SEO livré (lots 1 à 4)**, en code, sur le design validé. Il s'active quand la migration `20261009_seo_admin.sql` est appliquée
+> dans Supabase ; chaque source de données s'allume avec sa variable dans Vercel (§ 5). Une seule tâche planifiée : `GET /api/cron/seo` toutes les 15 minutes.
 
 ## 1. Constat
 
@@ -74,10 +76,10 @@ Sur téléphone, le groupe se trouve dans la feuille « Plus » et un sélecteur
 | Lot | Contenu | Prérequis côté fondateur |
 |---|---|---|
 | 0 | Accès Google et comptes d'API ; correctifs du plan du site et du titre répété (faits le 09/10/2026, § 7) | Compte de service Google Cloud (Search Console + PageSpeed), ajouté comme utilisateur de la propriété `sc-domain:qonforme.fr` ; variables dans Vercel ; comptes d'API selon décision 1 et 2 |
-| 1 | Paramètres, Vue d'ensemble, Performance (Recherche Google, PageSpeed) ; synchronisation quotidienne de Search Console avec reprise de 16 mois | Migration SQL à coller dans Supabase |
-| 2 | Mots-clés, Actions SEO, Audit du site (exploration du sitemap par paquets) | Migration SQL |
-| 3 | Articles : calendrier, sujets, préférences, génération pilotée par les paramètres, publication planifiée | Migration SQL |
-| 4 | Visibilité IA | Migration SQL ; clés des moteurs |
+| 1 | Paramètres, Vue d'ensemble, Performance (Recherche Google, PageSpeed) ; synchronisation quotidienne de Search Console avec reprise de 16 mois | **Livré le 10/10/2026.** Migration SQL ; `GOOGLE_SERVICE_ACCOUNT_JSON` (Search Console), `PAGESPEED_API_KEY` |
+| 2 | Mots-clés, Actions SEO, Audit du site (exploration du sitemap par paquets) | **Livré le 10/10/2026.** Migration SQL ; `DATAFORSEO_LOGIN` et `DATAFORSEO_PASSWORD` pour les volumes (facultatif) |
+| 3 | Articles : calendrier, sujets, préférences, génération pilotée par les paramètres, publication planifiée | **Livré le 10/10/2026.** Migration SQL ; `ANTHROPIC_API_KEY` (rédaction ; sans elle, Gemini rédige) ; l'ancien générateur s'arrête dès la migration appliquée |
+| 4 | Visibilité IA | **Livré le 10/10/2026.** Migration SQL ; `GEMINI_API_KEY` (déjà là), `OPENAI_API_KEY`, `PERPLEXITY_API_KEY` et `ANTHROPIC_API_KEY` selon les moteurs voulus |
 | 5 | Résiliation de PushRank : export, retrait de la route du webhook et de `PUSHRANK_WEBHOOK_SECRET`, déconnexion du CMS | **Code retiré le 09/10/2026** (décision du fondateur : PushRank abandonné). Reste côté fondateur : supprimer la variable dans Vercel, déconnecter le CMS et résilier chez PushRank |
 
 Chaque lot ajoute des tables en RLS sans politique (lecture et écriture par le serveur seul, comme les autres tables sensibles) et des tâches planifiées sur cron-job.org (`CRON_SECRET`).

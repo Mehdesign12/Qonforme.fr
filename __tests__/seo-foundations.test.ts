@@ -9,6 +9,7 @@ import { readServiceAccount, signServiceAccountJwt } from "@/lib/seo/google"
 import { isDailyDue, parisClock } from "@/lib/seo/cron"
 import { adminCrumbsFor, isAdminActive } from "@/components/admin/nav"
 import { stripLeadingTitle } from "@/lib/blog-utils"
+import { markdownToHtml } from "@/lib/markdown"
 
 const NBSP = " "
 
@@ -32,6 +33,13 @@ describe("réglages SEO", () => {
     const proofs = Array.from({ length: 6 }, () => ({ claim: "a", source: "b", url: "" }))
     const tooMany = parseSettings("brand", { ...SETTINGS_DEFAULTS.brand, proofs })
     expect(tooMany.ok).toBe(false)
+
+    for (const url of ["javascript:alert(1)", "data:text/html,x", "ftp://exemple.fr/a"]) {
+      const proof = parseSettings("brand", { ...SETTINGS_DEFAULTS.brand, proofs: [{ claim: "a", source: "b", url }] })
+      expect(proof.ok, url).toBe(false)
+    }
+    const httpsProof = parseSettings("brand", { ...SETTINGS_DEFAULTS.brand, proofs: [{ claim: "a", source: "b", url: " https://exemple.fr/a " }] })
+    expect(httpsProof.ok && httpsProof.value.proofs[0].url).toBe("https://exemple.fr/a")
 
     const goals = parseSettings("strategy", { ...SETTINGS_DEFAULTS.strategy, mainGoal: "conversions" })
     expect(goals.ok).toBe(false)
@@ -172,6 +180,17 @@ describe("articles du blog : titre non répété à l'affichage", () => {
     expect(stripLeadingTitle(md, "Autre titre")).toBe(md)
     expect(stripLeadingTitle(md, "")).toBe(md)
     expect(stripLeadingTitle("Texte sans titre", "Texte sans titre")).toBe("Texte sans titre")
+  })
+})
+
+describe("articles du blog : liens sûrs", () => {
+  it("garde http(s), les chemins du site et les ancres ; jamais javascript:, // ni un guillemet", () => {
+    const html = markdownToHtml('[a](https://x.fr/a) [b](javascript:alert) [c](/guide/x) [d](//evil.com) [e](https://x.fr/"onmouseover=1)')
+    expect(html).toContain('href="https://x.fr/a"')
+    expect(html).toContain('href="/guide/x"')
+    expect(html).not.toContain("javascript:")
+    expect(html).not.toContain('href="//evil.com"')
+    expect(html).not.toContain('"onmouseover')
   })
 })
 

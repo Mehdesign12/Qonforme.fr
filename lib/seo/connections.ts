@@ -45,10 +45,10 @@ export const CONNECTIONS: ConnectionDef[] = [
     env: ["PAGESPEED_API_KEY"],
     note: "Sans clé, les mesures restent possibles avec un quota très faible.",
   },
-  { key: "gemini", name: "Gemini", purpose: "Rédaction, images de couverture et suivi de Gemini", env: ["GEMINI_API_KEY"] },
+  { key: "gemini", name: "Gemini", purpose: "Plan et contrôle des articles, images de couverture, propositions d'actions et suivi de Gemini", env: ["GEMINI_API_KEY"] },
   { key: "openai", name: "OpenAI", purpose: "Suivi de ChatGPT dans la visibilité IA", env: ["OPENAI_API_KEY"] },
   { key: "perplexity", name: "Perplexity", purpose: "Suivi de Perplexity dans la visibilité IA", env: ["PERPLEXITY_API_KEY"], optional: true },
-  { key: "anthropic", name: "Anthropic", purpose: "Suivi de Claude dans la visibilité IA", env: ["ANTHROPIC_API_KEY"], optional: true },
+  { key: "anthropic", name: "Anthropic", purpose: "Rédaction des articles et suivi de Claude dans la visibilité IA", env: ["ANTHROPIC_API_KEY"], optional: true },
   {
     key: "dataforseo",
     name: "DataForSEO",

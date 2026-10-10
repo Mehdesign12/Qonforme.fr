@@ -205,8 +205,9 @@ export async function runPageSpeed(
   }
   const params = new URLSearchParams({ url: target.toString(), strategy, category: "performance", locale: "fr" })
   const key = process.env.PAGESPEED_API_KEY?.trim()
-  if (key) params.set("key", key)
   const res = await fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params}`, {
+    // Clé en en-tête, jamais dans l'adresse (journaux des proxys)
+    headers: key ? { "X-Goog-Api-Key": key } : undefined,
     cache: "no-store",
     // Une mesure Lighthouse prend souvent 20 à 40 s
     signal: AbortSignal.timeout(opts.timeoutMs ?? 90_000),

@@ -207,7 +207,7 @@ export const ARTICLE_STATUS: Record<ArticleDisplayStatus, Labelled> = {
 export const PUBLISH_MODE_LABELS: Record<PublishMode, { label: string; hint: string }> = {
   draft: { label: "Brouillon à relire", hint: "L'article attend votre relecture ; rien ne part sans vous." },
   after_check: { label: "Publier après contrôle", hint: "Publié à l'heure prévue si le contrôle automatique ne repère rien." },
-  direct: { label: "Publier directement", hint: "Publié à l'heure prévue sans relecture." },
+  direct: { label: "Publier directement", hint: "L'article est publié dès qu'il est prêt, sauf valeur périmée, affirmation interdite ou concurrent nommé, que le contrôle retient toujours ; un simple signalement (comme « PDP ») ne le bloque pas." },
 }
 
 /* ------------------------------------------------------------------ */
@@ -260,4 +260,20 @@ export const CONNECTION_STATE: Record<ConnectionState, Labelled> = {
   missing: { label: "Clé manquante", tone: "warn" },
   not_configured: { label: "Non configurée", tone: "neutral" },
   error: { label: "Erreur", tone: "danger" },
+}
+
+/**
+ * Clé présente que rien n'a encore vérifiée : la présence seule ne prouve pas
+ * qu'elle fonctionne, « Connectée » est réservé à un test réussi (Paramètres ›
+ * Connexions) ou à des réponses obtenues (Visibilité IA).
+ */
+export const KEY_PRESENT: Labelled = { label: "Clé présente", tone: "ok" }
+
+/**
+ * Pastille d'un moteur de Visibilité IA : « Connectée » seulement si le moteur
+ * a répondu au dernier relevé ; clé présente sans réponse obtenue : « Clé présente ».
+ */
+export function enginePill(e: { state: ConnectionState; configured: boolean }, answered = false): Labelled {
+  if (e.configured) return answered ? CONNECTION_STATE.connected : KEY_PRESENT
+  return CONNECTION_STATE[e.state]
 }

@@ -98,7 +98,7 @@ CREATE INDEX IF NOT EXISTS seo_gsc_query_pages_query_idx ON seo_gsc_query_pages 
 -- Agrégats sur une période (p_device, p_country : NULL = tous).
 CREATE OR REPLACE FUNCTION seo_gsc_totals(p_from date, p_to date, p_device text DEFAULT NULL, p_country text DEFAULT NULL)
 RETURNS TABLE (clicks bigint, impressions bigint, avg_position double precision)
-LANGUAGE sql STABLE AS $$
+LANGUAGE sql STABLE SET search_path = public AS $$
   SELECT COALESCE(SUM(d.clicks), 0)::bigint,
          COALESCE(SUM(d.impressions), 0)::bigint,
          CASE WHEN COALESCE(SUM(d.impressions), 0) = 0 THEN NULL
@@ -111,7 +111,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION seo_gsc_by_date(p_from date, p_to date, p_device text DEFAULT NULL, p_country text DEFAULT NULL)
 RETURNS TABLE (date date, clicks bigint, impressions bigint, avg_position double precision)
-LANGUAGE sql STABLE AS $$
+LANGUAGE sql STABLE SET search_path = public AS $$
   SELECT d.date,
          SUM(d.clicks)::bigint,
          SUM(d.impressions)::bigint,
@@ -127,7 +127,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION seo_gsc_by_page(p_from date, p_to date, p_device text DEFAULT NULL, p_country text DEFAULT NULL)
 RETURNS TABLE (page text, clicks bigint, impressions bigint, avg_position double precision)
-LANGUAGE sql STABLE AS $$
+LANGUAGE sql STABLE SET search_path = public AS $$
   SELECT p.page,
          SUM(p.clicks)::bigint,
          SUM(p.impressions)::bigint,
@@ -143,7 +143,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION seo_gsc_by_query(p_from date, p_to date, p_device text DEFAULT NULL, p_country text DEFAULT NULL)
 RETURNS TABLE (query text, clicks bigint, impressions bigint, avg_position double precision)
-LANGUAGE sql STABLE AS $$
+LANGUAGE sql STABLE SET search_path = public AS $$
   SELECT q.query,
          SUM(q.clicks)::bigint,
          SUM(q.impressions)::bigint,
@@ -159,7 +159,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION seo_gsc_query_pages_agg(p_from date, p_to date)
 RETURNS TABLE (query text, page text, clicks bigint, impressions bigint, avg_position double precision)
-LANGUAGE sql STABLE AS $$
+LANGUAGE sql STABLE SET search_path = public AS $$
   SELECT qp.query,
          qp.page,
          SUM(qp.clicks)::bigint,
@@ -169,13 +169,14 @@ LANGUAGE sql STABLE AS $$
   FROM seo_gsc_query_pages qp
   WHERE qp.date BETWEEN p_from AND p_to
   GROUP BY qp.query, qp.page
-  ORDER BY qp.query, SUM(qp.impressions) DESC
+  -- Ordre unique (lue par tranches de 1 000 lignes) : la page en dernier critère
+  ORDER BY qp.query, SUM(qp.impressions) DESC, qp.page
 $$;
 
 -- Bornes des données enregistrées (premier et dernier jour).
 CREATE OR REPLACE FUNCTION seo_gsc_bounds()
 RETURNS TABLE (first_date date, last_date date)
-LANGUAGE sql STABLE AS $$
+LANGUAGE sql STABLE SET search_path = public AS $$
   SELECT MIN(d.date), MAX(d.date) FROM seo_gsc_daily d
 $$;
 
@@ -540,3 +541,59 @@ WHERE NOT EXISTS (SELECT 1 FROM seo_findings WHERE source = 'import');
 -- ═════════════════════════════════════════════════════════════════════════
 -- 12. Ajouts des modules (réservé : chaque module ajoute ici ses colonnes)
 -- ═════════════════════════════════════════════════════════════════════════
+
+-- Module Mots-clés : devise du CPC. Google Ads (DataForSEO) le donne en dollars US ;
+-- NULL = valeur reprise de PushRank, affichée en euros comme dans PushRank.
+ALTER TABLE seo_keywords ADD COLUMN IF NOT EXISTS cpc_currency text CHECK (cpc_currency IN ('EUR', 'USD'));
+
+-- Module Mots-clés : sujets repris (§ 11) ou créés sans mot-clé connu, rattachés à leur
+-- mot-clé, pour que « Créer un sujet d'article » rende le sujet existant au lieu d'un doublon
+-- (rejouable : ne touche que les sujets encore sans keyword_id).
+UPDATE seo_topics t SET keyword_id = k.id
+FROM seo_keywords k
+WHERE t.keyword_id IS NULL AND t.keyword = k.keyword;
+
+-- Module Performance : mesures PageSpeed déjà faites (journal du dépôt, 4 oct. 2026 :
+-- Lighthouse mobile simulé sur un build local, avant puis après les correctifs du LCP),
+-- reprises une seule fois pour que la colonne « Avant » parte de vraies valeurs.
+-- Les guides avaient 4,1 à 4,3 s avant correctifs selon la page : pas de valeur « avant » unique, donc pas de ligne.
+INSERT INTO seo_pagespeed (path, strategy, measured_at, source, note, lcp_ms, unused_js_bytes)
+SELECT m.path, 'mobile', m.measured_at, 'import', m.note, m.lcp_ms, m.unused_js_bytes
+FROM (VALUES
+  ('/',                                   '2026-10-04T08:00:00Z'::timestamptz, 'Avant correctifs, build local',  6000, 151552),
+  ('/facturation',                        '2026-10-04T08:00:00Z'::timestamptz, 'Avant correctifs, build local',  6000, NULL),
+  ('/modele',                             '2026-10-04T08:00:00Z'::timestamptz, 'Avant correctifs, build local',  5300, NULL),
+  ('/demo',                               '2026-10-04T08:00:00Z'::timestamptz, 'Avant correctifs, build local',  5000, 218112),
+  ('/',                                   '2026-10-04T18:00:00Z'::timestamptz, 'Après correctifs, build local',  3200, 70656),
+  ('/facturation',                        '2026-10-04T18:00:00Z'::timestamptz, 'Après correctifs, build local',  2600, NULL),
+  ('/modele',                             '2026-10-04T18:00:00Z'::timestamptz, 'Après correctifs, build local',  2700, NULL),
+  ('/guide/mentions-obligatoires-facture','2026-10-04T18:00:00Z'::timestamptz, 'Guides après correctifs, build local', 2700, NULL),
+  ('/demo',                               '2026-10-04T18:00:00Z'::timestamptz, 'Après correctifs, build local',  3400, 92160)
+) AS m (path, measured_at, note, lcp_ms, unused_js_bytes)
+WHERE NOT EXISTS (SELECT 1 FROM seo_pagespeed WHERE source = 'import');
+
+-- Module Visibilité IA : un seul relevé en attente ou en cours à la fois (deux
+-- « Analyse immédiate » simultanées, ou une analyse pendant le relevé mensuel,
+-- ne créent jamais deux relevés : la seconde création reçoit 23505, rendue en 409).
+CREATE UNIQUE INDEX IF NOT EXISTS seo_geo_runs_one_active ON seo_geo_runs ((true)) WHERE status IN ('queued', 'running');
+
+-- Module Visibilité IA : un seul sujet d'article par question suivie, archivé compris
+-- (« Créer un sujet » rend le sujet existant ; deux demandes simultanées reçoivent 23505
+-- et rendent la première). Archivé compris pour que restaurer un sujet archivé dans
+-- Articles › Sujets ne heurte jamais un second sujet de la même question.
+CREATE UNIQUE INDEX IF NOT EXISTS seo_topics_one_per_geo_question ON seo_topics (geo_question_id) WHERE geo_question_id IS NOT NULL;
+
+-- Module Articles : une seule rédaction en attente ou en cours par sujet (la
+-- préparation de la tâche planifiée et un « Rédiger maintenant » simultanés ne
+-- créent jamais deux rédactions : la seconde reçoit 23505 et rend la première),
+-- et recherche des rédactions d'un sujet.
+CREATE UNIQUE INDEX IF NOT EXISTS seo_article_jobs_one_active_per_topic ON seo_article_jobs (topic_id) WHERE status IN ('queued', 'running');
+CREATE INDEX IF NOT EXISTS seo_article_jobs_topic_idx ON seo_article_jobs (topic_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS seo_topics_post_idx ON seo_topics (post_id) WHERE post_id IS NOT NULL;
+
+-- Articles du blog : lus et écrits côté serveur seulement (clé service_role : blog,
+-- plan du site, admin). Les colonnes internes ajoutées ci-dessus (audit_result,
+-- held_reason, review_status, target_keyword) et ai_prompt ne doivent pas être
+-- lisibles avec la clé publique (anon), que la politique « Public can read
+-- published posts » laissait lire pour tout article publié.
+REVOKE ALL ON TABLE blog_posts FROM anon, authenticated;

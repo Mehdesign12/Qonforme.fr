@@ -33,6 +33,16 @@ export const MAX_PROOFS = 5
 export const MAX_COUNTRIES = 20
 export const MAX_COMPETITORS = 10
 
+/** Adresse absolue en http ou https (jamais javascript:, data:, ftp:…). */
+export function isHttpUrl(value: string): boolean {
+  try {
+    const u = new URL(value)
+    return u.protocol === "https:" || u.protocol === "http:"
+  } catch {
+    return false
+  }
+}
+
 export const brandSchema = z.object({
   name: text(80).min(1, "Le nom de la marque est obligatoire"),
   audience: text(600),
@@ -46,7 +56,8 @@ export const brandSchema = z.object({
       z.object({
         claim: text(300).min(1, "L'affirmation est obligatoire"),
         source: text(200).min(1, "La source est obligatoire"),
-        url: z.union([z.literal(""), z.string().trim().url("Adresse de la source invalide").max(500)]),
+        // http(s) seulement : le lien part dans la consigne du générateur d'articles et s'ouvre depuis l'admin
+        url: z.string().trim().max(500, "Adresse trop longue (500 caractères au plus)").refine((v) => v === "" || isHttpUrl(v), "Adresse de la source invalide"),
       }),
     )
     .max(MAX_PROOFS, `${MAX_PROOFS} preuves au maximum`),
@@ -71,7 +82,7 @@ export const strategySchema = z.object({
 })
 
 export const targetingSchema = z.object({
-  scope: z.enum(["france", "local", "international"]),
+  scope: z.enum(["france", "local", "regional", "international"]),
   audience: z.enum(["b2b", "b2c", "both"]),
   /** Codes ISO 3166-1 alpha-2 (« FR »). */
   countries: z.array(z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/)).min(1).max(MAX_COUNTRIES),
