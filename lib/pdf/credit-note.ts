@@ -9,6 +9,7 @@
  */
 import { PDFDocument, rgb, PageSizes } from "pdf-lib"
 import { addUriLink } from "@/lib/pdf/link"
+import { drawDivider, drawHeaderBand, drawLogoBacking, drawPartiesFill, drawTableHead, drawTotalBox, pdfTheme, templateOf } from "@/lib/pdf/theme"
 import { poweredByUrl } from "@/lib/utils/powered-by"
 import fontkit from "@pdf-lib/fontkit"
 import { buildFacturX, documentMentions } from "@/lib/facturx/xml"
@@ -183,49 +184,66 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
   }
 
   // ── HEADER ───────────────────────────────────────────────────────────────
+  // Modèle de mise en page (Paramètres › Modèles de documents) ; Classique = rendu d'avant
+  const theme = pdfTheme(templateOf(company, "credit_note"), {
+    docColor: creditOrange, classicTitle: creditOrange, classicHeadFill: rgb(0.99, 0.97, 0.95), brand: accentCompany,
+  })
+  const barY = height - 155
+  drawHeaderBand(page, theme, barY - 8)
+
   let curY = height - 44
   const logoMaxH = 52; const logoMaxW = 130
 
   if (logoImg) {
     const scale = Math.min(logoMaxW / logoImg.width, logoMaxH / logoImg.height, 1)
     const lw = logoImg.width * scale; const lh = logoImg.height * scale
-    page.drawImage(logoImg, { x: mL, y: curY - lh + 4, width: lw, height: lh })
+    const logoBox = { x: mL, y: curY - lh + 4, width: lw, height: lh }
+    drawLogoBacking(page, theme, logoBox)
+    page.drawImage(logoImg, logoBox)
   } else {
-    draw(company?.name ?? "Votre entreprise", mL, curY, { size: 16, bold: true, color: accentCompany })
+    draw(company?.name ?? "Votre entreprise", mL, curY, { size: 16, bold: true, color: theme.band ? theme.head.text : theme.id === "classique" ? accentCompany : theme.primary })
   }
 
-  draw("AVOIR", mR, curY, { size: 22, bold: true, color: creditOrange, align: "right" })
-  draw(creditNote.credit_note_number, mR, curY - 20, { size: 11, bold: true, color: creditOrange, align: "right" })
-  draw(`Émis le : ${fmtDate(creditNote.issue_date)}`, mR, curY - 36, { size: 8.5, color: grayDark, align: "right" })
+  draw("AVOIR", mR, curY, { size: 22, bold: true, color: theme.title, align: "right" })
+  draw(creditNote.credit_note_number, mR, curY - 20, { size: 11, bold: true, color: theme.head.number, align: "right" })
+  draw(`Émis le : ${fmtDate(creditNote.issue_date)}`, mR, curY - 36, { size: 8.5, color: theme.head.sub, align: "right" })
 
   if (creditNote.original_invoice) {
     const original = creditNote.original_invoice
     draw(
       `Avoir sur la facture ${original.invoice_number}${original.issue_date ? ` du ${fmtDate(original.issue_date)}` : ""}`,
-      mR, curY - 50, { size: 8, color: grayDark, align: "right" }
+      mR, curY - 50, { size: 8, color: theme.head.sub, align: "right" }
     )
   }
 
   let infoY = curY - logoMaxH - 12
-  if (company?.address)    { draw(company.address, mL, infoY, { size: 8.5, color: grayDark }); infoY -= 14 }
+  if (company?.address)    { draw(company.address, mL, infoY, { size: 8.5, color: theme.head.sub }); infoY -= 14 }
   const cityLine = [company?.zip_code, company?.city].filter(Boolean).join(" ")
-  if (cityLine)            { draw(cityLine, mL, infoY, { size: 8.5, color: grayDark }); infoY -= 14 }
-  if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 8, color: grayLight }); infoY -= 13 }
-  else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 8, color: grayLight }); infoY -= 13 }
-  if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 8, color: grayLight }) }
+  if (cityLine)            { draw(cityLine, mL, infoY, { size: 8.5, color: theme.head.sub }); infoY -= 14 }
+  if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
+  else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
+  if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 8, color: theme.head.faint }) }
 
-  const barY = height - 155
-  rect(mL, barY, cW, 3, creditOrange)
+  drawDivider(page, theme, mL, cW, barY)
 
   // ── ÉMETTEUR / FACTURÉ À ─────────────────────────────────────────────────
   curY = barY - 20
   const col2 = mL + cW / 2 + 8; const colW2 = cW / 2 - 8
 
-  draw("ÉMETTEUR",  mL,   curY, { size: 7, bold: true, color: creditOrange })
-  draw("FACTURÉ À", col2, curY, { size: 7, bold: true, color: creditOrange })
+  // Fond des parties (modèle Moderne) : hauteur calculée comme les lignes ci-dessous
+  {
+    let y = curY - 4 - 13 - 14
+    if (company?.address || creditNote.client?.address) y -= 13
+    if ([company?.zip_code, company?.city, creditNote.client?.zip_code, creditNote.client?.city].some(Boolean)) y -= 13
+    y -= 13
+    if (company?.vat_number || creditNote.client?.siren) y -= 13
+    drawPartiesFill(page, theme, mL, cW, barY - 8, y + 6)
+  }
+  draw("ÉMETTEUR",  mL,   curY, { size: 7, bold: true, color: theme.primary })
+  draw("FACTURÉ À", col2, curY, { size: 7, bold: true, color: theme.primary })
   curY -= 4
-  hLine(curY, mL, mL + 80, 0.8, creditOrange)
-  hLine(curY, col2, col2 + 80, 0.8, creditOrange)
+  hLine(curY, mL, mL + 80, 0.8, theme.primary)
+  hLine(curY, col2, col2 + 80, 0.8, theme.primary)
   curY -= 13
 
   draw(company?.name ?? "—",                mL,   curY, { size: 10, bold: true, color: black, maxWidth: colW2 })
@@ -259,7 +277,7 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
 
   // Motif de l'avoir
   curY -= 4
-  draw("MOTIF DE L'AVOIR", mL, curY, { size: 7, bold: true, color: creditOrange })
+  draw("MOTIF DE L'AVOIR", mL, curY, { size: 7, bold: true, color: theme.primary })
   curY -= 12
   draw(creditNote.reason ?? "", mL, curY, { size: 8.5, color: grayDark, maxWidth: cW })
   curY -= 20
@@ -268,12 +286,12 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
   const colDesc = mL; const colQty = mL + 250; const colPU = mL + 300
   const colTVA  = mL + 378; const colTotal = mR; const tableHeaderH = 20
 
-  rect(mL, curY - 4, cW, tableHeaderH, rgb(0.99, 0.97, 0.95))
-  draw("Désignation", colDesc,  curY + 4, { size: 7.5, bold: true, color: grayDark })
-  draw("Qté",         colQty,   curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
-  draw("P.U. HT",     colPU,    curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
-  draw("TVA",         colTVA,   curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
-  draw("Total HT",    colTotal, curY + 4, { size: 7.5, bold: true, color: grayDark, align: "right" })
+  drawTableHead(page, theme, mL, curY - 4, cW, tableHeaderH)
+  draw("Désignation", colDesc,  curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text })
+  draw("Qté",         colQty,   curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
+  draw("P.U. HT",     colPU,    curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
+  draw("TVA",         colTVA,   curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
+  draw("Total HT",    colTotal, curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
   curY -= tableHeaderH + 2
 
   const lines: { description: string; quantity: number; unit_price_ht: number; vat_rate: number; total_ht: number }[]
@@ -286,7 +304,7 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
     draw(String(line.quantity),      colQty,   curY + 2, { size: 8.5, color: grayDark,    align: "right" })
     draw(fmt(line.unit_price_ht),    colPU,    curY + 2, { size: 8.5, color: grayDark,    align: "right" })
     draw(`${fmtRate(line.vat_rate)} %`, colTVA, curY + 2, { size: 8.5, color: grayDark,   align: "right" })
-    draw(`-${fmt(line.total_ht)}`,   colTotal, curY + 2, { size: 8.5, bold: true, color: creditOrange, align: "right" })
+    draw(`-${fmt(line.total_ht)}`,   colTotal, curY + 2, { size: 8.5, bold: true, color: theme.primary, align: "right" })
     curY -= rowH
     hLine(curY + 2, mL, mR, 0.3, rgb(0.92, 0.93, 0.95))
   })
@@ -316,10 +334,10 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
   hLine(curY, totX, mR, 0.8, grayLight)
   curY -= 16
 
-  hLine(curY, totX, mR, 1.5, creditOrange)
   curY -= 14
-  draw("TOTAL AVOIR TTC",              totX,    curY, { size: 10, bold: true, color: creditOrange })
-  draw(`-${fmt(totals.grandTotal)}`, totValX, curY, { size: 14, bold: true, color: creditOrange, align: "right" })
+  drawTotalBox(page, theme, totX, mR - totX, curY)
+  draw("TOTAL AVOIR TTC",              totX,    curY, { size: 10, bold: true, color: theme.total.text })
+  draw(`-${fmt(totals.grandTotal)}`, totValX, curY, { size: 14, bold: true, color: theme.total.text, align: "right" })
   curY -= 24
 
   // ── MENTIONS LÉGALES — de l'entreprise, puis celles que déclare le XML ─────
@@ -336,7 +354,7 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
   // ── FOOTER ───────────────────────────────────────────────────────────────
   hLine(32, mL, mR, 0.5, separator)
   draw(`${company?.name ?? "Qonforme"} — ${creditNote.credit_note_number}`, mL, 20, { size: 7, color: grayLight })
-  draw("Généré par Qonforme", mR, 20, { size: 7, color: creditOrange, align: "right" })
+  draw("Généré par Qonforme", mR, 20, { size: 7, color: theme.primary, align: "right" })
   {
     // « Propulsé par Qonforme » cliquable, avec sa provenance (lib/utils/powered-by.ts)
     const tw = fontRegular.widthOfTextAtSize("Généré par Qonforme", 7)

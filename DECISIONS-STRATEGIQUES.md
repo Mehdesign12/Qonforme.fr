@@ -279,6 +279,7 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 | Tableau de bord d'un compte neuf (premiers pas, états vides expliqués) | **Construit le 02/10/2026** : tuiles « Pour commencer » (entreprise, premier client, premier devis, logo) à la place de graphiques vides | Activation |
 | Séquence de 5 emails déclenchés par les actions | **Construit le 03/10/2026**, désinscription en un clic (migration à appliquer, masqué d'ici là) ; cron `/api/cron/onboarding` à créer | Activation et passage au payant |
 | Logo personnalisé, avec aperçu sur un devis | **Existe** dans Paramètres › Préférences factures (import, couleur). La maquette le place dans Paramètres › Entreprise avec un aperçu en direct | Documents à l'image de l'artisan |
+| Modèles de mise en page des documents | **Construit le 10/10/2026** : 5 habillages des PDF dans Paramètres › Modèles de documents (Classique, identique aux PDF d'avant ; Chantier ; Moderne ; Épuré, économe en encre ; Prestige), le même pour tous les documents ou un par document (devis, factures, avoirs, bons de commande), exemple PDF de chaque modèle. Seul l'habillage change : mentions, montants et XML Factur-X identiques (revalidé avec Mustang pour chaque modèle). Migration `20261010_document_templates.sql` à appliquer (Classique pour tous d'ici là). Les aperçus à l'écran gardent la mise en page Classique | Documents à l'image de l'artisan |
 
 ### Devis, facture, paiement (le cœur)
 

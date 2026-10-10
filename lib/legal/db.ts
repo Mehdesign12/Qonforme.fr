@@ -21,7 +21,9 @@ export interface CompanyResult {
 }
 
 /**
- * Entreprise de l'utilisateur avec les colonnes demandées et son profil légal.
+ * Entreprise de l'utilisateur avec les colonnes demandées, son profil légal et
+ * ses modèles de documents (`document_templates`, lib/pdf/theme.ts), chacun
+ * relu sans lui si sa migration manque.
  * @param userId filtre explicite (routes serveur) ; omis, la RLS suffit (navigateur).
  */
 export async function selectCompanyWithProfile(
@@ -35,12 +37,24 @@ export async function selectCompanyWithProfile(
     const { data, error } = await q.maybeSingle()
     return { data: (data as CompanyRow | null) ?? null, error }
   }
+  const withTemplates = await run(`${columns},legal_profile,document_templates`)
+  if (!withTemplates.error || !isMissingSchemaError(withTemplates.error)) return { ...withTemplates, profileAvailable: true }
   const first = await run(`${columns},legal_profile`)
   if (first.error && isMissingSchemaError(first.error)) {
     const second = await run(columns)
     return { ...second, profileAvailable: false }
   }
   return { ...first, profileAvailable: true }
+}
+
+/**
+ * Modèles de documents d'un compte, pour les lectures de l'entreprise qui ne
+ * passent pas par selectCompanyWithProfile. Vide si la colonne manque.
+ */
+export async function loadDocumentTemplates(db: SupabaseClient, userId: string): Promise<unknown> {
+  const { data, error } = await db.from("companies").select("document_templates").eq("user_id", userId).maybeSingle()
+  if (error) return {}
+  return (data as { document_templates?: unknown } | null)?.document_templates ?? {}
 }
 
 /** Vrai si la colonne `companies.legal_profile` existe (réglages à afficher ou non). */

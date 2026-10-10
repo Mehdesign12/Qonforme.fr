@@ -47,7 +47,7 @@ import { paymentLinkFor } from "@/lib/payment-link/server"
 import { shareLinkForEmail } from "@/lib/signature/share"
 import { buildQuoteFollowupEmail } from "@/lib/email/templates/quote-followup"
 import { generateQuotePdf } from "@/lib/pdf/quote"
-import { loadLegalSnapshot } from "@/lib/legal/db"
+import { loadDocumentTemplates, loadLegalSnapshot } from "@/lib/legal/db"
 import { canIssueInvoices } from "@/lib/stripe/access"
 import { addDays, daysBetween, todayInParis } from "@/lib/utils/paris-date"
 import { settingsFromRow, BEFORE_DUE_CHOICES, type ReminderSettings, type ReminderSettingsRow } from "@/lib/reminders/settings"
@@ -127,7 +127,9 @@ function accountCaches(admin: SupabaseClient) {
     const cached = companies.get(userId)
     if (cached) return cached
     const { data } = await admin.from("companies").select(COMPANY_FIELDS).eq("user_id", userId).maybeSingle()
-    const value = (data as CompanyInfo | null) ?? { name: null, iban: null, accent_color: null, email: null }
+    const base = (data as CompanyInfo | null) ?? { name: null, iban: null, accent_color: null, email: null }
+    // Modèle de mise en page du PDF joint aux relances de devis (lib/pdf/theme.ts)
+    const value = { ...base, document_templates: await loadDocumentTemplates(admin, userId) }
     companies.set(userId, value)
     return value
   }
