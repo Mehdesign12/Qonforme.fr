@@ -19,6 +19,8 @@ export interface ChartSeries {
   invert?: boolean
   /** Remplissage sous la courbe. */
   area?: boolean
+  /** 0 est une mesure (taux de 0 %), pas une absence de donnée. */
+  zeroIsData?: boolean
 }
 
 /** Plafond « rond » de l'axe (204 → 250, 7 → 8, 1 → 1,5). */
@@ -76,7 +78,8 @@ export function SeoChart({
   const xOf = (i: number) => step * i + step / 2
   const [left, right] = series
   const scales = series.map(scale)
-  const empty = series.every((s) => s.values.every((v) => !v))
+  // Vide : aucune valeur, ou que des zéros pour une série de volumes (0 % reste une mesure)
+  const empty = series.every((s) => s.values.every((v) => v === null || (!s.zeroIsData && v === 0)))
 
   const tickEvery = Math.max(1, Math.ceil(n / 8))
   const ticks = days.map((d, i) => ({ d, i })).filter(({ i }) => i % tickEvery === 0 || i === n - 1)
