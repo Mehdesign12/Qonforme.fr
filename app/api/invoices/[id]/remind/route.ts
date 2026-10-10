@@ -132,24 +132,23 @@ export async function POST(_req: NextRequest, { params }: Params) {
       ccSubject: `Copie — Relance ${reminderNumber} — Facture ${invoice.invoice_number} pour ${invoice.client?.name ?? ""}`,
     })
 
-    // 5. Noter la relance (le statut de la facture ne change pas)
+    // 5. Mettre à jour les champs de relance ; « en retard » seulement une fois
+    //    l'échéance passée (une relance envoyée en avance ne rend pas la facture
+    //    en retard — même règle que la fiche facture, échéance à 23 h 59)
     const now = new Date().toISOString()
-    let updated = invoice
-    if (useJournal) {
-      const err = await recordManualReminder(supabase, {
-        user_id: user.id, document_type: "invoice", document_id: id, sent_to: clientEmail,
-      })
-      if (err) console.error("[invoice-remind] relance envoyée mais non journalisée :", err.message)
-    } else {
-      const { data } = await supabase
-        .from("invoices")
-        .update(reminderNumber === 1 ? { reminder_1_sent_at: now } : { reminder_2_sent_at: now })
-        .eq("id", id)
-        .eq("user_id", user.id)
-        .select()
-        .single()
-      if (data) updated = { ...invoice, ...data }
+    const pastDue = !!invoice.due_date && new Date(`${invoice.due_date}T23:59:59`) < new Date()
+    const updateFields = {
+      ...(reminderNumber === 1 ? { reminder_1_sent_at: now } : { reminder_2_sent_at: now }),
+      ...(pastDue ? { status: "overdue" } : {}),
     }
+
+    const { data: updated } = await supabase
+      .from("invoices")
+      .update(updateFields)
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .select()
+      .single()
 
     return NextResponse.json({
       success: true,

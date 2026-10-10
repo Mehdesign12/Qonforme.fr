@@ -35,29 +35,103 @@ const CommandPalette = dynamic(() => import("@/components/layout/CommandPalette"
 /* Menu « Nouveau »                                                    */
 /* ------------------------------------------------------------------ */
 
-function CreateMenu({ identity }: { identity: ShellIdentity }) {
-  const router = useRouter()
-  const mode = identity.mode
-  const go = (href: string) => router.push(href)
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="q-btn q-btn-primary !h-[38px] gap-2 !pl-3.5 !pr-3" aria-label="Nouveau document">
-        <Plus strokeWidth={2.25} aria-hidden />
-        Nouveau
-        <ChevronDown className="!size-3.5 opacity-80" aria-hidden />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        sideOffset={8}
-        className="w-[300px]"
-        onKeyDown={(e: React.KeyboardEvent) => {
-          // Raccourcis affichés dans le menu (D, F, C, B), actifs tant qu'il est ouvert
-          if (e.metaKey || e.ctrlKey || e.altKey) return
-          const hit = CREATE_LINKS.find((c) => c.shortcut.toLowerCase() === e.key.toLowerCase())
-          if (hit) {
-            e.preventDefault()
-            go(hrefFor(hit, mode))
-          }
+const PAGE_TITLES: Record<string, string> = {
+  "/dashboard":              "Tableau de bord",
+  "/invoices":               "Factures",
+  "/invoices/new":           "Nouvelle facture",
+  "/quotes":                 "Devis",
+  "/quotes/new":             "Nouveau devis",
+  "/clients":                "Clients",
+  "/clients/new":            "Nouveau client",
+  "/products":               "Catalogue produits",
+  "/purchase-orders":        "Bons de commande",
+  "/purchase-orders/new":    "Nouveau bon de commande",
+  "/settings":               "Paramètres",
+  "/settings/company":       "Mon entreprise",
+  "/settings/billing":       "Abonnement",
+  "/settings/ppf":           "Connexion PPF",
+  "/settings/invoices":      "Préférences factures",
+  "/settings/notifications": "Notifications",
+  "/credit-notes":           "Avoirs",
+  "/tresorerie":             "Trésorerie",
+  "/relances":               "Relances",
+}
+
+const PREFIX_TITLES: { prefix: string; title: string }[] = [
+  { prefix: "/purchase-orders/", title: "Bons de commande" },
+  { prefix: "/invoices/",        title: "Factures"         },
+  { prefix: "/quotes/",          title: "Devis"            },
+  { prefix: "/clients/",         title: "Clients"          },
+  { prefix: "/credit-notes/",    title: "Avoirs"           },
+]
+
+function getTitle(pathname: string): string {
+  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]
+  for (const { prefix, title } of PREFIX_TITLES) {
+    if (pathname.startsWith(prefix)) return title
+  }
+  return "Qonforme"
+}
+
+/* ------------------------------------------------------------------ */
+/* CTA contextuels par route                                            */
+/* ------------------------------------------------------------------ */
+
+interface CtaConfig {
+  href:  string
+  label: string
+  icon:  React.ElementType
+}
+
+const PAGE_CTA: Record<string, CtaConfig> = {
+  "/invoices":        { href: "/invoices/new",        label: "Nouvelle facture", icon: FileText     },
+  "/quotes":          { href: "/quotes/new",           label: "Nouveau devis",    icon: FileCheck2   },
+  "/clients":         { href: "/clients/new",          label: "Nouveau client",   icon: Plus         },
+  "/purchase-orders": { href: "/purchase-orders/new",  label: "Nouveau BdC",      icon: ShoppingCart },
+  "/products":        { href: "/products",             label: "Nouveau produit",  icon: Plus         },
+}
+
+/* ------------------------------------------------------------------ */
+/* Initiales                                                            */
+/* ------------------------------------------------------------------ */
+
+function getInitials(firstName: string, lastName: string): string {
+  const f = firstName.trim()
+  const l = lastName.trim()
+  if (f && l) return (f[0] + l[0]).toUpperCase()
+  if (f)      return f.slice(0, 2).toUpperCase()
+  if (l)      return l.slice(0, 2).toUpperCase()
+  return "?"
+}
+
+/* ------------------------------------------------------------------ */
+/* Styles pilules                                                       */
+/* ------------------------------------------------------------------ */
+
+const PILL_BG     = "var(--glass-bg)"
+const PILL_BORDER = "1px solid var(--glass-border-color)"
+const PILL_SHADOW = "var(--glass-shadow)"
+
+/* Mobile : fond solide (pas de backdrop-filter — CLAUDE.md) */
+const MOBILE_PILL: React.CSSProperties = {
+  background: "var(--glass-bg)",
+  border:     "1px solid var(--glass-border-color)",
+  boxShadow:  "0 1px 3px rgba(15,23,42,0.04)",
+}
+
+/* ------------------------------------------------------------------ */
+/* Badge plan                                                           */
+/* ------------------------------------------------------------------ */
+
+function PlanBadge({ plan }: { plan: PlanId }) {
+  if (plan === "pro") {
+    return (
+      <span
+        className="inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+        style={{
+          background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)",
+          color: "#2563EB",
+          border: "1px solid rgba(37,99,235,0.20)",
         }}
       >
         {CREATE_LINKS.map((c) => {

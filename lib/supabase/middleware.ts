@@ -154,12 +154,8 @@ export async function updateSession(request: NextRequest) {
     '/products',
     '/credit-notes',
     '/purchase-orders',
-    // Espace comptable : compte connecté, sans entreprise exigée (l'accès à
-    // chaque dossier est vérifié par lib/accountant/server.ts)
-    '/comptable',
-    '/received-invoices',
-    // Chantiers (formule Artisan)
-    '/chantiers',
+    '/tresorerie',
+    '/relances',
   ]
 
   const isProtected = protectedPaths.some((path) =>

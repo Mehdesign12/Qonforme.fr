@@ -17,8 +17,10 @@ import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import {
-  Plus, Ellipsis, ChevronRight, ShieldCheck, Sparkles, Bug, MessageSquare,
-  LogOut, House, CreditCard, Building2, FileCog, FlaskConical, ArrowRight, Search,
+  LayoutDashboard, Users, FileText, FileCheck2,
+  Settings, LogOut, Minus, Menu,
+  Plus, Archive, RotateCcw, Package, ShoppingCart, X,
+  PanelLeftClose, PanelLeftOpen, Wallet, BellRing,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from "@/lib/brand"
@@ -36,7 +38,226 @@ import { useLogout } from "@/components/layout/useLogout"
 /* Logo                                                                */
 /* ------------------------------------------------------------------ */
 
-function Logo({ height = 19 }: { height?: number }) {
+interface SubItem {
+  href:  string
+  label: string
+  icon?: React.ElementType
+}
+
+interface NavItem {
+  href:  string
+  label: string
+  icon:  React.ElementType
+  sub?:  SubItem[]
+}
+
+/* ------------------------------------------------------------------ */
+/* Navigation                                                           */
+/* ------------------------------------------------------------------ */
+
+const NAV: NavItem[] = [
+  { href: "/dashboard",      label: "Tableau de bord",   icon: LayoutDashboard },
+  { href: "/clients",        label: "Clients",            icon: Users },
+  {
+    href: "/quotes",
+    label: "Devis",
+    icon: FileCheck2,
+    sub: [{ href: "/quotes/new", label: "Créer un devis", icon: Plus }],
+  },
+  {
+    href: "/purchase-orders",
+    label: "Bons de commande",
+    icon: ShoppingCart,
+    sub: [{ href: "/purchase-orders/new", label: "Nouveau BdC", icon: Plus }],
+  },
+  {
+    href: "/invoices",
+    label: "Factures",
+    icon: FileText,
+    sub: [
+      { href: "/invoices/new",           label: "Nouvelle facture", icon: Plus      },
+      { href: "/credit-notes",           label: "Avoirs",           icon: RotateCcw },
+      { href: "/invoices?archived=true", label: "Archives",         icon: Archive   },
+    ],
+  },
+  { href: "/products", label: "Catalogue produits", icon: Package },
+  { href: "/tresorerie", label: "Trésorerie", icon: Wallet },
+  { href: "/relances",   label: "Relances",   icon: BellRing },
+]
+
+/* ------------------------------------------------------------------ */
+/* NavGroup                                                             */
+/* ------------------------------------------------------------------ */
+
+function NavGroup({
+  item,
+  pathname,
+  collapsed,
+  onNavigate,
+}: {
+  item:        NavItem
+  pathname:    string
+  collapsed:   boolean
+  onNavigate?: () => void
+}) {
+  const isParentActive =
+    pathname === item.href ||
+    (item.href !== "/dashboard" && pathname.startsWith(item.href))
+
+  const isSubActive = item.sub?.some(
+    (s) => pathname === s.href || pathname.startsWith(s.href.split("?")[0])
+  )
+
+  const hasChildren = !!item.sub?.length
+  const isActive    = isParentActive || !!isSubActive
+
+  return (
+    <div>
+      <Link
+        href={item.href}
+        onClick={onNavigate}
+        title={collapsed ? item.label : undefined}
+        className={cn(
+          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100",
+          collapsed ? "justify-center px-2" : "",
+          isActive
+            ? "bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#60A5FA]"
+            : "text-slate-500 dark:text-slate-400 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
+        )}
+      >
+        <item.icon className={cn("w-4 h-4 shrink-0", isActive ? "text-[#2563EB] dark:text-[#60A5FA]" : "text-slate-400 dark:text-slate-500")} />
+        {!collapsed && (
+          <>
+            <span className="flex-1 truncate">{item.label}</span>
+            {hasChildren && (
+              <Minus className={cn(
+                "w-3 h-3 shrink-0 transition-colors",
+                isActive ? "text-[#BFDBFE]" : "text-slate-300"
+              )} />
+            )}
+          </>
+        )}
+      </Link>
+
+      {/* Sous-items — uniquement si expanded */}
+      {!collapsed && hasChildren && isActive && (
+        <div className="relative mt-0.5 mb-1 ml-[22px]">
+          <span className="absolute left-0 top-1 bottom-1 w-px bg-[#BFDBFE]" />
+          <div className="space-y-0.5 pl-4">
+            {item.sub!.map((s) => {
+              const sHrefBase = s.href.split("?")[0]
+              const sHasQuery = s.href.includes("?")
+              const sActive   = !sHasQuery && (
+                pathname === s.href ||
+                (pathname.startsWith(sHrefBase) && sHrefBase !== item.href)
+              )
+              return (
+                <Link
+                  key={s.href}
+                  href={s.href}
+                  onClick={onNavigate}
+                  className={cn(
+                    "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors duration-100",
+                    sActive
+                      ? "bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#60A5FA]"
+                      : "text-slate-400 dark:text-slate-500 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
+                  )}
+                >
+                  {s.icon && (
+                    <s.icon className={cn("w-3.5 h-3.5 shrink-0", sActive ? "text-[#2563EB]" : "text-slate-300")} />
+                  )}
+                  {s.label}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* SidebarContent                                                       */
+/* ------------------------------------------------------------------ */
+
+function SidebarContent({
+  pathname,
+  collapsed,
+  onNavigate,
+  onLogout,
+}: {
+  pathname:    string
+  collapsed:   boolean
+  onNavigate?: () => void
+  onLogout:    () => void
+}) {
+  return (
+    <>
+      <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
+        {NAV.map((item) => (
+          <NavGroup
+            key={item.href}
+            item={item}
+            pathname={pathname}
+            collapsed={collapsed}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </nav>
+
+      <div className={cn(
+        "px-2 py-4 border-t border-[#F1F5F9] dark:border-[#162032] space-y-0.5",
+      )}>
+        <Link
+          href="/settings"
+          onClick={onNavigate}
+          title={collapsed ? "Paramètres" : undefined}
+          className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-100",
+            collapsed ? "justify-center px-2" : "",
+            pathname.startsWith("/settings")
+              ? "bg-[#EFF6FF] dark:bg-[#1E3A5F] text-[#2563EB] dark:text-[#60A5FA]"
+              : "text-slate-500 dark:text-slate-400 hover:bg-[#F8FAFC] dark:hover:bg-[#162032] hover:text-[#0F172A] dark:hover:text-[#E2E8F0]"
+          )}
+        >
+          <Settings className={cn(
+            "w-4 h-4 shrink-0",
+            pathname.startsWith("/settings") ? "text-[#2563EB]" : "text-slate-400"
+          )} />
+          {!collapsed && <span>Paramètres</span>}
+        </Link>
+
+        <BugReportModal collapsed={collapsed} />
+        <ContactModal collapsed={collapsed} />
+
+        <button
+          onClick={onLogout}
+          title={collapsed ? "Se déconnecter" : undefined}
+          className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-colors duration-100 w-full group",
+            collapsed ? "justify-center px-2" : ""
+          )}
+        >
+          <LogOut className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-red-400 transition-colors" />
+          {!collapsed && <span>Se déconnecter</span>}
+        </button>
+      </div>
+    </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Sidebar — desktop                                                    */
+/* ------------------------------------------------------------------ */
+
+export function Sidebar() {
+  const pathname = usePathname()
+  const router   = useRouter()
+  // useMemo : évite de recréer une instance Supabase à chaque re-render
+  // (createBrowserClient enregistre des listeners internes ; en créer plusieurs
+  // peut provoquer des conflits de token-refresh)
+  const supabase = useMemo(() => createClient(), [])
   const { resolvedTheme } = useTheme()
   // Garde `mounted` : resolvedTheme est indéfini côté serveur (règle next-themes de CLAUDE.md)
   const [mounted, setMounted] = useState(false)
