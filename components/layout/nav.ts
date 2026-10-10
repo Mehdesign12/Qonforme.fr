@@ -3,13 +3,13 @@
  * mobile, la feuille « Plus », le menu « Nouveau » et la palette de recherche —
  * pour l'application réelle comme pour la démo (préfixe /demo).
  *
- * N'y figurent que des écrans qui existent : pas de trésorerie tant qu'elle
- * n'est pas livrée (DECISIONS § 10). Chantiers : formule Artisan (la page
+ * N'y figurent que des écrans qui existent (DECISIONS § 10) ; la trésorerie
+ * est livrée depuis le 10/10/2026. Chantiers : formule Artisan (la page
  * explique la formule à un compte qui ne l'a pas).
  */
 import {
   LayoutDashboard, FileText, FileCheck2, Users, Package, ShoppingCart,
-  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox, HardHat,
+  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox, HardHat, Wallet,
   type LucideIcon,
 } from "lucide-react"
 
@@ -43,6 +43,7 @@ export const NAV_MAIN: NavLink[] = [
 ]
 
 export const NAV_PILOTAGE: NavLink[] = [
+  { key: "tresorerie", label: "Trésorerie", href: "/tresorerie", demoHref: "/demo/tresorerie", icon: Wallet, hint: "Ce qui doit rentrer et sortir" },
   { key: "exports", label: "Exports comptables", href: "/settings/exports", demoHref: "/demo/settings/exports", icon: Download, hint: "Fichier des écritures comptables" },
 ]
 
@@ -96,6 +97,7 @@ const SECTION_TITLES: { prefix: string; title: string; href: string }[] = [
   { prefix: "/purchase-orders", title: "Bons de commande", href: "/purchase-orders" },
   { prefix: "/credit-notes", title: "Avoirs", href: "/credit-notes" },
   { prefix: "/received-invoices", title: "Factures reçues", href: "/received-invoices" },
+  { prefix: "/tresorerie", title: "Trésorerie", href: "/tresorerie" },
   { prefix: "/settings/exports", title: "Exports comptables", href: "/settings/exports" },
   { prefix: "/settings", title: "Paramètres", href: "/settings" },
   { prefix: "/dashboard", title: "Tableau de bord", href: "/dashboard" },

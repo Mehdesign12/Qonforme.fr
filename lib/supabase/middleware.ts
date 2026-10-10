@@ -160,6 +160,7 @@ export async function updateSession(request: NextRequest) {
     '/received-invoices',
     // Chantiers (formule Artisan)
     '/chantiers',
+    '/tresorerie',
   ]
 
   const isProtected = protectedPaths.some((path) =>
