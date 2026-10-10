@@ -70,7 +70,7 @@ export function SidePanel({
 export function PanelSection({ title, children, className }: { title: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <section className={cn("flex flex-col gap-2 border-t border-[var(--q-line-soft)] pt-5 first:border-t-0 first:pt-0", className)}>
-      <h3 className="text-[13px] font-semibold uppercase tracking-wide text-[var(--q-text-4)]">{title}</h3>
+      <h3 className="text-base font-semibold leading-tight text-[var(--q-ink)]">{title}</h3>
       {children}
     </section>
   )
