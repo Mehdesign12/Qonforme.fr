@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import { ExportsView } from '@/components/settings/ExportsView'
+import FecExportSection from './FecExportSection'
+import SalesJournalSection from './SalesJournalSection'
 
 export const metadata: Metadata = { title: 'Exports comptables' }
 export const dynamic = 'force-dynamic'
@@ -26,5 +27,18 @@ export default async function ExportsPage() {
     hasIssued    = error || count === null ? null : count > 0
   }
 
-  return <ExportsView mode="app" siren={siren} sirenMissing={sirenMissing} hasIssued={hasIssued} />
+  return (
+    <div className="max-w-2xl animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-[#0F172A] dark:text-[#E2E8F0]">Exports comptables</h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Fichier des Écritures Comptables (FEC) — requis lors de toute vérification de comptabilité.
+        </p>
+      </div>
+      <FecExportSection sirenMissing={sirenMissing} siren={siren} />
+      <div className="mt-6">
+        <SalesJournalSection />
+      </div>
+    </div>
+  )
 }

@@ -1,13 +1,11 @@
 'use client'
 
-/**
- * Barre supérieure flottante (ordinateur, ≥ 1024 px) — canevas « Tableau de bord » :
- * fil d'Ariane, recherche ⌘K, menu « Nouveau », notifications, menu du compte.
- *
- * Verre liquide clair sur ordinateur seulement (.q-float) ; sur mobile la barre
- * n'est pas rendue (titre dans la page, navigation en bas). Partagée avec la
- * démo : DemoHeader.tsx la rend en mode « demo ».
- */
+import {
+  Bell, Plus, FileText, FileCheck2, ShoppingCart,
+  Building2, CreditCard, Sun, Moon, LogOut, Search,
+} from "lucide-react"
+import { CommandPalette, openPalette } from "@/components/search/CommandPalette"
+import type { SearchResults } from "@/lib/search/types"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { usePathname, useRouter } from "next/navigation"
@@ -54,6 +52,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/settings/notifications": "Notifications",
   "/credit-notes":           "Avoirs",
   "/tresorerie":             "Trésorerie",
+  "/chantiers":              "Chantiers",
+  "/chantiers/new":          "Nouveau chantier",
   "/relances":               "Relances",
 }
 
@@ -63,6 +63,7 @@ const PREFIX_TITLES: { prefix: string; title: string }[] = [
   { prefix: "/quotes/",          title: "Devis"            },
   { prefix: "/clients/",         title: "Clients"          },
   { prefix: "/credit-notes/",    title: "Avoirs"           },
+  { prefix: "/chantiers/",       title: "Chantiers"        },
 ]
 
 function getTitle(pathname: string): string {
@@ -89,6 +90,7 @@ const PAGE_CTA: Record<string, CtaConfig> = {
   "/clients":         { href: "/clients/new",          label: "Nouveau client",   icon: Plus         },
   "/purchase-orders": { href: "/purchase-orders/new",  label: "Nouveau BdC",      icon: ShoppingCart },
   "/products":        { href: "/products",             label: "Nouveau produit",  icon: Plus         },
+  "/chantiers":       { href: "/chantiers/new",        label: "Nouveau chantier", icon: Plus         },
 }
 
 /* ------------------------------------------------------------------ */
@@ -158,10 +160,36 @@ function PlanBadge({ plan }: { plan: PlanId }) {
 /* Menu du compte                                                      */
 /* ------------------------------------------------------------------ */
 
-function AccountMenu({ identity }: { identity: ShellIdentity }) {
-  const router = useRouter()
-  const logout = useLogout()
-  const { resolvedTheme, setTheme } = useTheme()
+interface HeaderProps {
+  firstName?: string
+  lastName?:  string
+  email?:     string
+  plan?:      PlanId | null
+}
+
+/* ------------------------------------------------------------------ */
+/* Recherche (palette ⌘K)                                               */
+/* ------------------------------------------------------------------ */
+
+async function liveSearch(q: string): Promise<SearchResults> {
+  const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
+  if (!res.ok) throw new Error("search failed")
+  return res.json()
+}
+
+/* ------------------------------------------------------------------ */
+/* Composant                                                            */
+/* ------------------------------------------------------------------ */
+
+export function Header({ firstName = "", lastName = "", email = "", plan = null }: HeaderProps) {
+  const pathname = usePathname()
+  const router   = useRouter()
+  const title    = getTitle(pathname)
+  const cta      = PAGE_CTA[pathname]
+  const initials = getInitials(firstName, lastName)
+  const supabase = useMemo(() => createClient(), [])
+
+  const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const isDark = mounted && resolvedTheme === "dark"
@@ -176,28 +204,28 @@ function AccountMenu({ identity }: { identity: ShellIdentity }) {
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className="grid size-8 place-items-center rounded-full bg-[var(--q-sunken)] text-xs font-semibold text-[var(--q-ink)] outline-none ring-offset-2 focus-visible:shadow-[0_0_0_4px_var(--q-focus)]"
-          aria-label="Menu du compte"
-          title={name}
-        >
-          {initials}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" sideOffset={10} className="w-[272px]">
-          <div className="mb-1 flex items-center gap-3 rounded-[10px] bg-[var(--q-surface-2)] p-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--q-accent)] text-[13px] font-semibold text-white dark:bg-[#2563EB]">
-              {initials}
-            </span>
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate text-[13px] font-semibold text-[var(--q-ink)]">{name}</span>
-              {identity.email && <span className="truncate text-xs text-[var(--q-text-4)]">{identity.email}</span>}
-              <span className="mt-1">
-                <span className={identity.planName ? "q-pill q-pill-info !h-5 !text-[11px]" : "q-pill !h-5 !text-[11px]"}>
-                  {identity.planName ?? "Version gratuite"}
-                </span>
-              </span>
-            </span>
+      <CommandPalette base="" search={liveSearch} />
+      {/* ════════════════════════════════════════════════════════════════
+          MOBILE header (< lg) — pilules solides, pas de backdrop-filter,
+          pas de toggle thème (crash GPU iOS Safari — cf. CLAUDE.md)
+          ════════════════════════════════════════════════════════════════ */}
+      <header
+        className="lg:hidden flex items-center justify-between gap-2 px-3 shrink-0 z-20"
+        style={{
+          paddingTop:    'max(12px, env(safe-area-inset-top, 12px))',
+          paddingBottom: '10px',
+          minHeight:     '54px',
+        }}
+      >
+        {/* Gauche : pilule titre */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div
+            className="flex items-center rounded-full px-3.5 py-1.5 min-w-0"
+            style={MOBILE_PILL}
+          >
+            <h1 className="text-[15px] font-semibold truncate text-[#0F172A] dark:text-[#E2E8F0]">
+              {title}
+            </h1>
           </div>
           <DropdownMenuItem onClick={() => router.push(demo ? "/demo/settings/company" : "/settings/company")}>
             <Building2 aria-hidden />
@@ -238,21 +266,37 @@ function AccountMenu({ identity }: { identity: ShellIdentity }) {
               </DropdownMenuItem>
             </>
           )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      {!demo && (
-        <>
-          <BugReportModal open={bugOpen} onOpenChange={setBugOpen} />
-          <ContactModal open={contactOpen} onOpenChange={setContactOpen} />
-        </>
-      )}
-    </>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Barre supérieure                                                    */
-/* ------------------------------------------------------------------ */
+          <div
+            className="flex items-center gap-0.5 rounded-full px-1 py-0.5"
+            style={MOBILE_PILL}
+          >
+            <button
+              type="button"
+              onClick={openPalette}
+              className="w-8 h-8 flex items-center justify-center rounded-full touch-manipulation text-slate-500 dark:text-slate-400"
+              aria-label="Rechercher"
+            >
+              <Search className="w-[17px] h-[17px]" />
+            </button>
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-full touch-manipulation text-slate-400 dark:text-slate-500"
+              aria-label="Notifications"
+            >
+              <Bell className="w-[17px] h-[17px]" />
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500 touch-manipulation"
+                style={avatarStyle}
+                title={fullName}
+              >
+                {initials}
+              </DropdownMenuTrigger>
+              {renderDropdown(false)}
+            </DropdownMenu>
+          </div>
+        </div>
+      </header>
 
 export function Header({ identity }: { identity: ShellIdentity }) {
   const pathname = usePathname()
@@ -317,10 +361,42 @@ export function Header({ identity }: { identity: ShellIdentity }) {
           <kbd className="q-kbd">⌘K</kbd>
         </button>
 
-        <div className="flex shrink-0 items-center gap-1.5">
-          <CreateMenu identity={identity} />
-          <NotificationsButton identity={identity} />
-          <AccountMenu identity={identity} />
+          <button
+            type="button"
+            onClick={openPalette}
+            className="header-pill-glass inline-flex items-center gap-2 rounded-full pl-3 pr-2 py-2 text-[13px] text-slate-500 dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-[#E2E8F0] transition-colors"
+            style={{ background: PILL_BG, border: PILL_BORDER, boxShadow: PILL_SHADOW }}
+            aria-label="Rechercher (⌘K)"
+          >
+            <Search className="w-4 h-4" />
+            <span>Rechercher</span>
+            <kbd className="rounded-md border border-slate-200 dark:border-slate-700 px-1.5 text-[11px] font-mono">⌘K</kbd>
+          </button>
+
+          <div
+            className="header-pill-glass flex items-center gap-0.5 rounded-full px-1.5 py-1"
+            style={{ background: PILL_BG, border: PILL_BORDER, boxShadow: PILL_SHADOW }}
+          >
+            <ThemeToggle />
+            <div className="w-px h-4 bg-slate-200/80 dark:bg-slate-700/80 mx-0.5" />
+            <button
+              className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400"
+              aria-label="Notifications"
+            >
+              <Bell className="w-[17px] h-[17px]" />
+            </button>
+            <div className="w-px h-4 bg-slate-200/80 dark:bg-slate-700/80 mx-0.5" />
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                style={avatarStyle}
+                title={fullName}
+              >
+                {initials}
+              </DropdownMenuTrigger>
+              {renderDropdown(true)}
+            </DropdownMenu>
+          </div>
         </div>
       </header>
       {searchMounted && <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} identity={identity} />}
