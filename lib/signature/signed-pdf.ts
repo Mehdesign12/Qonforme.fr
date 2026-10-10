@@ -3,6 +3,7 @@
  * - signé : l'exemplaire conservé dans le stockage privé au moment de la
  *   signature ; à défaut (stockage indisponible), il est reconstruit à partir
  *   du dossier de preuve enregistré en base ;
+ *   Un document signé puis rétracté garde son exemplaire signé (preuve).
  * - pas encore signé : le PDF actuel du document.
  */
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -13,7 +14,8 @@ import { generateDocumentPdf, listEvents, loadCompany, loadDocument, pdfFilename
 import type { SignatureRow } from "@/lib/signature/types"
 
 export async function pdfForLink(admin: SupabaseClient, row: SignatureRow): Promise<{ bytes: Uint8Array; filename: string } | null> {
-  if (row.status === "signed") {
+  const wasSigned = row.status === "signed" || row.status === "withdrawn"
+  if (wasSigned) {
     const stored = await readPdf(admin, row.signed_pdf_path)
     if (stored) return { bytes: stored, filename: pdfFilename(row.document_number, true) }
   }
@@ -24,7 +26,7 @@ export async function pdfForLink(admin: SupabaseClient, row: SignatureRow): Prom
   ])
   if (!doc) return null
   const original = await generateDocumentPdf(doc, company)
-  if (row.status !== "signed" || !row.signed_at || !row.signer_name || !row.signer_email || !row.signature_method) {
+  if (!wasSigned || !row.signed_at || !row.signer_name || !row.signer_email || !row.signature_method) {
     return { bytes: original, filename: pdfFilename(doc.number, false) }
   }
 

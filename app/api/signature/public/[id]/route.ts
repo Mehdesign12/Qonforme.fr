@@ -4,20 +4,21 @@ import { PDFDocument } from "pdf-lib"
 import { createAdminClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/resend"
 import {
-  buildSignatureCodeEmail, buildSignatureConfirmationEmail, buildSignatureNotificationEmail,
+  buildSignatureCodeEmail, buildSignatureConfirmationEmail, buildSignatureNotificationEmail, buildWithdrawalAckEmail,
 } from "@/lib/email/templates/signature"
+import { depositOfRow, publicDeposit, transferAccount } from "@/lib/signature/deposit"
 import { codeMatches, decodeSignaturePng, generateCode, hashCode, sha256Hex } from "@/lib/signature/crypto"
 import { buildSignedPdf } from "@/lib/signature/pdf"
 import { publicState } from "@/lib/signature/public"
 import {
-  CODE_MAX_ATTEMPTS, CODE_TTL_MINUTES, canSendCode, codeAttemptState, isValidEmail, maskEmail,
-  needsReducedVatCertification, reducedVatCertificationText, refusedStatusFor, signedStatusFor, validateRefusePayload,
-  validateSignPayload, withdrawalDeadline,
+  CODE_MAX_ATTEMPTS, CODE_TTL_MINUTES, canSendCode, canWithdraw, codeAttemptState, depositReference, isValidEmail, maskEmail,
+  needsReducedVatCertification, parisDay, planDeposit, reducedVatCertificationText, refusedStatusFor, signedStatusFor,
+  validateRefusePayload, validateSignPayload, validateWithdrawPayload, withdrawalDeadline, withdrawnStatusFor,
 } from "@/lib/signature/rules"
 import {
-  appUrl, documentFingerprint, generateDocumentPdf, isUuid, linkCookieName, listEvents, loadCompany, loadDocument,
-  loadLinkForToken, ownerEmail, recordEvent, requestMeta, storagePaths, storePdf, pdfFilename,
-  type CompanyInfo, type LoadedDoc,
+  appUrl, documentFingerprint, generateDocumentPdf, getSignatureSettings, isUuid, linkCookieName, linkUrl, listEvents,
+  loadBankDetails, loadCompany, loadDocument, loadLinkForToken, ownerEmail, recordEvent, requestMeta, signatureExtrasAvailable,
+  storagePaths, storePdf, pdfFilename, type CompanyInfo, type LoadedDoc,
 } from "@/lib/signature/server"
 import { canTransition } from "@/lib/utils/document-status"
 import type { SignatureRow } from "@/lib/signature/types"
@@ -29,7 +30,8 @@ import type { SignatureRow } from "@/lib/signature/types"
  * lien, lu dans le cookie HttpOnly posé par /s/<jeton> et comparé à son
  * empreinte. Chaque requête ne touche que le lien et le document de ce lien.
  *
- * Actions : view, send_code, verify_code, sign, refuse.
+ * Actions : view, send_code, verify_code, sign, refuse, withdraw (rétractation
+ * d'un particulier, après la signature et dans le délai de 14 jours).
  */
 export const dynamic = "force-dynamic"
 export const maxDuration = 30
@@ -72,7 +74,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const admin = createAdminClient()
   const token = cookies().get(linkCookieName(id))?.value
   const row = await loadLinkForToken(admin, id, token)
-  if (!row) return fail("Ce lien n'est plus valable sur cet appareil. Ouvrez le lien reçu par email.", 404)
+  if (!row || !token) return fail("Ce lien n'est plus valable sur cet appareil. Ouvrez le lien reçu par email.", 404)
 
   const meta = requestMeta(req)
   const now = new Date()
@@ -82,8 +84,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       case "view": return await onView(admin, row, meta)
       case "send_code": return await onSendCode(admin, row, body, meta, now)
       case "verify_code": return await onVerifyCode(admin, row, body, meta, now)
-      case "sign": return await onSign(admin, row, body, meta, now)
+      case "sign": return await onSign(admin, row, body, meta, now, token)
       case "refuse": return await onRefuse(admin, row, body, meta, now)
+      case "withdraw": return await onWithdraw(admin, row, body, meta, now)
       default: return fail("Action inconnue.")
     }
   } catch (err) {
@@ -223,10 +226,12 @@ async function onVerifyCode(admin: Admin, row: SignatureRow, body: Record<string
 /* Signature                                                           */
 /* ------------------------------------------------------------------ */
 
-async function onSign(admin: Admin, row: SignatureRow, body: Record<string, unknown>, meta: { ip: string | null; userAgent: string | null }, now: Date) {
+async function onSign(admin: Admin, row: SignatureRow, body: Record<string, unknown>, meta: { ip: string | null; userAgent: string | null }, now: Date, token: string) {
   const ctx = await signableContext(admin, row, now)
   if (!ctx.ok) return ctx.res
   const { doc, company } = ctx
+  // Rétractation en ligne et acompte : seulement une fois la migration 20261010 appliquée
+  const extras = signatureExtrasAvailable(row)
 
   const reducedVat = needsReducedVatCertification(doc.lines)
   const parsed = validateSignPayload(body, { clientKind: row.client_kind, reducedVat })
@@ -248,6 +253,25 @@ async function onSign(admin: Admin, row: SignatureRow, body: Record<string, unkn
   const original = await generateDocumentPdf(doc, company)
   const documentSha256 = sha256Hex(original)
 
+  // Acompte figé à la signature, d'après le réglage de l'artisan (aucun sans IBAN)
+  const [bank, settings] = extras
+    ? await Promise.all([loadBankDetails(admin, row.user_id), getSignatureSettings(admin, row.user_id).catch(() => null)])
+    : [null, null]
+  const depositPercent = settings?.extras ? settings.settings.deposit_percent : 0
+  const depositPlan = extras
+    ? planDeposit({
+        percent: depositPercent, totalTtc: doc.total_ttc, hasIban: !!transferAccount(bank), clientKind: row.client_kind,
+        context: p.context, urgentRepair: !!p.consents.urgent_repair_requested, signedAt: now,
+      })
+    : null
+  const depositColumns = extras ? {
+    deposit_amount: depositPlan?.amount ?? null,
+    deposit_percent: depositPlan?.percent ?? null,
+    deposit_reference: depositPlan ? depositReference(doc.type, doc.number) : null,
+    deposit_request_on: depositPlan?.requestOn ?? null,
+    deposit_requested_at: depositPlan?.timing === "now" ? now.toISOString() : null,
+  } : {}
+
   // 2. Enregistrement de la signature, une seule fois (garde sur le statut)
   const signedAtIso = now.toISOString()
   const { data: signedRows, error: signErr } = await admin.from("document_signatures").update({
@@ -265,6 +289,7 @@ async function onSign(admin: Admin, row: SignatureRow, body: Record<string, unkn
     signer_ip: meta.ip,
     signer_user_agent: meta.userAgent,
     document_sha256: documentSha256,
+    ...depositColumns,
   }).eq("id", row.id).eq("status", "pending").select("*")
   if (signErr || !signedRows || signedRows.length === 0) return fail("Ce document vient d'être traité. Rechargez la page.", 409)
   const signed = signedRows[0] as SignatureRow
@@ -279,6 +304,7 @@ async function onSign(admin: Admin, row: SignatureRow, body: Record<string, unkn
     if (docErr) console.error("[signature] statut du document :", docErr.message)
   }
   await recordEvent(admin, signed, "signed", meta, { method: p.method, context: p.context })
+  if (depositPlan?.timing === "now") await recordEvent(admin, signed, "deposit_requested", {}, { amount: depositPlan.amount, at_signature: true })
 
   // 4. PDF signé avec son dossier de preuve, conservé dans le stockage privé
   const events = await listEvents(admin, signed.id)
@@ -310,11 +336,16 @@ async function onSign(admin: Admin, row: SignatureRow, body: Record<string, unkn
   const deadline = signed.client_kind === "consumer" ? withdrawalDeadline(now) : null
   const companyAddress = [company?.address, [company?.zip_code, company?.city].filter(Boolean).join(" ")].filter(Boolean).join(", ") || null
   const artisanEmail = await ownerEmail(admin, row.user_id, company)
+  const deposit = publicDeposit(depositOfRow(signed), bank, parisDay(now))
+  // Liens par le jeton : ils rouvrent la page sur n'importe quel appareil (le cookie du lien n'existe que sur celui-ci)
   const confirmation = buildSignatureConfirmationEmail({
     docType: doc.type, docNumber: doc.number, companyName, companyAddress, companyEmail: company?.email ?? artisanEmail,
     accentColor: accent, signerName: p.signer_name, signedAt: now, totalTtc: doc.total_ttc, clientKind: signed.client_kind,
     context: p.context, earlyStartRequested: !!p.consents.early_start_requested, withdrawalDeadline: deadline,
-    pageUrl: `${appUrl()}/signer/${signed.id}`,
+    pageUrl: linkUrl(token),
+    withdrawUrl: extras && signed.client_kind === "consumer" ? linkUrl(token, { withdraw: true }) : null,
+    urgentRepair: !!p.consents.urgent_repair_requested,
+    deposit,
   })
   await trySend(admin, signed, "confirmation", () => sendEmail({
     to: p.signer_email, subject: confirmation.subject, html: confirmation.html, fromName: companyName,
@@ -327,12 +358,17 @@ async function onSign(admin: Admin, row: SignatureRow, body: Record<string, unkn
       signerName: p.signer_name, signerRole: p.signer_role, at: now, totalTtc: doc.total_ttc,
       clientOrderNumber: p.client_order_number, clientKind: signed.client_kind, context: p.context,
       earlyStartRequested: !!p.consents.early_start_requested, withdrawalDeadline: deadline,
+      deposit: deposit ? { amount: deposit.amount, reference: deposit.reference, timing: deposit.timing, requestOn: deposit.requestOn } : null,
+      depositMissingIban: depositPercent > 0 && !transferAccount(bank),
       docUrl: `${appUrl()}/${doc.type === "quote" ? "quotes" : "purchase-orders"}/${doc.id}`,
     })
     await trySend(admin, signed, "notification", () => sendEmail({ to: artisanEmail, subject: notice.subject, html: notice.html, fromName: "Qonforme" }))
   }
 
-  return json({ ok: true, signed_at: signedAtIso, withdrawalDeadline: deadline })
+  return json({
+    ok: true, signed_at: signedAtIso, withdrawalDeadline: deadline, deposit,
+    withdrawal: { available: extras && signed.client_kind === "consumer", open: extras && canWithdraw(signed, now) },
+  })
 }
 
 /* ------------------------------------------------------------------ */
@@ -371,4 +407,83 @@ async function onRefuse(admin: Admin, row: SignatureRow, body: Record<string, un
     await trySend(admin, row, "notification", () => sendEmail({ to: artisanEmail, subject: notice.subject, html: notice.html, fromName: "Qonforme" }))
   }
   return json({ ok: true })
+}
+
+/* ------------------------------------------------------------------ */
+/* Rétractation (particulier, 14 jours)                                */
+/* ------------------------------------------------------------------ */
+
+async function onWithdraw(admin: Admin, row: SignatureRow, body: Record<string, unknown>, meta: { ip: string | null; userAgent: string | null }, now: Date) {
+  if (row.status === "withdrawn") return fail("Votre rétractation est déjà enregistrée.", 409, { state: "withdrawn" })
+  if (row.status !== "signed") return fail("Ce document n'est pas signé : il n'y a rien à rétracter.", 409)
+  if (row.client_kind !== "consumer") {
+    return fail("Le droit de rétractation est réservé aux particuliers. Contactez l'entreprise pour toute question.", 400)
+  }
+  if (!signatureExtrasAvailable(row)) {
+    return fail("La rétractation en ligne n'est pas encore disponible : envoyez le formulaire de rétractation reçu par email à l'entreprise.", 503)
+  }
+  if (!canWithdraw(row, now)) {
+    const deadline = row.signed_at ? withdrawalDeadline(new Date(row.signed_at)) : null
+    return fail(`Le délai de rétractation est écoulé${deadline ? ` depuis le ${deadline.split("-").reverse().join("/")}` : ""}. Contactez l'entreprise pour toute question.`, 400)
+  }
+
+  const parsed = validateWithdrawPayload(body)
+  if (!parsed.ok) return fail(parsed.error, 400, { field: parsed.field })
+  const { name, message } = parsed.value
+
+  const nowIso = now.toISOString()
+  const { data: rows } = await admin.from("document_signatures").update({
+    status: "withdrawn", withdrawn_at: nowIso, withdrawal_name: name, withdrawal_message: message,
+    withdrawal_ip: meta.ip, withdrawal_user_agent: meta.userAgent,
+  }).eq("id", row.id).eq("status", "signed").select("*")
+  if (!rows || rows.length === 0) return fail("Ce document vient d'être traité. Rechargez la page.", 409)
+  const withdrawn = rows[0] as SignatureRow
+  await recordEvent(admin, withdrawn, "withdrawn", meta)
+
+  // Statut du document : devis « rétracté », bon de commande « annulé »
+  const [doc, company] = await Promise.all([
+    loadDocument(admin, row.document_type, row.document_id, row.user_id),
+    loadCompany(admin, row.user_id),
+  ])
+  let invoiced = false
+  if (doc) {
+    const signedStatus = signedStatusFor(doc.type)
+    if (doc.status === signedStatus) {
+      const table = doc.type === "quote" ? "quotes" : "purchase_orders"
+      const { error: docErr } = await admin.from(table)
+        .update({ status: withdrawnStatusFor(doc.type), updated_at: nowIso })
+        .eq("id", doc.id).eq("user_id", doc.user_id).eq("status", signedStatus)
+      if (docErr) console.error("[signature] statut après rétractation :", docErr.message)
+    }
+    invoiced = !!doc.raw.converted_invoice_id
+    if (!invoiced && doc.type === "quote") {
+      // Factures d'acompte ou de situation (formule Artisan) rattachées au devis
+      const { data: linked, error: linkedErr } = await admin.from("invoices").select("id")
+        .eq("user_id", doc.user_id).eq("quote_id", doc.id).neq("status", "draft").limit(1)
+      invoiced = !linkedErr && (linked ?? []).length > 0
+    }
+  }
+
+  const companyName = company?.name?.trim() || "L'entreprise"
+  const artisanEmail = await ownerEmail(admin, row.user_id, company)
+  const to = row.signer_email
+  if (to) {
+    const ack = buildWithdrawalAckEmail({
+      docType: row.document_type, docNumber: row.document_number, companyName, accentColor: company?.accent_color ?? "#2563EB",
+      name, signedAt: new Date(row.signed_at ?? nowIso), withdrawnAt: now, message,
+    })
+    await trySend(admin, withdrawn, "withdrawal_ack", () => sendEmail({
+      to, subject: ack.subject, html: ack.html, fromName: companyName, replyTo: company?.email ?? artisanEmail ?? undefined,
+    }))
+  }
+  if (artisanEmail) {
+    const notice = buildSignatureNotificationEmail({
+      outcome: "withdrawn", docType: row.document_type, docNumber: row.document_number, clientName: doc?.client?.name ?? null,
+      signerName: name, signerRole: null, at: now, totalTtc: doc?.total_ttc ?? 0, clientKind: row.client_kind, context: row.signature_context,
+      message, invoiced, docUrl: `${appUrl()}/${row.document_type === "quote" ? "quotes" : "purchase-orders"}/${row.document_id}`,
+    })
+    await trySend(admin, withdrawn, "notification", () => sendEmail({ to: artisanEmail, subject: notice.subject, html: notice.html, fromName: "Qonforme" }))
+  }
+
+  return json({ ok: true, withdrawn_at: nowIso })
 }

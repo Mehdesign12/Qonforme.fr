@@ -23,7 +23,7 @@ export async function GET(_req: NextRequest, { params }: { params: { type: strin
     const doc = await loadDocument(admin, type, params.id, user.id)
     if (!doc) return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     const { row } = await latestLink(admin, user.id, type, doc.id)
-    if (!row || row.status !== "signed") return NextResponse.json({ error: "Ce document n'a pas été signé en ligne." }, { status: 404 })
+    if (!row || (row.status !== "signed" && row.status !== "withdrawn")) return NextResponse.json({ error: "Ce document n'a pas été signé en ligne." }, { status: 404 })
     const file = await pdfForLink(admin, row)
     if (!file) return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     return pdfResponse(file)

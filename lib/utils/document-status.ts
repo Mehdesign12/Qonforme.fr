@@ -39,8 +39,10 @@ const TRANSITIONS: Record<DocumentKind, Record<string, readonly string[]>> = {
   quote: {
     draft: ["sent"],
     sent: ["accepted", "rejected"],
+    // « withdrawn » (rétracté) n'est posé que par la rétractation en ligne du client
     accepted: [],
     rejected: [],
+    withdrawn: [],
   },
   purchase_order: {
     draft: ["sent"],

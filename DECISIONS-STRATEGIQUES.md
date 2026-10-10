@@ -284,7 +284,7 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 
 | Apport | Aujourd'hui | Valeur |
 |---|---|---|
-| Signature en ligne des devis et bons de commande (§ 11) | **Construit le 03/10/2026** (signature électronique simple, Essentiel) (migration à appliquer, masqué d'ici là) ; restent la rétractation en ligne, l'acompte après signature et la relance avant expiration | Chantiers signés plus vite |
+| Signature en ligne des devis et bons de commande (§ 11) | **Construit le 03/10/2026** (signature électronique simple, Essentiel) (migration à appliquer, masqué d'ici là). **Complété le 10/10/2026** : rétractation en ligne d'un particulier (« Changer d'avis » sur la page et dans l'email, accusé de réception, devis « rétracté »), acompte proposé après la signature (virement, IBAN, QR code SEPA ; à J+8 après une signature sur place chez un particulier, sauf réparation urgente), relance automatique avant expiration ; seconde migration à appliquer (`20261010_signature_withdrawal_deposit_reminder.sql`) | Chantiers signés plus vite |
 | Lien de paiement par virement dans la facture : page de règlement du client (IBAN, référence, « j'ai effectué le virement ») | **Construit le 03/10/2026** : page `/regler`, QR code SEPA, déclaration de virement, lien dans l'email et les relances (migration à appliquer, masqué d'ici là) | Payé plus vite |
 | Relances réglables (avant échéance, J+7, J+15) et relance des devis non signés | **Construit le 03/10/2026** (migration à appliquer, masqué d'ici là) ; J+30 et J+45 d'ici là | Trésorerie |
 | Suivi d'ouverture des devis et factures | **À construire** | L'artisan sait quand relancer |

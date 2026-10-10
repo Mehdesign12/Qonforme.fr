@@ -3,13 +3,14 @@
  * démo (règle « Mode démo » de CLAUDE.md : mêmes briques, même rendu).
  *
  * Tout ce qui s'affiche ici se déduit des données réelles d'un devis : statut
- * (draft, sent, accepted, rejected), dates, lignes, facture de conversion.
+ * (draft, sent, accepted, rejected, withdrawn — rétracté par un particulier
+ * après une signature en ligne), dates, lignes, facture de conversion.
  * Pas de « vu par le client » ni de signature en ligne : ces fonctions ne
  * sont pas livrées. « Expiré » n'est pas un statut, seulement un rappel tiré
  * de la date de validité d'un devis envoyé.
  */
 
-export type QuoteStatus = "draft" | "sent" | "accepted" | "rejected"
+export type QuoteStatus = "draft" | "sent" | "accepted" | "rejected" | "withdrawn"
 
 const MS_DAY = 86_400_000
 
@@ -182,6 +183,8 @@ export function quoteNextStep(
       return { text: "À facturer", tone: "default" }
     case "rejected":
       return { text: "Sans suite", tone: "default" }
+    case "withdrawn":
+      return { text: "Rétracté par le client", tone: "warn" }
   }
 }
 

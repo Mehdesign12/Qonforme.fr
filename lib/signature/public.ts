@@ -3,11 +3,15 @@
  * lien déjà vérifié par son jeton (lib/signature/server.ts › loadLinkForToken).
  */
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { depositOfRow, publicDeposit, transferAccount, type BankDetails } from "@/lib/signature/deposit"
 import {
-  canSignDocument, computeLinkState, maskEmail, needsReducedVatCertification, reducedVatCertificationText, refusalLabel,
-  withdrawalDeadline,
+  canSignDocument, canWithdraw, computeLinkState, maskEmail, needsReducedVatCertification, parisDay, planDeposit,
+  reducedVatCertificationText, refusalLabel, withdrawalDeadline,
 } from "@/lib/signature/rules"
-import { documentFingerprint, loadCompany, loadDocument, type CompanyInfo, type LoadedDoc } from "@/lib/signature/server"
+import {
+  documentFingerprint, getSignatureSettings, loadBankDetails, loadCompany, loadDocument, signatureExtrasAvailable,
+  type CompanyInfo, type LoadedDoc,
+} from "@/lib/signature/server"
 import type { SignatureRow } from "@/lib/signature/types"
 import { emptyPublicView, type PublicPageState, type PublicSignViewData } from "@/lib/signature/view"
 
@@ -29,7 +33,7 @@ function closedMessage(doc: LoadedDoc): string | null {
 export function publicState(row: SignatureRow, doc: LoadedDoc | null, now: Date): PublicPageState {
   if (!doc) return "not_found"
   const link = computeLinkState(row, now)
-  if (link === "signed" || link === "refused" || link === "disabled" || link === "superseded") return link
+  if (link === "signed" || link === "refused" || link === "disabled" || link === "superseded" || link === "withdrawn") return link
   if (link === "expired") return "expired"
   if (row.content_sha256 !== documentFingerprint(doc)) return "superseded"
   if (row.mode === "view") return "view"
@@ -37,7 +41,18 @@ export function publicState(row: SignatureRow, doc: LoadedDoc | null, now: Date)
   return canSignDocument(doc.type, doc.status) ? "sign" : "closed"
 }
 
-export function toPublicView(row: SignatureRow, doc: LoadedDoc | null, company: CompanyInfo | null, opts: { onSite: boolean; now: Date }): PublicSignViewData {
+export interface PublicViewOptions {
+  onSite: boolean
+  now: Date
+  /** Coordonnées bancaires (acompte) ; sans elles, aucun acompte n'est proposé. */
+  bank?: BankDetails | null
+  /** Acompte réglé par l'artisan, en % du TTC. */
+  depositPercent?: number
+  /** Ouvrir le formulaire de rétractation (lien « Changer d'avis »). */
+  openWithdrawal?: boolean
+}
+
+export function toPublicView(row: SignatureRow, doc: LoadedDoc | null, company: CompanyInfo | null, opts: PublicViewOptions): PublicSignViewData {
   const state = publicState(row, doc, opts.now)
   if (!doc || state === "not_found") return emptyPublicView(row.id)
 
@@ -47,6 +62,16 @@ export function toPublicView(row: SignatureRow, doc: LoadedDoc | null, company: 
   const signedAt = row.signed_at ? new Date(row.signed_at) : null
   // Lien désactivé ou remplacé : il ne donne plus accès au contenu, seulement au numéro et au contact
   const revoked = state === "disabled" || state === "superseded"
+  const extras = signatureExtrasAvailable(row)
+  const today = parisDay(opts.now)
+  const consumerSigned = row.client_kind === "consumer" && !!signedAt
+  // Avant la signature : l'acompte qui sera demandé (même calcul qu'à la signature)
+  const planned = state === "sign" && extras && transferAccount(opts.bank)
+    ? planDeposit({
+        percent: opts.depositPercent ?? 0, totalTtc: doc.total_ttc, hasIban: true, clientKind: row.client_kind,
+        context: opts.onSite ? "in_person" : "distance", signedAt: opts.now,
+      })
+    : null
 
   return {
     id: row.id,
@@ -98,16 +123,35 @@ export function toPublicView(row: SignatureRow, doc: LoadedDoc | null, company: 
       ? { name: row.signer_name ?? "", role: row.signer_role, company: row.signer_company, at: row.signed_at!, method: row.signature_method, order_number: row.client_order_number }
       : null,
     refused: row.status === "refused" && row.refused_at ? { at: row.refused_at, reason: refusalLabel(row.refusal_reason) } : null,
-    withdrawalDeadline: signedAt && row.client_kind === "consumer" ? withdrawalDeadline(signedAt) : null,
+    withdrawalDeadline: consumerSigned ? withdrawalDeadline(signedAt!) : null,
+    withdrawal: {
+      available: extras && consumerSigned,
+      open: extras && state === "signed" && canWithdraw(row, opts.now),
+    },
+    withdrawn: row.status === "withdrawn" && row.withdrawn_at ? { at: row.withdrawn_at, name: row.withdrawal_name ?? null } : null,
+    urgentRepair: !!row.consents?.urgent_repair_requested,
+    depositPlanned: planned ? { percent: planned.percent, amount: planned.amount } : null,
+    deposit: state === "signed" ? publicDeposit(depositOfRow(row), opts.bank, today) : null,
+    openWithdrawal: !!opts.openWithdrawal && state === "signed",
     pdfUrl: revoked ? null : `/api/signature/public/${row.id}/pdf`,
   }
 }
 
-/** Charge le document et l'entreprise d'un lien, puis construit la vue. */
-export async function buildPublicView(admin: SupabaseClient, row: SignatureRow, opts: { onSite: boolean; now?: Date }): Promise<PublicSignViewData> {
-  const [doc, company] = await Promise.all([
+/** Charge le document, l'entreprise et les réglages d'un lien, puis construit la vue. */
+export async function buildPublicView(
+  admin: SupabaseClient,
+  row: SignatureRow,
+  opts: { onSite: boolean; now?: Date; openWithdrawal?: boolean },
+): Promise<PublicSignViewData> {
+  const [doc, company, bank, settings] = await Promise.all([
     loadDocument(admin, row.document_type, row.document_id, row.user_id),
     loadCompany(admin, row.user_id),
+    loadBankDetails(admin, row.user_id),
+    // Réglages illisibles : la page s'affiche quand même, sans acompte annoncé
+    getSignatureSettings(admin, row.user_id).catch(() => ({ settings: { deposit_percent: 0 } })),
   ])
-  return toPublicView(row, doc, company, { onSite: opts.onSite, now: opts.now ?? new Date() })
+  return toPublicView(row, doc, company, {
+    onSite: opts.onSite, now: opts.now ?? new Date(), bank, depositPercent: settings.settings.deposit_percent,
+    openWithdrawal: opts.openWithdrawal,
+  })
 }

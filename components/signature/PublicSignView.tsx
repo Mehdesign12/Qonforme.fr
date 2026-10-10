@@ -8,14 +8,17 @@
  * Mobile d'abord : une colonne (document, puis formulaire) ; à partir de
  * 1024 px, le formulaire se range à droite du document.
  *
+ * Après la signature : l'acompte (virement) et, pour un particulier, le
+ * bouton « Changer d'avis » (rétractation en ligne, components/signature/AfterSignature).
+ *
  * Même composant pour la démo (`api` simulée, rien n'est enregistré).
  * Vocabulaire : « signature électronique simple », jamais « certifiée ».
  */
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import {
-  AlertTriangle, Ban, Check, CheckCircle2, Clock, Download, FileQuestion, Info, KeyRound, Loader2, PenLine, RefreshCw,
-  Smartphone, Type, X, XCircle, type LucideIcon,
+  AlertTriangle, Ban, Check, CheckCircle2, Clock, Download, FileQuestion, Info, KeyRound, Landmark, Loader2, PenLine, RefreshCw,
+  Smartphone, Type, Undo2, X, XCircle, type LucideIcon,
 } from "lucide-react"
 import { Initials } from "@/components/app/kit"
 import { cn } from "@/lib/utils"
@@ -24,9 +27,10 @@ import { longDate } from "@/components/quotes/QuoteListHelpers"
 import { SignaturePad } from "@/components/signature/SignaturePad"
 import { PublicDocument } from "@/components/signature/PublicDocument"
 import { demoSignApi } from "@/components/signature/demo-api"
+import { DepositCard, WithdrawCard } from "@/components/signature/AfterSignature"
 import { OFF_PREMISES_NO_PAYMENT_DAYS, WITHDRAWAL_DAYS, validateSignPayload, withdrawalDeadline } from "@/lib/signature/rules"
 import { REFUSAL_REASONS, type RefusalReason, type SignatureMethod } from "@/lib/signature/types"
-import type { PublicPageState, PublicSignViewData } from "@/lib/signature/view"
+import type { PublicDeposit, PublicPageState, PublicSignViewData } from "@/lib/signature/view"
 
 export interface PublicSignApi {
   post: (action: string, body?: Record<string, unknown>) => Promise<{ ok: boolean; status: number; json: Record<string, unknown> }>
@@ -55,11 +59,19 @@ const parisDateTime = (iso: string) =>
   new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(iso))
 
 export function PublicSignView({ data, api: apiProp }: { data: PublicSignViewData; api?: PublicSignApi }) {
-  const api = useMemo(() => apiProp ?? (data.demo ? demoSignApi() : httpApi(data.id)), [apiProp, data.demo, data.id])
+  const api = useMemo(() => apiProp ?? (data.demo ? demoSignApi(data) : httpApi(data.id)), [apiProp, data])
   const [state, setState] = useState<PublicPageState>(data.state)
   const [signedInfo, setSignedInfo] = useState(data.signed)
   const [refusedInfo, setRefusedInfo] = useState(data.refused)
   const [deadline, setDeadline] = useState(data.withdrawalDeadline)
+  const [deposit, setDeposit] = useState<PublicDeposit | null>(data.deposit)
+  const [withdrawal, setWithdrawal] = useState(data.withdrawal)
+  const [withdrawnInfo, setWithdrawnInfo] = useState(data.withdrawn)
+
+  // Lien « Changer d'avis » de l'email : le formulaire est ouvert, on y descend
+  useEffect(() => {
+    if (data.openWithdrawal && data.withdrawal.open) document.getElementById("retractation")?.scrollIntoView({ block: "start" })
+  }, [data.openWithdrawal, data.withdrawal.open])
 
   const doc = data.doc
   const company = data.company
@@ -130,7 +142,29 @@ export function PublicSignView({ data, api: apiProp }: { data: PublicSignViewDat
               </div>
             )}
 
-            <StateBanner state={state} data={data} signed={signedInfo} refused={refusedInfo} deadline={deadline} theDoc={theDoc} />
+            <StateBanner
+              state={state} data={data} signed={signedInfo} refused={refusedInfo} deadline={deadline} theDoc={theDoc}
+              withdrawal={withdrawal} withdrawn={withdrawnInfo}
+            />
+
+            {state === "signed" && deposit && (
+              <DepositCard deposit={deposit} companyName={company.name} consumer={data.clientKind === "consumer"} />
+            )}
+            {state === "signed" && withdrawal.open && (
+              <WithdrawCard
+                api={api}
+                companyName={company.name}
+                deadline={deadline}
+                defaultName={signedInfo?.name ?? ""}
+                theDoc={`${theDoc} ${doc.number}`}
+                startOpen={!!data.openWithdrawal}
+                onWithdrawn={(info) => {
+                  setWithdrawnInfo(info)
+                  setState("withdrawn")
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }}
+              />
+            )}
 
             {/* Lien désactivé ou remplacé : plus de document, seulement le message et le contact */}
             {!revoked && (
@@ -141,7 +175,7 @@ export function PublicSignView({ data, api: apiProp }: { data: PublicSignViewDat
                   {data.pdfUrl && (
                     <a href={data.pdfUrl} className="q-btn q-btn-secondary q-btn-sm min-h-[44px]" download>
                       <Download aria-hidden />
-                      {state === "signed" ? "PDF signé" : "Télécharger le PDF"}
+                      {state === "signed" || state === "withdrawn" ? "PDF signé" : "Télécharger le PDF"}
                     </a>
                   )}
                 </div>
@@ -153,9 +187,11 @@ export function PublicSignView({ data, api: apiProp }: { data: PublicSignViewDat
                   <SignForm
                     data={data}
                     api={api}
-                    onSigned={(info, dl) => {
+                    onSigned={(info, dl, after) => {
                       setSignedInfo(info)
                       setDeadline(dl ?? (data.clientKind === "consumer" ? withdrawalDeadline(new Date(info.at)) : null))
+                      setDeposit(after.deposit)
+                      setWithdrawal(after.withdrawal)
                       setState("signed")
                       window.scrollTo({ top: 0, behavior: "smooth" })
                     }}
@@ -212,6 +248,7 @@ function stateTitle(state: PublicPageState, docWord: string): string {
     case "superseded": return "Une version plus récente existe"
     case "disabled": return "Ce lien a été désactivé"
     case "closed": return `Ce ${docWord} n'attend plus de signature`
+    case "withdrawn": return "Rétractation enregistrée"
     default: return "Lien introuvable"
   }
 }
@@ -221,7 +258,7 @@ function stateTitle(state: PublicPageState, docWord: string): string {
 /* ------------------------------------------------------------------ */
 
 function StateBanner({
-  state, data, signed, refused, deadline, theDoc,
+  state, data, signed, refused, deadline, theDoc, withdrawal, withdrawn,
 }: {
   state: PublicPageState
   data: PublicSignViewData
@@ -229,6 +266,8 @@ function StateBanner({
   refused: PublicSignViewData["refused"]
   deadline: string | null
   theDoc: string
+  withdrawal: PublicSignViewData["withdrawal"]
+  withdrawn: PublicSignViewData["withdrawn"]
 }) {
   const company = data.company?.name ?? "l'entreprise"
   const contact = data.company?.email
@@ -245,9 +284,21 @@ function StateBanner({
         {data.clientKind === "consumer" && (
           <span className="mt-2 block">
             Vous disposez d&apos;un délai de rétractation de {WITHDRAWAL_DAYS} jours{deadline ? <>, jusqu&apos;au {longDate(deadline)} inclus</> : null}.
-            Pour l&apos;exercer, envoyez le formulaire de rétractation joint à l&apos;email de confirmation, ou toute déclaration sans ambiguïté, à {company} : {contact}.
+            {withdrawal.open
+              ? <> Pour l&apos;exercer, utilisez « Changer d&apos;avis » ci-dessous, ou envoyez le formulaire reçu par email à {company} : {contact}.</>
+              : <> Pour l&apos;exercer, envoyez le formulaire de rétractation joint à l&apos;email de confirmation, ou toute déclaration sans ambiguïté, à {company} : {contact}.</>}
+            {data.urgentRepair && <> Pour une réparation urgente que vous avez demandée, ce droit ne s&apos;applique pas aux travaux strictement nécessaires à l&apos;urgence.</>}
           </span>
         )}
+      </StateCard>
+    )
+  }
+  if (state === "withdrawn") {
+    return (
+      <StateCard icon={Undo2} tone="neutral" title="Votre rétractation est enregistrée">
+        {withdrawn ? <>Le {parisDateTime(withdrawn.at)} (heure de Paris){withdrawn.name ? `, par ${withdrawn.name}` : ""}. </> : null}
+        {company} en est informée et un accusé de réception vous a été envoyé par email. Toute somme versée, acompte compris, doit vous
+        être remboursée dans les 14 jours. Pour toute question : {contact}.
       </StateCard>
     )
   }
@@ -319,7 +370,11 @@ function SignForm({
 }: {
   data: PublicSignViewData
   api: PublicSignApi
-  onSigned: (info: NonNullable<PublicSignViewData["signed"]>, deadline: string | null) => void
+  onSigned: (
+    info: NonNullable<PublicSignViewData["signed"]>,
+    deadline: string | null,
+    after: { deposit: PublicDeposit | null; withdrawal: PublicSignViewData["withdrawal"] },
+  ) => void
   onRefused: (info: NonNullable<PublicSignViewData["refused"]>) => void
   onStale: (state: PublicPageState) => void
 }) {
@@ -337,6 +392,7 @@ function SignForm({
   const [vatCert, setVatCert] = useState(false)
   const [earlyStart, setEarlyStart] = useState(false)
   const [durable, setDurable] = useState(false)
+  const [urgent, setUrgent] = useState(false)
   const [method, setMethod] = useState<SignatureMethod>("drawn")
   const [image, setImage] = useState<string | null>(null)
   const [typed, setTyped] = useState("")
@@ -375,6 +431,7 @@ function SignForm({
       reduced_vat_certified: vatCert,
       early_start_requested: earlyStart,
       durable_medium_by_email: durable,
+      urgent_repair_requested: urgent,
     },
   })
 
@@ -428,6 +485,10 @@ function SignForm({
       onSigned(
         { name: check.value.signer_name, role: check.value.signer_role, company: check.value.signer_company, at: String(r.json.signed_at ?? new Date().toISOString()), method, order_number: check.value.client_order_number },
         (r.json.withdrawalDeadline as string | null) ?? null,
+        {
+          deposit: (r.json.deposit as PublicDeposit | null) ?? null,
+          withdrawal: (r.json.withdrawal as PublicSignViewData["withdrawal"] | undefined) ?? { available: false, open: false },
+        },
       )
       return
     }
@@ -493,6 +554,26 @@ function SignForm({
           <CheckField id="f-durable_medium_by_email" checked={durable} onChange={setDurable} error={errors.durable_medium_by_email}>
             J&apos;accepte de recevoir mon exemplaire daté et signé par email, à l&apos;adresse indiquée.
           </CheckField>
+        )}
+        {data.depositPlanned && (
+          <div className="q-inset flex flex-col gap-2 p-3.5 text-[14px] leading-relaxed text-[var(--q-text-3)]">
+            <p className="flex items-center gap-1.5 font-semibold text-[var(--q-ink)]">
+              <Landmark className="size-4 shrink-0 text-[var(--q-accent-strong)]" aria-hidden />
+              Acompte de {formatCurrency(data.depositPlanned.amount)} ({String(data.depositPlanned.percent).replace(".", ",")} %)
+            </p>
+            <p>
+              {consumer && data.onSite && !urgent
+                ? <>À régler par virement. Signé sur place, aucun paiement ne peut vous être demandé avant {OFF_PREMISES_NO_PAYMENT_DAYS} jours : les coordonnées vous seront envoyées par email au bout de 8 jours.</>
+                : <>À régler par virement : les coordonnées s&apos;affichent dès la signature et vous sont envoyées par email.</>}
+            </p>
+            {consumer && data.onSite && (
+              <CheckField id="f-urgent_repair_requested" checked={urgent} onChange={setUrgent}>
+                <strong className="font-semibold text-[var(--q-ink)]">Réparation urgente.</strong> J&apos;ai moi-même demandé une intervention
+                d&apos;urgence à mon domicile : l&apos;acompte peut m&apos;être demandé tout de suite, et je n&apos;ai pas de droit de rétractation pour
+                les travaux strictement nécessaires à l&apos;urgence.
+              </CheckField>
+            )}
+          </div>
         )}
       </fieldset>
 

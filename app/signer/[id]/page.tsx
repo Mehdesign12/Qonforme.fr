@@ -31,7 +31,12 @@ export default async function SignerPage({ params, searchParams }: { params: { i
     try {
       const admin = createAdminClient()
       const row = await loadLinkForToken(admin, id, cookies().get(linkCookieName(id))?.value)
-      if (row) data = await buildPublicView(admin, row, { onSite: searchParams["sur-place"] === "1" })
+      if (row) {
+        data = await buildPublicView(admin, row, {
+          onSite: searchParams["sur-place"] === "1",
+          openWithdrawal: searchParams["retractation"] === "1",
+        })
+      }
     } catch (err) {
       console.error("[signature] page publique :", err)
     }

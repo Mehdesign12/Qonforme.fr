@@ -42,7 +42,9 @@ export async function GET(req: NextRequest, { params }: { params: { token: strin
   if (!id) return redirect(req, "/signer/introuvable")
 
   const onSite = req.nextUrl.searchParams.get("sur-place") === "1"
-  const res = redirect(req, `/signer/${id}${onSite ? "?sur-place=1" : ""}`)
+  // Lien « Changer d'avis » de l'email de confirmation : formulaire de rétractation ouvert
+  const withdraw = req.nextUrl.searchParams.get("retractation") === "1"
+  const res = redirect(req, `/signer/${id}${onSite ? "?sur-place=1" : withdraw ? "?retractation=1" : ""}`)
   res.cookies.set(linkCookieName(id), token, {
     httpOnly: true,
     secure: req.nextUrl.protocol === "https:",
