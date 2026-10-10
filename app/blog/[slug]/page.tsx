@@ -12,6 +12,8 @@ import {
 } from "@/lib/blog-utils"
 import ArticleView from "@/components/blog/ArticleView"
 import { fitDescription, fitTitle } from "@/lib/seo/meta"
+import { seoDb } from "@/lib/seo/db"
+import { getSettings } from "@/lib/seo/settings"
 
 export const revalidate = 60
 
@@ -25,6 +27,19 @@ async function getPost(slug: string) {
     .eq("is_published", true)
     .single()
   return data
+}
+
+/**
+ * Préférence « Liens internes automatiques » (admin › SEO › Paramètres ›
+ * Préférences d'écriture). Illisible ou jamais enregistrée : activée, comme
+ * avant l'onglet SEO.
+ */
+async function autoLinksEnabled(): Promise<boolean> {
+  try {
+    return (await getSettings(seoDb(), "articles")).value.autoLinks
+  } catch {
+    return true
+  }
 }
 
 async function getSimilarPosts(currentSlug: string, aiPrompt: string | null) {
@@ -108,18 +123,19 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   // Sans un premier titre qui répète le h1 de la page
   const content = stripLeadingTitle(post.content ?? "", post.title)
-  const contentHtml = autoLinkPseo(markdownToHtml(content))
+  const [similar, adjacent, autoLinks] = await Promise.all([
+    getSimilarPosts(post.slug, post.ai_prompt),
+    getAdjacentPosts(post.published_at ?? new Date().toISOString()),
+    autoLinksEnabled(),
+  ])
+  const html = markdownToHtml(content)
+  const contentHtml = autoLinks ? autoLinkPseo(html) : html
   const readingTime = getReadingTime(content)
   const category = getCategoryFromPrompt(post.ai_prompt)
   const headings = extractHeadings(content)
   const keywords = (post.ai_keywords as string[] | null) ?? []
 
   const faqItems = extractFaqItems(content)
-
-  const [similar, adjacent] = await Promise.all([
-    getSimilarPosts(post.slug, post.ai_prompt),
-    getAdjacentPosts(post.published_at ?? new Date().toISOString()),
-  ])
 
   // JSON-LD: Article + FAQPage (if questions found)
   const jsonLd: Record<string, unknown>[] = [
