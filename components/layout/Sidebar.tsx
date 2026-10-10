@@ -9,8 +9,9 @@ import {
   LayoutDashboard, Users, FileText, FileCheck2,
   Settings, LogOut, Minus, Menu,
   Plus, Archive, RotateCcw, Package, ShoppingCart, X,
-  PanelLeftClose, PanelLeftOpen, Wallet, BellRing,
+  PanelLeftClose, PanelLeftOpen, Wallet, BellRing, HardHat,
 } from "lucide-react"
+import { FEATURES } from "@/lib/features"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { purgePwaPageCache } from "@/lib/pwa/client"
@@ -53,6 +54,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: "/dashboard",      label: "Tableau de bord",   icon: LayoutDashboard },
   { href: "/clients",        label: "Clients",            icon: Users },
+  ...(FEATURES.chantiers ? [{ href: "/chantiers", label: "Chantiers", icon: HardHat }] : []),
   {
     href: "/quotes",
     label: "Devis",

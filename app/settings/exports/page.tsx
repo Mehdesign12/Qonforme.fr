@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import FecExportSection from './FecExportSection'
+import SalesJournalSection from './SalesJournalSection'
 
 export const metadata: Metadata = { title: 'Paramètres — Exports comptables' }
 export const dynamic = 'force-dynamic'
@@ -32,6 +33,9 @@ export default async function ExportsPage() {
         </p>
       </div>
       <FecExportSection sirenMissing={sirenMissing} siren={siren} />
+      <div className="mt-6">
+        <SalesJournalSection />
+      </div>
     </div>
   )
 }

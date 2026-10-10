@@ -26,7 +26,9 @@ import {
   Home,
   Wallet,
   BellRing,
+  HardHat,
 } from "lucide-react"
+import { FEATURES } from "@/lib/features"
 import { cn } from "@/lib/utils"
 
 /* ------------------------------------------------------------------ */
@@ -68,6 +70,7 @@ interface NavItem {
 const DEMO_NAV: NavItem[] = [
   { href: "/demo",               label: "Tableau de bord",    icon: LayoutDashboard },
   { href: "/demo/clients",       label: "Clients",            icon: Users },
+  ...(FEATURES.chantiers ? [{ href: "/demo/chantiers", label: "Chantiers", icon: HardHat }] : []),
   {
     href:  "/demo/quotes",
     label: "Devis",

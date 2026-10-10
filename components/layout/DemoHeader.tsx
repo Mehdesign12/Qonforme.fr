@@ -2,8 +2,10 @@
 
 import {
   Bell, Plus, FileText, FileCheck2, ShoppingCart,
-  Building2, CreditCard, Sun, Moon, UserPlus,
+  Building2, CreditCard, Sun, Moon, UserPlus, Search,
 } from "lucide-react"
+import { CommandPalette, openPalette } from "@/components/search/CommandPalette"
+import { demoSearch } from "@/lib/demo/search"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
@@ -49,6 +51,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/demo/settings":         "Paramètres",
   "/demo/settings/ppf":     "Connexion PPF",
   "/demo/tresorerie":       "Trésorerie",
+  "/demo/chantiers":        "Chantiers",
+  "/demo/chantiers/new":    "Nouveau chantier",
   "/demo/relances":         "Relances",
 }
 
@@ -58,6 +62,7 @@ const PREFIX_TITLES: { prefix: string; title: string }[] = [
   { prefix: "/demo/quotes/",          title: "Devis"            },
   { prefix: "/demo/clients/",         title: "Clients"          },
   { prefix: "/demo/credit-notes/",    title: "Avoirs"           },
+  { prefix: "/demo/chantiers/",       title: "Chantiers"        },
 ]
 
 function getTitle(pathname: string): string {
@@ -84,6 +89,7 @@ const PAGE_CTA: Record<string, CtaConfig> = {
   "/demo/clients":         { href: "/demo/clients/new",     label: "Nouveau client",   icon: Plus         },
   "/demo/purchase-orders": { href: "/demo/purchase-orders", label: "Nouveau BdC",      icon: ShoppingCart },
   "/demo/products":        { href: "/demo/products",        label: "Nouveau produit",  icon: Plus         },
+  "/demo/chantiers":       { href: "/demo/chantiers/new",   label: "Nouveau chantier", icon: Plus         },
 }
 
 /* ------------------------------------------------------------------ */
@@ -218,6 +224,7 @@ export function DemoHeader() {
 
   return (
     <>
+      <CommandPalette base="/demo" search={demoSearch} />
       {/* ════════════════════════════════════════════════════════════════
           MOBILE header (< lg) — pilules solides, pas de toggle thème
           (crash GPU iOS Safari — cf. CLAUDE.md)
@@ -268,6 +275,14 @@ export function DemoHeader() {
             className="flex items-center gap-0.5 rounded-full px-1 py-0.5"
             style={MOBILE_PILL}
           >
+            <button
+              type="button"
+              onClick={openPalette}
+              className="w-8 h-8 flex items-center justify-center rounded-full touch-manipulation text-slate-500 dark:text-slate-400"
+              aria-label="Rechercher"
+            >
+              <Search className="w-[17px] h-[17px]" />
+            </button>
             <button
               className="w-8 h-8 flex items-center justify-center rounded-full touch-manipulation text-slate-400 dark:text-slate-500"
               aria-label="Notifications"
@@ -329,6 +344,18 @@ export function DemoHeader() {
           )}
 
           {/* Pilule [thème + cloche + séparateur + avatar] */}
+          <button
+            type="button"
+            onClick={openPalette}
+            className="header-pill-glass inline-flex items-center gap-2 rounded-full pl-3 pr-2 py-2 text-[13px] text-slate-500 dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-[#E2E8F0] transition-colors"
+            style={{ background: PILL_BG, border: PILL_BORDER, boxShadow: PILL_SHADOW }}
+            aria-label="Rechercher (⌘K)"
+          >
+            <Search className="w-4 h-4" />
+            <span>Rechercher</span>
+            <kbd className="rounded-md border border-slate-200 dark:border-slate-700 px-1.5 text-[11px] font-mono">⌘K</kbd>
+          </button>
+
           <div
             className="header-pill-glass flex items-center gap-0.5 rounded-full px-1.5 py-1"
             style={{ background: PILL_BG, border: PILL_BORDER, boxShadow: PILL_SHADOW }}

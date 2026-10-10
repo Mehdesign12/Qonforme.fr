@@ -2,8 +2,10 @@
 
 import {
   Bell, Plus, FileText, FileCheck2, ShoppingCart,
-  Building2, CreditCard, Sun, Moon, LogOut,
+  Building2, CreditCard, Sun, Moon, LogOut, Search,
 } from "lucide-react"
+import { CommandPalette, openPalette } from "@/components/search/CommandPalette"
+import type { SearchResults } from "@/lib/search/types"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
@@ -45,6 +47,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/settings/notifications": "Notifications",
   "/credit-notes":           "Avoirs",
   "/tresorerie":             "Trésorerie",
+  "/chantiers":              "Chantiers",
+  "/chantiers/new":          "Nouveau chantier",
   "/relances":               "Relances",
 }
 
@@ -54,6 +58,7 @@ const PREFIX_TITLES: { prefix: string; title: string }[] = [
   { prefix: "/quotes/",          title: "Devis"            },
   { prefix: "/clients/",         title: "Clients"          },
   { prefix: "/credit-notes/",    title: "Avoirs"           },
+  { prefix: "/chantiers/",       title: "Chantiers"        },
 ]
 
 function getTitle(pathname: string): string {
@@ -80,6 +85,7 @@ const PAGE_CTA: Record<string, CtaConfig> = {
   "/clients":         { href: "/clients/new",          label: "Nouveau client",   icon: Plus         },
   "/purchase-orders": { href: "/purchase-orders/new",  label: "Nouveau BdC",      icon: ShoppingCart },
   "/products":        { href: "/products",             label: "Nouveau produit",  icon: Plus         },
+  "/chantiers":       { href: "/chantiers/new",        label: "Nouveau chantier", icon: Plus         },
 }
 
 /* ------------------------------------------------------------------ */
@@ -145,6 +151,16 @@ interface HeaderProps {
   lastName?:  string
   email?:     string
   plan?:      PlanId | null
+}
+
+/* ------------------------------------------------------------------ */
+/* Recherche (palette ⌘K)                                               */
+/* ------------------------------------------------------------------ */
+
+async function liveSearch(q: string): Promise<SearchResults> {
+  const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
+  if (!res.ok) throw new Error("search failed")
+  return res.json()
 }
 
 /* ------------------------------------------------------------------ */
@@ -291,6 +307,7 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
 
   return (
     <>
+      <CommandPalette base="" search={liveSearch} />
       {/* ════════════════════════════════════════════════════════════════
           MOBILE header (< lg) — pilules solides, pas de backdrop-filter,
           pas de toggle thème (crash GPU iOS Safari — cf. CLAUDE.md)
@@ -332,6 +349,14 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
             className="flex items-center gap-0.5 rounded-full px-1 py-0.5"
             style={MOBILE_PILL}
           >
+            <button
+              type="button"
+              onClick={openPalette}
+              className="w-8 h-8 flex items-center justify-center rounded-full touch-manipulation text-slate-500 dark:text-slate-400"
+              aria-label="Rechercher"
+            >
+              <Search className="w-[17px] h-[17px]" />
+            </button>
             <button
               className="w-8 h-8 flex items-center justify-center rounded-full touch-manipulation text-slate-400 dark:text-slate-500"
               aria-label="Notifications"
@@ -385,6 +410,18 @@ export function Header({ firstName = "", lastName = "", email = "", plan = null 
               </button>
             </Link>
           )}
+
+          <button
+            type="button"
+            onClick={openPalette}
+            className="header-pill-glass inline-flex items-center gap-2 rounded-full pl-3 pr-2 py-2 text-[13px] text-slate-500 dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-[#E2E8F0] transition-colors"
+            style={{ background: PILL_BG, border: PILL_BORDER, boxShadow: PILL_SHADOW }}
+            aria-label="Rechercher (⌘K)"
+          >
+            <Search className="w-4 h-4" />
+            <span>Rechercher</span>
+            <kbd className="rounded-md border border-slate-200 dark:border-slate-700 px-1.5 text-[11px] font-mono">⌘K</kbd>
+          </button>
 
           <div
             className="header-pill-glass flex items-center gap-0.5 rounded-full px-1.5 py-1"
