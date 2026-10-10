@@ -44,6 +44,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/settings/invoices":      "Préférences factures",
   "/settings/notifications": "Notifications",
   "/credit-notes":           "Avoirs",
+  "/tresorerie":             "Trésorerie",
+  "/relances":               "Relances",
 }
 
 const PREFIX_TITLES: { prefix: string; title: string }[] = [

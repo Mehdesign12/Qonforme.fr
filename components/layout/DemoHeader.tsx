@@ -48,6 +48,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/demo/credit-notes":     "Avoirs",
   "/demo/settings":         "Paramètres",
   "/demo/settings/ppf":     "Connexion PPF",
+  "/demo/tresorerie":       "Trésorerie",
+  "/demo/relances":         "Relances",
 }
 
 const PREFIX_TITLES: { prefix: string; title: string }[] = [

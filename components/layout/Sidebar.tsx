@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, FileText, FileCheck2,
   Settings, LogOut, Minus, Menu,
   Plus, Archive, RotateCcw, Package, ShoppingCart, X,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, Wallet, BellRing,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -76,6 +76,8 @@ const NAV: NavItem[] = [
     ],
   },
   { href: "/products", label: "Catalogue produits", icon: Package },
+  { href: "/tresorerie", label: "Trésorerie", icon: Wallet },
+  { href: "/relances",   label: "Relances",   icon: BellRing },
 ]
 
 /* ------------------------------------------------------------------ */

@@ -76,12 +76,15 @@ export async function POST(_req: NextRequest, { params }: Params) {
       ccSubject: `Copie — Relance ${reminderNumber} — Facture ${invoice.invoice_number} pour ${invoice.client?.name ?? ""}`,
     })
 
-    // 5. Mettre à jour les champs de relance + passer en overdue
+    // 5. Mettre à jour les champs de relance ; « en retard » seulement une fois
+    //    l'échéance passée (une relance envoyée en avance ne rend pas la facture
+    //    en retard — même règle que la fiche facture, échéance à 23 h 59)
     const now = new Date().toISOString()
-    const updateFields =
-      reminderNumber === 1
-        ? { reminder_1_sent_at: now, status: "overdue" }
-        : { reminder_2_sent_at: now, status: "overdue" }
+    const pastDue = !!invoice.due_date && new Date(`${invoice.due_date}T23:59:59`) < new Date()
+    const updateFields = {
+      ...(reminderNumber === 1 ? { reminder_1_sent_at: now } : { reminder_2_sent_at: now }),
+      ...(pastDue ? { status: "overdue" } : {}),
+    }
 
     const { data: updated } = await supabase
       .from("invoices")

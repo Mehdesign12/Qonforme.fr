@@ -143,6 +143,8 @@ export async function updateSession(request: NextRequest) {
     '/products',
     '/credit-notes',
     '/purchase-orders',
+    '/tresorerie',
+    '/relances',
   ]
 
   const isProtected = protectedPaths.some((path) =>

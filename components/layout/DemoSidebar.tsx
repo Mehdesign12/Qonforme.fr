@@ -24,6 +24,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Home,
+  Wallet,
+  BellRing,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -89,6 +91,8 @@ const DEMO_NAV: NavItem[] = [
     ],
   },
   { href: "/demo/products", label: "Catalogue produits", icon: Package },
+  { href: "/demo/tresorerie", label: "Trésorerie", icon: Wallet },
+  { href: "/demo/relances",   label: "Relances",   icon: BellRing },
 ]
 
 /* ------------------------------------------------------------------ */
