@@ -7,14 +7,25 @@
  * l'API) et sa démo (/demo/invoices, lib/demo/data.ts) : même rendu des deux
  * côtés. Filtres et recherche se font ici, sur la liste déjà chargée.
  *
- * Pas de colonne « Transmission », de « Reste dû » ni d'actions groupées :
- * la transmission par plateforme agréée et le paiement partiel ne sont pas
- * livrés (DECISIONS-STRATEGIQUES.md § 10).
+ * Pas de colonne « Transmission » ni de « Reste dû » : la transmission par
+ * plateforme agréée et le paiement partiel ne sont pas livrés
+ * (DECISIONS-STRATEGIQUES.md § 10).
+ *
+ * Actions groupées (ordinateur) : cases à cocher, puis PDF en ZIP, export CSV
+ * de la sélection (fait ici, dans le navigateur) et archivage — rien qui émette,
+ * relance ou change un statut. Vues enregistrées : onglet et recherche gardés
+ * sous un nom, sur cet appareil (lib/export/invoice-list.ts).
  */
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Archive, ChevronRight, FileText, Plus, RotateCcw, RefreshCw } from "lucide-react"
+import { Archive, ArchiveRestore, Bookmark, ChevronRight, Download, FileSpreadsheet, FileText, Loader2, Plus, RotateCcw, RefreshCw, X } from "lucide-react"
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  BULK_PDF_LIMIT, SAVED_VIEWS_KEY, invoicesToCsv, parseSavedViews, upsertView, type SavedInvoiceView,
+} from "@/lib/export/invoice-list"
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { DRAFT_INVOICE_LABEL, invoiceNumberLabel } from "@/lib/utils/document-numbering"
@@ -60,15 +71,60 @@ export interface InvoiceListProps {
   creditNotesCount?: number | null
   /** Actions secondaires de l'en-tête (ex. « Exporter »), avant « Nouvelle facture ». */
   extraActions?: React.ReactNode
+  /** Actions groupées de la sélection (la démo affiche une invitation à s'inscrire). */
+  bulk?: {
+    /** PDF des factures choisies, en ZIP. */
+    downloadPdfs: (ids: string[]) => Promise<void>
+    /** Archive ou désarchive les factures choisies ; renvoie vrai si c'est fait. */
+    setArchived: (ids: string[], archived: boolean) => Promise<boolean>
+  }
+}
+
+const TAB_KEYS = ["all", "open", "late", "draft", "paid", "archived"] as const
+
+/** Téléchargement d'un fichier produit dans le navigateur. */
+function saveFile(name: string, content: BlobPart, type: string) {
+  const url = URL.createObjectURL(new Blob([content], { type }))
+  const a = document.createElement("a")
+  a.href = url
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 export function InvoiceList({
   invoices, archived, loading, error, onRetry, today, hrefFor,
-  newHref, quoteNewHref, creditNotesHref, creditNotesCount, extraActions,
+  newHref, quoteNewHref, creditNotesHref, creditNotesCount, extraActions, bulk,
 }: InvoiceListProps) {
   const router = useRouter()
   const [tab, setTab] = useState<TabKey>("all")
   const [query, setQuery] = useState("")
+
+  // Sélection (ordinateur) : vidée à chaque changement d'onglet ou de recherche
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState<"pdf" | "archive" | null>(null)
+  useEffect(() => { setSelected(new Set()) }, [tab, query])
+
+  // Vues enregistrées sur cet appareil (stockage local, lu après le montage)
+  const [views, setViews] = useState<SavedInvoiceView[]>([])
+  const [naming, setNaming] = useState(false)
+  const [viewName, setViewName] = useState("")
+  useEffect(() => {
+    try { setViews(parseSavedViews(window.localStorage.getItem(SAVED_VIEWS_KEY), TAB_KEYS)) } catch { /* stockage indisponible */ }
+  }, [])
+  const storeViews = (next: SavedInvoiceView[]) => {
+    setViews(next)
+    try { window.localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(next)) } catch { /* stockage indisponible */ }
+  }
+  const saveView = () => {
+    const name = viewName.trim()
+    if (!name) return
+    storeViews(upsertView(views, { name, tab, query: query.trim() }))
+    setViewName("")
+    setNaming(false)
+  }
 
   // Onglet demandé par un lien (tableau de bord : « ?filtre=retard ») ; lu après le
   // montage pour ne pas imposer de frontière Suspense à useSearchParams.
@@ -113,6 +169,29 @@ export function InvoiceList({
       normalize(`${invoiceNumberLabel(i.invoice_number)} ${i.client_name ?? ""} ${i.subject ?? ""}`).includes(q),
     )
   }, [tab, invoices, archived, query, today])
+
+  const selectedRows = rows.filter((r) => selected.has(r.id))
+  const allSelected = rows.length > 0 && selectedRows.length === rows.length
+  const toggle = (id: string) => setSelected((prev) => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.id)))
+  const exportCsv = () => saveFile(`factures-${today}.csv`, invoicesToCsv(selectedRows), "text/csv;charset=utf-8")
+  const downloadPdfs = async () => {
+    if (!bulk) return
+    setBulkBusy("pdf")
+    try { await bulk.downloadPdfs(selectedRows.map((r) => r.id)) } finally { setBulkBusy(null) }
+  }
+  const archiveSelected = async () => {
+    if (!bulk) return
+    setBulkBusy("archive")
+    try {
+      if (await bulk.setArchived(selectedRows.map((r) => r.id), tab !== "archived")) setSelected(new Set())
+    } finally { setBulkBusy(null) }
+  }
 
   const rowsTtc = rows.reduce((s, i) => s + i.total_ttc, 0)
   const rowsDue = rows.filter((i) => isOpen(i.status)).reduce((s, i) => s + i.total_ttc, 0)
@@ -182,6 +261,56 @@ export function InvoiceList({
             aria-label="Rechercher une facture"
             className="h-12 w-full rounded-2xl md:h-9 md:w-[300px] md:rounded-[9px]"
           />
+          {/* Vues enregistrées (ordinateur) */}
+          <div className="hidden items-center gap-2 md:flex">
+            {naming ? (
+              <form onSubmit={(e) => { e.preventDefault(); saveView() }} className="flex items-center gap-1.5">
+                <input
+                  autoFocus
+                  value={viewName}
+                  onChange={(e) => setViewName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Escape") { setNaming(false); setViewName("") } }}
+                  maxLength={40}
+                  placeholder="Nom de la vue"
+                  aria-label="Nom de la vue"
+                  className="q-input h-9 w-[180px] text-base md:text-sm"
+                />
+                <button type="submit" className="q-btn q-btn-primary q-btn-sm h-9" disabled={!viewName.trim()}>Enregistrer</button>
+                <button type="button" className="q-btn q-btn-ghost q-btn-sm q-btn-icon h-9" aria-label="Annuler" onClick={() => { setNaming(false); setViewName("") }}>
+                  <X aria-hidden />
+                </button>
+              </form>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="q-btn q-btn-secondary q-btn-sm h-9">
+                  <Bookmark aria-hidden />
+                  Vues{views.length ? ` (${views.length})` : ""}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64">
+                  {views.length === 0 && (
+                    <p className="px-2 py-1.5 text-[13px] leading-snug text-[var(--q-text-4)]">
+                      Gardez un onglet et une recherche sous un nom, pour y revenir en un clic. Les vues restent sur cet appareil.
+                    </p>
+                  )}
+                  {views.map((v) => (
+                    <DropdownMenuItem key={v.name} onClick={() => { setTab(v.tab as TabKey); setQuery(v.query) }} className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 flex-1 truncate">{v.name}</span>
+                      <button
+                        type="button"
+                        aria-label={`Supprimer la vue ${v.name}`}
+                        className="grid size-6 shrink-0 place-items-center rounded text-[var(--q-text-4)] hover:bg-[var(--q-hover)]"
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); storeViews(views.filter((x) => x.name !== v.name)) }}
+                      >
+                        <X className="size-3.5" aria-hidden />
+                      </button>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setNaming(true)}>Enregistrer la vue actuelle…</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
 
         {/* Onglets — mobile : pastilles défilantes */}
@@ -270,12 +399,52 @@ export function InvoiceList({
         </section>
       ) : (
         <>
+          {/* Ordinateur : barre des actions groupées */}
+          {selectedRows.length > 0 && (
+            <div role="region" aria-label="Actions sur la sélection" className="q-card hidden flex-wrap items-center gap-2 px-4 py-2.5 md:flex">
+              <span className="mr-2 text-sm font-semibold tabular-nums">
+                {plural(selectedRows.length, "facture sélectionnée", "factures sélectionnées")} · {formatCurrency(selectedRows.reduce((s, r) => s + r.total_ttc, 0))}
+              </span>
+              <button
+                type="button"
+                className="q-btn q-btn-secondary q-btn-sm"
+                onClick={downloadPdfs}
+                disabled={!!bulkBusy || !bulk || selectedRows.length > BULK_PDF_LIMIT}
+                title={selectedRows.length > BULK_PDF_LIMIT ? `${BULK_PDF_LIMIT} factures au plus par archive` : undefined}
+              >
+                {bulkBusy === "pdf" ? <Loader2 className="animate-spin" aria-hidden /> : <Download aria-hidden />}
+                PDF (ZIP)
+              </button>
+              <button type="button" className="q-btn q-btn-secondary q-btn-sm" onClick={exportCsv} disabled={!!bulkBusy}>
+                <FileSpreadsheet aria-hidden />
+                Exporter en CSV
+              </button>
+              <button type="button" className="q-btn q-btn-secondary q-btn-sm" onClick={archiveSelected} disabled={!!bulkBusy || !bulk}>
+                {bulkBusy === "archive" ? <Loader2 className="animate-spin" aria-hidden /> : tab === "archived" ? <ArchiveRestore aria-hidden /> : <Archive aria-hidden />}
+                {tab === "archived" ? "Désarchiver" : "Archiver"}
+              </button>
+              <button type="button" className="q-btn q-btn-ghost q-btn-sm ml-auto" onClick={() => setSelected(new Set())}>
+                Tout désélectionner
+              </button>
+            </div>
+          )}
+
           {/* Ordinateur : tableau */}
           <section aria-label="Liste des factures" className="q-card hidden overflow-hidden md:block">
             <div className="overflow-x-auto">
               <table className="q-table min-w-[760px]">
                 <thead className="bg-[var(--q-surface-2)] [&_th]:border-t-0">
                   <tr>
+                    <th scope="col" className="w-10 !pr-0">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        ref={(el) => { if (el) el.indeterminate = selectedRows.length > 0 && !allSelected }}
+                        onChange={toggleAll}
+                        aria-label="Sélectionner toutes les factures affichées"
+                        className="size-4 cursor-pointer accent-[var(--q-accent)] align-middle"
+                      />
+                    </th>
                     <th scope="col">Numéro</th>
                     <th scope="col">Client · objet</th>
                     <th scope="col">Émise</th>
@@ -293,8 +462,17 @@ export function InvoiceList({
                       <tr
                         key={inv.id}
                         onClick={() => router.push(href)}
-                        className={cn("cursor-pointer", inv.is_archived && tab !== "archived" && "opacity-60")}
+                        className={cn("cursor-pointer", inv.is_archived && tab !== "archived" && "opacity-60", selected.has(inv.id) && "bg-[var(--q-wash)]")}
                       >
+                        <td className="w-10 !pr-0" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selected.has(inv.id)}
+                            onChange={() => toggle(inv.id)}
+                            aria-label={`Sélectionner ${inv.invoice_number ?? `le brouillon${inv.client_name ? ` pour ${inv.client_name}` : ""}`}`}
+                            className="size-4 cursor-pointer accent-[var(--q-accent)] align-middle"
+                          />
+                        </td>
                         <td className="whitespace-nowrap text-[13px]">
                           {inv.invoice_number ? (
                             <Link href={href} className="font-mono text-[var(--q-accent-strong)] hover:underline">
@@ -332,7 +510,7 @@ export function InvoiceList({
                 </tbody>
                 <tfoot>
                   <tr className="bg-[var(--q-surface-2)] text-[13px]">
-                    <td colSpan={4} className="border-t border-[var(--q-line-soft)] text-[var(--q-text-3)]">
+                    <td colSpan={5} className="border-t border-[var(--q-line-soft)] text-[var(--q-text-3)]">
                       {plural(rows.length, "facture", "factures")}
                     </td>
                     <td className="is-num whitespace-nowrap border-t border-[var(--q-line-soft)] font-semibold">

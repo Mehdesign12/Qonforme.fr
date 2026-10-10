@@ -37,6 +37,10 @@ export default function DemoInvoicesPage() {
       quoteNewHref="/demo/quotes/new"
       creditNotesHref="/demo/credit-notes"
       creditNotesCount={DEMO_CREDIT_NOTES.length}
+      bulk={{
+        downloadPdfs: async () => { signupToast("télécharger vos factures en PDF") },
+        setArchived: async () => { signupToast("archiver vos factures"); return false },
+      }}
       extraActions={
         <button type="button" className="q-btn q-btn-secondary" onClick={() => signupToast("exporter vos écritures comptables")}>
           <Download aria-hidden />

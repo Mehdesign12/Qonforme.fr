@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic"
 
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
 import { Download } from "lucide-react"
 import { InvoiceStatus } from "@/types"
 import { InvoiceList } from "@/components/invoices/InvoiceList"
@@ -74,6 +75,44 @@ export default function InvoicesPage() {
       .catch(() => {})
   }, [fetchInvoices])
 
+  // Actions groupées : PDF en ZIP (POST /api/invoices/bulk-pdf), archivage facture par facture (PATCH)
+  const bulk = {
+    downloadPdfs: async (ids: string[]) => {
+      try {
+        const res = await fetch("/api/invoices/bulk-pdf", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }),
+        })
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}))
+          toast.error(json.error ?? "Les PDF n'ont pas pu être générés.")
+          return
+        }
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? "factures.zip"
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+      } catch { toast.error("Erreur réseau") }
+    },
+    setArchived: async (ids: string[], value: boolean) => {
+      let failed = 0
+      for (const id of ids) {
+        const res = await fetch(`/api/invoices/${id}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ is_archived: value }),
+        }).catch(() => null)
+        if (!res?.ok) failed++
+      }
+      if (failed) toast.error(`${failed} facture${failed > 1 ? "s n'ont" : " n'a"} pas pu être ${value ? "archivée" : "désarchivée"}${failed > 1 ? "s" : ""}.`)
+      else toast.success(`${ids.length} facture${ids.length > 1 ? "s" : ""} ${value ? "archivée" : "désarchivée"}${ids.length > 1 ? "s" : ""}`)
+      await fetchInvoices()
+      return failed === 0
+    },
+  }
+
   return (
     <InvoiceList
       invoices={invoices}
@@ -87,6 +126,7 @@ export default function InvoicesPage() {
       quoteNewHref="/quotes/new"
       creditNotesHref="/credit-notes"
       creditNotesCount={creditCount}
+      bulk={bulk}
       extraActions={
         <Link href="/settings/exports" className="q-btn q-btn-secondary">
           <Download aria-hidden />
