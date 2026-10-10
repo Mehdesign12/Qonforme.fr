@@ -26,11 +26,18 @@
  *   support durable avec le formulaire de rétractation (art. L221-13 et
  *   annexe à l'art. R221-1) ; hors établissement, exemplaire daté sur papier
  *   ou, avec l'accord du consommateur, sur un autre support durable
- *   (art. L221-9) et aucun paiement avant 7 jours (art. L221-10).
+ *   (art. L221-9) et aucun paiement avant 7 jours (art. L221-10), sauf
+ *   réparation urgente demandée par le consommateur (art. L221-10, 4°, et
+ *   L221-28, 8°, pour le droit de rétractation).
+ * - Rétractation en ligne : le professionnel qui la propose sur son site
+ *   envoie sans délai un accusé de réception sur support durable
+ *   (art. L221-21) ; il rembourse les sommes reçues dans les 14 jours
+ *   (art. L221-24). Sommes versées d'avance par un consommateur : des arrhes,
+ *   sauf stipulation contraire (art. L214-1).
  */
 import { canTransition } from "@/lib/utils/document-status"
 import type {
-  ClientKind, LinkState, RefusalReason, SignatureContext, SignatureDocType, SignatureMethod,
+  ClientKind, DepositTiming, LinkState, RefusalReason, SignatureContext, SignatureDocType, SignatureMethod,
   SignatureMode, SignatureSettings, SignatureStatus, SignDocLine,
 } from "@/lib/signature/types"
 import { REFUSAL_REASONS } from "@/lib/signature/types"
@@ -55,6 +62,14 @@ export const VIEW_LINK_DAYS = 90
 export const WITHDRAWAL_DAYS = 14
 /** Hors établissement : aucun paiement avant ce délai (C. consom. art. L221-10). */
 export const OFF_PREMISES_NO_PAYMENT_DAYS = 7
+/** Signé sur place chez un particulier : la demande d'acompte part à J+8, après le délai de 7 jours. */
+export const DEPOSIT_DEFERRED_DAYS = OFF_PREMISES_NO_PAYMENT_DAYS + 1
+/** Acomptes proposés dans les réglages (% du TTC ; 0 : aucun). */
+export const DEPOSIT_PERCENT_CHOICES = [0, 10, 20, 30, 40, 50] as const
+/** Relance avant expiration : jours proposés dans les réglages. */
+export const EXPIRY_REMINDER_DAY_CHOICES = [1, 2, 3, 5, 7] as const
+/** Pas de relance avant expiration pour un lien envoyé il y a moins de ce nombre de jours. */
+export const EXPIRY_REMINDER_MIN_AGE_DAYS = 2
 
 /* ------------------------------------------------------------------ */
 /* Client et contenu                                                   */
@@ -205,6 +220,7 @@ export function computeLinkState(
   if (row.status === "refused") return "refused"
   if (row.status === "disabled") return "disabled"
   if (row.status === "superseded") return "superseded"
+  if (row.status === "withdrawn") return "withdrawn"
   if (new Date(row.expires_at).getTime() <= now.getTime()) return "expired"
   if ((row.view_count ?? 0) > 0) return "viewed"
   return row.sent_at ? "sent" : "ready"
@@ -228,6 +244,9 @@ export const EVENT_LABELS: Record<string, string> = {
   disabled: "Lien désactivé",
   superseded: "Lien remplacé",
   email_failed: "Échec d'envoi d'un email",
+  withdrawn: "Rétractation du client",
+  expiry_reminder_sent: "Relance avant expiration envoyée",
+  deposit_requested: "Acompte demandé au client",
 }
 
 export const LINK_STATE_LABELS: Record<LinkState, string> = {
@@ -239,6 +258,7 @@ export const LINK_STATE_LABELS: Record<LinkState, string> = {
   expired: "Expiré",
   superseded: "Remplacé",
   disabled: "Désactivé",
+  withdrawn: "Rétracté",
 }
 
 /* ------------------------------------------------------------------ */
@@ -253,6 +273,11 @@ export function signedStatusFor(docType: SignatureDocType): "accepted" | "confir
 /** Statut que prend le document refusé : devis « refusé » ; un bon de commande garde son statut. */
 export function refusedStatusFor(docType: SignatureDocType): "rejected" | null {
   return docType === "quote" ? "rejected" : null
+}
+
+/** Statut que prend le document après une rétractation : devis « rétracté », bon de commande « annulé ». */
+export function withdrawnStatusFor(docType: SignatureDocType): "withdrawn" | "cancelled" {
+  return docType === "quote" ? "withdrawn" : "cancelled"
 }
 
 /**
@@ -411,6 +436,7 @@ export interface SignPayload {
     withdrawal_information_shown?: boolean
     early_start_requested?: boolean
     durable_medium_by_email?: boolean
+    urgent_repair_requested?: boolean
   }
 }
 
@@ -472,7 +498,10 @@ export function validateSignPayload(input: unknown, ctx: SignPayloadContext): { 
           withdrawal_information_shown: true,
           early_start_requested: consents.early_start_requested === true,
         } : {}),
-        ...(consumer && context === "in_person" ? { durable_medium_by_email: true } : {}),
+        ...(consumer && context === "in_person" ? {
+          durable_medium_by_email: true,
+          urgent_repair_requested: consents.urgent_repair_requested === true,
+        } : {}),
       },
     },
   }
@@ -486,6 +515,115 @@ export function validateRefusePayload(input: unknown): { ok: true; value: { reas
   const message = cleanMultiline(b.message, 1000) || null
   const name = cleanText(b.name, 120) || null
   return { ok: true, value: { reason, message, name } }
+}
+
+/* ------------------------------------------------------------------ */
+/* Rétractation en ligne (particulier)                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * La rétractation en ligne est-elle ouverte ? Seulement pour un document signé
+ * par un particulier, jusqu'au dernier jour du délai inclus (heure de Paris).
+ */
+export function canWithdraw(
+  row: { status: SignatureStatus; client_kind: ClientKind; signed_at: string | null },
+  now: Date,
+): boolean {
+  if (row.status !== "signed" || row.client_kind !== "consumer" || !row.signed_at) return false
+  return parisDay(now) <= withdrawalDeadline(new Date(row.signed_at))
+}
+
+/** Vérifie la déclaration de rétractation : nom, message facultatif, confirmation explicite. */
+export function validateWithdrawPayload(input: unknown): { ok: true; value: { name: string; message: string | null } } | Fail {
+  const b = (input && typeof input === "object" ? input : {}) as Record<string, unknown>
+  const name = cleanText(b.name, 120)
+  if (name.length < 2) return { ok: false, field: "withdraw_name", error: "Indiquez votre nom et votre prénom." }
+  if (b.confirm !== true) return { ok: false, field: "withdraw_confirm", error: "Cochez la case pour confirmer votre rétractation." }
+  return { ok: true, value: { name, message: cleanMultiline(b.message, 1000) || null } }
+}
+
+/* ------------------------------------------------------------------ */
+/* Acompte après signature                                             */
+/* ------------------------------------------------------------------ */
+
+export interface DepositPlan {
+  amount: number
+  percent: number
+  /** « now » : virement proposé dès la signature ; « later » : demande envoyée à J+8. */
+  timing: DepositTiming
+  /** Jour de la demande différée (AAAA-MM-JJ), sinon null. */
+  requestOn: string | null
+}
+
+/**
+ * Acompte proposé au client qui vient de signer, d'après le réglage de
+ * l'artisan. Aucun sans IBAN ou à 0 %. Un particulier qui signe sur place
+ * (hors établissement) ne peut rien payer avant 7 jours : la demande part à
+ * J+8, sauf réparation urgente qu'il a lui-même demandée (art. L221-10, 4°).
+ */
+export function planDeposit(params: {
+  percent: number
+  totalTtc: number
+  hasIban: boolean
+  clientKind: ClientKind
+  context: SignatureContext
+  urgentRepair?: boolean
+  signedAt: Date
+}): DepositPlan | null {
+  const percent = Math.round(Number(params.percent) * 100) / 100
+  if (!params.hasIban || !(percent > 0) || percent > 100) return null
+  const amount = Math.round(Number(params.totalTtc) * percent) / 100
+  if (!(amount >= 0.01)) return null
+  const deferred = params.clientKind === "consumer" && params.context === "in_person" && !params.urgentRepair
+  return {
+    amount,
+    percent,
+    timing: deferred ? "later" : "now",
+    requestOn: deferred ? addDaysISO(parisDay(params.signedAt), DEPOSIT_DEFERRED_DAYS) : null,
+  }
+}
+
+/** Référence du virement d'acompte (texte libre du QR code SEPA, 140 caractères au plus). */
+export function depositReference(docType: SignatureDocType, number: string): string {
+  return `Acompte ${docType === "quote" ? "devis" : "commande"} ${number}`.slice(0, 140)
+}
+
+/* ------------------------------------------------------------------ */
+/* Relance avant expiration                                            */
+/* ------------------------------------------------------------------ */
+
+/** Jour (AAAA-MM-JJ, heure de Paris) où part la relance d'un lien qui expire à `expiresAt`. */
+export function expiryReminderDay(expiresAt: string, days: number): string {
+  return addDaysISO(parisDay(new Date(expiresAt)), -Math.max(1, Math.round(days)))
+}
+
+/**
+ * La relance avant expiration part-elle aujourd'hui ? Une seule par lien, pour
+ * un lien de signature encore actif, envoyé par email depuis au moins
+ * EXPIRY_REMINDER_MIN_AGE_DAYS jours, à partir du jour prévu et jusqu'au
+ * dernier jour du lien. Renvoie le nombre de jours restants, ou null.
+ */
+export function planExpiryReminder(
+  row: {
+    status: SignatureStatus
+    mode: SignatureMode
+    expires_at: string
+    sent_at: string | null
+    expiry_reminder_sent_at?: string | null
+  },
+  settings: Pick<SignatureSettings, "expiry_reminder_enabled" | "expiry_reminder_days">,
+  now: Date,
+): { daysLeft: number } | null {
+  if (!settings.expiry_reminder_enabled) return null
+  if (row.status !== "pending" || row.mode !== "sign" || !row.sent_at || row.expiry_reminder_sent_at) return null
+  if (new Date(row.expires_at).getTime() <= now.getTime()) return null
+  const today = parisDay(now)
+  if (today < expiryReminderDay(row.expires_at, settings.expiry_reminder_days)) return null
+  const sentDay = parisDay(new Date(row.sent_at))
+  if (addDaysISO(sentDay, EXPIRY_REMINDER_MIN_AGE_DAYS) > today) return null
+  const lastDay = parisDay(new Date(row.expires_at))
+  const daysLeft = Math.round((Date.parse(`${lastDay}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86_400_000)
+  return { daysLeft }
 }
 
 export function refusalLabel(reason: RefusalReason | null | undefined): string {

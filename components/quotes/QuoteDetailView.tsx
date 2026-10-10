@@ -20,7 +20,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
   Check, CheckCircle2, ChevronLeft, ChevronRight, Clock, Copy, Download, FileText, Info,
-  Loader2, MoreHorizontal, Pencil, Printer, RefreshCw, Send, Trash2, X, type LucideIcon,
+  Loader2, MoreHorizontal, Pencil, Printer, RefreshCw, Send, Trash2, Undo2, X, type LucideIcon,
 } from "lucide-react"
 import { DocStatusPill, INVOICE_PILLS, Initials, Kpi, KpiGrid, StatusPill, initialsOf } from "@/components/app/kit"
 import { SetCrumb } from "@/components/layout/crumb"
@@ -356,6 +356,14 @@ export function QuoteDetailView({
           <Link href={quote.converted_invoice.href} className="text-sm font-semibold hover:underline">Voir la facture</Link>
         </div>
       )}
+      {s === "withdrawn" && (
+        <div role="status" className="q-banner q-banner-warn items-center print:hidden">
+          <Undo2 className="size-5 shrink-0" aria-hidden />
+          <span className="flex-1 text-[15px] leading-snug">
+            <strong className="font-semibold">Votre client s&apos;est rétracté.</strong> Remboursez toute somme reçue, acompte compris, au plus tard 14 jours après sa rétractation{quote.converted ? " ; annulez la facture par un avoir" : ""}.
+          </span>
+        </div>
+      )}
       {expired && (
         <div role="status" className="q-banner q-banner-warn items-center print:hidden">
           <Clock className="size-5 shrink-0" aria-hidden />
@@ -483,6 +491,7 @@ export function QuoteDetailView({
               <h2 className="q-h2">Accord du client</h2>
               {s === "accepted" ? <StatusPill tone="ok" icon={<Check strokeWidth={2.75} aria-hidden />}>Accepté</StatusPill>
                 : s === "rejected" ? <StatusPill tone="danger" icon={<X strokeWidth={2.75} aria-hidden />}>Refusé</StatusPill>
+                : s === "withdrawn" ? <StatusPill tone="warn">Rétracté</StatusPill>
                 : s === "sent" ? <StatusPill tone="neutral">En attente</StatusPill>
                 : <StatusPill tone="neutral">À envoyer</StatusPill>}
             </div>
@@ -491,6 +500,7 @@ export function QuoteDetailView({
               {s === "sent" && "Votre client donne son accord en vous retournant le devis daté et signé, avec la mention « Bon pour accord ». Dès réception, marquez-le comme accepté."}
               {s === "accepted" && "Accord enregistré. Conservez le devis signé par votre client avec vos documents : il vaut commande."}
               {s === "rejected" && "Le client a refusé ce devis. Dupliquez-le pour lui proposer une nouvelle version."}
+              {s === "withdrawn" && "Le client s'est rétracté après avoir signé. Remboursez toute somme reçue sous 14 jours."}
             </p>
             {s === "sent" && (
               <div className="flex flex-wrap gap-2">
@@ -498,7 +508,7 @@ export function QuoteDetailView({
                 <Act label="Refusé ?" size="sm" onClick={openModal("reject")} />
               </div>
             )}
-            {s === "rejected" && (
+            {(s === "rejected" || s === "withdrawn") && (
               <div className="flex flex-wrap gap-2">
                 <Act label="Dupliquer" icon={Copy} size="sm" onClick={actions.onDuplicate} loading={busy.duplicate} />
               </div>
@@ -582,7 +592,7 @@ export function QuoteDetailView({
             <BarBtn label="Télécharger le PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
           </>
         )}
-        {s === "rejected" && (
+        {(s === "rejected" || s === "withdrawn") && (
           <>
             <BarBtn primary label="Dupliquer ce devis" icon={Copy} onClick={actions.onDuplicate} loading={busy.duplicate} />
             <BarBtn label="Télécharger le PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />

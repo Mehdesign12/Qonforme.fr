@@ -4,12 +4,14 @@
  * vérification de démonstration est 123456.
  */
 import type { PublicSignApi } from "@/components/signature/PublicSignView"
+import { demoDepositAfterSign } from "@/lib/demo/signature"
+import type { PublicSignViewData } from "@/lib/signature/view"
 
 export const DEMO_CODE = "123456"
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-export function demoSignApi(): PublicSignApi {
+export function demoSignApi(data?: PublicSignViewData): PublicSignApi {
   return {
     async post(action, body = {}) {
       await wait(450)
@@ -24,8 +26,20 @@ export function demoSignApi(): PublicSignApi {
             : { ok: false, status: 400, json: { error: "Code incorrect. En démonstration, le code est 123456." } }
         case "sign": {
           const now = new Date()
-          return { ok: true, status: 200, json: { ok: true, signed_at: now.toISOString(), withdrawalDeadline: null } }
+          const consents = (body.consents ?? {}) as Record<string, unknown>
+          const consumer = data?.clientKind === "consumer"
+          return {
+            ok: true, status: 200, json: {
+              ok: true, signed_at: now.toISOString(), withdrawalDeadline: null,
+              deposit: data ? demoDepositAfterSign(data, consents.urgent_repair_requested === true) : null,
+              withdrawal: { available: consumer, open: consumer },
+            },
+          }
         }
+        case "withdraw":
+          return body.confirm === true
+            ? { ok: true, status: 200, json: { ok: true, withdrawn_at: new Date().toISOString() } }
+            : { ok: false, status: 400, json: { error: "Cochez la case pour confirmer votre rétractation.", field: "withdraw_confirm" } }
         case "refuse":
           return { ok: true, status: 200, json: { ok: true } }
         default:

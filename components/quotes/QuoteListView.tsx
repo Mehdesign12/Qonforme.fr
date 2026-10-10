@@ -41,7 +41,9 @@ export interface QuoteListItem {
   href: string
 }
 
-type Filter = "all" | QuoteStatus
+/** Le filtre « Refusés » regroupe aussi les devis rétractés. */
+type Filter = "all" | Exclude<QuoteStatus, "withdrawn">
+const filterOf = (status: QuoteStatus): Filter => (status === "withdrawn" ? "rejected" : status)
 
 const FILTERS: { key: Filter; label: string }[] = [
   { key: "all", label: "Tous" },
@@ -88,9 +90,9 @@ export function QuoteListView({
       .sort((a, b) => a - b)
     const recent = items.filter((q) => q.issue_date >= since)
     const accepted = recent.filter((q) => q.status === "accepted")
-    const decided = recent.filter((q) => q.status === "accepted" || q.status === "rejected")
+    const decided = recent.filter((q) => q.status === "accepted" || q.status === "rejected" || q.status === "withdrawn")
     const counts: Record<Filter, number> = { all: items.length, draft: 0, sent: 0, accepted: 0, rejected: 0 }
-    for (const q of items) counts[q.status] += 1
+    for (const q of items) counts[filterOf(q.status)] += 1
     return {
       year,
       yearCount: items.filter((q) => q.issue_date.startsWith(year)).length,
@@ -109,7 +111,7 @@ export function QuoteListView({
   const visible = useMemo(() => {
     const q = normalizeSearch(query)
     return items.filter((item) => {
-      if (filter !== "all" && item.status !== filter) return false
+      if (filter !== "all" && filterOf(item.status) !== filter) return false
       if (!q) return true
       return normalizeSearch(`${item.quote_number} ${item.client_name ?? ""} ${item.subject} ${item.search_text ?? ""}`).includes(q)
     })

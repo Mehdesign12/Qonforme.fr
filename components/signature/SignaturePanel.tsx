@@ -10,14 +10,15 @@
  *   (DECISIONS § 12, point 4). L'accord sur papier reste possible.
  * - Lien actif : envoyé, consulté (combien de fois), expiration ; partager,
  *   faire signer sur place, nouveau lien, désactiver.
- * - Signé : signataire, date, méthode, PDF signé et dossier de preuve.
+ * - Signé : signataire, date, méthode, acompte demandé, PDF signé et dossier de preuve.
  * - Refusé : motif et message du client.
+ * - Rétracté : date, message du client, remboursement à faire sous 14 jours.
  */
 import { useState } from "react"
 import Link from "next/link"
 import {
   Ban, CheckCircle2, ChevronDown, Copy, Download, ExternalLink, KeyRound, Link2, Loader2, Mail, PenLine,
-  RefreshCw, Send, Share2, ShieldCheck, Smartphone, XCircle,
+  RefreshCw, Send, Share2, ShieldCheck, Smartphone, Undo2, XCircle,
 } from "lucide-react"
 import { toast } from "sonner"
 import { StatusPill, type Tone } from "@/components/app/kit"
@@ -44,6 +45,7 @@ export interface SignaturePanelActions {
 
 const STATE_TONE: Record<LinkState, Tone> = {
   ready: "neutral", sent: "info", viewed: "info", signed: "ok", refused: "danger", expired: "warn", superseded: "neutral", disabled: "neutral",
+  withdrawn: "warn",
 }
 
 export function SignaturePanel({
@@ -139,7 +141,7 @@ export function SignaturePanel({
       </div>
 
       {/* Compte gratuit */}
-      {!data.access && (state !== "signed" && state !== "refused") && (
+      {!data.access && (state !== "signed" && state !== "refused" && state !== "withdrawn") && (
         <>
           <p className="text-[13px] leading-normal text-[var(--q-text-3)]">
             Avec Essentiel, votre client lit {theDoc} en entier et le signe en ligne, sur ordinateur ou téléphone.
@@ -163,7 +165,7 @@ export function SignaturePanel({
       )}
 
       {/* Pas de lien actif : proposer l'envoi */}
-      {data.access && (!link || (!active && state !== "signed" && state !== "refused")) && (data.enabled || link) && (
+      {data.access && (!link || (!active && state !== "signed" && state !== "refused" && state !== "withdrawn")) && (data.enabled || link) && (
         <>
           {link && state && (
             <p className="text-[13px] text-[var(--q-text-4)]">
@@ -198,6 +200,9 @@ export function SignaturePanel({
             <Row label="Envoi">{link.sent_at ? `${dateTime(link.sent_at)}${link.sent_to ? ` · ${link.sent_to}` : ""}` : "Lien prêt, pas encore envoyé par email"}</Row>
             <Row label="Consultation">{link.view_count > 0 && link.last_viewed_at ? `${link.view_count} fois · dernière le ${dateTime(link.last_viewed_at)}` : "Pas encore ouvert"}</Row>
             <Row label="Expiration">{dateTime(link.expires_at)}</Row>
+            {link.expiry_reminder_sent_at
+              ? <Row label="Relance">Envoyée le {dateTime(link.expiry_reminder_sent_at)}</Row>
+              : link.expiry_reminder_on ? <Row label="Relance">Automatique le {longDate(link.expiry_reminder_on)}, s&apos;il n&apos;a pas répondu</Row> : null}
             {link.mode === "sign" && <Row label="Code par email">{link.code_required ? "Oui, demandé à la signature" : "Non"}</Row>}
             {link.mode === "view" && <Row label="Type">Consultation seule</Row>}
           </dl>
@@ -244,7 +249,15 @@ export function SignaturePanel({
               </Row>
             )}
           </dl>
-          {link.client_kind === "consumer" && link.signature_context === "in_person" && (
+          {link.deposit && (
+            <InfoNote>
+              Acompte de {formatCurrency(link.deposit.amount)} ({String(link.deposit.percent).replace(".", ",")} %) :{" "}
+              {link.deposit.timing === "later" && !link.deposit.requested_at && link.deposit.request_on
+                ? <>demande envoyée au client le {longDate(link.deposit.request_on)} (signé sur place, rien avant 7 jours).</>
+                : <>vos coordonnées bancaires ont été données au client, référence « {link.deposit.reference} ». À réception, émettez la facture d&apos;acompte.</>}
+            </InfoNote>
+          )}
+          {!link.deposit && link.client_kind === "consumer" && link.signature_context === "in_person" && !link.consents?.urgent_repair_requested && (
             <InfoNote>Signé sur place chez un particulier : aucun paiement ne peut être demandé avant 7 jours.</InfoNote>
           )}
           <div className="flex flex-wrap gap-2">
@@ -291,6 +304,28 @@ export function SignaturePanel({
             {link.refusal_message && <span className="whitespace-pre-line break-words text-[13px] text-[var(--q-text-3)]">« {link.refusal_message} »</span>}
           </span>
         </div>
+      )}
+
+      {/* Rétracté */}
+      {link && state === "withdrawn" && (
+        <>
+          <div className="flex items-start gap-2.5 rounded-[14px] border border-[var(--q-warn-line)] bg-[var(--q-warn-bg)] px-3.5 py-3 text-[14px] leading-normal text-[var(--q-text-2)]">
+            <Undo2 className="mt-0.5 size-4 shrink-0 text-[var(--q-warn)]" aria-hidden />
+            <span className="flex min-w-0 flex-col gap-1">
+              <span>
+                <strong className="font-semibold text-[var(--q-ink)]">Rétracté{link.withdrawal_name ? ` par ${link.withdrawal_name}` : ""}</strong>
+                {link.withdrawn_at ? ` le ${dateTime(link.withdrawn_at)}` : ""}, en ligne.
+              </span>
+              {link.withdrawal_message && <span className="whitespace-pre-line break-words text-[13px] text-[var(--q-text-3)]">« {link.withdrawal_message} »</span>}
+            </span>
+          </div>
+          <InfoNote>
+            Remboursez toute somme reçue, acompte compris, au plus tard 14 jours après la rétractation. Si une facture a été émise, annulez-la par un avoir.
+          </InfoNote>
+          <div className="flex flex-wrap gap-2">
+            <Act label="PDF signé" icon={Download} size="sm" onClick={actions.downloadSigned} loading={busy === "pdf"} />
+          </div>
+        </>
       )}
 
       {demo && previewHref && (

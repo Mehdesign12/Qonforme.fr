@@ -100,7 +100,8 @@ export interface Invoice {
 }
 
 // ---- Devis ----
-export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected'
+// 'withdrawn' : rétracté par un particulier après une signature en ligne (migration 20261010)
+export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'withdrawn'
 
 export interface Quote {
   id: string

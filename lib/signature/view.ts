@@ -3,7 +3,7 @@
  * Uniquement les données du document du lien : ni identifiant d'utilisateur,
  * ni empreinte de jeton, ni donnée d'un autre document.
  */
-import type { ClientKind, SignatureDocType, SignatureMode, SignDocLine } from "@/lib/signature/types"
+import type { ClientKind, DepositTiming, SignatureDocType, SignatureMode, SignDocLine } from "@/lib/signature/types"
 
 export type PublicPageState =
   | "sign"        // à signer
@@ -14,6 +14,7 @@ export type PublicPageState =
   | "superseded"  // une version plus récente a été envoyée
   | "disabled"
   | "closed"      // le document n'attend plus de réponse (accepté ou annulé par l'entreprise)
+  | "withdrawn"   // le particulier s'est rétracté après avoir signé
   | "not_found"   // lien inconnu, ou ouvert sans le lien reçu par email
 
 export interface PublicDocView {
@@ -49,6 +50,20 @@ export interface PublicCompanyView {
   legal_notice: string | null
 }
 
+/** Acompte proposé après la signature : virement à l'artisan, sans page de paiement. */
+export interface PublicDeposit {
+  amount: number
+  percent: number
+  /** « now » : à régler maintenant ; « later » : demande envoyée par email à `requestOn`. */
+  timing: DepositTiming
+  requestOn: string | null
+  reference: string
+  /** Coordonnées du virement (IBAN valide uniquement). */
+  account: { holder: string; iban: string; bic: string | null } | null
+  /** QR code de virement SEPA (format EPC), tracé SVG prêt à afficher. */
+  qr: { path: string; size: number } | null
+}
+
 export interface PublicSignViewData {
   id: string
   state: PublicPageState
@@ -73,6 +88,20 @@ export interface PublicSignViewData {
   signed: { name: string; role: string | null; company: string | null; at: string; method: "drawn" | "typed" | null; order_number: string | null } | null
   refused: { at: string; reason: string } | null
   withdrawalDeadline: string | null
+  /**
+   * Rétractation en ligne : `available` quand la fonction est active (migration
+   * appliquée) et le signataire un particulier ; `open` tant que le délai court.
+   */
+  withdrawal: { available: boolean; open: boolean }
+  withdrawn: { at: string; name: string | null } | null
+  /** Réparation urgente demandée à la signature sur place (art. L221-10, 4°). */
+  urgentRepair: boolean
+  /** Avant la signature : acompte qui sera demandé (réglage de l'artisan, IBAN renseigné). */
+  depositPlanned: { percent: number; amount: number } | null
+  /** Après la signature : l'acompte à régler. */
+  deposit: PublicDeposit | null
+  /** Ouvrir directement le formulaire de rétractation (lien « Changer d'avis » de l'email). */
+  openWithdrawal?: boolean
   /** Téléchargement du PDF (null en démo). */
   pdfUrl: string | null
   demo?: boolean
@@ -84,6 +113,7 @@ export function emptyPublicView(id: string, state: PublicPageState = "not_found"
     id, state, mode: "sign", clientKind: "consumer", onSite: false, doc: null, company: null, expires_at: null,
     codeRequired: false, codeVerified: false, codeTarget: null, codeToSignerEmail: false,
     prefill: { name: "", email: "", company: "" }, reducedVat: false, reducedVatText: null, closedMessage: null,
-    signed: null, refused: null, withdrawalDeadline: null, pdfUrl: null,
+    signed: null, refused: null, withdrawalDeadline: null, withdrawal: { available: false, open: false }, withdrawn: null,
+    urgentRepair: false, depositPlanned: null, deposit: null, pdfUrl: null,
   }
 }

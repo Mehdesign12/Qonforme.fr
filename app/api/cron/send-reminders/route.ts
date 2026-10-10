@@ -26,6 +26,10 @@
  * - Historique (table absente) : comportement d'avant, J+30 puis J+45 sur les
  *   factures, suivi par les colonnes reminder_1_sent_at / reminder_2_sent_at.
  *
+ * Ensuite, la signature en ligne (lib/signature/jobs.ts) : relance du client
+ * avant l'expiration d'un lien sans réponse, et demande d'acompte à J+8 après
+ * une signature sur place chez un particulier.
+ *
  * Dans les deux modes, une relance ne change plus le statut de la facture : le
  * retard se lit sur la date d'échéance. (Avant, la relance passait la facture
  * en « overdue », ce qui la faisait sortir des montants « en attente » et
@@ -48,6 +52,7 @@ import { canIssueInvoices } from "@/lib/stripe/access"
 import { addDays, daysBetween, todayInParis } from "@/lib/utils/paris-date"
 import { settingsFromRow, BEFORE_DUE_CHOICES, type ReminderSettings, type ReminderSettingsRow } from "@/lib/reminders/settings"
 import { planInvoiceReminder, planQuoteFollowup } from "@/lib/reminders/schedule"
+import { runSignatureJobs } from "@/lib/signature/jobs"
 import {
   SETTINGS_COLUMNS, claimReminderStage, loadReminderLog, releaseReminderStage, reminderLogAvailable,
 } from "@/lib/reminders/store"
@@ -173,9 +178,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Journal des relances illisible" }, { status: 500 })
   }
 
-  const results = probe.available
+  const reminders = probe.available
     ? await runWithSettings(admin, today)
     : await runLegacy(admin, today)
+
+  // Signature en ligne : une erreur ici n'empêche jamais le journal des relances
+  let signature_expiry: Summary | { available: false } = { available: false }
+  let signature_deposits: Summary | { available: false } = { available: false }
+  try {
+    const jobs = await runSignatureJobs(admin)
+    if (jobs.available) ({ expiry: signature_expiry, deposits: signature_deposits } = jobs)
+  } catch (err) {
+    signature_expiry = { sent: 0, skipped: 0, errors: [errorText(err)] }
+  }
+  const results = { ...reminders, signature_expiry, signature_deposits }
 
   const duration = Date.now() - startedAt
   const hasErrors = Object.values(results).some((r) => typeof r === "object" && r !== null && "errors" in r && (r as Summary).errors.length > 0)

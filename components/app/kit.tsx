@@ -212,6 +212,7 @@ export const QUOTE_PILLS: Record<string, PillDef> = {
   sent:     { label: "Envoyé",    tone: "info",   icon: "send" },
   accepted: { label: "Accepté",   tone: "ok",     icon: "check" },
   rejected: { label: "Refusé",    tone: "danger", icon: "x" },
+  withdrawn: { label: "Rétracté", tone: "warn",   icon: "undo" },
 }
 
 export const PURCHASE_ORDER_PILLS: Record<string, PillDef> = {

@@ -16,6 +16,8 @@ import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { generateQuotePdf } from "@/lib/pdf/quote"
 import { generatePurchaseOrderPdf } from "@/lib/pdf/purchase-order"
 import { decryptToken, encryptToken, generateToken, hashToken, sha256Hex, tokenMatches } from "@/lib/signature/crypto"
+import type { BankDetails } from "@/lib/signature/deposit"
+import { SETTINGS_BASE_COLUMNS, SETTINGS_EXTRA_COLUMNS, settingsFromRow } from "@/lib/signature/settings"
 import {
   canCreateLink, clientKindOf, computeLinkState, contentFingerprintSource, linkExpiry, needsVerificationCode,
 } from "@/lib/signature/rules"
@@ -37,9 +39,24 @@ export function appUrl(): string {
   return (process.env.NEXT_PUBLIC_APP_URL ?? "https://qonforme.fr").replace(/\/+$/, "")
 }
 
-/** Lien court envoyé au client : il pose le jeton dans un cookie puis redirige (app/s/[token]/route.ts). */
-export function linkUrl(token: string, opts: { onSite?: boolean } = {}): string {
-  return `${appUrl()}/s/${token}${opts.onSite ? "?sur-place=1" : ""}`
+/**
+ * Lien court envoyé au client : il pose le jeton dans un cookie puis redirige
+ * (app/s/[token]/route.ts). `withdraw` ouvre directement le formulaire de
+ * rétractation (lien « Changer d'avis » de l'email de confirmation).
+ */
+export function linkUrl(token: string, opts: { onSite?: boolean; withdraw?: boolean } = {}): string {
+  const query = opts.onSite ? "?sur-place=1" : opts.withdraw ? "?retractation=1" : ""
+  return `${appUrl()}/s/${token}${query}`
+}
+
+/**
+ * Colonnes de 20261010_signature_withdrawal_deposit_reminder.sql présentes ?
+ * Une ligne lue avec select("*") porte toutes les colonnes de la table : leur
+ * absence signale une migration pas encore appliquée (rétractation en ligne,
+ * acompte et relance avant expiration restent alors masqués).
+ */
+export function signatureExtrasAvailable(row: object | null | undefined): boolean {
+  return !!row && "withdrawn_at" in row
 }
 
 /** Cookie qui porte le jeton d'un lien, propre à ce lien (plusieurs onglets possibles). */
@@ -65,25 +82,29 @@ export function requestMeta(req: NextRequest | Request): { ip: string | null; us
 /* Réglages                                                            */
 /* ------------------------------------------------------------------ */
 
-export async function getSignatureSettings(admin: Admin, userId: string): Promise<{ available: boolean; settings: SignatureSettings }> {
-  const { data, error } = await admin
+/**
+ * Réglages d'un compte. `extras` : colonnes de la relance avant expiration et
+ * de l'acompte présentes (sinon, valeurs par défaut et fonctions masquées).
+ */
+export async function getSignatureSettings(admin: Admin, userId: string): Promise<{ available: boolean; extras: boolean; settings: SignatureSettings }> {
+  const full = await admin
     .from("signature_settings")
-    .select("enabled,code_mode,code_threshold_ttc,link_validity_days")
+    .select(`${SETTINGS_BASE_COLUMNS},${SETTINGS_EXTRA_COLUMNS}`)
     .eq("user_id", userId)
     .maybeSingle()
-  if (error) {
-    if (isMissingSchemaError(error)) return { available: false, settings: DEFAULT_SIGNATURE_SETTINGS }
-    throw error
+  if (!full.error) return { available: true, extras: true, settings: settingsFromRow(full.data) }
+  if (!isMissingSchemaError(full.error)) throw full.error
+
+  const base = await admin.from("signature_settings").select(SETTINGS_BASE_COLUMNS).eq("user_id", userId).maybeSingle()
+  if (base.error) {
+    if (isMissingSchemaError(base.error)) return { available: false, extras: false, settings: DEFAULT_SIGNATURE_SETTINGS }
+    throw base.error
   }
-  if (!data) return { available: true, settings: DEFAULT_SIGNATURE_SETTINGS }
+  // Sans la migration : pas d'acompte, et pas de relance avant expiration (aucune colonne pour la tracer)
   return {
     available: true,
-    settings: {
-      enabled: data.enabled !== false,
-      code_mode: data.code_mode === "always" || data.code_mode === "never" ? data.code_mode : "threshold",
-      code_threshold_ttc: Number(data.code_threshold_ttc ?? DEFAULT_SIGNATURE_SETTINGS.code_threshold_ttc),
-      link_validity_days: Number(data.link_validity_days ?? DEFAULT_SIGNATURE_SETTINGS.link_validity_days),
-    },
+    extras: false,
+    settings: { ...settingsFromRow(base.data), expiry_reminder_enabled: false, deposit_percent: 0 },
   }
 }
 
@@ -192,6 +213,18 @@ export async function loadCompany(admin: Admin, userId: string): Promise<Company
     userId,
   )
   return (data as CompanyInfo | null) ?? null
+}
+
+/**
+ * Coordonnées bancaires pour l'acompte. BIC et titulaire du compte viennent de
+ * 20261003_payment_links.sql : sans elle, l'IBAN seul.
+ */
+export async function loadBankDetails(admin: Admin, userId: string): Promise<BankDetails | null> {
+  const full = await admin.from("companies").select("name,iban,bic,bank_account_holder").eq("user_id", userId).maybeSingle()
+  if (!full.error) return (full.data as BankDetails | null) ?? null
+  if (!isMissingSchemaError(full.error)) return null
+  const { data } = await admin.from("companies").select("name,iban").eq("user_id", userId).maybeSingle()
+  return (data as BankDetails | null) ?? null
 }
 
 /** Adresse de l'artisan pour les notifications : celle de l'entreprise, sinon celle du compte. */

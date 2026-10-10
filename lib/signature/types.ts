@@ -12,11 +12,15 @@ export type SignatureDocType = "quote" | "purchase_order"
 /** 'sign' : consulter et signer (Essentiel, Artisan) ; 'view' : consultation seule (compte gratuit). */
 export type SignatureMode = "sign" | "view"
 
-/** Statut enregistré en base. « Expiré » se déduit de `expires_at`. */
-export type SignatureStatus = "pending" | "signed" | "refused" | "disabled" | "superseded"
+/**
+ * Statut enregistré en base. « Expiré » se déduit de `expires_at`.
+ * « withdrawn » : le particulier s'est rétracté après avoir signé
+ * (migration 20261010_signature_withdrawal_deposit_reminder.sql).
+ */
+export type SignatureStatus = "pending" | "signed" | "refused" | "disabled" | "superseded" | "withdrawn"
 
 /** État affiché du lien (panneau de l'artisan et page du client). */
-export type LinkState = "ready" | "sent" | "viewed" | "signed" | "refused" | "expired" | "superseded" | "disabled"
+export type LinkState = "ready" | "sent" | "viewed" | "signed" | "refused" | "expired" | "superseded" | "disabled" | "withdrawn"
 
 /** Particulier (consommateur) ou professionnel : déduit de la fiche client (SIREN ou TVA renseignés). */
 export type ClientKind = "consumer" | "business"
@@ -34,6 +38,12 @@ export interface SignatureSettings {
   code_threshold_ttc: number
   /** Validité d'un lien de bon de commande (un devis expire avec sa date de validité). */
   link_validity_days: number
+  /** Relance automatique du client avant l'expiration du lien. */
+  expiry_reminder_enabled: boolean
+  /** Jours avant l'expiration où part la relance. */
+  expiry_reminder_days: number
+  /** Acompte demandé à la signature, en % du TTC (0 : aucun). */
+  deposit_percent: number
 }
 
 export const DEFAULT_SIGNATURE_SETTINGS: SignatureSettings = {
@@ -41,6 +51,9 @@ export const DEFAULT_SIGNATURE_SETTINGS: SignatureSettings = {
   code_mode: "threshold",
   code_threshold_ttc: 5000,
   link_validity_days: 30,
+  expiry_reminder_enabled: true,
+  expiry_reminder_days: 3,
+  deposit_percent: 0,
 }
 
 export type RefusalReason = "price" | "delay" | "other_offer" | "abandoned" | "other"
@@ -64,6 +77,8 @@ export interface SignatureConsents {
   early_start_requested?: boolean
   /** Signature sur place : accord pour recevoir son exemplaire par email (C. consom. art. L221-9). */
   durable_medium_by_email?: boolean
+  /** Sur place : réparation urgente demandée par le client, l'acompte peut être demandé tout de suite (art. L221-10, 4°). */
+  urgent_repair_requested?: boolean
 }
 
 /** Ligne de `document_signatures` (les colonnes utiles au code). */
@@ -116,6 +131,19 @@ export interface SignatureRow {
   superseded_at: string | null
   superseded_by: string | null
   created_at: string
+  // Colonnes de 20261010_signature_withdrawal_deposit_reminder.sql : absentes
+  // de la ligne tant que la migration n'est pas appliquée.
+  withdrawn_at?: string | null
+  withdrawal_name?: string | null
+  withdrawal_message?: string | null
+  withdrawal_ip?: string | null
+  withdrawal_user_agent?: string | null
+  expiry_reminder_sent_at?: string | null
+  deposit_amount?: number | string | null
+  deposit_percent?: number | string | null
+  deposit_reference?: string | null
+  deposit_request_on?: string | null
+  deposit_requested_at?: string | null
 }
 
 export type SignatureEventType =
@@ -130,6 +158,9 @@ export type SignatureEventType =
   | "disabled"
   | "superseded"
   | "email_failed"
+  | "withdrawn"
+  | "expiry_reminder_sent"
+  | "deposit_requested"
 
 export interface SignatureEvent {
   type: SignatureEventType
@@ -179,7 +210,29 @@ export interface SignaturePanelLink {
   refused_at: string | null
   refusal_reason: RefusalReason | null
   refusal_message: string | null
+  withdrawn_at?: string | null
+  withdrawal_name?: string | null
+  withdrawal_message?: string | null
+  /** Acompte figé à la signature (null : aucun). */
+  deposit?: PanelDeposit | null
+  /** Relance avant expiration : envoyée le…, ou prévue le… (AAAA-MM-JJ). */
+  expiry_reminder_sent_at?: string | null
+  expiry_reminder_on?: string | null
   events: SignatureEvent[]
+}
+
+/** Quand l'acompte est demandé au client. */
+export type DepositTiming = "now" | "later"
+
+export interface PanelDeposit {
+  amount: number
+  percent: number
+  reference: string
+  timing: DepositTiming
+  /** Signé sur place chez un particulier : jour de la demande (J+8). */
+  request_on: string | null
+  /** Horodatage de la demande (tout de suite, ou par le cron à J+8). */
+  requested_at: string | null
 }
 
 export interface SignaturePanelData {

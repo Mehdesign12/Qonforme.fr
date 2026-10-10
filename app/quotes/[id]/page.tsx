@@ -70,6 +70,7 @@ const STATUS_LABELS: Record<QuoteStatus, string> = {
   sent:     "Envoyé",
   accepted: "Accepté",
   rejected: "Refusé",
+  withdrawn: "Rétracté",
 }
 
 /* ------------------------------------------------------------------ */

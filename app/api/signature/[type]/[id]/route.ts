@@ -5,12 +5,13 @@ import { buildSignatureRequestEmail } from "@/lib/email/templates/signature"
 import { hasSignatureAccess, requireSignatureAccess } from "@/lib/signature/access"
 import { requireIssuerIdentity } from "@/lib/legal/issuer"
 import { decryptToken, tokenMatches } from "@/lib/signature/crypto"
-import { canCreateLink, clientKindOf, computeLinkState, isValidEmail, linkExpiry } from "@/lib/signature/rules"
+import { canCreateLink, clientKindOf, computeLinkState, expiryReminderDay, isValidEmail, linkExpiry } from "@/lib/signature/rules"
+import { depositOfRow } from "@/lib/signature/deposit"
 import {
   SignatureError, createLink, ensureLink, generateDocumentPdf, getSignatureSettings, latestLink, linkUrl, listEvents,
-  loadCompany, loadDocument, markDocumentSent, pdfFilename, recordEvent, requestMeta, type LoadedDoc,
+  loadCompany, loadDocument, markDocumentSent, pdfFilename, recordEvent, requestMeta, signatureExtrasAvailable, type LoadedDoc,
 } from "@/lib/signature/server"
-import type { SignatureDocType, SignaturePanelData, SignaturePanelLink, SignatureRow } from "@/lib/signature/types"
+import type { SignatureDocType, SignaturePanelData, SignaturePanelLink, SignatureRow, SignatureSettings } from "@/lib/signature/types"
 
 /**
  * Panneau « Signature en ligne » de la fiche devis ou bon de commande.
@@ -40,8 +41,12 @@ async function authed() {
   return { supabase, user }
 }
 
-function panelLink(row: SignatureRow, events: SignaturePanelLink["events"], now: Date): SignaturePanelLink {
+function panelLink(row: SignatureRow, events: SignaturePanelLink["events"], now: Date, settings?: SignatureSettings): SignaturePanelLink {
   const state = computeLinkState(row, now)
+  const extras = signatureExtrasAvailable(row)
+  // Relance avant expiration : prévue pour un lien de signature envoyé par email et encore actif
+  const reminderPlanned = extras && settings?.expiry_reminder_enabled && row.mode === "sign" && row.sent_at
+    && !row.expiry_reminder_sent_at && (state === "sent" || state === "viewed")
   const token = row.status === "pending" && state !== "expired" ? decryptToken(row.token_ciphertext) : null
   return {
     id: row.id,
@@ -72,6 +77,12 @@ function panelLink(row: SignatureRow, events: SignaturePanelLink["events"], now:
     refused_at: row.refused_at,
     refusal_reason: row.refusal_reason,
     refusal_message: row.refusal_message,
+    withdrawn_at: row.withdrawn_at ?? null,
+    withdrawal_name: row.withdrawal_name ?? null,
+    withdrawal_message: row.withdrawal_message ?? null,
+    deposit: extras ? depositOfRow(row) : null,
+    expiry_reminder_sent_at: row.expiry_reminder_sent_at ?? null,
+    expiry_reminder_on: reminderPlanned && settings ? expiryReminderDay(row.expires_at, settings.expiry_reminder_days) : null,
     events,
   }
 }
@@ -89,7 +100,7 @@ async function panelData(admin: ReturnType<typeof createAdminClient>, doc: Loade
     enabled: settings.settings.enabled,
     client_kind: clientKindOf(doc.client),
     client_email: doc.client?.email ?? null,
-    link: row ? panelLink(row, events, new Date()) : null,
+    link: row ? panelLink(row, events, new Date(), settings.settings) : null,
   }
 }
 
