@@ -8,6 +8,8 @@
  * d'origine (lib/facturx). Montants et mentions imprimés sont ceux du XML.
  */
 import { PDFDocument, rgb, PageSizes } from "pdf-lib"
+import { addUriLink } from "@/lib/pdf/link"
+import { poweredByUrl } from "@/lib/utils/powered-by"
 import fontkit from "@pdf-lib/fontkit"
 import { buildFacturX, documentMentions } from "@/lib/facturx/xml"
 import { creditNoteToFacturX, type LineRecord } from "@/lib/facturx/records"
@@ -335,6 +337,11 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
   hLine(32, mL, mR, 0.5, separator)
   draw(`${company?.name ?? "Qonforme"} — ${creditNote.credit_note_number}`, mL, 20, { size: 7, color: grayLight })
   draw("Généré par Qonforme", mR, 20, { size: 7, color: creditOrange, align: "right" })
+  {
+    // « Propulsé par Qonforme » cliquable, avec sa provenance (lib/utils/powered-by.ts)
+    const tw = fontRegular.widthOfTextAtSize("Généré par Qonforme", 7)
+    addUriLink(doc, page, { x: mR - tw, y: 18, width: tw, height: 9 }, poweredByUrl("pdf-avoir"))
+  }
 
   // PDF/A-3 avec le XML Factur-X de l'avoir embarqué
   const pdfBytes = await saveAsFacturX(doc, {

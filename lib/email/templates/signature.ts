@@ -104,6 +104,7 @@ export function buildSignatureRequestEmail(d: {
   return {
     subject,
     html: emailBase({
+      source: "email-signature",
       accentColor: d.accentColor,
       companyName: e(d.companyName),
       preheader: e(`${DocLabel(d.docType)} ${d.docNumber} — ${fmtEur(d.totalTtc)} TTC — à consulter et signer en ligne`),
@@ -133,7 +134,7 @@ export function buildSignatureCodeEmail(d: {
   `
   return {
     subject,
-    html: emailBase({ accentColor: d.accentColor, companyName: e(d.companyName), preheader: `Code de signature : ${d.code}`, body }),
+    html: emailBase({ source: "email-signature", accentColor: d.accentColor, companyName: e(d.companyName), preheader: `Code de signature : ${d.code}`, body }),
   }
 }
 
@@ -213,7 +214,7 @@ export function buildSignatureConfirmationEmail(d: {
   `
   return {
     subject,
-    html: emailBase({ accentColor: d.accentColor, companyName: e(d.companyName), preheader: e(`${DocLabel(d.docType)} ${d.docNumber} signé — votre exemplaire est joint`), body }),
+    html: emailBase({ source: "email-signature", accentColor: d.accentColor, companyName: e(d.companyName), preheader: e(`${DocLabel(d.docType)} ${d.docNumber} signé — votre exemplaire est joint`), body }),
   }
 }
 
@@ -346,7 +347,7 @@ export function buildSignatureExpiryReminderEmail(d: {
   `
   return {
     subject,
-    html: emailBase({ accentColor: d.accentColor, companyName: e(d.companyName), preheader: e(`Le lien de signature expire ${when}`), body }),
+    html: emailBase({ source: "email-signature", accentColor: d.accentColor, companyName: e(d.companyName), preheader: e(`Le lien de signature expire ${when}`), body }),
   }
 }
 
@@ -379,7 +380,7 @@ export function buildWithdrawalAckEmail(d: {
   `
   return {
     subject,
-    html: emailBase({ accentColor: d.accentColor, companyName: e(d.companyName), preheader: e(`Rétractation enregistrée : ${d.docNumber}`), body }),
+    html: emailBase({ source: "email-signature", accentColor: d.accentColor, companyName: e(d.companyName), preheader: e(`Rétractation enregistrée : ${d.docNumber}`), body }),
   }
 }
 
@@ -406,6 +407,6 @@ export function buildDepositRequestEmail(d: {
   `
   return {
     subject,
-    html: emailBase({ accentColor: d.accentColor, companyName: e(d.companyName), preheader: e(`Acompte de ${fmtEur(d.deposit.amount)} à régler par virement`), body }),
+    html: emailBase({ source: "email-signature", accentColor: d.accentColor, companyName: e(d.companyName), preheader: e(`Acompte de ${fmtEur(d.deposit.amount)} à régler par virement`), body }),
   }
 }

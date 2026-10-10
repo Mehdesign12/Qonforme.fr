@@ -87,6 +87,8 @@ export interface PaymentLinkState {
   disabledAt: string | null
   /** Dernière déclaration de virement, sauf celles que l'artisan a écartées. */
   declaration: ArtisanDeclaration | null
+  /** Ouvertures de la page de règlement par le client (null : suivi indisponible, migration 20261010). */
+  views?: { count: number; first: string | null; last: string | null } | null
 }
 
 /** Tables de la migration 20261003_payment_links.sql. */

@@ -44,6 +44,7 @@ export function buildResetPasswordEmail({
   `
 
   const html = emailBase({
+    source: "email-compte",
     accentColor: "#2563EB",
     companyName: "Qonforme",
     preheader: "Réinitialisez votre mot de passe Qonforme — lien valable 1 heure",

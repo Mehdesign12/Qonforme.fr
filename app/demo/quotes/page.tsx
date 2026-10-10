@@ -2,6 +2,13 @@
 
 import { QuoteListView, type QuoteListItem } from "@/components/quotes/QuoteListView"
 import { DEMO_PURCHASE_ORDERS, DEMO_QUOTES, DEMO_TODAY } from "@/lib/demo/data"
+import { demoSignaturePanel } from "@/lib/demo/signature"
+
+/** Suivi d'ouverture des devis envoyés, d'après les liens de signature de la démo. */
+function demoViews(id: string) {
+  const link = demoSignaturePanel("quote", id).link
+  return link && link.sent_at ? { count: link.view_count, last: link.last_viewed_at } : null
+}
 
 /** Démo : même liste que /quotes, alimentée par les données fictives communes. */
 const ITEMS: QuoteListItem[] = DEMO_QUOTES.map((q) => ({
@@ -16,6 +23,7 @@ const ITEMS: QuoteListItem[] = DEMO_QUOTES.map((q) => ({
   search_text: q.lines.map((l) => l.description).join(" "),
   converted: !!q.converted_invoice_number,
   converted_invoice_number: q.converted_invoice_number ?? null,
+  views: q.status === "sent" ? demoViews(q.id) : null,
   href: `/demo/quotes/${q.id}`,
 }))
 

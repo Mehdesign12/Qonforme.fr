@@ -98,6 +98,7 @@ export function buildInvoiceEmail(d: InvoiceEmailData): { subject: string; html:
   return {
     subject,
     html: emailBase({
+      source: "email-facture",
       accentColor: d.accentColor,
       companyName: d.companyName,
       preheader:   `Facture ${d.invoiceNumber} — ${fmtEur(d.totalTtc)} TTC — échéance ${fmtDate(d.dueDate)}`,

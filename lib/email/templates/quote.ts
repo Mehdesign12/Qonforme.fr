@@ -81,6 +81,7 @@ export function buildQuoteEmail(d: QuoteEmailData): { subject: string; html: str
   return {
     subject,
     html: emailBase({
+      source: "email-devis",
       accentColor: d.accentColor,
       companyName: d.companyName,
       preheader:   `Devis ${d.quoteNumber} — ${fmtEur(d.totalTtc)} TTC — valable jusqu'au ${fmtDate(d.validUntil)}`,

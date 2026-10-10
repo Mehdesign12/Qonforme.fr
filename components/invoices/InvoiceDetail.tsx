@@ -392,24 +392,33 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     if (invoice.status === "draft" && invoice.client?.email) setShowSendModal(true)
   }, [invoice?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const changeStatus = async (newStatus: InvoiceStatus) => {
-    if (!invoice) return
+  const changeStatus = async (newStatus: InvoiceStatus, extra: { paid_at?: string } = {}): Promise<boolean> => {
+    if (!invoice) return false
     setStatusLoading(true)
     try {
       const res = await fetch(`/api/invoices/${invoiceId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus, ...extra }),
       })
       const json = await res.json()
-      if (isSubscriptionRequired(res.status, json)) { setPaywall("send"); return }
-      if (isArtisanPaywall(res.status, json)) { setPaywall("artisan"); return }
-      if (toastCompanyRequired(res.status, json)) return
-      if (!res.ok) { toast.error(json.error); return }
+      if (isSubscriptionRequired(res.status, json)) { setPaywall("send"); return false }
+      if (isArtisanPaywall(res.status, json)) { setPaywall("artisan"); return false }
+      if (toastCompanyRequired(res.status, json)) return false
+      if (!res.ok) { toast.error(json.error); return false }
       setInvoice(prev => mergeInvoice(prev, json.invoice))
       toast.success(`Statut mis à jour : ${STATUS_LABELS[newStatus] ?? newStatus}`)
-    } catch { toast.error("Erreur réseau") }
+      return true
+    } catch { toast.error("Erreur réseau"); return false }
     finally { setStatusLoading(false) }
+  }
+
+  // « Marquer comme payée » : la date du paiement fait l'« encaissé » du tableau de bord
+  const [paidDialog, setPaidDialog] = useState(false)
+  const [paidDate, setPaidDate] = useState("")
+  const askPaidDate = () => { setPaidDate(todayISO()); setPaidDialog(true) }
+  const confirmPaid = async () => {
+    if (await changeStatus("paid" as InvoiceStatus, { paid_at: paidDate })) setPaidDialog(false)
   }
 
   const downloadPDF = async () => {
@@ -639,7 +648,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         paymentBanner={payLink.state?.declaration?.status === "open" && isPayableStatus(invoice.status) ? (
           <DeclarationBanner
             declaration={payLink.state.declaration}
-            onMarkPaid={() => changeStatus("paid" as InvoiceStatus)}
+            onMarkPaid={() => void changeStatus("paid" as InvoiceStatus, { paid_at: payLink.state!.declaration!.transferDate })}
             onDismiss={() => payLink.dismiss(payLink.state!.declaration!.id)}
             busy={payLink.busy || statusLoading}
           />
@@ -660,10 +669,40 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           remindLoading,
           openSend: () => setShowSendModal(true),
           sendLoading,
-          changeStatus,
+          changeStatus: (s: InvoiceStatus) => (s === "paid" ? askPaidDate() : void changeStatus(s)),
           statusLoading,
         }}
       />
+
+      {/* Fenêtre « Marquer comme payée » : date du paiement */}
+      <Dialog open={paidDialog} onOpenChange={(o) => { if (!o && !statusLoading) setPaidDialog(false) }}>
+        <DialogContent showCloseButton={!statusLoading} className="gap-0 overflow-hidden p-0 sm:max-w-[440px]">
+          <DialogHead
+            title="Marquer comme payée"
+            sub={<><span className={cn(invoice.invoice_number && "font-mono")}>{invoiceNumberLabel(invoice.invoice_number)}</span> · {formatCurrency(invoice.total_ttc)} TTC</>}
+          />
+          <div className="flex flex-col gap-2 px-[22px] pb-5 pt-[18px]">
+            <label htmlFor="paid-date" className="q-label">Date du paiement</label>
+            <input
+              id="paid-date"
+              type="date"
+              value={paidDate}
+              max={todayISO()}
+              onChange={(e) => setPaidDate(e.target.value)}
+              className="q-input w-full text-base md:text-sm"
+            />
+            <p className="q-field-hint leading-relaxed">
+              Le jour où l&apos;argent est arrivé sur votre compte. Il compte dans l&apos;« encaissé » du tableau de bord.
+            </p>
+          </div>
+          <DialogFoot>
+            <Button variant="ghost" onClick={() => setPaidDialog(false)} disabled={statusLoading}>Annuler</Button>
+            <Button onClick={confirmPaid} disabled={statusLoading || !paidDate}>
+              {statusLoading ? "Enregistrement…" : "Marquer payée"}
+            </Button>
+          </DialogFoot>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

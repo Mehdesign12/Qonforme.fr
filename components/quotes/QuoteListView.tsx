@@ -21,7 +21,7 @@ import { DocStatusPill, EmptyState, Kpi, KpiGrid, PageHeader, SearchField } from
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
 import {
-  addDays, daysLeft, normalizeSearch, plural, quoteNextStep, shortDate, type QuoteStatus,
+  addDays, daysLeft, normalizeSearch, plural, quoteNextStep, shortDate, type QuoteStatus, type QuoteViews,
 } from "@/components/quotes/QuoteListHelpers"
 
 export interface QuoteListItem {
@@ -38,6 +38,8 @@ export interface QuoteListItem {
   search_text?: string
   converted: boolean
   converted_invoice_number?: string | null
+  /** Consultations de la page en ligne du devis ; absent sans lien envoyé. */
+  views?: QuoteViews | null
   href: string
 }
 

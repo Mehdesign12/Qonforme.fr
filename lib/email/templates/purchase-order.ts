@@ -81,6 +81,7 @@ export function buildPurchaseOrderEmail(d: PurchaseOrderEmailData): { subject: s
   return {
     subject,
     html: emailBase({
+      source: "email-commande",
       accentColor: d.accentColor,
       companyName: d.companyName,
       preheader:   `Bon de commande ${d.poNumber} — ${fmtEur(d.totalTtc)} TTC`,
