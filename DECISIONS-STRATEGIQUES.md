@@ -306,7 +306,7 @@ Canevas : https://claude.ai/artifact/QEPJmN9m1MdvkriB3RpAkG
 | Apport | Aujourd'hui | Valeur |
 |---|---|---|
 | Tableau de bord : encaissé, à encaisser, en retard, prévision à 30 jours | **Partiel** (refait le 02/10/2026) : facturé sur la période (mois, trimestre, année), à encaisser, en retard, à échoir sous 30 jours, « À faire » tiré des données. Le bug de la facture relancée est corrigé. Pas d'« encaissé » : la date de paiement (`paid_at`) n'est jamais enregistrée ; pas de prévision | Pilotage fiable |
-| Trésorerie | **À construire** | Anticiper les mois creux |
+| Trésorerie | **Construit le 10/10/2026** (`/tresorerie`, menu Pilotage) : encaissements et décaissements à venir semaine par semaine sur 30, 60 ou 90 jours, d'après les échéances des factures émises (avoirs et retenue de garantie déduits) et des factures reçues à payer (litiges exclus) ; retards à part, solde prévu, échéancier. Les sorties apparaissent dès que la réception des factures fournisseurs est activée | Anticiper les mois creux |
 | Liste des factures : recherche, vues enregistrées, actions groupées | **Partiel** : onglets à compteurs et recherche (02/10/2026) ; pas de vues enregistrées ni d'actions groupées | Gain de temps au-delà de 50 factures |
 | Recherche globale ⌘K | **Construit le 02/10/2026** : factures, devis, clients et actions, au clavier (`/api/search`) ; cloche « À surveiller » (retards, devis sans réponse, brouillons oubliés, `/api/attention`) | Rapidité |
 | Exports comptables | **Partiel** : FEC ; ventes CSV et archive des PDF dans l'espace comptable (03/10/2026) | Le comptable reçoit ce qu'il attend |
