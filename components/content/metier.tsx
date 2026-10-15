@@ -6,8 +6,7 @@ import { SectionHeading } from "./ui"
 import { fr } from "./text"
 
 /**
- * Blocs des pages « Facturation par métier » (/facturation/[slug] et sa
- * déclinaison par ville), partagés pour garder les deux pages identiques.
+ * Blocs des pages « Facturation par métier » (/facturation/[slug]).
  */
 
 /** Photos des métiers du bâtiment (mêmes photos que l'accueil, lib/landing/photos). */

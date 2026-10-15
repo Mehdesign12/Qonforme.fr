@@ -5,13 +5,13 @@ import { OutilsHero } from "@/components/outils/OutilsHero"
 import { ToolCard, ToolShell } from "@/components/outils/kit"
 
 export const metadata: Metadata = {
-  title: "Outils gratuits pour auto-entrepreneurs et TPE",
+  title: "Outils gratuits pour artisans du bâtiment",
   description: "12 outils gratuits pour artisans : calculateur de TVA, simulateurs de charges et de seuil de TVA, vérificateur SIRET, facture et devis en PDF.",
   keywords: ["calculateur tva gratuit", "simulateur charges auto-entrepreneur", "vérificateur siret", "générateur facture gratuit", "outils auto-entrepreneur"],
   alternates: { canonical: "/outils" },
   openGraph: {
-    title: "Outils gratuits pour auto-entrepreneurs et TPE | Qonforme",
-    description: "12 outils gratuits pour gérer votre activité. Calculateurs, générateurs, vérificateurs — sans inscription.",
+    title: "Outils gratuits pour artisans du bâtiment | Qonforme",
+    description: "12 outils gratuits pour les artisans du bâtiment : calculateurs, générateurs, vérificateurs, sans inscription.",
     url: "https://qonforme.fr/outils",
     images: [{ url: "/api/og?title=Outils%20gratuits&subtitle=Calculateurs%2C%20g%C3%A9n%C3%A9rateurs%20et%20v%C3%A9rificateurs", width: 1200, height: 630 }],
   },

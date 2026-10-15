@@ -201,8 +201,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.6,
     })),
-    // pSEO géolocalisé : métier x ville — SUSPENDU (voir Audit SEO 09/04/2026)
-    // Les 780 pages sont considérées comme thin content par Google.
-    // À réintroduire quand le domaine a 100+ pages indexées, avec contenu unique.
+    // Pages métier × ville : supprimées le 15/10/2026 (thin content, hors de ce plan depuis le 09/04).
+    // Elles sont dans l'historique du code ; à réintroduire seulement avec du contenu local unique.
   ];
 }

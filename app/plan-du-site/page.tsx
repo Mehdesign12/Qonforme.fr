@@ -13,7 +13,7 @@ import { fr } from "@/components/content/text"
 /*
  * Plan du site en HTML, lié depuis le pied de page (PushRank, 04/10/2026).
  * Mêmes pages que app/sitemap.ts : seulement les pages publiques indexables,
- * jamais les pages métier × ville (noindex) ni les pages de l'application.
+ * jamais les pages de l'application.
  */
 export const metadata: Metadata = {
   title: "Plan du site",
