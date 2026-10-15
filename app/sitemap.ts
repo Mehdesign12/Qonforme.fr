@@ -12,6 +12,40 @@ import { INSTALLATIONS } from "@/lib/pseo/installation";
  */
 export const revalidate = 3600
 
+/**
+ * Dernière modification réelle du contenu, par adresse (AAAA-MM-JJ, tirées du
+ * suivi des modifications de CLAUDE.md). Une adresse absente d'ici n'a pas de
+ * `lastmod` : mieux vaut aucune date qu'une fausse, car Google cesse de se
+ * fier à un `lastmod` toujours égal à « maintenant » (c'était le cas de 104
+ * adresses). Les articles de blog prennent leur `updated_at`, les guides leur
+ * date de vérification (`verifieLe`). À compléter quand une page change de
+ * façon significative.
+ */
+const MAJ: Record<string, string> = {
+  "/": "2026-10-05",
+  "/pricing": "2026-10-02",
+  "/demo": "2026-10-04",
+  "/signup": "2026-10-06",
+  "/guide": "2026-10-05",
+  "/outils": "2026-10-15",
+  "/outils/calculateur-beton": "2026-10-15",
+  "/outils/calculateur-pente": "2026-10-15",
+  "/modele": "2026-10-15",
+  "/modele/devis-travaux": "2026-10-15",
+  "/modele/devis-electricien": "2026-10-15",
+  "/facturation": "2026-10-15",
+  "/facturation/electricien": "2026-10-15",
+  "/facturation/macon": "2026-10-15",
+  "/facturation/couvreur": "2026-10-15",
+  "/facturation/paysagiste": "2026-10-15",
+  "/devenir-a-son-compte/electricien": "2026-10-15",
+}
+
+const jour = (iso: string) => new Date(`${iso}T00:00:00Z`)
+
+/** `{ lastModified }` si la date de l'adresse est connue, sinon rien. */
+const dateDe = (path: string): { lastModified?: Date } => (MAJ[path] ? { lastModified: jour(MAJ[path]) } : {})
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://qonforme.fr";
 
@@ -31,31 +65,38 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .eq("robots->>index", "false");
   const hidden = new Set((noindex ?? []).map((p) => p.slug));
 
-  const blogPostEntries: MetadataRoute.Sitemap = (posts ?? []).filter((post) => !hidden.has(post.slug)).map((post) => ({
+  const visibles = (posts ?? []).filter((post) => !hidden.has(post.slug));
+  const blogPostEntries: MetadataRoute.Sitemap = visibles.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
     lastModified: new Date(post.updated_at),
     changeFrequency: "monthly" as const,
     priority: 0.7,
   }));
 
+  // Le hub du blog change quand un article change : date du plus récent
+  const dernierArticle = visibles.reduce<Date | null>((max, p) => {
+    const d = new Date(p.updated_at)
+    return Number.isNaN(d.getTime()) || (max && d <= max) ? max : d
+  }, null)
+
   // pSEO pages
   const metierEntries: MetadataRoute.Sitemap = METIERS.map((m) => ({
     url: `${baseUrl}/facturation/${m.slug}`,
-    lastModified: new Date(),
+    ...dateDe(`/facturation/${m.slug}`),
     changeFrequency: "monthly" as const,
     priority: 0.8,
   }));
 
   const guideEntries: MetadataRoute.Sitemap = GUIDES.map((g) => ({
     url: `${baseUrl}/guide/${g.slug}`,
-    lastModified: new Date(),
+    ...(g.verifieLe ? { lastModified: jour(g.verifieLe) } : {}),
     changeFrequency: "monthly" as const,
     priority: 0.7,
   }));
 
   const modeleEntries: MetadataRoute.Sitemap = MODELES.map((m) => ({
     url: `${baseUrl}/modele/${m.slug}`,
-    lastModified: new Date(),
+    ...dateDe(`/modele/${m.slug}`),
     changeFrequency: "monthly" as const,
     priority: 0.7,
   }));
@@ -63,92 +104,77 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     {
       url: baseUrl,
-      lastModified: new Date(),
+      ...dateDe("/"),
       changeFrequency: "weekly",
       priority: 1.0,
     },
     {
       url: `${baseUrl}/pricing`,
-      lastModified: new Date(),
+      ...dateDe("/pricing"),
       changeFrequency: "monthly",
       priority: 0.9,
     },
     {
       url: `${baseUrl}/demo`,
-      lastModified: new Date(),
+      ...dateDe("/demo"),
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
       url: `${baseUrl}/blog`,
-      lastModified: new Date(),
+      ...(dernierArticle ? { lastModified: dernierArticle } : {}),
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
       url: `${baseUrl}/facturation`,
-      lastModified: new Date(),
+      ...dateDe("/facturation"),
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
       url: `${baseUrl}/guide`,
-      lastModified: new Date(),
+      ...dateDe("/guide"),
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
       url: `${baseUrl}/modele`,
-      lastModified: new Date(),
+      ...dateDe("/modele"),
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
       url: `${baseUrl}/signup`,
-      lastModified: new Date(),
+      ...dateDe("/signup"),
       changeFrequency: "monthly",
       priority: 0.7,
     },
-    {
-      url: `${baseUrl}/login`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
+    // /login et /forgot-password ne sont plus listés (15/10/2026) : pages de connexion sans valeur de recherche.
     {
       url: `${baseUrl}/mentions-legales`,
-      lastModified: new Date(),
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${baseUrl}/cgu`,
-      lastModified: new Date(),
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${baseUrl}/confidentialite`,
-      lastModified: new Date(),
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${baseUrl}/plan-du-site`,
-      lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.3,
-    },
-    {
-      url: `${baseUrl}/forgot-password`,
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.2,
     },
     // Outils gratuits
     {
       url: `${baseUrl}/outils`,
-      lastModified: new Date(),
+      ...dateDe("/outils"),
       changeFrequency: "weekly" as const,
       priority: 0.8,
     },
@@ -165,9 +191,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       "simulateur-revenu-net",
       "generateur-numero-facture",
       "generateur-conditions-paiement",
+      "calculateur-beton",
+      "calculateur-pente",
     ].map((slug) => ({
       url: `${baseUrl}/outils/${slug}`,
-      lastModified: new Date(),
+      ...dateDe(`/outils/${slug}`),
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),
@@ -178,26 +206,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // S'installer à son compte (métiers du bâtiment)
     {
       url: `${baseUrl}/devenir-a-son-compte`,
-      lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.8,
     },
     ...INSTALLATIONS.map((i) => ({
       url: `${baseUrl}/devenir-a-son-compte/${i.slug}`,
-      lastModified: new Date(),
+      ...dateDe(`/devenir-a-son-compte/${i.slug}`),
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),
     // Glossaire
     {
       url: `${baseUrl}/glossaire`,
-      lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.7,
     },
     ...GLOSSAIRE.map((t) => ({
       url: `${baseUrl}/glossaire/${t.slug}`,
-      lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.6,
     })),
