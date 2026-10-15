@@ -76,10 +76,31 @@ function uniqueNames(names: string[]): string[] {
   })
 }
 
+export interface ZipOptions {
+  /**
+   * Garde les dossiers (« word/document.xml », « _rels/.rels ») : les fichiers
+   * Word et Excel sont des archives à arborescence imposée. Les noms viennent
+   * alors du code, pas d'un utilisateur : un nom absolu, avec « .. », une
+   * barre oblique inverse ou un doublon est une erreur, jamais corrigé en silence.
+   */
+  folders?: boolean
+}
+
+function foldedNames(names: string[]): string[] {
+  const seen = new Set<string>()
+  for (const n of names) {
+    const bad = !n || n.startsWith("/") || n.includes("\\") || /[\u0000-\u001f\u007f]/.test(n) || n.split("/").some((s) => s === ".." || s === "." || s === "")
+    if (bad) throw new Error(`Nom d'entrée ZIP invalide : ${JSON.stringify(n)}`)
+    if (seen.has(n.toLowerCase())) throw new Error(`Nom d'entrée ZIP en double : ${n}`)
+    seen.add(n.toLowerCase())
+  }
+  return names
+}
+
 /** Construit l'archive. */
-export function createZip(entries: ZipEntry[]): Uint8Array {
+export function createZip(entries: ZipEntry[], options: ZipOptions = {}): Uint8Array {
   if (entries.length > 0xffff) throw new Error("Trop de fichiers pour une archive sans ZIP64")
-  const names = uniqueNames(entries.map((e) => e.name))
+  const names = options.folders ? foldedNames(entries.map((e) => e.name)) : uniqueNames(entries.map((e) => e.name))
   const encoder = new TextEncoder()
   const locals: Uint8Array[] = []
   const centrals: Uint8Array[] = []

@@ -5,6 +5,7 @@ import { MODELES, getModeleBySlug } from "@/lib/pseo/modeles"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
 import { fr } from "@/components/content/text"
 import ModelePaper from "@/components/content/ModelePaper"
+import { TelechargerModele } from "@/components/content/TelechargerModele"
 import { ExempleDevisCard } from "@/components/content/ExempleDevis"
 import { fitDescription, fitTitle } from "@/lib/seo/meta"
 
@@ -147,6 +148,16 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
                 <p className="max-w-[68ch] text-[17px] leading-[1.75] text-q-text-2">{fr(modele.pourQui)}</p>
               </section>
 
+              {modele.telechargement && (
+                <TelechargerModele
+                  id="telecharger"
+                  className="mt-12"
+                  fichier={modele.telechargement}
+                  titre="Télécharger ce modèle vierge"
+                  texte="Le même devis en fichier, prêt à remplir : lignes de prestations, TVA par taux, mentions de l'artisan et cadre « Bon pour accord ». Sans inscription."
+                />
+              )}
+
               {modele.exemple && <ExempleDevisCard exemple={modele.exemple} id="exemple" />}
 
               {modele.mentionsSpecifiques.length > 0 && (
@@ -183,7 +194,9 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
                 </h2>
                 <ChipLinks
                   links={[
+                    // Les modèles du même type d'abord : un devis renvoie vers les autres devis
                     ...MODELES.filter((m) => m.slug !== modele.slug)
+                      .sort((a, b) => Number(b.type === modele.type) - Number(a.type === modele.type))
                       .slice(0, 5)
                       .map((m) => ({ href: `/modele/${m.slug}`, label: m.titre.replace(/^Modèle d(e |')/, "").replace(" gratuit", "") })),
                     ...(modele.type === "devis"

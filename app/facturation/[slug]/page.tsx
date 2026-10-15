@@ -12,6 +12,13 @@ export function generateStaticParams() {
   return METIERS.map(m => ({ slug: m.slug }))
 }
 
+/** Calculateurs de chantier utiles à chaque métier (liens du pied de page). */
+const OUTILS_CHANTIER: Record<string, { href: string; label: string }[]> = {
+  macon: [{ href: "/outils/calculateur-beton", label: "Calculateur de béton" }, { href: "/outils/calculateur-pente", label: "Calculateur de pente" }],
+  couvreur: [{ href: "/outils/calculateur-pente", label: "Calculateur de pente" }],
+  paysagiste: [{ href: "/outils/calculateur-beton", label: "Calculateur de béton" }, { href: "/outils/calculateur-pente", label: "Calculateur de pente" }],
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const metier = getMetierBySlug(slug)
@@ -137,6 +144,8 @@ export default async function MetierPage({ params }: { params: Promise<{ slug: s
             { href: "/guide/facture-electronique-2026", label: "Facture électronique 2026" },
             { href: "/modele/facture-classique", label: "Modèle de facture gratuit" },
             { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
+            ...(metier.slug === "electricien" ? [{ href: "/modele/devis-electricien", label: "Exemple de devis d'électricien" }] : []),
+            ...(OUTILS_CHANTIER[metier.slug] ?? []),
             { href: "/pricing", label: "Tarifs" },
             { href: "/blog", label: "Blog" },
           ]}

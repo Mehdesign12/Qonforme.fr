@@ -3,20 +3,24 @@ import Link from "next/link"
 import { ArrowRight, Check, FileText, Receipt, FileCheck, ClipboardList, Mail, Wand2 } from "lucide-react"
 import { MODELES } from "@/lib/pseo/modeles"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, FaqList, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
+import { TelechargerModele } from "@/components/content/TelechargerModele"
 
 /*
- * Page la plus vue du site dans Google (PushRank, 04/10/2026) : 3ᵉ en moyenne
- * sur « devis modele », 4ᵉ sur « modele devis », aucun clic. Le titre et le
- * haut de page répondent donc d'abord à « un modèle de devis à remplir ».
+ * Page la mieux classée du site dans Google (Search Console, 12/07-12/10/2026) :
+ * 4,5ᵉ en moyenne sur « devis modele », 6,5ᵉ sur « modele devis », aucun clic.
+ * Les pages qui la devancent proposent toutes un fichier à télécharger (Word,
+ * Excel, PDF) : le titre le dit et le fichier est en haut de page. Ne pas
+ * déplacer ces requêtes vers /modele/devis-travaux, qui reste sur « devis
+ * artisan » et « exemple de devis travaux ».
  */
 export const metadata: Metadata = {
-  title: "Modèle de devis et de facture gratuit, prêt à remplir",
-  description: "Modèle de devis gratuit avec les mentions obligatoires : remplissez-le en ligne et téléchargez le PDF, sans inscription. Factures et avoirs aussi.",
-  keywords: ["modele devis", "devis modele", "modele de devis gratuit", "modele facture gratuit", "modele avoir", "modele bon de commande"],
+  title: "Modèle de devis gratuit à télécharger : Word, Excel, PDF",
+  description: "Modèle de devis gratuit à télécharger en Word, Excel ou PDF, ou à remplir en ligne. Mentions obligatoires incluses, sans inscription. Factures aussi.",
+  keywords: ["modele devis", "devis modele", "modele de devis gratuit", "modele devis word", "modele devis excel", "modele devis pdf", "modele facture gratuit", "modele avoir", "modele bon de commande"],
   alternates: { canonical: "/modele" },
   openGraph: {
-    title: "Modèle de devis et de facture gratuit | Qonforme",
-    description: "Remplissez un modèle de devis ou de facture en ligne et téléchargez le PDF, sans inscription.",
+    title: "Modèle de devis gratuit à télécharger | Qonforme",
+    description: "Modèle de devis en Word, Excel ou PDF, ou à remplir en ligne. Sans inscription.",
     url: "https://qonforme.fr/modele",
     images: [{ url: "/api/og?title=Mod%C3%A8le%20de%20devis%20gratuit&subtitle=Devis%2C%20factures%2C%20avoirs%20et%20bons%20de%20commande", width: 1200, height: 630 }],
   },
@@ -49,7 +53,12 @@ const FAQ = [
   {
     question: "Ce modèle de devis est-il vraiment gratuit ?",
     answer:
-      "Oui. Le générateur de devis remplit le modèle en ligne et vous donne le PDF tout de suite, sans inscription. Rien n'est enregistré sur nos serveurs : gardez votre PDF.",
+      "Oui. Les fichiers Word, Excel et PDF se téléchargent sans inscription, et le générateur de devis remplit le modèle en ligne et vous donne le PDF tout de suite. Rien n'est enregistré sur nos serveurs : gardez votre fichier.",
+  },
+  {
+    question: "Dans quel format télécharger le modèle de devis ?",
+    answer:
+      "Trois formats, avec les mêmes mentions : Word (.docx) pour modifier librement le texte, Excel (.xlsx) dont les totaux et la TVA par taux se calculent seuls, et PDF pour imprimer et remplir à la main.",
   },
   {
     question: "Quelles mentions un devis doit-il comporter ?",
@@ -94,7 +103,7 @@ export default function ModeleIndexPage() {
           eyebrow="Modèles gratuits"
           title="Modèle de devis et de facture,"
           accent="gratuit."
-          sub="Remplissez le modèle en ligne et téléchargez votre devis ou votre facture en PDF, sans inscription. Chaque modèle liste les mentions obligatoires."
+          sub="Téléchargez le modèle de devis en Word, Excel ou PDF, ou remplissez-le en ligne et récupérez le PDF, sans inscription. Chaque modèle liste les mentions obligatoires."
         >
           <div className="mx-auto mt-8 flex w-full max-w-[360px] flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:justify-center">
             <Link href="/outils/generateur-devis-gratuit" className="lp-btn-p">
@@ -110,6 +119,17 @@ export default function ModeleIndexPage() {
           </div>
           <p className="mt-4 text-[14px] text-q-text-3">Gratuit, sans compte, PDF prêt à envoyer.</p>
         </ContentHero>
+
+        <div className="px-4 pb-14 sm:px-6 sm:pb-16">
+          <div className="mx-auto w-full max-w-[860px]">
+            <TelechargerModele
+              id="telecharger-devis"
+              fichier="modele-devis-artisan"
+              titre="Télécharger le modèle de devis vierge"
+              texte="Un devis de travaux prêt à remplir : lignes de prestations, TVA par taux, mentions de l'artisan et cadre « Bon pour accord ». Sans inscription."
+            />
+          </div>
+        </div>
 
         <section aria-labelledby="tous-les-modeles" className="px-4 sm:px-6">
           <div className={WRAP}>

@@ -176,6 +176,7 @@ export default async function InstallationPage({ params }: { params: Promise<{ s
                     { href: "/guide/tva-travaux", label: "TVA des travaux" },
                     { href: "/guide/mentions-obligatoires-devis", label: "Mentions obligatoires d'un devis" },
                     { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
+                    ...(inst.slug === "electricien" ? [{ href: "/modele/devis-electricien", label: "Exemple de devis d'électricien" }] : []),
                     { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires d'une facture" },
                     { href: "/outils/simulateur-charges-auto-entrepreneur", label: "Simuler mes cotisations" },
                     { href: "/devenir-a-son-compte", label: "Tous les métiers" },

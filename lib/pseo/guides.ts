@@ -616,6 +616,7 @@ export const GUIDES: Guide[] = [
     liens: [
       { href: "/guide/mentions-obligatoires-devis", label: "Mentions obligatoires d'un devis" },
       { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
+      { href: "/modele/devis-electricien", label: "Exemple de devis d'électricien" },
       { href: "/outils/generateur-devis-gratuit", label: "Générateur de devis gratuit" },
       { href: "/guide/devis-obligatoire", label: "Quand le devis est obligatoire" },
       { href: "/guide/tva-travaux", label: "TVA des travaux" },
