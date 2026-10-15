@@ -15,6 +15,8 @@ export interface Modele {
   mentionsSpecifiques: string[]
   /** Exemple chiffré affiché sous le modèle (totaux calculés par lib/pseo/exemple-devis.ts). */
   exemple?: ExempleDevis
+  /** Fichier à télécharger (Word, Excel, PDF) : nom sans extension, déclaré dans lib/modeles/fichier.ts. */
+  telechargement?: string
 }
 
 export const MODELES: Modele[] = [
@@ -102,8 +104,9 @@ export const MODELES: Modele[] = [
   {
     slug: "devis-travaux",
     titre: "Modèle de devis travaux gratuit pour artisan",
-    titreSeo: "Modèle de devis artisan gratuit et exemple de devis travaux",
-    description: "Modèle de devis artisan gratuit pour vos travaux : mentions obligatoires, matériaux et main-d'œuvre détaillés, TVA, et un exemple de devis chiffré.",
+    titreSeo: "Modèle de devis artisan et exemple de devis travaux (Word, Excel)",
+    description: "Modèle de devis artisan gratuit en Word, Excel ou PDF : mentions obligatoires, matériaux et main-d'œuvre détaillés, TVA, et un exemple de devis chiffré.",
+    telechargement: "modele-devis-artisan",
     motsCles: ["modele devis travaux", "modele devis artisan", "devis exemple", "exemple devis travaux", "devis matériaux", "devis travaux gratuit"],
     type: "devis",
     pourQui: "Artisans et entreprises du bâtiment qui veulent établir des devis détaillés et conformes pour leurs clients, particuliers ou professionnels.",
@@ -155,6 +158,66 @@ export const MODELES: Modele[] = [
         "Déchets : environ 0,5 m³ de gravats, triés et déposés en déchèterie professionnelle (nom et adresse à indiquer), coût compris dans la ligne d'évacuation.",
         "Acompte de 30 % à la signature, solde à la fin des travaux. Signé au domicile du client, l'acompte ne pourrait être encaissé qu'au bout de sept jours.",
         "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit.",
+        "Signature du client précédée de « Bon pour accord ».",
+      ],
+    },
+  },
+  {
+    slug: "devis-electricien",
+    titre: "Exemple de devis d'électricien à télécharger",
+    titreSeo: "Exemple de devis électricien chiffré (Word, Excel, PDF)",
+    description: "Exemple de devis d'électricien chiffré : tableau électrique et prises, TVA à 10 %, mentions obligatoires. À télécharger en Word, Excel ou PDF et à adapter.",
+    motsCles: ["exemple devis électricien", "devis électricité exemple", "modele devis electricien", "devis tableau électrique", "devis installation électrique exemple"],
+    type: "devis",
+    pourQui: "Électriciens, à leur compte ou en sous-traitance, qui veulent un devis de travaux électriques détaillé et conforme : fournitures, main-d'œuvre, déchets, TVA et assurance décennale.",
+    contenu: [
+      "Mention « Devis », date et durée de validité",
+      "Coordonnées de l'entreprise (SIREN ou SIRET, « EI » pour un entrepreneur individuel)",
+      "Coordonnées du client et adresse du chantier",
+      "Fournitures détaillées : tableau, appareillage, câbles, avec la référence ou « équivalent »",
+      "Main-d'œuvre : forfait ou heures, avec le taux horaire TTC chez un particulier",
+      "Mise en service et contrôle de l'installation",
+      "Évacuation des déchets du chantier : gestion, point de collecte et coût",
+      "Taux de TVA de chaque ligne et totaux HT et TTC",
+      "Délai d'exécution, acompte et conditions de paiement",
+      "Assurance décennale : assureur, n° de contrat, couverture géographique",
+      "Emplacement pour la signature du client, précédée de « Bon pour accord »",
+    ],
+    conseils: [
+      "Séparez la fourniture, la main-d'œuvre et la mise en service : le client voit ce qu'il paie et vous évitez les discussions sur le prix.",
+      "Indiquez la norme appliquée : la NF C 15-100 est la norme française des installations électriques de basse tension.",
+      "Pour une installation neuve ou entièrement rénovée avec coupure du réseau, l'attestation de conformité visée par le Consuel est nécessaire avant la mise en service : ajoutez-la au devis et précisez qui la prend en charge.",
+      "Le taux réduit de 10 % chez un particulier suppose que le client certifie sur le devis que le logement est achevé depuis plus de deux ans : prévoyez la mention à côté de sa signature.",
+      "Écrivez « acompte » pour la somme demandée à la signature : sans précision, celle d'un particulier est considérée comme des arrhes.",
+    ],
+    mentionsSpecifiques: [
+      "Installation réalisée selon la norme NF C 15-100",
+      "Assurance décennale : [Assureur], contrat n° [X], couverture : France métropolitaine",
+      "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit",
+    ],
+    telechargement: "exemple-devis-electricien",
+    exemple: {
+      titre: "Remplacement d'un tableau électrique et ajout de prises",
+      contexte: "Exemple fictif : devis pour un particulier, dans un appartement achevé depuis plus de deux ans, donc TVA à 10 %. Les prix illustrent la méthode ; ce ne sont pas des prix de marché.",
+      lignes: [
+        { designation: "Dépose de l'ancien tableau et mise en sécurité de l'installation", quantite: 1, unite: "forfait", prixUnitaireHT: 120 },
+        { designation: "Tableau électrique 3 rangées équipé (interrupteurs différentiels 30 mA, disjoncteurs divisionnaires), fourni", quantite: 1, unite: "u", prixUnitaireHT: 520 },
+        { designation: "Raccordement et repérage des circuits, pose du tableau", quantite: 8, unite: "h", prixUnitaireHT: 48 },
+        { designation: "Prise 16 A avec terre encastrée, fournie et posée (percement, câble 2,5 mm² et boîte d'encastrement compris)", quantite: 6, unite: "u", prixUnitaireHT: 78 },
+        { designation: "Essais, mise en service et contrôle de l'installation", quantite: 1, unite: "forfait", prixUnitaireHT: 90 },
+        { designation: "Évacuation du matériel usagé et dépôt en point de collecte", quantite: 1, unite: "forfait", prixUnitaireHT: 45 },
+      ],
+      tauxTva: 10,
+      acomptePourcent: 30,
+      conditions: [
+        "Devis gratuit, valable deux mois.",
+        "Travaux réalisés en deux jours, dans les 30 jours qui suivent la signature.",
+        "Installation réalisée selon la norme NF C 15-100.",
+        "Taux horaire pour un travail supplémentaire accepté par avenant : 48,00 € HT, soit 52,80 € TTC.",
+        "Déchets : environ 25 kg de matériel électrique usagé (ancien tableau, câbles), déposés en point de collecte (nom et adresse à indiquer), coût compris dans la ligne d'évacuation.",
+        "Acompte de 30 % à la signature, solde à la fin des travaux. Signé au domicile du client, l'acompte ne pourrait être encaissé qu'au bout de sept jours.",
+        "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit.",
+        "Assurance décennale : assureur, numéro de contrat et zone couverte à indiquer.",
         "Signature du client précédée de « Bon pour accord ».",
       ],
     },

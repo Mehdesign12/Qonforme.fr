@@ -1,17 +1,17 @@
 import type { Metadata } from "next"
-import { Calculator, FileText, Search, Receipt, FileCheck, Scale, TrendingUp, Hash, ClipboardList, Shield, Wrench, type LucideIcon } from "lucide-react"
+import { Calculator, FileText, Search, Receipt, FileCheck, Scale, TrendingUp, Hash, ClipboardList, Shield, Wrench, Layers, Ruler, type LucideIcon } from "lucide-react"
 import { MetaPixelEvent } from "@/components/shared/MetaPixelEvent"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { ToolCard, ToolShell } from "@/components/outils/kit"
 
 export const metadata: Metadata = {
   title: "Outils gratuits pour artisans du bâtiment",
-  description: "12 outils gratuits pour artisans : calculateur de TVA, simulateurs de charges et de seuil de TVA, vérificateur SIRET, facture et devis en PDF.",
-  keywords: ["calculateur tva gratuit", "simulateur charges auto-entrepreneur", "vérificateur siret", "générateur facture gratuit", "outils auto-entrepreneur"],
+  description: "14 outils gratuits pour artisans : calculateurs de TVA, de béton et de pente, simulateurs de charges, vérificateur SIRET, facture et devis en PDF.",
+  keywords: ["calculateur tva gratuit", "calculateur béton", "calculateur pente", "simulateur charges auto-entrepreneur", "vérificateur siret", "générateur facture gratuit", "outils artisan"],
   alternates: { canonical: "/outils" },
   openGraph: {
     title: "Outils gratuits pour artisans du bâtiment | Qonforme",
-    description: "12 outils gratuits pour les artisans du bâtiment : calculateurs, générateurs, vérificateurs, sans inscription.",
+    description: "14 outils gratuits pour les artisans du bâtiment : calculateurs, générateurs, vérificateurs, sans inscription.",
     url: "https://qonforme.fr/outils",
     images: [{ url: "/api/og?title=Outils%20gratuits&subtitle=Calculateurs%2C%20g%C3%A9n%C3%A9rateurs%20et%20v%C3%A9rificateurs", width: 1200, height: 630 }],
   },
@@ -45,6 +45,14 @@ const CATEGORIES: { title: string; accent: string; tools: Tool[] }[] = [
     ],
   },
   {
+    title: "Mesurer",
+    accent: "sur le chantier.",
+    tools: [
+      { title: "Calculateur de béton", desc: "Volume d'une dalle ou de poteaux, marge de perte, sacs de ciment, sable et gravillons.", href: "/outils/calculateur-beton", icon: Layers },
+      { title: "Calculateur de pente", desc: "Pente en pourcentage et en degrés, rapport 1 pour n, dénivelé d'une pente connue.", href: "/outils/calculateur-pente", icon: Ruler },
+    ],
+  },
+  {
     title: "Rédiger",
     accent: "et vérifier.",
     tools: [
@@ -67,8 +75,8 @@ export default function OutilsPage() {
         icon={<Wrench />}
         badge={`${ALL.length} outils gratuits`}
         title="Outils gratuits pour"
-        accent="auto-entrepreneurs et TPE."
-        subtitle="Calculateurs, générateurs et vérificateurs : tout ce dont vous avez besoin pour préparer vos devis et factures, estimer vos charges et vérifier vos mentions."
+        accent="artisans du bâtiment."
+        subtitle="Calculateurs, générateurs et vérificateurs : tout ce dont vous avez besoin pour préparer vos devis et factures, mesurer un chantier, estimer vos charges et vérifier vos mentions."
         checks={["Résultat instantané", "Sans inscription", "Rien n'est enregistré"]}
       />
 

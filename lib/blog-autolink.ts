@@ -26,6 +26,7 @@ const KEYWORD_LINKS: { pattern: RegExp; href: string }[] = [
   // Modèles
   { pattern: /mod[eè]le\s+de\s+facture\s+classique/i, href: "/modele/facture-classique" },
   { pattern: /mod[eè]le\s+de\s+devis\s+travaux/i, href: "/modele/devis-travaux" },
+  { pattern: /exemples?\s+de\s+devis\s+(?:d['']\s*)?[eé]lectricien/i, href: "/modele/devis-electricien" },
   { pattern: /mod[eè]le\s+d['']avoir/i, href: "/modele/avoir-annulation" },
   // Glossaire
   { pattern: /Factur-X/i, href: "/glossaire/factur-x" },
