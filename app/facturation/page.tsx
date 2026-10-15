@@ -1,53 +1,24 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, Wrench, Briefcase, Heart, Scissors, Car, KeyRound } from "lucide-react"
+import { ArrowRight, KeyRound } from "lucide-react"
 import { METIERS } from "@/lib/pseo/metiers"
-import { ContentCta, ContentHero, ContentPage, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
+import { ContentCta, ContentHero, ContentPage, SectionHeading, WRAP } from "@/components/content/ui"
 import { TRADE_PHOTOS } from "@/components/content/metier"
 
 export const metadata: Metadata = {
-  title: "Logiciel de facturation par métier",
-  description: "Devis et factures adaptés à votre métier, du bâtiment aux services, avec les mentions obligatoires propres à chaque activité. Devis gratuits et illimités.",
-  keywords: ["logiciel facturation", "facturation par metier", "facture BTP", "facture freelance", "facture artisan"],
+  title: "Logiciel de facturation pour les métiers du bâtiment",
+  description: "Devis et factures pour plombier, électricien, maçon, peintre et autres métiers du bâtiment : TVA par ligne, décennale, mentions légales. Devis gratuits.",
+  keywords: ["logiciel facturation", "facturation par metier", "facture BTP", "devis BTP", "facture artisan"],
   alternates: { canonical: "/facturation" },
   openGraph: {
-    title: "Logiciel de facturation par métier | Qonforme",
-    description: "Une facturation adaptée à chaque métier, du bâtiment aux services.",
+    title: "Logiciel de facturation pour les métiers du bâtiment | Qonforme",
+    description: "Une facturation adaptée à chaque métier du bâtiment.",
     url: "https://qonforme.fr/facturation",
     images: [{ url: "/api/og?title=Facturation%20par%20m%C3%A9tier&subtitle=Logiciel%20adapt%C3%A9%20%C3%A0%20votre%20activit%C3%A9", width: 1200, height: 630 }],
   },
 }
 
-const CATEGORIES: { nom: string; icon: React.ReactNode; slugs: string[] }[] = [
-  {
-    nom: "Bâtiment",
-    icon: <Wrench className="w-5 h-5" />,
-    slugs: ["plombier", "electricien", "macon", "peintre", "carreleur", "menuisier", "couvreur", "plaquiste", "chauffagiste", "serrurier"],
-  },
-  {
-    nom: "Services et indépendants",
-    icon: <Briefcase className="w-5 h-5" />,
-    slugs: ["auto-entrepreneur", "consultant", "developpeur-freelance", "graphiste", "photographe", "formateur", "coach", "community-manager", "traducteur", "comptable", "avocat", "agent-immobilier", "informaticien"],
-  },
-  {
-    nom: "Artisanat et commerce",
-    icon: <Scissors className="w-5 h-5" />,
-    slugs: ["coiffeur", "estheticienne", "paysagiste", "architecte-interieur", "traiteur", "fleuriste", "boulanger", "jardinier"],
-  },
-  {
-    nom: "Transport et services à domicile",
-    icon: <Car className="w-5 h-5" />,
-    slugs: ["vtc", "taxi", "demenageur", "femme-de-menage"],
-  },
-  {
-    nom: "Santé et bien-être",
-    icon: <Heart className="w-5 h-5" />,
-    slugs: ["osteopathe", "kinesitherapeute", "infirmier-liberal", "dieteticien"],
-  },
-]
-
-const metiersBySlug = Object.fromEntries(METIERS.map(m => [m.slug, m]))
 
 
 export default function FacturationIndexPage() {
@@ -60,8 +31,6 @@ export default function FacturationIndexPage() {
     publisher: { "@type": "Organization", name: "Qonforme", url: "https://qonforme.fr" },
   }
 
-  const [btp, ...others] = CATEGORIES
-
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -70,7 +39,7 @@ export default function FacturationIndexPage() {
           eyebrow="Facturation par métier"
           title="Un logiciel de facturation"
           accent="adapté à votre métier."
-          sub={`${METIERS.length} métiers couverts : devis, factures et obligations légales propres à votre activité.`}
+          sub={`${METIERS.length} métiers du bâtiment : devis, factures et obligations légales propres à votre activité.`}
         />
 
         {/* Bâtiment : galerie de photos (canevas « Main », galerie des métiers) */}
@@ -78,9 +47,8 @@ export default function FacturationIndexPage() {
           <div className={WRAP}>
             <SectionHeading id="cat-batiment" title="Les métiers" accent="du bâtiment." className="mb-8" />
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
-              {btp.slugs.map((slug, i) => {
-                const m = metiersBySlug[slug]
-                if (!m) return null
+              {METIERS.map((m, i) => {
+                const slug = m.slug
                 const photo = TRADE_PHOTOS[slug]
                 return (
                   <li key={slug}>
@@ -117,24 +85,6 @@ export default function FacturationIndexPage() {
           </div>
         </section>
 
-        {/* Autres catégories */}
-        {others.map((cat) => (
-          <section key={cat.nom} aria-label={cat.nom} className="px-4 pt-16 sm:px-6 sm:pt-20">
-            <div className={WRAP}>
-              <div className="mb-8 flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-q-wash text-q-accent-strong">{cat.icon}</span>
-                <SectionHeading title={cat.nom} />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
-                {cat.slugs.map((slug) => {
-                  const m = metiersBySlug[slug]
-                  if (!m) return null
-                  return <LinkCard key={slug} href={`/facturation/${slug}`} title={m.nom} text={m.description} cta="Voir le métier" as="h3" />
-                })}
-              </div>
-            </div>
-          </section>
-        ))}
 
         <ContentCta
           title="Votre métier n'est pas dans la liste&nbsp;?"
