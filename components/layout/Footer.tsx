@@ -21,7 +21,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "S'installer à son compte", href: "/devenir-a-son-compte" },
       { label: "Facturation par métier", href: "/facturation" },
       { label: "Guides pratiques", href: "/guide" },
-      { label: "Modèles gratuits", href: "/modele" },
+      { label: "Modèle de devis gratuit", href: "/modele" },
       { label: "Glossaire", href: "/glossaire" },
     ],
   },
