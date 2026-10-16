@@ -3,6 +3,66 @@
 > Document interne. Il nomme un concurrent : ne jamais reprendre ce nom dans un contenu public (CLAUDE.md, `DECISIONS-STRATEGIQUES.md` § 2).
 > Relevé le 16/10/2026. Méthode : « compact keywords » du skill expert-seo (requêtes de bas de funnel, très précises, qui décrivent un scénario d'achat), complétée le même jour par les mots exacts que tapent les chercheurs (§ 9).
 
+## 0. Plan retenu (16/10/2026)
+
+> Validé avec le fondateur le 16/10/2026. C'est la feuille de route ; les sections 1 à 9 en donnent les preuves. Cocher au fur et à mesure.
+
+### Règles d'écriture
+
+- **Accents** : orthographe française correcte partout dans les title, descriptions, H1 et textes (« maçon », « bâtiment », « électricité »). Google rapproche les formes avec et sans accents : `/facturation/macon`, dont le titre porte « Maçon », sort à la même position pour « logiciel devis maçon » (27,8) et « logiciel devis facture macon » (28,5) dans la Search Console. Les adresses restent sans accents (`/modele/devis-maconnerie`) : un « ç » dans une adresse devient « %C3%A7 » quand on copie le lien. Les outils de mots-clés enregistrent souvent les requêtes sans accents : ne jamais recopier cette orthographe sur le site.
+- **Les mots des chercheurs** (§ 9) : l'ouvrage dans le titre (« devis de maçonnerie »), le métier dans la première phrase ; le chantier précis en titre de section (« remplacement de tableau électrique ») ; « PDF » cité en premier ; « auto-entrepreneur » dans les titres, « micro-entrepreneur » dans le texte.
+- **Honnêteté** : « gratuit » seulement pour les devis (les factures sont payantes) ; aucun concurrent nommé ; prix des exemples annoncés comme fictifs ; ni IA, ni mode hors ligne, ni application à télécharger promis.
+- **Une page, une vraie valeur** : un exemple chiffré du métier, ses règles de TVA et ses mentions, ses fichiers PDF, Word et Excel, une version auto-entrepreneur. Jamais une page recopiée en changeant le nom du métier.
+
+### Mots-clés retenus
+
+Volumes mensuels en France (Google Ads via OpenSEO, 16/10/2026), estimations à confirmer dans la Search Console.
+
+| Mot-clé exact | Recherches/mois | Ce que veut la personne | Page | État |
+|---|---|---|---|---|
+| logiciel devis facture bâtiment | 880 | acheter un logiciel | accueil | existe (déjà ciblé) |
+| exemple devis auto entrepreneur | 480 | rédiger son devis | `/modele/devis-auto-entrepreneur` | à créer |
+| exemple devis remplacement tableau électrique | 390 | rédiger son devis | `/modele/devis-electricien` | existe, titre à changer |
+| exemple devis paysagiste | 390 | rédiger son devis | `/modele/devis-paysagiste` | à créer |
+| exemple devis peinture, peinture façade extérieure | 320 + 320 | rédiger son devis | `/modele/devis-peinture` | à créer |
+| devis vierge à imprimer, devis vierge pdf | 260 + 170 | rédiger son devis | `/modele/devis-vierge` | à créer |
+| logiciel plombier | 260 | acheter un logiciel | `/facturation/plombier` | existe, titre à changer |
+| exemple devis électricité maison 100m2 | 210 | rédiger son devis | `/modele/devis-electricien` | existe, section à ajouter |
+| exemple devis maçonnerie | 170 | rédiger son devis | `/modele/devis-maconnerie` | à créer |
+| modèle devis auto entrepreneur sans tva | 140 | rédiger son devis | `/modele/devis-auto-entrepreneur` | à créer |
+| exemple devis plomberie | 140 | rédiger son devis | `/modele/devis-plomberie` | à créer |
+| logiciel chauffagiste | 140 | acheter un logiciel | `/facturation/chauffagiste` | existe, titre à changer |
+| attestation tva 10 travaux | 140 | appliquer la bonne TVA | `/guide/tva-travaux` | existe, section à ajouter |
+| exemple devis placo | 110 | rédiger son devis | `/modele/devis-placo` | à créer |
+| relance facture impayée mail | 110 | se faire payer | `/modele/lettre-relance-impaye` | existe, mails à ajouter |
+| logiciel devis bâtiment gratuit | 90 | acheter un logiciel | pages métier | existe |
+| logiciel devis artisan | 90 | acheter un logiciel | accueil | existe |
+| logiciel devis menuisier | 70 | acheter un logiciel | `/facturation/menuisier` | existe, titre à changer |
+| logiciel devis électricité gratuit | 50 | acheter un logiciel | `/facturation/electricien` | existe, titre à changer |
+
+Les requêtes « logiciel… » sont peu nombreuses, mais ce sont des acheteurs (jusqu'à 29 € le clic en publicité). Les requêtes « exemple de devis… » ont plus de volume : l'artisan est en train de rédiger son devis, et on lui propose de le faire gratuitement en ligne ; une partie vient aussi de particuliers qui comparent des prix.
+
+Écarté : « logiciel facturation auto-entrepreneur gratuit » (720/mois) : les factures sont payantes, la page serait fausse. Les autres requêtes écartées et leurs raisons sont au § 3.
+
+### Ordre de travail
+
+1. **Cette semaine, sur les pages qui existent** :
+   - [ ] titres des 11 pages métier : title « Logiciel de devis gratuit pour {métier} », H1 « Logiciel de devis et facture pour {métier} » ;
+   - [ ] `/modele/devis-electricien` : « remplacement de tableau » dans le title et le H1 ;
+   - [ ] `/guide/tva-travaux` : section et question « Attestation TVA 10 % (attestation simplifiée) : supprimée en 2025 » ;
+   - [ ] `/modele/lettre-relance-impaye` : versions mail (1re relance, 2e rappel, avant mise en demeure).
+2. **Ensuite, 7 pages à créer**, chacune avec un vrai exemple chiffré et ses fichiers PDF, Word et Excel :
+   - [ ] `/modele/devis-vierge`
+   - [ ] `/modele/devis-auto-entrepreneur`
+   - [ ] `/modele/devis-paysagiste`
+   - [ ] `/modele/devis-peinture`
+   - [ ] `/modele/devis-maconnerie`
+   - [ ] `/modele/devis-plomberie`
+   - [ ] `/modele/devis-placo`
+3. **Après chaque mise en ligne** : le fondateur demande l'indexation de la page dans la Search Console.
+4. **Mesure** dans la Search Console, 4 à 8 semaines après publication.
+5. **Ensuite seulement, le blog** (§ 6) : rattacher les articles par métier aux nouvelles pages (redirections montrées avant d'être faites).
+
 ## 1. Résumé
 
 - **Niche** : artisans du bâtiment (11 métiers), surtout seuls ou en petite équipe. **Offre réelle**, lue sur /pricing en ligne le 16/10 : devis gratuits et illimités pour toujours, envoi des devis par email compris ; factures, relances et export FEC avec Essentiel (12 € HT/mois ou 120 € HT/an). La formule Artisan (situations, acomptes, retenue de garantie, autoliquidation, chantiers) est affichée « Bientôt » et n'est pas en vente. La signature en ligne, la réception des factures fournisseurs et l'émission par une plateforme agréée sont « à venir ». Pas d'application dans les stores : le site et la PWA.
