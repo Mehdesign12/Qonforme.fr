@@ -252,7 +252,8 @@ describe("guides TVA des travaux et facture d'artisan, modèle de devis travaux 
       expect(g.description.length, slug).toBeGreaterThanOrEqual(120)
       expect(g.description.length, slug).toBeLessThanOrEqual(DESCRIPTION_MAX)
       expect(g.sources?.filter((s) => s.href?.startsWith("https://")).length, slug).toBeGreaterThanOrEqual(2)
-      expect(g.verifieLe, slug).toBe("2026-10-05")
+      // tva-travaux revérifié le 16/10/2026 (modèles de mention du BOFiP du 09/09/2026)
+      expect(g.verifieLe, slug).toBe(slug === "tva-travaux" ? "2026-10-16" : "2026-10-05")
       expect(JSON.stringify(g), slug).not.toMatch(interdits)
     }
     // Plus de délai de facturation inventé (« dans les 15 jours »)

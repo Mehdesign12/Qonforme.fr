@@ -6,7 +6,7 @@ import { METIERS, getMetierBySlug } from "@/lib/pseo/metiers"
 import { getInstallationBySlug } from "@/lib/pseo/installation"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, FaqList, SectionHeading, WRAP } from "@/components/content/ui"
 import { MetierFeatures, MetierObligations, tradeHeroPhoto } from "@/components/content/metier"
-import { lcFirst } from "@/components/content/text"
+import { fr, lcFirst } from "@/components/content/text"
 
 export function generateStaticParams() {
   return METIERS.map(m => ({ slug: m.slug }))
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       title: metier.titre,
       description: metier.description,
       url: `https://qonforme.fr/facturation/${metier.slug}`,
-      images: [{ url: `/api/og?title=${encodeURIComponent(metier.titre)}&subtitle=${encodeURIComponent(`Factures et devis pour ${metier.nom}`)}`, width: 1200, height: 630 }],
+      images: [{ url: `/api/og?title=${encodeURIComponent(metier.titre)}&subtitle=${encodeURIComponent(`Devis et factures pour ${lcFirst(metier.nom)}`)}`, width: 1200, height: 630 }],
     },
   }
 }
@@ -78,9 +78,9 @@ export default async function MetierPage({ params }: { params: Promise<{ slug: s
           size="md"
           crumbs={[{ label: "Accueil", href: "/" }, { label: "Facturation par métier", href: "/facturation" }, { label: metier.nom }]}
           eyebrow={<><Briefcase className="h-3.5 w-3.5" aria-hidden />Facturation par métier</>}
-          title="Logiciel de facturation"
+          title="Logiciel de devis et facture"
           accent={`pour ${lcFirst(metier.nom)}`}
-          sub={metier.description}
+          sub={fr(metier.intro)}
           media={tradeHeroPhoto(metier.slug)}
         >
           <CtaButtons align="start" className="mt-8" />

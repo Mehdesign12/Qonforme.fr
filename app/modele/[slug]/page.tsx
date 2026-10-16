@@ -7,6 +7,7 @@ import { fr } from "@/components/content/text"
 import ModelePaper from "@/components/content/ModelePaper"
 import { TelechargerModele } from "@/components/content/TelechargerModele"
 import { ExempleDevisCard } from "@/components/content/ExempleDevis"
+import { TextesModele } from "@/components/content/TextesModele"
 import { fitDescription, fitTitle } from "@/lib/seo/meta"
 
 const TYPE_LABELS: Record<string, string> = {
@@ -148,6 +149,8 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
                 <p className="max-w-[68ch] text-[17px] leading-[1.75] text-q-text-2">{fr(modele.pourQui)}</p>
               </section>
 
+              {modele.textes && <TextesModele textes={modele.textes} className="mt-12" />}
+
               {modele.telechargement && (
                 <TelechargerModele
                   id="telecharger"
@@ -159,6 +162,23 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
               )}
 
               {modele.exemple && <ExempleDevisCard exemple={modele.exemple} id="exemple" />}
+
+              {modele.autresExemples?.map((a, i) => (
+                <ExempleDevisCard key={a.exemple.titre} exemple={a.exemple} id={`exemple-${i + 2}`} heading={{ title: a.titre, accent: a.accent }} />
+              ))}
+
+              {modele.sections?.map((s) => (
+                <section key={s.id} aria-labelledby={s.id} className="mt-14">
+                  <SectionHeading id={s.id} title={s.titre} accent={s.accent} className="mb-4" />
+                  <div className="flex max-w-[68ch] flex-col gap-4">
+                    {s.paragraphes.map((p, i) => (
+                      <p key={i} className="text-[16px] leading-[1.7] text-q-text-2">
+                        {fr(p)}
+                      </p>
+                    ))}
+                  </div>
+                </section>
+              ))}
 
               {modele.mentionsSpecifiques.length > 0 && (
                 <section aria-labelledby="mentions" className="mt-14">

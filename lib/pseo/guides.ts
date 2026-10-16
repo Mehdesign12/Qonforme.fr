@@ -1,3 +1,5 @@
+import { CERTIFICATION_DEVIS_10, CERTIFICATION_DEVIS_5_5, CERTIFICATION_FACTURE_10, CERTIFICATION_RESUME } from "@/lib/legal/certification-tva"
+
 export interface GuideSection {
   titre: string
   contenu: string
@@ -106,7 +108,7 @@ export const GUIDES: Guide[] = [
         liste: [
           "Franchise en base : « TVA non applicable, art. 293 B du CGI ».",
           "Sous-traitance dans le bâtiment : « Autoliquidation ». L'entreprise principale déclare elle-même la TVA.",
-          "Taux réduit de 10 % ou 5,5 % pour des travaux chez un particulier : depuis le 1er mars 2025, le client certifie sur le devis ou la facture que les conditions sont remplies (logement achevé depuis plus de deux ans, travaux non exclus). L'attestation séparée n'existe plus.",
+          "Taux réduit de 10 % ou 5,5 % pour des travaux chez un particulier : depuis la loi de finances pour 2025, le client certifie sur le devis ou la facture que les conditions sont remplies (logement achevé depuis plus de deux ans, travaux qui ne le rendent pas neuf ni n'augmentent sa surface de plancher de plus de 10 %). L'attestation séparée n'est plus obligatoire.",
         ],
       },
       {
@@ -437,7 +439,7 @@ export const GUIDES: Guide[] = [
         liste: [
           "L'assurance souscrite, les coordonnées de l'assureur ou du garant, les références du contrat et sa couverture géographique.",
           "Pour la garantie décennale : l'attestation d'assurance jointe au devis (code des assurances, art. L243-2).",
-          "Taux réduit de 10 % ou 5,5 % chez un particulier : depuis le 1er mars 2025, le client certifie sur le devis ou la facture que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit.",
+          "Taux réduit de 10 % ou 5,5 % chez un particulier : depuis la loi de finances pour 2025, le client certifie sur le devis ou la facture que le logement est achevé depuis plus de deux ans et que les travaux ne le rendront pas neuf ni n'augmenteront sa surface de plancher de plus de 10 %, avec la mention dont l'administration fiscale publie le modèle.",
           "Sous-traitance : un prix hors taxes, la TVA étant autoliquidée par l'entreprise principale ; la facture portera la mention « Autoliquidation ».",
           "Travaux de construction, de rénovation ou de démolition (depuis le 1er juillet 2021) : la quantité de déchets estimée, leur tri et leur enlèvement, le ou les points de collecte prévus (nom, adresse, type d'installation) et le coût estimé de cette gestion (code de l'environnement, art. L541-21-2-3 et D541-45-1).",
         ],
@@ -536,7 +538,7 @@ export const GUIDES: Guide[] = [
           "20 % : construction neuve, locaux professionnels, logement achevé depuis moins de deux ans.",
           "10 % : travaux d'amélioration, de transformation, d'aménagement et d'entretien d'un logement achevé depuis plus de deux ans.",
           "5,5 % : travaux de rénovation énergétique éligibles dans ce même logement.",
-          "Depuis le 1er mars 2025, le client certifie sur le devis ou sur la facture que les conditions du taux réduit sont remplies : prévoyez la mention à côté de sa signature.",
+          "Depuis la loi de finances pour 2025, le client certifie sur le devis ou sur la facture que les conditions du taux réduit sont remplies : prévoyez la mention de l'administration fiscale à côté de sa signature.",
           "Franchise en base : aucune TVA, mais la mention « TVA non applicable, art. 293 B du CGI ».",
           "Sous-traitance pour une autre entreprise du bâtiment : un prix hors taxes, la TVA étant autoliquidée par l'entreprise principale.",
         ],
@@ -600,7 +602,7 @@ export const GUIDES: Guide[] = [
         "Devis gratuit, valable deux mois.",
         "Travaux réalisés dans les 30 jours qui suivent la signature.",
         "Acompte de 30 % à la signature, solde à la fin des travaux. Signé au domicile du client, l'acompte ne pourrait être encaissé qu'au bout de sept jours.",
-        "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit.",
+        CERTIFICATION_RESUME,
         "Assurance décennale : assureur, numéro de contrat et couverture géographique, attestation jointe.",
         "Signature du client précédée de « Bon pour accord ».",
       ],
@@ -640,7 +642,7 @@ export const GUIDES: Guide[] = [
     titre: "TVA des travaux : 20 %, 10 % ou 5,5 %, quel taux appliquer ?",
     titreSeo: "TVA travaux 2026 : 10 %, 5,5 % ou 20 %, quel taux appliquer ?",
     description: "Quel taux de TVA pour vos travaux en 2026 : 10 % en rénovation, 5,5 % en rénovation énergétique, 20 % dans le neuf, exclusions et certification du client.",
-    motsCles: ["tva travaux", "tva travaux rénovation 10 %", "tva 5,5 % travaux rénovation énergétique", "taux tva travaux", "tva 10 % travaux", "tva artisan bâtiment"],
+    motsCles: ["tva travaux", "tva travaux rénovation 10 %", "tva 5,5 % travaux rénovation énergétique", "taux tva travaux", "tva 10 % travaux", "tva artisan bâtiment", "attestation tva 10 travaux", "attestation tva simplifiée 2026"],
     essentiel: [
       "10 % : travaux d'amélioration, de transformation, d'aménagement et d'entretien d'un logement achevé depuis plus de deux ans.",
       "5,5 % : rénovation énergétique de ce même logement, quand le matériau ou l'équipement atteint les critères de performance fixés par arrêté.",
@@ -648,7 +650,7 @@ export const GUIDES: Guide[] = [
       "Exclus même dans un logement ancien : chaudière qui peut fonctionner au gaz ou au fioul (depuis le 1er mars 2025), espaces verts, nettoyage, électroménager, climatisation, fourniture sans pose.",
       "Travaux qui rendent l'immeuble neuf ou augmentent la surface de plancher de plus de 10 % : 20 %.",
       "Le taux se choisit ligne par ligne ; la facture indique le montant de TVA de chaque taux.",
-      "Depuis le 1er mars 2025, le client certifie sur le devis ou la facture que les conditions du taux réduit sont remplies : l'attestation papier n'existe plus.",
+      "Depuis la loi de finances pour 2025, le client certifie sur le devis ou la facture, avec une mention dont l'administration publie le modèle, que les conditions du taux réduit sont remplies : l'attestation simplifiée 1301-SD n'est plus obligatoire.",
       "Sous-traitance : facture hors taxes avec la mention « Autoliquidation ». Franchise en base : « TVA non applicable, art. 293 B du CGI ».",
     ],
     sections: [
@@ -690,12 +692,16 @@ export const GUIDES: Guide[] = [
         contenu: "Un même chantier mélange souvent les taux : une fenêtre performante à 5,5 %, la peinture de la pièce à 10 %. Indiquez le taux de chaque ligne sur le devis ; la facture reprend les lignes et donne, pour chaque taux, la base hors taxes et le montant de TVA. L'exemple plus bas montre un devis à deux taux.",
       },
       {
-        titre: "La certification du client, depuis le 1er mars 2025",
-        contenu: "Les attestations papier (formulaires 1300-SD et 1301-SD) ont été supprimées par la loi de finances pour 2025. Pour un taux de 10 % ou de 5,5 %, le client certifie désormais, directement sur le devis ou sur la facture, que les conditions du taux réduit sont remplies.",
+        // Mots des chercheurs : « attestation tva 10 travaux » (140/mois), « attestation tva simplifiée 2026 » (90/mois).
+        titre: "Attestation TVA 10 % (attestation simplifiée) : remplacée par une mention en 2025",
+        contenu: "La loi de finances pour 2025 a supprimé l'obligation de faire remplir l'attestation simplifiée (formulaire 1301-SD) ou l'attestation normale (1300-SD), sauf pour les travaux déjà en cours au 16 février 2025. Pour un taux de 10 % ou de 5,5 %, le client certifie désormais, directement sur le devis ou sur la facture, que les conditions du taux réduit sont remplies. Sans cette certification, le taux réduit ne s'applique pas. L'administration fiscale publie les mentions à recopier :",
         liste: [
-          "Prévoyez la mention à côté de sa signature : le logement est achevé depuis plus de deux ans, et les travaux ne relèvent d'aucune exclusion du taux réduit.",
-          "Pour le 5,5 %, la mention vise aussi les conditions propres à la rénovation énergétique.",
-          "Conservez le devis ou la facture certifiés : c'est votre justificatif en cas de contrôle.",
+          `Sur le devis, au taux de 10 % : « ${CERTIFICATION_DEVIS_10} »`,
+          `Sur le devis, au taux de 5,5 % : « ${CERTIFICATION_DEVIS_5_5} »`,
+          `Sur la facture, au taux de 10 % : « ${CERTIFICATION_FACTURE_10} » Au taux de 5,5 %, la mention se termine par « et qu'ils ont la nature de travaux de rénovation énergétique ».`,
+          "Le formulaire 1301-SD ou 1300-SD reste admis à la place de la mention, s'il comporte tous les éléments demandés.",
+          "Le client et vous conservez chacun un exemplaire du devis ou de la facture certifiés ; le client garde le sien jusqu'au 31 décembre de la cinquième année qui suit la facture.",
+          "Les exclusions (chaudière au gaz ou au fioul, espaces verts, équipements ménagers…) ne se certifient pas : choisir le bon taux pour chaque ligne reste à votre charge.",
         ],
       },
       {
@@ -724,7 +730,7 @@ export const GUIDES: Guide[] = [
       acomptePourcent: 30,
       conditions: [
         "Devis gratuit, valable deux mois.",
-        "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus des taux réduits.",
+        CERTIFICATION_RESUME,
         "Acompte de 30 % à la signature, solde à la fin des travaux.",
         "Signature du client précédée de « Bon pour accord ».",
       ],
@@ -734,7 +740,7 @@ export const GUIDES: Guide[] = [
       { question: "Une chaudière gaz est-elle encore à 5,5 % ou à 10 % ?", reponse: "Non. Depuis le 1er mars 2025, la fourniture et l'installation d'une chaudière qui peut fonctionner au gaz ou au fioul sont exclues des deux taux réduits, même si elle est très performante : elles sont à 20 %." },
       { question: "Les matériaux achetés par le client sont-ils à 10 % ?", reponse: "Non. Le client paie 20 % au magasin sur le matériel qu'il achète lui-même ; seule votre main-d'œuvre de pose est à 10 %. Le matériel que vous fournissez et posez suit le taux des travaux." },
       { question: "Quel taux pour des travaux dans un bureau ou un commerce ?", reponse: "20 %. Les taux réduits ne concernent que les locaux à usage d'habitation achevés depuis plus de deux ans." },
-      { question: "Faut-il encore faire remplir l'attestation de TVA 1300-SD ?", reponse: "Non. Depuis le 1er mars 2025, le client certifie directement sur le devis ou sur la facture que les conditions du taux réduit sont remplies. Conservez ce document signé." },
+      { question: "L'attestation TVA 10 % (attestation simplifiée) existe-t-elle encore ?", reponse: "Elle n'est plus obligatoire depuis la loi de finances pour 2025 : le client certifie directement sur le devis ou sur la facture que les conditions du taux réduit sont remplies, avec la mention dont l'administration fiscale publie le modèle (voir plus haut). Le formulaire 1301-SD reste admis à la place, s'il comporte tous les éléments demandés. Sans certification, le taux réduit ne s'applique pas." },
       { question: "Un auto-entrepreneur facture-t-il la TVA à 10 % ?", reponse: "Pas en franchise en base : il ne facture aucune TVA et indique « TVA non applicable, art. 293 B du CGI ». Dès qu'il devient redevable de la TVA, il applique les taux des travaux comme toute entreprise." },
     ],
     liens: [
@@ -748,11 +754,13 @@ export const GUIDES: Guide[] = [
       { label: "Code général des impôts, articles 278-0 bis A (5,5 %) et 279-0 bis (10 %)", href: "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006191654" },
       { label: "BOFiP, BOI-TVA-LIQ-30-20-90-20 (taux réduits des travaux dans les logements)", href: "https://bofip.impots.gouv.fr/bofip/1666-PGP.html/identifiant=BOI-TVA-LIQ-30-20-90-20-20251022" },
       { label: "BOFiP, actualité du 22 octobre 2025 : certification sur le devis ou la facture, exclusion des chaudières à combustibles fossiles", href: "https://bofip.impots.gouv.fr/bofip/14835-PGP.html/ACTU-2025-00165" },
+      { label: "BOFiP, BOI-TVA-LIQ-30-20-90-40 : certification par le client et conservation des documents (version du 9 septembre 2026)", href: "https://bofip.impots.gouv.fr/bofip/1742-PGP.html" },
+      { label: "BOFiP, BOI-LETTRE-000280 : modèles de mention valant certification sur le devis et sur la facture (version du 9 septembre 2026)", href: "https://bofip.impots.gouv.fr/bofip/14834-PGP.html" },
       { label: "Loi n° 2025-127 du 14 février 2025 de finances pour 2025, articles 32 et 41" },
       { label: "Code général des impôts, annexe IV, article 30-00 A (gros équipements exclus)" },
       { label: "Code général des impôts, articles 283-2 nonies (autoliquidation en sous-traitance) et 293 B (franchise en base)" },
     ],
-    verifieLe: "2026-10-05",
+    verifieLe: "2026-10-16",
   },
   {
     slug: "facture-acompte",
@@ -916,7 +924,7 @@ export const GUIDES: Guide[] = [
       acompteReference: "Facture d'acompte F-2026-014",
       conditions: [
         "Facture F-2026-018, émise à la fin des travaux, qui rappelle le devis signé.",
-        "Le client a certifié sur le devis signé que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit.",
+        "Le client a certifié sur le devis signé, avec la mention prévue par l'administration fiscale, que le logement est achevé depuis plus de deux ans et que les travaux ne l'ont pas rendu neuf ni n'ont augmenté sa surface de plancher de plus de 10 %.",
         "Paiement à réception, par virement sur l'IBAN indiqué.",
         "Assurance décennale : assureur, numéro de contrat et couverture géographique, attestation jointe.",
         "Nom de l'artisan suivi de « EI », adresse et SIREN en tête de facture.",

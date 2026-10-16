@@ -1,8 +1,11 @@
 export interface Metier {
   slug: string
   nom: string
+  /** <title> de la page : la requête « logiciel devis {métier} » (MOTS-CLES-COMPACTS-2026-10.md § 0). */
   titre: string
   description: string
+  /** Introduction sous le H1 : l'ouvrage (le mot que tapent les gens), puis le détail du métier. */
+  intro: string
   motsCles: string[]
   features: { titre: string; texte: string }[]
   obligations: string[]
@@ -28,18 +31,40 @@ const COMMON_FEATURES = [
   { titre: "Export comptable FEC", texte: "Exportez vos factures et vos avoirs au format FEC (Fichier des écritures comptables) pour votre expert-comptable." },
 ]
 
+/*
+ * Title, description et introduction suivent les mots des chercheurs
+ * (MOTS-CLES-COMPACTS-2026-10.md § 0 et § 9, 16/10/2026) : « logiciel devis
+ * {métier} » dans le title, l'ouvrage (« devis de maçonnerie ») dans la
+ * première phrase. « Gratuit » ne vise que les devis : les factures et les
+ * relances demandent la formule Essentiel (lib/stripe/plans.ts).
+ */
 const DESCRIPTIONS: Record<string, string> = {
-  plombier: "Logiciel de facturation pour plombier : devis détaillés, TVA par ligne (5,5, 10 ou 20 %), assurance décennale sur vos documents. Devis gratuits.",
-  electricien: "Facturez vos travaux d'électricité avec les mentions NF C 15-100, l'attestation Consuel et l'assurance décennale. Devis gratuits et illimités.",
-  macon: "Logiciel de facturation maçonnerie : devis gros œuvre, TVA 10 % rénovation / 20 % neuf, export FEC comptable. Devis gratuits et illimités.",
-  peintre: "Créez vos devis peinture au m² avec le détail des couches, de la sous-couche et des fournitures. TVA 10 % rénovation. Devis gratuits et illimités.",
-  carreleur: "Devis et factures de pose de carrelage : surfaces, matériaux, ragréage. TVA adaptée au type de travaux. Devis gratuits et illimités.",
-  menuisier: "Facturez vos travaux de menuiserie sur mesure : fabrication, pose, finitions. Marquage CE et décennale. Devis gratuits et illimités.",
-  couvreur: "Logiciel de facturation couverture et toiture : devis tuiles, ardoises, zinc, étanchéité, mention décennale. Devis gratuits et illimités.",
-  plaquiste: "Facturez vos chantiers placo au m² : cloisons, plafonds, isolation, bandes et enduit. Export comptable FEC. Devis gratuits et illimités.",
-  chauffagiste: "Facturez installations et dépannages de chauffage : TVA à 5,5 % ou 10 %, mention RGE, attestation gaz, entretien annuel. Devis gratuits et illimités.",
-  serrurier: "Factures et devis de serrurerie : interventions d'urgence, pose de serrures, tarifs transparents. Devis gratuits et illimités.",
-  paysagiste: "Devis et factures d'entretien de jardin et d'aménagement paysager : crédit d'impôt SAP, RC pro, TVA. Devis gratuits et illimités.",
+  plombier: "Logiciel de devis gratuit pour plombier : devis de plomberie illimités, dépannage et fournitures détaillés, TVA par ligne. Factures avec Essentiel.",
+  electricien: "Logiciel de devis gratuit pour électricien : devis d'électricité illimités, TVA par ligne, décennale sur vos documents. Factures avec Essentiel.",
+  macon: "Logiciel de devis gratuit pour maçon : devis de maçonnerie illimités, gros œuvre ligne par ligne, TVA à 10 % ou 20 %. Factures et relances avec Essentiel.",
+  peintre: "Logiciel de devis gratuit pour peintre : devis de peinture illimités au m², couches et fournitures détaillées, TVA par ligne. Factures avec Essentiel.",
+  carreleur: "Logiciel de devis gratuit pour carreleur : devis de carrelage illimités, surfaces, colle et ragréage, TVA selon le chantier. Factures avec Essentiel.",
+  menuisier: "Logiciel de devis gratuit pour menuisier : devis de menuiserie illimités, fabrication, pose et finitions détaillées. Factures et relances avec Essentiel.",
+  couvreur: "Logiciel de devis gratuit pour couvreur : devis de toiture illimités, tuiles, ardoises, zinc, décennale sur vos documents. Factures avec Essentiel.",
+  plaquiste: "Logiciel de devis gratuit pour plaquiste : devis de placo illimités au m², cloisons, plafonds et isolation. Factures et relances avec Essentiel.",
+  chauffagiste: "Logiciel de devis gratuit pour chauffagiste : devis de chauffage illimités, installation, dépannage et entretien, TVA par ligne. Factures avec Essentiel.",
+  serrurier: "Logiciel de devis gratuit pour serrurier : devis de serrurerie illimités, urgences, serrures et déplacement détaillés. Factures avec Essentiel.",
+  paysagiste: "Logiciel de devis gratuit pour paysagiste : devis de jardin illimités, création, plantation, entretien et déchets verts. Factures avec Essentiel.",
+}
+
+/** L'ouvrage tel que le tapent les chercheurs (« devis de maçonnerie »), puis le détail du métier. */
+const OUVRAGES: Record<string, { devisDe: string; detail: string }> = {
+  plombier: { devisDe: "de plomberie", detail: "Main-d'œuvre, fournitures et déplacement ligne par ligne, un taux de TVA par ligne (5,5 %, 10 % ou 20 %) et votre assurance décennale en bas de chaque document." },
+  electricien: { devisDe: "d'électricité", detail: "Tableau, prises et circuits chiffrés ligne par ligne, avec la bonne TVA et votre assurance décennale en bas de chaque document." },
+  macon: { devisDe: "de maçonnerie", detail: "Terrassement, fondations, murs et fournitures ligne par ligne, avec la TVA à 10 % ou 20 % selon le chantier et votre assurance décennale en bas de chaque document." },
+  peintre: { devisDe: "de peinture", detail: "Surfaces au mètre carré, nombre de couches, sous-couche et fournitures détaillés, avec la TVA à 10 % en rénovation d'un logement de plus de deux ans." },
+  carreleur: { devisDe: "de carrelage", detail: "Surfaces, carrelage, colle, joints et ragréage ligne par ligne, avec le taux de TVA qui correspond au chantier." },
+  menuisier: { devisDe: "de menuiserie", detail: "Fabrication, pose et finitions séparées, avec la bonne TVA et votre assurance décennale en bas de chaque document." },
+  couvreur: { devisDe: "de toiture", detail: "Dépose, tuiles, ardoises, zinc et échafaudage ligne par ligne, avec la bonne TVA et votre assurance décennale en bas de chaque document." },
+  plaquiste: { devisDe: "de plâtrerie et de placo", detail: "Cloisons, plafonds, isolation, bandes et enduit chiffrés au mètre carré, avec la bonne TVA sur chaque ligne." },
+  chauffagiste: { devisDe: "de chauffage", detail: "Installation, dépannage et entretien annuel détaillés, avec le taux de TVA qui correspond à l'équipement posé." },
+  serrurier: { devisDe: "de serrurerie", detail: "Déplacement, main-d'œuvre, fournitures et majorations de nuit ou de week-end bien visibles, sur un devis remis avant d'intervenir." },
+  paysagiste: { devisDe: "de paysagisme et d'entretien de jardin", detail: "Création, plantation, tonte et taille ligne par ligne, avec l'évacuation des déchets verts et le taux de TVA qui correspond aux travaux." },
 }
 
 function metier(
@@ -52,12 +77,15 @@ function metier(
   metiersProches: string[] = [],
 ): Metier {
   const catFeatures = categorie === "btp" ? BTP_FEATURES : []
+  const nomMin = nom.toLowerCase()
+  const ouvrage = OUVRAGES[slug] ?? { devisDe: `de ${nomMin}`, detail: "" }
   return {
     slug,
     nom,
-    titre: `Logiciel de facturation pour ${nom}`,
-    description: DESCRIPTIONS[slug] ?? `Créez et envoyez vos devis et factures de ${nom.toLowerCase()} en quelques clics, avec les mentions obligatoires. Devis gratuits et illimités.`,
-    motsCles: [`facturation ${nom.toLowerCase()}`, `facture ${nom.toLowerCase()}`, `devis ${nom.toLowerCase()}`, `logiciel facturation ${nom.toLowerCase()}`, ...motsCles],
+    titre: `Logiciel de devis gratuit pour ${nomMin}`,
+    description: DESCRIPTIONS[slug] ?? `Logiciel de devis gratuit pour ${nomMin} : devis illimités avec les mentions obligatoires et la TVA par ligne. Factures avec Essentiel.`,
+    intro: `Faites vos devis ${ouvrage.devisDe} gratuitement et sans limite, puis vos factures avec Essentiel. ${ouvrage.detail}`.trim(),
+    motsCles: [`logiciel devis ${nomMin}`, `devis ${nomMin}`, `facture ${nomMin}`, `logiciel facturation ${nomMin}`, ...motsCles],
     features: [...catFeatures, ...COMMON_FEATURES],
     obligations,
     faq,
@@ -168,7 +196,7 @@ export const METIERS: Metier[] = [
     ["Qualification RGE pour les aides énergétiques", "Attestation de conformité gaz"],
     [
       { question: "Un chauffagiste doit-il être RGE ?", reponse: "La qualification RGE (Reconnu Garant de l'Environnement) n'est pas obligatoire mais elle permet à vos clients de bénéficier des aides (MaPrimeRénov', CEE). Mentionnez-la sur vos devis et factures." },
-      { question: "Quel taux de TVA pour l'installation d'un chauffage ?", reponse: "Le taux de 5,5 % s'applique aux équipements de chauffage performants (pompe à chaleur, chaudière à condensation) dans un logement de plus de 2 ans. Le taux de 10 % s'applique aux autres travaux de rénovation. Le neuf est à 20 %." },
+      { question: "Quel taux de TVA pour l'installation d'un chauffage ?", reponse: "Le taux de 5,5 % s'applique à la pose d'équipements qui atteignent les critères de performance fixés (pompe à chaleur, chaudière au bois ou aux granulés, régulation du chauffage) dans un logement achevé depuis plus de deux ans. Depuis le 1er mars 2025, une chaudière qui peut fonctionner au gaz ou au fioul n'a plus droit aux taux réduits, même à condensation : sa fourniture et sa pose sont à 20 %. Les autres travaux de rénovation d'un logement de plus de deux ans sont à 10 %, le neuf à 20 %. Le client certifie sur le devis ou la facture que les conditions du taux réduit sont remplies." },
       { question: "L'assurance décennale est-elle obligatoire pour un chauffagiste ?", reponse: "Oui, les installations de chauffage sont des éléments d'équipement indissociables du bâtiment couverts par la garantie décennale (article 1792 du Code civil). Le chauffagiste doit mentionner son assureur et son numéro de contrat sur chaque devis." },
       { question: "Comment facturer l'entretien annuel d'une chaudière ?", reponse: "L'entretien annuel obligatoire (décret n° 2009-649) se facture généralement au forfait. Détaillez les opérations effectuées (nettoyage, vérifications, mesure de combustion) et remettez l'attestation d'entretien au client." },
       { question: "Un chauffagiste est-il concerné par Factur-X 2026 ?", reponse: "Oui, comme tous les professionnels du BTP : réception des factures électroniques depuis le 1er septembre 2026 et, pour les TPE et PME, émission des factures B2B dans un format structuré à partir du 1er septembre 2027. Les factures aux particuliers relèveront du e-reporting." },
@@ -192,8 +220,8 @@ export const METIERS: Metier[] = [
     ["facture entretien jardin", "devis amenagement paysager"],
     ["Devis de travaux de jardinage : gestion des déchets verts, point de collecte et coût estimé", "Assurance RC professionnelle"],
     [
-      { question: "Comment facturer un entretien de jardin ?", reponse: "Facturez à l'heure ou au forfait. Détaillez : tonte, taille, désherbage, évacuation des déchets verts. Pour les particuliers, le crédit d'impôt SAP (50%) s'applique à l'entretien courant." },
-      { question: "Quel taux de TVA pour des travaux de paysagisme ?", reponse: "Le taux de 20 % s'applique aux travaux de création (aménagement, plantation, terrassement). Le taux de 10 % peut s'appliquer à l'entretien de jardins attenants à un logement de plus de 2 ans. Les prestations SAP d'entretien courant sont à 20 %." },
+      { question: "Comment facturer un entretien de jardin ?", reponse: "Facturez à l'heure ou au forfait. Détaillez : tonte, taille, désherbage, évacuation des déchets verts. Chez un particulier, les petits travaux de jardinage peuvent ouvrir droit au crédit d'impôt de 50 %, dans la limite de 5 000 € de dépenses par an, si votre entreprise est déclarée comme organisme de services à la personne et en remplit les conditions." },
+      { question: "Quel taux de TVA pour des travaux de paysagisme ?", reponse: "L'aménagement et l'entretien des espaces verts (plantation, engazonnement, tonte, taille) sont au taux normal de 20 %, même chez un particulier dont la maison a plus de deux ans : ils sont exclus des taux réduits. Les petits travaux de jardinage facturés en services à la personne sont aussi à 20 %. Dans une maison achevée depuis plus de deux ans, restent à 10 % l'allée principale et l'accès au garage, les clôtures et le portail (sauf les haies vives) et la réfection d'une terrasse maçonnée attenante." },
       { question: "Un paysagiste doit-il souscrire une assurance décennale ?", reponse: "L'assurance décennale est obligatoire pour les ouvrages paysagers structurels (murs de soutènement, terrasses, allées carrossables). Pour l'entretien et les plantations, la RC professionnelle suffit généralement." },
       { question: "Comment facturer un contrat d'entretien annuel de jardin ?", reponse: "Proposez un forfait annuel avec un calendrier d'interventions (mensuel ou trimestriel). Détaillez les prestations incluses (tonte, taille, traitement) et émettez une facture par passage ou une facture mensuelle selon l'accord." },
       { question: "Un paysagiste est-il concerné par Factur-X 2026 ?", reponse: "Oui. Les paysagistes doivent pouvoir recevoir des factures électroniques depuis le 1er septembre 2026. À partir du 1er septembre 2027, ils devront émettre au format électronique leurs factures aux entreprises ; le e-reporting s'appliquera aux prestations pour les particuliers." },

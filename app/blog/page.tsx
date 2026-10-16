@@ -8,11 +8,12 @@ import CategoryFilter from "@/components/blog/CategoryFilter"
 import { ContentCta, ContentHero, ContentPage, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
 
 export const metadata: Metadata = {
-  title: "Blog",
-  description: "Guides, conseils et actualités sur la facturation électronique, la conformité Factur-X et la réglementation 2026 pour artisans et TPE.",
+  // Le hub vise la cible du site, comme l'accueil (« artisans du bâtiment »), et non plus « TPE ».
+  title: "Blog : devis, factures et TVA pour artisans du bâtiment",
+  description: "Articles pour les artisans du bâtiment : rédiger ses devis et factures, appliquer la bonne TVA, se faire payer et préparer la facture électronique.",
   alternates: { canonical: "/blog" },
   openGraph: {
-    images: [{ url: "/api/og?title=Blog%20Qonforme&subtitle=Guides%20et%20conseils%20facturation%20%C3%A9lectronique%20pour%20artisans%20et%20TPE", width: 1200, height: 630 }],
+    images: [{ url: "/api/og?title=Blog%20Qonforme&subtitle=Devis%2C%20factures%20et%20TVA%20pour%20les%20artisans%20du%20b%C3%A2timent", width: 1200, height: 630 }],
   },
 }
 
