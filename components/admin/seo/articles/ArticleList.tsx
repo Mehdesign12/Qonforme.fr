@@ -6,12 +6,14 @@
  * « Source », tableau Titre · Type · Mot-clé · Statut · Source · Date ·
  * Contrôle · actions ; liste empilée sur téléphone. Filtres dans l'adresse
  * (?etat=, ?source=) ; ?generer=1 ouvre la fenêtre « Générer un article ».
+ * Le titre d'un article ouvre sa fenêtre (performances, mots-clés, qualité :
+ * ArticleDetailsDialog) ; « Modifier » (menu de la ligne) ouvre l'éditeur.
  */
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { ArrowDown, ArrowUp, Ellipsis, ExternalLink, FileText, Loader2, PencilLine, Send, ShieldCheck, TriangleAlert, Undo2 } from "lucide-react"
+import { ArrowDown, ArrowUp, ChartNoAxesColumn, Ellipsis, ExternalLink, FileText, Loader2, PencilLine, Send, ShieldCheck, TriangleAlert, Undo2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { EmptyState, SearchField } from "@/components/app/kit"
@@ -24,6 +26,7 @@ import { api } from "@/components/admin/seo/articles/api"
 import { ArticleStatusPill, Missing, Tag, TypeTag } from "@/components/admin/seo/articles/pills"
 import { Select } from "@/components/admin/seo/articles/fields"
 import { GenerateDialog } from "@/components/admin/seo/articles/GenerateDialog"
+import { ArticleDetailsDialog } from "@/components/admin/seo/articles/ArticleDetailsDialog"
 
 type StateFilter = "tous" | "publies" | "brouillons" | "planifies" | "a-relire"
 
@@ -88,6 +91,7 @@ export function ArticleList({ items, sources, generate }: { items: ArticleListIt
   const [pending, setPending] = useState<Pending>(null)
   const [busy, setBusy] = useState(false)
   const [blockers, setBlockers] = useState<{ label: string; excerpt: string | null; detail: string | null }[] | null>(null)
+  const [detailsId, setDetailsId] = useState<string | null>(null)
 
   const setParam = (key: string, value: string | null) => {
     const qs = new URLSearchParams(params.toString())
@@ -141,9 +145,13 @@ export function ArticleList({ items, sources, generate }: { items: ArticleListIt
         <Ellipsis className="size-4" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={6} className="w-56">
+        <DropdownMenuItem onClick={() => setDetailsId(item.id)}>
+          <ChartNoAxesColumn aria-hidden />
+          Voir la fiche
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push(`/admin/blog/${item.id}`)}>
           <PencilLine aria-hidden />
-          Ouvrir
+          Modifier
         </DropdownMenuItem>
         {item.isPublished && (
           <DropdownMenuItem onClick={() => window.open(`/blog/${item.slug}`, "_blank", "noopener,noreferrer")}>
@@ -234,9 +242,14 @@ export function ArticleList({ items, sources, generate }: { items: ArticleListIt
                   {visible.map((item) => (
                     <tr key={item.id}>
                       <td>
-                        <Link href={`/admin/blog/${item.id}`} className="line-clamp-2 font-medium leading-snug text-[var(--q-ink)] hover:text-[var(--q-accent-strong)]">
-                          {item.title}
-                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setDetailsId(item.id)}
+                          aria-haspopup="dialog"
+                          className="rounded-sm text-left font-medium leading-snug text-[var(--q-ink)] hover:text-[var(--q-accent-strong)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)]"
+                        >
+                          <span className="line-clamp-2">{item.title}</span>
+                        </button>
                         {item.heldReason && item.status === "to_review" && <p className="mt-1 line-clamp-1 text-xs text-[var(--q-warn)]">{item.heldReason}</p>}
                       </td>
                       <td className="text-[13px] text-[var(--q-text-2)]">{item.type ? <TypeTag type={item.type} /> : <Missing />}</td>
@@ -263,7 +276,12 @@ export function ArticleList({ items, sources, generate }: { items: ArticleListIt
             <ul className="q-list md:hidden" aria-label="Articles du blog">
               {visible.map((item) => (
                 <li key={item.id} className="flex items-start gap-2 px-4 py-3.5">
-                  <Link href={`/admin/blog/${item.id}`} className="flex min-w-0 flex-1 flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDetailsId(item.id)}
+                    aria-haspopup="dialog"
+                    className="-m-1 flex min-w-0 flex-1 flex-col gap-2 rounded-xl p-1 text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)]"
+                  >
                     <span className="flex flex-wrap items-center gap-1.5">
                       <ArticleStatusPill status={item.status} />
                       <TypeTag type={item.type} />
@@ -280,7 +298,7 @@ export function ArticleList({ items, sources, generate }: { items: ArticleListIt
                       {item.date ? `${shortDay(parisDayTime(item.date).day, true)} · ${parisDayTime(item.date).time}` : "Sans date"}
                       <ControlCell item={item} />
                     </span>
-                  </Link>
+                  </button>
                   {actions(item)}
                 </li>
               ))}
@@ -343,6 +361,7 @@ export function ArticleList({ items, sources, generate }: { items: ArticleListIt
       </Dialog>
 
       <GenerateDialog open={generateOpen} onClose={() => setParam("generer", null)} data={generate} />
+      <ArticleDetailsDialog postId={detailsId} onClose={() => setDetailsId(null)} />
     </>
   )
 }

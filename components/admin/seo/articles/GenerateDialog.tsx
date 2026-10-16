@@ -6,6 +6,9 @@
  * « Annuler » + « Générer ». Après l'envoi, la même fenêtre suit la rédaction
  * passe par passe (Plan…, Rédaction…, Contrôle…, Image…) ; la fermer n'annule
  * rien : la tâche planifiée termine la rédaction.
+ *
+ * Ouverte depuis le « + » d'un jour du calendrier (`initialDay`) : la
+ * publication passe à « Planifier » ce jour-là.
  */
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
@@ -46,7 +49,21 @@ function lengthOptions(min: number, max: number): { min: number; max: number }[]
   })
 }
 
-export function GenerateDialog({ open, onClose, data }: { open: boolean; onClose: () => void; data: GenerateDialogData }) {
+export function GenerateDialog({
+  open,
+  onClose,
+  data,
+  initialDay = null,
+  initialTime = null,
+}: {
+  open: boolean
+  onClose: () => void
+  data: GenerateDialogData
+  /** Jour de publication prérempli (« + » d'un jour du calendrier) : publication « Planifier ». */
+  initialDay?: string | null
+  /** Heure préremplie avec `initialDay` ; sinon celle du prochain créneau, ou 08:00. */
+  initialTime?: string | null
+}) {
   const router = useRouter()
   const runner = useJobRunner()
   const firstTopic = data.topics[0]
@@ -93,9 +110,13 @@ export function GenerateDialog({ open, onClose, data }: { open: boolean; onClose
 
   useEffect(() => {
     if (open && firstTopic && !jobId) applyTopic(firstTopic.id)
-    // Réinitialise à chaque ouverture
+    if (open && !jobId && initialDay) {
+      setPublication("schedule")
+      setWhen({ day: initialDay, time: initialTime ?? data.slot?.time ?? "08:00" })
+    }
+    // Réinitialise à chaque ouverture (et au jour choisi dans le calendrier)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  }, [open, initialDay, initialTime])
 
   const keyword = keywordChoice === NEW ? keywordText.trim() : keywordChoice
   const trackedStatus = data.keywords.find((k) => k.keyword === keyword)

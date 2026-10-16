@@ -1,313 +1,1040 @@
 'use client'
 
-import { useState } from 'react'
+/**
+ * Éditeur d'articles du blog (admin › Blog › Nouvel article / Modifier).
+ *
+ * Coque qui assemble les pièces de components/admin/blog :
+ * - à gauche, une seule feuille : couverture, titre, chapeau, éditeur visuel
+ *   (shell/DocumentSheet.tsx, editor/RichEditor.tsx) ;
+ * - à droite (≥ 1 280 px), une colonne collante qui défile seule :
+ *   Publication et « Enregistrer », Score SEO, Mot-clé principal, Résultat
+ *   Google, Adresse, Mots-clés secondaires, Plan de l'article
+ *   (shell/SideCards.tsx, seo/*) ; sous 1 280 px, trois onglets collants
+ *   « Rédaction », « Référencement » (avec le score) et « Publication ».
+ *
+ * Enregistrement (shell/model.ts) :
+ * - création : POST /api/admin/blog, puis l'adresse de la page devient
+ *   /admin/blog/<id> (router.replace) : on reste dans l'éditeur ;
+ * - modification : PATCH /api/admin/blog/<id> avec les seuls champs changés.
+ *   Le texte n'est envoyé que s'il a changé : ouvrir un article ne réécrit
+ *   jamais son contenu (l'éditeur visuel ne rend rien tant qu'on n'a rien
+ *   touché) ;
+ * - publication : brouillon, publié ou programmé (`is_published`,
+ *   `scheduled_at`) ; 409 du contrôle → bannière avec les passages ;
+ * - Ctrl+S (⌘S) ; messages précis ; erreurs renvoyées au bon champ.
+ *
+ * Sûreté : copie locale toutes les 2 s, et aussitôt quand la page disparaît
+ * (restauration proposée au retour si elle est plus récente que
+ * l'enregistrement), alerte à la fermeture de l'onglet, confirmation avant de
+ * suivre un lien interne, fichier lâché hors des zones de dépôt sans effet
+ * (shell/hooks.ts). Un seul enregistrement à la fois : Ctrl+S pendant un envoi
+ * en relance un autre à la fin (ce qui a été tapé entre-temps). Après la
+ * création, le changement de page remonte l'éditeur : le texte tapé pendant
+ * l'envoi, l'onglet, le défilement et le curseur passent au nouvel éditeur
+ * (relais de shell/hooks.ts).
+ *
+ * Programmation depuis le calendrier (?programmer=AAAA-MM-JJ, lu par la page) :
+ * heure des Préférences ; aujourd'hui, si elle est passée, la prochaine heure
+ * possible est proposée et doit être confirmée (bannière, ou fenêtre à
+ * l'enregistrement).
+ *
+ * Liste de contrôle → champ : l'onglet voulu s'affiche (téléphone), la page
+ * défile jusqu'au champ, qui reçoit le focus et un anneau d'accent bref.
+ */
+import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bot, Loader2, RefreshCw, Save, Trash2 } from 'lucide-react'
+import { Loader2, LogOut, PenLine, Save, Search, Send, Trash2, TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
-import { PageHeader, Panel, StatusPill, Switch } from '@/components/app/kit'
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-
-interface Post {
-  id:           string
-  slug:         string
-  title:        string
-  excerpt?:     string | null
-  content:      string
-  cover_url?:   string | null
-  is_published: boolean
-  ai_generated?: boolean
-  ai_keywords?:  string[] | null
-  /** Balises propres à Google (migration 20261006) : absentes avant la migration. */
-  seo_title?:       string | null
-  seo_description?: string | null
-}
+import { slugify } from '@/lib/seo/articles/check'
+import { analyzeOnPage, scoreTone } from '@/lib/seo/articles/onpage'
+import { api } from '@/components/admin/seo/articles/api'
+import { useImageStudio } from '@/components/admin/blog/images/useImageStudio'
+import { useSeoContext } from '@/components/admin/blog/seo/useSeoContext'
+import { useSuggest } from '@/components/admin/blog/seo/SuggestButton'
+import { scoreLabel } from '@/components/admin/blog/seo/SeoScore'
+import type { PublicationValue } from '@/components/admin/blog/seo/PublicationPanel'
+import type { RichEditorHandle } from '@/components/admin/blog/editor/RichEditor'
+import type { EditorMode } from '@/components/admin/blog/editor/Toolbar'
+import type { SuggestField, SuggestRequest } from '@/lib/seo/articles/editor-types'
+import {
+  buildSaveRequest,
+  changedFields,
+  DEFAULT_PUBLISH_TIME,
+  describeFields,
+  draftOfPost,
+  isDirty,
+  issuesOf,
+  metaAfterSave,
+  metaOfPost,
+  newDraft,
+  normalSlug,
+  publicationMovedSince,
+  relativeDay,
+  restoreDraft,
+  saveActionLabel,
+  statusOfMeta,
+  successMessage,
+  tabOfTarget,
+  targetOfError,
+  type ArticleDraft,
+  type BlockingIssue,
+  type EditorPost,
+  type EditorTab,
+  type FocusTarget,
+  type SavedMeta,
+  type ScheduleSlot,
+} from '@/components/admin/blog/shell/model'
+import {
+  captureEditorView,
+  noteCreationHandoffView,
+  offerCreationHandoff,
+  peekCreationHandoff,
+  restoreEditorView,
+  takeCreationHandoff,
+  useLeaveGuard,
+  useLocalDraft,
+  usePageDropGuard,
+  useSaveShortcut,
+  type ViewMemo,
+} from '@/components/admin/blog/shell/hooks'
+import { BlockedBanner, ConfirmDialog, DraftOfferBanner, EditorTabs, flashElement, ScheduleProposalBanner, type SaveState } from '@/components/admin/blog/shell/parts'
+import { EditorHeader } from '@/components/admin/blog/shell/EditorHeader'
+import { DocumentSheet } from '@/components/admin/blog/shell/DocumentSheet'
+import { AddressCard, GoogleCard, KeywordCard, OutlineCard, PublicationCard, ScoreCard, SecondaryCard } from '@/components/admin/blog/shell/SideCards'
 
 interface BlogEditorProps {
   mode: 'create' | 'edit'
-  post?: Post
+  post?: EditorPost
+  /** Jour demandé par le calendrier (?programmer=AAAA-MM-JJ, déjà contrôlé par la page) : publication programmée ce jour-là. */
+  initialSchedule?: string | null
+  /** Heure de publication des Préférences (HH:MM, Paris) ; à défaut, celle du contexte de référencement, puis 08:00. */
+  publishTime?: string | null
+  /** Instant du rendu serveur (ISO) : même état initial au serveur et au navigateur. */
+  renderedAt?: string | null
 }
 
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80)
+type Heading = { level: number; text: string }
+
+/** Ce que l'éditeur de /admin/blog/new laisse à celui de la page de l'article (relais de shell/hooks.ts). */
+type Carried = { id: string; draft: ArticleDraft; tab: EditorTab; highlighted: string[]; lastSaveAt: string; fromCalendar: boolean; editorMode: EditorMode }
+
+const FOCUS_IDS: Record<Exclude<FocusTarget, 'content' | 'publication'>, string> = {
+  title: 'blog-title',
+  excerpt: 'blog-excerpt',
+  cover: 'blog-cover',
+  keyword: 'blog-keyword',
+  seoTitle: 'blog-seo-title',
+  seoDescription: 'blog-seo-description',
+  slug: 'blog-slug',
 }
 
-function Field({ id, label, hint, children }: { id: string; label: string; hint?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-[7px]">
-      <label htmlFor={id} className="q-label">{label}</label>
-      {children}
-      {hint && <div className="q-field-hint">{hint}</div>}
-    </div>
-  )
+const PANELS: Record<EditorTab, string> = {
+  redaction: 'editeur-redaction',
+  referencement: 'editeur-colonne',
+  publication: 'editeur-colonne',
 }
 
-export function BlogEditor({ mode, post }: BlogEditorProps) {
+function reducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+}
+
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
+
+/**
+ * Champ validé à sa sortie (adresse de la couverture, « Options avancées ») :
+ * validé avant l'envoi (sinon Ctrl+S enregistrerait sans lui), puis le focus
+ * y revient. L'attente laisse passer le rendu qui met l'article à jour.
+ */
+async function commitFieldBeingEdited(): Promise<void> {
+  const active = typeof document !== 'undefined' ? document.activeElement : null
+  if (!(active instanceof HTMLElement) || !active.matches('[data-commit-on-blur]')) return
+  active.blur()
+  await new Promise((resolve) => window.setTimeout(resolve, 0))
+  active.focus({ preventScroll: true })
+}
+
+async function sendJson(method: 'POST' | 'PATCH', url: string, body: unknown): Promise<{ status: number; json: Record<string, unknown> | null }> {
+  try {
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' })
+    const json = (await res.json().catch(() => null)) as Record<string, unknown> | null
+    return { status: res.status, json }
+  } catch {
+    return { status: 0, json: null }
+  }
+}
+
+export function BlogEditor({ mode, post, initialSchedule = null, publishTime = null, renderedAt = null }: BlogEditorProps) {
   const router = useRouter()
+  const editing = mode === 'edit' && Boolean(post)
+  const [id, setId] = useState<string | null>(editing && post ? post.id : null)
 
-  const [title,     setTitle]     = useState(post?.title     ?? '')
-  const [slug,      setSlug]      = useState(post?.slug      ?? '')
-  const [excerpt,   setExcerpt]   = useState(post?.excerpt   ?? '')
-  const [content,   setContent]   = useState(post?.content   ?? '')
-  const [coverUrl,  setCoverUrl]  = useState(post?.cover_url ?? '')
-  const [published, setPublished] = useState(post?.is_published ?? false)
-  const [seoTitle,  setSeoTitle]  = useState(post?.seo_title ?? '')
-  const [seoDescription, setSeoDescription] = useState(post?.seo_description ?? '')
-  const [saving,    setSaving]    = useState(false)
-  const [deleting,  setDeleting]  = useState(false)
+  /* ---------------------------------------------------------------- */
+  /* État                                                              */
+  /* ---------------------------------------------------------------- */
+
+  const [init] = useState<{ draft: ArticleDraft; saved: ArticleDraft; slot: ScheduleSlot | null; carried: Carried | null }>(() => {
+    const now = renderedAt ? new Date(renderedAt) : new Date()
+    const pref = publishTime || DEFAULT_PUBLISH_TIME
+    if (editing && post) {
+      const stored = draftOfPost(post, pref, now)
+      // Article créé à l'instant par l'éditeur de /admin/blog/new : on reprend là où il en était,
+      // seulement si la base a encore ce qui a été créé (rien de plus récent n'est écrasé)
+      const h = peekCreationHandoff(post.id)
+      const carried =
+        h && !isDirty(h.saved, stored)
+          ? { id: h.id, draft: h.latest(), tab: h.tab, highlighted: h.highlighted, lastSaveAt: h.lastSaveAt, fromCalendar: h.fromCalendar, editorMode: h.editorMode }
+          : null
+      return { draft: carried?.draft ?? stored, saved: stored, slot: null, carried }
+    }
+    const created = newDraft(initialSchedule, pref, now)
+    return { draft: created.draft, saved: created.draft, slot: created.slot, carried: null }
+  })
+  const carried = init.carried
+  const [draft, setDraft] = useState<ArticleDraft>(init.draft)
+  const [saved, setSaved] = useState<ArticleDraft>(init.saved)
+  const [meta, setMeta] = useState<SavedMeta>(() => metaOfPost(editing ? post : null))
+  const [lastSaveAt, setLastSaveAt] = useState<string | null>(carried?.lastSaveAt ?? null)
+  const [slugTouched, setSlugTouched] = useState(editing)
+  const [slugError, setSlugError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [restored, setRestored] = useState(false)
+  /**
+   * Publication refusée par le contrôle ; `unscheduled` : la programmation d'avant a été retirée par le
+   * serveur ; `notCreated` : création publiée refusée avant tout enregistrement (rien n'est créé).
+   */
+  const [blocked, setBlocked] = useState<{ issues: BlockingIssue[]; unscheduled: boolean; notCreated?: boolean } | null>(null)
+  const [proposal, setProposal] = useState<ScheduleSlot | null>(init.slot && init.slot.adjusted !== 'none' ? init.slot : null)
+  const [scheduleCheck, setScheduleCheck] = useState<{ then: string | null } | null>(null)
+  const [leaveHref, setLeaveHref] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
-  const [slugEdited, setSlugEdited] = useState(mode === 'edit')
+  const [tab, setTab] = useState<EditorTab>(carried?.tab ?? 'redaction')
+  const [headings, setHeadings] = useState<Heading[]>([])
+  const [highlighted, setHighlighted] = useState<string[]>(carried?.highlighted ?? [])
 
-  const handleTitleChange = (val: string) => {
-    setTitle(val)
-    if (!slugEdited) setSlug(slugify(val))
+  const editorRef = useRef<RichEditorHandle>(null)
+  const tabsAnchorRef = useRef<HTMLDivElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  // Valeurs courantes pour les fonctions stables (raccourci, propositions, enregistrement).
+  // Mises à jour aussi tout de suite après un enregistrement : un Ctrl+S qui arrive avant le
+  // rendu suivant voit l'article créé (PATCH, jamais un second POST) et ce qui est enregistré.
+  const idRef = useRef(id)
+  idRef.current = id
+  const draftRef = useRef(draft)
+  draftRef.current = draft
+  const savedRef = useRef(saved)
+  savedRef.current = saved
+  const metaRef = useRef(meta)
+  metaRef.current = meta
+  const proposalRef = useRef(proposal)
+  proposalRef.current = proposal
+  const highlightedRef = useRef(highlighted)
+  highlightedRef.current = highlighted
+  const slugTouchedRef = useRef(slugTouched)
+  slugTouchedRef.current = slugTouched
+  const tabRef = useRef(tab)
+  tabRef.current = tab
+  const savingRef = useRef(false)
+  /** Ctrl+S pendant un envoi : un autre enregistrement suit. */
+  const queuedRef = useRef(false)
+  const deletingRef = useRef(false)
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  // Article relu après un enregistrement (router.refresh) : statut et dates du serveur
+  const firstPost = useRef(post)
+  useEffect(() => {
+    if (post && post !== firstPost.current && post.id === id) setMeta(metaOfPost(post))
+  }, [post, id])
+
+  const changes = useMemo(() => changedFields(draft, saved), [draft, saved])
+  const dirty = changes.length > 0
+  const publicationChanged = changes.includes('publication')
+
+  const patch = useCallback((next: Partial<ArticleDraft>) => setDraft((d) => ({ ...d, ...next })), [])
+
+  /* ---------------------------------------------------------------- */
+  /* Référencement                                                     */
+  /* ---------------------------------------------------------------- */
+
+  const seo = useSeoContext({ id, keyword: draft.keyword })
+  const prefTime = publishTime || seo.data?.prefs.publishTime || DEFAULT_PUBLISH_TIME
+
+  // Analyse sur des valeurs différées, texte et autres champs : une frappe dans le titre, le chapeau
+  // ou la description ne relance pas tout de suite l'analyse de tout l'article (comparaison avec
+  // jusqu'à 2 000 titres comprise) ; les compteurs de caractères suivent, eux, la saisie
+  const deferredDraft = useDeferredValue(draft)
+  const deferredHighlighted = useDeferredValue(highlighted)
+  const otherTitles = useMemo(() => seo.data?.others.map((o) => ({ id: o.id, title: o.title, slug: o.slug })), [seo.data])
+  const analysis = useMemo(
+    () =>
+      analyzeOnPage({
+        title: deferredDraft.title,
+        seoTitle: deferredDraft.seoTitle,
+        seoDescription: deferredDraft.seoDescription,
+        slug: deferredDraft.slug,
+        excerpt: deferredDraft.excerpt,
+        content: deferredDraft.content,
+        keyword: deferredDraft.keyword,
+        secondary: deferredHighlighted,
+        coverUrl: deferredDraft.coverUrl.trim() || null,
+        coverAlt: deferredDraft.coverAlt.trim() || null,
+        otherTitles,
+        selfId: id,
+        lengthMin: seo.data?.prefs.lengthMin,
+        lengthMax: seo.data?.prefs.lengthMax,
+        competitors: seo.data?.competitors,
+      }),
+    [deferredDraft.title, deferredDraft.seoTitle, deferredDraft.seoDescription, deferredDraft.slug, deferredDraft.excerpt, deferredDraft.content, deferredDraft.keyword, deferredHighlighted, deferredDraft.coverUrl, deferredDraft.coverAlt, otherTitles, seo.data, id],
+  )
+
+  const highlightTerms = useMemo(() => {
+    const terms = [draft.keyword ?? '', ...highlighted].map((t) => t.trim()).filter(Boolean)
+    return Array.from(new Set(terms))
+  }, [draft.keyword, highlighted])
+
+  // Propositions : contexte lu au clic ; sans mot-clé ni texte, le bouton explique ce qui manque
+  const suggestReason = !draft.keyword
+    ? "Choisissez d'abord le mot-clé principal : les propositions s'appuient dessus."
+    : !draft.title.trim() && !draft.content.trim()
+      ? "Écrivez d'abord le titre ou le texte de l'article."
+      : null
+  const requestFor = useMemo(() => {
+    const base = (field: SuggestField) => (): Omit<SuggestRequest, 'field'> => {
+      const d = draftRef.current
+      const current = field === 'seoTitle' ? d.seoTitle : field === 'seoDescription' ? d.seoDescription : field === 'slug' ? d.slug : field === 'excerpt' ? d.excerpt : d.title
+      return {
+        keyword: d.keyword ?? '',
+        secondary: highlightedRef.current,
+        title: d.title,
+        excerpt: d.excerpt,
+        content: d.content,
+        ...(current.trim() ? { current: current.trim() } : {}),
+      }
+    }
+    return { seoTitle: base('seoTitle'), seoDescription: base('seoDescription'), slug: base('slug'), excerpt: base('excerpt') }
+  }, [])
+  const suggestSeoTitle = useSuggest({ field: 'seoTitle', getRequest: requestFor.seoTitle, onUse: (text) => patch({ seoTitle: text }), disabledReason: suggestReason })
+  const suggestSeoDescription = useSuggest({ field: 'seoDescription', getRequest: requestFor.seoDescription, onUse: (text) => patch({ seoDescription: text }), disabledReason: suggestReason })
+  const suggestSlug = useSuggest({
+    field: 'slug',
+    getRequest: requestFor.slug,
+    onUse: (text) => {
+      setSlugTouched(true)
+      setSlugError(null)
+      patch({ slug: text })
+    },
+    disabledReason: suggestReason,
+  })
+  const suggestExcerpt = useSuggest({ field: 'excerpt', getRequest: requestFor.excerpt, onUse: (text) => patch({ excerpt: text }), disabledReason: suggestReason })
+
+  /* ---------------------------------------------------------------- */
+  /* Images                                                            */
+  /* ---------------------------------------------------------------- */
+
+  const studio = useImageStudio({ title: draft.title, keyword: draft.keyword })
+
+  /* ---------------------------------------------------------------- */
+  /* Liste de contrôle → champ                                         */
+  /* ---------------------------------------------------------------- */
+
+  const focusTarget = useCallback((target: FocusTarget) => {
+    setTab(tabOfTarget(target))
+    // Deux images : l'onglet voulu est affiché avant la mesure
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const wrap = document.querySelector<HTMLElement>(`[data-focus-target="${target}"]`)
+        if (!wrap) return
+        const behavior: ScrollBehavior = reducedMotion() ? 'auto' : 'smooth'
+        if (target === 'content') {
+          editorRef.current?.focus()
+          wrap.scrollIntoView({ block: 'start', behavior })
+          return
+        }
+        wrap.scrollIntoView({ block: 'center', behavior })
+        const field =
+          target === 'publication'
+            ? wrap.querySelector<HTMLElement>('#blog-pub-heure') ?? wrap.querySelector<HTMLElement>("[aria-pressed='true']")
+            : document.getElementById(FOCUS_IDS[target])
+        field?.focus({ preventScroll: true })
+        flashElement(wrap)
+      }),
+    )
+  }, [])
+
+  const changeTab = useCallback((next: EditorTab) => {
+    setTab(next)
+    // Panneau changé alors que la page avait défilé : retour en haut des panneaux, sous les onglets
+    requestAnimationFrame(() => {
+      const anchor = tabsAnchorRef.current
+      if (!anchor) return
+      const sticky = window.matchMedia('(min-width: 1024px)').matches ? 80 : 8
+      if (anchor.getBoundingClientRect().top < sticky) anchor.scrollIntoView({ block: 'start' })
+    })
+  }, [])
+
+  const goToHeading = useCallback((index: number) => {
+    setTab('redaction')
+    requestAnimationFrame(() => requestAnimationFrame(() => editorRef.current?.scrollToHeading(index)))
+  }, [])
+
+  /* ---------------------------------------------------------------- */
+  /* Brouillon local, sortie de page, glisser-déposer                  */
+  /* ---------------------------------------------------------------- */
+
+  const [savedAtMs] = useState<number | null>(() => {
+    const value = editing ? post?.updated_at ?? post?.created_at ?? null : null
+    const t = value ? Date.parse(value) : Number.NaN
+    return Number.isNaN(t) ? null : t
+  })
+  const local = useLocalDraft({ id, draft, saved, savedAt: savedAtMs, dirty })
+
+  // Éditeur qui vient de créer l'article : sa vue (défilement, curseur) est relevée au démontage…
+  useIsoLayoutEffect(
+    () => () => noteCreationHandoffView(idRef.current, () => captureEditorView(rootRef.current, editorRef.current)),
+    [],
+  )
+  // … et rendue par l'éditeur de la page de l'article, une fois la zone d'écriture prête
+  const carriedView = useRef<ViewMemo | null | undefined>(undefined)
+  useEffect(() => {
+    if (!carried) return
+    if (carriedView.current === undefined) carriedView.current = takeCreationHandoff(carried.id)?.view ?? null
+    const view = carriedView.current
+    if (!view) return
+    let frame = 0
+    let tries = 0
+    const attempt = () => {
+      if (restoreEditorView(view, editorRef.current) || ++tries > 180) {
+        carriedView.current = null
+        return
+      }
+      frame = requestAnimationFrame(attempt)
+    }
+    frame = requestAnimationFrame(attempt)
+    return () => cancelAnimationFrame(frame)
+  }, [carried])
+
+  // Heure des Préférences connue après coup (lecture de la page en échec) : elle remplace 08:00
+  // pour une programmation à venir, sans toucher à une programmation déjà choisie
+  const lateTime = publishTime ? null : seo.data?.prefs.publishTime ?? null
+  const lateTimeApplied = useRef(false)
+  useEffect(() => {
+    if (!lateTime || lateTimeApplied.current) return
+    lateTimeApplied.current = true
+    const withTime = (d: ArticleDraft): ArticleDraft =>
+      d.publication.mode === 'schedule' || d.publication.time === lateTime ? d : { ...d, publication: { ...d.publication, time: lateTime } }
+    setDraft(withTime)
+    setSaved(withTime)
+  }, [lateTime])
+
+  const restoreLocal = () => {
+    if (!local.offer) return
+    // Publication gardée : jour demandé par le calendrier, ou publication changée sur le serveur
+    // depuis la copie (publiée à l'heure prévue entre-temps)
+    const keep = editing ? publicationMovedSince(local.offer, savedRef.current) : Boolean(initialSchedule)
+    const next = restoreDraft(local.offer, draftRef.current, keep)
+    setDraft(next)
+    setSlugTouched(editing || next.slug !== slugify(next.title))
+    setRestored(true)
+    local.accept()
+    toast.success('Version de cet appareil restaurée : enregistrez-la pour la garder.')
   }
 
-  const handleSave = async () => {
-    if (!title.trim() || !content.trim() || !slug.trim()) {
-      toast.error('Titre, adresse et contenu sont obligatoires')
-      return
-    }
-    setSaving(true)
-    try {
-      const url    = mode === 'create' ? '/api/admin/blog' : `/api/admin/blog/${post!.id}`
-      const method = mode === 'create' ? 'POST' : 'PATCH'
+  const dirtyRef = useRef(dirty)
+  dirtyRef.current = dirty
+  const requestLeave = useCallback(
+    (href: string) => {
+      if (dirtyRef.current) setLeaveHref(href)
+      else router.push(href)
+    },
+    [router],
+  )
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title, slug, excerpt, content, cover_url: coverUrl, is_published: published,
-          // Envoyés seulement s'ils existent déjà ou sont saisis (colonnes absentes avant la migration 20261006)
-          ...(post?.seo_title !== undefined || seoTitle ? { seo_title: seoTitle } : {}),
-          ...(post?.seo_description !== undefined || seoDescription ? { seo_description: seoDescription } : {}),
-        }),
-      })
+  useLeaveGuard({ when: dirty && !deleting, onAttempt: (href) => setLeaveHref(href) })
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        throw new Error(data?.error ?? 'Erreur lors de l\'enregistrement')
+  usePageDropGuard(() => {
+    toast("Image non insérée : déposez-la sur la couverture, ou utilisez le bouton « Image » de la barre d'outils.")
+  })
+
+  /* ---------------------------------------------------------------- */
+  /* Enregistrement                                                    */
+  /* ---------------------------------------------------------------- */
+
+  const saveFnRef = useRef<(opts?: { then?: string | null; confirmed?: boolean; quiet?: boolean }) => Promise<void>>()
+
+  const save = useCallback(
+    async (opts?: { then?: string | null; confirmed?: boolean; quiet?: boolean }) => {
+      if (deletingRef.current) return
+      if (savingRef.current) {
+        // Un envoi est en cours : un autre suivra, avec ce qui aura été tapé entre-temps
+        if (!opts?.then) queuedRef.current = true
+        return
+      }
+      savingRef.current = true
+      const then = opts?.then ?? null
+      const done = () => {
+        savingRef.current = false
+        setSaving(false)
       }
 
-      toast.success(mode === 'create' ? 'Article créé' : 'Article mis à jour')
-      router.push('/admin/blog')
-      router.refresh()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement')
-    } finally {
-      setSaving(false)
-    }
-  }
+      await commitFieldBeingEdited()
+      const current = draftRef.current
+      const articleId = idRef.current
+      const creating = !articleId
 
-  const handleDelete = async () => {
+      // Heure proposée par l'éditeur (celle des Préférences est passée) : confirmée avant de programmer
+      const pending = proposalRef.current
+      if (pending && !opts?.confirmed && current.publication.mode === 'schedule' && current.publication.day === pending.day && current.publication.time === pending.time) {
+        done()
+        queuedRef.current = false
+        setScheduleCheck({ then })
+        return
+      }
+
+      const request = buildSaveRequest({ mode: creating ? 'create' : 'edit', id: articleId, current, saved: creating ? null : savedRef.current, meta: metaRef.current })
+      if (request.kind === 'nothing') {
+        done()
+        queuedRef.current = false
+        if (!opts?.quiet) toast('Rien à enregistrer : tout est à jour.')
+        if (then) router.push(then)
+        return
+      }
+      if (request.kind === 'invalid') {
+        done()
+        queuedRef.current = false
+        toast.error(request.error)
+        if (request.target === 'slug') setSlugError(request.error)
+        focusTarget(request.target)
+        return
+      }
+
+      setSaving(true)
+      const { status, json } = await sendJson(request.method, request.url, request.body)
+      done()
+      const message = typeof json?.error === 'string' ? json.error : null
+      const queued = queuedRef.current
+      queuedRef.current = false
+
+      if (status === 200 || status === 201) {
+        const now = new Date()
+        const storedSlug = typeof json?.slug === 'string' ? json.slug : typeof request.body.slug === 'string' ? request.body.slug : normalSlug(current.slug)
+        const nextSaved: ArticleDraft = { ...current, slug: storedSlug }
+        const nextMeta = metaAfterSave(metaRef.current, request.change, request.scheduledAt, now)
+        savedRef.current = nextSaved
+        metaRef.current = nextMeta
+        proposalRef.current = null
+        setSaved(nextSaved)
+        setMeta(nextMeta)
+        setLastSaveAt(now.toISOString())
+        setRestored(false)
+        setBlocked(null)
+        setSlugError(null)
+        setProposal(null)
+        // Adresse mise au propre par le serveur : le champ la montre, si rien n'a été retapé entre-temps
+        setDraft((d) => (d.slug === current.slug && d.slug !== storedSlug ? { ...d, slug: storedSlug } : d))
+        local.clear()
+        toast.success(successMessage({ created: creating, change: request.change, scheduledAt: request.scheduledAt, now }))
+        if (creating && typeof json?.id === 'string') {
+          const newId = json.id
+          idRef.current = newId
+          setId(newId)
+          // Page quittée pendant l'envoi (« Quitter » sans enregistrer) : on n'y ramène pas
+          if (!mountedRef.current) return
+          // On reste dans l'éditeur : la page devient celle de l'article (nouvel éditeur, relais ci-dessous)
+          offerCreationHandoff(
+            then
+              ? null
+              : {
+                  id: newId,
+                  saved: nextSaved,
+                  latest: () => draftRef.current,
+                  tab: tabRef.current,
+                  highlighted: highlightedRef.current,
+                  lastSaveAt: now.toISOString(),
+                  fromCalendar: !editing && Boolean(initialSchedule),
+                  editorMode: rootRef.current?.querySelector('.q-editor')?.getAttribute('data-mode') === 'markdown' ? 'markdown' : 'visual',
+                  view: null,
+                  at: Date.now(),
+                },
+          )
+          router.replace(`/admin/blog/${newId}`)
+          if (then) router.push(then)
+          return
+        }
+        // Tapé pendant l'envoi : la copie de l'appareil garde ce qui n'est pas encore enregistré
+        if (isDirty(draftRef.current, nextSaved)) local.flush(nextSaved)
+        if (then) {
+          router.push(then)
+          return
+        }
+        router.refresh()
+        if (queued) window.setTimeout(() => void saveFnRef.current?.({ quiet: true }), 0)
+        return
+      }
+
+      if (status === 409 && json?.code === 'check_failed' && creating) {
+        // Création publiée refusée par le contrôle : rien n'est créé, le texte reste dans l'éditeur (et sur l'appareil)
+        local.flush()
+        setBlocked({ issues: issuesOf(json), unscheduled: false, notCreated: true })
+        setTab('redaction')
+        toast.error("Publication refusée : l'article n'est pas encore enregistré. Corrigez les passages signalés, ou enregistrez-le en brouillon.")
+        requestAnimationFrame(() => document.getElementById('editeur-alertes')?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }))
+        return
+      }
+
+      if (status === 409 && json?.code === 'check_failed') {
+        // Le serveur a enregistré les modifications, sans la mise en ligne (programmation retirée)
+        const wasScheduled = Boolean(metaRef.current.scheduledAt) && Date.parse(metaRef.current.scheduledAt ?? '') > Date.now()
+        const nextSaved: ArticleDraft = { ...current, slug: typeof request.body.slug === 'string' ? request.body.slug : current.slug, publication: { ...current.publication, mode: 'draft' } }
+        savedRef.current = nextSaved
+        metaRef.current = { ...metaRef.current, isPublished: false, scheduledAt: null }
+        setSaved(nextSaved)
+        setMeta((m) => ({ ...m, isPublished: false, scheduledAt: null }))
+        setLastSaveAt(new Date().toISOString())
+        setRestored(false)
+        local.clear()
+        // Tapé pendant l'envoi : gardé sur l'appareil (pas la seule demande de mise en ligne, refusée)
+        if (changedFields(draftRef.current, nextSaved).some((f) => f !== 'publication')) local.flush(nextSaved)
+        setBlocked({ issues: issuesOf(json), unscheduled: wasScheduled })
+        setTab('redaction')
+        toast.error('Publication refusée : les modifications sont enregistrées, corrigez les passages signalés.')
+        requestAnimationFrame(() => document.getElementById('editeur-alertes')?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }))
+        router.refresh()
+        return
+      }
+
+      if (status === 0) {
+        toast.error("Connexion impossible : l'article n'est pas enregistré. Une copie reste sur cet appareil ; réessayez dans un instant.")
+        local.flush()
+        return
+      }
+      if (status === 401 || status === 403) {
+        toast.error("Session expirée : reconnectez-vous (une copie de l'article reste sur cet appareil).")
+        local.flush()
+        return
+      }
+      const text = message ?? (status === 503 ? 'Enregistrement indisponible pour le moment. Réessayez dans un instant.' : "L'enregistrement a échoué. Réessayez dans un instant.")
+      toast.error(text)
+      // Rien d'enregistré : la copie de l'appareil est écrite tout de suite
+      local.flush()
+      if (status === 400 || status === 409) {
+        const target = targetOfError(text)
+        if (target === 'slug') setSlugError(text)
+        if (target) focusTarget(target)
+      }
+    },
+    [editing, initialSchedule, focusTarget, local, router],
+  )
+  saveFnRef.current = save
+
+  useSaveShortcut(() => void save())
+
+  /* ---------------------------------------------------------------- */
+  /* Autres actions                                                    */
+  /* ---------------------------------------------------------------- */
+
+  const remove = async () => {
+    const articleId = idRef.current
+    if (!articleId || deletingRef.current) return
+    deletingRef.current = true
     setDeleting(true)
     try {
-      const res = await fetch(`/api/admin/blog/${post!.id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/admin/blog/${articleId}`, { method: 'DELETE', cache: 'no-store' })
       if (!res.ok) throw new Error()
-      toast.success('Article supprimé')
+      setSaved(draftRef.current)
+      // Plus aucune copie sur l'appareil d'un article qui n'existe plus
+      local.stop()
       setConfirmDelete(false)
+      toast.success('Article supprimé')
       router.push('/admin/blog')
       router.refresh()
     } catch {
-      toast.error('Impossible de supprimer l\'article')
-    } finally {
+      toast.error("Impossible de supprimer l'article. Réessayez dans un instant.")
+      deletingRef.current = false
       setDeleting(false)
     }
   }
 
-  const handleRegenerate = async () => {
-    if (!post) return
+  const regenerate = async () => {
+    if (!post || regenerating) return
     setRegenerating(true)
-    try {
-      const res = await fetch('/api/admin/blog/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: title, keywords: post.ai_keywords ?? [] }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
-      toast.success(`Nouvel article généré : « ${data.post.title} »`)
-      router.push(`/admin/blog/${data.post.id}`)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur de régénération')
-    } finally {
-      setRegenerating(false)
+    const toastId = toast.loading("Rédaction d'un nouvel article par l'IA… Cet article reste tel quel.")
+    const res = await api<{ post?: { id: string; title: string } }>('/api/admin/blog/generate', 'POST', { topic: draftRef.current.title, keywords: post.ai_keywords ?? [] })
+    setRegenerating(false)
+    const created = res.data?.post
+    if (!res.ok || !created) {
+      toast.error(res.error ?? 'La génération a échoué. Réessayez dans un instant.', { id: toastId })
+      return
     }
+    toast.success(`Nouvel article généré : « ${created.title} »`, {
+      id: toastId,
+      duration: 12_000,
+      // Page quittée entre-temps : plus de confirmation à demander
+      action: { label: 'Ouvrir', onClick: () => (mountedRef.current ? requestLeave(`/admin/blog/${created.id}`) : router.push(`/admin/blog/${created.id}`)) },
+    })
   }
 
+  /* ---------------------------------------------------------------- */
+  /* Changements de champs                                             */
+  /* ---------------------------------------------------------------- */
+
+  const onTitleChange = useCallback((title: string) => {
+    setDraft((d) => ({ ...d, title, slug: slugTouchedRef.current ? d.slug : slugify(title) }))
+  }, [])
+  const onExcerptChange = useCallback((excerpt: string) => patch({ excerpt }), [patch])
+  const onContentChange = useCallback((content: string) => patch({ content }), [patch])
+  const onCoverChange = useCallback((next: { url: string; alt: string }) => patch({ coverUrl: next.url, coverAlt: next.alt }), [patch])
+  const onPublicationChange = useCallback((publication: PublicationValue) => {
+    setProposal(null)
+    patch({ publication })
+  }, [patch])
+  const onSlugChange = useCallback(
+    (slug: string) => {
+      setSlugTouched(true)
+      setSlugError(null)
+      patch({ slug })
+    },
+    [patch],
+  )
+
+  /* ---------------------------------------------------------------- */
+  /* Rendu                                                             */
+  /* ---------------------------------------------------------------- */
+
+  const status = id ? statusOfMeta(meta) : null
+  const saveState: SaveState = saving
+    ? { kind: 'saving' }
+    : blocked && changes.length === 1 && publicationChanged
+      ? { kind: 'blocked' }
+      : dirty
+        ? { kind: 'dirty', restored }
+        : lastSaveAt
+          ? { kind: 'saved', at: lastSaveAt }
+          : { kind: 'clean', updatedAt: editing ? post?.updated_at ?? post?.created_at ?? null : null, isNew: !id }
+
+  // Article retenu par la tâche planifiée (lib/seo/articles/publish.ts) : la raison, tant qu'il n'est pas en ligne
+  const heldReason = !meta.isPublished && meta.heldReason?.trim() ? meta.heldReason.trim().replace(/([^.!?…])$/, '$1.') : null
+  const fromCalendar = carried?.fromCalendar ?? (!editing && Boolean(initialSchedule))
+  const backHref = fromCalendar ? '/admin/seo/articles' : '/admin/blog'
+  const backLabel = fromCalendar ? 'Calendrier' : 'Blog'
+  const liveHref = meta.isPublished && saved.slug ? `/blog/${saved.slug}` : null
+  const tone = scoreTone(analysis.score)
+  const serpDate = meta.isPublished ? meta.publishedAt : draft.publication.mode === 'schedule' ? draft.publication.day : null
+  const saveLabel = saveActionLabel(draft.publication.mode, meta, !id || publicationChanged)
+  const fromTitle = slugify(draft.title)
+
+  const proposalText = proposal
+    ? proposal.adjusted === 'later_today'
+      ? (
+          <>
+            L&apos;heure habituelle de publication (<strong className="q-num font-semibold tabular-nums">{proposal.preferred}</strong>) est passée pour aujourd&apos;hui. Heure
+            proposée : <strong className="font-semibold">aujourd&apos;hui à <span className="q-num tabular-nums">{proposal.time}</span></strong> (heure de Paris).
+          </>
+        )
+      : (
+          <>
+            Plus aucune heure de publication possible aujourd&apos;hui. Publication proposée{' '}
+            <strong className="font-semibold">
+              {relativeDay(proposal.day)} à <span className="q-num tabular-nums">{proposal.time}</span>
+            </strong>{' '}
+            (heure de Paris).
+          </>
+        )
+    : null
+
   return (
-    <div className="mx-auto flex w-full max-w-[860px] flex-col gap-5">
-      <PageHeader
-        backHref="/admin/blog"
-        backLabel="Blog"
-        title={mode === 'create' ? 'Nouvel article' : 'Modifier l\'article'}
-        subtitle={
-          <span className="mt-1 flex flex-wrap items-center gap-2">
-            <StatusPill tone={published ? 'ok' : 'neutral'}>{published ? 'Publié' : 'Brouillon'}</StatusPill>
-            {post?.ai_generated && (
-              <StatusPill tone="info" icon={<Bot strokeWidth={2.25} aria-hidden />}>Généré par IA</StatusPill>
-            )}
-          </span>
+    <div ref={rootRef} className="flex w-full min-w-0 flex-col gap-5 [--q-editor-top:62px] lg:[--q-editor-top-lg:134px] xl:[--q-editor-top-lg:80px]">
+      <EditorHeader
+        title={id ? "Modifier l'article" : 'Nouvel article'}
+        backHref={backHref}
+        backLabel={backLabel}
+        status={status}
+        aiGenerated={Boolean(post?.ai_generated)}
+        saveState={saveState}
+        saving={saving}
+        onSave={() => void save()}
+        viewHref={liveHref}
+        onRegenerate={id && post?.ai_generated ? () => void regenerate() : undefined}
+        regenerating={regenerating}
+        onDelete={id ? () => setConfirmDelete(true) : undefined}
+      />
+
+      <div ref={tabsAnchorRef} className="-mb-5 scroll-mt-2 lg:scroll-mt-[80px] xl:hidden" aria-hidden />
+      <EditorTabs<EditorTab>
+        value={tab}
+        onChange={changeTab}
+        controls={PANELS}
+        tabs={[
+          { value: 'redaction', label: 'Rédaction', icon: <PenLine /> },
+          { value: 'referencement', label: 'Référencement', icon: <Search />, score: { value: analysis.score, tone, label: `score ${analysis.score} sur 100, ${scoreLabel(analysis.score).toLowerCase()}` } },
+          { value: 'publication', label: 'Publication', icon: <Send /> },
+        ]}
+      />
+
+      <div className="grid min-w-0 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-6">
+        {/* Rédaction */}
+        <div id={PANELS.redaction} className={tab === 'redaction' ? 'flex min-w-0 flex-col gap-4' : 'flex min-w-0 flex-col gap-4 max-xl:hidden'}>
+          {(local.offer || blocked || proposal || heldReason) && (
+            <div id="editeur-alertes" className="flex scroll-mt-20 flex-col gap-3 lg:scroll-mt-[150px] xl:scroll-mt-[92px]">
+              {local.offer && (
+                <DraftOfferBanner
+                  savedAt={local.offer.savedAt}
+                  changes={describeFields(
+                    changedFields(local.offer.draft, saved).filter((f) => f !== 'publication' || !editing || !publicationMovedSince(local.offer!, saved)),
+                  )}
+                  onRestore={restoreLocal}
+                  onDismiss={local.dismiss}
+                />
+              )}
+              {blocked && (
+                <BlockedBanner
+                  issues={blocked.issues}
+                  message={
+                    blocked.notCreated
+                      ? "L'article n'est pas encore enregistré. Corrigez ces passages, puis publiez à nouveau, ou enregistrez-le en brouillon."
+                      : blocked.unscheduled
+                        ? "Les modifications sont enregistrées, mais l'article n'est pas en ligne et sa programmation est retirée. Corrigez ces passages, puis publiez ou programmez à nouveau."
+                        : "Les modifications sont enregistrées, mais l'article n'est pas en ligne. Corrigez ces passages, puis publiez à nouveau."
+                  }
+                  onDismiss={() => setBlocked(null)}
+                />
+              )}
+              {heldReason && !blocked && (
+                <div role="status" className="q-banner q-banner-warn">
+                  <TriangleAlert className="mt-0.5 size-5 shrink-0" aria-hidden />
+                  <p className="m-0 min-w-0 flex-1 text-[14px] leading-snug text-[var(--q-text-2)]">
+                    <strong className="font-semibold text-[var(--q-warn)]">Retenu par le contrôle à l&apos;heure prévue.</strong> {heldReason} Corrigez le passage, puis
+                    publiez ou programmez à nouveau.
+                  </p>
+                </div>
+              )}
+              {proposal && proposalText && (
+                <ScheduleProposalBanner
+                  text={proposalText}
+                  confirmLabel={proposal.adjusted === 'later_today' ? `Confirmer ${proposal.time}` : 'Confirmer'}
+                  onConfirm={() => {
+                    setProposal(null)
+                    toast.success(`Publication programmée ${relativeDay(proposal.day)} à ${proposal.time} : elle sera enregistrée avec l'article.`)
+                  }}
+                  onChange={() => focusTarget('publication')}
+                />
+              )}
+            </div>
+          )}
+
+          <DocumentSheet
+            title={draft.title}
+            excerpt={draft.excerpt}
+            content={draft.content}
+            coverUrl={draft.coverUrl}
+            coverAlt={draft.coverAlt}
+            keyword={draft.keyword}
+            onTitleChange={onTitleChange}
+            onExcerptChange={onExcerptChange}
+            onContentChange={onContentChange}
+            onCoverChange={onCoverChange}
+            onOutline={setHeadings}
+            highlightTerms={highlightTerms}
+            editorRef={editorRef}
+            onRequestImage={studio.requestImage}
+            excerptSuggest={suggestExcerpt}
+            editorMode={carried?.editorMode}
+          />
+        </div>
+
+        {/* Référencement et publication */}
+        <aside
+          id={PANELS.referencement}
+          aria-label="Référencement et publication"
+          className={[
+            'flex min-w-0 flex-col gap-3',
+            'xl:sticky xl:top-[84px] xl:-mx-2 xl:-mt-1 xl:max-h-[calc(100dvh-96px)] xl:overflow-y-auto xl:overscroll-contain xl:px-2 xl:pb-4 xl:pt-1',
+            '[scrollbar-color:var(--q-field)_transparent] [scrollbar-width:thin]',
+            'max-xl:mx-auto max-xl:w-full max-xl:max-w-[680px]',
+            tab === 'redaction' ? 'max-xl:hidden' : '',
+          ].join(' ')}
+        >
+          <PublicationCard
+            className={tab === 'publication' ? '' : 'max-xl:hidden'}
+            value={draft.publication}
+            onChange={onPublicationChange}
+            isPublished={meta.isPublished}
+            publishedAt={meta.publishedAt}
+            slug={saved.slug}
+            defaultTime={prefTime}
+            saving={saving}
+            saveLabel={saveLabel}
+            onSave={() => void save()}
+          />
+          <ScoreCard className={tab === 'referencement' ? '' : 'max-xl:hidden'} result={analysis} onFocusTarget={focusTarget} />
+          <KeywordCard
+            className={tab === 'referencement' ? '' : 'max-xl:hidden'}
+            value={draft.keyword}
+            onChange={(keyword) => patch({ keyword })}
+            seo={seo}
+            slug={draft.slug}
+            selfId={id}
+          />
+          <GoogleCard
+            className={tab === 'referencement' ? '' : 'max-xl:hidden'}
+            seoTitle={draft.seoTitle}
+            seoDescription={draft.seoDescription}
+            title={draft.title}
+            excerpt={draft.excerpt}
+            slug={draft.slug}
+            date={serpDate}
+            onSeoTitleChange={(seoTitle) => patch({ seoTitle })}
+            onSeoDescriptionChange={(seoDescription) => patch({ seoDescription })}
+            suggestTitle={suggestSeoTitle}
+            suggestDescription={suggestSeoDescription}
+          />
+          <AddressCard
+            className={tab === 'referencement' ? '' : 'max-xl:hidden'}
+            slug={draft.slug}
+            onSlugChange={onSlugChange}
+            fromTitle={fromTitle}
+            onRecreate={() => {
+              setSlugTouched(!!id)
+              setSlugError(null)
+              patch({ slug: fromTitle })
+            }}
+            suggest={suggestSlug}
+            error={slugError}
+            changedWhileOnline={meta.isPublished && normalSlug(draft.slug) !== normalSlug(saved.slug)}
+          />
+          <SecondaryCard
+            className={tab === 'referencement' ? '' : 'max-xl:hidden'}
+            keyword={draft.keyword}
+            seo={seo}
+            title={draft.title}
+            content={deferredDraft.content}
+            highlighted={highlighted}
+            onHighlightChange={setHighlighted}
+          />
+          <OutlineCard className={tab === 'referencement' ? '' : 'max-xl:hidden'} headings={headings} onGo={goToHeading} />
+        </aside>
+      </div>
+
+      {studio.dialog}
+
+      {/* Heure proposée à confirmer */}
+      <ConfirmDialog
+        open={scheduleCheck !== null}
+        onOpenChange={(open) => !open && setScheduleCheck(null)}
+        title={proposal ? `Programmer ${relativeDay(proposal.day)} à ${proposal.time} ?` : 'Programmer la publication ?'}
+        description={
+          proposal ? (
+            <>
+              L&apos;heure habituelle de publication ({proposal.preferred}) est passée pour aujourd&apos;hui. L&apos;article sera publié {relativeDay(proposal.day)} à{' '}
+              {proposal.time} (heure de Paris), après le contrôle.
+            </>
+          ) : (
+            ''
+          )
         }
         actions={
           <>
-            {mode === 'edit' && (
-              <button type="button" onClick={() => setConfirmDelete(true)} disabled={deleting} className="q-btn q-btn-danger">
-                <Trash2 aria-hidden />
-                Supprimer
-              </button>
-            )}
-            <button type="button" onClick={handleSave} disabled={saving} className="q-btn q-btn-primary">
-              {saving ? <Loader2 className="animate-spin" aria-hidden /> : <Save aria-hidden />}
-              {saving ? 'Enregistrement…' : 'Enregistrer'}
+            <button
+              type="button"
+              className="q-btn q-btn-ghost"
+              onClick={() => {
+                setScheduleCheck(null)
+                focusTarget('publication')
+              }}
+            >
+              Choisir une autre heure
+            </button>
+            <button
+              type="button"
+              className="q-btn q-btn-primary"
+              onClick={() => {
+                const then = scheduleCheck?.then ?? null
+                setScheduleCheck(null)
+                setProposal(null)
+                void save({ then, confirmed: true })
+              }}
+            >
+              <Save aria-hidden />
+              {proposal ? `Programmer à ${proposal.time}` : 'Programmer'}
             </button>
           </>
         }
       />
 
-      {post?.ai_generated && (
-        <Panel bodyClassName="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-          <div className="flex min-w-0 flex-col gap-2">
-            <p className="text-sm text-[var(--q-text-2)]">Article généré par l&apos;IA. Relisez-le avant publication.</p>
-            {post.ai_keywords && post.ai_keywords.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs font-semibold text-[var(--q-text-4)]">Mots-clés :</span>
-                {post.ai_keywords.map((kw, i) => (
-                  <span key={i} className="q-tag">{kw}</span>
-                ))}
-              </div>
-            )}
-          </div>
-          {mode === 'edit' && (
-            <button type="button" onClick={handleRegenerate} disabled={regenerating} className="q-btn q-btn-secondary q-btn-sm shrink-0 self-start sm:self-center">
-              {regenerating ? <Loader2 className="animate-spin" aria-hidden /> : <RefreshCw aria-hidden />}
-              Régénérer
+      {/* Sortie avec des modifications non enregistrées */}
+      <ConfirmDialog
+        open={leaveHref !== null}
+        onOpenChange={(open) => !open && setLeaveHref(null)}
+        title="Quitter sans enregistrer ?"
+        description="Vos modifications ne sont pas enregistrées. Une copie reste sur cet appareil : elle vous sera proposée à votre retour."
+        actions={
+          <>
+            <button type="button" className="q-btn q-btn-ghost" onClick={() => setLeaveHref(null)}>
+              Rester
             </button>
-          )}
-        </Panel>
-      )}
+            <button
+              type="button"
+              className="q-btn q-btn-secondary"
+              onClick={() => {
+                const href = leaveHref
+                setLeaveHref(null)
+                local.flush()
+                if (href) router.push(href)
+              }}
+            >
+              <LogOut aria-hidden />
+              Quitter
+            </button>
+            <button
+              type="button"
+              className="q-btn q-btn-primary"
+              disabled={saving}
+              onClick={() => {
+                const href = leaveHref
+                setLeaveHref(null)
+                void save({ then: href })
+              }}
+            >
+              <Save aria-hidden />
+              Enregistrer et quitter
+            </button>
+          </>
+        }
+      />
 
-      <Panel bodyClassName="flex flex-col gap-5 p-4 sm:p-5">
-        <Field id="blog-title" label="Titre">
-          <input
-            id="blog-title"
-            value={title}
-            onChange={e => handleTitleChange(e.target.value)}
-            placeholder="Titre de l'article…"
-            required
-            className="q-input font-semibold"
-          />
-        </Field>
-
-        <Field id="blog-slug" label="Adresse de l'article" hint="Lettres minuscules, chiffres et tirets ; remplie à partir du titre.">
-          <div className="q-fw flex h-[42px] items-center rounded-[10px] border border-[var(--q-field)] bg-[var(--q-surface)] pl-3">
-            <span className="shrink-0 font-mono text-sm text-[var(--q-text-4)]">/blog/</span>
-            <input
-              id="blog-slug"
-              value={slug}
-              onChange={e => { setSlug(e.target.value); setSlugEdited(true) }}
-              placeholder="mon-article"
-              required
-              className="h-full min-w-0 flex-1 bg-transparent pr-3 font-mono text-base text-[var(--q-ink)] outline-none placeholder:text-[var(--q-placeholder)] md:text-sm"
-            />
-          </div>
-        </Field>
-
-        <Field id="blog-excerpt" label="Extrait" hint="Une ou deux phrases pour les aperçus et les moteurs de recherche.">
-          <input
-            id="blog-excerpt"
-            value={excerpt}
-            onChange={e => setExcerpt(e.target.value)}
-            placeholder="Courte description…"
-            className="q-input"
-          />
-        </Field>
-
-        <Field
-          id="blog-seo-title"
-          label="Titre pour Google (facultatif)"
-          hint={`${seoTitle.length} / 70 caractères. Vide : le titre de l'article.`}
-        >
-          <input
-            id="blog-seo-title"
-            value={seoTitle}
-            onChange={e => setSeoTitle(e.target.value)}
-            maxLength={120}
-            placeholder={title || 'Titre affiché dans les résultats de Google'}
-            className="q-input"
-          />
-        </Field>
-
-        <Field
-          id="blog-seo-description"
-          label="Description pour Google (facultatif)"
-          hint={`${seoDescription.length} caractères, 120 à 155 conseillés. Vide : l'extrait.`}
-        >
-          <textarea
-            id="blog-seo-description"
-            value={seoDescription}
-            onChange={e => setSeoDescription(e.target.value)}
-            rows={2}
-            maxLength={400}
-            placeholder={excerpt || 'Description affichée sous le lien dans Google'}
-            className="q-input"
-          />
-        </Field>
-
-        <Field id="blog-cover" label="Image de couverture (adresse)">
-          <input
-            id="blog-cover"
-            value={coverUrl}
-            onChange={e => setCoverUrl(e.target.value)}
-            placeholder="https://…"
-            type="url"
-            inputMode="url"
-            className="q-input"
-          />
-        </Field>
-
-        <Field id="blog-content" label="Contenu (Markdown)" hint={`${content.length.toLocaleString('fr-FR')} caractères`}>
-          <textarea
-            id="blog-content"
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            rows={20}
-            required
-            placeholder={`# Titre\n\nIntroduction…\n\n## Section\n\nContenu en **Markdown**…`}
-            className="q-input !min-h-[360px] font-mono leading-relaxed"
-          />
-        </Field>
-
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--q-line)] bg-[var(--q-surface-2)] px-4 py-3">
-          <span className="flex min-w-0 flex-col">
-            <label htmlFor="blog-published" className="q-label">Publié sur le blog</label>
-            <span className="text-xs text-[var(--q-text-4)]">Pris en compte à l&apos;enregistrement.</span>
-          </span>
-          <Switch id="blog-published" checked={published} onCheckedChange={setPublished} />
-        </div>
-      </Panel>
-
-      <Dialog open={confirmDelete} onOpenChange={(o) => { if (!deleting) setConfirmDelete(o) }}>
-        <DialogContent showCloseButton={false} className="gap-3 sm:max-w-md">
-          <DialogTitle className="q-display text-[22px] font-semibold leading-tight">Supprimer cet article ?</DialogTitle>
-          <DialogDescription className="text-sm leading-relaxed !text-[var(--q-text-3)]">
-            L&apos;article « {title || 'sans titre'} » sera supprimé définitivement{published ? ' et retiré du blog' : ''}.
-          </DialogDescription>
-          <div className="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button type="button" onClick={() => setConfirmDelete(false)} disabled={deleting} className="q-btn q-btn-ghost">Annuler</button>
-            <button type="button" onClick={handleDelete} disabled={deleting} className="q-btn q-btn-danger">
-              {deleting ? <Loader2 className="animate-spin" aria-hidden /> : <Trash2 aria-hidden />}
+      {/* Suppression */}
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={(open) => {
+          if (!deleting) setConfirmDelete(open)
+        }}
+        title="Supprimer l'article ?"
+        description={
+          <>
+            L&apos;article « {draft.title.trim() || saved.title.trim() || 'sans titre'} » sera supprimé définitivement{meta.isPublished ? ' et retiré du blog' : ''}. Cette action ne
+            peut pas être annulée.
+          </>
+        }
+        actions={
+          <>
+            <button type="button" onClick={() => setConfirmDelete(false)} disabled={deleting} className="q-btn q-btn-ghost">
+              Annuler
+            </button>
+            <button type="button" onClick={() => void remove()} disabled={deleting} className="q-btn q-btn-danger">
+              {deleting ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : <Trash2 aria-hidden />}
               Supprimer
             </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      />
+
     </div>
   )
 }

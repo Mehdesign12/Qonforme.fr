@@ -3,11 +3,12 @@ import Image from "next/image"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
 import { Breadcrumbs, ChipLinks, ContentCta, ContentPage, SectionHeading, WRAP } from "@/components/content/ui"
-import ArticleCard, { CoverFallback, type ArticleCardPost } from "./ArticleCard"
+import ArticleCard, { CoverFallback, coverAltOf, type ArticleCardPost } from "./ArticleCard"
 import CategoryBadge from "./CategoryBadge"
 import ReadingProgressBar from "./ReadingProgressBar"
 import ShareButtons from "./ShareButtons"
 import TableOfContents from "./TableOfContents"
+import { isGeneratedBlogImage } from "@/lib/blog-images/policy"
 
 export interface ArticleViewProps {
   post: {
@@ -16,7 +17,7 @@ export interface ArticleViewProps {
     excerpt: string | null
     cover_url: string | null
     published_at: string | null
-    /** Texte alternatif de la couverture (vide : image décorative). */
+    /** Texte alternatif de la couverture (vide : le titre de l'article). */
     cover_alt?: string | null
     /** Article et couverture produits par une IA : la couverture porte la mention « Illustration générée par IA ». */
     ai_generated?: boolean | null
@@ -96,13 +97,13 @@ export default function ArticleView({ post, category, readingTime, keywords, hea
             <figure className="mt-8">
               <div className="relative aspect-[16/9] overflow-hidden rounded-[20px] border border-q-line bg-q-sunken">
                 {post.cover_url ? (
-                  <Image src={post.cover_url} alt={post.cover_alt ?? ""} fill className="object-cover" sizes="(max-width: 760px) 100vw, 700px" priority />
+                  <Image src={post.cover_url} alt={coverAltOf(post)} fill className="object-cover" sizes="(max-width: 760px) 100vw, 700px" priority />
                 ) : (
                   <CoverFallback size={96} />
                 )}
               </div>
-              {/* Transparence sur les images de synthèse (AI Act, art. 50) */}
-              {post.cover_url && post.ai_generated && (
+              {/* Transparence sur les images de synthèse (AI Act, art. 50) : article généré, ou couverture du studio d'images (editor/ia/) */}
+              {post.cover_url && (post.ai_generated || isGeneratedBlogImage(post.cover_url)) && (
                 <figcaption className="mt-2 text-[13px] text-q-text-4">Illustration générée par IA</figcaption>
               )}
             </figure>

@@ -18,11 +18,16 @@ const ARTICLE_ICONS: Record<ArticleDisplayStatus, React.ReactNode> = {
   generating: <Loader2 strokeWidth={2.25} className="animate-spin motion-reduce:animate-none" aria-hidden />,
 }
 
-export function ArticleStatusPill({ status, className }: { status: ArticleDisplayStatus; className?: string }) {
+/**
+ * `post` : la pastille d'un article (éditeur, fenêtre de l'article) dit
+ * « Programmé » pour une publication à date fixe, comme le panneau Publication ;
+ * le calendrier garde « Planifié », commun aux sujets et aux articles.
+ */
+export function ArticleStatusPill({ status, className, post }: { status: ArticleDisplayStatus; className?: string; post?: boolean }) {
   const def = ARTICLE_STATUS[status]
   return (
     <StatusPill tone={def.tone} icon={ARTICLE_ICONS[status]} className={className}>
-      {def.label}
+      {post && status === "scheduled" ? "Programmé" : def.label}
     </StatusPill>
   )
 }

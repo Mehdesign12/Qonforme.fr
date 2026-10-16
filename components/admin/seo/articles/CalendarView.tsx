@@ -5,19 +5,37 @@
  * barre du mois (précédent, suivant, statut, aujourd'hui), grille du lundi au
  * dimanche sur ordinateur, agenda par semaine sur téléphone, cartes
  * d'événement (type, titre, statut, heure de Paris), légende des statuts.
- * Un article ouvre sa fiche (/admin/blog/<id>) ; un sujet ouvre sa fenêtre.
+ * Un article ouvre sa fenêtre (performances, mots-clés, qualité, actions :
+ * ArticleDetailsDialog) ; un sujet ouvre la sienne.
  * ?planifier=1 ouvre « Planifier un sujet ».
+ *
+ * « + » sur aujourd'hui et chaque jour à venir (jamais dans le passé) : un
+ * seul menu pour tout le calendrier (déclencheurs détachés de Base UI, le jour
+ * passe en « payload ») : « Écrire un article » (éditeur, publication
+ * programmée ce jour-là à l'heure des Préférences), « Planifier un sujet »,
+ * « Générer avec l'IA ». Sur ordinateur, le « + » apparaît au survol ou au
+ * clavier, toujours sur écran tactile ; une case vide à venir montre en plus,
+ * au survol, une zone « Ajouter ». Sur téléphone : « Ajouter un article cette
+ * semaine » dans une semaine vide (ou, en plus petit, sous des articles déjà
+ * passés), « + » à côté de chaque jour à venir. Le menu compte les articles
+ * du jour sans le filtre de statut et se ferme sur un jour devenu passé
+ * (page restée ouverte depuis la veille).
  */
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { ChevronLeft, ChevronRight, Funnel } from "lucide-react"
+import { Menu } from "@base-ui/react/menu"
+import { CalendarPlus, ChevronLeft, ChevronRight, Funnel, PenLine, Plus, Sparkles, TriangleAlert } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ArticleDisplayStatus } from "@/lib/seo/types"
-import type { CalendarData, CalendarEvent, TopicLite } from "@/lib/seo/articles/data"
-import { shortDay, weekLabel, weekdayDay, WEEKDAY_LABELS } from "@/lib/seo/articles/schedule"
+import type { CalendarData, CalendarEvent, GenerateOptions, TopicLite } from "@/lib/seo/articles/data"
+import { parisDayTime, parisInstant, shortDay, weekLabel, weekdayDay, WEEKDAY_LABELS } from "@/lib/seo/articles/schedule"
+import { addDays, todayInParis } from "@/lib/utils/paris-date"
+import { DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { ArticleStatusPill, LEGEND, Tag, TypeTag } from "@/components/admin/seo/articles/pills"
 import { PlanTopicDialog, TopicDialog } from "@/components/admin/seo/articles/TopicDialogs"
+import { GenerateDialog } from "@/components/admin/seo/articles/GenerateDialog"
+import { ArticleDetailsDialog, longDay } from "@/components/admin/seo/articles/ArticleDetailsDialog"
 
 const FILTERS: { value: ArticleDisplayStatus; label: string }[] = [
   { value: "published", label: "Publié" },
@@ -55,22 +73,26 @@ function EventInner({ event, compact }: { event: CalendarEvent; compact?: boolea
 
 const CARD = "flex w-full flex-col gap-1.5 rounded-[10px] border border-[var(--q-line)] bg-[var(--q-surface)] p-[7px] text-left shadow-[0_1px_2px_rgba(10,17,34,.06)] hover:border-[var(--q-accent)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)]"
 
-function EventCard({ event, onTopic }: { event: CalendarEvent; onTopic: (t: TopicLite) => void }) {
-  if (event.kind === "post" && event.href) {
-    return (
-      <Link href={event.href} className={CARD}>
-        <EventInner event={event} compact />
-      </Link>
-    )
-  }
+/** Ouvre la fenêtre d'un article ou d'un sujet. */
+interface EventOpeners {
+  onTopic: (t: TopicLite) => void
+  onPost: (id: string) => void
+}
+
+function openEvent(event: CalendarEvent, { onTopic, onPost }: EventOpeners) {
+  if (event.kind === "post") onPost(event.id)
+  else if (event.topic) onTopic(event.topic)
+}
+
+function EventCard({ event, ...openers }: { event: CalendarEvent } & EventOpeners) {
   return (
-    <button type="button" onClick={() => event.topic && onTopic(event.topic)} className={CARD}>
+    <button type="button" onClick={() => openEvent(event, openers)} aria-haspopup="dialog" className={CARD}>
       <EventInner event={event} compact />
     </button>
   )
 }
 
-function AgendaCard({ event, onTopic }: { event: CalendarEvent; onTopic: (t: TopicLite) => void }) {
+function AgendaCard({ event, ...openers }: { event: CalendarEvent } & EventOpeners) {
   const inner = (
     <>
       <span className="flex items-center justify-between gap-2">
@@ -96,27 +118,240 @@ function AgendaCard({ event, onTopic }: { event: CalendarEvent; onTopic: (t: Top
       )}
     </>
   )
-  const cls = "flex w-full flex-col gap-2.5 rounded-2xl border border-[var(--q-line)] bg-[var(--q-surface)] px-4 py-3.5 text-left shadow-[var(--q-shadow-card)]"
-  if (event.kind === "post" && event.href) {
-    return (
-      <Link href={event.href} className={cls}>
-        {inner}
-      </Link>
-    )
-  }
+  const cls =
+    "flex w-full flex-col gap-2.5 rounded-2xl border border-[var(--q-line)] bg-[var(--q-surface)] px-4 py-3.5 text-left [box-shadow:var(--q-shadow-card)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)]"
   return (
-    <button type="button" onClick={() => event.topic && onTopic(event.topic)} className={cls}>
+    <button type="button" onClick={() => openEvent(event, openers)} aria-haspopup="dialog" className={cls}>
       {inner}
     </button>
   )
 }
 
-export function CalendarView({ data, filter }: { data: CalendarData; filter: ArticleDisplayStatus | null }) {
+/* ------------------------------------------------------------------ */
+/* Ajouter un article un jour donné                                    */
+/* ------------------------------------------------------------------ */
+
+const pad = (n: number) => String(n).padStart(2, "0")
+
+/**
+ * Jour et heure de publication proposés pour un jour du calendrier : l'heure
+ * des Préférences ; aujourd'hui, si elle est passée (ou dans moins de 30
+ * minutes), le prochain quart d'heure à 30 minutes au moins ; trop tard
+ * aujourd'hui (après 23:45), le lendemain à l'heure des Préférences.
+ * « Aujourd'hui » se lit à l'horloge (`now`) quand la page date de la veille.
+ */
+export function plannedSlot(day: string, today: string, time: string, now: Date): { day: string; time: string; shifted: boolean } {
+  const clock = todayInParis(now)
+  const current = clock > today ? clock : today
+  if (day !== current || parisInstant(day, time).getTime() > now.getTime() + 30 * 60_000) return { day, time, shifted: false }
+  const [h, m] = parisDayTime(now).time.split(":").map(Number)
+  const minutes = Math.ceil((h * 60 + m + 30) / 15) * 15
+  if (minutes > 23 * 60 + 45) return { day: addDays(day, 1), time, shifted: true }
+  return { day, time: `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`, shifted: true }
+}
+
+/**
+ * Jour passé à l'horloge alors que la page l'affichait encore à venir (page
+ * restée ouverte depuis la veille) : plus rien à y ajouter.
+ */
+export function isPastDay(day: string, now: Date): boolean {
+  return day < todayInParis(now)
+}
+
+/** « 1 article déjà prévu ce jour », « 2 articles déjà prévus ce jour ». */
+export function alreadyPlannedLabel(count: number): string | null {
+  if (count <= 0) return null
+  return count > 1 ? `${count} articles déjà prévus ce jour` : "1 article déjà prévu ce jour"
+}
+
+type AddHandle = Menu.Handle<string>
+
+function MenuEntry({ icon, title, hint }: { icon: React.ReactNode; title: string; hint: string }) {
+  return (
+    <>
+      <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--q-wash)] text-[var(--q-accent-strong)] [&_svg]:!size-4">
+        {icon}
+      </span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-sm font-semibold leading-tight text-[var(--q-ink)]">{title}</span>
+        <span className="text-[12px] font-normal leading-snug text-[var(--q-text-4)]">{hint}</span>
+      </span>
+    </>
+  )
+}
+
+/** Contenu du menu « + » d'un jour (calculé à l'ouverture : l'heure proposée dépend de l'heure qu'il est). */
+function AddMenuContent({
+  day,
+  today,
+  publishTime,
+  count,
+  canGenerate,
+  onWrite,
+  onPlan,
+  onGenerate,
+}: {
+  day: string
+  today: string
+  publishTime: string
+  count: number
+  canGenerate: boolean
+  onWrite: (day: string) => void
+  onPlan: (slot: { day: string; time: string }) => void
+  onGenerate: (slot: { day: string; time: string }) => void
+}) {
+  const now = new Date()
+  const header = longDay(day, { capitalize: true })
+  const menuClass = "w-[min(300px,calc(100vw-2rem))] [box-shadow:var(--q-shadow-pop)]"
+  const labelClass = "flex flex-col gap-1 px-2.5 pb-2 pt-1.5 text-[13px] font-semibold text-[var(--q-ink)]"
+  // Page ouverte depuis la veille : le jour est passé, rien ne s'y programme plus
+  if (isPastDay(day, now)) {
+    return (
+      <DropdownMenuContent align="end" sideOffset={6} className={menuClass}>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className={labelClass}>
+            {header}
+            <span className="text-[12px] font-normal leading-snug text-[var(--q-text-3)]">Ce jour est passé. Actualisez la page pour voir le calendrier à jour.</span>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    )
+  }
+  const slot = plannedSlot(day, today, publishTime, now)
+  const already = alreadyPlannedLabel(count)
+  const isToday = day === todayInParis(now)
+  // L'éditeur publie à l'heure des Préférences : passée aujourd'hui, l'heure se choisit dans l'éditeur
+  const writeHint = slot.shifted ? "Programmé aujourd'hui, heure à choisir dans l'éditeur" : `Programmé à ${publishTime}`
+  const when = slot.day === day ? `à ${slot.time}` : `demain à ${slot.time}`
+  // Un sujet est rédigé dans les 24 heures qui précèdent sa parution (tâche planifiée) : le jour même, dès le prochain passage
+  const planHint = slot.day === day && isToday ? `Parution ${when}, rédigé avant la parution` : `Parution ${when}, rédigé la veille`
+  return (
+    <DropdownMenuContent align="end" sideOffset={6} className={menuClass}>
+      <DropdownMenuGroup>
+        <DropdownMenuLabel className={labelClass}>
+          {header}
+          {already && (
+            <span className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--q-warn)]">
+              <TriangleAlert className="size-3.5 shrink-0" aria-hidden />
+              {already}
+            </span>
+          )}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator className="mx-0 my-1 bg-[var(--q-line-soft)]" />
+        <DropdownMenuItem onClick={() => onWrite(slot.day)} className="items-start py-2.5">
+          <MenuEntry icon={<PenLine />} title="Écrire un article" hint={slot.day === day ? writeHint : `Programmé demain à ${publishTime}`} />
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onPlan(slot)} className="items-start py-2.5">
+          <MenuEntry icon={<CalendarPlus />} title="Planifier un sujet" hint={planHint} />
+        </DropdownMenuItem>
+        {canGenerate && (
+          <DropdownMenuItem onClick={() => onGenerate(slot)} className="items-start py-2.5">
+            <MenuEntry icon={<Sparkles />} title="Générer avec l'IA" hint={`Rédigé maintenant, publié ${when}`} />
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuGroup>
+    </DropdownMenuContent>
+  )
+}
+
+/** « + » d'un jour de la grille (coin haut-droit de la case). */
+function AddDayButton({ handle, day }: { handle: AddHandle; day: string }) {
+  return (
+    <Menu.Trigger
+      handle={handle}
+      payload={day}
+      id={`ajout-${day}`}
+      aria-label={`Ajouter un article le ${longDay(day)}`}
+      title="Ajouter un article"
+      className={cn(
+        "q-btn q-btn-ghost q-btn-icon absolute right-1 top-1 z-[1] !size-7 !rounded-lg !text-[var(--q-text-3)] hover:!bg-[var(--q-surface)] hover:!text-[var(--q-accent-strong)] hover:shadow-[0_1px_2px_rgba(10,17,34,.08)]",
+        // Écran tactile (tablette) : zone de toucher de 44 px autour du bouton de 28 px
+        "[@media(hover:none)]:before:absolute [@media(hover:none)]:before:-inset-2 [@media(hover:none)]:before:content-['']",
+        "opacity-0 transition-opacity duration-100 motion-reduce:transition-none",
+        "focus-visible:opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 data-[popup-open]:opacity-100 data-[popup-open]:!bg-[var(--q-surface)] data-[popup-open]:!text-[var(--q-accent-strong)] [@media(hover:none)]:opacity-100",
+      )}
+    >
+      <Plus aria-hidden />
+    </Menu.Trigger>
+  )
+}
+
+/** Zone « Ajouter » d'une case vide à venir (survol seulement ; le « + » reste le chemin du clavier). */
+function AddZone({ handle, day, today = false }: { handle: AddHandle; day: string; today?: boolean }) {
+  return (
+    <Menu.Trigger
+      handle={handle}
+      payload={day}
+      tabIndex={-1}
+      aria-hidden
+      className={cn(
+        "absolute inset-x-1.5 bottom-1.5 top-9 flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed text-[12.5px] font-semibold text-[var(--q-accent-strong)]",
+        // Filet pointillé à l'accent atténué ; aujourd'hui, la case est déjà teintée : la zone se détache en blanc
+        "border-[color-mix(in_srgb,var(--q-accent)_38%,transparent)]",
+        today ? "bg-[var(--q-surface)]" : "bg-[var(--q-wash)]",
+        "opacity-0 transition-opacity duration-100 group-hover:opacity-100 data-[popup-open]:opacity-100 motion-reduce:transition-none [@media(hover:none)]:hidden",
+      )}
+    >
+      <Plus className="size-3.5" aria-hidden />
+      Ajouter
+    </Menu.Trigger>
+  )
+}
+
+/**
+ * Téléphone : « Ajouter un article cette semaine » (premier jour libre à
+ * partir d'aujourd'hui). Semaine vide : grand bouton ; semaine dont les
+ * articles sont déjà passés : version compacte sous la liste.
+ */
+function AddWeekButton({ handle, day, compact = false }: { handle: AddHandle; day: string; compact?: boolean }) {
+  return (
+    <Menu.Trigger
+      handle={handle}
+      payload={day}
+      className={cn(
+        "flex w-full items-center gap-3 rounded-2xl border border-dashed border-[var(--q-line)] px-4 text-left transition-colors duration-100 hover:border-[var(--q-accent)] hover:bg-[var(--q-wash)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)] data-[popup-open]:border-[var(--q-accent)] data-[popup-open]:bg-[var(--q-wash)] motion-reduce:transition-none",
+        compact ? "min-h-[52px] py-2.5" : "min-h-[64px] py-3",
+      )}
+    >
+      <span aria-hidden className={cn("grid shrink-0 place-items-center rounded-full bg-[var(--q-wash)] text-[var(--q-accent-strong)]", compact ? "size-8" : "size-9")}>
+        <Plus className="size-4" />
+      </span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className={cn("font-semibold leading-tight text-[var(--q-ink)]", compact ? "text-sm" : "text-[15px]")}>Ajouter un article cette semaine</span>
+        <span className="text-[13px] text-[var(--q-text-4)]">{compact ? `À partir du ${longDay(day)}` : "Aucun article prévu."}</span>
+      </span>
+    </Menu.Trigger>
+  )
+}
+
+export function CalendarView({
+  data,
+  filter,
+  generate = null,
+}: {
+  data: CalendarData
+  filter: ArticleDisplayStatus | null
+  /**
+   * Fenêtre « Générer un article » ; null : ses données n'ont pas pu être lues (entrée masquée).
+   * Ses sujets sont ceux du calendrier encore à planifier (pas ceux en échec) : la page ne les envoie qu'une fois.
+   */
+  generate?: GenerateOptions | null
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
   const planOpen = params.get("planifier") === "1"
   const [topic, setTopic] = useState<TopicLite | null>(null)
+  const [postId, setPostId] = useState<string | null>(null)
+  // Fenêtres ouvertes depuis le « + » d'un jour : jour et heure proposés
+  const [planSlot, setPlanSlot] = useState<{ day: string; time: string } | null>(null)
+  const [generateSlot, setGenerateSlot] = useState<{ day: string; time: string } | null>(null)
+  // Un seul menu « + » pour tout le calendrier : chaque jour est un déclencheur détaché
+  const [addMenu] = useState(() => Menu.createHandle<string>())
+  const publishTime = data.publishTime ?? "08:00"
+  const openers: EventOpeners = { onTopic: setTopic, onPost: setPostId }
+  // Jours déjà occupés, filtre de statut non appliqué (repli : événements affichés)
+  const eventsOf = useMemo(() => new Map(data.weeks.flatMap((w) => w.days.map((d) => [d.day, data.dayCounts?.[d.day] ?? d.events.length] as const))), [data.weeks, data.dayCounts])
 
   const href = (next: Record<string, string | null>) => {
     const qs = new URLSearchParams(params.toString())
@@ -219,7 +454,7 @@ export function CalendarView({ data, filter }: { data: CalendarData; filter: Art
                     <td
                       key={d.day}
                       className={cn(
-                        "h-[150px] border-[var(--q-line-soft)] p-1.5 align-top",
+                        "group relative h-[150px] border-[var(--q-line-soft)] p-1.5 align-top",
                         di < 6 && "border-r",
                         wi < data.weeks.length - 1 && "border-b",
                         d.isToday ? "bg-[var(--q-wash)]" : d.inMonth ? "bg-[var(--q-surface)]" : "bg-[var(--q-surface-2)]",
@@ -245,10 +480,16 @@ export function CalendarView({ data, filter }: { data: CalendarData; filter: Art
                         <ul className="mt-1.5 flex flex-col gap-1.5">
                           {d.events.map((e) => (
                             <li key={e.key}>
-                              <EventCard event={e} onTopic={setTopic} />
+                              <EventCard event={e} {...openers} />
                             </li>
                           ))}
                         </ul>
+                      )}
+                      {d.day >= data.today && (
+                        <>
+                          {d.events.length === 0 && <AddZone handle={addMenu} day={d.day} today={d.isToday} />}
+                          <AddDayButton handle={addMenu} day={d.day} />
+                        </>
                       )}
                     </td>
                   ))}
@@ -301,6 +542,11 @@ export function CalendarView({ data, filter }: { data: CalendarData; filter: Art
           {data.weeks.map((week) => {
             const days = week.days.filter((d) => d.events.length > 0)
             const past = todayInGrid ? week.monday < (todayWeek as string) : week.days[6].day < data.today
+            // Semaine vide qui n'est pas passée : on peut y ajouter un article (premier jour à partir d'aujourd'hui)
+            const upcoming = week.days.filter((d) => d.day >= data.today)
+            const addDay = upcoming[0]?.day ?? null
+            // Articles tous passés, jours libres à venir : aucun « + » de jour ne serait affiché, d'où le bouton compact
+            const freeDay = upcoming.some((d) => d.events.length > 0) ? null : (upcoming.find((d) => d.events.length === 0)?.day ?? null)
             return (
               <section key={week.monday} aria-labelledby={`sem-${week.monday}`} className="flex flex-col gap-2.5">
                 <div className="flex items-baseline justify-between gap-2">
@@ -309,7 +555,9 @@ export function CalendarView({ data, filter }: { data: CalendarData; filter: Art
                   </h2>
                   {week.monday === todayWeek && <span className="whitespace-nowrap text-[13px] font-semibold text-[var(--q-accent-strong)]">Cette semaine</span>}
                 </div>
-                {days.length === 0 ? (
+                {days.length === 0 && addDay ? (
+                  <AddWeekButton handle={addMenu} day={addDay} />
+                ) : days.length === 0 ? (
                   <p className="flex min-h-[52px] items-center rounded-2xl border border-dashed border-[var(--q-line)] px-4 text-sm text-[var(--q-text-4)]">
                     {past ? "Aucun article." : "Aucun article prévu."}
                   </p>
@@ -317,27 +565,45 @@ export function CalendarView({ data, filter }: { data: CalendarData; filter: Art
                   <div className="flex flex-col gap-3.5">
                     {days.map((d) => (
                       <div key={d.day} className="flex flex-col gap-2">
-                        <h3 className="flex items-center gap-2.5 text-sm font-semibold text-[var(--q-ink)]">
-                          <span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", d.isToday ? "bg-[var(--q-accent)]" : "bg-[var(--q-field)]")} />
-                          <span>
-                            {weekdayDay(d.day)}
-                            {d.isToday && (
-                              <>
-                                {" · "}
-                                <span className="text-[var(--q-accent-strong)]">Aujourd&apos;hui</span>
-                              </>
-                            )}
-                          </span>
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="flex min-w-0 flex-1 items-center gap-2.5 text-sm font-semibold text-[var(--q-ink)]">
+                            <span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", d.isToday ? "bg-[var(--q-accent)]" : "bg-[var(--q-field)]")} />
+                            <span>
+                              {weekdayDay(d.day)}
+                              {d.isToday && (
+                                <>
+                                  {" · "}
+                                  <span className="text-[var(--q-accent-strong)]">Aujourd&apos;hui</span>
+                                </>
+                              )}
+                            </span>
+                          </h3>
+                          {d.day >= data.today && (
+                            <Menu.Trigger
+                              handle={addMenu}
+                              payload={d.day}
+                              aria-label={`Ajouter un article le ${longDay(d.day)}`}
+                              className="group/add -my-2.5 grid size-11 shrink-0 place-items-center rounded-full focus-visible:outline-none"
+                            >
+                              <span
+                                aria-hidden
+                                className="grid size-7 place-items-center rounded-full border border-[var(--q-line)] bg-[var(--q-surface)] text-[var(--q-accent-strong)] shadow-[0_1px_2px_rgba(10,17,34,.06)] group-focus-visible/add:ring-4 group-focus-visible/add:ring-[var(--q-focus)] group-data-[popup-open]/add:border-[var(--q-accent)] group-data-[popup-open]/add:bg-[var(--q-wash)]"
+                              >
+                                <Plus className="size-3.5" />
+                              </span>
+                            </Menu.Trigger>
+                          )}
+                        </div>
                         <ul className="flex flex-col gap-2">
                           {d.events.map((e) => (
                             <li key={e.key}>
-                              <AgendaCard event={e} onTopic={setTopic} />
+                              <AgendaCard event={e} {...openers} />
                             </li>
                           ))}
                         </ul>
                       </div>
                     ))}
+                    {freeDay && <AddWeekButton handle={addMenu} day={freeDay} compact />}
                   </div>
                 )}
               </section>
@@ -358,8 +624,46 @@ export function CalendarView({ data, filter }: { data: CalendarData; filter: Art
         </section>
       </div>
 
-      <PlanTopicDialog open={planOpen} onClose={closePlan} topics={data.unplanned} slots={data.slots} defaultMode={data.defaultMode} />
+      <Menu.Root handle={addMenu}>
+        {({ payload }: { payload: string | undefined }) =>
+          payload ? (
+            <AddMenuContent
+              day={payload}
+              today={data.today}
+              publishTime={publishTime}
+              count={eventsOf.get(payload) ?? 0}
+              canGenerate={generate !== null}
+              onWrite={(day) => router.push(`/admin/blog/new?programmer=${day}`)}
+              onPlan={setPlanSlot}
+              onGenerate={setGenerateSlot}
+            />
+          ) : null
+        }
+      </Menu.Root>
+
+      <PlanTopicDialog
+        open={planOpen || planSlot !== null}
+        onClose={() => {
+          setPlanSlot(null)
+          if (planOpen) closePlan()
+        }}
+        topics={data.unplanned}
+        slots={data.slots}
+        defaultMode={data.defaultMode}
+        initialDay={planSlot?.day ?? null}
+        initialTime={planSlot?.time ?? null}
+      />
       <TopicDialog topic={topic} onClose={() => setTopic(null)} slots={data.slots} coverImage={data.coverImage} />
+      <ArticleDetailsDialog postId={postId} onClose={() => setPostId(null)} />
+      {generate && (
+        <GenerateDialog
+          open={generateSlot !== null}
+          onClose={() => setGenerateSlot(null)}
+          data={{ ...generate, topics: data.unplanned.filter((t) => t.status === "unplanned") }}
+          initialDay={generateSlot?.day ?? null}
+          initialTime={generateSlot?.time ?? null}
+        />
+      )}
     </>
   )
 }

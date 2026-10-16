@@ -2,9 +2,10 @@
 
 /**
  * Fenêtres des sujets planifiés :
- * - « Planifier un sujet » (primaire du calendrier) : un sujet à planifier ou
- *   un nouveau sujet, jour et heure de Paris proposés d'après le rythme, mode
- *   de publication ;
+ * - « Planifier un sujet » (primaire du calendrier, ou « + » d'un jour) : un
+ *   sujet à planifier ou un nouveau sujet, jour et heure de Paris proposés
+ *   d'après le rythme (ou le jour choisi dans le calendrier), mode de
+ *   publication ;
  * - fiche d'un sujet du calendrier : Replanifier, Rédiger maintenant (suivi de
  *   la rédaction), Retirer du calendrier, Réessayer après un échec.
  */
@@ -65,12 +66,18 @@ export function PlanTopicDialog({
   topics,
   slots,
   defaultMode,
+  initialDay = null,
+  initialTime = null,
 }: {
   open: boolean
   onClose: () => void
   topics: TopicLite[]
   slots: Slot[]
   defaultMode: PublishMode
+  /** Jour prérempli (« + » d'un jour du calendrier) ; sinon le premier créneau libre du rythme. */
+  initialDay?: string | null
+  /** Heure préremplie avec `initialDay` ; sinon celle du créneau de ce jour, ou du premier créneau. */
+  initialTime?: string | null
 }) {
   const router = useRouter()
   const [choice, setChoice] = useState<string>(topics[0]?.id ?? NEW)
@@ -86,13 +93,21 @@ export function PlanTopicDialog({
   useEffect(() => {
     if (!open) return
     setChoice(topics[0]?.id ?? NEW)
-    setWhen({ day: slots[0]?.day ?? "", time: slots[0]?.time ?? "08:00" })
+    setTitle("")
+    setKeyword("")
+    setType("guide")
+    if (initialDay) {
+      const slotOfDay = slots.find((s) => s.day === initialDay)
+      setWhen({ day: initialDay, time: initialTime ?? slotOfDay?.time ?? slots[0]?.time ?? "08:00" })
+    } else {
+      setWhen({ day: slots[0]?.day ?? "", time: slots[0]?.time ?? "08:00" })
+    }
     setMode(defaultMode)
     setError(null)
     setFieldErrors({})
-    // Réinitialise à chaque ouverture
+    // Réinitialise à chaque ouverture (et au jour choisi dans le calendrier)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  }, [open, initialDay, initialTime])
 
   async function submit() {
     setBusy(true)

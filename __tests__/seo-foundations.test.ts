@@ -8,7 +8,7 @@ import { assertNoCompetitorInPrompt, brandOfDomain, CompetitorLeakError, findCom
 import { readServiceAccount, signServiceAccountJwt } from "@/lib/seo/google"
 import { isDailyDue, parisClock } from "@/lib/seo/cron"
 import { adminCrumbsFor, isAdminActive } from "@/components/admin/nav"
-import { stripLeadingTitle } from "@/lib/blog-utils"
+import { extractFaqItems, stripLeadingTitle } from "@/lib/blog-utils"
 import { markdownToHtml } from "@/lib/markdown"
 
 const NBSP = " "
@@ -180,6 +180,31 @@ describe("articles du blog : titre non répété à l'affichage", () => {
     expect(stripLeadingTitle(md, "Autre titre")).toBe(md)
     expect(stripLeadingTitle(md, "")).toBe(md)
     expect(stripLeadingTitle("Texte sans titre", "Texte sans titre")).toBe("Texte sans titre")
+  })
+})
+
+describe("articles du blog : FAQ des données structurées", () => {
+  it("réponse sans « !texte alternatif » d'image ni barres de tableau (même contenu que la page)", () => {
+    const md = [
+      "## Quel taux de TVA pour une rénovation ?",
+      "",
+      '![Électricien posant un tableau](https://x.supabase.co/storage/v1/object/public/blog-covers/a.jpg#w=1600&h=900 "légende")',
+      "",
+      "Le taux de 10 % s'applique aux travaux de rénovation d'un logement de plus de deux ans.",
+      "",
+      "| Travaux | Taux |",
+      "|---|---|",
+      "| Rénovation | 10 % |",
+      "",
+      "Travaux | Taux",
+      "--- | ---",
+      "Énergie | 5,5 %",
+      "",
+      "## Suite",
+    ].join("\n")
+    expect(extractFaqItems(md)).toEqual([
+      { question: "Quel taux de TVA pour une rénovation ?", answer: "Le taux de 10 % s'applique aux travaux de rénovation d'un logement de plus de deux ans." },
+    ])
   })
 })
 

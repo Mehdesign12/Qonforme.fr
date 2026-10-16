@@ -508,7 +508,7 @@ export function ToolCard({
     <Link
       href={href}
       className={cn(
-        "group flex h-full flex-col rounded-[20px] border border-q-line bg-q-surface shadow-[var(--q-shadow-card)] transition-[border-color,box-shadow,transform] duration-200",
+        "group flex h-full flex-col rounded-[20px] border border-q-line bg-q-surface shadow-[shadow:var(--q-shadow-card)] transition-[border-color,box-shadow,transform] duration-200",
         "hover:-translate-y-0.5 hover:border-q-wash-line hover:shadow-[0_18px_36px_-22px_rgba(10,17,34,.35)] motion-reduce:hover:translate-y-0",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent",
         lg ? "p-5 sm:p-7" : "p-5",

@@ -497,7 +497,7 @@ export function InvoiceDetailView({
       {/* ---- Téléphone : barre d'actions collée en bas, au-dessus de la barre de navigation ---- */}
       <div aria-hidden className={cn("lg:hidden print:hidden", primary ? "h-[124px]" : "h-[64px]")} />
       <div
-        className="q-card fixed inset-x-3 z-30 flex flex-col gap-2.5 rounded-3xl p-3 shadow-[var(--q-shadow-pop)] lg:hidden print:hidden"
+        className="q-card fixed inset-x-3 z-30 flex flex-col gap-2.5 rounded-3xl p-3 shadow-[shadow:var(--q-shadow-pop)] lg:hidden print:hidden"
         style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
       >
         {primary && <ActionButton action={primary} run={run} primary size="xl" className="w-full" />}

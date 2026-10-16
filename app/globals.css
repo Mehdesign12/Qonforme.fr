@@ -630,6 +630,45 @@ a,
   border-radius: 16px;
 }
 
+/* Images du texte (lib/markdown.ts) : pleine largeur de la colonne, légende discrète */
+.blog-prose figure {
+  margin: 2rem 0;
+}
+
+.blog-prose figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  background: var(--q-sunken);
+}
+
+.blog-prose figcaption {
+  margin-top: 0.6rem;
+  font-size: 0.85em;
+  line-height: 1.5;
+  color: var(--q-text-3);
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* Reflet du studio d'images pendant une génération (fond seulement, aucune couche GPU) */
+@keyframes q-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+.q-shimmer {
+  background-color: var(--q-sunken);
+  background-image: linear-gradient(100deg, transparent 20%, var(--q-wash) 45%, var(--q-surface-2) 50%, var(--q-wash) 55%, transparent 80%);
+  background-size: 200% 100%;
+  animation: q-shimmer 1.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .q-shimmer { animation: none; background-image: none; }
+}
+
 /* ── Blog — safe-area bottom padding for mobile share bar ────────────────── */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
@@ -1054,3 +1093,182 @@ html[data-standalone="true"] [role="button"] {
 }
 /* Prévision : hachures en plus d'être plus claire */
 .q-hatch { background-image: repeating-linear-gradient(135deg, #5E8EF0 0 3px, #B7CBF8 3px 6px); }
+
+/* ── Éditeur d'articles (admin › Blog, components/admin/blog/editor) ─────────
+ * La zone d'écriture porte .blog-prose : on voit le texte comme le blog
+ * l'affichera. Ici, seulement ce qui est propre à l'édition : focus de la
+ * carte, curseur, sélection, texte d'invite, image sélectionnée, tableau
+ * éditable, surlignage des mots-clés. Jetons --q-* : thème sombre compris.
+ * Ni backdrop-filter ni will-change (règle iOS de CLAUDE.md).
+ * ────────────────────────────────────────────────────────────────────────── */
+.q-editor {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+/* Anneau quand on écrit (zone visuelle ou Markdown) ; les boutons de la barre ont le leur */
+.q-editor:has(.ProseMirror:focus, textarea:focus) {
+  border-color: var(--q-wash-line);
+  box-shadow: var(--q-shadow-card), 0 0 0 4px var(--q-focus);
+}
+.q-editor .ProseMirror {
+  outline: none;
+  caret-color: var(--q-accent);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.q-editor .ProseMirror ::selection {
+  background: color-mix(in srgb, var(--q-accent) 22%, transparent);
+}
+.dark .q-editor .ProseMirror ::selection {
+  background: color-mix(in srgb, var(--q-accent) 40%, transparent);
+}
+/* Titres : sous la barre d'outils collée (et la barre supérieure sur ordinateur) quand le plan y mène.
+   Décalages réglables par --q-editor-top / --q-editor-top-lg, comme la barre d'outils. */
+.q-editor .ProseMirror :is(h1, h2, h3, h4) {
+  scroll-margin-top: calc(var(--q-editor-top, 8px) + 5rem);
+}
+@media (min-width: 1024px) {
+  .q-editor .ProseMirror :is(h1, h2, h3, h4) {
+    scroll-margin-top: calc(var(--q-editor-top-lg, 80px) + 4.5rem);
+  }
+}
+/* Titre de niveau 1 (hors règles du blog) : visible comme tel, souligné d'ambre */
+.q-editor .ProseMirror h1 {
+  font-family: var(--font-bricolage), system-ui, sans-serif;
+  font-size: 1.9rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 2.75rem 0 0.9rem;
+  color: var(--q-ink-strong);
+  text-decoration: underline wavy var(--q-warn-line);
+  text-underline-offset: 6px;
+}
+/* Texte d'invite (éditeur vide, titre vide) */
+.q-editor .ProseMirror .is-editor-empty:first-child::before,
+.q-editor .ProseMirror :is(h1, h2, h3, h4).is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--q-placeholder);
+  font-weight: inherit;
+}
+/* Liens : jamais ouverts au clic dans l'éditeur */
+.q-editor .ProseMirror a {
+  cursor: text;
+}
+/* Images : figure du blog ; sélection par un anneau d'accent */
+.q-editor .ProseMirror figure.q-editor-figure {
+  margin: 2rem 0;
+  cursor: default;
+}
+.q-editor .ProseMirror figure.q-editor-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  border: 1px solid var(--q-line);
+  border-radius: 16px;
+  background: var(--q-sunken);
+  transition: box-shadow 0.15s ease;
+}
+.q-editor .ProseMirror figure.q-editor-figure figcaption {
+  margin-top: 0.6rem;
+  font-size: 0.85em;
+  line-height: 1.5;
+  color: var(--q-text-3);
+  text-align: center;
+}
+.q-editor .ProseMirror figure.q-editor-figure:hover img {
+  box-shadow: 0 0 0 3px var(--q-wash-line);
+}
+.q-editor .ProseMirror figure.ProseMirror-selectednode img {
+  box-shadow: 0 0 0 3px var(--q-surface), 0 0 0 6px var(--q-accent);
+}
+/* Image hors du compartiment du blog : le blog ne l'affichera pas */
+.q-editor .ProseMirror figure[data-external] img {
+  opacity: 0.45;
+  outline: 2px dashed var(--q-warn-line);
+  outline-offset: 3px;
+}
+.q-editor .ProseMirror figure[data-external]::after {
+  content: "Image hors du blog : elle ne sera pas affichée. Remplacez-la par une image importée.";
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 0.8em;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--q-warn);
+  text-align: center;
+}
+.q-editor .ProseMirror hr.ProseMirror-selectednode,
+.q-editor .ProseMirror pre.ProseMirror-selectednode {
+  box-shadow: 0 0 0 3px var(--q-focus);
+}
+/* Tableaux éditables : grille visible, cellule sélectionnée en lavis */
+.q-editor .ProseMirror .tableWrapper {
+  margin: 2rem 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.q-editor .ProseMirror .tableWrapper table {
+  display: table;
+  width: 100%;
+  margin: 0;
+  table-layout: auto;
+}
+.q-editor .ProseMirror :is(th, td) {
+  position: relative;
+  min-width: 5rem;
+  box-shadow: inset -1px 0 0 var(--q-line-soft);
+}
+.q-editor .ProseMirror :is(th, td):last-child {
+  box-shadow: none;
+}
+.q-editor .ProseMirror :is(th, td) > p {
+  margin: 0;
+}
+.q-editor .ProseMirror .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--q-wash);
+  box-shadow: inset 0 0 0 1px var(--q-wash-line);
+  pointer-events: none;
+}
+/* Surlignage des mots-clés : ambre doux, lisible dans les deux thèmes */
+.q-editor .ProseMirror .q-hl {
+  border-radius: 3px;
+  background: rgba(245, 158, 11, 0.22);
+  box-shadow: 0 1px 0 rgba(180, 83, 9, 0.45);
+  color: inherit;
+}
+.dark .q-editor .ProseMirror .q-hl {
+  background: rgba(251, 191, 36, 0.2);
+  box-shadow: 0 1px 0 rgba(251, 191, 36, 0.55);
+}
+/* Sélection gardée visible quand le focus part (fenêtre de lien, assistant) */
+.q-editor .ProseMirror .q-sel-ghost {
+  background: color-mix(in srgb, var(--q-accent) 16%, transparent);
+  box-shadow: 0 0 0 1px var(--q-wash-line);
+}
+.dark .q-editor .ProseMirror .q-sel-ghost {
+  background: color-mix(in srgb, var(--q-accent) 30%, transparent);
+}
+/* Curseur entre deux blocs (avant un tableau, après une image) */
+.q-editor .ProseMirror .ProseMirror-gapcursor::after {
+  border-top-color: var(--q-accent);
+}
+/* Aperçu d'une proposition de l'assistant : mêmes styles que le blog, plus serrés */
+.q-assist-preview > :last-child {
+  margin-bottom: 0;
+}
+.q-assist-preview :is(h2, h3, h4) {
+  margin-top: 0.4rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .q-editor,
+  .q-editor .ProseMirror figure.q-editor-figure img {
+    transition: none;
+  }
+}

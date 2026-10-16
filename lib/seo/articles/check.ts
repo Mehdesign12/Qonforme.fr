@@ -256,6 +256,10 @@ export interface CheckInput {
   title: string
   content: string
   metaDescription?: string | null
+  /** Titre Google (balise <title> de la page) : contrôlé comme le titre. */
+  seoTitle?: string | null
+  /** Texte alternatif de la couverture (attribut alt de la page publique). */
+  coverAlt?: string | null
   slug?: string | null
   /** Mots-clés publiés avec l'article (étiquettes et données structurées de la page). */
   keywords?: string[] | null
@@ -272,7 +276,8 @@ export interface CheckInput {
 
 export function checkArticle(input: CheckInput): CheckIssue[] {
   const issues: CheckIssue[] = []
-  const fullText = [input.title, input.metaDescription ?? "", (input.keywords ?? []).join(", "), input.content].join("\n\n")
+  // Tout ce que la page publique affiche ou met dans ses balises : titre Google et texte alternatif compris
+  const fullText = [input.title, input.seoTitle ?? "", input.metaDescription ?? "", input.coverAlt ?? "", (input.keywords ?? []).join(", "), input.content].join("\n\n")
 
   for (const f of auditArticle(fullText)) {
     const blocking = !NON_BLOCKING_AUDIT_RULES.has(f.rule.id)
@@ -313,6 +318,7 @@ export function checkArticle(input: CheckInput): CheckIssue[] {
   // structurées : aucun chevron (« </script> ») n'y passe, même à la publication manuelle
   const tagged = [
     ["le titre", input.title],
+    ["le titre Google", input.seoTitle ?? ""],
     ["la description", input.metaDescription ?? ""],
     ["les mots-clés", (input.keywords ?? []).join(" ")],
   ].filter(([, value]) => /[<>]/.test(value))

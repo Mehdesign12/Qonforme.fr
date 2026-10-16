@@ -112,7 +112,7 @@ export function GeoEvolutionChart({ points, today, className }: { points: Evolut
             // Valeur du dernier relevé à côté de son point (planche) ; à gauche s'il est près du bord droit
             <span
               className={cn(
-                "absolute whitespace-nowrap rounded-lg border border-[var(--q-line)] bg-[var(--q-surface)] px-2 py-1 text-xs font-semibold text-[var(--q-ink)] shadow-[var(--q-shadow-card)]",
+                "absolute whitespace-nowrap rounded-lg border border-[var(--q-line)] bg-[var(--q-surface)] px-2 py-1 text-xs font-semibold text-[var(--q-ink)] shadow-[shadow:var(--q-shadow-card)]",
                 xOf(last.day) > 60 ? "-translate-x-full" : "translate-x-2",
                 last.mention > 0.75 ? "translate-y-2.5" : "-translate-y-[calc(100%+10px)]",
               )}

@@ -10,6 +10,8 @@ export interface ArticleCardPost {
   title: string
   excerpt: string | null
   cover_url: string | null
+  /** Texte alternatif de la couverture ; absent ou vide : le titre de l'article. */
+  cover_alt?: string | null
   published_at: string | null
   category: TopicCategory
   readingTime?: number
@@ -27,6 +29,11 @@ interface Props {
 /** Date courte d'un article (« 2 oct. 2026 »). */
 export function shortDate(iso: string) {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
+}
+
+/** Texte alternatif d'une couverture : celui saisi dans l'éditeur, sinon le titre de l'article. */
+export function coverAltOf(post: { title: string; cover_alt?: string | null }): string {
+  return post.cover_alt?.trim() || post.title
 }
 
 /** Couverture absente : lavis bleu et Q de la marque, sans dégradé ni image distante. */
@@ -49,7 +56,7 @@ export default function ArticleCard({ post, index = 0, as: Tag = "h2", sizes = "
     <Link
       href={`/blog/${post.slug}`}
       className={cn(
-        "group blog-card-animate flex flex-col overflow-hidden rounded-[20px] border border-q-line bg-q-surface shadow-[var(--q-shadow-card)]",
+        "group blog-card-animate flex flex-col overflow-hidden rounded-[20px] border border-q-line bg-q-surface shadow-[shadow:var(--q-shadow-card)]",
         "transition-[border-color,box-shadow] duration-300 hover:border-q-wash-line hover:shadow-[0_18px_36px_-22px_rgba(10,17,34,.35)]",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent",
       )}
@@ -59,7 +66,7 @@ export default function ArticleCard({ post, index = 0, as: Tag = "h2", sizes = "
         {post.cover_url ? (
           <Image
             src={post.cover_url}
-            alt=""
+            alt={coverAltOf(post)}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
             sizes={sizes}

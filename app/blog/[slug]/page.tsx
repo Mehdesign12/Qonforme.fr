@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { createAdminClient } from "@/lib/supabase/server"
+import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { markdownToHtml } from "@/lib/markdown"
 import { autoLinkPseo } from "@/lib/blog-autolink"
 import {
@@ -42,15 +43,27 @@ async function autoLinksEnabled(): Promise<boolean> {
   }
 }
 
+interface SimilarPost {
+  slug: string
+  title: string
+  excerpt: string | null
+  cover_url: string | null
+  cover_alt?: string | null
+  published_at: string | null
+  ai_prompt: string | null
+  content: string
+}
+
+const SIMILAR_COLUMNS = "slug, title, excerpt, cover_url, published_at, ai_prompt, content"
+
 async function getSimilarPosts(currentSlug: string, aiPrompt: string | null) {
   const admin = createAdminClient()
-  const { data } = await admin
-    .from("blog_posts")
-    .select("slug, title, excerpt, cover_url, published_at, ai_prompt, content")
-    .eq("is_published", true)
-    .neq("slug", currentSlug)
-    .order("published_at", { ascending: false })
-    .limit(20)
+  const read = (columns: string) =>
+    admin.from("blog_posts").select(columns).eq("is_published", true).neq("slug", currentSlug).order("published_at", { ascending: false }).limit(20)
+  // Texte alternatif des couvertures (cover_alt, migration 20261006) ; relu sans lui si la colonne manque
+  let res = await read(`${SIMILAR_COLUMNS}, cover_alt`)
+  if (res.error && isMissingSchemaError(res.error)) res = await read(SIMILAR_COLUMNS)
+  const data = res.data as unknown as SimilarPost[] | null
 
   if (!data) return []
 
@@ -128,7 +141,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     getAdjacentPosts(post.published_at ?? new Date().toISOString()),
     autoLinksEnabled(),
   ])
-  const html = markdownToHtml(content)
+  // Images du texte générées par IA : « Illustration générée par IA » dans leur légende
+  const html = markdownToHtml(content, { aiImageMention: true })
   const contentHtml = autoLinks ? autoLinkPseo(html) : html
   const readingTime = getReadingTime(content)
   const category = getCategoryFromPrompt(post.ai_prompt)

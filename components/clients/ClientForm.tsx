@@ -421,7 +421,7 @@ export function ClientFormPage({
 
       {/* Barre d'enregistrement mobile, au-dessus de la barre de navigation */}
       <div aria-hidden className="h-[84px] md:hidden" />
-      <div className="fixed inset-x-3 bottom-[calc(96px+env(safe-area-inset-bottom))] z-30 rounded-3xl border border-[var(--q-line)] bg-[var(--q-surface)] p-3 shadow-[var(--q-shadow-float)] md:hidden">
+      <div className="fixed inset-x-3 bottom-[calc(96px+env(safe-area-inset-bottom))] z-30 rounded-3xl border border-[var(--q-line)] bg-[var(--q-surface)] p-3 shadow-[shadow:var(--q-shadow-float)] md:hidden">
         <button type="submit" className="q-btn q-btn-primary q-btn-xl w-full" disabled={submitting}>
           {submitting ? <Loader2 className="animate-spin" aria-hidden /> : <Check strokeWidth={2.5} aria-hidden />}
           {mobileSubmitLabel ?? submitLabel}

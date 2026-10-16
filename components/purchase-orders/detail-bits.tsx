@@ -295,7 +295,7 @@ export function MobileActionBar({ children }: { children: React.ReactNode }) {
       {/* Réserve sous la barre, pour que la fin de page reste lisible */}
       <div aria-hidden className="h-[132px] lg:hidden print:hidden" />
       <div
-        className="fixed inset-x-3 z-30 flex flex-col gap-2.5 rounded-3xl border border-[var(--q-line)] bg-[var(--q-surface)] p-3 shadow-[var(--q-shadow-float)] lg:hidden print:hidden"
+        className="fixed inset-x-3 z-30 flex flex-col gap-2.5 rounded-3xl border border-[var(--q-line)] bg-[var(--q-surface)] p-3 shadow-[shadow:var(--q-shadow-float)] lg:hidden print:hidden"
         style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
       >
         {children}

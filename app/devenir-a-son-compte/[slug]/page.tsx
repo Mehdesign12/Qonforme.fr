@@ -152,7 +152,7 @@ export default async function InstallationPage({ params }: { params: Promise<{ s
                 <SectionHeading id="metier" title="Ce qui est propre" accent={`au métier de ${inst.metier}.`} className="mb-6" />
                 <div className="grid gap-4 sm:grid-cols-2">
                   {inst.specificites.map((s) => (
-                    <div key={s.titre} className="rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[var(--q-shadow-card)]">
+                    <div key={s.titre} className="rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[shadow:var(--q-shadow-card)]">
                       <h3 className="font-display text-[18px] font-semibold leading-[1.3] tracking-[-0.02em] text-q-ink-strong">{fr(s.titre)}</h3>
                       <p className="mt-2 text-[15px] leading-[1.6] text-q-text-3">{fr(s.texte)}</p>
                     </div>

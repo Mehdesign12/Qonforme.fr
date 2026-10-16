@@ -24,6 +24,7 @@ import {
   type ModelOption,
   type TextModelDef,
 } from "@/lib/seo/articles/model-registry"
+import type { ImageAspect } from "@/lib/blog-images/policy"
 
 export * from "@/lib/seo/articles/model-registry"
 
@@ -289,7 +290,14 @@ async function geminiText(def: TextModelDef, key: string, input: GenerateTextInp
 export interface GenerateImageInput {
   model: string
   prompt: string
-  aspect: "16:9"
+  /**
+   * Format demandé : 16:9 pour les couvertures, 4:3 ou 1:1 pour les images du
+   * texte (studio d'images de l'éditeur). Les deux API acceptent ces trois
+   * rapports tels quels : `aspect_ratio` de l'API Interactions et
+   * `imageConfig.aspectRatio` de generateContent (1:1, 2:3, 3:2, 3:4, 4:3, 4:5,
+   * 5:4, 9:16, 16:9 et 21:9 d'après la documentation de Google).
+   */
+  aspect: ImageAspect
   timeoutMs?: number
 }
 

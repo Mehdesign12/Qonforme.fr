@@ -265,7 +265,7 @@ export function ReceivedInvoiceDetailView({ invoice: inv, today, backHref, pdfUr
         <>
           <div aria-hidden className="h-[72px] lg:hidden" />
           <div
-            className="q-card fixed inset-x-3 z-30 grid gap-2.5 rounded-3xl p-3 shadow-[var(--q-shadow-pop)] lg:hidden"
+            className="q-card fixed inset-x-3 z-30 grid gap-2.5 rounded-3xl p-3 shadow-[shadow:var(--q-shadow-pop)] lg:hidden"
             style={{ bottom: "calc(96px + env(safe-area-inset-bottom))", gridTemplateColumns: primary && secondary ? "1fr 1fr" : "1fr" }}
           >
             {secondary && <ActionButton action={secondary} size="lg" className="w-full" short />}
