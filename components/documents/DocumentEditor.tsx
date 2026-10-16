@@ -175,7 +175,7 @@ export function DocumentEditor({
 
       {/* ── Barre d'actions mobile, au-dessus de la barre de navigation ── */}
       <div
-        className="fixed inset-x-3 z-30 flex flex-col gap-2.5 rounded-3xl border border-[var(--q-line)] bg-[var(--q-surface)] px-3.5 pb-3.5 pt-3 shadow-[var(--q-shadow-float)] lg:hidden"
+        className="fixed inset-x-3 z-30 flex flex-col gap-2.5 rounded-3xl border border-[var(--q-line)] bg-[var(--q-surface)] px-3.5 pb-3.5 pt-3 shadow-[shadow:var(--q-shadow-float)] lg:hidden"
         style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
       >
         <div className="flex items-center justify-between gap-3 text-[13px] tabular-nums text-[var(--q-text-3)]">

@@ -310,7 +310,7 @@ export function ProductCombobox({
       ref={dropdownRef}
       role="dialog"
       aria-label="Catalogue"
-      className="overflow-hidden rounded-[14px] border border-[var(--q-line)] bg-[var(--q-surface)] shadow-[var(--q-shadow-pop)]"
+      className="overflow-hidden rounded-[14px] border border-[var(--q-line)] bg-[var(--q-surface)] shadow-[shadow:var(--q-shadow-pop)]"
       style={dropdownStyle}
     >
       {list}

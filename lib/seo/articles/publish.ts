@@ -8,12 +8,15 @@
  *   affirmation interdite reste ;
  * - à l'heure prévue, la décision suit le mode du sujet (lib/seo/articles/check.ts) :
  *   brouillon → jamais publié ; après contrôle → publié si rien n'est repéré ;
- *   directement → publié sauf valeur périmée ou affirmation interdite.
+ *   directement → publié sauf valeur périmée ou affirmation interdite. Un
+ *   article sans sujet (programmé depuis l'éditeur du blog) part en mode
+ *   « directement » : l'admin a choisi lui-même la date, comme pour « Publier
+ *   maintenant ».
  *
  * Après chaque publication ou retrait : revalidateBlog(slug) (liste, article,
  * plans du site).
  */
-import { must, type SeoDb } from "@/lib/seo/db"
+import { failureOf, must, type SeoDb } from "@/lib/seo/db"
 import { getAllSettings, type ArticleSettings } from "@/lib/seo/settings"
 import { revalidateBlog } from "@/lib/blog-revalidate"
 import type { PublishMode } from "@/lib/seo/types"
@@ -39,12 +42,15 @@ export interface PublishablePost {
   scheduled_at: string | null
   review_status: string | null
   seo_description: string | null
+  /** Titre Google et texte alternatif de la couverture : publiés, donc contrôlés (même migration que seo_description). */
+  seo_title?: string | null
+  cover_alt?: string | null
   ai_keywords?: string[] | null
   audit_result?: unknown
 }
 
 const PUBLISHABLE_COLUMNS =
-  "id, slug, title, excerpt, content, is_published, published_at, scheduled_at, review_status, seo_description, ai_keywords, audit_result"
+  "id, slug, title, excerpt, content, is_published, published_at, scheduled_at, review_status, seo_description, seo_title, cover_alt, ai_keywords, audit_result"
 
 export interface CheckContext {
   competitors: string[]
@@ -64,7 +70,6 @@ export async function loadCheckContext(db: SeoDb): Promise<CheckContext> {
   }
 }
 
-/** Contrôle d'un article enregistré, sur son texte actuel. */
 /**
  * Contrôle d'un article sur son texte actuel : les règles locales (avec la
  * longueur et la FAQ demandées à la rédaction, gardées dans audit_result), plus
@@ -78,6 +83,8 @@ export function checkPost(post: PublishablePost, ctx: CheckContext): CheckIssue[
     title: post.title,
     content,
     metaDescription: post.seo_description ?? post.excerpt ?? null,
+    seoTitle: post.seo_title ?? null,
+    coverAlt: post.cover_alt ?? null,
     slug: post.slug,
     keywords: post.ai_keywords ?? null,
     selfId: post.id,
@@ -98,10 +105,13 @@ export async function readPublishablePost(db: SeoDb, id: string): Promise<Publis
   return must(await db.from("blog_posts").select(PUBLISHABLE_COLUMNS).eq("id", id).maybeSingle(), "l'article") as PublishablePost | null
 }
 
-async function markTopic(db: SeoDb, postId: string, status: "published" | "drafted", nowIso: string): Promise<void> {
+export async function markTopic(db: SeoDb, postId: string, status: "published" | "drafted", nowIso: string): Promise<void> {
   const { error } = await db.from("seo_topics").update({ status, updated_at: nowIso }).eq("post_id", postId).in("status", ["drafted", "published", "generating"])
   if (error) console.error("[seo-articles] sujet non mis à jour", error.message)
 }
+
+/** Mode d'un article programmé depuis l'éditeur du blog (sans sujet). */
+export const EDITOR_SCHEDULE_MODE: PublishMode = "direct"
 
 export type ManualPublishResult = { ok: true } | { ok: false; blockers: CheckIssue[] }
 
@@ -138,6 +148,26 @@ export async function publishNow(db: SeoDb, post: PublishablePost, ctx: CheckCon
   return { ok: true }
 }
 
+/**
+ * Passages qui empêchent de créer un article directement en ligne (éditeur du
+ * blog, « Publié » dès la création) : même contrôle que « Publier
+ * maintenant », sur l'article pas encore enregistré. Onglet SEO pas encore
+ * migré (réglages illisibles) : aucun contrôle possible, liste vide.
+ */
+export async function blockersBeforeCreate(
+  db: SeoDb,
+  post: Pick<PublishablePost, "slug" | "title" | "excerpt" | "content" | "seo_description" | "seo_title" | "cover_alt">,
+): Promise<CheckIssue[]> {
+  let ctx: CheckContext
+  try {
+    ctx = await loadCheckContext(db)
+  } catch (error) {
+    if (failureOf(error) === "migration_pending") return []
+    throw error
+  }
+  return manualPublishBlockers(checkPost({ ...post, id: "", is_published: false, published_at: null, scheduled_at: null, review_status: null }, ctx))
+}
+
 /** « Repasser en brouillon » : l'article quitte le blog et la date prévue est retirée (sinon la tâche le republierait). */
 export async function unpublish(db: SeoDb, post: PublishablePost, now = new Date()): Promise<void> {
   const nowIso = now.toISOString()
@@ -155,6 +185,9 @@ export async function unpublish(db: SeoDb, post: PublishablePost, now = new Date
 /**
  * Articles arrivés à leur heure (non publiés, date prévue passée, aucune
  * décision encore prise) : publiés ou retenus selon le mode de leur sujet.
+ * Sans sujet (date choisie dans l'éditeur du blog) : mode « directement »,
+ * jamais le mode par défaut des Préférences (« brouillon » le retiendrait
+ * toujours, alors que l'admin a programmé la publication lui-même).
  */
 export async function publishDuePosts(
   db: SeoDb,
@@ -185,7 +218,7 @@ export async function publishDuePosts(
   let held = 0
   for (const post of due) {
     if (Date.now() > opts.deadline - 5_000) break
-    const mode = modeOf.get(post.id) ?? ctx.prefs.publishMode
+    const mode: PublishMode = modeOf.get(post.id) ?? EDITOR_SCHEDULE_MODE
     const issues = checkPost(post, ctx)
     const decision = decidePublication(mode, issues)
     const now = new Date().toISOString()

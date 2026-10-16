@@ -357,7 +357,7 @@ function InscriptionWindow({
             "rounded-t-[24px] shadow-[0_-12px_40px_-12px_rgba(10,17,34,.35)]",
             view === "done" ? "max-h-[calc(100dvh-12px)]" : "h-[calc(100dvh-12px)]",
             // Ordinateur : carte centrée
-            "sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[20px] sm:border sm:border-[var(--q-line)] sm:shadow-[var(--q-shadow-pop)]",
+            "sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[20px] sm:border sm:border-[var(--q-line)] sm:shadow-[shadow:var(--q-shadow-pop)]",
             view === "done" ? "sm:max-w-[620px]" : "sm:max-w-[560px]",
           )}
         >

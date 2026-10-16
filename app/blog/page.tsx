@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { createAdminClient } from "@/lib/supabase/server"
+import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { BookOpen, Briefcase, FileText, Library } from "lucide-react"
 import { getReadingTime, getCategoryFromPrompt } from "@/lib/blog-utils"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
@@ -19,14 +20,23 @@ export const metadata: Metadata = {
 
 export const revalidate = 60
 
-async function getPosts() {
+const POST_COLUMNS = "slug, title, excerpt, cover_url, published_at, content, ai_prompt"
+
+/**
+ * Articles publiés, avec le texte alternatif de leur couverture (cover_alt,
+ * migration 20261006) ; si la colonne manque, relus sans elle : la liste ne
+ * casse jamais.
+ */
+async function getPosts(): Promise<RawPost[]> {
   const admin = createAdminClient()
-  const { data } = await admin
-    .from("blog_posts")
-    .select("slug, title, excerpt, cover_url, published_at, content, ai_prompt")
-    .eq("is_published", true)
-    .order("published_at", { ascending: false })
-  return data ?? []
+  const read = (columns: string) =>
+    admin.from("blog_posts").select(columns).eq("is_published", true).order("published_at", { ascending: false })
+  const withAlt = await read(`${POST_COLUMNS}, cover_alt`)
+  if (withAlt.error && isMissingSchemaError(withAlt.error)) {
+    const { data } = await read(POST_COLUMNS)
+    return (data ?? []) as unknown as RawPost[]
+  }
+  return (withAlt.data ?? []) as unknown as RawPost[]
 }
 
 const RESOURCES = [
@@ -36,14 +46,19 @@ const RESOURCES = [
   { href: "/glossaire", title: "Glossaire", text: "Acompte, avoir, Factur-X, autoliquidation : les définitions des termes clés.", icon: <Library /> },
 ]
 
-interface EnrichedPost {
+interface RawPost {
   slug: string
   title: string
   excerpt: string | null
   cover_url: string | null
+  cover_alt?: string | null
   published_at: string | null
   content: string
   ai_prompt: string | null
+}
+
+/** Ce que reçoit la grille (composant client) : jamais le texte des articles. */
+interface EnrichedPost extends Omit<RawPost, "content" | "ai_prompt"> {
   category: TopicCategory
   readingTime: number
 }
@@ -51,11 +66,12 @@ interface EnrichedPost {
 export default async function BlogPage() {
   const rawPosts = await getPosts()
 
-  // Catégorie et temps de lecture de chaque article
-  const posts: EnrichedPost[] = rawPosts.map((p) => ({
+  // Catégorie et temps de lecture de chaque article ; le texte complet reste sur le serveur
+  // (il partait dans la page pour chaque article, alors que la grille n'en affiche rien)
+  const posts: EnrichedPost[] = rawPosts.map(({ content, ai_prompt, ...p }) => ({
     ...p,
-    category: getCategoryFromPrompt(p.ai_prompt),
-    readingTime: getReadingTime(p.content),
+    category: getCategoryFromPrompt(ai_prompt),
+    readingTime: getReadingTime(content),
   }))
 
   return (

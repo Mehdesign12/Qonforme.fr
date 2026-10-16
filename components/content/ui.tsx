@@ -252,7 +252,7 @@ export function LinkCard({
     <Link
       href={href}
       className={cn(
-        "group flex flex-col rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[var(--q-shadow-card)] transition-[border-color,box-shadow,transform] duration-200",
+        "group flex flex-col rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[shadow:var(--q-shadow-card)] transition-[border-color,box-shadow,transform] duration-200",
         "hover:-translate-y-0.5 hover:border-q-wash-line hover:shadow-[0_18px_36px_-22px_rgba(10,17,34,.35)] motion-reduce:hover:translate-y-0",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent",
         className,
@@ -358,7 +358,7 @@ export function ContentCta({
         {photo && (
           <div className="relative min-h-[240px] bg-q-sunken md:min-h-[360px]">
             <Image src={photo.src} alt={photo.alt} fill sizes="(min-width: 1200px) 560px, (min-width: 768px) 48vw, 100vw" loading="lazy" className="object-cover" />
-            <div aria-hidden className="absolute bottom-4 left-4 flex items-center gap-3 rounded-2xl border border-q-line bg-q-surface px-3.5 py-2.5 shadow-[var(--q-shadow-pop)] sm:bottom-5 sm:left-5">
+            <div aria-hidden className="absolute bottom-4 left-4 flex items-center gap-3 rounded-2xl border border-q-line bg-q-surface px-3.5 py-2.5 shadow-[shadow:var(--q-shadow-pop)] sm:bottom-5 sm:left-5">
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-q-wash text-q-accent-strong">
                 <ShieldCheck className="h-4 w-4" />
               </span>

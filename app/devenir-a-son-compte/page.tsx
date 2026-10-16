@@ -119,7 +119,7 @@ export default function InstallationIndexPage() {
             <SectionHeading id="etapes" title="Les six étapes," accent="pour tous les métiers." className="mb-8" />
             <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {ETAPES.map((e, n) => (
-                <li key={e.titre} className="flex flex-col rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[var(--q-shadow-card)]">
+                <li key={e.titre} className="flex flex-col rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[shadow:var(--q-shadow-card)]">
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-[#0A1122] text-[13px] font-semibold text-white tabular-nums dark:bg-q-accent">{n + 1}</span>
                   <h3 className="mt-4 font-display text-[18px] font-semibold leading-[1.3] tracking-[-0.02em] text-q-ink-strong">{fr(e.titre)}</h3>
                   <p className="mt-2 text-[15px] leading-[1.6] text-q-text-3">{fr(e.texte)}</p>

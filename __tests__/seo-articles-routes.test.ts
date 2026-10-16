@@ -368,11 +368,16 @@ describe("éditeur du blog : PATCH /api/admin/blog/<id>", () => {
     expect(db.tables.seo_topics[0].status).toBe("published")
   })
 
-  it("article manuel sans audit_result : comportement habituel", async () => {
+  it("article manuel sans audit_result : même contrôle à la mise en ligne (le résultat ne dépend plus du bouton)", async () => {
     const p = post({ content: "Le seuil de franchise est de 36 800 € pour les services.", review_status: null })
     db.tables.blog_posts.push(p)
     const res = await patchBlogPost(blogReq(p.id as string, { is_published: true }), params(p.id as string))
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(409)
+    expect((await res.json()).code).toBe("check_failed")
+    expect(db.tables.blog_posts[0].is_published).toBe(false)
+    // Passage corrigé : publié, date de publication posée
+    const ok = await patchBlogPost(blogReq(p.id as string, { content: "Le seuil de franchise est de 37 500 € pour les services.", is_published: true }), params(p.id as string))
+    expect(ok.status).toBe(200)
     expect(db.tables.blog_posts[0].is_published).toBe(true)
     expect(db.tables.blog_posts[0].published_at).toBeTruthy()
   })

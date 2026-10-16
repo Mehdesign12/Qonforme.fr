@@ -5,6 +5,10 @@
  *
  * Filtres et panneau pilotés par l'adresse : `?statut=`, `?intention=`, `?q=`,
  * `?page=`, `?mot-cle=<id>`.
+ *
+ * Carte « Plan mots-clés du 16 octobre » tant que des mots-clés du plan
+ * (lib/seo/keywords/plan.ts) ne sont pas suivis (comparaison sans accents ;
+ * un mot-clé ignoré compte comme suivi).
  */
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -44,6 +48,9 @@ import {
   type KeywordListItem,
 } from "@/components/admin/seo/keywords/KeywordList"
 import { KeywordPanel } from "@/components/admin/seo/keywords/KeywordPanel"
+import { PlanImportCard } from "@/components/admin/seo/keywords/PlanImportCard"
+import { PLAN_KEYWORDS } from "@/lib/seo/keywords/plan"
+import { planMissing } from "@/lib/seo/articles/secondary"
 
 export const dynamic = "force-dynamic"
 export const metadata = { title: "Admin — Mots-clés" }
@@ -79,6 +86,10 @@ export default async function SeoKeywordsPage({ searchParams }: { searchParams: 
 
   const { keywords, bounds, job } = loaded.data
   const period = keywordPeriod(bounds, now)
+  const planToAdd = planMissing(keywords)
+    .slice()
+    .sort((a, b) => b.volume - a.volume)
+    .map((k) => ({ keyword: k.keyword, volume: k.volume, targetPath: k.targetPath }))
   const analysis = analysisState(job, now)
   const availability: AnalyzeAvailability = !dataForSeo ? "not_configured" : analysis.kind === "available" ? "available" : analysis.kind
 
@@ -193,6 +204,8 @@ export default async function SeoKeywordsPage({ searchParams }: { searchParams: 
             </Link>
           </InfoLine>
         ))}
+
+      <PlanImportCard missing={planToAdd} total={PLAN_KEYWORDS.length} />
 
       <section aria-label="Indicateurs des mots-clés">
         <KpiGrid>

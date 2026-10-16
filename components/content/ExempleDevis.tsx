@@ -38,7 +38,7 @@ export function ExempleDevisCard({
       />
       <p className="mb-6 max-w-[68ch] text-[15px] leading-[1.6] text-q-text-3">{fr(exemple.contexte)}</p>
 
-      <figure className="overflow-hidden rounded-[20px] border border-q-line bg-q-surface shadow-[var(--q-shadow-card)]">
+      <figure className="overflow-hidden rounded-[20px] border border-q-line bg-q-surface shadow-[shadow:var(--q-shadow-card)]">
         <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-q-line px-5 py-4 sm:px-7">
           <span className="font-display text-[18px] font-semibold tracking-[-0.02em] text-q-ink-strong">{fr(exemple.titre)}</span>
           <span className="text-[13px] text-q-text-4">

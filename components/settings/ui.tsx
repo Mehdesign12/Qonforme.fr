@@ -167,7 +167,7 @@ export function MobileSaveBar({
   return (
     <>
       <div className="h-16 lg:hidden" aria-hidden />
-      <div className="q-card fixed inset-x-3 bottom-[calc(96px+env(safe-area-inset-bottom))] z-30 flex items-center gap-3 rounded-2xl p-2 pl-4 shadow-[var(--q-shadow-pop)] lg:hidden">
+      <div className="q-card fixed inset-x-3 bottom-[calc(96px+env(safe-area-inset-bottom))] z-30 flex items-center gap-3 rounded-2xl p-2 pl-4 shadow-[shadow:var(--q-shadow-pop)] lg:hidden">
         <DirtyHint className="flex-1" />
         <SaveButton form={form} saving={saving} onClick={onClick} size="lg" />
       </div>

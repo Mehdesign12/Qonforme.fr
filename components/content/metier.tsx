@@ -46,7 +46,7 @@ export function MetierFeatures({ metier, limit }: { metier: Metier; limit?: numb
         <SectionHeading id="fonctions" title="Ce qui vous" accent="fait gagner du temps." className="mb-8" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
           {features.map((f) => (
-            <div key={f.titre} className="rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[var(--q-shadow-card)]">
+            <div key={f.titre} className="rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[shadow:var(--q-shadow-card)]">
               <span className="mb-5 grid h-10 w-10 place-items-center rounded-xl bg-q-wash text-q-accent-strong">
                 <FileText className="h-5 w-5" aria-hidden />
               </span>

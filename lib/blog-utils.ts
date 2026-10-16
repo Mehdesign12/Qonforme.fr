@@ -71,6 +71,9 @@ export interface FaqItem {
   answer: string
 }
 
+/** Ligne de séparation d'un tableau GFM (« |---|:---:| », « ---|--- »). */
+const TABLE_DELIMITER = /^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?$|^\|\s*:?-+:?\s*\|$/
+
 /**
  * Extracts FAQ pairs from markdown content.
  * A FAQ item is any H2/H3 heading ending with "?" followed by paragraph text.
@@ -85,18 +88,26 @@ export function extractFaqItems(content: string): FaqItem[] {
 
     const question = decodeEntities(headingMatch[1].trim())
 
-    // Collect answer lines until next heading, code block, or end
+    // Collect answer lines until next heading, code block, or end. Images et lignes de
+    // tableau ignorées : la page les affiche en figure et en tableau, pas en texte (le
+    // JSON-LD doit correspondre au contenu visible, sans « !texte alternatif » ni « | »)
     const answerLines: string[] = []
+    let inTable = false
     for (let j = i + 1; j < lines.length; j++) {
       const line = lines[j]
       if (/^#{1,3}\s/.test(line)) break
       if (line.startsWith("```")) break
       const trimmed = line.trim()
+      // Tableau : en-tête (suivi de la ligne de séparation), séparation, puis lignes à barres
+      const headerRow = trimmed.includes("|") && TABLE_DELIMITER.test((lines[j + 1] ?? "").trim())
+      inTable = headerRow || (inTable && trimmed.includes("|")) || trimmed.startsWith("|")
+      if (inTable || /^!\[/.test(trimmed)) continue
       if (trimmed) answerLines.push(trimmed)
     }
 
     const answer = answerLines
       .join(" ")
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
       .replace(/\*\*(.+?)\*\*/g, "$1")
       .replace(/\*(.+?)\*/g, "$1")
       .replace(/`([^`]+)`/g, "$1")

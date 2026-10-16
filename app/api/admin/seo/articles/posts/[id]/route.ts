@@ -1,4 +1,10 @@
 /**
+ * GET /api/admin/seo/articles/posts/<id> : fiche de l'article pour la fenêtre
+ * du calendrier et de la liste (article, performances dans Google, mot-clé
+ * principal, qualité ; lib/seo/articles/details.ts). Une lecture de Search
+ * Console en échec ne fait pas échouer la fiche (performances « non
+ * reliées » avec un message) ; 404 si l'article n'existe pas.
+ *
  * PATCH /api/admin/seo/articles/posts/<id>  { action: "publish" | "unpublish" }
  *
  * - publish (« Publier maintenant ») : le contrôle repasse sur le texte actuel ;
@@ -12,11 +18,27 @@ import { isAdminAuthenticated } from "@/lib/admin-require"
 import { errorPayload, seoDb } from "@/lib/seo/db"
 import { ID, postPatchSchema, zodError } from "@/lib/seo/articles/input"
 import { loadCheckContext, publishNow, readPublishablePost, unpublish } from "@/lib/seo/articles/publish"
+import { loadArticleDetails } from "@/lib/seo/articles/details"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 type Params = { params: Promise<{ id: string }> | { id: string } }
+
+export async function GET(_request: NextRequest, { params }: Params) {
+  if (!(await isAdminAuthenticated())) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+  const { id } = await params
+  if (!ID.safeParse(id).success) return NextResponse.json({ error: "Identifiant invalide" }, { status: 400 })
+
+  try {
+    const details = await loadArticleDetails(seoDb(), id, new Date())
+    if (!details) return NextResponse.json({ error: "Article introuvable : il a peut-être été supprimé." }, { status: 404 })
+    return NextResponse.json(details)
+  } catch (error) {
+    const { status, body } = errorPayload(error)
+    return NextResponse.json(body, { status })
+  }
+}
 
 export async function PATCH(request: NextRequest, { params }: Params) {
   if (!(await isAdminAuthenticated())) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })

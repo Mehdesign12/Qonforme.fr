@@ -11,7 +11,7 @@
 import type { Metadata } from "next"
 
 /** Suffixe ajouté par le gabarit du layout racine (`%s | Qonforme`). */
-const SUFFIX = " | Qonforme"
+export const SUFFIX = " | Qonforme"
 export const TITLE_MAX = 70
 export const DESCRIPTION_MAX = 155
 

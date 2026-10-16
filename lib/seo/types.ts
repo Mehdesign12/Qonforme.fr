@@ -156,7 +156,8 @@ export const KEYWORD_SOURCE_LABELS: Record<KeywordSource, string> = {
   search_console: "Search Console",
   manual: "Manuel",
   suggestion: "Suggestion",
-  import: "Repris de PushRank",
+  // Repris de PushRank (migration 20261009) ou du plan mots-clés du 16/10/2026 : la note de la ligne précise l'origine
+  import: "Importé",
 }
 
 /* ------------------------------------------------------------------ */

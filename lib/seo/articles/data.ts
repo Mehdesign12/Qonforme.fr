@@ -100,27 +100,37 @@ export function modelsSummary(prefs: ArticleSettings): { summary: string; fallba
   return { summary: passesSummary({ plan: plan.model, write: write.model, review: review.model }), fallbacks, blocked }
 }
 
-export async function loadGenerateDialog(db: SeoDb, now: Date): Promise<GenerateDialogData> {
-  const [settings, topics, keywords] = await Promise.all([
-    getSettings(db, "articles"),
-    db.from("seo_topics").select(TOPIC_COLUMNS).eq("status", "unplanned").order("created_at", { ascending: true }).limit(200),
-    db.from("seo_keywords").select("keyword, status").neq("status", "ignored").order("keyword", { ascending: true }).limit(500),
-  ])
-  const prefs = settings.value
+/** Fenêtre « Générer un article » sans ses sujets (le calendrier lui passe les siens). */
+export type GenerateOptions = Omit<GenerateDialogData, "topics">
+
+const generateKeywordsQuery = (db: SeoDb) =>
+  db.from("seo_keywords").select("keyword, status").neq("status", "ignored").order("keyword", { ascending: true }).limit(500)
+
+function generateOptionsOf(prefs: ArticleSettings, keywords: { keyword: string; status: KeywordStatus }[], slot: Slot | null): GenerateOptions {
   const order: Record<string, number> = { targeted: 0, candidate: 1, covered: 2 }
-  const kw = (must(keywords, "les mots-clés suivis") as { keyword: string; status: KeywordStatus }[])
-    .slice()
-    .sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9) || a.keyword.localeCompare(b.keyword, "fr"))
-  const slots = await freeSlots(db, prefs, now, 1)
+  const kw = keywords.slice().sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9) || a.keyword.localeCompare(b.keyword, "fr"))
   return {
-    topics: (must(topics, "les sujets") as TopicRow[]).map(liteOf),
     keywords: kw.map((k) => ({ keyword: k.keyword, status: k.status, label: KEYWORD_STATUS[k.status]?.label ?? k.status })),
     angles: EDITORIAL_ANGLES.map((a) => ({ key: a.key, label: a.label })),
     lengthMin: prefs.lengthMin,
     lengthMax: prefs.lengthMax,
     coverImage: prefs.coverImage,
     ...modelsSummary(prefs),
-    slot: slots[0] ?? null,
+    slot,
+  }
+}
+
+export async function loadGenerateDialog(db: SeoDb, now: Date): Promise<GenerateDialogData> {
+  const [settings, topics, keywords] = await Promise.all([
+    getSettings(db, "articles"),
+    db.from("seo_topics").select(TOPIC_COLUMNS).eq("status", "unplanned").order("created_at", { ascending: true }).limit(200),
+    generateKeywordsQuery(db),
+  ])
+  const prefs = settings.value
+  const slots = await freeSlots(db, prefs, now, 1)
+  return {
+    topics: (must(topics, "les sujets") as TopicRow[]).map(liteOf),
+    ...generateOptionsOf(prefs, must(keywords, "les mots-clés suivis") as { keyword: string; status: KeywordStatus }[], slots[0] ?? null),
   }
 }
 
@@ -166,6 +176,14 @@ export interface CalendarData {
   defaultMode: PublishMode
   /** Image de couverture prévue (suivi des passes dans la fiche d'un sujet). */
   coverImage: boolean
+  /** Heure de publication des Préférences (HH:MM, Paris) : « + » d'un jour du calendrier. Absente : 08:00. */
+  publishTime?: string
+  /**
+   * Articles et sujets prévus chaque jour, filtre de statut NON appliqué
+   * (« 1 article déjà prévu ce jour » du « + ») : un filtre « Publié » ne doit
+   * pas faire croire qu'un jour est libre. Absent : événements affichés.
+   */
+  dayCounts?: Record<string, number>
 }
 
 export function matchesFilter(status: ArticleDisplayStatus, filter: ArticleDisplayStatus | null): boolean {
@@ -176,6 +194,29 @@ export function matchesFilter(status: ArticleDisplayStatus, filter: ArticleDispl
 }
 
 export async function loadCalendar(db: SeoDb, month: string, now: Date, filter: ArticleDisplayStatus | null): Promise<CalendarData> {
+  return (await calendarWithPrefs(db, month, now, filter)).calendar
+}
+
+/**
+ * Page du calendrier : le calendrier et la fenêtre « Générer un article » en
+ * une passe. Réglages et créneaux libres lus une seule fois ; les sujets de la
+ * fenêtre ne sont pas renvoyés (CalendarView les tire de `unplanned`, statut
+ * « à planifier ») : la liste ne part qu'une fois dans la page. Mots-clés
+ * illisibles : `generate` vaut null (entrée « Générer avec l'IA » masquée),
+ * le calendrier s'affiche quand même.
+ */
+export async function loadCalendarPage(
+  db: SeoDb,
+  month: string,
+  now: Date,
+  filter: ArticleDisplayStatus | null,
+): Promise<{ calendar: CalendarData; generate: GenerateOptions | null }> {
+  const [{ calendar, prefs }, keywords] = await Promise.all([calendarWithPrefs(db, month, now, filter), generateKeywordsQuery(db)])
+  const generate = keywords.error ? null : generateOptionsOf(prefs, (keywords.data ?? []) as { keyword: string; status: KeywordStatus }[], calendar.slots[0] ?? null)
+  return { calendar, generate }
+}
+
+async function calendarWithPrefs(db: SeoDb, month: string, now: Date, filter: ArticleDisplayStatus | null): Promise<{ calendar: CalendarData; prefs: ArticleSettings }> {
   const weeks = monthGrid(month)
   const first = weeks[0][0]
   const last = weeks[weeks.length - 1][6]
@@ -238,6 +279,10 @@ export async function loadCalendar(db: SeoDb, month: string, now: Date, filter: 
   events.sort((a, b) => (a.day + a.time).localeCompare(b.day + b.time))
 
   const today = todayInParis(now)
+  const dayCounts: Record<string, number> = {}
+  events.forEach((e) => {
+    dayCounts[e.day] = (dayCounts[e.day] ?? 0) + 1
+  })
   const byDay = new Map<string, CalendarEvent[]>()
   events
     .filter((e) => matchesFilter(e.status, filter))
@@ -247,7 +292,7 @@ export async function loadCalendar(db: SeoDb, month: string, now: Date, filter: 
       byDay.set(e.day, list)
     })
 
-  return {
+  const calendar: CalendarData = {
     month,
     label: monthLabel(month),
     prev: shiftMonth(month, -1),
@@ -261,7 +306,10 @@ export async function loadCalendar(db: SeoDb, month: string, now: Date, filter: 
     slots: await freeSlots(db, settings.value, now, 3),
     defaultMode: settings.value.publishMode,
     coverImage: settings.value.coverImage,
+    publishTime: settings.value.time,
+    dayCounts,
   }
+  return { calendar, prefs: settings.value }
 }
 
 export { currentMonth }

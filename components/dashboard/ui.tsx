@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
  * en léger dégradé, sans backdrop-filter (règle iOS de CLAUDE.md).
  */
 export const SOLID =
-  "border border-[var(--q-line)] bg-[linear-gradient(180deg,var(--q-surface),var(--q-surface-2))] shadow-[var(--q-shadow-float)]"
+  "border border-[var(--q-line)] bg-[linear-gradient(180deg,var(--q-surface),var(--q-surface-2))] shadow-[shadow:var(--q-shadow-float)]"
 
 /** Grille d'indicateurs du canevas : 4 colonnes de 220 px minimum. */
 export const KPI_GRID = "grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr))]"

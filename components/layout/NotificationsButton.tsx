@@ -79,7 +79,7 @@ export function NotificationsButton({ identity }: { identity: ShellIdentity }) {
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="w-[360px] max-w-[calc(100vw-2rem)] gap-0.5 rounded-[14px] border border-[var(--q-line)] bg-[var(--q-surface)] p-1.5 text-[var(--q-ink)] shadow-[var(--q-shadow-pop)] ring-0"
+        className="w-[360px] max-w-[calc(100vw-2rem)] gap-0.5 rounded-[14px] border border-[var(--q-line)] bg-[var(--q-surface)] p-1.5 text-[var(--q-ink)] shadow-[shadow:var(--q-shadow-pop)] ring-0"
       >
         <div className="flex items-center justify-between px-2.5 pb-1.5 pt-2">
           <span className="text-sm font-semibold">À surveiller</span>

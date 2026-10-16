@@ -197,7 +197,7 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
               <div className="absolute left-1/2 top-full z-[150] -translate-x-1/2 pt-3">
                 <div
                   id={outilsId}
-                  className="w-[720px] rounded-2xl border border-q-line bg-q-surface p-5 shadow-[var(--q-shadow-pop)] duration-150 animate-in fade-in-0 slide-in-from-top-1 motion-reduce:animate-none"
+                  className="w-[720px] rounded-2xl border border-q-line bg-q-surface p-5 shadow-[shadow:var(--q-shadow-pop)] duration-150 animate-in fade-in-0 slide-in-from-top-1 motion-reduce:animate-none"
                 >
                   <div className="grid grid-cols-3 gap-5">
                     {OUTILS_CATEGORIES.map((cat) => (
@@ -273,7 +273,7 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
         {menuOpen && (
           <div
             id={menuId}
-            className="absolute right-[-1px] top-[calc(100%+8px)] w-[calc(100%+2px)] overflow-y-auto overscroll-contain rounded-2xl border border-q-line bg-q-surface p-1.5 shadow-[var(--q-shadow-pop)] duration-150 animate-in fade-in-0 slide-in-from-top-1 motion-reduce:animate-none sm:w-[360px] lg:hidden"
+            className="absolute right-[-1px] top-[calc(100%+8px)] w-[calc(100%+2px)] overflow-y-auto overscroll-contain rounded-2xl border border-q-line bg-q-surface p-1.5 shadow-[shadow:var(--q-shadow-pop)] duration-150 animate-in fade-in-0 slide-in-from-top-1 motion-reduce:animate-none sm:w-[360px] lg:hidden"
             style={{ maxHeight: "calc(100dvh - 104px)" }}
           >
             <ul className="flex flex-col gap-0.5">

@@ -102,7 +102,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
         className={[
           'relative z-10 flex w-full flex-col overflow-hidden',
           'max-sm:rounded-t-[24px] sm:w-[calc(100%-32px)] sm:max-w-[440px] sm:rounded-[20px]',
-          'border border-[var(--q-line)] bg-[var(--q-surface)] shadow-[var(--q-shadow-pop)]',
+          'border border-[var(--q-line)] bg-[var(--q-surface)] shadow-[shadow:var(--q-shadow-pop)]',
         ].join(' ')}
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >

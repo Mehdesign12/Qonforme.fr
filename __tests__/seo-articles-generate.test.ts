@@ -344,6 +344,39 @@ describe("publication à l'heure prévue et tâche planifiée", () => {
     expect(await publishDuePosts(db.client as SeoDb, { now: new Date(), deadline: Date.now() + 60_000 })).toEqual({ published: 0, held: 0 })
   })
 
+  it("article sans sujet programmé depuis l'éditeur : publié comme « directement », même si les Préférences disent « brouillon »", async () => {
+    const past = new Date(Date.now() - 60_000).toISOString()
+    const clean = { id: uuid(), slug: "editeur-propre", title: "Article de l'éditeur", excerpt: null, content: "Texte propre, sans valeur périmée.", is_published: false, published_at: null, scheduled_at: past, review_status: null, seo_description: null }
+    const stale = { id: uuid(), slug: "editeur-perime", title: "Article périmé", excerpt: null, content: "La franchise : 36 800 € en services.", is_published: false, published_at: null, scheduled_at: past, review_status: null, seo_description: null }
+    const db = fakeArticlesDb({
+      blog_posts: [clean, stale],
+      seo_topics: [],
+      seo_settings: [{ key: "articles", value: { ...SETTINGS_DEFAULTS.articles, publishMode: "draft" }, updated_at: "2026-10-01T08:00:00.000Z" }],
+    })
+    const res = await publishDuePosts(db.client as SeoDb, { now: new Date(), deadline: Date.now() + 60_000 })
+    expect(res).toEqual({ published: 1, held: 1 })
+    // Signalements simples (longueur, sous-titres…) : publié quand même, comme « Publier maintenant »
+    expect(db.tables.blog_posts[0]).toMatchObject({ is_published: true, review_status: "approved", held_reason: null })
+    expect(mocks.revalidated).toContain("/blog/editeur-propre")
+    // Valeur périmée : retenu, toujours
+    expect(db.tables.blog_posts[1]).toMatchObject({ is_published: false, review_status: "to_review" })
+    expect(db.tables.blog_posts[1].held_reason).toContain("Anciens seuils de franchise de TVA")
+  })
+
+  it("titre Google et texte alternatif contrôlés comme le texte (concurrent nommé : retenu, refusé à la main)", async () => {
+    const past = new Date(Date.now() - 60_000).toISOString()
+    const base = { excerpt: null, content: "Texte propre, sans valeur périmée.", is_published: false, published_at: null, scheduled_at: past, review_status: null, seo_description: null }
+    const byTitle = { ...base, id: uuid(), slug: "titre-google", title: "Logiciel de devis", seo_title: `Logiciel certifié, mieux que ${competitors[0]}` }
+    const byAlt = { ...base, id: uuid(), slug: "texte-alternatif", title: "Devis de maçonnerie", cover_alt: `Capture de ${competitors[0]}` }
+    const db = fakeArticlesDb({ blog_posts: [byTitle, byAlt], seo_topics: [], seo_settings: [] })
+    const client = db.client as SeoDb
+    const ctx = await loadCheckContext(client)
+    expect(await publishNow(client, (await readPublishablePost(client, byTitle.id))!, ctx)).toMatchObject({ ok: false })
+    expect(await publishNow(client, (await readPublishablePost(client, byAlt.id))!, ctx)).toMatchObject({ ok: false })
+    expect(await publishDuePosts(client, { now: new Date(), deadline: Date.now() + 60_000, ctx })).toEqual({ published: 0, held: 2 })
+    expect(db.tables.blog_posts.map((p) => p.is_published)).toEqual([false, false])
+  })
+
   it("la tâche prépare un sujet planifié dans les 24 h et termine sa rédaction", async () => {
     const at = new Date(Date.now() + 10 * 3600_000).toISOString()
     const far = new Date(Date.now() + 72 * 3600_000).toISOString()

@@ -18,7 +18,7 @@ export function TextesModele({ textes, className }: { textes: NonNullable<Modele
           <article
             key={t.id}
             aria-labelledby={`texte-${t.id}`}
-            className="overflow-hidden rounded-[20px] border border-q-line bg-q-surface shadow-[var(--q-shadow-card)]"
+            className="overflow-hidden rounded-[20px] border border-q-line bg-q-surface shadow-[shadow:var(--q-shadow-card)]"
           >
             <header className="flex flex-wrap items-start justify-between gap-3 border-b border-q-line px-5 py-4 sm:px-7">
               <div className="flex min-w-0 flex-col gap-1">
