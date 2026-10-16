@@ -25,7 +25,7 @@ import { ACTIVITES } from "@/lib/outils/charges"
 import { SEUILS_FRANCHISE_TVA } from "@/lib/outils/franchise-tva"
 
 export interface Installation {
-  /** Même slug que la page « Logiciel de facturation pour … » (lib/pseo/metiers.ts). */
+  /** Même slug que la page « Logiciel de devis gratuit pour … » (lib/pseo/metiers.ts). */
   slug: string
   /** Métier au singulier, en minuscules : « plombier ». */
   metier: string
@@ -309,7 +309,7 @@ export function etapes(i: Installation): { titre: string; contenu: string; liste
       contenu: `En micro-entreprise, la franchise en base vous dispense de facturer la TVA tant que vos prestations de services restent sous ${CHIFFRES.franchiseServices} par an (${CHIFFRES.franchiseServicesMajore} en seuil majoré ; ${CHIFFRES.franchiseVente} pour la vente de marchandises) : vos factures portent alors « TVA non applicable, art. 293 B du CGI ». Au-delà, vous facturez la TVA au bon taux.`,
       liste: [
         i.tva,
-        "Taux réduit chez un particulier : depuis le 1er mars 2025, le client certifie sur le devis ou la facture que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit.",
+        "Taux réduit chez un particulier : depuis la loi de finances pour 2025, le client certifie sur le devis ou la facture que le logement est achevé depuis plus de deux ans et que les travaux ne le rendront pas neuf ni n'augmenteront sa surface de plancher de plus de 10 %, avec la mention dont l'administration fiscale publie le modèle.",
       ],
     },
     {

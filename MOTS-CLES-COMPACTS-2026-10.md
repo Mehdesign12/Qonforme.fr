@@ -22,23 +22,23 @@ Volumes mensuels en France (Google Ads via OpenSEO, 16/10/2026), estimations à 
 |---|---|---|---|---|
 | logiciel devis facture bâtiment | 880 | acheter un logiciel | accueil | existe (déjà ciblé) |
 | exemple devis auto entrepreneur | 480 | rédiger son devis | `/modele/devis-auto-entrepreneur` | à créer |
-| exemple devis remplacement tableau électrique | 390 | rédiger son devis | `/modele/devis-electricien` | existe, titre à changer |
+| exemple devis remplacement tableau électrique | 390 | rédiger son devis | `/modele/devis-electricien` | fait (16/10/2026) |
 | exemple devis paysagiste | 390 | rédiger son devis | `/modele/devis-paysagiste` | à créer |
 | exemple devis peinture, peinture façade extérieure | 320 + 320 | rédiger son devis | `/modele/devis-peinture` | à créer |
 | devis vierge à imprimer, devis vierge pdf | 260 + 170 | rédiger son devis | `/modele/devis-vierge` | à créer |
-| logiciel plombier | 260 | acheter un logiciel | `/facturation/plombier` | existe, titre à changer |
-| exemple devis électricité maison 100m2 | 210 | rédiger son devis | `/modele/devis-electricien` | existe, section à ajouter |
+| logiciel plombier | 260 | acheter un logiciel | `/facturation/plombier` | fait (16/10/2026) |
+| exemple devis électricité maison 100m2 | 210 | rédiger son devis | `/modele/devis-electricien` | fait (16/10/2026) |
 | exemple devis maçonnerie | 170 | rédiger son devis | `/modele/devis-maconnerie` | à créer |
 | modèle devis auto entrepreneur sans tva | 140 | rédiger son devis | `/modele/devis-auto-entrepreneur` | à créer |
 | exemple devis plomberie | 140 | rédiger son devis | `/modele/devis-plomberie` | à créer |
-| logiciel chauffagiste | 140 | acheter un logiciel | `/facturation/chauffagiste` | existe, titre à changer |
-| attestation tva 10 travaux | 140 | appliquer la bonne TVA | `/guide/tva-travaux` | existe, section à ajouter |
+| logiciel chauffagiste | 140 | acheter un logiciel | `/facturation/chauffagiste` | fait (16/10/2026) |
+| attestation tva 10 travaux | 140 | appliquer la bonne TVA | `/guide/tva-travaux` | fait (16/10/2026) |
 | exemple devis placo | 110 | rédiger son devis | `/modele/devis-placo` | à créer |
-| relance facture impayée mail | 110 | se faire payer | `/modele/lettre-relance-impaye` | existe, mails à ajouter |
+| relance facture impayée mail | 110 | se faire payer | `/modele/lettre-relance-impaye` | fait (16/10/2026) |
 | logiciel devis bâtiment gratuit | 90 | acheter un logiciel | pages métier | existe |
 | logiciel devis artisan | 90 | acheter un logiciel | accueil | existe |
-| logiciel devis menuisier | 70 | acheter un logiciel | `/facturation/menuisier` | existe, titre à changer |
-| logiciel devis électricité gratuit | 50 | acheter un logiciel | `/facturation/electricien` | existe, titre à changer |
+| logiciel devis menuisier | 70 | acheter un logiciel | `/facturation/menuisier` | fait (16/10/2026) |
+| logiciel devis électricité gratuit | 50 | acheter un logiciel | `/facturation/electricien` | fait (16/10/2026) |
 
 Les requêtes « logiciel… » sont peu nombreuses, mais ce sont des acheteurs (jusqu'à 29 € le clic en publicité). Les requêtes « exemple de devis… » ont plus de volume : l'artisan est en train de rédiger son devis, et on lui propose de le faire gratuitement en ligne ; une partie vient aussi de particuliers qui comparent des prix.
 
@@ -47,10 +47,10 @@ Les requêtes « logiciel… » sont peu nombreuses, mais ce sont des acheteurs 
 ### Ordre de travail
 
 1. **Cette semaine, sur les pages qui existent** :
-   - [ ] titres des 11 pages métier : title « Logiciel de devis gratuit pour {métier} », H1 « Logiciel de devis et facture pour {métier} » ;
-   - [ ] `/modele/devis-electricien` : « remplacement de tableau » dans le title et le H1 ;
-   - [ ] `/guide/tva-travaux` : section et question « Attestation TVA 10 % (attestation simplifiée) : supprimée en 2025 » ;
-   - [ ] `/modele/lettre-relance-impaye` : versions mail (1re relance, 2e rappel, avant mise en demeure).
+   - [x] titres des 11 pages métier : title « Logiciel de devis gratuit pour {métier} », H1 « Logiciel de devis et facture pour {métier} » (16/10/2026, avec l'introduction par l'ouvrage et des descriptions réécrites) ;
+   - [x] `/modele/devis-electricien` : « remplacement de tableau » dans le title et le H1 (16/10/2026, avec l'exemple « maison de 100 m² » et la version auto-entrepreneur) ;
+   - [x] `/guide/tva-travaux` : section et question sur l'attestation TVA 10 % (16/10/2026). Titre ajusté en « remplacée par une mention en 2025 » : d'après le BOFiP du 09/09/2026, l'obligation est supprimée mais le formulaire 1301-SD reste admis ; modèles officiels de mention repris (BOI-LETTRE-000280) ;
+   - [x] `/modele/lettre-relance-impaye` : versions mail (1re relance, 2e rappel, avant mise en demeure) et lettre de mise en demeure (16/10/2026 ; la page n'avait aucun texte).
 2. **Ensuite, 7 pages à créer**, chacune avec un vrai exemple chiffré et ses fichiers PDF, Word et Excel :
    - [ ] `/modele/devis-vierge`
    - [ ] `/modele/devis-auto-entrepreneur`

@@ -1,4 +1,20 @@
 import type { ExempleDevis } from "@/lib/pseo/guides"
+import { INDEMNITE_FORFAITAIRE, SEMESTRE_REFERENCE, TAUX_PENALITES_DEFAUT } from "@/lib/outils/penalites"
+import { CERTIFICATION_DEVIS_10, CERTIFICATION_RESUME } from "@/lib/legal/certification-tva"
+
+/** « 12,40 % » : taux BCE + 10 points du semestre en cours (lib/outils/penalites.ts, mis à jour chaque semestre). */
+const TAUX_DEFAUT_FR = `${TAUX_PENALITES_DEFAUT.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`
+
+/** Texte à recopier (mail de relance, lettre). Entre crochets : à remplacer. */
+export interface TexteModele {
+  id: string
+  titre: string
+  /** Moment conseillé (« 7 jours après l'échéance »). */
+  quand: string
+  canal: "Mail" | "Lettre recommandée avec accusé de réception"
+  objet: string
+  corps: string[]
+}
 
 export interface Modele {
   slug: string
@@ -15,6 +31,12 @@ export interface Modele {
   mentionsSpecifiques: string[]
   /** Exemple chiffré affiché sous le modèle (totaux calculés par lib/pseo/exemple-devis.ts). */
   exemple?: ExempleDevis
+  /** Autres exemples chiffrés, sous le premier, chacun avec son intertitre. */
+  autresExemples?: { titre: string; accent: string; exemple: ExempleDevis }[]
+  /** Paragraphes sous les exemples (variante auto-entrepreneur…). */
+  sections?: { id: string; titre: string; accent: string; paragraphes: string[] }[]
+  /** Textes prêts à recopier (relances par mail, lettre de mise en demeure), sous un intertitre. */
+  textes?: { titre: string; accent: string; intro: string; liste: TexteModele[] }
   /** Fichier à télécharger (Word, Excel, PDF) : nom sans extension, déclaré dans lib/modeles/fichier.ts. */
   telechargement?: string
 }
@@ -136,7 +158,7 @@ export const MODELES: Modele[] = [
     mentionsSpecifiques: [
       "Bon pour accord, le [date] (mention du client avant sa signature)",
       "Assurance décennale : [Assureur], contrat n° [X], couverture : France métropolitaine",
-      "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit",
+      CERTIFICATION_DEVIS_10,
     ],
     exemple: {
       titre: "Pose de carrelage dans une salle de bains",
@@ -157,17 +179,19 @@ export const MODELES: Modele[] = [
         "Taux horaire pour un travail supplémentaire accepté par avenant : 50,00 € HT, soit 55,00 € TTC.",
         "Déchets : environ 0,5 m³ de gravats, triés et déposés en déchèterie professionnelle (nom et adresse à indiquer), coût compris dans la ligne d'évacuation.",
         "Acompte de 30 % à la signature, solde à la fin des travaux. Signé au domicile du client, l'acompte ne pourrait être encaissé qu'au bout de sept jours.",
-        "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit.",
+        CERTIFICATION_RESUME,
         "Signature du client précédée de « Bon pour accord ».",
       ],
     },
   },
   {
     slug: "devis-electricien",
-    titre: "Exemple de devis d'électricien à télécharger",
-    titreSeo: "Exemple de devis électricien chiffré (Word, Excel, PDF)",
-    description: "Exemple de devis d'électricien chiffré : tableau électrique et prises, TVA à 10 %, mentions obligatoires. À télécharger en Word, Excel ou PDF et à adapter.",
-    motsCles: ["exemple devis électricien", "devis électricité exemple", "modele devis electricien", "devis tableau électrique", "devis installation électrique exemple"],
+    // Mots des chercheurs (MOTS-CLES-COMPACTS-2026-10.md § 9) : « exemple devis remplacement tableau
+    // électrique » (390/mois) dans le title et le H1, « maison 100 m² » (210/mois) dans un intertitre.
+    titre: "Exemple de devis d'électricien : remplacement du tableau électrique",
+    titreSeo: "Exemple de devis électricité : remplacement de tableau",
+    description: "Exemples de devis d'électricien chiffrés : remplacement du tableau électrique (Word, Excel, PDF) et rénovation d'une maison de 100 m², TVA à 10 %.",
+    motsCles: ["exemple devis remplacement tableau électrique", "exemple devis électricien", "exemple devis électricité maison 100m2", "devis électricité exemple", "modele devis electricien", "devis électricien auto entrepreneur"],
     type: "devis",
     pourQui: "Électriciens, à leur compte ou en sous-traitance, qui veulent un devis de travaux électriques détaillé et conforme : fournitures, main-d'œuvre, déchets, TVA et assurance décennale.",
     contenu: [
@@ -193,7 +217,7 @@ export const MODELES: Modele[] = [
     mentionsSpecifiques: [
       "Installation réalisée selon la norme NF C 15-100",
       "Assurance décennale : [Assureur], contrat n° [X], couverture : France métropolitaine",
-      "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit",
+      CERTIFICATION_DEVIS_10,
     ],
     telechargement: "exemple-devis-electricien",
     exemple: {
@@ -216,11 +240,60 @@ export const MODELES: Modele[] = [
         "Taux horaire pour un travail supplémentaire accepté par avenant : 48,00 € HT, soit 52,80 € TTC.",
         "Déchets : environ 25 kg de matériel électrique usagé (ancien tableau, câbles), déposés en point de collecte (nom et adresse à indiquer), coût compris dans la ligne d'évacuation.",
         "Acompte de 30 % à la signature, solde à la fin des travaux. Signé au domicile du client, l'acompte ne pourrait être encaissé qu'au bout de sept jours.",
-        "Le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit.",
+        CERTIFICATION_RESUME,
         "Assurance décennale : assureur, numéro de contrat et zone couverte à indiquer.",
         "Signature du client précédée de « Bon pour accord ».",
       ],
     },
+    autresExemples: [
+      {
+        titre: "Un second exemple :",
+        accent: "rénovation électrique d'une maison de 100 m².",
+        exemple: {
+          titre: "Rénovation électrique complète d'une maison de 100 m²",
+          contexte: "Exemple fictif : remise à neuf de toute l'installation d'une maison de 100 m² (séjour, cuisine, trois chambres, salle de bain, WC), achevée depuis plus de deux ans, pour un particulier : TVA à 10 %. Les quantités dépendent de la maison et de la norme NF C 15-100 ; les prix illustrent la méthode, ce ne sont pas des prix de marché.",
+          lignes: [
+            { designation: "Dépose de l'ancienne installation (tableau, appareillage, câbles apparents)", quantite: 1, unite: "forfait", prixUnitaireHT: 450 },
+            { designation: "Tableau électrique 4 rangées équipé (interrupteurs différentiels 30 mA, disjoncteurs divisionnaires) et gaine technique logement, fournis et posés", quantite: 1, unite: "u", prixUnitaireHT: 1250 },
+            { designation: "Prise 16 A avec terre, fournie et posée (câble 2,5 mm², gaine et boîte d'encastrement compris)", quantite: 25, unite: "u", prixUnitaireHT: 72 },
+            { designation: "Point lumineux avec interrupteur, fourni et posé (câble 1,5 mm², gaine et boîte compris)", quantite: 11, unite: "u", prixUnitaireHT: 85 },
+            { designation: "Circuit spécialisé 20 A (four, lave-linge, lave-vaisselle, chauffe-eau), fourni et posé", quantite: 4, unite: "u", prixUnitaireHT: 140 },
+            { designation: "Circuit de plaque de cuisson 32 A (câble 6 mm²), fourni et posé", quantite: 1, unite: "u", prixUnitaireHT: 190 },
+            { designation: "Saignées et rebouchage des passages de câbles (hors peinture)", quantite: 1, unite: "forfait", prixUnitaireHT: 650 },
+            { designation: "Liaison équipotentielle de la salle de bain et contrôle de la prise de terre", quantite: 1, unite: "forfait", prixUnitaireHT: 180 },
+            { designation: "Essais, mise en service et contrôle de l'installation", quantite: 1, unite: "forfait", prixUnitaireHT: 150 },
+            { designation: "Attestation de conformité visée par le Consuel", quantite: 1, unite: "forfait", prixUnitaireHT: 180 },
+            { designation: "Évacuation des déchets du chantier et dépôt en point de collecte", quantite: 1, unite: "forfait", prixUnitaireHT: 90 },
+          ],
+          tauxTva: 10,
+          acomptePourcent: 30,
+          conditions: [
+            "Devis gratuit, valable deux mois.",
+            "Travaux réalisés en huit jours, à une date fixée ensemble dans les 60 jours qui suivent la signature.",
+            "Installation réalisée selon la norme NF C 15-100.",
+            "Installation entièrement rénovée avec coupure du réseau : l'attestation de conformité visée par le Consuel est nécessaire avant la remise sous tension ; son coût est compris dans le devis.",
+            "Taux horaire pour un travail supplémentaire accepté par avenant : 48,00 € HT, soit 52,80 € TTC.",
+            "Déchets : environ 150 kg (ancien tableau, câbles, appareillage, gravats des saignées), triés et déposés en point de collecte (nom et adresse à indiquer), coût compris dans la ligne d'évacuation.",
+            "Acompte de 30 % à la signature, solde à la fin des travaux. Signé au domicile du client, l'acompte ne pourrait être encaissé qu'au bout de sept jours.",
+            CERTIFICATION_RESUME,
+            "Assurance décennale : assureur, numéro de contrat et zone couverte à indiquer.",
+            "Signature du client précédée de « Bon pour accord ».",
+          ],
+        },
+      },
+    ],
+    sections: [
+      {
+        id: "auto-entrepreneur",
+        titre: "Électricien auto-entrepreneur :",
+        accent: "le même devis, sans TVA.",
+        paragraphes: [
+          "Micro-entrepreneur en franchise de TVA, vous ne facturez pas la TVA : le devis n'a ni taux ni total de TVA, et le prix hors taxe est le prix à payer. Ajoutez la mention « TVA non applicable, article 293 B du CGI ».",
+          "Le reste ne change pas : vos coordonnées avec la mention « EI », votre assurance décennale, le détail des fournitures et de la main-d'œuvre, le taux horaire, les déchets du chantier, la mention de la norme NF C 15-100 et le « Bon pour accord ». Le client n'a rien à certifier sur la TVA, puisqu'elle n'est pas facturée.",
+          "En sous-traitance pour une autre entreprise, pas d'autoliquidation non plus : elle ne concerne que les entreprises qui facturent la TVA. Si vous dépassez les seuils de la franchise, la TVA s'applique et le devis reprend la forme des exemples ci-dessus.",
+        ],
+      },
+    ],
   },
   {
     slug: "devis-prestation-service",
@@ -388,32 +461,102 @@ export const MODELES: Modele[] = [
   },
   {
     slug: "lettre-relance-impaye",
-    titre: "Modèle de lettre de relance pour facture impayée",
-    description: "Modèle gratuit de lettre de relance pour facture impayée, en 3 niveaux : relance amiable, relance ferme, mise en demeure.",
-    motsCles: ["lettre relance facture impayee", "relance impaye modele", "modele mise en demeure facture"],
+    // Mots des chercheurs (MOTS-CLES-COMPACTS-2026-10.md § 9) : « relance facture impayée mail » (110/mois).
+    titre: "Modèle de relance de facture impayée : mail et lettre",
+    description: "Modèles gratuits de relance de facture impayée : 3 mails à copier (1re relance, 2e rappel, avant mise en demeure) et la lettre de mise en demeure.",
+    motsCles: ["relance facture impayée mail", "modèle relance facture impayée", "lettre relance facture impayee", "mail relance facture impayée", "relance avant mise en demeure", "modele mise en demeure facture"],
     type: "relance",
-    pourQui: "Toute entreprise confrontée à des retards de paiement qui veut relancer ses clients de manière professionnelle.",
+    pourQui: "Artisans et entreprises du bâtiment dont un client, professionnel ou particulier, n'a pas réglé une facture à l'échéance, et qui veulent le relancer par mail puis, si besoin, le mettre en demeure par lettre recommandée.",
     contenu: [
-      "En-tête avec les coordonnées de l'entreprise",
-      "Coordonnées du débiteur",
-      "Référence de la ou des factures impayées (numéro, date, montant)",
+      "Référence de la facture impayée (numéro, date, montant TTC)",
       "Date d'échéance dépassée",
-      "Montant dû et pénalités de retard calculées",
-      "Indemnité forfaitaire de recouvrement de 40 €",
-      "Délai accordé pour le règlement (8 à 15 jours)",
-      "Mention des suites en cas de non-paiement",
-      "Trois niveaux progressifs : relance amiable, relance ferme, mise en demeure en LRAR",
+      "Moyen de paiement : IBAN et référence à indiquer pour le virement",
+      "Délai accordé pour le règlement (huit jours)",
+      "Client professionnel : pénalités de retard et indemnité forfaitaire de 40 €",
+      "Client particulier : intérêts au taux légal à compter de la mise en demeure",
+      "Trois mails progressifs : 1re relance, 2e rappel, dernier rappel avant mise en demeure",
+      "Lettre de mise en demeure, à envoyer en recommandé avec accusé de réception",
     ],
     conseils: [
-      "Envoyez la première relance 7 jours après l'échéance (un email suffit)",
-      "La deuxième relance (15 jours) doit être plus ferme et mentionner les pénalités",
-      "La mise en demeure en LRAR est un préalable nécessaire à l'action en justice",
-      "Conservez une copie de toutes les relances envoyées comme preuve",
+      "Envoyez la première relance par mail 7 jours après l'échéance : un ton courtois et la facture en pièce jointe suffisent souvent.",
+      "Le deuxième rappel, 15 jours après l'échéance, demande un règlement sous huit jours ; chez un client professionnel, il rappelle les pénalités de retard et l'indemnité de 40 €.",
+      "Gardez la lettre recommandée avec accusé de réception pour la mise en demeure : elle prouve vos démarches avant une injonction de payer et, chez un particulier, fait courir les intérêts au taux légal (Code civil, art. 1231-6).",
+      "Conservez une copie de chaque relance envoyée : c'est votre preuve en cas de litige.",
+      "Avec la formule Essentiel, Qonforme envoie les relances par mail pour vous, aux dates que vous choisissez.",
     ],
     mentionsSpecifiques: [
-      "Pénalités de retard : taux de [X] % (minimum 3 fois le taux d'intérêt légal)",
-      "Indemnité forfaitaire de recouvrement : 40 € (article D441-5 du Code de commerce)",
+      "Client professionnel : pénalités de retard au taux de [X] % l'an (au moins trois fois le taux d'intérêt légal)",
+      "Client professionnel : indemnité forfaitaire pour frais de recouvrement de 40 € (article D441-5 du Code de commerce)",
     ],
+    textes: {
+      titre: "Relance de facture impayée par mail :",
+      accent: "les modèles à copier.",
+      intro: "Entre crochets : ce que vous remplacez. Les paragraphes marqués « Client professionnel » ou « Client particulier » ne gardent que celui qui correspond à votre client : l'indemnité de 40 € et les pénalités de plein droit ne valent qu'entre professionnels.",
+      liste: [
+        {
+          id: "relance-1",
+          titre: "1re relance par mail",
+          quand: "7 jours après l'échéance",
+          canal: "Mail",
+          objet: "Rappel de paiement — facture [numéro] du [date]",
+          corps: [
+            "Bonjour [Madame, Monsieur],",
+            "Sauf erreur de notre part, la facture [numéro] du [date], d'un montant de [montant] € TTC, arrivée à échéance le [date d'échéance], n'a pas encore été réglée.",
+            "Il s'agit peut-être d'un simple oubli : vous trouverez la facture en pièce jointe. Vous pouvez la régler par virement sur le compte [IBAN], en indiquant la référence [numéro].",
+            "Si le règlement a été fait entre-temps, merci de ne pas tenir compte de ce message.",
+            "Bien cordialement,",
+            "[Prénom Nom], [entreprise], [téléphone]",
+          ],
+        },
+        {
+          id: "relance-2",
+          titre: "2e rappel par mail",
+          quand: "15 jours après l'échéance",
+          canal: "Mail",
+          objet: "Deuxième rappel — facture [numéro] en attente de règlement",
+          corps: [
+            "Bonjour [Madame, Monsieur],",
+            "Nous revenons vers vous au sujet de la facture [numéro] du [date], d'un montant de [montant] € TTC, échue le [date d'échéance]. Malgré notre message du [date de la 1re relance], elle reste impayée à ce jour.",
+            "Nous vous remercions de la régler sous huit jours, par virement sur le compte [IBAN] avec la référence [numéro]. Si un point vous empêche de la régler (erreur sur la facture, travaux à reprendre), dites-le-nous : nous trouverons une solution.",
+            `[Client professionnel] Entre professionnels, tout retard de paiement fait courir de plein droit des pénalités de retard au taux indiqué sur la facture ou, à défaut, au taux de la Banque centrale européenne majoré de 10 points (${TAUX_DEFAUT_FR} l'an au ${SEMESTRE_REFERENCE.libelle}), ainsi qu'une indemnité forfaitaire pour frais de recouvrement de ${INDEMNITE_FORFAITAIRE} € (Code de commerce, articles L441-10 et D441-5).`,
+            "Bien cordialement,",
+            "[Prénom Nom], [entreprise], [téléphone]",
+          ],
+        },
+        {
+          id: "relance-3",
+          titre: "Dernier rappel avant mise en demeure",
+          quand: "30 jours après l'échéance",
+          canal: "Mail",
+          objet: "Dernier rappel avant mise en demeure — facture [numéro]",
+          corps: [
+            "Bonjour [Madame, Monsieur],",
+            "La facture [numéro] du [date], d'un montant de [montant] € TTC, échue le [date d'échéance], reste impayée malgré nos messages du [date] et du [date].",
+            "Sans règlement de votre part d'ici le [date, huit jours plus tard], nous vous adresserons une mise en demeure par lettre recommandée avec accusé de réception, puis nous pourrons engager une procédure de recouvrement.",
+            `[Client professionnel] Les pénalités de retard et l'indemnité forfaitaire de ${INDEMNITE_FORFAITAIRE} € sont dues depuis le [lendemain de l'échéance].`,
+            "Bien cordialement,",
+            "[Prénom Nom], [entreprise], [téléphone]",
+          ],
+        },
+        {
+          id: "mise-en-demeure",
+          titre: "Lettre de mise en demeure",
+          quand: "Après le dernier rappel resté sans réponse",
+          canal: "Lettre recommandée avec accusé de réception",
+          objet: "Mise en demeure de payer — facture [numéro] du [date]",
+          corps: [
+            "[Madame, Monsieur],",
+            "Par la présente, nous vous mettons en demeure de nous régler la somme de [montant] € TTC, due au titre de la facture [numéro] du [date], pour les travaux de [désignation] réalisés le [date] au [adresse du chantier]. Cette facture, échue le [date d'échéance], reste impayée malgré nos relances du [date] et du [date].",
+            "Ce règlement doit nous parvenir dans un délai de huit jours à compter de la réception de cette lettre, par virement sur le compte [IBAN] (référence [numéro]) ou par chèque à l'ordre de [entreprise].",
+            `[Client professionnel] À cette somme s'ajoutent les pénalités de retard au taux de [taux] % l'an, dues depuis le [lendemain de l'échéance], et l'indemnité forfaitaire pour frais de recouvrement de ${INDEMNITE_FORFAITAIRE} € (Code de commerce, articles L441-10 et D441-5).`,
+            "[Client particulier] La somme due portera intérêt au taux légal à compter de la présente mise en demeure (Code civil, article 1231-6).",
+            "À défaut de règlement dans ce délai, nous saisirons la juridiction compétente pour obtenir le paiement, notamment par une requête en injonction de payer.",
+            "Veuillez agréer, [Madame, Monsieur], l'expression de nos salutations distinguées.",
+            "[Prénom Nom], [entreprise], [adresse], SIREN [numéro]",
+          ],
+        },
+      ],
+    },
   },
 ]
 

@@ -11,6 +11,7 @@
  * (polices du PDF).
  */
 import { MENTION_FRANCHISE } from "@/lib/outils/document"
+import { CERTIFICATION_DEVIS_10 } from "@/lib/legal/certification-tva"
 
 export const FORMATS_MODELE = ["docx", "xlsx", "pdf"] as const
 export type FormatModele = (typeof FORMATS_MODELE)[number]
@@ -104,7 +105,7 @@ export const MENTIONS_TITRE = "Mentions à garder selon votre situation (supprim
 export const MENTIONS: string[] = [
   `Assurance professionnelle (décennale pour les travaux du bâtiment) : [assureur], contrat n° [numéro], couverture : [zone géographique].`,
   `Gestion des déchets du chantier (construction, rénovation, démolition) : quantité estimée [ ], tri et enlèvement [ ], point de collecte [nom et adresse], coût estimé [ ] €.`,
-  `Chez un particulier, taux réduit de 10 % ou 5,5 % : le client certifie que le logement est achevé depuis plus de deux ans et que les travaux ne sont pas exclus du taux réduit.`,
+  `Chez un particulier, taux réduit de 10 % (modèle de l'administration fiscale) : « ${CERTIFICATION_DEVIS_10} » Au taux de 5,5 %, ajoutez à la fin « et qu'ils ont la nature de travaux de rénovation énergétique ».`,
   `Franchise en base de TVA : « ${MENTION_FRANCHISE} » (mettez 0 dans la colonne TVA).`,
   `Sous-traitance du bâtiment : facturez hors taxes avec la mention « Autoliquidation — art. 283-2 nonies du CGI ».`,
 ]

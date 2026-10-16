@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   title: "Démo du tableau de bord de facturation, sans inscription",
   description: "Essayez le tableau de bord de facturation de Qonforme sans inscription : devis, factures, relances et clients d'un artisan, avec des données d'exemple.",
   alternates: { canonical: "/demo" },
+  // Le layout de la démo met ses sous-pages en noindex : la page d'entrée reste indexable.
+  robots: { index: true, follow: true },
   openGraph: {
     title: "Démo du tableau de bord de facturation | Qonforme",
     images: [{ url: "/api/og?title=D%C3%A9mo%20du%20tableau%20de%20bord&subtitle=Devis%2C%20factures%20et%20relances%20d%27un%20artisan%20%E2%80%94%20sans%20inscription", width: 1200, height: 630 }],

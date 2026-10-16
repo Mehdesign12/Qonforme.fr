@@ -107,7 +107,7 @@ describe("Word (.docx)", () => {
     const doc = fichiers.get("word/document.xml")!
     for (const motif of [
       "DEVIS", "VOTRE ENTREPRISE", "CLIENT", "N° du devis", "Valable jusqu&apos;au".replace("&apos;", "'"), "Assurance professionnelle (décennale",
-      "Gestion des déchets du chantier", "le client certifie que le logement est achevé depuis plus de deux ans", "TVA non applicable, art. 293 B du CGI",
+      "Gestion des déchets du chantier", "certifie que les travaux réalisés concernent des locaux à usage d'habitation achevés depuis plus de deux ans", "TVA non applicable, art. 293 B du CGI",
       "Autoliquidation — art. 283-2 nonies du CGI", "Bon pour accord", "acompte",
     ]) expect(doc.toLowerCase(), motif).toContain(motif.toLowerCase())
     // en-tête + 12 lignes dans la table des prestations

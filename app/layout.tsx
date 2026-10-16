@@ -59,9 +59,9 @@ export const metadata: Metadata = {
   description:
     "Le logiciel de devis et de facturation des artisans du bâtiment : devis gratuits et illimités, factures aux mentions obligatoires, relances automatiques.",
   keywords: ["logiciel de facturation", "logiciel facturation en ligne", "facturation électronique", "facture", "artisan", "TPE", "Factur-X", "PPF"],
-  alternates: {
-    canonical: "/",
-  },
+  // Pas de canonical ici : chaque page déclare le sien. Un canonical « / » dans le layout
+  // racine était hérité par toute page qui n'en avait pas (les sous-pages de la démo se
+  // présentaient à Google comme l'accueil). Celui de l'accueil est dans app/page.tsx.
 
   /* ── Favicon & icônes ── */
   icons: {
@@ -85,10 +85,10 @@ export const metadata: Metadata = {
     type:        "website",
     images: [
       {
-        url:    "/api/og?title=La%20facturation%20des%20pros%20du%20b%C3%A2timent&subtitle=Devis%20gratuits%20et%20illimit%C3%A9s%20%E2%80%94%20Vous%20payez%20quand%20vous%20facturez",
+        url:    "/api/og?title=La%20facturation%20des%20artisans%20du%20b%C3%A2timent&subtitle=Devis%20gratuits%20et%20illimit%C3%A9s%20%E2%80%94%20Vous%20payez%20quand%20vous%20facturez",
         width:  1200,
         height: 630,
-        alt:    "Qonforme — La facturation des pros du bâtiment",
+        alt:    "Qonforme — La facturation des artisans du bâtiment",
       },
     ],
   },
@@ -145,9 +145,8 @@ export default function RootLayout({
         />
         {/* Écrans de démarrage iOS — sinon l'app lancée depuis l'écran d'accueil démarre en blanc */}
         <AppleSplashScreens />
-        {/* Hreflang — site monolingue FR */}
-        <link rel="alternate" hrefLang="fr" href="https://qonforme.fr/" />
-        <link rel="alternate" hrefLang="x-default" href="https://qonforme.fr/" />
+        {/* Pas de hreflang : le site n'a qu'une langue. Les deux liens fixes qui étaient ici
+            disaient sur chaque page que sa version française était l'accueil. */}
         {/* JSON-LD — Organization + WebApplication */}
         <script
           type="application/ld+json"

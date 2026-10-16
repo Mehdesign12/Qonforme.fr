@@ -5,7 +5,7 @@ export const runtime = "edge";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const title = searchParams.get("title") || "La facturation des pros du bâtiment";
+  const title = searchParams.get("title") || "La facturation des artisans du bâtiment";
   const subtitle = searchParams.get("subtitle") || "Devis gratuits et illimités — Vous payez quand vous facturez";
 
   return new ImageResponse(

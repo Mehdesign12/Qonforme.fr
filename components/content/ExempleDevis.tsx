@@ -10,7 +10,16 @@ import { fr } from "@/components/content/text"
  * totaux calculés (jamais recopiés à la main) ; sur mobile, la quantité et le
  * prix unitaire passent sous la désignation.
  */
-export function ExempleDevisCard({ exemple, id }: { exemple: Exemple; id: string }) {
+export function ExempleDevisCard({
+  exemple,
+  id,
+  heading,
+}: {
+  exemple: Exemple
+  id: string
+  /** Intertitre propre (second exemple d'une page) ; par défaut « Un exemple de devis chiffré. » */
+  heading?: { title: string; accent: string }
+}) {
   const t = totauxExemple(exemple)
   const taux = `${formatNombreFr(exemple.tauxTva)} %`
   // Plusieurs taux : colonne « TVA » et TVA ventilée par taux dans les totaux
@@ -21,7 +30,12 @@ export function ExempleDevisCard({ exemple, id }: { exemple: Exemple; id: string
 
   return (
     <section aria-labelledby={id} className="mt-14">
-      <SectionHeading id={id} title="Un exemple" accent={facture ? "de facture chiffrée." : "de devis chiffré."} className="mb-4" />
+      <SectionHeading
+        id={id}
+        title={heading?.title ?? "Un exemple"}
+        accent={heading?.accent ?? (facture ? "de facture chiffrée." : "de devis chiffré.")}
+        className="mb-4"
+      />
       <p className="mb-6 max-w-[68ch] text-[15px] leading-[1.6] text-q-text-3">{fr(exemple.contexte)}</p>
 
       <figure className="overflow-hidden rounded-[20px] border border-q-line bg-q-surface shadow-[var(--q-shadow-card)]">

@@ -93,7 +93,7 @@ function Hero() {
           className="lp-fade-up mt-7 max-w-[1100px] font-display text-[clamp(38px,5vw,68px)] font-semibold leading-[1.04] tracking-[-0.04em] text-q-ink-strong [text-wrap:balance]"
           style={{ animationDelay: ".08s" }}
         >
-          <span className="sm:block">La facturation des pros du bâtiment,</span>{" "}
+          <span className="sm:block">La facturation des artisans du bâtiment,</span>{" "}
           <span className="q-serif sm:block">simple dès le premier devis.</span>
         </h1>
 

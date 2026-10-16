@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
 import {
@@ -37,6 +38,12 @@ import { cn } from "@/lib/utils"
  *  - mouvement en CSS seul (classes lp-* de app/globals.css), sans
  *    backdrop-filter, will-change ni animation infinie (règle iOS).
  */
+
+/* Title et description : ceux par défaut du layout racine. Le canonical de l'accueil vit
+   ici, et non dans le layout, pour qu'aucune autre page n'en hérite. */
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+}
 
 const essentiel = PLANS.starter
 const artisan = PLANS.pro
