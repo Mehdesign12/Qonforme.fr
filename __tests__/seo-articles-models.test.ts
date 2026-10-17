@@ -16,6 +16,7 @@ import {
   ModelError,
   parseInteractionImage,
   passesSummary,
+  readGoogleLimit,
   resolvePassModel,
   setAnthropicFactoryForTests,
   setSleepForTests,
@@ -414,5 +415,116 @@ describe("image de couverture", () => {
       vi.fn(async (url: string) => (url.endsWith("/interactions") ? json({ status: "completed", steps: [] }) : json({ candidates: [{ content: { parts: [] } }] }))),
     )
     await expect(generateImage({ model: "gemini-nano-banana-2.1", prompt: "photo", aspect: "16:9" })).rejects.toMatchObject({ kind: "empty" })
+  })
+})
+
+describe("429 de Google : la vraie raison, et pas de nouvel essai quand il est inutile", () => {
+  const ASK = { model: "gemini-3.8-flash", system: "S", prompt: "P", maxOutputTokens: 100 }
+  const OK = { candidates: [{ content: { parts: [{ text: "Texte" }] }, finishReason: "STOP" }] }
+  const quotaError = (over: { quotaId?: string; quotaValue?: string; retryDelay?: string; message?: string } = {}) => ({
+    error: {
+      code: 429,
+      status: "RESOURCE_EXHAUSTED",
+      message: over.message ?? "You exceeded your current quota, please check your plan and billing details.",
+      details: [
+        {
+          "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+          violations: [
+            { quotaMetric: "generativelanguage.googleapis.com/generate_content_free_tier_requests", quotaId: over.quotaId ?? "GenerateRequestsPerMinutePerProjectPerModel-FreeTier", quotaValue: over.quotaValue ?? "0" },
+          ],
+        },
+        ...(over.retryDelay ? [{ "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: over.retryDelay }] : []),
+      ],
+    },
+  })
+
+  it("lit le quota touché, le palier gratuit et la pause conseillée", () => {
+    expect(readGoogleLimit(quotaError().error)).toEqual({ noQuota: true, daily: false, freeTier: true, retryDelayMs: null })
+    expect(readGoogleLimit(quotaError({ quotaValue: "20", quotaId: "GenerateRequestsPerDayPerProjectPerModel", retryDelay: "37s" }).error)).toMatchObject({ noQuota: false, daily: true, retryDelayMs: 37_000 })
+    expect(readGoogleLimit({ message: "Quota exceeded for metric: x, limit: 0, model: m" })).toMatchObject({ noQuota: true })
+    expect(readGoogleLimit({ message: "Resource has been exhausted. Please retry in 12.5s." })).toMatchObject({ noQuota: false, daily: false, retryDelayMs: 12_500 })
+    expect(readGoogleLimit(undefined)).toEqual({ noQuota: false, daily: false, freeTier: false, retryDelayMs: null })
+  })
+
+  it("quota à zéro : un seul appel, erreur de type quota qui explique quoi faire, jamais « indisponible »", async () => {
+    const fetchMock = vi.fn(async () => json(quotaError(), 429))
+    vi.stubGlobal("fetch", fetchMock)
+    delete process.env.ANTHROPIC_API_KEY
+    const error = await generateText(ASK).catch((e) => e)
+    expect(error).toBeInstanceOf(ModelError)
+    expect(error).toMatchObject({ kind: "quota", retryable: false })
+    expect(error.message).toContain("aucun quota")
+    expect(error.message).toContain("gemini-3.8-flash")
+    expect(error.message).toContain("palier gratuit")
+    expect(error.message).not.toContain("indisponible")
+    expect(error.message).not.toContain("Nouvel essai")
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(pauses).toEqual([])
+  })
+
+  it("quota journalier atteint : pas de nouvel essai non plus", async () => {
+    const fetchMock = vi.fn(async () => json(quotaError({ quotaId: "GenerateRequestsPerDayPerProjectPerModel", quotaValue: "100", retryDelay: "3s" }), 429))
+    vi.stubGlobal("fetch", fetchMock)
+    delete process.env.ANTHROPIC_API_KEY
+    await expect(generateText(ASK)).rejects.toMatchObject({ kind: "quota", retryable: false, message: expect.stringContaining("Quota journalier") })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it("limite par minute : la pause conseillée par Google est respectée, puis l'appel aboutit", async () => {
+    const limited = json(quotaError({ quotaId: "GenerateRequestsPerMinutePerProjectPerModel", quotaValue: "10", retryDelay: "4s" }), 429)
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(limited).mockResolvedValueOnce(json(OK)))
+    await expect(generateText(ASK)).resolves.toMatchObject({ text: "Texte" })
+    expect(pauses).toEqual([4_000])
+  })
+
+  it("pause conseillée trop longue (plus de 10 s) : pas de nouvel essai, le message donne l'attente", async () => {
+    const fetchMock = vi.fn(async () => json(quotaError({ quotaId: "GenerateRequestsPerMinutePerProjectPerModel", quotaValue: "10", retryDelay: "45s" }), 429))
+    vi.stubGlobal("fetch", fetchMock)
+    delete process.env.ANTHROPIC_API_KEY
+    await expect(generateText(ASK)).rejects.toMatchObject({ kind: "http", retryable: true, message: expect.stringContaining("attendre 45 s") })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it("quota épuisé chez Gemini : Claude prend la consigne et l'écran en donne la raison", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json(quotaError(), 429)))
+    setAnthropicFactoryForTests(
+      () =>
+        ({
+          messages: { stream: () => ({ finalMessage: async () => ({ content: [{ type: "text", text: "Repli Claude", citations: null }], stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 } }) }) },
+        }) as unknown as Anthropic,
+    )
+    const res = await generateText(ASK)
+    expect(res).toMatchObject({ text: "Repli Claude", model: "claude-sonnet-5-5", fallbackFrom: { model: "gemini-3.8-flash" } })
+    expect(res.fallbackFrom?.reason).toContain("aucun quota")
+  })
+
+  it("image : le 429 de Nano Banana 2.1 dit pourquoi, et le repli qui réussit le reprend dans son avis", async () => {
+    const fetchMock = vi.fn(async (url: string) =>
+      url.endsWith("/interactions") ? json(quotaError(), 429) : json({ candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: PNG } }] } }] }),
+    )
+    vi.stubGlobal("fetch", fetchMock)
+    const image = await generateImage({ model: "gemini-nano-banana-2.1", prompt: "photo", aspect: "16:9" })
+    expect(image.model).toBe("gemini-3.1-flash-image")
+    expect(image.fallbackFrom?.reason).toContain("gemini-nano-banana-2.1")
+    expect(image.fallbackFrom?.reason).toContain("aucun quota")
+    // Interactions n'est appelée qu'une fois : un quota à zéro n'est pas rejoué
+    expect(fetchMock.mock.calls.filter(([url]) => url.endsWith("/interactions"))).toHaveLength(1)
+  })
+
+  it("image : les deux modèles à court de quota, l'erreur nomme les deux et ne promet aucun nouvel essai", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json(quotaError(), 429)))
+    const error = await generateImage({ model: "gemini-nano-banana-2.1", prompt: "photo", aspect: "16:9" }).catch((e) => e)
+    expect(error).toMatchObject({ kind: "quota", retryable: false })
+    expect(error.message).toContain("gemini-nano-banana-2.1")
+    expect(error.message).toContain("gemini-3.1-flash-image")
+    expect(error.message).not.toContain("Nouvel essai")
+  })
+
+  it("image : une erreur 500 du premier modèle reste lisible quand le repli échoue aussi", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url.endsWith("/interactions") ? json({ error: { message: "interne" } }, 500) : json(quotaError(), 429))))
+    const error = await generateImage({ model: "gemini-nano-banana-2.1", prompt: "photo", aspect: "16:9" }).catch((e) => e)
+    expect(error.kind).toBe("quota")
+    expect(error.message).toContain("Nano Banana 2.1 : Nano Banana a répondu 500 : interne")
+    expect(error.message).toContain("gemini-3.1-flash-image")
   })
 })

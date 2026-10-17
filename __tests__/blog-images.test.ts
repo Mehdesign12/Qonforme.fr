@@ -556,6 +556,18 @@ describe("POST /api/admin/blog/images/generate", () => {
     expect((await res.json()).error).toMatch(/^La génération de l'image a échoué\./)
   })
 
+  it("502 « quota » : la raison de Google est rendue telle quelle, sans « Réessayez »", async () => {
+    state.generate = async () => {
+      throw new ModelError("quota", "Google refuse gemini-3.1-flash-image (429) : aucun quota pour ce modèle sur le projet de la clé GEMINI_API_KEY.", false)
+    }
+    const res = await generateRoute(generateRequest(ok))
+    expect(res.status).toBe(502)
+    const body = await res.json()
+    expect(body.code).toBe("quota")
+    expect(body.error).toContain("aucun quota")
+    expect(body.error).not.toContain("Réessayez")
+  })
+
   it("503 si les réglages ne se lisent pas (concurrents inconnus : rien n'est envoyé)", async () => {
     state.settingsError = { code: "08006", message: "connexion perdue" }
     const res = await generateRoute(generateRequest(ok))

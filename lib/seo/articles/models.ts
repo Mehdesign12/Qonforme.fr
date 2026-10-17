@@ -32,12 +32,12 @@ export * from "@/lib/seo/articles/model-registry"
 const GEMINI_API = "https://generativelanguage.googleapis.com/v1beta"
 const DEFAULT_TIMEOUT_MS = 240_000
 
-export type ModelErrorKind = "not_configured" | "unknown_model" | "refused" | "truncated" | "empty" | "http" | "timeout"
+export type ModelErrorKind = "not_configured" | "unknown_model" | "refused" | "truncated" | "empty" | "http" | "timeout" | "quota"
 
 /** Erreur d'un appel de modèle, avec un message en français sûr à afficher. */
 export class ModelError extends Error {
   readonly kind: ModelErrorKind
-  /** Faux : réessayer ne sert à rien (clé absente, modèle inconnu, refus). */
+  /** Faux : réessayer ne sert à rien (clé absente, modèle inconnu, refus, quota épuisé ou absent). */
   readonly retryable: boolean
   constructor(kind: ModelErrorKind, message: string, retryable = kind === "http" || kind === "timeout" || kind === "empty" || kind === "truncated") {
     super(message)
@@ -136,10 +136,11 @@ function failureReason(error: ModelError): string {
   return error.message.replace(/\s*Nouvel essai au prochain passage\.?\s*$/i, "").replace(/\.$/, "")
 }
 
-/** Vrai pour une panne du fournisseur (surcharge, 5xx, réseau) : seule elle change de modèle. */
+/** Vrai pour une panne du fournisseur (surcharge, 5xx, réseau, quota épuisé) : seule elle change de modèle. */
 function isProviderOutage(error: unknown): error is ModelError {
-  // Un refus, une réponse vide ou coupée, un délai dépassé ou une clé refusée n'ont rien à voir avec la disponibilité
-  return error instanceof ModelError && error.kind === "http" && error.retryable
+  // Un refus, une réponse vide ou coupée, un délai dépassé ou une clé refusée n'ont rien à voir avec la disponibilité ;
+  // un quota épuisé chez un fournisseur n'empêche pas l'autre de répondre
+  return error instanceof ModelError && ((error.kind === "http" && error.retryable) || error.kind === "quota")
 }
 
 /**
@@ -257,7 +258,14 @@ interface GeminiResponse {
   candidates?: { content?: { parts?: GeminiPart[] }; finishReason?: string }[]
   promptFeedback?: { blockReason?: string }
   usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number }
-  error?: { message?: string }
+  error?: GoogleError
+}
+
+/** Corps d'erreur de Google (google.rpc.Status) : message, statut et détails (QuotaFailure, RetryInfo). */
+interface GoogleError {
+  message?: string
+  status?: string
+  details?: { "@type"?: string; retryDelay?: string; violations?: { quotaMetric?: string; quotaId?: string; quotaValue?: string | number }[] }[]
 }
 
 const GEMINI_REFUSALS = new Set(["SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION", "IMAGE_SAFETY", "IMAGE_PROHIBITED_CONTENT"])
@@ -284,16 +292,70 @@ function retryAfterMs(res: Response): number | null {
   return Number.isFinite(seconds) && seconds > 0 ? Math.min(RETRY_AFTER_MAX_MS, Math.max(1_000, Math.round(seconds * 1000))) : null
 }
 
+/** Ce que Google dit d'une réponse 429 (RESOURCE_EXHAUSTED). */
+export interface GoogleLimit {
+  /** Aucun quota pour ce modèle sur le projet de la clé (« limit: 0 ») : attendre n'y change rien. */
+  noQuota: boolean
+  /** Quota d'une journée atteint : il ne se remet à zéro qu'au changement de jour. */
+  daily: boolean
+  /** Le projet de la clé est au palier gratuit de Google. */
+  freeTier: boolean
+  /** Pause demandée par Google (« retryDelay », « Please retry in 37s »), en ms. */
+  retryDelayMs: number | null
+}
+
+/**
+ * Lit la raison d'un 429 de Google : l'erreur porte le quota touché
+ * (`QuotaFailure.violations[].quotaId`, `quotaValue`) et la pause conseillée
+ * (`RetryInfo.retryDelay`). Un quota à zéro ou journalier ne passera pas en
+ * attendant quelques secondes : l'appel n'est alors pas rejoué.
+ */
+export function readGoogleLimit(error: GoogleError | undefined): GoogleLimit {
+  const message = error?.message ?? ""
+  const violations = (error?.details ?? []).flatMap((d) => d?.violations ?? [])
+  const ids = violations.map((v) => `${v.quotaId ?? ""} ${v.quotaMetric ?? ""}`).join(" ")
+  const noQuota = violations.some((v) => String(v.quotaValue ?? "") === "0") || /\blimit:\s*0\b/i.test(message)
+  const daily = /PerDay/i.test(ids) || /\bper day\b|\bdaily\b/i.test(message)
+  const freeTier = /free_?tier/i.test(ids) || /free_?tier/i.test(message)
+  const delay = (error?.details ?? []).map((d) => d?.retryDelay).find((v) => typeof v === "string") ?? message.match(/retry in ([\d.]+)s/i)?.[1]
+  const seconds = delay ? Number.parseFloat(delay) : NaN
+  return { noQuota, daily, freeTier, retryDelayMs: Number.isFinite(seconds) && seconds >= 0 ? Math.round(seconds * 1000) : null }
+}
+
+/**
+ * Erreur d'un 429 de Google, avec sa vraie raison (au lieu d'un « indisponible »
+ * qui laissait croire à une panne). Quota à zéro ou journalier : `quota`, pas
+ * de nouvel essai. Limite de débit : `http`, nouvel essai plus tard.
+ */
+export function googleLimitError(apiModel: string, error: GoogleError | undefined): ModelError {
+  const limit = readGoogleLimit(error)
+  if (limit.noQuota) {
+    return new ModelError(
+      "quota",
+      `Google refuse ${apiModel} (429) : aucun quota pour ce modèle sur le projet de la clé GEMINI_API_KEY${limit.freeTier ? " (palier gratuit : vérifiez la facturation du projet dans Google AI Studio)" : ""}.`,
+      false,
+    )
+  }
+  if (limit.daily) {
+    return new ModelError("quota", `Quota journalier de Google atteint (429) pour ${apiModel} : il se remet à zéro au changement de jour (minuit, heure du Pacifique).`, false)
+  }
+  const wait = limit.retryDelayMs ? ` Google demande d'attendre ${Math.max(1, Math.round(limit.retryDelayMs / 1000))} s.` : ""
+  return new ModelError("http", `Limite de débit de Google atteinte (429) pour ${apiModel}.${wait} Nouvel essai au prochain passage.`)
+}
+
 /**
  * Appel de Gemini. Une surcharge passagère (503, 500, 502, 504) ou une limite
  * de débit (429) est rejouée deux fois après une pause (2 s, 6 s ; « Retry-After »
- * respecté, borné à 10 s), tant qu'il reste assez de temps dans `timeoutMs` ;
- * le délai dépassé n'est jamais rejoué. Sans cela, trois essais en dix secondes
- * échouaient tous pendant une surcharge qui dure une minute.
+ * ou pause conseillée par Google respectés, bornés à 10 s), tant qu'il reste
+ * assez de temps dans `timeoutMs` ; le délai dépassé n'est jamais rejoué, pas
+ * plus qu'un quota à zéro, journalier ou à remettre à plus de 10 s (attendre
+ * quelques secondes n'y changerait rien). Sans cela, trois essais en dix
+ * secondes échouaient tous pendant une surcharge qui dure une minute.
  */
 async function geminiCall(apiModel: string, key: string, body: unknown, timeoutMs: number): Promise<GeminiResponse> {
   const startedAt = Date.now()
   let res: Response
+  let data: GeminiResponse
   for (let attempt = 0; ; attempt++) {
     const left = timeoutMs - (Date.now() - startedAt)
     try {
@@ -310,13 +372,20 @@ async function geminiCall(apiModel: string, key: string, body: unknown, timeoutM
       }
       throw new ModelError("http", "Gemini injoignable pour le moment.")
     }
+    data = (await res.json().catch(() => ({}))) as GeminiResponse
     if (res.ok || !TRANSIENT_STATUSES.has(res.status) || attempt >= RETRY_PAUSES_MS.length) break
-    const pause = retryAfterMs(res) ?? RETRY_PAUSES_MS[attempt]
+    let googlePause: number | null = null
+    if (res.status === 429) {
+      const limit = readGoogleLimit(data.error)
+      // Quota à zéro, journalier ou à remettre dans longtemps : inutile d'insister
+      if (limit.noQuota || limit.daily || (limit.retryDelayMs !== null && limit.retryDelayMs > RETRY_AFTER_MAX_MS)) break
+      googlePause = limit.retryDelayMs === null ? null : Math.max(1_000, limit.retryDelayMs)
+    }
+    const pause = retryAfterMs(res) ?? googlePause ?? RETRY_PAUSES_MS[attempt]
     if (timeoutMs - (Date.now() - startedAt) - pause < RETRY_MIN_LEFT_MS) break
     console.warn(`[seo-articles] Gemini ${res.status} sur ${apiModel}, nouvel essai dans ${Math.round(pause / 1000)} s`)
     await sleepImpl(pause)
   }
-  const data = (await res.json().catch(() => ({}))) as GeminiResponse
   if (!res.ok) {
     const detail = shortMessage(data.error?.message ?? "")
     if (res.status === 401 || res.status === 403) {
@@ -324,6 +393,7 @@ async function geminiCall(apiModel: string, key: string, body: unknown, timeoutM
     }
     if (res.status === 404) throw new ModelError("unknown_model", `Modèle ${apiModel} indisponible chez Google.`, false)
     if (res.status === 400) throw new ModelError("http", `Requête refusée par Gemini (400)${detail ? ` : ${detail}` : ""}`, false)
+    if (res.status === 429) throw googleLimitError(apiModel, data.error)
     throw new ModelError("http", `Gemini indisponible (${res.status}). Nouvel essai au prochain passage.`)
   }
   if (data.promptFeedback?.blockReason) {
@@ -464,7 +534,9 @@ async function interactionsImage(def: ImageModelDef, key: string, prompt: string
   }
   const data = (await res.json().catch(() => null)) as unknown
   if (!res.ok) {
-    const message = (data as { error?: { message?: string } } | null)?.error?.message ?? ""
+    const googleError = (data as { error?: GoogleError } | null)?.error
+    if (res.status === 429) throw googleLimitError(def.apiModel, googleError)
+    const message = googleError?.message ?? ""
     throw new ModelError("http", `Nano Banana a répondu ${res.status}${message ? ` : ${shortMessage(message)}` : ""}.`)
   }
   return parseInteractionImage(data)
@@ -538,7 +610,12 @@ export async function generateImage(input: GenerateImageInput): Promise<Generate
     if (!fallback) throw error
     const reason = error instanceof Error ? error.message : "Échec du modèle d'image"
     console.warn(`[seo-articles] ${def.label} indisponible, repli sur ${fallback.label} : ${reason}`)
-    const raw = await imageWith(fallback, input, deadline)
+    let raw: RawImage
+    try {
+      raw = await imageWith(fallback, input, deadline)
+    } catch (fallbackError) {
+      throw bothImageModelsFailed(def, error, fallback, fallbackError)
+    }
     return {
       data: Buffer.from(raw.data, "base64"),
       mimeType: raw.mimeType,
@@ -546,6 +623,23 @@ export async function generateImage(input: GenerateImageInput): Promise<Generate
       fallbackFrom: { model: def.id, reason: reason.slice(0, 200) },
     }
   }
+}
+
+/**
+ * Les deux modèles d'image ont échoué : l'erreur dit pourquoi chacun a échoué
+ * (seule celle du repli était rendue, et cachait la vraie raison du premier).
+ * Le type et le caractère « réessayable » sont ceux du repli, sauf quand les
+ * deux sont à court de quota : réessayer ne servirait à rien.
+ */
+function bothImageModelsFailed(first: ImageModelDef, firstError: unknown, second: ImageModelDef, secondError: unknown): ModelError {
+  const reasonOf = (e: unknown) => (e instanceof ModelError ? failureReason(e) : e instanceof Error ? e.message.replace(/\.$/, "") : "échec du modèle d'image")
+  const named = (def: ImageModelDef, reason: string) => (reason.includes(def.apiModel) ? reason : `${def.label} : ${reason}`)
+  const message = `${named(first, reasonOf(firstError))}. ${named(second, reasonOf(secondError))}.`
+  if (secondError instanceof ModelError) {
+    const bothQuota = firstError instanceof ModelError && firstError.kind === "quota" && secondError.kind === "quota"
+    return new ModelError(secondError.kind, message, bothQuota ? false : secondError.retryable)
+  }
+  return new ModelError("http", message)
 }
 
 /** Message d'erreur d'un fournisseur, raccourci et sans rien qui ressemble à une clé. */

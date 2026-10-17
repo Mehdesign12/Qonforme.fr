@@ -14,7 +14,9 @@
  *   un titre qui en nommerait un ne sert pas au nom du fichier public ;
  * - 503 si la clé du modèle manque (message de ModelError, qui dit quoi faire)
  *   ou si les réglages ne se lisent pas ;
- * - 502 pour tout autre échec du modèle ou une image inexploitable.
+ * - 502 pour tout autre échec du modèle (code « quota » quand Google n'a plus
+ *   ou pas de quota pour la clé : la raison est dans le message) ou une image
+ *   inexploitable.
  *
  * Chaque image est facturée par Google : rien n'est relancé automatiquement.
  */
@@ -85,6 +87,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof ModelError && error.kind === "not_configured") {
       return NextResponse.json({ error: error.message, code: "not_configured" }, { status: 503 })
+    }
+    // Quota Google absent ou épuisé : la raison dit quoi faire, et « réessayez » ne servirait à rien
+    if (error instanceof ModelError && error.kind === "quota") {
+      return NextResponse.json({ error: `La génération de l'image a échoué. ${error.message}`, code: "quota" }, { status: 502 })
     }
     const reason = error instanceof ModelError ? ` ${error.message}` : ""
     if (!(error instanceof ModelError)) console.error("[blog-images] génération en échec", error)
