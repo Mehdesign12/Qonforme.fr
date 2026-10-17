@@ -315,7 +315,7 @@ export const GUIDES: Guide[] = [
       },
       {
         titre: "Et avec Qonforme ?",
-        contenu: "Qonforme produit déjà vos factures au format Factur-X : un PDF lisible qui contient les données structurées de la facture. Le raccordement de Qonforme à une plateforme agréée est en préparation, et Qonforme n'est pas encore « solution compatible ». D'ici là, choisissez votre plateforme agréée pour recevoir vos factures fournisseurs : cette obligation s'applique depuis le 1er septembre 2026.",
+        contenu: "Qonforme produit déjà vos factures au format Factur-X : un PDF lisible qui contient les données structurées de la facture. Qonforme est une « solution compatible facturation électronique » : il est raccordé à une plateforme agréée, qui seule transmet les factures. La réception des factures de vos fournisseurs est obligatoire depuis le 1er septembre 2026 : vous pouvez aussi choisir vous-même votre plateforme agréée.",
       },
     ],
     faq: [
