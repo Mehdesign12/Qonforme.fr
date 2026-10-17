@@ -2,6 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, Check, Linkedin, Mail, Monitor } from "lucide-react"
 import { LOGO_LONG_LIGHT } from "@/lib/brand"
+import { SolutionCompatible } from "@/components/brand/SolutionCompatible"
 
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
@@ -118,6 +119,7 @@ export default function Footer({ showCta = true }: { showCta?: boolean } = {}) {
               <Image src={LOGO_LONG_LIGHT} alt="Qonforme" width={94} height={18} sizes="94px" loading="lazy" className="h-[18px] w-auto" />
             </Link>
             <p className="max-w-[300px] leading-[1.6]">Le logiciel de devis et de facturation des artisans du bâtiment.</p>
+            <SolutionCompatible size="sm" className="self-start" />
             <div className="mt-1 flex items-center gap-2">
               <a
                 href="https://www.linkedin.com/company/qonforme"

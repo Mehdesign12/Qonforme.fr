@@ -521,3 +521,36 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 - **Formule annuelle :** pas de remboursement au prorata après les 30 jours. C'est la pratique retenue par défaut, à confirmer.
 - **CGV distinctes des CGU :** à faire relire par un juriste.
 - **Mentions légales :** il manque le SIREN, l'adresse du siège et le numéro de TVA de Qonforme SAS. Ils sont obligatoires sur le site comme sur les factures d'abonnement.
+
+---
+
+## 13. Label « Solution compatible – Facturation électronique » (déclaré obtenu le 17/10/2026)
+
+### La décision
+
+Le fondateur déclare le 17/10/2026 que Qonforme a obtenu le label de la DGFiP. Le logotype s'affiche donc sur l'accueil (§ « Où il s'affiche »). **Le dépôt ne contient pas la preuve** (date du raccordement, nom de la plateforme agréée, fonctions couvertes) : la noter ici dès qu'elle est sous la main, car la charte permet à l'État de contrôler l'usage et d'en exiger le retrait.
+
+> Preuve à consigner : plateforme agréée raccordée : ______ · date : ______ · fonctions couvertes (réception / émission / e-reporting) : ______
+
+### Ce que dit la charte (DGFiP, 30/07/2025)
+
+- **Qui :** un éditeur dont le logiciel sait recevoir des factures dans les formats de la réforme **et** est raccordé à au moins une plateforme agréée. S'il propose aussi l'émission, il doit aussi savoir émettre ; s'il propose le e-reporting, il doit savoir le transmettre. Le label s'apprécie fonction par fonction.
+- **Usage :** information générale seulement ; droit **non permanent, non exclusif, personnel, gratuit, limité au territoire français** ; l'État peut le retirer, et l'éditeur doit alors cesser tout usage sur tous ses supports sans indemnité.
+- **Graphisme :** logotype reproduit en entier avec son cartouche blanc, jamais déformé, incliné, recoloré, en transparence, ni avec une ombre ou un effet ; zone de protection respectée ; **cartouche « Solution compatible » d'au moins 12 px de haut** (soit 192 px de large pour le fichier `public/brand/solution-compatible-facturation-electronique.webp`) ; toujours accompagné de la mention « Solution compatible facturation électronique » (elle est dans le logotype et dans son texte alternatif).
+- **Interdits :** déposer une marque ou un nom de domaine proche, laisser croire à un agrément de l'État. La mention « Plateforme agréée » reste interdite à Qonforme.
+
+### Où il s'affiche
+
+Un seul composant, `components/brand/SolutionCompatible.tsx` (interrupteur `SOLUTION_COMPATIBLE`, à passer à `false` pour tout retirer d'un coup si le label est perdu) : héros, « Où en est Qonforme » (section de la réforme), tarifs, bandeau sous les engagements (`SolutionCompatibleNote`), réponse « Qonforme est-il une plateforme agréée ? » de la FAQ, appel final et pied de page (donc toutes les pages publiques).
+
+### Textes changés pour rester d'accord avec le logotype
+
+Accueil : réponse de la FAQ, 3ᵉ ligne de « Où en est Qonforme ». Guide « Plateforme agréée » : « Et avec Qonforme ? ».
+
+### À revoir : textes qui disent encore « en préparation » (décision en attente)
+
+Ils disent le contraire du logotype tant qu'ils ne sont pas relus avec ce que couvre le raccordement réel (réception seule, ou aussi émission) :
+
+- application : `components/reception/PlatformNotice.tsx`, `components/settings/{EInvoicingView,SettingsOverview}.tsx`, `components/layout/Sidebar.tsx`, `components/dashboard/ReformCard.tsx` ;
+- pages publiques : FAQ de `app/pricing/page.tsx`, `app/outils/{generateur-facture-gratuite,verificateur-conformite-facture}/page.tsx`, `lib/pseo/guides.ts` (guide auto-entrepreneur), `lib/pseo/metiers.ts` (plombier, peintre) ;
+- générateurs d'articles : `lib/ai/gemini.ts` et `lib/seo/articles/prompt.ts` (consigne « ne jamais écrire que Qonforme transmet les factures électroniques »), `lib/ai/reference-facts.ts` (faits de référence à relire) ; la vérification des articles (`lib/blog-audit.ts`) refuse « ni certifié ni homologué » : cela reste vrai pour « certifié », à ne pas assouplir.

@@ -14,6 +14,7 @@ import { PublicHeader } from "@/components/layout/PublicHeader"
 import { StorySection } from "@/components/landing/StorySection"
 import { IPhone, SCREENS } from "@/components/landing/devices"
 import { Doodles } from "@/components/brand/Doodles"
+import { SolutionCompatible, SolutionCompatibleNote } from "@/components/brand/SolutionCompatible"
 import { CtaButtons, PanPhoto, PhotoBand, SectionTitle } from "@/components/landing/ui"
 import { PhoneCarousel, ScreenCarousel } from "@/components/landing/carousels"
 import { StepsShowcase, type StepsData } from "@/components/landing/steps-showcase"
@@ -158,13 +159,14 @@ function ReformSection() {
                 Une facture envoyée ne se modifie plus&nbsp;: une erreur se corrige par un avoir.
               </li>
               <li className="flex gap-2.5">
-                <CircleDashed className="mt-1 h-4 w-4 shrink-0 text-q-text-4" strokeWidth={2} aria-hidden />
+                <Check className="mt-1 h-4 w-4 shrink-0 text-q-accent" strokeWidth={2} aria-hidden />
                 <span>
-                  Envoi et réception par une plateforme agréée, depuis Qonforme&nbsp;:{" "}
-                  <strong className="font-semibold text-q-ink-strong">en préparation</strong>.
+                  <strong className="font-semibold text-q-ink-strong">Solution compatible facturation électronique</strong>
+                  &nbsp;: Qonforme est raccordé à une plateforme agréée.
                 </span>
               </li>
             </ul>
+            <SolutionCompatible size="sm" className="mt-auto self-start" />
           </div>
         </div>
         <div className="mt-4 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -626,6 +628,9 @@ function PricingSection() {
             Comparer les offres
           </Link>
         </div>
+        <div data-reveal="" className="mt-12 flex justify-center">
+          <SolutionCompatible />
+        </div>
       </div>
     </section>
   )
@@ -678,6 +683,9 @@ function CommitmentsSection() {
             </article>
           ))}
         </div>
+        <div data-reveal="" className="mt-5 rounded-[22px] border border-q-line bg-q-bg p-6 sm:p-8">
+          <SolutionCompatibleNote className="sm:justify-start" />
+        </div>
       </div>
     </section>
   )
@@ -697,7 +705,8 @@ const FAQ_ITEMS = [
   },
   {
     q: "Qonforme est-il une plateforme agréée ?",
-    a: "Non. Qonforme est un logiciel de facturation. Le raccordement à une plateforme agréée, pour envoyer et recevoir vos factures électroniques depuis Qonforme, est en préparation.",
+    a: "Non. Qonforme est un logiciel de facturation, pas une plateforme agréée. C'est une solution compatible facturation électronique : il est raccordé à une plateforme agréée, qui seule transmet les factures.",
+    logo: true,
   },
   {
     q: "Je suis en franchise de TVA. Est-ce prévu ?",
@@ -744,7 +753,8 @@ function FAQSection() {
                 <span className="text-[16px] font-semibold text-q-ink-strong">{fr(item.q)}</span>
                 <ChevronDown className="h-[18px] w-[18px] shrink-0 text-q-text-4 transition-transform duration-300 group-open:rotate-180 motion-reduce:transition-none" strokeWidth={1.75} aria-hidden />
               </summary>
-              <p className="max-w-[680px] pb-6 text-[15px] leading-[1.65] text-q-text-3">{fr(item.a)}</p>
+              <p className={cn("max-w-[680px] text-[15px] leading-[1.65] text-q-text-3", item.logo ? "pb-4" : "pb-6")}>{fr(item.a)}</p>
+              {item.logo && <SolutionCompatible size="sm" className="mb-6" />}
             </details>
           ))}
         </div>
@@ -867,6 +877,7 @@ function FinalCta() {
         <div className="flex flex-col items-start bg-q-bg px-6 py-12 sm:px-12 sm:py-16">
           <SectionTitle title="Votre premier devis" accent="en quelques minutes." sub="Gratuit, sans carte bancaire. Vous ne payez qu'à partir de votre première facture." />
           <CtaButtons align="start" className="mt-9" />
+          <SolutionCompatible size="sm" className="mt-8" />
         </div>
         {photo && (
           <div className="relative min-h-[320px] bg-q-sunken">

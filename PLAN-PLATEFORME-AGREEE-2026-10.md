@@ -57,7 +57,7 @@ Dans l'ordre. Les étapes 1 à 4 se font cette semaine.
 4. **Consigner trois décisions** dans `DECISIONS-STRATEGIQUES.md` :
    - réception gratuite pour tous les comptes, y compris sans formule ; émission et e-reporting dans Essentiel ;
    - Super PDP nommé dans l'application, les CGU et la confidentialité (fournisseur, pas concurrent) ;
-   - aucune mention « conforme », « certifié » ou « solution compatible » avant qu'une vraie facture soit arrivée par la plateforme.
+   - aucune mention « conforme », « certifié » ou « solution compatible » avant qu'une vraie facture soit arrivée par la plateforme. *(Levée pour « solution compatible » le 17/10/2026 : le fondateur déclare le label obtenu, voir `DECISIONS-STRATEGIQUES.md` § 13. « Conforme » et « certifié » restent interdits.)*
 5. **Créer le compte de production** (représentant légal), passer la vérification d'identité sur téléphone et celle de l'entreprise, attendre le statut « verified ».
 6. **Créer l'application OAuth de production** : type confidentiel, retour exact `https://qonforme.fr/api/pa/callback`, IBAN et mandat SEPA (c'est l'abonnement payé par Qonforme). Le co-branding (logo et nom Qonforme sur les écrans de Super PDP) est facultatif.
 7. **Signer un accord de sous-traitance RGPD** avec Super PDP avant de l'ajouter à la politique de confidentialité. Faire préciser l'hébergement (France sur une page, Union européenne dans les CG).

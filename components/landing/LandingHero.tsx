@@ -3,6 +3,7 @@ import { Calculator, Check, ChevronRight, FileText, Hammer, HardHat, ReceiptText
 import { MacBook, IPhone, PhoneChrome, SCREENS } from "@/components/landing/devices"
 import { Doodles } from "@/components/brand/Doodles"
 import { CtaButtons } from "@/components/landing/ui"
+import { SolutionCompatible } from "@/components/brand/SolutionCompatible"
 
 /**
  * Héros de l'accueil : variante « Clair sobre » validée (DECISIONS § 6), au
@@ -111,6 +112,11 @@ function Hero() {
             </li>
           ))}
         </ul>
+
+        {/* Label de la DGFiP : règles de la charte dans components/brand/SolutionCompatible.tsx */}
+        <div className="lp-fade-up mt-8" style={{ animationDelay: ".4s" }}>
+          <SolutionCompatible priority />
+        </div>
       </div>
 
       <HeroDevices />
