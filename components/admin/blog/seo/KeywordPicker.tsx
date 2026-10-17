@@ -22,7 +22,7 @@
  */
 import { useEffect, useId, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { ArrowUpRight, Check, CircleCheck, CornerDownLeft, Loader2, PencilLine, Plus, RefreshCw, Search, Target, TriangleAlert, X } from "lucide-react"
+import { ArrowUpRight, Check, CircleCheck, CornerDownLeft, Loader2, PencilLine, Plus, RefreshCw, Search, Sparkles, Target, TriangleAlert, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { findMissingAccents } from "@/lib/seo/articles/onpage"
 import { keywordKey } from "@/lib/seo/articles/secondary"
@@ -130,6 +130,8 @@ export interface KeywordPickerProps {
   inputId?: string
   /** Search Console reliée (sinon la position se lit « — »). */
   gscConnected?: boolean
+  /** Ouvre la « Proposition IA » (requêtes exactes pour cet article) ; absent : pas de bouton. */
+  onPropose?: () => void
   className?: string
 }
 
@@ -145,6 +147,7 @@ export function KeywordPicker({
   selfId,
   inputId,
   gscConnected = true,
+  onPropose,
   className,
 }: KeywordPickerProps) {
   const uid = useId()
@@ -446,6 +449,13 @@ export function KeywordPicker({
             }}
           />
         )
+      )}
+
+      {onPropose && (
+        <button type="button" onClick={onPropose} className="q-btn q-btn-secondary q-btn-sm self-start max-md:!h-11">
+          <Sparkles aria-hidden />
+          {value ? "Proposer un mot-clé plus exact" : "Proposer un mot-clé exact"}
+        </button>
       )}
 
       {value && <Cannibalization value={value} pages={keywordPages} loading={loading} slug={slug} selfId={selfId ?? null} />}

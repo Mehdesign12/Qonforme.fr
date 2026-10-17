@@ -111,6 +111,7 @@ export function KeywordCard({
   seo,
   slug,
   selfId,
+  onPropose,
   className,
 }: {
   value: string | null
@@ -118,6 +119,8 @@ export function KeywordCard({
   seo: SeoContextState
   slug: string
   selfId: string | null
+  /** Ouvre la « Proposition IA » : requêtes exactes pour cet article. */
+  onPropose?: () => void
   className?: string
 }) {
   return (
@@ -135,6 +138,7 @@ export function KeywordCard({
           slug={slug}
           selfId={selfId}
           gscConnected={seo.data?.gsc.connected ?? true}
+          onPropose={onPropose}
         />
       </div>
     </SideCard>

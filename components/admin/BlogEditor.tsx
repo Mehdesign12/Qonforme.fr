@@ -99,6 +99,7 @@ import {
   useSaveShortcut,
   type ViewMemo,
 } from '@/components/admin/blog/shell/hooks'
+import { IdeasDialog } from '@/components/admin/seo/ideas/IdeasDialog'
 import { BlockedBanner, ConfirmDialog, DraftOfferBanner, EditorTabs, flashElement, ScheduleProposalBanner, type SaveState } from '@/components/admin/blog/shell/parts'
 import { EditorHeader } from '@/components/admin/blog/shell/EditorHeader'
 import { DocumentSheet } from '@/components/admin/blog/shell/DocumentSheet'
@@ -214,6 +215,8 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
   const [tab, setTab] = useState<EditorTab>(carried?.tab ?? 'redaction')
   const [headings, setHeadings] = useState<Heading[]>([])
   const [highlighted, setHighlighted] = useState<string[]>(carried?.highlighted ?? [])
+  // « Proposition IA » : requêtes exactes pour cet article
+  const [ideasOpen, setIdeasOpen] = useState(false)
 
   const editorRef = useRef<RichEditorHandle>(null)
   const tabsAnchorRef = useRef<HTMLDivElement>(null)
@@ -892,6 +895,7 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
             seo={seo}
             slug={draft.slug}
             selfId={id}
+            onPropose={() => setIdeasOpen(true)}
           />
           <GoogleCard
             className={tab === 'referencement' ? '' : 'max-xl:hidden'}
@@ -1046,6 +1050,21 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
         }
       />
 
+      {/* Proposition IA : requêtes exactes pour cet article */}
+      <IdeasDialog
+        open={ideasOpen}
+        onClose={() => setIdeasOpen(false)}
+        mode="article"
+        article={
+          ideasOpen
+            ? { title: draft.title.trim() || saved.title.trim(), content: draft.content, keyword: draft.keyword, articleType: articleTypeOf(draft.keyword, draft.title) }
+            : undefined
+        }
+        onUse={(idea) => {
+          patch({ keyword: idea.keyword })
+          seo.reload()
+        }}
+      />
     </div>
   )
 }

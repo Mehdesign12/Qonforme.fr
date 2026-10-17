@@ -22,6 +22,21 @@ export type TradeId =
   | "serrurier"
   | "paysagiste"
 
+/** Nom courant de chaque métier (listes déroulantes, consignes). */
+export const TRADE_LABELS: Record<TradeId, string> = {
+  chauffagiste: "chauffagiste",
+  plombier: "plombier",
+  electricien: "électricien",
+  macon: "maçon",
+  peintre: "peintre",
+  carreleur: "carreleur",
+  menuisier: "menuisier",
+  couvreur: "couvreur",
+  plaquiste: "plaquiste",
+  serrurier: "serrurier",
+  paysagiste: "paysagiste",
+}
+
 export const TRADE_KEYS: { id: TradeId; key: RegExp }[] = [
   { id: "chauffagiste", key: /chauffag|pompe a chaleur|chaudiere|\bpac\b/ },
   { id: "plombier", key: /plomb|sanitaire|chauffe-eau|robinet/ },

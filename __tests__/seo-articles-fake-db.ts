@@ -2,7 +2,7 @@
  * Base en mémoire pour les tests du module Articles : le sous-ensemble de
  * PostgREST utilisé par lib/seo/articles (select, insert, update, upsert,
  * delete ; filtres eq, neq, in, is, lt, lte, gte, like, or « col.is.null,col.lt."…" » ;
- * order, limit ; count en tête ; single, maybeSingle) et les contraintes qui
+ * order, limit, range ; count en tête ; single, maybeSingle) et les contraintes qui
  * comptent : adresse unique des articles, une rédaction active par sujet,
  * une ligne de réglages par clé. Un stockage simulé reçoit les couvertures.
  */
@@ -80,6 +80,7 @@ export function fakeArticlesDb(initial: Record<string, Row[]> = {}): FakeArticle
     let head = false
     let count = false
     let limit: number | null = null
+    let range: [number, number] | null = null
     const orders: { col: string; asc: boolean }[] = []
     let single: "single" | "maybe" | null = null
 
@@ -126,6 +127,7 @@ export function fakeArticlesDb(initial: Record<string, Row[]> = {}): FakeArticle
       let out = matched.map((r) => ({ ...r }))
       for (const o of orders.slice().reverse()) out.sort((a, b) => (o.asc ? cmp(a[o.col], b[o.col]) : -cmp(a[o.col], b[o.col])))
       if (head) return { data: null, error: null, count: matched.length }
+      if (range) out = out.slice(range[0], range[1] + 1)
       if (limit !== null) out = out.slice(0, limit)
       return finish(out, count ? matched.length : undefined)
     }
@@ -164,6 +166,7 @@ export function fakeArticlesDb(initial: Record<string, Row[]> = {}): FakeArticle
       or: (expr: string) => (filters.push(parseOr(expr)), api),
       order: (col: string, opts?: { ascending?: boolean }) => (orders.push({ col, asc: opts?.ascending !== false }), api),
       limit: (n: number) => ((limit = n), api),
+      range: (from: number, to: number) => ((range = [from, to]), api),
       single: () => ((single = "single"), Promise.resolve(run())),
       maybeSingle: () => ((single = "maybe"), Promise.resolve(run())),
       then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) => Promise.resolve(run()).then(resolve, reject),
