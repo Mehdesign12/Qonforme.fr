@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { Archive, ArchiveRestore, CalendarClock, Clock, Ellipsis, FilePen, Loader2, Lightbulb, PencilLine, RotateCcw, X } from "lucide-react"
+import { Archive, ArchiveRestore, CalendarClock, Clock, Ellipsis, FilePen, Loader2, Lightbulb, PencilLine, RotateCcw, Sparkles, X } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { EmptyState, SearchField } from "@/components/app/kit"
 import { cn } from "@/lib/utils"
@@ -25,6 +25,7 @@ import { Missing, Tag, TopicStatusPill, TypeTag } from "@/components/admin/seo/a
 import { dayTimeLabel } from "@/components/admin/seo/articles/fields"
 import { TopicDialog } from "@/components/admin/seo/articles/TopicDialogs"
 import { TopicFormDialog, type TopicFormValue } from "@/components/admin/seo/articles/TopicFormDialog"
+import { IdeasDialog } from "@/components/admin/seo/ideas/IdeasDialog"
 
 type StatusFilter = "tous" | "a-planifier" | "planifies" | "rediges"
 
@@ -65,6 +66,7 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
   const [query, setQuery] = useState("")
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState<string | null>(null)
+  const [ideasOpen, setIdeasOpen] = useState(false)
   const [editing, setEditing] = useState<TopicFormValue | null>(null)
   const [scheduling, setScheduling] = useState<TopicListItem | null>(null)
   const [progress, setProgress] = useState<{ index: number; total: number; title: string; state: RunnerState } | null>(null)
@@ -259,6 +261,12 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
         <div className="flex flex-wrap items-center gap-3 px-4 pb-4 pt-2 md:px-5">
           <SearchField value={query} onChange={setQuery} placeholder="Rechercher un sujet ou un mot-clé…" aria-label="Rechercher un sujet" className="w-full md:max-w-[380px] md:flex-1" />
           {!archived && (
+            <button type="button" onClick={() => setIdeasOpen(true)} className="q-btn q-btn-secondary max-md:q-btn-lg max-md:w-full">
+              <Sparkles aria-hidden />
+              Proposition IA
+            </button>
+          )}
+          {!archived && (
             <div className="-mx-4 w-[calc(100%+2rem)] overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:w-auto md:px-0">
               <div role="group" aria-label="Filtrer par statut" className="q-seg">
                 {FILTERS.map((f) => (
@@ -313,7 +321,7 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
           <EmptyState
             icon={<Lightbulb className="size-5" aria-hidden />}
             title={data.topics.length === 0 ? (archived ? "Aucun sujet archivé" : "Aucun sujet") : "Aucun sujet ne correspond"}
-            text={data.topics.length === 0 && !archived ? "Ajoutez un sujet, ou créez-en un depuis un mot-clé suivi." : "Changez de filtre ou de recherche."}
+            text={data.topics.length === 0 && !archived ? "Ajoutez un sujet, créez-en un depuis un mot-clé suivi, ou demandez des idées à la Proposition IA." : "Changez de filtre ou de recherche."}
           />
         ) : (
           <>
@@ -416,6 +424,7 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
         </div>
       </section>
 
+      <IdeasDialog open={ideasOpen} onClose={() => setIdeasOpen(false)} mode="topics" onAdopted={() => router.refresh()} />
       <TopicFormDialog
         open={addOpen || editing !== null}
         initial={editing}

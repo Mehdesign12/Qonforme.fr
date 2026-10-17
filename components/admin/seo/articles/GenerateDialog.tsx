@@ -19,11 +19,13 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { StatusPill } from "@/components/app/kit"
 import { cn } from "@/lib/utils"
 import { ARTICLE_TYPE_LABELS, KEYWORD_STATUS, type ArticleType } from "@/lib/seo/types"
-import type { GenerateDialogData } from "@/lib/seo/articles/data"
+import type { GenerateDialogData, TopicLite } from "@/lib/seo/articles/data"
+import type { AdoptResult, Idea } from "@/lib/seo/ideas/types"
 import { api } from "@/components/admin/seo/articles/api"
 import { useJobRunner } from "@/components/admin/seo/articles/job-runner"
 import { JobProgress } from "@/components/admin/seo/articles/JobProgress"
 import { Field, RadioCards, ScheduleFields, Select, type RadioOption } from "@/components/admin/seo/articles/fields"
+import { IdeasDialog } from "@/components/admin/seo/ideas/IdeasDialog"
 
 const NEW = "__new"
 const TYPES: ArticleType[] = ["howto", "guide", "news", "faq"]
@@ -66,6 +68,13 @@ export function GenerateDialog({
 }) {
   const router = useRouter()
   const runner = useJobRunner()
+  // Sujets créés par « Proposition IA » dans cette fenêtre, avant que la page ne les relise
+  const [adoptedTopics, setAdoptedTopics] = useState<TopicLite[]>([])
+  const topics = useMemo(() => {
+    const known = new Set(data.topics.map((t) => t.id))
+    return [...data.topics, ...adoptedTopics.filter((t) => !known.has(t.id))]
+  }, [data.topics, adoptedTopics])
+  const [ideasOpen, setIdeasOpen] = useState(false)
   const firstTopic = data.topics[0]
   const keywordSet = useMemo(() => new Set(data.keywords.map((k) => k.keyword)), [data.keywords])
 
@@ -86,9 +95,9 @@ export function GenerateDialog({
   const [topicId, setTopicId] = useState<string | null>(null)
 
   // Le mot-clé, le type et l'angle suivent le sujet choisi
-  const applyTopic = (id: string) => {
+  const applyTopic = (id: string, list: TopicLite[] = topics) => {
     setTopicChoice(id)
-    const topic = data.topics.find((t) => t.id === id)
+    const topic = list.find((t) => t.id === id)
     if (!topic) {
       setKeywordChoice("")
       setKeywordText("")
@@ -117,6 +126,28 @@ export function GenerateDialog({
     // Réinitialise à chaque ouverture (et au jour choisi dans le calendrier)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialDay, initialTime])
+
+  // Une idée de « Proposition IA » devient un sujet : il est aussitôt choisi ici
+  function onIdeaAdopted(result: AdoptResult, idea: Idea) {
+    if (!result.topicId) return
+    const existing = topics.find((t) => t.id === result.topicId)
+    const topic: TopicLite = existing ?? {
+      id: result.topicId,
+      title: idea.title,
+      keyword: result.keyword,
+      articleType: idea.articleType,
+      angle: null,
+      status: "unplanned",
+      scheduledAt: null,
+      publishMode: "draft",
+      lastError: null,
+      postId: null,
+    }
+    setAdoptedTopics((prev) => (prev.some((t) => t.id === topic.id) ? prev : [...prev, topic]))
+    applyTopic(topic.id, existing ? topics : [...topics, topic])
+    setIdeasOpen(false)
+    router.refresh()
+  }
 
   const keyword = keywordChoice === NEW ? keywordText.trim() : keywordChoice
   const trackedStatus = data.keywords.find((k) => k.keyword === keyword)
@@ -230,7 +261,7 @@ export function GenerateDialog({
 
               <Field label="Sujet" htmlFor="gen-sujet" hint={topicChoice !== NEW ? "Le mot-clé et le type suivent le sujet choisi." : undefined}>
                 <Select id="gen-sujet" value={topicChoice} onChange={(e) => applyTopic(e.target.value)}>
-                  {data.topics.map((t) => (
+                  {topics.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.title}
                     </option>
@@ -238,6 +269,10 @@ export function GenerateDialog({
                   <option value={NEW}>Saisir un autre sujet</option>
                 </Select>
               </Field>
+              <button type="button" onClick={() => setIdeasOpen(true)} className="q-btn q-btn-secondary q-btn-sm -mt-2 self-start max-md:!h-11">
+                <Sparkles aria-hidden />
+                Proposition IA
+              </button>
               {topicChoice === NEW && (
                 <Field label="Nouveau sujet" htmlFor="gen-titre" error={fieldErrors.title}>
                   <input
@@ -375,6 +410,7 @@ export function GenerateDialog({
             </div>
           </form>
         )}
+        <IdeasDialog open={ideasOpen} onClose={() => setIdeasOpen(false)} mode="topics" onAdopted={onIdeaAdopted} />
       </DialogContent>
     </Dialog>
   )
