@@ -109,6 +109,8 @@ export interface GenerateTextResult {
   text: string
   model: string
   usage: { inputTokens: number | null; outputTokens: number | null }
+  /** Repli utilisé : modèle demandé et motif (« Gemini indisponible (503) »). */
+  fallbackFrom?: { model: string; reason: string }
 }
 
 function requireKey(env: ModelKeyEnv): string {
@@ -117,15 +119,59 @@ function requireKey(env: ModelKeyEnv): string {
   return key
 }
 
-export async function generateText(input: GenerateTextInput): Promise<GenerateTextResult> {
-  const def = findTextModel(input.model)
-  if (!def) throw new ModelError("unknown_model", `Modèle de rédaction inconnu : ${input.model}.`)
+async function generateTextWith(def: TextModelDef, input: GenerateTextInput, timeoutMs: number): Promise<GenerateTextResult> {
   const key = requireKey(def.envKey)
   const maxOutputTokens = Math.min(input.maxOutputTokens, def.maxOutputTokens)
-  const timeoutMs = Math.max(5_000, input.timeoutMs ?? DEFAULT_TIMEOUT_MS)
   return def.provider === "anthropic"
     ? anthropicText(def, key, { ...input, maxOutputTokens }, timeoutMs)
     : geminiText(def, key, { ...input, maxOutputTokens }, timeoutMs)
+}
+
+/** Temps minimal qu'il faut encore pour tenter le modèle de repli (sinon l'erreur d'origine est rendue). */
+const FALLBACK_MIN_MS = 15_000
+
+/** Motif court d'une erreur de fournisseur, sans la phrase « Nouvel essai au prochain passage. ». */
+function failureReason(error: ModelError): string {
+  return error.message.replace(/\s*Nouvel essai au prochain passage\.?\s*$/i, "").replace(/\.$/, "")
+}
+
+/** Modèle de repli d'un modèle dont le fournisseur reste indisponible ; null si l'erreur n'en justifie pas ou si sa clé manque. */
+function fallbackDefFor(def: TextModelDef, error: unknown): TextModelDef | null {
+  // Seule une panne du fournisseur (surcharge, 5xx, réseau) change de modèle : un refus, une réponse
+  // vide ou coupée, un délai dépassé ou une clé refusée n'ont rien à voir avec la disponibilité
+  if (!(error instanceof ModelError) || error.kind !== "http" || !error.retryable) return null
+  const fb = def.fallback ? findTextModel(def.fallback) : null
+  return fb && fb.id !== def.id && hasKey(fb.envKey) ? fb : null
+}
+
+/**
+ * Texte d'un modèle. Quand son fournisseur reste indisponible après les
+ * nouveaux essais de l'appel (geminiCall), la même consigne part au modèle de
+ * repli (`fallback` du registre) avec le temps qui reste ; `fallbackFrom`
+ * l'indique à l'appelant, qui le dit à l'écran. Si le repli échoue aussi, c'est
+ * l'erreur d'origine qui est rendue : elle dit ce qui s'est vraiment passé.
+ */
+export async function generateText(input: GenerateTextInput): Promise<GenerateTextResult> {
+  const def = findTextModel(input.model)
+  if (!def) throw new ModelError("unknown_model", `Modèle de rédaction inconnu : ${input.model}.`)
+  const timeoutMs = Math.max(5_000, input.timeoutMs ?? DEFAULT_TIMEOUT_MS)
+  const startedAt = Date.now()
+  try {
+    return await generateTextWith(def, input, timeoutMs)
+  } catch (error) {
+    const fallback = fallbackDefFor(def, error)
+    const left = timeoutMs - (Date.now() - startedAt)
+    if (!fallback || left < FALLBACK_MIN_MS) throw error
+    const reason = failureReason(error as ModelError)
+    console.warn(`[seo-articles] ${def.label} indisponible, repli sur ${fallback.label} : ${reason}`)
+    try {
+      const res = await generateTextWith(fallback, input, left)
+      return { ...res, fallbackFrom: { model: def.id, reason } }
+    } catch (fallbackError) {
+      console.warn(`[seo-articles] repli sur ${fallback.label} en échec : ${fallbackError instanceof Error ? fallbackError.message.slice(0, 160) : ""}`)
+      throw error
+    }
+  }
 }
 
 /** Client Anthropic : remplaçable dans les tests. */
@@ -212,21 +258,59 @@ interface GeminiResponse {
 
 const GEMINI_REFUSALS = new Set(["SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION", "IMAGE_SAFETY", "IMAGE_PROHIBITED_CONTENT"])
 
+/** Statuts d'une surcharge ou d'une limite de débit passagère : l'appel est rejoué après une pause. */
+const TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504])
+/** Pauses avant le 2ᵉ et le 3ᵉ essai d'un appel (une surcharge de Google dure de quelques secondes à une minute). */
+const RETRY_PAUSES_MS = [2_000, 6_000]
+/** Temps qu'il doit rester après une pause pour qu'un nouvel essai ait une chance d'aboutir. */
+const RETRY_MIN_LEFT_MS = 15_000
+const RETRY_AFTER_MAX_MS = 10_000
+
+let sleepImpl: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/** Pause remplaçable : les tests ne l'attendent pas. */
+export function setSleepForTests(fn: ((ms: number) => Promise<void>) | null): void {
+  sleepImpl = fn ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)))
+}
+
+/** Pause demandée par l'en-tête « Retry-After » (secondes), bornée ; null si absent ou illisible. */
+function retryAfterMs(res: Response): number | null {
+  const raw = res.headers?.get?.("retry-after")
+  const seconds = raw ? Number(raw) : NaN
+  return Number.isFinite(seconds) && seconds > 0 ? Math.min(RETRY_AFTER_MAX_MS, Math.max(1_000, Math.round(seconds * 1000))) : null
+}
+
+/**
+ * Appel de Gemini. Une surcharge passagère (503, 500, 502, 504) ou une limite
+ * de débit (429) est rejouée deux fois après une pause (2 s, 6 s ; « Retry-After »
+ * respecté, borné à 10 s), tant qu'il reste assez de temps dans `timeoutMs` ;
+ * le délai dépassé n'est jamais rejoué. Sans cela, trois essais en dix secondes
+ * échouaient tous pendant une surcharge qui dure une minute.
+ */
 async function geminiCall(apiModel: string, key: string, body: unknown, timeoutMs: number): Promise<GeminiResponse> {
+  const startedAt = Date.now()
   let res: Response
-  try {
-    res = await fetch(`${GEMINI_API}/models/${encodeURIComponent(apiModel)}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify(body),
-      cache: "no-store",
-      signal: AbortSignal.timeout(timeoutMs),
-    })
-  } catch (error) {
-    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
-      throw new ModelError("timeout", "Gemini n'a pas répondu à temps. Nouvel essai au prochain passage.")
+  for (let attempt = 0; ; attempt++) {
+    const left = timeoutMs - (Date.now() - startedAt)
+    try {
+      res = await fetch(`${GEMINI_API}/models/${encodeURIComponent(apiModel)}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify(body),
+        cache: "no-store",
+        signal: AbortSignal.timeout(Math.max(1_000, left)),
+      })
+    } catch (error) {
+      if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+        throw new ModelError("timeout", "Gemini n'a pas répondu à temps. Nouvel essai au prochain passage.")
+      }
+      throw new ModelError("http", "Gemini injoignable pour le moment.")
     }
-    throw new ModelError("http", "Gemini injoignable pour le moment.")
+    if (res.ok || !TRANSIENT_STATUSES.has(res.status) || attempt >= RETRY_PAUSES_MS.length) break
+    const pause = retryAfterMs(res) ?? RETRY_PAUSES_MS[attempt]
+    if (timeoutMs - (Date.now() - startedAt) - pause < RETRY_MIN_LEFT_MS) break
+    console.warn(`[seo-articles] Gemini ${res.status} sur ${apiModel}, nouvel essai dans ${Math.round(pause / 1000)} s`)
+    await sleepImpl(pause)
   }
   const data = (await res.json().catch(() => ({}))) as GeminiResponse
   if (!res.ok) {

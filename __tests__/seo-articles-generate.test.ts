@@ -307,6 +307,61 @@ describe("rédaction en plusieurs passes", () => {
   })
 })
 
+describe("fournisseur indisponible", () => {
+  it("le plan tourne sur le modèle de repli : notice à l'écran, modèle réellement utilisé gardé pour l'état et les coûts", async () => {
+    mocks.text.mockImplementation(async ({ model, system, prompt }: { model: string; system: string; prompt: string }) => {
+      const pass = prompt.slice(0, 7)
+      calls.push({ model, pass, system, prompt })
+      const usage = { inputTokens: 100, outputTokens: 50 }
+      // Le plan est demandé à Gemini 3.8 Flash, indisponible : generateText répond avec le repli et le dit
+      if (pass === "PASSE 1") {
+        return { text: JSON.stringify(PLAN), model: "claude-sonnet-5-5", usage, fallbackFrom: { model, reason: "Gemini indisponible (503)" } }
+      }
+      if (pass === "PASSE 2") return { text: writeContent, model, usage }
+      if (pass === "PASSE 3") return { text: JSON.stringify({ problems: reviewProblems }), model, usage }
+      if (pass === "PASSE 4") return { text: fixContent, model, usage }
+      throw new Error(`passe inattendue : ${pass}`)
+    })
+    const { client, topicId } = setup()
+    const job = await startJob(client, topicId)
+    const first = await runJobStep(client, job.id, { deadline: Date.now() + 290_000 })
+    expect(first).toMatchObject({ ran: "plan", status: "queued", step: "write", error: null })
+    expect(first.notices).toContain("Plan par Claude Sonnet 5.5 au lieu de Gemini 3.8 Flash : Gemini indisponible (503).")
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.at(-1)?.status).toBe("done")
+    // La rédaction, elle, n'a pas bougé : le repli ne vaut que pour la passe qui en avait besoin
+    expect(calls.find((c) => c.pass === "PASSE 2")?.model).toBe("claude-opus-5-5")
+  })
+
+  it("trois essais en échec : le message ne promet plus de nouvel essai, et « Réessayer » reste proposé", async () => {
+    const { ModelError } = await import("@/lib/seo/articles/models")
+    mocks.text.mockRejectedValue(new ModelError("http", "Gemini indisponible (503). Nouvel essai au prochain passage."))
+    const { db, client, topicId } = setup()
+    const job = await startJob(client, topicId)
+    const outcomes = await runAll(client, job.id)
+    // Deux premiers échecs : la rédaction attend le prochain passage, le message le dit
+    expect(outcomes[0]).toMatchObject({ status: "queued", error: "Gemini indisponible (503). Nouvel essai au prochain passage." })
+    expect(outcomes[1]).toMatchObject({ status: "queued" })
+    // Troisième : définitif
+    const last = outcomes.at(-1)
+    expect(last).toMatchObject({ status: "failed" })
+    expect(last?.error).toContain("Gemini indisponible (503)")
+    expect(last?.error).not.toContain("Nouvel essai au prochain passage")
+    expect(last?.error).toContain("« Réessayer »")
+    expect(db.tables.seo_topics[0]).toMatchObject({ status: "failed" })
+    expect(String(db.tables.seo_topics[0].last_error)).toContain("« Réessayer »")
+  })
+
+  it("un échec définitif d'une autre nature garde son message tel quel", async () => {
+    const { ModelError } = await import("@/lib/seo/articles/models")
+    mocks.text.mockRejectedValue(new ModelError("not_configured", "Clé GEMINI_API_KEY refusée par Google : vérifiez-la dans les variables d'environnement.", false))
+    const { client, topicId } = setup()
+    const job = await startJob(client, topicId)
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.at(-1)).toMatchObject({ status: "failed", error: "Clé GEMINI_API_KEY refusée par Google : vérifiez-la dans les variables d'environnement." })
+  })
+})
+
 describe("publication à l'heure prévue et tâche planifiée", () => {
   it("après contrôle, date à venir : enregistré planifié, publié à l'heure si le contrôle ne repère rien", async () => {
     const at = new Date(Date.now() + 3 * 3600_000).toISOString()

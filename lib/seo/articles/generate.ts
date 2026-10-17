@@ -513,6 +513,16 @@ async function callText(env: StepEnv, pass: ModelPass, prompt: string, opts: { s
     json: opts.schema ? { schema: opts.schema } : undefined,
     timeoutMs: env.timeoutMs,
   })
+  if (res.fallbackFrom) {
+    // Fournisseur indisponible (surcharge, 5xx) malgré les nouveaux essais : la passe a tourné sur le modèle de repli
+    const outage = `${PASS_LABELS[pass]} par ${modelLabel(res.model)} au lieu de ${modelLabel(res.fallbackFrom.model)} : ${res.fallbackFrom.reason}.`
+    return {
+      text: res.text,
+      usage: res.usage,
+      choice: { model: res.model, requested: choice.requested, fallbackReason: res.fallbackFrom.reason },
+      notice: [notice, outage].filter(Boolean).join(" "),
+    }
+  }
   return { text: res.text, usage: res.usage, choice, notice }
 }
 
@@ -882,6 +892,13 @@ async function acquireJobLock(db: SeoDb, id: string, now: Date): Promise<JobRow 
   return rows[0] ?? null
 }
 
+/** Message d'un échec définitif après plusieurs essais : sans « Nouvel essai au prochain passage », qui ne serait plus vrai. */
+export function exhaustedMessage(message: string): string {
+  const base = message.replace(/\s*Nouvel essai au prochain passage\.?\s*$/i, "").replace(/\s+$/, "")
+  if (base === message.trim()) return message
+  return `${base.replace(/\.$/, "")}. Plusieurs essais ont échoué : « Réessayer » relance la rédaction, dans quelques minutes si le fournisseur reste surchargé.`
+}
+
 /** Message d'échec affiché (jamais de secret : les erreurs de modèle sont déjà rédigées pour l'écran). */
 function failureMessage(error: unknown): { message: string; fatal: boolean } {
   if (error instanceof CompetitorLeakError) {
@@ -943,6 +960,8 @@ export async function runJobStep(db: SeoDb, jobId: string, opts: { now?: Date; d
     const attempts = (job.attempts ?? 0) + 1
     const failed = fatal || attempts >= MAX_ATTEMPTS
     const nowIso = new Date().toISOString()
+    // Trois essais échoués : la rédaction ne reprend plus toute seule, le message ne promet donc plus de nouvel essai
+    const shown = failed && !fatal ? exhaustedMessage(message) : message
     // État relu : une passe a pu y noter son motif (plan refusé) avant d'échouer
     const latest = (await readJob(db, jobId)) ?? job
     const rows = must(
@@ -951,7 +970,7 @@ export async function runJobStep(db: SeoDb, jobId: string, opts: { now?: Date; d
         .update({
           status: failed ? "failed" : "queued",
           attempts,
-          error: message,
+          error: shown,
           lock_until: null,
           updated_at: nowIso,
           state: { ...latest.state, passes: (latest.state?.passes ?? 0) + 1, lastFailure: { step, fatal, message } },
@@ -963,10 +982,10 @@ export async function runJobStep(db: SeoDb, jobId: string, opts: { now?: Date; d
     if (failed && job.topic_id) {
       const { error: topicError } = await db
         .from("seo_topics")
-        .update({ status: "failed", last_error: message, updated_at: nowIso })
+        .update({ status: "failed", last_error: shown, updated_at: nowIso })
         .eq("id", job.topic_id)
       if (topicError) console.error("[seo-articles] sujet non passé en échec", topicError.message)
     }
-    return outcomeOf(rows[0] ?? { ...job, status: failed ? "failed" : "queued", error: message, attempts }, step)
+    return outcomeOf(rows[0] ?? { ...job, status: failed ? "failed" : "queued", error: shown, attempts }, step)
   }
 }
