@@ -24,6 +24,8 @@ import { auditArticle } from "@/lib/blog-audit"
 import { findCompetitorMentions } from "@/lib/seo/competitors"
 import { slugify } from "@/lib/seo/articles/check"
 import { matchKeyword, normalizeForMatch } from "@/lib/seo/articles/onpage"
+import { FREE_RULE, keywordArticleMismatch, keywordForm, titleDirectives } from "@/lib/seo/articles/search-language"
+import type { ArticleType } from "@/lib/seo/types"
 import type { SuggestField, SuggestRequest, SuggestResponse, Suggestion } from "@/lib/seo/articles/editor-types"
 
 export interface SuggestFieldDef {
@@ -79,14 +81,14 @@ const range = (field: SuggestField) => `${SUGGEST_FIELDS[field].targetMin} à ${
 const FIELD_RULES: Record<SuggestField, string[]> = {
   seoTitle: [
     `Titre affiché par Google (balise title) : ${range("seoTitle")}.`,
-    "Le mot-clé principal au début, dans une tournure naturelle, écrit avec ses accents.",
+    "La phrase de la recherche (le mot-clé) en début de titre quand elle décrit vraiment l'article, écrite avec ses accents.",
     "Sans « | Qonforme » : le site l'ajoute lui-même.",
     "Pas de majuscule à chaque mot, pas de point d'exclamation, pas de point final.",
     "Une année seulement si l'article porte sur une règle datée.",
   ],
   seoDescription: [
     `Description affichée sous le titre dans Google : ${range("seoDescription")}.`,
-    "Un bénéfice concret pour l'artisan qui lit, et le mot-clé principal.",
+    "Un bénéfice concret pour l'artisan qui lit, avec les mots de la recherche (le mot-clé) dès la première phrase.",
     "Vouvoiement. Une ou deux phrases, terminées par un point.",
   ],
   slug: [
@@ -100,7 +102,7 @@ const FIELD_RULES: Record<SuggestField, string[]> = {
   ],
   title: [
     `Titre principal de l'article (affiché en haut de la page) : ${range("title")}.`,
-    "Clair et précis, avec le mot-clé principal dans une tournure naturelle.",
+    "Clair et précis, dans les mots de la personne qui cherche cet article.",
     "Pas de majuscule à chaque mot, pas de point d'exclamation.",
   ],
 }
@@ -119,12 +121,20 @@ const COMMON_RULES = [
   "Jamais « PDP » : dites « plateforme agréée ». N'écrivez jamais que Qonforme est certifié, homologué ou agréé.",
   "N'inventez aucun chiffre, aucune date, aucun taux, aucun montant : seulement ce qui figure dans l'article.",
   "Aucune promesse de contact humain (appel, rendez-vous, réponse personnalisée).",
+  FREE_RULE,
   "Seulement des faits présents dans l'article ci-dessous.",
 ]
 
 /** Retire les chevrons (délimiteurs de la consigne) et réduit les espaces d'un texte venu de l'éditeur. */
 function promptText(text: string, max: number): string {
   return text.replace(/[<>]/g, " ").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim().slice(0, max)
+}
+
+const ARTICLE_KIND_LABEL: Record<ArticleType, string> = {
+  howto: "how-to (« comment faire »)",
+  guide: "guide",
+  news: "actualité",
+  faq: "FAQ (questions et réponses)",
 }
 
 /** Consigne d'un champ : contexte de l'article, règles du champ, règles communes, format JSON. */
@@ -136,10 +146,16 @@ export function buildSuggestPrompt(req: SuggestRequest): string {
   ]
   const secondary = (req.secondary ?? []).map((s) => promptText(s, 120)).filter(Boolean).slice(0, 10)
   if (secondary.length > 0) lines.push(`Mots-clés secondaires (facultatifs) : ${secondary.map((s) => `« ${s} »`).join(", ")}`)
+  if (req.articleType) lines.push(`Type d'article : ${ARTICLE_KIND_LABEL[req.articleType]}`)
   if (req.title.trim()) lines.push(`Titre de l'article : ${promptText(req.title, 200)}`)
   if (req.excerpt?.trim()) lines.push(`Chapeau : ${promptText(req.excerpt, 600)}`)
   if (req.current?.trim()) lines.push(`Valeur actuelle (ne la reprenez pas telle quelle) : ${promptText(req.current, 400)}`)
   lines.push("", "CONSIGNES POUR CE CHAMP :", ...FIELD_RULES[req.field].map((r) => `- ${r}`))
+  if (req.field === "seoTitle" || req.field === "title") {
+    lines.push("", "LANGAGE DE LA RECHERCHE (le client final tape sa requête, le titre lui répond) :", ...titleDirectives(req.articleType, keywordForm(req.keyword)).map((r) => `- ${r}`))
+  }
+  const mismatch = keywordArticleMismatch(req.keyword, req.articleType)
+  if (mismatch) lines.push("", `ATTENTION : ${mismatch}`)
   lines.push("", "RÈGLES COMMUNES :", ...COMMON_RULES.map((r) => `- ${r}`))
   const content = promptText(req.content, SUGGEST_CONTENT_MAX)
   lines.push("", "ARTICLE (Markdown) :", "<<<", content || "(texte pas encore écrit : appuyez-vous sur le titre et le chapeau)", ">>>")
@@ -224,8 +240,22 @@ function idealGap(field: SuggestField, length: number): number {
   return 0
 }
 
+/** Contexte facultatif du contrôle d'un titre : mot-clé et type d'article. */
+export interface RejectOptions {
+  keyword?: string | null
+  articleType?: ArticleType | null
+}
+
+/** Vrai si le titre commence par le mot-clé suivi de deux-points ou d'un tiret (« Logiciel devis : … »). */
+function startsWithKeywordPrefix(text: string, keyword: string): boolean {
+  const k = normalizeForMatch(keyword)
+  if (!k) return false
+  const m = /^(.{1,80}?)\s*[:–—-]\s+\S/.exec(text)
+  return m ? normalizeForMatch(m[1]) === k : false
+}
+
 /** Raison du refus d'une proposition nettoyée ; null : elle passe. */
-export function rejectReason(field: SuggestField, text: string, competitors: string[]): string | null {
+export function rejectReason(field: SuggestField, text: string, competitors: string[], opts: RejectOptions = {}): string | null {
   const def = SUGGEST_FIELDS[field]
   if (!text) return "vide"
   if (text.length < def.min || text.length > def.max) return "longueur"
@@ -236,6 +266,10 @@ export function rejectReason(field: SuggestField, text: string, competitors: str
   if (/qonforme[^.\n]{0,40}agréé/i.test(text)) return "affirmation"
   if (competitors.length > 0 && findCompetitorMentions(field === "slug" ? text.replace(/-/g, " ") : text, competitors).length > 0) return "concurrent"
   if ((field === "seoTitle" || field === "title") && (text.includes("!") || isTitleCase(text))) return "forme"
+  // « Facturer gratuitement avec Qonforme » : la facturation de Qonforme est dans la formule payante
+  if (/\bgratuit(?:e|es|ement)?\b/i.test(text) && /\bfactur/i.test(text) && /qonforme/i.test(text)) return "affirmation"
+  // Mot-clé d'achat en préfixe d'un titre « comment faire », FAQ ou actualité
+  if ((field === "seoTitle" || field === "title") && opts.keyword && keywordArticleMismatch(opts.keyword, opts.articleType) && startsWithKeywordPrefix(text, opts.keyword)) return "préfixe"
   if (field === "slug") {
     const words = text.split("-").filter(Boolean).length
     if (words < 2 || words > 8) return "longueur"
@@ -251,6 +285,8 @@ export interface SuggestFilterContext {
   competitors: string[]
   /** Adresses déjà prises par d'autres articles (champ « slug »). */
   taken?: string[]
+  /** Type de l'article : les titres qui parlent comme la recherche passent en premier. */
+  articleType?: ArticleType | null
 }
 
 /**
@@ -270,7 +306,7 @@ export function filterSuggestions(field: SuggestField, raw: string[], ctx: Sugge
     const key = normalizeForMatch(field === "slug" ? text.replace(/-/g, " ") : text)
     if (!key || seen.has(key) || key === currentKey) return
     seen.add(key)
-    if (rejectReason(field, text, ctx.competitors) || (field === "slug" && taken.has(text))) {
+    if (rejectReason(field, text, ctx.competitors, { keyword: ctx.keyword, articleType: ctx.articleType }) || (field === "slug" && taken.has(text))) {
       rejected++
       return
     }
@@ -278,8 +314,22 @@ export function filterSuggestions(field: SuggestField, raw: string[], ctx: Sugge
     kept.push({ text, length: text.length, hasKeyword: ctx.keyword.trim() ? matchKeyword(haystack, ctx.keyword) === "exact" : false, order })
   })
 
+  // Mot-clé qui ne correspond pas à l'article : sa présence ne compte plus, la forme de la recherche si
+  const mismatched = keywordArticleMismatch(ctx.keyword, ctx.articleType) !== null
+  const speaksLikeSearch = (text: string): number => {
+    if (field !== "seoTitle" && field !== "title") return 0
+    if (ctx.articleType === "howto") return /^comment\b/i.test(text) ? 1 : 0
+    if (ctx.articleType === "faq") return /\?$/.test(text) ? 1 : 0
+    return 0
+  }
   const suggestions = kept
-    .sort((a, b) => Number(b.hasKeyword) - Number(a.hasKeyword) || idealGap(field, a.length) - idealGap(field, b.length) || a.order - b.order)
+    .sort(
+      (a, b) =>
+        (mismatched ? 0 : Number(b.hasKeyword) - Number(a.hasKeyword)) ||
+        speaksLikeSearch(b.text) - speaksLikeSearch(a.text) ||
+        idealGap(field, a.length) - idealGap(field, b.length) ||
+        a.order - b.order,
+    )
     .slice(0, SUGGEST_SHOWN)
     .map(({ text, length, hasKeyword }) => ({ text, length, hasKeyword }))
   return { suggestions, rejected }

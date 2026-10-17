@@ -22,6 +22,8 @@ import { findCompetitorMentions } from "@/lib/seo/competitors"
 import { DUPLICATE_THRESHOLD, isAllowedLink, titleSimilarity, wordCount } from "@/lib/seo/articles/check"
 import { shortenTitle, SUFFIX, TITLE_MAX } from "@/lib/seo/meta"
 import { isSafeHref } from "@/lib/markdown"
+import { keywordArticleMismatch } from "@/lib/seo/articles/search-language"
+import type { ArticleType } from "@/lib/seo/types"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -56,6 +58,8 @@ export interface OnPageInput {
   /** Texte en Markdown (format enregistré). */
   content: string
   keyword: string | null
+  /** Type de l'article (enregistré ou déduit) : un mot-clé d'achat sur un « comment faire » est signalé. */
+  articleType?: ArticleType | null
   /** Mots-clés secondaires retenus (comptés dans le texte, sans effet sur le score). */
   secondary?: string[]
   coverUrl: string | null
@@ -489,6 +493,12 @@ export function analyzeOnPage(input: OnPageInput): OnPageResult {
     target: "keyword",
     weight: 10,
   })
+
+  // Mot-clé qui ne ressemble pas à la recherche de ce type d'article
+  const mismatch = hasKeyword ? keywordArticleMismatch(keyword, input.articleType) : null
+  if (mismatch) {
+    add({ id: "kw-fit", label: "Mot-clé adapté à l'article", status: "warn", detail: mismatch, target: "keyword", weight: 6 })
+  }
 
   // Titre Google
   const titleMatch = hasKeyword ? matchKeyword(effectiveTitle, keyword) : "none"

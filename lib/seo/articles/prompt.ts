@@ -19,6 +19,7 @@
 import { referenceFacts } from "@/lib/ai/reference-facts"
 import type { ArticleType } from "@/lib/seo/types"
 import type { ArticleSettings, BrandSettings, StrategySettings } from "@/lib/seo/settings"
+import { FREE_RULE, keywordForm, titleDirectives } from "@/lib/seo/articles/search-language"
 
 /* ------------------------------------------------------------------ */
 /* Faits de référence                                                  */
@@ -176,6 +177,7 @@ export function buildSystemPrompt({ brand, strategy, prefs }: PromptContext, rol
     `- Ne présentez comme fonction de ${name} que ce qui figure dans l'offre et les bénéfices ci-dessus.`,
     "- Ne promettez aucun contact humain : ni appel, ni rendez-vous, ni visio, ni réponse personnalisée, ni support téléphonique.",
     "- Dites « plateforme agréée », jamais « PDP ».",
+    `- ${FREE_RULE}`,
     "- Si vous n'êtes pas sûr d'une règle, d'un chiffre ou d'un article de loi, ne le citez pas.",
   )
   if (prefs.officialSources) {
@@ -266,6 +268,7 @@ export function buildPlanPrompt(brief: ArticleBrief, opts: { existingTitles: str
       : "FAQ : aucune (laissez la liste vide).",
   ]
   if (brief.notes) lines.push(`Notes de l'équipe : ${brief.notes}`)
+  lines.push("", "FORMULATION DU TITRE (le titre parle comme la personne qui cherche) :", ...titleDirectives(brief.articleType, keywordForm(brief.keyword)).map((r) => `- ${r}`))
   if (opts.existingTitles.length > 0) {
     lines.push("", "ARTICLES DÉJÀ PUBLIÉS OU EN PRÉPARATION (ne reprenez ni leur titre ni leur angle) :", ...opts.existingTitles.map((t) => `- ${t}`))
   }
@@ -273,7 +276,7 @@ export function buildPlanPrompt(brief: ArticleBrief, opts: { existingTitles: str
   lines.push(
     "",
     "Répondez uniquement en JSON avec ces champs :",
-    "- title : titre de 70 caractères au plus, avec le mot-clé cible si c'est naturel, sans nom d'autre logiciel ;",
+    "- title : titre de 70 caractères au plus, dans la formulation de la recherche décrite plus haut (jamais un mot-clé générique en préfixe), sans nom d'autre logiciel ;",
     "- slug : adresse courte en minuscules sans accents, mots séparés par des tirets ;",
     "- metaDescription : description pour Google de 120 à 155 caractères, qui donne envie de lire, sans promesse invérifiable ;",
     "- outline : 4 à 8 sections { h2, h3: [sous-sections] }, sans section FAQ ni conclusion (elles sont ajoutées à la rédaction) ;",

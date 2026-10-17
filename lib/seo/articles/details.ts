@@ -33,6 +33,7 @@ import { canonicalKeyword, foldAccents } from "@/lib/seo/keywords/normalize"
 import { PLAN_KEYWORDS, type PlanKeyword } from "@/lib/seo/keywords/plan"
 import type { KeywordRow } from "@/lib/seo/keywords/types"
 import { analyzeOnPage, sortChecks } from "@/lib/seo/articles/onpage"
+import { inferArticleType } from "@/lib/seo/articles/search-language"
 import { loadCheckContext } from "@/lib/seo/articles/publish"
 import { articleDisplayStatus, articleSource, POST_COLUMNS, type PostRow } from "@/lib/seo/articles/status"
 import type { ArticleType } from "@/lib/seo/types"
@@ -296,6 +297,7 @@ export async function loadArticleDetails(db: SeoDb, id: string, now: Date = new 
     excerpt: row.excerpt ?? "",
     content,
     keyword: target,
+    articleType: ARTICLE_TYPES.includes(row.article_type as ArticleType) ? (row.article_type as ArticleType) : inferArticleType(target, row.title),
     coverUrl: row.cover_url,
     coverAlt: row.cover_alt,
     otherTitles: ctx.existing,

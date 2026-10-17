@@ -91,6 +91,8 @@ export type SuggestField = "seoTitle" | "seoDescription" | "slug" | "excerpt" | 
 export interface SuggestRequest {
   field: SuggestField
   keyword: string
+  /** Type de l'article (how-to, guide, actualité, FAQ) : les titres parlent comme la recherche de ce type. */
+  articleType?: "howto" | "guide" | "news" | "faq"
   secondary?: string[]
   title: string
   excerpt?: string

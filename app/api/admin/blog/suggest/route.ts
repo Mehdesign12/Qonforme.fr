@@ -47,6 +47,7 @@ const suggestSchema = z.object({
     .string({ message: "Choisissez d'abord le mot-clé principal de l'article." })
     .transform((s) => canonicalKeyword(s))
     .pipe(z.string().min(2, "Choisissez d'abord le mot-clé principal de l'article.").max(120, "Mot-clé de 120 caractères au plus")),
+  articleType: z.enum(["howto", "guide", "news", "faq"]).optional(),
   secondary: z.array(z.string().trim().max(120)).max(20).optional(),
   title: z.string().trim().max(300, "Titre trop long"),
   excerpt: z.string().trim().max(1000).optional(),
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest) {
   const brief: SuggestRequest = {
     field: input.field,
     keyword: input.keyword,
+    articleType: input.articleType,
     secondary: (input.secondary ?? []).filter((s) => findCompetitorMentions(s, competitors).length === 0),
     title: redact(input.title) ?? "",
     excerpt: redact(input.excerpt),
@@ -121,6 +123,7 @@ export async function POST(request: NextRequest) {
       current: input.current ?? null,
       competitors,
       taken,
+      articleType: input.articleType ?? null,
     })
     if (body.suggestions.length === 0) {
       return NextResponse.json(
