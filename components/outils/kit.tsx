@@ -514,8 +514,8 @@ export function ToolCard({
         lg ? "p-5 sm:p-7" : "p-5",
       )}
     >
-      <span className={cn("grid shrink-0 place-items-center rounded-xl bg-q-wash text-q-accent-strong", lg ? "mb-4 h-11 w-11 sm:mb-6" : "mb-4 h-10 w-10")}>
-        <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+      <span className={cn("flex shrink-0 items-center text-q-accent-strong", lg ? "mb-4 h-11 sm:mb-6" : "mb-4 h-10")}>
+        <Icon className={lg ? "h-9 w-9" : "h-8 w-8"} strokeWidth={1.4} aria-hidden />
       </span>
       <Tag className={cn("font-display font-semibold tracking-[-0.02em] text-q-ink-strong transition-colors group-hover:text-q-accent-strong", lg ? "text-[21px] leading-[1.2]" : "text-[17px] leading-[1.25]")}>
         {title}

@@ -2,15 +2,18 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
 import {
-  ArrowRight, ArrowRightLeft, BellRing, Check, ChevronDown, CircleCheck, CircleDashed, ClipboardList,
-  Download, Eye, FileMinus, FileText, FolderOpen, Package, Palette, Percent, ReceiptText, RotateCcw,
-  Send, ShieldCheck, Smartphone, Unlock, Users,
+  ArrowRight, ArrowRightLeft, BadgeCheck, Bell, BellRing, BrickWall, Cable, CalendarClock, Calculator, Check,
+  ChevronDown, CircleCheck, CircleDashed, ClipboardCheck, ClipboardList, Construction, DoorOpen, Download, Drill, Droplets,
+  Euro, Eye, FileMinus, FileText, FolderOpen, Grid3x3, HandCoins, House, Lamp, Layers, Mail, Package,
+  PaintRoller, Paintbrush, Palette, Percent, PencilRuler, Pickaxe, PlugZap, ReceiptText, RotateCcw, Ruler, Scale,
+  Send, ShieldCheck, Signature, Smartphone, Stamp, Unlock, Users, Wrench,
 } from "lucide-react"
 
 import { LandingHero } from "@/components/landing/LandingHero"
 import { PublicHeader } from "@/components/layout/PublicHeader"
 import { StorySection } from "@/components/landing/StorySection"
 import { MacBook, IPhone, SCREENS } from "@/components/landing/devices"
+import { Doodles } from "@/components/landing/Doodles"
 import { Chip, CtaButtons, Floater, PanPhoto, PhotoBand, SectionTitle } from "@/components/landing/ui"
 import { StepCatalogue, StepCompany, StepQuote } from "@/components/landing/mini-ui"
 import { EXAMPLES } from "@/components/landing/examples"
@@ -54,6 +57,26 @@ const euros = (n: number) => `${n} €`
 
 const SECTION = "px-6 py-[clamp(88px,9vw,120px)]"
 const WRAP = "mx-auto w-full max-w-[1200px]"
+
+/*
+ * Icônes au trait fin de chaque section (components/landing/Doodles.tsx), tirées de
+ * celles des couvertures d'articles (lib/blog-images/cover/icon-markup.ts). L'ordre
+ * suit les emplacements du décor : les icônes en bleu plein sont les premières
+ * (et la quatrième, pour les décors à quatre ou six icônes).
+ */
+const DOODLES = {
+  reform: [Scale, CalendarClock, ClipboardCheck],
+  profiles: [Wrench, House, Drill],
+  quote: [PencilRuler, Stamp, Signature, BadgeCheck],
+  manifesto: [PaintRoller, Pickaxe, Lamp, Construction],
+  trades: [PlugZap, Droplets, BrickWall],
+  steps: [Send, Mail, Layers],
+  included: [Bell, Paintbrush, Cable],
+  pricing: [HandCoins, Euro, ReceiptText, CalendarClock],
+  commitments: [BadgeCheck, Stamp, ClipboardCheck],
+  faq: [Lamp, DoorOpen, Signature, Wrench],
+  resources: [Grid3x3, Ruler, Calculator],
+} as const
 
 /* ─────────────────────────────────────────────────────────
    Bandeau des métiers, sous le héros (glisse avec la page)
@@ -102,7 +125,8 @@ const REFORM = [
 
 function ReformSection() {
   return (
-    <section id="reforme" className={cn("scroll-mt-16 bg-q-surface", SECTION)}>
+    <section id="reforme" className={cn("relative scroll-mt-16 bg-q-surface", SECTION)}>
+      <Doodles layout="right" icons={DOODLES.reform} />
       <div className={WRAP}>
         <SectionTitle
           eyebrow="Ce que dit la loi"
@@ -197,7 +221,8 @@ const PROFILES: {
 
 function ProfilesSection() {
   return (
-    <section className={cn("bg-q-surface", SECTION)}>
+    <section className={cn("relative bg-q-surface", SECTION)}>
+      <Doodles layout="right" icons={DOODLES.profiles} />
       <div className={WRAP}>
         <SectionTitle
           title="Votre premier logiciel de facturation."
@@ -260,7 +285,8 @@ function ProfilesSection() {
 ───────────────────────────────────────────────────────── */
 function QuoteSection() {
   return (
-    <section className={cn("lp-clip bg-q-surface", SECTION)}>
+    <section className={cn("lp-clip relative bg-q-surface", SECTION)}>
+      <Doodles layout="sides" icons={DOODLES.quote} />
       <div className={WRAP}>
         <SectionTitle
           align="center"
@@ -310,7 +336,8 @@ function ManifestoSection() {
     return { "--lp-a": `${a}%`, "--lp-b": `${a + 30}%` } as React.CSSProperties
   }
   return (
-    <section className="bg-q-surface px-6 py-[clamp(88px,11vw,150px)]">
+    <section className="relative bg-q-surface px-6 py-[clamp(88px,11vw,150px)]">
+      <Doodles layout="frame" icons={DOODLES.manifesto} />
       <p className="lp-ink-scope mx-auto max-w-[860px] text-center font-display text-[clamp(30px,4vw,48px)] font-semibold leading-[1.14] tracking-[-0.03em] text-q-ink-strong [text-wrap:balance]">
         {words.map((w, i) => (
           <span key={i}>
@@ -465,7 +492,8 @@ function TileLabel({ children }: { children: React.ReactNode }) {
 
 function TradesSection() {
   return (
-    <section className="lp-clip bg-q-surface py-[clamp(88px,9vw,120px)]">
+    <section className="lp-clip relative bg-q-surface py-[clamp(88px,9vw,120px)]">
+      <Doodles layout="right" icons={DOODLES.trades} />
       <div className={cn(WRAP, "px-6")}>
         <SectionTitle
           title="Plaquistes, électriciens, plombiers…"
@@ -517,7 +545,8 @@ const STEPS = [
 
 function StepsSection() {
   return (
-    <section className={cn("bg-q-surface", SECTION)}>
+    <section className={cn("relative bg-q-surface", SECTION)}>
+      <Doodles layout="right" icons={DOODLES.steps} />
       <div className={WRAP}>
         <SectionTitle title="Trois étapes," accent="et votre premier devis est parti." />
         <ol className="lp-steps-scope mt-12 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
@@ -564,7 +593,8 @@ const INCLUDED = [
 
 function IncludedSection() {
   return (
-    <section className={cn("border-t border-q-line bg-q-surface", SECTION)}>
+    <section className={cn("relative border-t border-q-line bg-q-surface", SECTION)}>
+      <Doodles layout="right-short" icons={DOODLES.included} />
       <div className={WRAP}>
         <SectionTitle title="Tout ce qu'il faut." accent="Rien de superflu." />
         <ul className="mt-12 grid grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-8 lg:grid-cols-4">
@@ -590,7 +620,8 @@ function IncludedSection() {
 ───────────────────────────────────────────────────────── */
 function PricingSection() {
   return (
-    <section id="pricing" className={cn("scroll-mt-16 border-y border-q-line bg-q-bg", SECTION)}>
+    <section id="pricing" className={cn("relative scroll-mt-16 border-y border-q-line bg-q-bg", SECTION)}>
+      <Doodles layout="sides" icons={DOODLES.pricing} />
       <div className="mx-auto w-full max-w-[1080px]">
         <SectionTitle
           align="center"
@@ -638,7 +669,8 @@ const COMMITMENTS = [
 
 function CommitmentsSection() {
   return (
-    <section className={cn("bg-q-surface", SECTION)}>
+    <section className={cn("relative bg-q-surface", SECTION)}>
+      <Doodles layout="right-short" icons={DOODLES.commitments} />
       <div className={WRAP}>
         <SectionTitle title="Nos engagements," accent="noir sur blanc." />
         <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
@@ -714,7 +746,8 @@ const fr = (s: string) => s.replace(/ ([?:;!])/g, " $1")
 
 function FAQSection() {
   return (
-    <section className={cn("bg-q-surface", SECTION)}>
+    <section className={cn("relative bg-q-surface", SECTION)}>
+      <Doodles layout="sides" icons={DOODLES.faq} />
       <div className="mx-auto w-full max-w-[800px]">
         <SectionTitle title="Questions" accent="fréquentes" className="mb-10" />
         <div className="lp-reveal border-b border-q-line">
@@ -782,7 +815,8 @@ function ResourcesSection() {
     { title: "Outils gratuits", links: TOOLS },
   ]
   return (
-    <section className={cn("border-t border-q-line bg-q-bg", SECTION)}>
+    <section className={cn("relative border-t border-q-line bg-q-bg", SECTION)}>
+      <Doodles layout="right-short" icons={DOODLES.resources} />
       <div className={WRAP}>
         <SectionTitle title="Pour aller plus loin," accent="gratuitement." />
         <div className="mt-10">

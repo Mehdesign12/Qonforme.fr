@@ -212,8 +212,8 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
                                 aria-current={current(item.href)}
                                 className="group flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-q-hover aria-[current=page]:bg-q-wash"
                               >
-                                <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-q-wash text-q-accent-strong">
-                                  <item.icon className="h-4 w-4" aria-hidden />
+                                <span className="mt-px grid h-6 w-6 shrink-0 place-items-center text-q-accent-strong">
+                                  <item.icon className="h-5 w-5" strokeWidth={1.6} aria-hidden />
                                 </span>
                                 <span className="min-w-0">
                                   <span className="block text-[13px] font-semibold leading-tight text-q-ink">{item.label}</span>
@@ -314,8 +314,8 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
                           aria-current={current(item.href)}
                           className="flex min-h-[44px] items-center gap-3 rounded-[10px] px-3 text-sm font-medium text-q-text-2 transition-colors hover:bg-q-hover hover:text-q-ink aria-[current=page]:text-q-ink"
                         >
-                          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-q-wash text-q-accent-strong">
-                            <item.icon className="h-3.5 w-3.5" aria-hidden />
+                          <span className="grid h-6 w-6 shrink-0 place-items-center text-q-accent-strong">
+                            <item.icon className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden />
                           </span>
                           {item.label}
                         </Link>
