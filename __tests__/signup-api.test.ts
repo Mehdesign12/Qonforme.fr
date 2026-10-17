@@ -88,6 +88,8 @@ describe("signupMetadata", () => {
     expect(signupMetadata({ email: "a@b.fr", password: "motdepasse" })).toEqual({ signup_wizard: true })
     expect(signupMetadata({ email: "a@b.fr", password: "motdepasse", first_name: "Thomas" }))
       .toEqual({ signup_wizard: true, first_name: "Thomas" })
+    expect(signupMetadata({ email: "a@b.fr", password: "motdepasse", landing_variant: "design" }))
+      .toEqual({ signup_wizard: true, landing_variant: "design" })
   })
 })
 
@@ -139,6 +141,16 @@ describe("POST /api/auth/signup", () => {
     expect(sent[0].to).toBe("thomas@garnier.example.com")
     expect(sent[0].subject).toBe("Bienvenue sur Qonforme")
     expect(sent[0].html).not.toContain("undefined")
+  })
+
+  it("variante de l'accueil (?ab=design) : enregistrée si elle est connue, ignorée sinon, jamais une erreur", async () => {
+    await POST(request({ email: "a@b.fr", password: "motdepasse", landing_variant: "design" }))
+    expect(created[0].user_metadata).toEqual({ signup_wizard: true, landing_variant: "design" })
+    for (const landing_variant of ["accueil", "<script>", 42, null]) {
+      const res = await POST(request({ email: "c@d.fr", password: "motdepasse", landing_variant }))
+      expect(res.status).toBe(200)
+    }
+    expect(created.slice(1).map((c) => c.user_metadata)).toEqual(Array(4).fill({ signup_wizard: true }))
   })
 
   it("garde le prénom et le nom fournis (API)", async () => {

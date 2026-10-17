@@ -17,6 +17,11 @@ export interface PublicNavProps {
   backLink?: { href: string; label: string }
   /** Page courante dans la rubrique (fil d'Ariane des outils), affichée après le lien de retour. */
   crumb?: string
+  /**
+   * Destinations propres à une variante de l'accueil (/design, test A/B) : ancre
+   * « Produit », page des tarifs, inscription marquée de la variante (?ab=…).
+   */
+  links?: { product?: string; pricing?: string; signup?: string }
 }
 
 const NAV_LINK =
@@ -42,7 +47,7 @@ const SHADOW_SCROLLED = "0 1px 2px rgba(10,17,34,.05), 0 14px 34px -18px rgba(10
  * déroulant sous la pilule (cibles de 44 px). La barre de lecture (progression
  * du défilement) remplit le bord bas de la pilule, sur ordinateur comme sur téléphone.
  */
-export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavProps) {
+export function PublicNav({ isLandingPage = false, backLink, crumb, links }: PublicNavProps) {
   const pathname = usePathname() ?? "/"
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -150,14 +155,15 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
   // Libellés du canevas (Produit, Tarifs, Réforme 2027, Outils gratuits), vers
   // des destinations qui existent ; Blog et Démo restent accessibles.
   const leading = [
-    { label: "Produit", href: `${prefix}#features`, current: undefined },
-    { label: "Tarifs", href: isLandingPage ? "#pricing" : "/pricing", current: current("/pricing") },
+    { label: "Produit", href: links?.product ?? `${prefix}#features`, current: undefined },
+    { label: "Tarifs", href: links?.pricing ?? (isLandingPage ? "#pricing" : "/pricing"), current: current("/pricing") },
     { label: "Réforme 2027", href: REFORME_HREF, current: current(REFORME_HREF) },
   ]
   const trailing = [
     { label: "Blog", href: "/blog", current: current("/blog") },
     { label: "Démo", href: "/demo", current: undefined },
   ]
+  const signupHref = links?.signup ?? "/signup"
   const outilsCurrent = current("/outils")
   const closeMenu = () => setMenuOpen(false)
 
@@ -283,7 +289,7 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
         <div className="flex shrink-0 items-center gap-1.5 justify-self-end">
           <Link href="/login" className={cn(NAV_LINK, "hidden md:inline-flex")}>Se connecter</Link>
           {/* Libellé court du canevas (« Commencer ») sur les petits téléphones ; sous 360 px, l'appel passe dans le menu */}
-          <Link href="/signup" className={cn(CTA, "max-[359px]:!hidden")}>
+          <Link href={signupHref} className={cn(CTA, "max-[359px]:!hidden")}>
             <span className="max-[374px]:hidden">Créer mon compte</span>
             <span className="hidden max-[374px]:inline">Commencer</span>
           </Link>
@@ -373,7 +379,7 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
               <Link href="/login" onClick={closeMenu} className={cn(MENU_LINK, "font-semibold text-q-ink")}>Se connecter</Link>
             </div>
             <div className="hidden p-1.5 pt-2 max-[359px]:block">
-              <Link href="/signup" onClick={closeMenu} className="lp-btn-p !h-12 w-full !px-4 !text-[15px]">Créer mon compte</Link>
+              <Link href={signupHref} onClick={closeMenu} className="lp-btn-p !h-12 w-full !px-4 !text-[15px]">Créer mon compte</Link>
             </div>
           </div>
         )}

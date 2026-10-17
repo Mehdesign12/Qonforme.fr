@@ -843,6 +843,32 @@ html[data-standalone="true"] [role="button"] {
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .lp-zoom-host:hover .lp-zoom { transform: scale(1.045); }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Variante B de l'accueil (/design, components/design/) — classes préfixées dz-
+ *
+ * Mêmes règles que lp- : entrée du héros en CSS pur, une seule fois ; trait du
+ * ✓ (stroke-dashoffset) et étincelles du bandeau « du devis à la facture »,
+ * pilotés par l'attribut data-play posé par le composant. Sans JavaScript ou
+ * avec « Réduire les animations » : état final, immobile.
+ * ────────────────────────────────────────────────────────────────────────── */
+@keyframes dz-arch-in { from { opacity: 0; transform: translateY(28px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes dz-kenburns { from { transform: scale(1.08); } to { transform: scale(1); } }
+@keyframes dz-draw { from { stroke-dashoffset: var(--dz-len, 60); } to { stroke-dashoffset: 0; } }
+@keyframes dz-spark { 0% { opacity: 0; transform: rotate(var(--dz-a)) translateY(0) scaleY(.4); } 35% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--dz-a)) translateY(-26px) scaleY(1); } }
+
+/* Piste du carrousel des métiers : défilement natif, barre masquée */
+.dz-snap { scrollbar-width: none; -ms-overflow-style: none; }
+.dz-snap::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .dz-arch-in { animation: dz-arch-in 1.2s cubic-bezier(.22,1,.36,1) .2s both; }
+  .dz-kenburns { animation: dz-kenburns 7s cubic-bezier(.22,1,.36,1) both; }
+  [data-play="on"] .dz-draw { stroke-dasharray: var(--dz-len, 60); animation: dz-draw .7s cubic-bezier(.65,0,.35,1) var(--dz-delay, 0s) both; }
+  [data-play="on"] .dz-spark { animation: dz-spark .65s cubic-bezier(.22,1,.36,1) var(--dz-delay, .45s) both; }
+}
+/* Étincelles : invisibles hors animation (état final sans mouvement) */
+.dz-spark { opacity: 0; transform-origin: 50% 100%; }
 @media (prefers-reduced-motion: reduce) {
   .lp-btn-p, .lp-btn-s, .lp-btn-s-ic, .lp-btn-arrow { transition: none; }
   .lp-btn-p::after { display: none; }
