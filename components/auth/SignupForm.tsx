@@ -53,6 +53,8 @@ export default function SignupForm() {
         body: JSON.stringify({
           email:    fields.email.trim(),
           password: fields.password,
+          // Variante de l'accueil (test A/B, /design) : filtrée par liste blanche côté serveur
+          landing_variant: new URLSearchParams(window.location.search).get("ab") ?? undefined,
         }),
       })
       const json = await res.json().catch(() => ({}))

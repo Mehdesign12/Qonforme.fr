@@ -46,7 +46,7 @@ const COLUMN = "inset-x-6 mx-auto max-w-[1200px]"
 const FROM = { 1100: "min-[1100px]:block", 1180: "min-[1180px]:block", 1280: "min-[1280px]:block" } as const
 
 export type DoodleLayout =
-  | "right" | "right-short" | "sides" | "hero" | "frame"
+  | "right" | "right-short" | "sides" | "sides-short" | "hero" | "frame"
   | "page" | "page-right" | "article" | "auth" | "auth-column"
 
 const LAYOUTS: Record<DoodleLayout, Layout> = {
@@ -79,6 +79,18 @@ const LAYOUTS: Record<DoodleLayout, Layout> = {
       { top: 150, left: 74, size: 80, rotate: 12, wide: true },
       { top: 0, right: -4, size: 104, rotate: 10 },
       { top: 142, right: 70, size: 88, rotate: -14, accent: true, wide: true },
+    ],
+  },
+  /**
+   * Titre centré suivi de près par des cartes pleine largeur (variante B de
+   * l'accueil, /design) : une icône de chaque côté du titre, rien en dessous.
+   */
+  "sides-short": {
+    show: "min-[1180px]:block",
+    frame: cn(COLUMN, "top-[clamp(80px,9vw,120px)]"),
+    slots: [
+      { top: -10, left: -4, size: 100, rotate: -8, accent: true },
+      { top: -18, right: -4, size: 92, rotate: 10 },
     ],
   },
   /** Héros de l'accueil : trois icônes de chaque côté du titre, depuis le haut du héros (gauche ×3, droite ×3). */

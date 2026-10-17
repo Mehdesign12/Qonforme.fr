@@ -13,7 +13,9 @@
 // le produit. Les données restent celles de lib/demo/data.ts.
 //
 // Usage : le site lancé en local (npx next dev -p 3100), puis
-//   node scripts/capture-landing-screens.mjs <dossier> [http://localhost:3100]
+//   node scripts/capture-landing-screens.mjs <dossier> [http://localhost:3100] [noms]
+// où [noms], facultatif, limite la série à quelques écrans (« catalogue,relances ») :
+// pour AJOUTER des fichiers à une série (nouvelles adresses, aucun cache à vider).
 // avec un dossier NOUVEAU (v3, v4…) sous public/landing/ecrans, puis ECRANS dans
 // components/landing/devices.tsx et suppression de l'ancien dossier : l'optimisation
 // d'images de Vercel garde une image tant que son adresse ne change pas.
@@ -25,7 +27,8 @@ import { join } from "node:path"
 import { mkdirSync } from "node:fs"
 import sharp from "sharp"
 
-const [VERSION, BASE = "http://localhost:3100"] = process.argv.slice(2)
+const [VERSION, BASE = "http://localhost:3100", ONLY] = process.argv.slice(2)
+const only = ONLY ? new Set(ONLY.split(",").map((n) => n.trim()).filter(Boolean)) : null
 if (!VERSION) throw new Error("Dossier de la série attendu, par exemple : node scripts/capture-landing-screens.mjs v3")
 const OUT = `public/landing/ecrans/${VERSION}`
 mkdirSync(OUT, { recursive: true })
@@ -46,16 +49,21 @@ const DESKTOP = [
   ["devis", "/demo/quotes/d-2026-035"],
   ["facture", "/demo/invoices/f-2026-0142"],
   ["factures", "/demo/invoices"],
+  ["catalogue", "/demo/products"],
+  ["relances", "/demo/relances"],
 ]
 const MOBILE = [
   ["mobile-tableau-de-bord", "/demo"],
   ["mobile-devis", "/demo/quotes/d-2026-035"],
   ["mobile-facture", "/demo/invoices/f-2026-0142"],
   ["mobile-factures", "/demo/invoices"],
+  ["mobile-relances", "/demo/relances"],
+  ["mobile-catalogue", "/demo/products"],
 ]
 const ANALYTICS = /(posthog|facebook|sentry|google-analytics|googletagmanager|doubleclick)\./
 
 async function shoot(ctx, name, path, safeArea) {
+  if (only && !only.has(name)) return
   const page = await ctx.newPage()
   await page.route((url) => ANALYTICS.test(url.hostname), (route) => route.abort())
   if (safeArea) {
