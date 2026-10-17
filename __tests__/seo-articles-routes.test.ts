@@ -169,7 +169,7 @@ describe("POST /api/admin/seo/articles/generate", () => {
     expect(parisDayTime(t.scheduled_at as string)).toEqual({ day, time: "08:00" })
     const job = db.tables.seo_article_jobs[0]
     expect(job).toMatchObject({ id: body.jobId, status: "queued", step: "plan", model: "claude-opus-5-5" })
-    expect((job.state as { input: Row }).input).toMatchObject({ lengthMin: 1200, lengthMax: 1800, planModel: "gemini-3.8-flash", reviewModel: "gemini-3.8-flash", imageModel: "gemini-nano-banana-2.1" })
+    expect((job.state as { input: Row }).input).toMatchObject({ lengthMin: 1200, lengthMax: 1800, planModel: "claude-sonnet-5-5", reviewModel: "claude-sonnet-5-5", imageModel: "gemini-nano-banana-2.1" })
   })
 
   it("refuse un sujet qui nomme un concurrent suivi, et un sujet déjà en rédaction", async () => {

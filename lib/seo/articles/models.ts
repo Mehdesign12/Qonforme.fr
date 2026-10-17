@@ -18,6 +18,7 @@ import {
   findImageModel,
   findTextModel,
   imagePriceLabel,
+  textFallbackChain,
   textPriceLabel,
   type ImageModelDef,
   type ModelKeyEnv,
@@ -135,20 +136,18 @@ function failureReason(error: ModelError): string {
   return error.message.replace(/\s*Nouvel essai au prochain passage\.?\s*$/i, "").replace(/\.$/, "")
 }
 
-/** Modèle de repli d'un modèle dont le fournisseur reste indisponible ; null si l'erreur n'en justifie pas ou si sa clé manque. */
-function fallbackDefFor(def: TextModelDef, error: unknown): TextModelDef | null {
-  // Seule une panne du fournisseur (surcharge, 5xx, réseau) change de modèle : un refus, une réponse
-  // vide ou coupée, un délai dépassé ou une clé refusée n'ont rien à voir avec la disponibilité
-  if (!(error instanceof ModelError) || error.kind !== "http" || !error.retryable) return null
-  const fb = def.fallback ? findTextModel(def.fallback) : null
-  return fb && fb.id !== def.id && hasKey(fb.envKey) ? fb : null
+/** Vrai pour une panne du fournisseur (surcharge, 5xx, réseau) : seule elle change de modèle. */
+function isProviderOutage(error: unknown): error is ModelError {
+  // Un refus, une réponse vide ou coupée, un délai dépassé ou une clé refusée n'ont rien à voir avec la disponibilité
+  return error instanceof ModelError && error.kind === "http" && error.retryable
 }
 
 /**
  * Texte d'un modèle. Quand son fournisseur reste indisponible après les
- * nouveaux essais de l'appel (geminiCall), la même consigne part au modèle de
- * repli (`fallback` du registre) avec le temps qui reste ; `fallbackFrom`
- * l'indique à l'appelant, qui le dit à l'écran. Si le repli échoue aussi, c'est
+ * nouveaux essais de l'appel (geminiCall), la même consigne part au premier
+ * modèle de repli (`fallback` du registre : Opus → Sonnet → Gemini) dont la
+ * clé est présente, avec le temps qui reste ; `fallbackFrom` l'indique à
+ * l'appelant, qui le dit à l'écran. Si tous les replis échouent aussi, c'est
  * l'erreur d'origine qui est rendue : elle dit ce qui s'est vraiment passé.
  */
 export async function generateText(input: GenerateTextInput): Promise<GenerateTextResult> {
@@ -159,18 +158,23 @@ export async function generateText(input: GenerateTextInput): Promise<GenerateTe
   try {
     return await generateTextWith(def, input, timeoutMs)
   } catch (error) {
-    const fallback = fallbackDefFor(def, error)
-    const left = timeoutMs - (Date.now() - startedAt)
-    if (!fallback || left < FALLBACK_MIN_MS) throw error
-    const reason = failureReason(error as ModelError)
-    console.warn(`[seo-articles] ${def.label} indisponible, repli sur ${fallback.label} : ${reason}`)
-    try {
-      const res = await generateTextWith(fallback, input, left)
-      return { ...res, fallbackFrom: { model: def.id, reason } }
-    } catch (fallbackError) {
-      console.warn(`[seo-articles] repli sur ${fallback.label} en échec : ${fallbackError instanceof Error ? fallbackError.message.slice(0, 160) : ""}`)
-      throw error
+    if (!isProviderOutage(error)) throw error
+    const reason = failureReason(error)
+    for (const fallback of textFallbackChain(def)) {
+      if (!hasKey(fallback.envKey)) continue
+      const left = timeoutMs - (Date.now() - startedAt)
+      if (left < FALLBACK_MIN_MS) break
+      console.warn(`[seo-articles] ${def.label} indisponible, repli sur ${fallback.label} : ${reason}`)
+      try {
+        const res = await generateTextWith(fallback, input, left)
+        return { ...res, fallbackFrom: { model: def.id, reason } }
+      } catch (fallbackError) {
+        console.warn(`[seo-articles] repli sur ${fallback.label} en échec : ${fallbackError instanceof Error ? fallbackError.message.slice(0, 160) : ""}`)
+        // Une panne du repli aussi : modèle suivant ; toute autre erreur arrête la chaîne
+        if (!isProviderOutage(fallbackError)) break
+      }
     }
+    throw error
   }
 }
 

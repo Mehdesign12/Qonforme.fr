@@ -139,11 +139,11 @@ describe("rédaction en plusieurs passes", () => {
     expect(outcomes.map((o) => o.ran)).toEqual(["plan", "write", "check", "cover", "save"])
     expect(outcomes.at(-1)).toMatchObject({ status: "done", step: "done" })
 
-    // Plan et contrôle par Gemini 3.8 Flash, rédaction par Claude Opus 5.5 (réglages par défaut)
+    // Claude partout par défaut : plan et contrôle par Sonnet 5.5, rédaction par Opus 5.5 ; Gemini seulement en secours
     expect(calls.map((c) => [c.pass, c.model])).toEqual([
-      ["PASSE 1", "gemini-3.8-flash"],
+      ["PASSE 1", "claude-sonnet-5-5"],
       ["PASSE 2", "claude-opus-5-5"],
-      ["PASSE 3", "gemini-3.8-flash"],
+      ["PASSE 3", "claude-sonnet-5-5"],
     ])
     expect(calls[2].system).toMatch(/^Vous relisez/)
     // Aucun concurrent n'est jamais envoyé au modèle
@@ -163,7 +163,7 @@ describe("rédaction en plusieurs passes", () => {
       held_reason: null,
       seo_title: PLAN.title,
       seo_description: PLAN.metaDescription,
-      ai_model: "plan gemini-3.8-flash · rédaction claude-opus-5-5 · contrôle gemini-3.8-flash · image gemini-nano-banana-2.1",
+      ai_model: "plan claude-sonnet-5-5 · rédaction claude-opus-5-5 · contrôle claude-sonnet-5-5 · image gemini-nano-banana-2.1",
     })
     expect((post.seo_description as string).length).toBeGreaterThanOrEqual(120)
     expect((post.seo_description as string).length).toBeLessThanOrEqual(155)
@@ -313,9 +313,9 @@ describe("fournisseur indisponible", () => {
       const pass = prompt.slice(0, 7)
       calls.push({ model, pass, system, prompt })
       const usage = { inputTokens: 100, outputTokens: 50 }
-      // Le plan est demandé à Gemini 3.8 Flash, indisponible : generateText répond avec le repli et le dit
+      // Le plan est demandé à Claude Sonnet 5.5, indisponible : generateText répond avec le repli (Gemini) et le dit
       if (pass === "PASSE 1") {
-        return { text: JSON.stringify(PLAN), model: "claude-sonnet-5-5", usage, fallbackFrom: { model, reason: "Gemini indisponible (503)" } }
+        return { text: JSON.stringify(PLAN), model: "gemini-3.8-flash", usage, fallbackFrom: { model, reason: "Anthropic indisponible (529)" } }
       }
       if (pass === "PASSE 2") return { text: writeContent, model, usage }
       if (pass === "PASSE 3") return { text: JSON.stringify({ problems: reviewProblems }), model, usage }
@@ -326,26 +326,42 @@ describe("fournisseur indisponible", () => {
     const job = await startJob(client, topicId)
     const first = await runJobStep(client, job.id, { deadline: Date.now() + 290_000 })
     expect(first).toMatchObject({ ran: "plan", status: "queued", step: "write", error: null })
-    expect(first.notices).toContain("Plan par Claude Sonnet 5.5 au lieu de Gemini 3.8 Flash : Gemini indisponible (503).")
+    expect(first.notices).toContain("Plan par Gemini 3.8 Flash au lieu de Claude Sonnet 5.5 : Anthropic indisponible (529).")
     const outcomes = await runAll(client, job.id)
     expect(outcomes.at(-1)?.status).toBe("done")
     // La rédaction, elle, n'a pas bougé : le repli ne vaut que pour la passe qui en avait besoin
     expect(calls.find((c) => c.pass === "PASSE 2")?.model).toBe("claude-opus-5-5")
   })
 
+  it("clé Anthropic pas encore ajoutée : les trois passes tournent sur Gemini, et l'écran dit pourquoi", async () => {
+    delete process.env.ANTHROPIC_API_KEY
+    const { client, topicId } = setup()
+    const job = await startJob(client, topicId)
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.at(-1)?.status).toBe("done")
+    expect(calls.map((c) => [c.pass, c.model])).toEqual([
+      ["PASSE 1", "gemini-3.8-flash"],
+      ["PASSE 2", "gemini-3.8-flash"],
+      ["PASSE 3", "gemini-3.8-flash"],
+    ])
+    const notices = outcomes.at(-1)?.notices.join(" ") ?? ""
+    expect(notices).toContain("Plan par Gemini 3.8 Flash au lieu de Claude Sonnet 5.5 : Clé ANTHROPIC_API_KEY absente.")
+    expect(notices).toContain("Rédaction par Gemini 3.8 Flash au lieu de Claude Opus 5.5 : Clé ANTHROPIC_API_KEY absente.")
+  })
+
   it("trois essais en échec : le message ne promet plus de nouvel essai, et « Réessayer » reste proposé", async () => {
     const { ModelError } = await import("@/lib/seo/articles/models")
-    mocks.text.mockRejectedValue(new ModelError("http", "Gemini indisponible (503). Nouvel essai au prochain passage."))
+    mocks.text.mockRejectedValue(new ModelError("http", "Anthropic indisponible (529). Nouvel essai au prochain passage."))
     const { db, client, topicId } = setup()
     const job = await startJob(client, topicId)
     const outcomes = await runAll(client, job.id)
     // Deux premiers échecs : la rédaction attend le prochain passage, le message le dit
-    expect(outcomes[0]).toMatchObject({ status: "queued", error: "Gemini indisponible (503). Nouvel essai au prochain passage." })
+    expect(outcomes[0]).toMatchObject({ status: "queued", error: "Anthropic indisponible (529). Nouvel essai au prochain passage." })
     expect(outcomes[1]).toMatchObject({ status: "queued" })
     // Troisième : définitif
     const last = outcomes.at(-1)
     expect(last).toMatchObject({ status: "failed" })
-    expect(last?.error).toContain("Gemini indisponible (503)")
+    expect(last?.error).toContain("Anthropic indisponible (529)")
     expect(last?.error).not.toContain("Nouvel essai au prochain passage")
     expect(last?.error).toContain("« Réessayer »")
     expect(db.tables.seo_topics[0]).toMatchObject({ status: "failed" })
