@@ -10,16 +10,19 @@
  *    Next.js) : orientation appliquée puis métadonnées retirées (une photo de
  *    téléphone porte souvent la position GPS de la prise de vue, et le
  *    compartiment est public), 1 600 px de large au plus (largeur conseillée ;
- *    la colonne de lecture en affiche 700), recompression. Les images du texte
- *    ne passent pas par l'optimiseur de Next : un PNG de 2K renvoyé par le
- *    modèle pèserait plusieurs mégaoctets sur la page. Jamais d'original
- *    gardé tel quel (il garderait ses métadonnées) : sharp indisponible, image
- *    refusée (« upload », 503) ; fichier que sharp ne sait pas lire (JPEG
- *    tronqué…), image refusée (« type », 415).
+ *    la colonne de lecture en affiche 700), recompression en WebP (JPEG, PNG
+ *    et WebP reçus : toujours un WebP en sortie). Seules les métadonnées de
+ *    `meta` (lib/blog-images/metadata.ts : titre, description, mots-clés,
+ *    auteur, origine) sont réécrites, pour les images que Qonforme produit
+ *    lui-même. Les images du texte ne passent pas par l'optimiseur de Next :
+ *    un PNG de 2K renvoyé par le modèle pèserait plusieurs mégaoctets sur la
+ *    page. Jamais d'original gardé tel quel (il garderait ses métadonnées) :
+ *    sharp indisponible, image refusée (« upload », 503) ; fichier que sharp
+ *    ne sait pas lire (JPEG tronqué…), image refusée (« type », 415).
  * 3. Envoi sous editor/AAAA/MM/… (editor/ia/AAAA/MM/… pour une image générée
- *    par IA) sans écraser un fichier existant, mis en cache
- *    un an (le nom est unique), adresse publique avec les dimensions dans le
- *    fragment (#w=…&h=…).
+ *    par IA, covers/AAAA/MM/… pour une couverture dessinée par le code) sans
+ *    écraser un fichier existant, mis en cache un an (le nom est unique),
+ *    adresse publique avec les dimensions dans le fragment (#w=…&h=…).
  */
 import { randomBytes } from "node:crypto"
 import { createAdminClient } from "@/lib/supabase/server"
@@ -31,7 +34,8 @@ import {
   withImageSize,
   type AcceptedImageType,
 } from "@/lib/blog-images/policy"
-import { sniffImage, type SniffedImage } from "@/lib/blog-images/sniff"
+import { exifOf, xmpOf, type ImageMetadata } from "@/lib/blog-images/metadata"
+import { sniffImage } from "@/lib/blog-images/sniff"
 import type { StoredImage } from "@/lib/seo/articles/editor-types"
 
 export type BlogImageErrorCode = "type" | "size" | "upload"
@@ -58,8 +62,9 @@ export const STORED_MAX_HEIGHT = 2000
  * téléphone de 48 mégapixels passe.
  */
 export const MAX_INPUT_PIXELS = 60_000_000
-/** Un PNG opaque plus lourd que cela est enregistré en JPEG (photo envoyée en PNG). */
-const OPAQUE_PNG_MAX_BYTES = 1_200_000
+/** Qualité WebP : photos et images importées ; couvertures dessinées (aplats et texte, plus exigeant). */
+const WEBP_QUALITY_PHOTO = 82
+const WEBP_QUALITY_GRAPHIC = 90
 
 export const TYPE_ERROR_MESSAGE = "Format non reconnu : importez une image JPEG, PNG ou WebP."
 export const SIZE_ERROR_MESSAGE = "Image trop lourde : 5 Mo au plus."
@@ -89,44 +94,31 @@ async function loadSharp(): Promise<Sharp | null> {
 }
 
 /**
- * Orientation, métadonnées retirées, taille bornée et recompression.
- * `photo` : sortie JPEG quel que soit le format reçu (images générées,
- * toujours des photos). Jamais l'original : sharp manquant (« upload ») ou
- * en échec (« type ») lève BlogImageError, l'image n'est pas enregistrée
- * (elle garderait ses métadonnées, position GPS comprise).
+ * Orientation, métadonnées retirées (puis celles de `meta`, si elles sont
+ * données), taille bornée et recompression en WebP. Jamais l'original :
+ * sharp manquant (« upload ») ou en échec (« type ») lève BlogImageError,
+ * l'image n'est pas enregistrée (elle garderait ses métadonnées, position GPS
+ * comprise).
  */
-export async function prepareImage(data: Buffer, sniffed: SniffedImage, opts: { photo?: boolean } = {}): Promise<Prepared> {
+export async function prepareImage(data: Buffer, opts: { meta?: ImageMetadata; graphic?: boolean; year?: number } = {}): Promise<Prepared> {
   const sharp = await loadSharp()
   if (!sharp) throw new BlogImageError("upload", PROCESSING_ERROR_MESSAGE)
   try {
-    const base = () =>
-      sharp(data, { failOn: "error", limitInputPixels: MAX_INPUT_PIXELS, pages: 1 })
-        .rotate()
-        .resize({ width: STORED_MAX_WIDTH, height: STORED_MAX_HEIGHT, fit: "inside", withoutEnlargement: true })
-    const asJpeg = () => base().flatten({ background: "#ffffff" }).jpeg({ quality: 82, mozjpeg: true, progressive: true })
-
-    let out: { data: Buffer; info: { width: number; height: number } }
-    let mimeType: AcceptedImageType
-    if (opts.photo || sniffed.mimeType === "image/jpeg") {
-      out = await asJpeg().toBuffer({ resolveWithObject: true })
-      mimeType = "image/jpeg"
-    } else if (sniffed.mimeType === "image/webp") {
-      out = await base().webp({ quality: 82 }).toBuffer({ resolveWithObject: true })
-      mimeType = "image/webp"
-    } else {
-      // PNG : gardé en PNG (transparence, capture d'écran nette), sauf une photo opaque trop lourde
-      const meta = await sharp(data, { limitInputPixels: MAX_INPUT_PIXELS }).metadata()
-      out = await base().png({ compressionLevel: 9, adaptiveFiltering: true }).toBuffer({ resolveWithObject: true })
-      mimeType = "image/png"
-      if (!meta.hasAlpha && out.data.length > OPAQUE_PNG_MAX_BYTES) {
-        out = await asJpeg().toBuffer({ resolveWithObject: true })
-        mimeType = "image/jpeg"
-      }
+    let pipeline = sharp(data, { failOn: "error", limitInputPixels: MAX_INPUT_PIXELS, pages: 1 })
+      .rotate()
+      .resize({ width: STORED_MAX_WIDTH, height: STORED_MAX_HEIGHT, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: opts.graphic ? WEBP_QUALITY_GRAPHIC : WEBP_QUALITY_PHOTO })
+    if (opts.meta) {
+      const year = opts.year ?? new Date().getUTCFullYear()
+      const exif = exifOf(opts.meta, year)
+      if (Object.keys(exif.IFD0).length > 0) pipeline = pipeline.withExif(exif)
+      pipeline = pipeline.withXmp(xmpOf(opts.meta, year))
     }
+    const out = await pipeline.toBuffer({ resolveWithObject: true })
     // Le fichier produit est contrôlé comme un fichier reçu : seul ce qui est relu passe
     const check = sniffImage(out.data)
-    if (!check || check.mimeType !== mimeType) throw new Error("fichier produit illisible")
-    return { data: out.data, mimeType, width: check.width, height: check.height }
+    if (!check || check.mimeType !== "image/webp") throw new Error("fichier produit illisible")
+    return { data: out.data, mimeType: "image/webp", width: check.width, height: check.height }
   } catch (error) {
     console.warn("[blog-images] image refusée :", error instanceof Error ? error.message.slice(0, 160) : "sharp en échec")
     throw new BlogImageError("type", UNREADABLE_ERROR_MESSAGE)
@@ -137,16 +129,18 @@ export async function prepareImage(data: Buffer, sniffed: SniffedImage, opts: { 
  * Contrôle, met au propre et enregistre une image du blog ; rend son adresse
  * publique avec les dimensions dans le fragment.
  *
- * @param input.hint   titre ou description : forme le nom du fichier (lisible dans l'adresse)
- * @param input.photo  image générée : toujours enregistrée en JPEG
+ * @param input.hint   mot-clé, titre ou description : forme le nom du fichier (lisible dans l'adresse)
  * @param input.generated image générée par IA : enregistrée sous editor/ia/ (mention « Illustration générée par IA » sur le blog)
+ * @param input.cover  couverture dessinée par le code : enregistrée sous covers/, en WebP de qualité graphique
+ * @param input.meta   métadonnées à écrire (images produites par Qonforme) ; sans elles, tout est retiré
  * @param input.maxBytes taille maximale du fichier enregistré (5 Mo par défaut)
  */
 export async function storeBlogImage(input: {
   data: Buffer
   hint: string
-  photo?: boolean
   generated?: boolean
+  cover?: boolean
+  meta?: ImageMetadata
   maxBytes?: number
   now?: Date
 }): Promise<StoredImage> {
@@ -159,16 +153,18 @@ export async function storeBlogImage(input: {
     throw new BlogImageError("size", "Image trop grande : 60 mégapixels au plus. Réduisez-la (1 600 px de large suffisent) puis réessayez.")
   }
 
-  const prepared = await prepareImage(input.data, sniffed, { photo: input.photo })
+  const now = input.now ?? new Date()
+  const prepared = await prepareImage(input.data, { meta: input.meta, graphic: input.cover, year: now.getUTCFullYear() })
   const maxBytes = input.maxBytes ?? MAX_UPLOAD_BYTES
   if (prepared.data.length > maxBytes) throw new BlogImageError("size", SIZE_ERROR_MESSAGE)
 
   const path = editorImagePath({
     hint: input.hint,
     ext: IMAGE_EXTENSIONS[prepared.mimeType],
-    now: input.now ?? new Date(),
+    now,
     random: randomBytes(4).toString("hex"),
     generated: input.generated,
+    cover: input.cover,
   })
   const bucket = createAdminClient().storage.from(BLOG_IMAGE_BUCKET)
   let uploaded: { error: unknown }

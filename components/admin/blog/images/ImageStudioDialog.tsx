@@ -236,6 +236,7 @@ export function ImageStudioDialog({
           aspect: effectiveAspect,
           purpose,
           ...(title.trim() ? { title: title.trim().slice(0, 200) } : {}),
+          ...(keyword?.trim() ? { keyword: keyword.trim().slice(0, 120) } : {}),
         }),
         cache: "no-store",
         signal: controller.signal,

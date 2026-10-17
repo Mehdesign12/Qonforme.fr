@@ -85,7 +85,46 @@ describe("CoverField", () => {
     const group = document.getElementById("couverture")!
     expect(group.getAttribute("tabindex")).toBe("-1")
     await act(async () => group.focus())
-    expect(document.activeElement?.textContent).toContain("Générer avec Gemini")
+    expect(document.activeElement?.textContent).toContain("Créer la couverture")
+  })
+
+  it("« Créer la couverture » : la couverture Qonforme avec le titre et le mot-clé, texte alternatif = titre", async () => {
+    const changes: { url: string; alt: string }[] = []
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ url: `${STORED}#w=1600&h=900`, width: 1600, height: 900, alt: "Facturer le remplacement d'un chauffe-eau", family: "metier" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+    vi.stubGlobal("fetch", fetchMock)
+    await act(async () => root.render(createElement(Harness, { initial: { url: "", alt: "" }, onChange: (v) => changes.push(v) })))
+    await click(buttonByText("Créer la couverture", container))
+    await flush()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe("/api/admin/blog/images/cover")
+    expect(JSON.parse(init.body as string)).toEqual({ title: "Facturer le remplacement d'un chauffe-eau", keyword: "devis plombier" })
+    // Adresse sans le fragment des dimensions, texte alternatif repris de la réponse
+    expect(changes.at(-1)).toEqual({ url: STORED, alt: "Facturer le remplacement d'un chauffe-eau" })
+    expect(toasts.calls).toContain("Couverture créée : vérifiez le titre sur l'image.")
+    // Remplie : « Recréer » refait la couverture avec le titre du moment
+    await click(buttonByText("Recréer", container))
+    await flush()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(toasts.calls).toContain("Couverture recréée avec le titre actuel")
+  })
+
+  it("« Créer la couverture » : l'erreur du serveur est affichée, rien n'est changé", async () => {
+    const changes: { url: string; alt: string }[] = []
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ error: "Le titre ou le mot-clé nomme un concurrent : il serait écrit sur l'image publique." }), { status: 422, headers: { "Content-Type": "application/json" } })),
+    )
+    await act(async () => root.render(createElement(Harness, { initial: { url: "", alt: "" }, onChange: (v) => changes.push(v) })))
+    await click(buttonByText("Créer la couverture", container))
+    await flush()
+    expect((container.querySelector('[role="alert"]') as HTMLElement).textContent).toContain("nomme un concurrent")
+    expect(changes).toEqual([])
   })
 
   it("studio : description d'après le métier, couverture en 16:9, image générée puis choisie", async () => {
@@ -99,7 +138,7 @@ describe("CoverField", () => {
     vi.stubGlobal("fetch", fetchMock)
     await act(async () => root.render(createElement(Harness, { initial: { url: "", alt: "" }, onChange: (v) => changes.push(v) })))
 
-    await click(buttonByText("Générer avec Gemini", container))
+    await click(buttonByText("Photo avec Gemini", container))
     const dialog = document.querySelector('[role="dialog"]') as HTMLElement
     expect(dialog).toBeTruthy()
     expect(dialog.textContent).toContain("Image de couverture")
@@ -150,7 +189,7 @@ describe("CoverField", () => {
       ),
     )
     await act(async () => root.render(createElement(Harness, { initial: { url: "", alt: "" } })))
-    await click(buttonByText("Générer avec Gemini", container))
+    await click(buttonByText("Photo avec Gemini", container))
     const dialog = document.querySelector('[role="dialog"]') as HTMLElement
     await click(buttonByText(/^Générer/, dialog.querySelector("form")!))
     await flush()

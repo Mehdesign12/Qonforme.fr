@@ -403,38 +403,3 @@ export function buildFixPrompt(content: string, instructions: FixInstruction[]):
     "Répondez uniquement avec le Markdown complet de l'article corrigé.",
   ].join("\n")
 }
-
-/* ------------------------------------------------------------------ */
-/* Passe 5 : image de couverture                                       */
-/* ------------------------------------------------------------------ */
-
-const TRADES: { key: RegExp; scene: string }[] = [
-  { key: /plomb|sanitaire|chauffe|chaudi|chauffag/i, scene: "a plumber fitting copper pipes under a sink in a renovated French kitchen" },
-  { key: /[ée]lectri|irve|borne/i, scene: "an electrician wiring a modern electrical panel on a renovation site" },
-  { key: /ma[çc]on|gros [œo]euvre|b[ée]ton/i, scene: "a mason laying bricks on a house construction site" },
-  { key: /peint|ravalement|fa[çc]ade/i, scene: "a painter rolling fresh paint on a wall in a bright apartment under renovation" },
-  { key: /carrel|fa[iï]ence|sol/i, scene: "a tiler setting large floor tiles with a spirit level in a new bathroom" },
-  { key: /menuis|bois|charpent/i, scene: "a carpenter measuring a wooden window frame in his workshop" },
-  { key: /couv|toit|zinguer/i, scene: "a roofer replacing roof tiles on a sunny day, safety harness on" },
-  { key: /pl[aâ]tr|plaquiste|cloison/i, scene: "a drywall installer fixing plasterboard on metal studs in a bright room" },
-]
-
-const DEFAULT_SCENES = [
-  "a building contractor checking plans on a tablet on a renovation site",
-  "two craftspeople working on a home renovation, tools on a workbench",
-  "a tradesperson carrying materials into a house under renovation",
-  "a craftsperson in work clothes taking measurements in an empty room being renovated",
-]
-
-/** Consigne d'image : photo réaliste d'artisan du bâtiment au travail, sans texte ni logo, 16:9. */
-export function buildCoverPrompt(input: { keyword: string | null; title: string; seed: number }): string {
-  const text = `${input.keyword ?? ""} ${input.title}`
-  const trade = TRADES.find((t) => t.key.test(text))
-  const scene = trade ? trade.scene : DEFAULT_SCENES[Math.abs(input.seed) % DEFAULT_SCENES.length]
-  return `A realistic, natural-light editorial photograph for a blog cover, 16:9 widescreen: ${scene}. French building trades context, real working conditions, authentic people, natural colors, shallow depth of field, full-bleed composition filling the whole frame.
-
-STRICT RULES:
-- No text, letters, numbers, labels, signs, watermarks or logos anywhere in the image.
-- No brand names on clothes, tools, vehicles or packaging.
-- Any screen or document must be blurred and unreadable.`
-}

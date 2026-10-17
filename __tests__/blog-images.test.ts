@@ -53,6 +53,7 @@ import {
   editorImagePath,
   isBlogImageUrl,
   isGeneratedBlogImage,
+  isQonformeCover,
   readImageSize,
   withImageSize,
 } from "@/lib/blog-images/policy"
@@ -162,6 +163,17 @@ describe("isBlogImageUrl", () => {
     expect(isBlogImageUrl(`${PUBLIC}a.jpg`)).toBe(true)
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://autre.supabase.co"
     expect(isBlogImageUrl(`${PUBLIC}a.jpg`)).toBe(false)
+  })
+})
+
+describe("isQonformeCover", () => {
+  it("vrai seulement pour une image du blog rangée sous covers/", () => {
+    expect(isQonformeCover(`${PUBLIC}covers/2026/10/comment-facturer-abc.webp#w=1600&h=900`, SUPABASE)).toBe(true)
+    expect(isQonformeCover(`${PUBLIC}editor/ia/2026/10/photo.webp`, SUPABASE)).toBe(false)
+    expect(isQonformeCover(`${PUBLIC}seo/ancienne.jpg`, SUPABASE)).toBe(false)
+    expect(isQonformeCover("https://autre.fr/storage/v1/object/public/blog-covers/covers/a.webp", SUPABASE)).toBe(false)
+    expect(isQonformeCover(null, SUPABASE)).toBe(false)
+    expect(isQonformeCover("", SUPABASE)).toBe(false)
   })
 })
 
@@ -291,6 +303,20 @@ describe("buildImagePrompt", () => {
     expect(tail).toContain("artisans du bâtiment en France")
   })
 
+  it("photo réaliste : consigne de photographe, mains et outils plausibles, rien de « stock photo »", () => {
+    const prompt = buildImagePrompt({ description: "Un électricien raccorde un tableau.", aspect: "4:3", purpose: "inline" })
+    expect(prompt).toContain("PHOTOGRAPHIC LOOK")
+    expect(prompt).toContain("35 mm lens")
+    expect(prompt).toContain("do not look at the camera")
+    expect(prompt).toContain("worn and scuffed tools")
+    const rules = prompt.slice(prompt.indexOf("STRICT RULES"))
+    expect(rules).toContain("five fingers per hand")
+    expect(rules).toContain("no posed smiles")
+    expect(rules).toContain("not a 3D render")
+    // La description reste avant les règles, qui l'emportent
+    expect(prompt.indexOf("Un électricien")).toBeLessThan(prompt.indexOf("STRICT RULES"))
+  })
+
   it("couverture : composition pleine image, format du blog", () => {
     const prompt = buildImagePrompt({ description: "Un maçon au travail.", aspect: "16:9", purpose: "cover" })
     expect(prompt).toContain("cover of a blog article")
@@ -313,6 +339,14 @@ describe("buildImagePrompt", () => {
 })
 
 describe("description proposée et puces de style", () => {
+  it("chaque métier a une scène précise : geste, outils et matériaux", () => {
+    for (const text of ["plomberie", "electricien", "chauffagiste", "macon", "peintre", "carreleur", "menuisier", "couvreur", "plaquiste", "serrurier", "paysagiste"]) {
+      const scene = defaultImageDescription({ title: text, keyword: null, purpose: "inline" })
+      expect(scene.length).toBeGreaterThan(90)
+      expect(scene).toMatch(/Cadrage resserré/)
+    }
+  })
+
   it("reconnaît le métier dans le mot-clé ou le titre, sans accents ni casse", () => {
     expect(defaultImageDescription({ title: "Facture d'un plombier", keyword: null, purpose: "cover" })).toMatch(/^Un plombier/)
     expect(defaultImageDescription({ title: "Devis", keyword: "devis electricien", purpose: "cover" })).toMatch(/^Un électricien/)
@@ -363,8 +397,8 @@ describe("storeBlogImage", () => {
     expect(state.uploads).toHaveLength(1)
     const up = state.uploads[0]
     expect(up.bucket).toBe(BLOG_IMAGE_BUCKET)
-    expect(up.path).toMatch(/^editor\/2026\/10\/salle-de-bains-[a-z0-9]+\.jpg$/)
-    expect(up.opts).toMatchObject({ contentType: "image/jpeg", upsert: false, cacheControl: "31536000" })
+    expect(up.path).toMatch(/^editor\/2026\/10\/salle-de-bains-[a-z0-9]+\.webp$/)
+    expect(up.opts).toMatchObject({ contentType: "image/webp", upsert: false, cacheControl: "31536000" })
     expect(stored).toEqual({ url: `${PUBLIC}${up.path}#w=800&h=450`, width: 800, height: 450 })
     expect(isBlogImageUrl(stored.url)).toBe(true)
   })
@@ -382,13 +416,58 @@ describe("storeBlogImage", () => {
     expect(meta.width).toBe(1600)
   })
 
-  it("image générée (photo) : toujours en JPEG ; PNG transparent importé : gardé en PNG", async () => {
+  it("toute image est enregistrée en WebP (JPEG, PNG et WebP reçus), sans perdre la transparence", async () => {
     const png = await sharp({ create: { width: 64, height: 48, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0.3 } } }).png().toBuffer()
-    const photo = await storeBlogImage({ data: png, hint: "photo", photo: true, now })
-    expect(state.uploads[0].opts.contentType).toBe("image/jpeg")
-    expect(photo.url).toMatch(/\.jpg#w=64&h=48$/)
-    await storeBlogImage({ data: png, hint: "capture", now })
-    expect(state.uploads[1].opts.contentType).toBe("image/png")
+    const converted = await storeBlogImage({ data: png, hint: "capture", now })
+    expect(state.uploads[0].opts.contentType).toBe("image/webp")
+    expect(converted.url).toMatch(/\.webp#w=64&h=48$/)
+    expect((await sharp(state.uploads[0].data).metadata()).hasAlpha).toBe(true)
+    const jpeg = await sharp({ create: { width: 64, height: 48, channels: 3, background: "#996633" } }).jpeg().toBuffer()
+    await storeBlogImage({ data: jpeg, hint: "photo", now })
+    expect(state.uploads[1].opts.contentType).toBe("image/webp")
+    expect(state.uploads[1].path).toMatch(/\.webp$/)
+    const webp = await sharp({ create: { width: 64, height: 48, channels: 3, background: "#996633" } }).webp().toBuffer()
+    await storeBlogImage({ data: webp, hint: "deja-webp", now })
+    expect(state.uploads[2].opts.contentType).toBe("image/webp")
+  })
+
+  it("métadonnées : seules celles de Qonforme sont écrites (titre, description, mots-clés, auteur, origine IA), jamais celles du fichier", async () => {
+    const data = await sharp({ create: { width: 640, height: 360, channels: 3, background: "#996633" } })
+      .jpeg()
+      .withExif({ IFD0: { Make: "Canon", Copyright: "Téléphone" }, IFD3: { GPSLatitudeRef: "N", GPSLatitude: "48/1 51/1 0/1" } })
+      .toBuffer()
+    await storeBlogImage({
+      data,
+      hint: "comment facturer un chantier",
+      generated: true,
+      meta: { title: "Comment facturer un chantier", description: "Un électricien raccorde un tableau électrique", keywords: ["comment facturer un chantier", "devis"], creator: "Qonforme", source: "ai" },
+      now,
+    })
+    const meta = await sharp(state.uploads[0].data).metadata()
+    const xmp = meta.xmp?.toString("utf8") ?? ""
+    expect(xmp).toContain("Comment facturer un chantier")
+    expect(xmp).toContain("<rdf:li>comment facturer un chantier</rdf:li>")
+    expect(xmp).toContain("<dc:creator><rdf:Seq><rdf:li>Qonforme</rdf:li>")
+    expect(xmp).toContain("© 2026 Qonforme")
+    expect(xmp).toContain("trainedAlgorithmicMedia")
+    expect(xmp).not.toMatch(/GPS|Canon|Téléphone/)
+    const exif = meta.exif?.toString("latin1") ?? ""
+    expect(exif).toContain("Qonforme")
+    expect(exif).not.toMatch(/GPS|Canon/)
+    expect(state.uploads[0].path).toMatch(/^editor\/ia\/2026\/10\/comment-facturer-un-chantier-[a-z0-9]+\.webp$/)
+    // Une image importée : rien n'est ajouté
+    await storeBlogImage({ data, hint: "import", now })
+    const plain = await sharp(state.uploads[1].data).metadata()
+    expect(plain.xmp).toBeUndefined()
+    expect(plain.exif).toBeUndefined()
+  })
+
+  it("couverture dessinée : sous covers/, qualité graphique, origine « digitalArt »", async () => {
+    const data = await sharp({ create: { width: 1600, height: 900, channels: 3, background: "#ffffff" } }).png().toBuffer()
+    const stored = await storeBlogImage({ data, hint: "Comment facturer un chantier", cover: true, meta: { title: "Comment facturer un chantier", creator: "Qonforme", source: "graphic" }, now })
+    expect(state.uploads[0].path).toMatch(/^covers\/2026\/10\/comment-facturer-un-chantier-[a-z0-9]+\.webp$/)
+    expect(stored).toMatchObject({ width: 1600, height: 900 })
+    expect((await sharp(state.uploads[0].data).metadata()).xmp?.toString("utf8")).toContain("digitalArt")
   })
 
   it("refuse un fichier qui n'est pas une image, une image trop grande ou trop lourde", async () => {
@@ -535,7 +614,7 @@ describe("POST /api/admin/blog/images/generate", () => {
     expect(res.status).toBe(200)
     const { url } = await res.json()
     expect(url).not.toMatch(/batisoft/i)
-    expect(url).toMatch(/\/un-plombier-installe-un-chauffe-eau-[a-z0-9-]*\.jpg#/)
+    expect(url).toMatch(/\/un-plombier-installe-un-chauffe-eau-[a-z0-9-]*\.webp#/)
   })
 
   it("503 avec le message du modèle si la clé manque", async () => {
@@ -575,7 +654,7 @@ describe("POST /api/admin/blog/images/generate", () => {
     expect(state.generateCalls).toHaveLength(0)
   })
 
-  it("200 : modèle des Préférences, 75 s, consigne complète, image enregistrée en JPEG, repli signalé", async () => {
+  it("200 : modèle des Préférences, 75 s, consigne complète, image enregistrée en WebP, repli signalé", async () => {
     withCompetitor()
     const png = await sharp({ create: { width: 1024, height: 768, channels: 3, background: "#8899aa" } }).png().toBuffer()
     state.generate = async () => ({
@@ -589,7 +668,7 @@ describe("POST /api/admin/blog/images/generate", () => {
     const body = await res.json()
     expect(body).toMatchObject({ width: 1024, height: 768, model: "Nano Banana 2" })
     // Image générée : rangée sous editor/ia/, le blog affiche « Illustration générée par IA » sous elle
-    expect(body.url).toMatch(/\/editor\/ia\/\d{4}\/\d{2}\/facturer-un-chauffe-eau-[a-z0-9]+\.jpg#w=1024&h=768$/)
+    expect(body.url).toMatch(/\/editor\/ia\/\d{4}\/\d{2}\/facturer-un-chauffe-eau-[a-z0-9]+\.webp#w=1024&h=768$/)
     expect(isGeneratedBlogImage(body.url, SUPABASE)).toBe(true)
     expect(body.notice).toBe("Image par Nano Banana 2 au lieu de Nano Banana 2.1 : Nano Banana a répondu 500.")
     const call = state.generateCalls[0]

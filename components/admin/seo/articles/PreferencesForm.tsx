@@ -302,19 +302,19 @@ export function PreferencesForm({
         </div>
 
         <div className="flex min-w-0 flex-[1_1_420px] flex-col gap-5">
-          <Card id="t-image" title="Image de couverture" text="Choisissez si une image de couverture est générée avec chaque article.">
-            <ToggleRow id="pref-image" label="Générer une image de couverture" hint="Photo d'artisan du bâtiment au travail, sans texte ni logo, 16:9, créée au moment de la rédaction." checked={v.coverImage} onChange={(b) => set("coverImage", b)} />
+          <Card id="t-image" title="Images" text="Couverture de chaque article et photos générées dans l'éditeur.">
+            <ToggleRow id="pref-image" label="Créer une couverture avec chaque article" hint="La couverture Qonforme : titre de l'article, logo et icônes du sujet, 16:9, enregistrée en WebP. Dessinée par le code, sans coût ni clé." checked={v.coverImage} onChange={(b) => set("coverImage", b)} />
             <div className="mt-3.5 border-t border-[var(--q-line-soft)] pt-3.5">
-              <ModelSelect id="image-modele" label="Modèle d'image" value={v.imageModel} options={imageModels} onChange={(m) => set("imageModel", m)} />
+              <ModelSelect id="image-modele" label="Modèle d'image des photos de l'éditeur" value={v.imageModel} options={imageModels} onChange={(m) => set("imageModel", m)} />
               {fallbackImage && (
                 <p className="mt-2 flex items-start gap-2 text-[13px] text-[var(--q-text-3)]">
                   <Info className="mt-px size-4 shrink-0" aria-hidden />
                   <span>
-                    Repli automatique : si {image?.label} échoue, l&apos;image est demandée à {fallbackImage.label} ; le modèle réellement utilisé est noté sur l&apos;article.
+                    Repli automatique : si {image?.label} échoue, l&apos;image est demandée à {fallbackImage.label} ; le modèle réellement utilisé est noté dans l&apos;éditeur.
                   </span>
                 </p>
               )}
-              <p className="mt-2 text-[13px] text-[var(--q-text-4)]">Une image qui échoue n&apos;empêche jamais l&apos;article.</p>
+              <p className="mt-2 text-[13px] text-[var(--q-text-4)]">Ce modèle sert aux photos que vous générez dans l&apos;éditeur (« Photo avec Gemini », images du texte). Une couverture qui échoue n&apos;empêche jamais l&apos;article.</p>
             </div>
           </Card>
 
