@@ -182,14 +182,14 @@ export function buildSystemPrompt({ brand, strategy, prefs }: PromptContext, rol
   )
   if (prefs.officialSources) {
     lines.push(
-      "- Chaque règle légale renvoie à sa source officielle. Liens autorisés : uniquement des adresses https en .gouv.fr (legifrance.gouv.fr, bofip.impots.gouv.fr, impots.gouv.fr, entreprendre.service-public.gouv.fr…) ou service-public.fr. N'inventez aucune adresse : en cas de doute, citez le texte (« article L441-10 du Code de commerce ») sans lien.",
+      "- Chaque règle légale renvoie à sa source officielle. Liens externes autorisés : uniquement des adresses https en .gouv.fr (legifrance.gouv.fr, bofip.impots.gouv.fr, impots.gouv.fr, entreprendre.service-public.gouv.fr…) ou service-public.fr. N'inventez aucune adresse : en cas de doute, citez le texte (« article L441-10 du Code de commerce ») sans lien.",
     )
   } else {
     lines.push("- Aucun lien externe, sauf vers une adresse https officielle en .gouv.fr dont vous êtes certain.")
   }
   lines.push(
     "",
-    "FORMAT DU BLOG (Markdown simple) : pas de titre de niveau 1 (« # ») — le titre est affiché par la page ; sections « ## » et sous-sections « ### » ; listes « - » ou « 1. » ; gras « **…** » ; liens « [texte](https://…) ». Pas de tableau, pas de HTML, pas d'image, pas de case à cocher, pas de bloc de code.",
+    "FORMAT DU BLOG (Markdown simple) : pas de titre de niveau 1 (« # ») — le titre est affiché par la page ; sections « ## » et sous-sections « ### » ; listes « - » ou « 1. » ; gras « **…** » ; liens « [texte](adresse) ». Pas de tableau, pas de HTML, pas d'image, pas de case à cocher, pas de bloc de code.",
   )
   return lines.join("\n")
 }
@@ -291,7 +291,27 @@ export function buildPlanPrompt(brief: ArticleBrief, opts: { existingTitles: str
 /* Passe 2 : rédaction                                                 */
 /* ------------------------------------------------------------------ */
 
-export function buildWritePrompt(brief: ArticleBrief, plan: ArticlePlan, brandName: string): string {
+/** Pages de qonforme.fr que le rédacteur peut lier, et le nombre de liens attendu (lib/seo/links). */
+export interface LinkGuide {
+  min: number
+  max: number
+  pages: { path: string; title: string; anchors: string[] }[]
+}
+
+/** Consigne de maillage interne : les pages permises, le nombre de liens, la forme des ancres. */
+export function linkGuideLines(guide: LinkGuide): string[] {
+  return [
+    "",
+    `MAILLAGE INTERNE : placez entre ${guide.min} et ${guide.max} liens vers d'autres pages de qonforme.fr, en Markdown « [ancre](/chemin) ».`,
+    "- Seulement les pages de la liste ci-dessous, avec leur chemin exact (il commence par « / ») ; n'inventez aucune adresse interne.",
+    "- Chaque page au plus une fois. L'ancre est une expression naturelle de 2 à 6 mots qui décrit la page (« les mentions obligatoires d'un devis »), intégrée à la phrase ; jamais « cliquez ici » ni « en savoir plus », jamais le titre de l'article, jamais dans un titre « ## » ou « ### ».",
+    "- Répartissez les liens dans l'article (introduction, sections, conclusion), pas deux dans la même phrase, et seulement quand le lien aide le lecteur à cet endroit.",
+    "Pages que vous pouvez lier :",
+    ...guide.pages.map((p) => `- ${p.path} : ${p.title}${p.anchors.length > 0 ? ` (ancres possibles : ${p.anchors.map((a) => `« ${a} »`).join(", ")})` : ""}`),
+  ]
+}
+
+export function buildWritePrompt(brief: ArticleBrief, plan: ArticlePlan, brandName: string, links?: LinkGuide | null): string {
   const angle = findAngle(brief.angle)
   const outline = plan.outline.flatMap((s) => [`## ${s.h2}`, ...s.h3.map((h) => `### ${h}`)])
   const lines: string[] = [
@@ -317,6 +337,7 @@ export function buildWritePrompt(brief: ArticleBrief, plan: ArticlePlan, brandNa
   if (plan.sources.length > 0) {
     lines.push("", "Sources officielles à citer en lien, à l'endroit où la règle est énoncée :", ...plan.sources.map((s) => `- ${s.title} : ${s.url}`))
   }
+  if (links && links.pages.length > 0) lines.push(...linkGuideLines(links))
   lines.push(
     "",
     `Conclusion : une dernière section « ## » qui résume l'essentiel et invite à essayer ${brandName} pour ce besoin, sans promesse invérifiable, sans chiffre et sans contact humain.`,

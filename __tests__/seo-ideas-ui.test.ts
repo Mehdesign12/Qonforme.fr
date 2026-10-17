@@ -428,6 +428,7 @@ describe("« Générer un article » · Proposition IA", () => {
     lengthMin: 1000,
     lengthMax: 1500,
     coverImage: true,
+    inlineImages: 4,
     summary: "Plan par Claude Sonnet 5.5",
     fallbacks: [],
     blocked: null,

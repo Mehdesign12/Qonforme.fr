@@ -46,6 +46,7 @@ const generate: GenerateDialogData = {
   lengthMin: 1500,
   lengthMax: 2500,
   coverImage: true,
+  inlineImages: 4,
   summary: "Plan et contrôle par Gemini 3.8 Flash · rédaction par Claude Opus 5.5",
   fallbacks: [],
   blocked: null,
@@ -57,6 +58,7 @@ function calendar(): CalendarData {
   return {
     month: "2026-10",
     coverImage: true,
+    inlineImages: 4,
     label: "Octobre 2026",
     prev: "2026-09",
     next: "2026-11",
@@ -157,7 +159,7 @@ describe("écrans Articles", () => {
       date: null,
       displayStatus: "unplanned",
     }
-    const out = html(createElement(TopicsView, { data: { topics: [t], archived: 2, nextRelease: "2026-10-12T06:00:00Z", keywords: [], angles: [], slots: [], defaultMode: "draft", coverImage: true }, archived: false }))
+    const out = html(createElement(TopicsView, { data: { topics: [t], archived: 2, nextRelease: "2026-10-12T06:00:00Z", keywords: [], angles: [], slots: [], defaultMode: "draft", coverImage: true, inlineImages: 4 }, archived: false }))
     expect(out).toContain("Sujets à traiter")
     expect(out).toContain("Prochaine parution")
     expect(out).toContain("12")
@@ -169,8 +171,9 @@ describe("écrans Articles", () => {
 
   it("préférences : cartes, modèles par passe, règles du contrôle", () => {
     const out = html(createElement(PreferencesForm, { initial: SETTINGS_DEFAULTS.articles, textModels: textModelOptions(), imageModels: imageModelOptions(), auditRules: AUDIT_RULES.map((r) => r.label) }))
-    for (const title of ["Publication", "Rythme", "Rédaction", "Images", "Créer une couverture avec chaque article", "Modèle d&#x27;image des photos de l&#x27;éditeur", "Contrôle automatique", "Liens automatiques vers les guides"]) expect(out).toContain(title)
+    for (const title of ["Publication", "Rythme", "Rédaction", "Images", "Créer une couverture avec chaque article", "Photos dans le texte des articles générés", "Modèle d&#x27;image des photos (éditeur et articles générés)", "Contrôle automatique", "Maillage interne automatique"]) expect(out).toContain(title)
     expect(out).toContain("Recommandé")
+    expect(out).toContain("4 photos au plus (conseillé)")
     expect(out).toContain("Le contrôle automatique retient toujours un article qui cite une valeur périmée ou une affirmation interdite.")
     expect(out).toContain(`${AUDIT_RULES.length} règles actives`)
     expect(out).toContain("Gemini 3.8 Flash")

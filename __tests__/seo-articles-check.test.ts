@@ -24,6 +24,14 @@ const words = (n: number) => Array.from({ length: n }, (_, i) => `mot${i}`).join
 const issue = (blocking: boolean): CheckIssue => ({ kind: "audit", label: blocking ? "Anciens seuils de franchise de TVA" : "Ancien nom des plateformes agréées (PDP)", blocking, fixable: true })
 
 describe("contrôle d'un article", () => {
+  it("une photo du texte (syntaxe image) n'est pas un lien vers un site non officiel ; un vrai lien l'est toujours", () => {
+    const photo = "![Un plombier au travail](https://proj.supabase.co/storage/v1/object/public/blog-covers/editor/ia/2026/10/plombier-abc.webp#w=1600&h=900)"
+    const base = { title: "Un titre", metaDescription: null, slug: null, keywords: [], competitors: [], existing: [], lengthMin: 0, lengthMax: 0, faq: null }
+    const linkKinds = (content: string) => checkArticle({ ...base, content }).filter((i) => i.kind === "link")
+    expect(linkKinds(`## Section\n\nUn paragraphe.\n\n${photo}\n\nLa suite.`)).toEqual([])
+    expect(linkKinds(`## Section\n\nVoir [ce site](https://www.exemple.com/page).\n\n${photo}`)).toHaveLength(1)
+  })
+
   it("repère valeurs périmées, concurrents, titres, liens, FAQ, description et doublon", () => {
     const content = [
       "# Un titre de niveau 1",

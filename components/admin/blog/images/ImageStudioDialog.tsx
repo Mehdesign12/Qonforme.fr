@@ -14,6 +14,12 @@
  * et, pour une image du texte, la légende. Téléphone : plein écran, une
  * colonne, aperçu en haut, pied collant au-dessus de la barre d'accueil.
  *
+ * - Image du texte ouverte sur un passage (texte sélectionné, paragraphe du
+ *   curseur) : le sujet, la scène et les puces de style sont DÉTECTÉS d'après
+ *   ce passage (POST /api/admin/blog/images/describe) avant de cliquer sur
+ *   « Générer ». Pendant la lecture, une carte « Lecture du passage… » ; si la
+ *   personne écrit dans le champ, la détection s'arrête et son texte est gardé ;
+ *   sans modèle, la proposition vient des mots du passage et la carte le dit.
  * - Une génération dure 20 à 40 secondes et chaque image est facturée par
  *   Google : rien n'est relancé tout seul, « Annuler » (ou Échap) interrompt
  *   l'attente, et un clic à côté de la fenêtre ne la ferme jamais (le travail
@@ -56,7 +62,8 @@ import {
   toggleStyleChip,
   type ImagePurpose,
 } from "@/lib/blog-images/prompt"
-import type { GeneratedImageResponse, PickedImage, StoredImage } from "@/lib/seo/articles/editor-types"
+import { descriptionFromSuggestion, heuristicPassage, passageExcerpt, type PassageContext } from "@/lib/blog-images/passage"
+import type { DescribePassageResponse, GeneratedImageResponse, PickedImage, StoredImage } from "@/lib/seo/articles/editor-types"
 import { UPLOAD_HINT, dragHasFiles, imageFileFrom, modKey, uploadBlogImage } from "@/components/admin/blog/images/upload-client"
 
 export type StudioTab = "generate" | "import"
@@ -73,6 +80,16 @@ interface StudioImage extends StoredImage {
 }
 
 type Busy = null | "generate" | "import"
+/** Lecture du passage : « loading » tant que le modèle n'a pas répondu, « done » après (proposition du modèle ou repli). */
+interface Detection {
+  status: "idle" | "loading" | "done"
+  subject: string
+  source: DescribePassageResponse["source"] | null
+  notice: string | null
+}
+const NO_DETECTION: Detection = { status: "idle", subject: "", source: null, notice: null }
+/** Au-delà, la fenêtre se contente du repli (le serveur s'arrête à 20 s). */
+const DETECT_TIMEOUT_MS = 25_000
 interface StudioError {
   message: string
   /** « config » : la clé du modèle manque (503) ; la génération ne peut pas marcher. */
@@ -88,6 +105,56 @@ const ratioOf = (aspect: ImageAspect) => {
 const clampRatio = (r: number) => Math.min(2.4, Math.max(0.5, r))
 const ALT_PREFIX = /^(image|photo|photographie|illustration)\s+(de|d['’]|du|des)\b/i
 
+/** Carte « Sujet repéré » : ce que le studio a lu dans le passage, avant de générer (sujet, style, extrait). */
+function PassageCard({ passage, detection, description }: { passage: PassageContext; detection: Detection; description: string }) {
+  const loading = detection.status === "loading"
+  const excerpt = passageExcerpt(passage.text || passage.heading || "", 110)
+  // Les puces actives dans la description : elles suivent les choix de la personne
+  const styles = IMAGE_STYLE_CHIPS.filter((chip) => hasStyleChip(description, chip)).map((chip) => chip.label)
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      data-testid="passage-card"
+      className="flex flex-col gap-1.5 rounded-xl border border-[var(--q-line)] bg-[var(--q-surface)] p-3"
+    >
+      <div className="flex items-center gap-2">
+        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-[var(--q-wash)] text-[var(--q-accent-strong)]" aria-hidden>
+          {loading ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" /> : <Sparkles className="size-3.5" />}
+        </span>
+        <span className="q-label !m-0">{loading ? "Lecture du passage…" : "Sujet repéré"}</span>
+      </div>
+      {loading ? (
+        <div className="flex flex-col gap-1.5" aria-hidden>
+          <span className="h-3.5 w-3/4 animate-pulse rounded bg-[var(--q-wash)] motion-reduce:animate-none" />
+          <span className="h-3 w-1/2 animate-pulse rounded bg-[var(--q-wash)] motion-reduce:animate-none" />
+        </div>
+      ) : (
+        <>
+          <p className="text-[14px] font-semibold leading-snug text-[var(--q-ink)]">{detection.subject}</p>
+          {styles.length > 0 && (
+            <p className="text-[12.5px] leading-snug text-[var(--q-text-2)]">
+              <span className="text-[var(--q-text-4)]">Style : </span>
+              {styles.join(" · ")}
+            </p>
+          )}
+        </>
+      )}
+      {excerpt && (
+        <p className="line-clamp-1 text-[12.5px] leading-snug text-[var(--q-text-4)]">
+          {passage.selected ? "Texte sélectionné" : "Paragraphe du curseur"} : « {excerpt} »
+        </p>
+      )}
+      {!loading && detection.notice && (
+        <p className="flex items-start gap-1.5 text-[12.5px] leading-snug text-[var(--q-text-3)]">
+          <Info className="mt-px size-3.5 shrink-0" aria-hidden />
+          {detection.notice}
+        </p>
+      )}
+    </div>
+  )
+}
+
 let keySeed = 0
 const nextKey = () => `img-${Date.now().toString(36)}-${++keySeed}`
 
@@ -99,6 +166,7 @@ export function ImageStudioDialog({
   keyword,
   initialAlt,
   initialTab,
+  passage,
   onPick,
 }: {
   open: boolean
@@ -111,6 +179,8 @@ export function ImageStudioDialog({
   initialAlt?: string
   /** Onglet ouvert : « Générer avec Gemini » par défaut. */
   initialTab?: StudioTab
+  /** Passage illustré (images du texte) : ce que montre l'image et le style en sont déduits à l'ouverture. */
+  passage?: PassageContext | null
   onPick: (image: PickedImage) => void
 }) {
   const ids = useId()
@@ -134,6 +204,11 @@ export function ImageStudioDialog({
   const [previewBroken, setPreviewBroken] = useState(false)
   const [live, setLive] = useState("")
   const [mod, setMod] = useState("Ctrl")
+  const [detection, setDetection] = useState<Detection>(NO_DETECTION)
+  // Texte alternatif de la détection, valable tant que la description envoyée est celle qu'elle a produite
+  const detectedAlt = useRef<{ description: string; alt: string } | null>(null)
+  const detectAbort = useRef<AbortController | null>(null)
+  const detectId = useRef(0)
 
   const abortRef = useRef<AbortController | null>(null)
   const busyRef = useRef<Busy>(null)
@@ -144,6 +219,8 @@ export function ImageStudioDialog({
   const previewRef = useRef<HTMLDivElement>(null)
 
   const proposed = defaultImageDescription({ title, keyword, purpose })
+  // Seule une image du texte lit un passage (une couverture est dessinée d'après le titre)
+  const reading = purpose === "inline" && passage ? passage : null
   const effectiveAspect: ImageAspect = cover ? "16:9" : aspect
 
   // Chaque ouverture repart d'une page propre ; l'historique reste
@@ -163,15 +240,30 @@ export function ImageStudioDialog({
     setPreviewBroken(false)
     setLive("")
     setMod(modKey())
+    detectedAlt.current = null
+    cancelDetection()
+    setDetection(NO_DETECTION)
+    // Image du texte ouverte sur un passage : sujet, scène et style sont lus avant de générer
+    if (reading && (initialTab ?? "generate") === "generate") void detectPassage(reading)
     // Seulement à l'ouverture : le titre peut changer pendant que la fenêtre est fermée
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   // Fermeture ou démontage : plus rien n'attend de réponse
   useEffect(() => {
-    if (!open) abortRef.current?.abort()
+    if (!open) {
+      abortRef.current?.abort()
+      cancelDetection()
+    }
   }, [open])
-  useEffect(() => () => abortRef.current?.abort(), [])
+  useEffect(
+    () => () => {
+      abortRef.current?.abort()
+      detectId.current++
+      detectAbort.current?.abort()
+    },
+    [],
+  )
 
   // Chronomètre de la génération
   useEffect(() => {
@@ -182,12 +274,97 @@ export function ImageStudioDialog({
     return () => window.clearInterval(timer)
   }, [busy])
 
+  /** Arrête la lecture du passage en cours (fermeture, nouvelle lecture, texte écrit à la main). */
+  function cancelDetection() {
+    detectId.current++
+    detectAbort.current?.abort()
+    detectAbort.current = null
+  }
+
+  /**
+   * Lit le passage : le champ « Ce que montre l'image » reçoit tout de suite la
+   * proposition tirée des mots du passage, puis celle du modèle quand elle
+   * arrive (puces de style comprises), sauf si la personne a écrit entretemps
+   * (cancelDetection). Sans réponse du serveur, la proposition de départ reste.
+   */
+  async function detectPassage(source: PassageContext) {
+    cancelDetection()
+    const controller = new AbortController()
+    detectAbort.current = controller
+    const id = ++detectId.current
+    const quick = heuristicPassage({ passage: source, title, keyword })
+    const quickText = descriptionFromSuggestion(quick)
+    setDescription(quickText)
+    setDetection({ status: "loading", subject: quick.subject, source: null, notice: null })
+    setLive("Lecture du passage pour proposer l'image.")
+    const timer = window.setTimeout(() => controller.abort(), DETECT_TIMEOUT_MS)
+    let suggestion = quick
+    let from: Detection["source"] = "heuristic"
+    let notice: string | null = null
+    try {
+      const res = await fetch("/api/admin/blog/images/describe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          passage: source,
+          ...(title.trim() ? { title: title.trim().slice(0, 300) } : {}),
+          ...(keyword?.trim() ? { keyword: keyword.trim().slice(0, 160) } : {}),
+        }),
+        cache: "no-store",
+        signal: controller.signal,
+      })
+      const json = (await res.json().catch(() => null)) as (Partial<DescribePassageResponse> & { error?: string }) | null
+      if (id !== detectId.current) return
+      if (res.ok && json?.scene && json.subject) {
+        suggestion = { subject: json.subject, scene: json.scene, styles: Array.isArray(json.styles) ? json.styles : [], alt: json.alt ?? quick.alt }
+        from = json.source === "model" ? "model" : "heuristic"
+        notice = json.notice ?? null
+      } else {
+        notice = res.status === 401 ? "Session expirée : reconnectez-vous." : `${json?.error ?? "Lecture du passage impossible"} : proposition d'après les mots du passage.`
+      }
+    } catch {
+      if (id !== detectId.current) return
+      notice = controller.signal.aborted
+        ? "Le modèle a mis trop de temps : proposition d'après les mots du passage."
+        : "Connexion impossible : proposition d'après les mots du passage."
+    } finally {
+      window.clearTimeout(timer)
+      if (detectAbort.current === controller) detectAbort.current = null
+    }
+    if (id !== detectId.current) return
+    const text = descriptionFromSuggestion(suggestion)
+    setDescription(text)
+    detectedAlt.current = { description: text.trim(), alt: suggestion.alt }
+    setDetection({ status: "done", subject: suggestion.subject, source: from, notice })
+    setLive(`Sujet repéré : ${suggestion.subject}. Vérifiez la description, puis générez l'image.`)
+  }
+
+  /** Écrire dans le champ ou changer un style arrête la lecture du passage : le texte de la personne est gardé. */
+  function edit(update: (previous: string) => string) {
+    if (detection.status === "loading") {
+      cancelDetection()
+      setDetection((d) => ({ ...d, status: "done", source: "heuristic", notice: "Lecture interrompée : votre texte est conservé." }))
+      setLive("")
+    }
+    setDescription(update)
+  }
+
   /** Affiche une image ; le texte alternatif suit tant que l'admin ne l'a pas réécrit. */
   const show = useCallback(
     (image: StudioImage) => {
       setCurrent(image)
       setPreviewBroken(false)
-      if (altAuto.current) setAlt(image.description ? altFromDescription(image.description) : "")
+      if (altAuto.current) {
+        const detected = detectedAlt.current
+        // Le texte alternatif du modèle vaut pour la description qu'il a produite, pas pour une description retouchée
+        setAlt(
+          image.description && detected && detected.description === image.description.trim()
+            ? detected.alt
+            : image.description
+              ? altFromDescription(image.description)
+              : "",
+        )
+      }
     },
     [],
   )
@@ -219,7 +396,7 @@ export function ImageStudioDialog({
   }, [])
 
   async function generate() {
-    if (busyRef.current || description.trim().length < 3) return
+    if (busyRef.current || detection.status === "loading" || description.trim().length < 3) return
     const controller = new AbortController()
     abortRef.current = controller
     setBusy("generate")
@@ -401,6 +578,7 @@ export function ImageStudioDialog({
   const status = ((): { tone: "muted" | "ok" | "warn"; text: string } => {
     if (busy === "generate") return { tone: "muted", text: "Génération en cours… Échap pour l'annuler." }
     if (busy === "import") return { tone: "muted", text: "Envoi de l'image en cours…" }
+    if (!current && detection.status === "loading" && tab === "generate") return { tone: "muted", text: "Lecture du passage pour proposer l'image…" }
     if (!current) return { tone: "muted", text: tab === "generate" ? "Générez ou importez une image." : "Importez une image." }
     if (previewBroken) return { tone: "warn", text: "L'aperçu ne s'affiche pas : choisissez une autre image." }
     if (!altValid) return { tone: "warn", text: "Ajoutez un texte alternatif pour continuer." }
@@ -493,24 +671,37 @@ export function ImageStudioDialog({
                   void generate()
                 }}
               >
+                {reading && detection.status !== "idle" && <PassageCard passage={reading} detection={detection} description={description} />}
+
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-end justify-between gap-2">
                     <label htmlFor={`${ids}-description`} className="q-label">
                       Ce que montre l&apos;image
                     </label>
-                    {description.trim() !== proposed && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDescription(proposed)
-                          descriptionRef.current?.focus()
-                        }}
-                        className="inline-flex min-h-8 items-center gap-1 rounded-md px-1.5 text-[12px] font-semibold text-[var(--q-accent-strong)] hover:bg-[var(--q-hover)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)] max-md:min-h-11"
-                      >
-                        <RotateCcw className="size-3.5" aria-hidden />
-                        Proposition d&apos;après le titre
-                      </button>
-                    )}
+                    {reading
+                      ? detection.status === "done" && (
+                          <button
+                            type="button"
+                            onClick={() => void detectPassage(reading)}
+                            className="inline-flex min-h-8 items-center gap-1 rounded-md px-1.5 text-[12px] font-semibold text-[var(--q-accent-strong)] hover:bg-[var(--q-hover)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)] max-md:min-h-11"
+                          >
+                            <RotateCcw className="size-3.5" aria-hidden />
+                            Relire le passage
+                          </button>
+                        )
+                      : description.trim() !== proposed && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDescription(proposed)
+                              descriptionRef.current?.focus()
+                            }}
+                            className="inline-flex min-h-8 items-center gap-1 rounded-md px-1.5 text-[12px] font-semibold text-[var(--q-accent-strong)] hover:bg-[var(--q-hover)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)] max-md:min-h-11"
+                          >
+                            <RotateCcw className="size-3.5" aria-hidden />
+                            Proposition d&apos;après le titre
+                          </button>
+                        )}
                   </div>
                   <div className="relative">
                     <textarea
@@ -519,7 +710,11 @@ export function ImageStudioDialog({
                       rows={5}
                       value={description}
                       maxLength={MAX_IMAGE_DESCRIPTION}
-                      onChange={(e) => setDescription(e.target.value)}
+                      onChange={(e) => {
+                        const next = e.target.value
+                        edit(() => next)
+                      }}
+                      aria-busy={detection.status === "loading"}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                           e.preventDefault()
@@ -527,7 +722,10 @@ export function ImageStudioDialog({
                         }
                       }}
                       aria-describedby={`${ids}-description-aide`}
-                      className="q-input min-h-[136px] resize-y pb-7 text-base leading-relaxed md:text-sm"
+                      className={cn(
+                        "q-input min-h-[136px] resize-y pb-7 text-base leading-relaxed transition-opacity duration-150 motion-reduce:transition-none md:text-sm",
+                        detection.status === "loading" && "opacity-60",
+                      )}
                       placeholder="Par exemple : un plombier remplace un chauffe-eau dans une buanderie, lumière naturelle."
                     />
                     <span
@@ -558,7 +756,7 @@ export function ImageStudioDialog({
                           type="button"
                           aria-pressed={on}
                           title={chip.text}
-                          onClick={() => setDescription((d) => toggleStyleChip(d, chip))}
+                          onClick={() => edit((d) => toggleStyleChip(d, chip))}
                           className={cn(
                             "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold transition-colors duration-100 motion-reduce:transition-none md:min-h-8",
                             "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)]",
@@ -612,11 +810,21 @@ export function ImageStudioDialog({
                 <div className="flex flex-col gap-2 md:sticky md:-bottom-5 md:z-[1] md:-mx-6 md:-mb-5 md:mt-auto md:border-t md:border-[var(--q-line-soft)] md:bg-[var(--q-surface-2)] md:px-6 md:pb-5 md:pt-4">
                   <button
                     type="submit"
-                    disabled={busy !== null || description.trim().length < 3}
+                    disabled={busy !== null || detection.status === "loading" || description.trim().length < 3}
                     className="q-btn q-btn-primary h-11 w-full max-md:h-12 max-md:rounded-[14px] max-md:text-[15px]"
                   >
-                    {busy === "generate" ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : <Sparkles aria-hidden />}
-                    {busy === "generate" ? "Génération…" : current?.source === "generate" ? "Générer une autre image" : "Générer"}
+                    {busy === "generate" || detection.status === "loading" ? (
+                      <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden />
+                    ) : (
+                      <Sparkles aria-hidden />
+                    )}
+                    {busy === "generate"
+                      ? "Génération…"
+                      : detection.status === "loading"
+                        ? "Lecture du passage…"
+                        : current?.source === "generate"
+                          ? "Générer une autre image"
+                          : "Générer"}
                     <span className="ml-1 hidden items-center gap-0.5 opacity-80 md:inline-flex" aria-hidden>
                       <kbd className="q-kbd !border-white/30 !bg-white/10 !text-white">{mod}</kbd>
                       <kbd className="q-kbd !border-white/30 !bg-white/10 !text-white">↵</kbd>

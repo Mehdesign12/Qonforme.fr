@@ -319,6 +319,7 @@ function calendar(today: string): CalendarData {
     slots: [],
     defaultMode: "draft",
     coverImage: true,
+    inlineImages: 4,
     publishTime: "08:00",
   }
 }
@@ -328,7 +329,7 @@ describe("calendrier : « + » d'un jour", () => {
     const today = todayInParis()
     // Un jour à venir du même mois quand il existe, sinon aujourd'hui
     const target = addDays(today, 1).slice(0, 7) === today.slice(0, 7) ? addDays(today, 1) : today
-    const generate = { topics: [], keywords: [], angles: [], lengthMin: 1500, lengthMax: 2500, coverImage: true, summary: "Plan", fallbacks: [], blocked: null, slot: null }
+    const generate = { topics: [], keywords: [], angles: [], lengthMin: 1500, lengthMax: 2500, coverImage: true, inlineImages: 4, summary: "Plan", fallbacks: [], blocked: null, slot: null }
     await act(async () => root.render(createElement(Calendar.CalendarView, { data: calendar(today), filter: null, generate })))
     const plus = document.getElementById(`ajout-${target}`) as HTMLElement
     expect(plus).toBeTruthy()

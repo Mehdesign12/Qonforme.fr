@@ -103,7 +103,8 @@ import { IdeasDialog } from '@/components/admin/seo/ideas/IdeasDialog'
 import { BlockedBanner, ConfirmDialog, DraftOfferBanner, EditorTabs, flashElement, ScheduleProposalBanner, type SaveState } from '@/components/admin/blog/shell/parts'
 import { EditorHeader } from '@/components/admin/blog/shell/EditorHeader'
 import { DocumentSheet } from '@/components/admin/blog/shell/DocumentSheet'
-import { AddressCard, GoogleCard, KeywordCard, OutlineCard, PublicationCard, ScoreCard, SecondaryCard } from '@/components/admin/blog/shell/SideCards'
+import { AddressCard, GoogleCard, KeywordCard, LinksCard, OutlineCard, PublicationCard, ScoreCard, SecondaryCard } from '@/components/admin/blog/shell/SideCards'
+import { useAutoLinks } from '@/components/admin/blog/seo/useAutoLinks'
 
 interface BlogEditorProps {
   mode: 'create' | 'edit'
@@ -129,6 +130,7 @@ const FOCUS_IDS: Record<Exclude<FocusTarget, 'content' | 'publication'>, string>
   seoTitle: 'blog-seo-title',
   seoDescription: 'blog-seo-description',
   slug: 'blog-slug',
+  links: 'blog-links-run',
 }
 
 const PANELS: Record<EditorTab, string> = {
@@ -354,6 +356,16 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
   /* ---------------------------------------------------------------- */
 
   const studio = useImageStudio({ title: draft.title, keyword: draft.keyword })
+
+  /* ---------------------------------------------------------------- */
+  /* Maillage interne                                                  */
+  /* ---------------------------------------------------------------- */
+
+  // Les liens posés passent par le même chemin qu'une modification du texte : l'éditeur recharge le texte, Ctrl+Z revient
+  const autoLinks = useAutoLinks({
+    getArticle: () => ({ markdown: draftRef.current.content, title: draftRef.current.title, keyword: draftRef.current.keyword, slug: draftRef.current.slug }),
+    onApply: (markdown) => patch({ content: markdown }),
+  })
 
   /* ---------------------------------------------------------------- */
   /* Liste de contrôle → champ                                         */
@@ -896,6 +908,15 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
             slug={draft.slug}
             selfId={id}
             onPropose={() => setIdeasOpen(true)}
+          />
+          <LinksCard
+            className={tab === 'referencement' ? '' : 'max-xl:hidden'}
+            content={deferredDraft.content}
+            state={autoLinks.state}
+            onRun={() => void autoLinks.run()}
+            onUndo={autoLinks.undo}
+            onAddRelated={autoLinks.addRelatedBlock}
+            onDismiss={autoLinks.dismiss}
           />
           <GoogleCard
             className={tab === 'referencement' ? '' : 'max-xl:hidden'}

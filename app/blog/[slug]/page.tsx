@@ -3,7 +3,8 @@ import { notFound } from "next/navigation"
 import { createAdminClient } from "@/lib/supabase/server"
 import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { markdownToHtml } from "@/lib/markdown"
-import { autoLinkPseo } from "@/lib/blog-autolink"
+import { loadLinkCandidates } from "@/lib/seo/links/catalog"
+import { topUpLinks } from "@/lib/seo/links/engine"
 import {
   getReadingTime,
   getCategoryFromPrompt,
@@ -41,6 +42,26 @@ async function autoLinksEnabled(): Promise<boolean> {
     return (await getSettings(seoDb(), "articles")).value.autoLinks
   } catch {
     return true
+  }
+}
+
+/**
+ * Complète les liens internes d'un article jusqu'à l'objectif de sa longueur
+ * (lib/seo/links) : les articles écrits avant le maillage automatique reçoivent
+ * ainsi leurs liens vers les guides, modèles, outils et autres articles, sans
+ * que leur texte enregistré change. Un article qui a déjà assez de liens n'en
+ * reçoit aucun. Catalogue illisible : texte tel quel.
+ */
+async function withInternalLinks(markdown: string, post: { slug: string; title: string; target_keyword?: string | null }): Promise<string> {
+  try {
+    const candidates = await loadLinkCandidates(seoDb())
+    return topUpLinks(markdown, candidates, {
+      selfPath: `/blog/${post.slug}`,
+      keyword: post.target_keyword ?? null,
+      topic: `${post.title} ${post.target_keyword ?? ""}`,
+    }).markdown
+  } catch {
+    return markdown
   }
 }
 
@@ -146,8 +167,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     autoLinksEnabled(),
   ])
   // Images du texte générées par IA : « Illustration générée par IA » dans leur légende
-  const html = markdownToHtml(content, { aiImageMention: true })
-  const contentHtml = autoLinks ? autoLinkPseo(html) : html
+  const linked = autoLinks ? await withInternalLinks(content, post) : content
+  const contentHtml = markdownToHtml(linked, { aiImageMention: true, sameTabInternalLinks: true })
   const readingTime = getReadingTime(content)
   const category = getCategoryFromPrompt(post.ai_prompt)
   const headings = extractHeadings(content)

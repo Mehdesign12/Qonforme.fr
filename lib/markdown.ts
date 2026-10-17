@@ -42,6 +42,13 @@ export interface MarkdownOptions {
    * Jamais dans l'éditeur, qui relit la légende comme du texte de l'article.
    */
   aiImageMention?: boolean
+  /**
+   * Page publique du blog : un lien vers une page du site (« /guide/… », « #… »)
+   * s'ouvre dans le même onglet, avec son référent (l'analyse des parcours le
+   * lit) ; les liens externes gardent leur nouvel onglet. L'éditeur, qui relit
+   * le texte à l'identique, garde le comportement d'origine.
+   */
+  sameTabInternalLinks?: boolean
 }
 
 /** Mention ajoutée sous une image générée par IA (option aiImageMention). */
@@ -90,6 +97,7 @@ export function markdownToHtml(md: string, options: MarkdownOptions = {}): strin
   // Links — http(s), chemins du site et ancres seulement (jamais javascript:, data:…)
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, text: string, href: string) => {
     const url = safeHref(href)
+    if (url && options.sameTabInternalLinks && /^(\/(?![/\\])|#)/.test(url)) return `<a href="${url}">${text}</a>`
     return url ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>` : text
   })
 

@@ -9,6 +9,7 @@ import React, { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import type { Editor } from "@tiptap/core"
 import { RichEditor, type RichEditorHandle, type RichEditorProps } from "@/components/admin/blog/editor/RichEditor"
+import type { PassageContext } from "@/lib/blog-images/passage"
 
 // Composants compilés en JSX classique par Vitest : React doit être accessible
 ;(globalThis as unknown as { React: typeof React }).React = React
@@ -290,6 +291,64 @@ describe("éditeur d'articles : cas limites", () => {
     await wait(20)
     expect(onRequestImage).toHaveBeenCalledTimes(1)
     expect(onChange).toHaveBeenLastCalledWith(`${value}\n\n![Pose du carrelage terminée](${PHOTO}#w=1600&h=900)`)
+  })
+
+  describe("illustrer un passage", () => {
+    const PICKED = { url: `${PHOTO}#w=1600&h=900`, width: 1600, height: 900, alt: "Un plaquiste pose une plaque" }
+    const IMAGE = `![Un plaquiste pose une plaque](${PHOTO}#w=1600&h=900)`
+
+    it("texte sélectionné : le passage part au studio, la photo s'insère après le paragraphe sans remplacer le texte", async () => {
+      const onRequestImage = vi.fn(async () => PICKED)
+      const { ref, editor } = await mount({ value: MD, onRequestImage })
+      await act(async () => select(editor, "reformuler"))
+      await wait(250)
+      await act(async () => button("Illustrer").click())
+      await wait(20)
+      expect(onRequestImage).toHaveBeenCalledTimes(1)
+      const passage = (onRequestImage.mock.calls[0] as unknown as [PassageContext])[0]
+      expect(passage).toMatchObject({ text: "reformuler", heading: "Premier titre", selected: true })
+      expect(passage.before).toContain("Texte du devis à")
+      expect(passage.after).toContain("ici.")
+      expect(ref.current?.getMarkdown()).toBe(MD.replace("Texte du devis à reformuler ici.", `Texte du devis à reformuler ici.\n\n${IMAGE}`))
+    })
+
+    it("titre sélectionné : la photo s'insère après le premier paragraphe de la section, pas entre le titre et son texte", async () => {
+      const onRequestImage = vi.fn(async () => PICKED)
+      const { ref, editor } = await mount({ value: MD, onRequestImage })
+      await act(async () => select(editor, "Premier titre"))
+      await wait(250)
+      await act(async () => button("Illustrer").click())
+      await wait(20)
+      const passage = (onRequestImage.mock.calls[0] as unknown as [PassageContext])[0]
+      expect(passage).toMatchObject({ text: "Premier titre", heading: "Premier titre", selected: true })
+      expect(passage.after).toContain("Texte du devis")
+      expect(ref.current?.getMarkdown()).toBe(MD.replace("Texte du devis à reformuler ici.", `Texte du devis à reformuler ici.\n\n${IMAGE}`))
+    })
+
+    it("bouton Image de la barre d'outils, curseur dans un paragraphe : le paragraphe est le passage, la photo vient après lui", async () => {
+      const onRequestImage = vi.fn(async () => PICKED)
+      const { ref, editor } = await mount({ value: MD, onRequestImage })
+      await act(async () => {
+        editor.chain().focus().setTextSelection(4).run()
+      })
+      await act(async () => button("Image").click())
+      await wait(20)
+      const passage = (onRequestImage.mock.calls[0] as unknown as [PassageContext])[0]
+      expect(passage).toMatchObject({ text: "Intro avec gras.", heading: null, selected: false })
+      expect(ref.current?.getMarkdown()).toBe(MD.replace("Intro avec **gras**.", `Intro avec **gras**.\n\n${IMAGE}`))
+    })
+
+    it("photo refusée ou studio fermé : rien n'est inséré", async () => {
+      const onRequestImage = vi.fn(async () => null)
+      const { ref, editor, onChange } = await mount({ value: MD, onRequestImage })
+      await act(async () => select(editor, "reformuler"))
+      await wait(250)
+      await act(async () => button("Illustrer").click())
+      await wait(20)
+      expect(onRequestImage).toHaveBeenCalledTimes(1)
+      expect(onChange).not.toHaveBeenCalled()
+      expect(ref.current?.getMarkdown()).toBe(MD)
+    })
   })
 
   it("barre d'outils : seulement ce que le blog affiche", async () => {

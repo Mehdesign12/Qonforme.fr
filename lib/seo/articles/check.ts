@@ -91,9 +91,11 @@ function headingsOf(markdown: string): { level: number; text: string }[] {
 
 /** Même repérage des liens que le moteur Markdown du blog (lib/markdown.ts) : ce qu'il transformerait en <a href>. */
 const MD_LINK = /\[([^\]]+)\]\(([^)]+)\)/g
+/** Idem, sans les images « ![texte](adresse) » : une photo du texte n'est pas un lien vers un autre site. */
+const MD_LINK_ONLY = new RegExp("(?<!!)\\[([^\\]]+)\\]\\(([^)]+)\\)", "g")
 
 function linksOf(markdown: string): { text: string; url: string }[] {
-  return Array.from(markdown.matchAll(MD_LINK)).map((m) => ({ text: m[1], url: m[2] }))
+  return Array.from(markdown.matchAll(MD_LINK_ONLY)).map((m) => ({ text: m[1], url: m[2] }))
 }
 
 /**

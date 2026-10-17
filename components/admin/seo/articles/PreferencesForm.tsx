@@ -304,8 +304,26 @@ export function PreferencesForm({
         <div className="flex min-w-0 flex-[1_1_420px] flex-col gap-5">
           <Card id="t-image" title="Images" text="Couverture de chaque article et photos générées dans l'éditeur.">
             <ToggleRow id="pref-image" label="Créer une couverture avec chaque article" hint="La couverture Qonforme : titre de l'article, logo et icônes du sujet, 16:9, enregistrée en WebP. Dessinée par le code, sans coût ni clé." checked={v.coverImage} onChange={(b) => set("coverImage", b)} />
+            <div className="mt-3.5 flex flex-col gap-1.5 border-t border-[var(--q-line-soft)] pt-3.5">
+              <Field label="Photos dans le texte des articles générés" htmlFor="pref-photos" error={fieldErrors.inlineImages}>
+                <Select id="pref-photos" value={String(v.inlineImages)} onChange={(e) => set("inlineImages", Number(e.target.value))}>
+                  <option value="0">Aucune photo dans le texte</option>
+                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                    <option key={n} value={n}>
+                      {n} photo{n > 1 ? "s" : ""} au plus{n === 4 ? " (conseillé)" : ""}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <p className="flex items-start gap-2 text-[13px] text-[var(--q-text-3)]">
+                <Info className="mt-px size-4 shrink-0" aria-hidden />
+                <span>
+                  Une photo environ tous les 400 mots (2 000 mots : 4 photos), placée juste après le premier paragraphe d&apos;une section et jamais dans l&apos;introduction, la FAQ ni la conclusion. Le modèle lit le paragraphe pour choisir la scène et rédige le texte alternatif. Chaque photo prend 20 à 40 secondes et est facturée par Google ; une photo qui échoue n&apos;empêche jamais l&apos;article.
+                </span>
+              </p>
+            </div>
             <div className="mt-3.5 border-t border-[var(--q-line-soft)] pt-3.5">
-              <ModelSelect id="image-modele" label="Modèle d'image des photos de l'éditeur" value={v.imageModel} options={imageModels} onChange={(m) => set("imageModel", m)} />
+              <ModelSelect id="image-modele" label="Modèle d'image des photos (éditeur et articles générés)" value={v.imageModel} options={imageModels} onChange={(m) => set("imageModel", m)} />
               {fallbackImage && (
                 <p className="mt-2 flex items-start gap-2 text-[13px] text-[var(--q-text-3)]">
                   <Info className="mt-px size-4 shrink-0" aria-hidden />
@@ -314,7 +332,7 @@ export function PreferencesForm({
                   </span>
                 </p>
               )}
-              <p className="mt-2 text-[13px] text-[var(--q-text-4)]">Ce modèle sert aux photos que vous générez dans l&apos;éditeur (« Photo avec Gemini », images du texte). Une couverture qui échoue n&apos;empêche jamais l&apos;article.</p>
+              <p className="mt-2 text-[13px] text-[var(--q-text-4)]">Ce modèle sert aux photos que vous générez dans l&apos;éditeur (« Illustrer », images du texte) et à celles des articles générés. Une couverture qui échoue n&apos;empêche jamais l&apos;article.</p>
             </div>
           </Card>
 
@@ -353,11 +371,11 @@ export function PreferencesForm({
             </div>
           </Card>
 
-          <Card id="t-liens" title="Liens automatiques vers les guides" text="Relient vos articles à vos guides pour renforcer le maillage interne.">
+          <Card id="t-liens" title="Maillage interne automatique" text="Relie chaque article à vos guides, modèles, outils et autres articles, sur des mots du texte.">
             <ToggleRow
               id="pref-liens"
-              label="Ajouter les liens à chaque article"
-              hint="Par exemple, « faire un devis » ou « taux de TVA des travaux » renvoient vers le guide qui y répond."
+              label="Poser les liens internes automatiquement"
+              hint="À la rédaction, le modèle reçoit les pages à lier, les adresses inventées sont retirées et les liens complétés selon la longueur ; sur le blog, les anciens articles reçoivent aussi leurs liens."
               checked={v.autoLinks}
               onChange={(b) => set("autoLinks", b)}
             />

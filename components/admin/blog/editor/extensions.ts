@@ -364,10 +364,10 @@ export function emptyTable(rows: number, cols: number): JSONContent {
 /**
  * Insère un bloc (image, tableau, séparateur) au bon niveau. Curseur : dans
  * la première cellule d'un tableau ; sinon au début du paragraphe qui suit
- * (créé s'il n'y en a pas).
+ * (créé s'il n'y en a pas). `at` impose la position (null : au curseur).
  */
-export function insertBlock(editor: Editor, content: JSONContent): boolean {
-  const pos = blockInsertPosition(editor.state)
+export function insertBlock(editor: Editor, content: JSONContent, opts?: { at?: number | null }): boolean {
+  const pos = opts && "at" in opts ? (opts.at ?? null) : blockInsertPosition(editor.state)
   const chain = editor.chain().focus()
   if (pos === null) return chain.insertContent(content).scrollIntoView().run()
   return chain
