@@ -1,21 +1,18 @@
 import { getImageProps } from "next/image"
-import { BellRing, Calculator, Check, ChevronRight, CircleCheck, FileCheck2, FileText, Hammer, HardHat, ReceiptText, Ruler } from "lucide-react"
+import { Calculator, Check, ChevronRight, FileText, Hammer, HardHat, ReceiptText, Ruler } from "lucide-react"
 import { MacBook, IPhone, PhoneChrome, SCREENS } from "@/components/landing/devices"
 import { Doodles } from "@/components/brand/Doodles"
-import { CtaButtons, Floater } from "@/components/landing/ui"
-import { EXAMPLES } from "@/components/landing/examples"
-import { formatCurrency } from "@/lib/utils/invoice"
+import { CtaButtons } from "@/components/landing/ui"
 
 /**
  * Héros de l'accueil : variante « Clair sobre » validée (DECISIONS § 6), au
  * langage du canevas « Main » v20 : titre en deux voix, vrai produit dans un
- * ordinateur et un téléphone, notifications flottantes.
+ * ordinateur et un téléphone. Aucun élément flottant (décision du fondateur,
+ * 17/10/2026) : le produit parle seul.
  *
  * Le titre validé finit par « conforme de bout en bout ». Il reviendra quand la
  * transmission par plateforme agréée sera livrée ; d'ici là, on ne promet que
- * ce que le produit fait déjà. Les notifications ne montrent que des actions
- * qui existent (relance, devis accepté, facture marquée payée), avec les
- * données d'exemple de la démo (lib/demo/data.ts).
+ * ce que le produit fait déjà.
  *
  * Entrée en CSS pur (.lp-fade-up, .lp-tilt, .lp-phone-in) : elle joue avant
  * l'hydratation, et « Réduire les animations » l'annule.
@@ -25,8 +22,6 @@ import { formatCurrency } from "@/lib/utils/invoice"
 const DOODLE_ICONS = [FileText, Ruler, HardHat, Hammer, ReceiptText, Calculator]
 
 const PROMISES = ["Devis gratuits et illimités", "Sans carte bancaire", "Vous payez à la première facture"]
-
-const { relance: RELANCE, accepte: ACCEPTE, payee: PAYEE } = EXAMPLES
 
 /**
  * Capture du tableau de bord : version ordinateur dès 640 px, version téléphone
@@ -63,17 +58,6 @@ function HeroDevices() {
       {/* Téléphone : monte un peu plus vite que la page (masqué sur petit écran) */}
       <div className="lp-drift absolute bottom-0 left-0 z-[3] hidden w-[clamp(150px,18vw,236px)] min-[861px]:block min-[1320px]:left-[-36px]">
         <IPhone className="lp-phone-in" screen={{ ...SCREENS.mobileTableauDeBord, sizes: "236px" }} />
-      </div>
-
-      {/* Notifications : seulement quand elles tiennent hors de l'écran de l'ordinateur */}
-      <div aria-hidden className="lp-fade-up absolute left-[-72px] top-[-48px] z-[5] hidden min-[1320px]:block" style={{ animationDelay: "1.65s" }}>
-        <Floater icon={BellRing} tone="warn" title="Relance envoyée" sub={`${RELANCE.client.name} · ${RELANCE.invoice_number}`} bob={1} />
-      </div>
-      <div aria-hidden className="lp-fade-up absolute right-[-64px] top-[-34px] z-[5] hidden min-[1320px]:block" style={{ animationDelay: "1.5s" }}>
-        <Floater icon={FileCheck2} tone="ok" title={`Devis ${ACCEPTE.quote_number} accepté`} sub={`${ACCEPTE.client.name} · ${formatCurrency(ACCEPTE.total_ttc)}`} bob={2} />
-      </div>
-      <div aria-hidden className="lp-fade-up absolute right-[-72px] top-[66%] z-[5] hidden min-[1320px]:block" style={{ animationDelay: "1.8s" }}>
-        <Floater icon={CircleCheck} tone="info" title={`Facture ${PAYEE.invoice_number} payée`} sub={`${PAYEE.client.name} · ${formatCurrency(PAYEE.total_ttc)}`} bob={3} />
       </div>
     </div>
   )

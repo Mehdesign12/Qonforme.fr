@@ -312,7 +312,7 @@ export function ToolCta({
   className?: string
 }) {
   return (
-    <aside className={cn("q-card flex flex-col items-start gap-4 p-5 sm:p-6", className)}>
+    <aside data-reveal="" className={cn("q-card flex flex-col items-start gap-4 p-5 sm:p-6", className)}>
       <div className="min-w-0">
         <p className="text-[16px] font-semibold text-q-ink">{typeof title === "string" ? frSpaces(title) : title}</p>
         <p className="mt-1 text-[14px] leading-[1.55] text-q-text-3">{typeof text === "string" ? frSpaces(text) : text}</p>
@@ -415,7 +415,7 @@ export function RateTable({ head, rows }: { head: string[]; rows: ReactNode[][] 
  */
 export function ToolFaq({ items }: { items: { q: string; a: string }[] }) {
   return (
-    <div className="mt-14">
+    <div data-reveal="" className="mt-14">
       <h2 className="font-display text-[clamp(24px,2.6vw,30px)] font-semibold tracking-[-0.03em] text-q-ink-strong">
         Questions <span className="q-serif">fréquentes.</span>
       </h2>
@@ -437,7 +437,7 @@ export function ToolFaq({ items }: { items: { q: string; a: string }[] }) {
 /** Maillage interne : outils complémentaires, en pastilles. */
 export function ToolLinks({ links, title = "Outils complémentaires" }: { links: { href: string; label: string }[]; title?: string }) {
   return (
-    <nav aria-label={title} className="mt-12">
+    <nav data-reveal="" aria-label={title} className="mt-12">
       <p className="q-eyebrow mb-3">{title}</p>
       <ul className="flex flex-wrap gap-2">
         {links.map((l) => (

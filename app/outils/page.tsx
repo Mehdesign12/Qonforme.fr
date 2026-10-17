@@ -86,7 +86,7 @@ export default function OutilsPage() {
           <h2 id="outils-essentiels" className="q-eyebrow mb-4">Les essentiels</h2>
           <ul className="grid gap-4 sm:grid-cols-2">
             {ESSENTIELS.map((t) => (
-              <li key={t.href}>
+              <li key={t.href} data-reveal="" data-reveal-item="">
                 <ToolCard href={t.href} title={t.title} desc={t.desc} icon={t.icon} size="lg" />
               </li>
             ))}
@@ -103,7 +103,7 @@ export default function OutilsPage() {
             </h2>
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {cat.tools.map((t) => (
-                <li key={t.href}>
+                <li key={t.href} data-reveal="" data-reveal-item="">
                   <ToolCard href={t.href} title={t.title} desc={t.desc} icon={t.icon} />
                 </li>
               ))}

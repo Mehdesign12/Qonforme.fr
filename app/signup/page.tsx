@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import SignupForm from "@/components/auth/SignupForm"
 import AuthLayout from "@/components/auth/AuthLayout"
-import SignupPhotoPanel, { SignupPhotoBand } from "@/components/auth/SignupPhotoPanel"
+import { AuthPhotoBand, AuthPhotoPanel } from "@/components/auth/AuthPhotoPanel"
+import { SIGNUP_PHOTO } from "@/components/auth/photos"
 import { safeNextPath } from "@/lib/stripe/access"
 import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
 
@@ -43,9 +44,9 @@ export default function SignupPage({ searchParams }: { searchParams?: { next?: s
 
   return (
     <AuthLayout
-      aside={<SignupPhotoPanel />}
+      aside={<AuthPhotoPanel {...SIGNUP_PHOTO} />}
       asideVariant="photo"
-      mobileBand={<SignupPhotoBand />}
+      mobileBand={<AuthPhotoBand {...SIGNUP_PHOTO} />}
       topRight={<Link href={loginHref} className="q-link text-[14px] lg:hidden">Se connecter</Link>}
     >
       <AuthTitle>Votre premier <Serif>devis</Serif>, sans attendre.</AuthTitle>

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { ArrowRight, Check, ExternalLink, HardHat } from "lucide-react"
 import { INSTALLATIONS, SOURCES_COMMUNES, CHIFFRES, etapes, getInstallationBySlug } from "@/lib/pseo/installation"
 import { getMetierBySlug } from "@/lib/pseo/metiers"
-import { ChipLinks, ContentCta, ContentHero, ContentPage, FaqList, SectionHeading, WRAP } from "@/components/content/ui"
+import { ChipLinks, ContentCta, ContentHero, ContentPage, FaqList, InlineCta, SectionHeading, WRAP } from "@/components/content/ui"
 import { tradeHeroPhoto } from "@/components/content/metier"
 import { dateFr, fr } from "@/components/content/text"
 import { fitDescription, fitTitle } from "@/lib/seo/meta"
@@ -147,6 +147,8 @@ export default async function InstallationPage({ params }: { params: Promise<{ s
                   </section>
                 ))}
               </div>
+
+              <InlineCta className="mt-14" title="Votre premier chantier arrive :" accent="votre premier devis est gratuit." />
 
               <section aria-labelledby="metier" className="mt-14">
                 <SectionHeading id="metier" title="Ce qui est propre" accent={`au métier de ${inst.metier}.`} className="mb-6" />

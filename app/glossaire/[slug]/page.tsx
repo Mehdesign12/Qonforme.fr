@@ -3,7 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowRight, Library } from "lucide-react"
 import { GLOSSAIRE, getTermeBySlug } from "@/lib/pseo/glossaire"
-import { ChipLinks, ContentCta, ContentHero, ContentPage, SectionHeading } from "@/components/content/ui"
+import { ChipLinks, ContentCta, ContentHero, ContentPage, InlineCta, SectionHeading } from "@/components/content/ui"
 import { fr, resolveContentLink } from "@/components/content/text"
 import { composeDescription, fitTitle } from "@/lib/seo/meta"
 
@@ -93,6 +93,8 @@ export default async function TermePage({ params }: { params: Promise<{ slug: st
                   </p>
                 </section>
               )}
+
+              <InlineCta className="mt-14" title="De la définition à la pratique :" accent="faites votre premier devis, gratuitement." />
 
               {liens.length > 0 && (
                 <section aria-labelledby="en-savoir-plus" className="mt-14">
