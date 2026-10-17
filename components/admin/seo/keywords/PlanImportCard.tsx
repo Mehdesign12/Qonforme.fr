@@ -62,7 +62,7 @@ export function PlanImportCard({
       <div className="flex flex-col gap-4 p-4 md:flex-row md:items-center md:gap-6 md:p-5 md:pl-6">
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex items-start gap-3.5">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--q-wash)] text-[var(--q-accent-strong)]" aria-hidden>
+            <span className="grid size-10 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph" aria-hidden>
               <MapIcon className="size-5" />
             </span>
             <div className="flex min-w-0 flex-col gap-1">

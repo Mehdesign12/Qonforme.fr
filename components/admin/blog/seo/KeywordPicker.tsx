@@ -362,7 +362,7 @@ export function KeywordPicker({
                         onMouseMove={() => setActive(index)}
                         className={cn("flex min-h-11 cursor-pointer items-center gap-2.5 rounded-[9px] px-2.5 py-2", isActive && "bg-[var(--q-hover)]")}
                       >
-                        <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-[var(--q-wash)] text-[var(--q-accent-strong)]" aria-hidden>
+                        <span className="grid size-7 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph" aria-hidden>
                           <Plus className="size-3.5" />
                         </span>
                         <span className="flex min-w-0 flex-1 flex-col">
@@ -498,7 +498,7 @@ function SelectedKeyword({
   return (
     <div className="rounded-xl border border-[var(--q-line)] bg-[var(--q-surface-2)] p-3.5">
       <div className="flex items-start gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--q-wash)] text-[var(--q-accent-strong)]" aria-hidden>
+        <span className="grid size-9 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph" aria-hidden>
           <Target className="size-[18px]" />
         </span>
         <div className="min-w-0 flex-1 pt-0.5">

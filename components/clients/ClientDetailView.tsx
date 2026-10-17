@@ -283,7 +283,7 @@ export function ClientDetailView({
                         href={d.href}
                         className="hidden grid-cols-[34px_minmax(0,1fr)_96px_120px_118px] items-center gap-3 px-[18px] py-3 text-[var(--q-ink)] transition-colors hover:bg-[var(--q-row-hover)] lg:grid"
                       >
-                        <span className="grid size-[34px] place-items-center rounded-[9px] bg-[var(--q-sunken)] text-[var(--q-text-3)]">
+                        <span className="grid size-[34px] place-items-center text-[var(--q-text-3)] q-glyph">
                           <Icon className="size-4" aria-hidden />
                         </span>
                         <span className="flex min-w-0 flex-col gap-px">
@@ -338,7 +338,7 @@ export function ClientDetailView({
             ].map(({ icon: Icon, value, label, empty, kind, href, mono }) => {
               const body = (
                 <>
-                  <span className="grid size-9 shrink-0 place-items-center rounded-[11px] bg-[var(--q-sunken)] text-[var(--q-text-3)]">
+                  <span className="grid size-9 shrink-0 place-items-center text-[var(--q-text-3)] q-glyph">
                     <Icon className="size-[18px]" aria-hidden />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">

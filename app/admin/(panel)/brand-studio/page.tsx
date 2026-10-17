@@ -19,6 +19,7 @@ import {
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { EmptyState, PageHeader, Panel } from '@/components/app/kit'
+import { PictoCluster } from '@/components/brand/PictoCluster'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { LoadError, fmtDateTime } from '@/components/admin/ui'
 import { cn } from '@/lib/utils'
@@ -391,7 +392,7 @@ export default function BrandStudioPage() {
                 dragOver ? 'border-[var(--q-accent)] bg-[var(--q-wash)]' : 'border-[var(--q-field)] hover:border-[var(--q-accent)] hover:bg-[var(--q-wash)]',
               )}
             >
-              <span className="q-empty-icon"><Upload className="size-5" aria-hidden /></span>
+              <PictoCluster icon={<Upload />} size="sm" />
               <span className="text-sm font-semibold text-[var(--q-ink)]">Glissez une image ici ou choisissez un fichier</span>
               <span className="text-[13px] text-[var(--q-text-4)]">PNG, JPG ou WebP, 10 Mo au maximum. Vous pouvez aussi la coller (Ctrl+V).</span>
             </button>

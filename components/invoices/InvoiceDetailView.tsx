@@ -23,7 +23,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
-  AlertTriangle, Archive, ArchiveX, Bell, Check, ChevronLeft, ChevronRight, Clock, Copy,
+  AlertTriangle, Archive, ArchiveX, Bell, Check, ChevronLeft, ChevronRight, CircleCheck, Clock, Copy,
   CreditCard, Download, FileCheck2, FileCode, FileX, HardHat, MoreHorizontal, Pencil, Printer,
   RotateCcw, Send, Trash2, XCircle, CheckCircle2, type LucideIcon,
 } from "lucide-react"
@@ -456,7 +456,7 @@ export function InvoiceDetailView({
                 <RelatedRow
                   href={linkedQuote.href}
                   icon={
-                    <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+                    <span className="grid size-8 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
                       <FileCheck2 className="size-4" aria-hidden />
                     </span>
                   }
@@ -468,7 +468,7 @@ export function InvoiceDetailView({
                 <RelatedRow
                   href={invoice.chantier.href}
                   icon={
-                    <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+                    <span className="grid size-8 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
                       <HardHat className="size-4" aria-hidden />
                     </span>
                   }
@@ -481,7 +481,7 @@ export function InvoiceDetailView({
                   key={d.invoice_id}
                   href={invoiceHref ? invoiceHref({ id: d.invoice_id, number: d.number }) : null}
                   icon={
-                    <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+                    <span className="grid size-8 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
                       <RotateCcw className="size-4" aria-hidden />
                     </span>
                   }
@@ -750,9 +750,7 @@ function Timeline({ invoice, today, year }: { invoice: InvoiceView; today: strin
           <li key={i} className="flex gap-3">
             <span className="flex flex-col items-center">
               {s.state === "done" ? (
-                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--q-accent)] text-white">
-                  <Check className="size-3" strokeWidth={3} aria-hidden />
-                </span>
+                <CircleCheck className="size-5 shrink-0 text-[var(--q-accent)]" strokeWidth={2} aria-hidden />
               ) : (
                 <span
                   className={cn(

@@ -47,7 +47,7 @@ export default function DemoDashboardPage({ searchParams }: { searchParams: { pe
             href={href}
             className="q-card group flex items-center gap-4 p-5 transition-colors hover:border-[var(--q-field)]"
           >
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+            <span className="grid size-10 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
               <Icon className="size-[18px]" strokeWidth={1.75} aria-hidden />
             </span>
             <span className="flex min-w-0 flex-col gap-0.5">

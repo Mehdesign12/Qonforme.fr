@@ -144,7 +144,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
                   'touch-manipulation',
                 ].join(' ')}
               >
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+                <span className="grid size-10 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
                   {isLoading
                     ? <Loader2 className="size-5 animate-spin" aria-hidden />
                     : <Icon className="size-[22px]" strokeWidth={1.5} aria-hidden />

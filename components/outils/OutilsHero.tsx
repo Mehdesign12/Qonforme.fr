@@ -1,6 +1,7 @@
 import Link from "next/link"
-import { Check, ChevronRight } from "lucide-react"
-import type { ReactNode } from "react"
+import { Check, ChevronRight, HardHat, House, Ruler } from "lucide-react"
+import { isValidElement, type ReactNode } from "react"
+import { Doodles } from "@/components/brand/Doodles"
 import { cn } from "@/lib/utils"
 import { frSpaces } from "./kit"
 
@@ -28,6 +29,9 @@ const DEFAULT_CHECKS = ["Gratuit", "Sans inscription", "Rien n'est enregistré"]
  * En-tête partagé du hub et des 12 outils, d'après le héros du canevas
  * « Main » : pastille, titre en deux voix centré, chapeau, engagements cochés.
  * Fond clair avec le halo bleu du canevas (--q-glow), sans dégradé multicolore.
+ * Pictogrammes de marque autour du titre sur grand écran : l'icône de l'outil en
+ * bleu plein, des outils du bâtiment en bleu pâle (pages clientes : trois icônes
+ * fixes, pas le jeu complet des couvertures).
  */
 export function OutilsHero({ icon, badge, title, accent, subtitle, crumb, checks = DEFAULT_CHECKS, children, className }: OutilsHeroProps) {
   return (
@@ -35,7 +39,8 @@ export function OutilsHero({ icon, badge, title, accent, subtitle, crumb, checks
       className={cn("relative px-4 pb-8 pt-[104px] sm:px-6 sm:pb-12 sm:pt-[136px]", className)}
       style={{ backgroundImage: "var(--q-glow)" }}
     >
-      <div className="mx-auto flex w-full max-w-[880px] flex-col items-center text-center">
+      <Doodles layout="page" accent={isValidElement(icon) ? [icon] : []} soft={[HardHat, Ruler, House]} />
+      <div className="relative mx-auto flex w-full max-w-[880px] flex-col items-center text-center">
         {crumb && (
           <nav aria-label="Fil d'Ariane" className="mb-6">
             <ol className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[13px] text-q-text-4">

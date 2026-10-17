@@ -185,7 +185,7 @@ function SheetRow({ link, counts, onClick }: { link: AdminNavLink; counts: Admin
   const Icon = link.icon
   return (
     <Link href={link.href} onClick={onClick} className="q-list-row">
-      <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[var(--q-sunken)] text-[var(--q-text-2)]">
+      <span className="grid size-9 shrink-0 place-items-center text-[var(--q-text-2)] q-glyph">
         <Icon className="size-[17px]" strokeWidth={1.75} aria-hidden />
       </span>
       <span className="flex min-w-0 flex-1 flex-col text-left">
@@ -229,14 +229,14 @@ function PlusSheet({ open, onOpenChange, counts }: { open: boolean; onOpenChange
           <p className="px-1 pb-2 pt-5 text-[15px] font-semibold text-[var(--q-ink)]">Session</p>
           <div className="q-card q-list overflow-hidden">
             <Link href="/dashboard" onClick={close} className="q-list-row">
-              <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[var(--q-sunken)] text-[var(--q-text-2)]">
+              <span className="grid size-9 shrink-0 place-items-center text-[var(--q-text-2)] q-glyph">
                 <ArrowLeft className="size-[17px]" strokeWidth={1.75} aria-hidden />
               </span>
               <span className="flex-1 text-base font-semibold">Retour à l&apos;application</span>
               <ChevronRight className="size-4 shrink-0 text-[var(--q-text-4)]" aria-hidden />
             </Link>
             <button type="button" onClick={() => { close(); logout() }} className="q-list-row w-full">
-              <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[var(--q-danger-bg)] text-[var(--q-danger)]">
+              <span className="grid size-9 shrink-0 place-items-center text-[var(--q-danger)] q-glyph">
                 <LogOut className="size-[17px]" strokeWidth={1.75} aria-hidden />
               </span>
               <span className="flex-1 text-left text-base font-semibold text-[var(--q-danger)]">Se déconnecter</span>

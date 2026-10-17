@@ -19,6 +19,7 @@ import { purgePwaPageCache } from "@/lib/pwa/client"
 import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
 import { dayOf } from "@/components/accountant/format"
 import type { InvitationState } from "@/lib/accountant/types"
+import { PictoCluster } from "@/components/brand/PictoCluster"
 
 const NEXT = encodeURIComponent("/invitation-comptable")
 
@@ -46,7 +47,7 @@ function Notice({ children }: { children: React.ReactNode }) {
 }
 
 function StateIcon({ children }: { children: React.ReactNode }) {
-  return <span className="mb-5 grid size-12 place-items-center rounded-2xl bg-[var(--q-sunken)] text-[var(--q-text-3)]">{children}</span>
+  return <PictoCluster icon={children} className="mb-5" />
 }
 
 export function InvitationView({ invitation, viewerEmail }: { invitation: InvitationState; viewerEmail: string | null }) {

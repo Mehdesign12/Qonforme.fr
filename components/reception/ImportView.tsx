@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react"
 import Link from "next/link"
 import { FileUp, Info, Loader2, RotateCcw, Save, Sparkles, XCircle } from "lucide-react"
+import { PictoCluster } from "@/components/brand/PictoCluster"
 import { cn } from "@/lib/utils"
 import { PageHeader, Panel } from "@/components/app/kit"
 import { MAX_UPLOAD_BYTES } from "@/lib/reception/bytes"
@@ -168,7 +169,7 @@ export function ImportView({ backHref, analyze, save, onSaved, duplicateHref, sa
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => { e.preventDefault(); setDragOver(false); void pick(e.dataTransfer.files?.[0]) }}
       >
-        <span className="q-empty-icon"><FileUp className="size-5" aria-hidden /></span>
+        <PictoCluster icon={<FileUp />} size="sm" />
         {file ? (
           <div className="flex flex-col gap-0.5">
             <p className="break-all text-base font-semibold text-[var(--q-ink)]">{file.name}</p>

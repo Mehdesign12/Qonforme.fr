@@ -1,7 +1,7 @@
 import { getImageProps } from "next/image"
 import { BellRing, Calculator, Check, ChevronRight, CircleCheck, FileCheck2, FileText, Hammer, HardHat, ReceiptText, Ruler } from "lucide-react"
-import { MacBook, IPhone, SCREENS } from "@/components/landing/devices"
-import { Doodles } from "@/components/landing/Doodles"
+import { MacBook, IPhone, PhoneChrome, SCREENS } from "@/components/landing/devices"
+import { Doodles } from "@/components/brand/Doodles"
 import { CtaButtons, Floater } from "@/components/landing/ui"
 import { EXAMPLES } from "@/components/landing/examples"
 import { formatCurrency } from "@/lib/utils/invoice"
@@ -53,8 +53,10 @@ function HeroDevices() {
   return (
     <div className="relative mx-auto mt-[clamp(40px,6vw,72px)] max-w-[1200px] pb-12 sm:pb-16">
       <div className="lp-tilt">
-        <MacBook screenClassName="max-sm:aspect-[390/844]" baseClassName="max-sm:hidden">
+        <MacBook screenClassName="max-sm:aspect-[393/852]" baseClassName="max-sm:hidden">
           <HeroScreen />
+          {/* Sur téléphone, l'ordinateur devient un téléphone : barre d'état et indicateur d'accueil */}
+          <PhoneChrome className="sm:hidden" />
         </MacBook>
       </div>
 

@@ -384,7 +384,7 @@ export function QuoteListView({
       </section>
 
       <Link href={purchaseOrdersHref} className="q-card q-list-row overflow-hidden rounded-[18px] px-3.5 md:hidden">
-        <span className="grid size-9 shrink-0 place-items-center rounded-[11px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+        <span className="grid size-9 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
           <ShoppingCart className="size-[18px]" strokeWidth={1.75} aria-hidden />
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">

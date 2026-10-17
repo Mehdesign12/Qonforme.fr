@@ -36,7 +36,7 @@ export default function AuthBenefits() {
       <ul className="mt-4 flex flex-col gap-3.5">
         {BENEFITS.map(({ icon: Icon, title, text }) => (
           <li key={title} className="q-card flex items-start gap-3.5 px-[18px] py-4">
-            <span className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-[11px] bg-q-wash text-q-accent-strong">
+            <span className="grid h-[38px] w-[38px] shrink-0 place-items-center text-q-accent-strong q-glyph">
               <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
             </span>
             <span className="flex flex-col gap-[3px]">

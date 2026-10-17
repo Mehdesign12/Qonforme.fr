@@ -14,11 +14,11 @@ import { cn } from "@/lib/utils"
 import type { ShellIdentity } from "@/components/layout/shell"
 import type { AttentionData, AttentionKind } from "@/components/search/model"
 
-const KIND_STYLE: Record<AttentionKind, { icon: React.ElementType; tile: string }> = {
-  overdue: { icon: Clock, tile: "bg-[var(--q-warn-bg)] text-[var(--q-warn)]" },
-  quote: { icon: FileClock, tile: "bg-[var(--q-wash)] text-[var(--q-accent-strong)]" },
-  draft: { icon: FilePen, tile: "bg-[var(--q-neutral-bg)] text-[var(--q-neutral)]" },
-  transfer: { icon: Landmark, tile: "bg-[var(--q-ok-bg)] text-[var(--q-ok)]" },
+const KIND_STYLE: Record<AttentionKind, { icon: React.ElementType; tone: string }> = {
+  overdue: { icon: Clock, tone: "text-[var(--q-warn)]" },
+  quote: { icon: FileClock, tone: "text-[var(--q-accent-strong)]" },
+  draft: { icon: FilePen, tone: "text-[var(--q-neutral)]" },
+  transfer: { icon: Landmark, tone: "text-[var(--q-ok)]" },
 }
 
 type LoadState = { status: "idle" | "loading" | "done" | "error"; data: AttentionData | null }
@@ -102,7 +102,7 @@ export function NotificationsButton({ identity }: { identity: ShellIdentity }) {
         )}
 
         {items.map((item) => {
-          const { icon: Icon, tile } = KIND_STYLE[item.kind]
+          const { icon: Icon, tone } = KIND_STYLE[item.kind]
           return (
             <Link
               key={item.id}
@@ -110,8 +110,8 @@ export function NotificationsButton({ identity }: { identity: ShellIdentity }) {
               onClick={() => setOpen(false)}
               className="flex items-start gap-3 rounded-[10px] p-2.5 text-[var(--q-ink)] transition-colors hover:bg-[var(--q-hover)]"
             >
-              <span className={cn("grid size-8 shrink-0 place-items-center rounded-[9px]", tile)}>
-                <Icon className="size-4" strokeWidth={2} aria-hidden />
+              <span className={cn("q-glyph size-8", tone)}>
+                <Icon aria-hidden />
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="text-sm font-semibold leading-[1.35]">{item.title}</span>

@@ -2,6 +2,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, ChevronDown, ChevronRight, Monitor, ShieldCheck } from "lucide-react"
 import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
+import { Doodles } from "@/components/brand/Doodles"
+import { pictosFor } from "@/components/brand/pictos"
 import Footer from "@/components/layout/Footer"
 import { PHOTOS } from "@/lib/landing/photos"
 import { cn } from "@/lib/utils"
@@ -128,6 +130,7 @@ export function ContentHero({
   size = "lg",
   children,
   media,
+  topic,
   className,
 }: {
   crumbs?: Crumb[]
@@ -143,9 +146,18 @@ export function ContentHero({
   children?: React.ReactNode
   /** Visuel à droite sur grand écran, sous le texte sur mobile (photo de métier). */
   media?: React.ReactNode
+  /**
+   * Sujet de la page pour choisir ses pictogrammes de marque (même règle que les
+   * couvertures d'articles) ; par défaut, le titre et sa seconde voix.
+   */
+  topic?: string
   className?: string
 }) {
   const center = align === "center" && !media
+  // Pictogrammes de marque : autour du titre centré, ou à sa droite ; une page
+  // avec une photo de métier n'en a pas besoin (la photo occupe la droite)
+  const subject = topic ?? [title, accent, eyebrow].filter((t): t is string => typeof t === "string").join(" ")
+  const doodles = media ? null : <Doodles layout={center ? "page" : "page-right"} {...pictosFor(subject)} />
   const text = (
     <div className={cn("flex min-w-0 flex-col", center ? "items-center text-center" : "items-start")}>
       {crumbs && <Breadcrumbs items={crumbs} className="mb-6" />}
@@ -175,13 +187,14 @@ export function ContentHero({
       className={cn("relative px-4 pb-10 pt-[112px] sm:px-6 sm:pb-14 sm:pt-[140px]", className)}
       style={{ backgroundImage: "var(--q-glow)" }}
     >
+      {doodles}
       {media ? (
-        <div className={cn(WRAP, "grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-14")}>
+        <div className={cn(WRAP, "relative grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-14")}>
           {text}
           {media}
         </div>
       ) : (
-        <div className={WRAP}>{text}</div>
+        <div className={cn(WRAP, "relative")}>{text}</div>
       )}
     </header>
   )
@@ -260,7 +273,7 @@ export function LinkCard({
     >
       {(icon || kicker) && (
         <div className="mb-5 flex items-center justify-between gap-3">
-          {icon && <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-q-wash text-q-accent-strong [&_svg]:h-5 [&_svg]:w-5">{icon}</span>}
+          {icon && <span className="grid h-10 w-10 shrink-0 place-items-center text-q-accent-strong q-glyph">{icon}</span>}
           {kicker}
         </div>
       )}
@@ -359,7 +372,7 @@ export function ContentCta({
           <div className="relative min-h-[240px] bg-q-sunken md:min-h-[360px]">
             <Image src={photo.src} alt={photo.alt} fill sizes="(min-width: 1200px) 560px, (min-width: 768px) 48vw, 100vw" loading="lazy" className="object-cover" />
             <div aria-hidden className="absolute bottom-4 left-4 flex items-center gap-3 rounded-2xl border border-q-line bg-q-surface px-3.5 py-2.5 shadow-[shadow:var(--q-shadow-pop)] sm:bottom-5 sm:left-5">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-q-wash text-q-accent-strong">
+              <span className="grid h-8 w-8 place-items-center text-q-accent-strong q-glyph">
                 <ShieldCheck className="h-4 w-4" />
               </span>
               <span className="flex flex-col">

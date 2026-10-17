@@ -101,7 +101,7 @@ function ProductList({
               onClick={() => onSelect(product)}
               className="flex w-full items-start gap-3 rounded-[10px] px-2.5 py-2.5 text-left transition-colors hover:bg-[var(--q-hover)] focus-visible:bg-[var(--q-hover)] focus-visible:outline-none"
             >
-              <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+              <span className="mt-0.5 grid size-8 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
                 <Package className="size-3.5" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">

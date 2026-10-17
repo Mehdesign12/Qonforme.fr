@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from "react"
-import { ChevronDown, FileText } from "lucide-react"
+import { ChevronDown, FileText, Scale } from "lucide-react"
+import { PictoCluster } from "@/components/brand/PictoCluster"
 import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
 import Footer from "@/components/layout/Footer"
 
@@ -126,6 +127,8 @@ export function LegalLayout({ children, title, titleAccent, subtitle, lastUpdate
         <div className="mx-auto grid max-w-[1040px] gap-6 lg:grid-cols-[256px_minmax(0,720px)] lg:justify-center lg:gap-x-14 lg:gap-y-8">
           {/* En-tête */}
           <header className="lg:col-start-2">
+            {/* Pictogrammes de marque : la balance entre deux outils du bâtiment */}
+            <PictoCluster icon={<Scale />} size="sm" className="mb-4" />
             <p className="q-eyebrow">Informations légales</p>
             <h1 className="mt-3 font-display text-[clamp(34px,5vw,52px)] font-semibold leading-[1.05] tracking-[-0.035em] text-q-ink [text-wrap:balance]">
               {title}

@@ -53,8 +53,8 @@ function FloatCard({
     >
       <span
         className={cn(
-          "grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[10px]",
-          tone === "ok" ? "bg-q-ok-bg text-q-ok" : "bg-q-wash text-q-accent-strong",
+          "q-glyph size-8",
+          tone === "ok" ? "text-q-ok" : "text-q-accent-strong",
         )}
       >
         {icon}

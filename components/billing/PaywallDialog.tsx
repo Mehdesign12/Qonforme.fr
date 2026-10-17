@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Check, ShieldCheck } from 'lucide-react'
+import { BellRing, Check, Construction, Send, ShieldCheck, Signature } from 'lucide-react'
+import { PictoCluster } from '@/components/brand/PictoCluster'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { PLANS, formatEuros, withVat, type BillingPeriod } from '@/lib/stripe/plans'
@@ -73,6 +74,12 @@ export function PaywallDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto p-[22px] sm:max-w-[460px]">
         <div className="flex flex-col gap-1.5 pr-8">
+          {/* Pictogrammes de marque : ce que débloque la formule */}
+          <PictoCluster
+            size="sm"
+            className="mb-2"
+            icon={artisan ? <Construction /> : reason === 'remind' ? <BellRing /> : reason === 'signature' ? <Signature /> : <Send />}
+          />
           <DialogTitle className="q-display text-[22px] leading-tight text-[var(--q-ink)]">
             {artisan
               ? `Cette fonction fait partie de la formule ${plan.name}.`

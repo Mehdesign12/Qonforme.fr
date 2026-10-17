@@ -738,7 +738,7 @@ export function SelectionMenu({ editor, keyword, articleTitle, onLink, linkOpen,
       {view.kind === "loading" && (
         <div ref={resultRef} aria-busy="true" className={cn(SURFACE, "flex w-[min(380px,calc(100vw-32px))] flex-col gap-3 p-3.5")}>
           <div className="flex items-center gap-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+            <span className="grid size-8 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
               <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
@@ -819,7 +819,7 @@ export function SelectionMenu({ editor, keyword, articleTitle, onLink, linkOpen,
       {view.kind === "error" && (
         <div ref={resultRef} role="alert" className={cn(SURFACE, "flex w-[min(380px,calc(100vw-32px))] flex-col gap-3 p-3.5")}>
           <div className="flex items-start gap-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--q-danger-bg)] text-[var(--q-danger)]">
+            <span className="grid size-8 shrink-0 place-items-center text-[var(--q-danger)] q-glyph">
               <TriangleAlert className="size-4" aria-hidden />
             </span>
             <span className="flex min-w-0 flex-col gap-0.5">

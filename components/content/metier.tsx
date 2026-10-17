@@ -47,7 +47,7 @@ export function MetierFeatures({ metier, limit }: { metier: Metier; limit?: numb
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
           {features.map((f) => (
             <div key={f.titre} className="rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[shadow:var(--q-shadow-card)]">
-              <span className="mb-5 grid h-10 w-10 place-items-center rounded-xl bg-q-wash text-q-accent-strong">
+              <span className="mb-5 grid h-10 w-10 place-items-center text-q-accent-strong q-glyph">
                 <FileText className="h-5 w-5" aria-hidden />
               </span>
               <h3 className="font-display text-[19px] font-semibold leading-[1.25] tracking-[-0.02em] text-q-ink-strong">{fr(f.titre)}</h3>
@@ -75,7 +75,7 @@ export function MetierObligations({ metier }: { metier: Metier }) {
         <ul className="q-card q-list overflow-hidden">
           {metier.obligations.map((o) => (
             <li key={o} className="flex items-start gap-3 px-5 py-4 text-[15px] leading-[1.55] text-q-text-2">
-              <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-q-ok-bg text-q-ok">
+              <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center text-q-ok q-glyph [&>svg]:size-4 [&>svg]:[stroke-width:2]">
                 <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
               </span>
               {fr(o)}

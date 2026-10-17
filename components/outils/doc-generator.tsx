@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState, type ReactNode } from "react"
-import { AlertCircle, ArrowLeft, ArrowRight, Check, Download, Info, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react"
+import { AlertCircle, ArrowLeft, ArrowRight, CircleCheck, Download, Info, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react"
 import { trackEvent } from "@/lib/meta-pixel"
 import { cn } from "@/lib/utils"
 import { Callout, Field, PanelTitle } from "@/components/outils/kit"
@@ -104,11 +104,11 @@ export function Stepper({
                   className={cn(
                     "grid h-7 w-7 shrink-0 place-items-center rounded-full text-[13px] font-semibold tabular-nums transition-colors",
                     active && "bg-q-accent text-white",
-                    done && "bg-q-wash text-q-accent-strong",
+                    done && "text-q-accent-strong",
                     !active && !done && "border border-q-field bg-q-surface text-q-text-4",
                   )}
                 >
-                  {done ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden /> : i + 1}
+                  {done ? <CircleCheck className="h-7 w-7" strokeWidth={1.6} aria-hidden /> : i + 1}
                 </span>
                 {/* Sur mobile, seul le libellé de l'étape courante s'affiche */}
                 <span className={cn("whitespace-nowrap text-[13px] font-semibold sm:text-[14px]", active ? "text-q-ink" : "sr-only text-q-text-4 sm:not-sr-only")}>

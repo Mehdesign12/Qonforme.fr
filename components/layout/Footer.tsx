@@ -98,7 +98,7 @@ export default function Footer({ showCta = true }: { showCta?: boolean } = {}) {
               <ul className="mt-4 flex flex-col gap-3">
                 {PROMISES.map((p) => (
                   <li key={p} className="flex items-start gap-3 text-[15px] leading-snug text-q-text-2">
-                    <span className="mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full bg-q-wash text-q-accent-strong">
+                    <span className="mt-px grid h-5 w-5 shrink-0 place-items-center text-q-accent-strong q-glyph [&>svg]:size-4 [&>svg]:[stroke-width:2]">
                       <Check className="h-3 w-3" strokeWidth={2.5} aria-hidden />
                     </span>
                     {p}

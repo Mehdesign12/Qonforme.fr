@@ -169,7 +169,7 @@ type AddHandle = Menu.Handle<string>
 function MenuEntry({ icon, title, hint }: { icon: React.ReactNode; title: string; hint: string }) {
   return (
     <>
-      <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--q-wash)] text-[var(--q-accent-strong)] [&_svg]:!size-4">
+      <span aria-hidden className="grid size-8 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
         {icon}
       </span>
       <span className="flex min-w-0 flex-col gap-0.5">
@@ -239,14 +239,14 @@ function AddMenuContent({
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="mx-0 my-1 bg-[var(--q-line-soft)]" />
         <DropdownMenuItem onClick={() => onWrite(slot.day)} className="items-start py-2.5">
-          <MenuEntry icon={<PenLine />} title="Écrire un article" hint={slot.day === day ? writeHint : `Programmé demain à ${publishTime}`} />
+          <MenuEntry icon={<PenLine className="size-5" />} title="Écrire un article" hint={slot.day === day ? writeHint : `Programmé demain à ${publishTime}`} />
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onPlan(slot)} className="items-start py-2.5">
-          <MenuEntry icon={<CalendarPlus />} title="Planifier un sujet" hint={planHint} />
+          <MenuEntry icon={<CalendarPlus className="size-5" />} title="Planifier un sujet" hint={planHint} />
         </DropdownMenuItem>
         {canGenerate && (
           <DropdownMenuItem onClick={() => onGenerate(slot)} className="items-start py-2.5">
-            <MenuEntry icon={<Sparkles />} title="Générer avec l'IA" hint={`Rédigé maintenant, publié ${when}`} />
+            <MenuEntry icon={<Sparkles className="size-5" />} title="Générer avec l'IA" hint={`Rédigé maintenant, publié ${when}`} />
           </DropdownMenuItem>
         )}
       </DropdownMenuGroup>
@@ -313,7 +313,7 @@ function AddWeekButton({ handle, day, compact = false }: { handle: AddHandle; da
         compact ? "min-h-[52px] py-2.5" : "min-h-[64px] py-3",
       )}
     >
-      <span aria-hidden className={cn("grid shrink-0 place-items-center rounded-full bg-[var(--q-wash)] text-[var(--q-accent-strong)]", compact ? "size-8" : "size-9")}>
+      <span aria-hidden className={cn("grid shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph", compact ? "size-8" : "size-9")}>
         <Plus className="size-4" />
       </span>
       <span className="flex min-w-0 flex-col gap-0.5">

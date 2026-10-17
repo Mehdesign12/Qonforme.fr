@@ -132,7 +132,7 @@ function SectionTitle({ id, icon, children, aside }: { id: string; icon: React.R
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
       <h3 id={id} className="m-0 flex items-center gap-2.5 text-[15px] font-semibold tracking-[-0.01em] text-[var(--q-ink)]">
-        <span aria-hidden className="grid size-7 place-items-center rounded-lg bg-[var(--q-wash)] text-[var(--q-accent-strong)] [&_svg]:size-4">
+        <span aria-hidden className="grid size-7 place-items-center text-[var(--q-accent-strong)] q-glyph">
           {icon}
         </span>
         {children}
@@ -597,7 +597,7 @@ function PerformanceSection({
   } else if (!published && !hasData) {
     body = (
       <div className="flex items-start gap-3 rounded-xl border border-dashed border-[var(--q-line)] bg-[var(--q-surface-2)] px-4 py-4">
-        <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--q-surface)] text-[var(--q-text-3)] shadow-[0_1px_2px_rgba(10,17,34,.06)]">
+        <span aria-hidden className="grid size-9 shrink-0 place-items-center text-[var(--q-text-3)] q-glyph">
           {post.status === "scheduled" ? <Clock className="size-4" /> : <EyeOff className="size-4" />}
         </span>
         <div className="flex min-w-0 flex-col gap-0.5 text-[13px]">
@@ -1328,7 +1328,7 @@ export function ArticleDetailsDialog({ postId, onClose, onChanged }: { postId: s
           {state.status === "error" && (
             <>
               <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 py-14 text-center">
-                <span aria-hidden className="grid size-12 place-items-center rounded-[14px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+                <span aria-hidden className="grid size-12 place-items-center text-[var(--q-accent-strong)] q-glyph">
                   {state.notFound ? <FileWarning className="size-5" /> : <CloudOff className="size-5" />}
                 </span>
                 <DialogTitle className="text-base font-semibold text-[var(--q-ink)]">{state.notFound ? "Article introuvable" : "Fiche indisponible"}</DialogTitle>
