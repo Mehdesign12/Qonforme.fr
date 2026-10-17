@@ -3,6 +3,8 @@ import Image from "next/image"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
 import { Breadcrumbs, ChipLinks, ContentCta, ContentPage, InlineCta, SectionHeading, WRAP } from "@/components/content/ui"
+import { Doodles } from "@/components/brand/Doodles"
+import { pictosFor } from "@/components/brand/pictos"
 import ArticleCard, { CoverFallback, coverAltOf, type ArticleCardPost } from "./ArticleCard"
 import CategoryBadge from "./CategoryBadge"
 import ShareButtons from "./ShareButtons"
@@ -52,8 +54,10 @@ const RESOURCES = [
 export default function ArticleView({ post, category, readingTime, keywords, headings, contentHtml, similar, adjacent }: ArticleViewProps) {
   return (
     <ContentPage bottomBarSpace>
-      <div className="px-4 pb-10 pt-[112px] sm:px-6 sm:pt-[140px]" style={{ backgroundImage: "var(--q-glow)" }}>
-        <div className={`${WRAP} lg:grid lg:grid-cols-[44px_minmax(0,1fr)] lg:gap-10 xl:grid-cols-[44px_minmax(0,1fr)_220px]`}>
+      <div className="relative px-4 pb-10 pt-[112px] sm:px-6 sm:pt-[140px]" style={{ backgroundImage: "var(--q-glow)" }}>
+        {/* Marque très discrète : les pictogrammes de la couverture, choisis d'après le sujet de l'article */}
+        <Doodles layout="article" className="opacity-60" {...pictosFor(post.title, keywords[0])} />
+        <div className={`${WRAP} relative lg:grid lg:grid-cols-[44px_minmax(0,1fr)] lg:gap-10 xl:grid-cols-[44px_minmax(0,1fr)_220px]`}>
           {/* Partage : colonne collée à gauche (ordinateur), barre fixée en bas (mobile) */}
           <div className="lg:pt-[190px]">
             <ShareButtons title={post.title} slug={post.slug} />
