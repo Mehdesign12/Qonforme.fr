@@ -41,6 +41,8 @@ const STEP_TEXT: Record<string, string> = {
   write: "Rédaction…",
   check: "Contrôle…",
   fix: "Correction…",
+  links: "Maillage…",
+  images: "Photos…",
   cover: "Image…",
   save: "Enregistrement…",
   done: "Article prêt",
@@ -455,6 +457,7 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
         onClose={() => setScheduling(null)}
         slots={data.slots}
         coverImage={data.coverImage}
+        inlineImages={data.inlineImages}
         initialView="reschedule"
       />
     </>

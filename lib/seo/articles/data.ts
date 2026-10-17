@@ -78,6 +78,8 @@ export interface GenerateDialogData {
   lengthMin: number
   lengthMax: number
   coverImage: boolean
+  /** Photos du texte prévues (plafond des Préférences, 0 : aucune). */
+  inlineImages: number
   /** « Plan et contrôle par Claude Sonnet 5.5 · rédaction par Claude Opus 5.5 » (modèles réellement utilisables). */
   summary: string
   /** Replis prévus (clé absente) : affichés sous le résumé. */
@@ -115,6 +117,7 @@ function generateOptionsOf(prefs: ArticleSettings, keywords: { keyword: string; 
     lengthMin: prefs.lengthMin,
     lengthMax: prefs.lengthMax,
     coverImage: prefs.coverImage,
+    inlineImages: prefs.inlineImages,
     ...modelsSummary(prefs),
     slot,
   }
@@ -176,6 +179,8 @@ export interface CalendarData {
   defaultMode: PublishMode
   /** Image de couverture prévue (suivi des passes dans la fiche d'un sujet). */
   coverImage: boolean
+  /** Photos du texte prévues (plafond des Préférences, 0 : aucune). */
+  inlineImages: number
   /** Heure de publication des Préférences (HH:MM, Paris) : « + » d'un jour du calendrier. Absente : 08:00. */
   publishTime?: string
   /**
@@ -306,6 +311,7 @@ async function calendarWithPrefs(db: SeoDb, month: string, now: Date, filter: Ar
     slots: await freeSlots(db, settings.value, now, 3),
     defaultMode: settings.value.publishMode,
     coverImage: settings.value.coverImage,
+    inlineImages: settings.value.inlineImages,
     publishTime: settings.value.time,
     dayCounts,
   }
@@ -394,6 +400,7 @@ export interface TopicsData {
   slots: Slot[]
   defaultMode: PublishMode
   coverImage: boolean
+  inlineImages: number
 }
 
 export async function loadTopics(db: SeoDb, now: Date, opts: { archived: boolean }): Promise<TopicsData> {
@@ -454,6 +461,7 @@ export async function loadTopics(db: SeoDb, now: Date, opts: { archived: boolean
     slots: await freeSlots(db, settings.value, now, 3),
     defaultMode: settings.value.publishMode,
     coverImage: settings.value.coverImage,
+    inlineImages: settings.value.inlineImages,
   }
 }
 

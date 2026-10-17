@@ -121,6 +121,12 @@ export const articlesSchema = z.object({
   coverImage: z.boolean(),
   /** Identifiant du modèle d'image (lib/seo/articles/models.ts). */
   imageModel: text(80).min(1),
+  /**
+   * Photos dans le texte des articles générés : plafond (0 = aucune). Le
+   * nombre réel suit la longueur (une par tranche de 400 mots), voir
+   * lib/seo/articles/images.ts. Chaque photo est facturée par Google.
+   */
+  inlineImages: z.number().int().min(0).max(6),
   autoLinks: z.boolean(),
 })
 
@@ -271,6 +277,7 @@ export const SETTINGS_DEFAULTS: { [K in SettingsKey]: SettingsValue<K> } = {
     reviewModel: "claude-sonnet-5-5",
     coverImage: true,
     imageModel: "gemini-nano-banana-2.1",
+    inlineImages: 4,
     autoLinks: true,
   },
   geo: {

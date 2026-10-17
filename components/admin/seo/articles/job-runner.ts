@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { api } from "@/components/admin/seo/articles/api"
 
-export type RunnerStep = "plan" | "write" | "check" | "fix" | "cover" | "save" | "done"
+export type RunnerStep = "plan" | "write" | "check" | "fix" | "links" | "images" | "cover" | "save" | "done"
 
 export interface StepResponse {
   jobId: string

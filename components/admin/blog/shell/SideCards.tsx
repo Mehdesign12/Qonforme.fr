@@ -12,7 +12,7 @@
  * l'adresse. Chaque champ porte data-focus-target (liste de contrôle → champ).
  */
 import { useId } from "react"
-import { CalendarClock, ListTree, Gauge, Link2, Loader2, RefreshCw, Save, Search, Send, Tags, Target, TriangleAlert, Undo2 } from "lucide-react"
+import { CalendarClock, Check, ListTree, Gauge, Link2, Loader2, RefreshCw, Save, Search, Send, Tags, Target, TriangleAlert, Undo2, Wand2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SUGGEST_FIELDS } from "@/lib/seo/articles/suggest"
 import { CharMeter } from "@/components/admin/blog/seo/CharMeter"
@@ -25,6 +25,8 @@ import { SuggestButton, SuggestionList, type SuggestController } from "@/compone
 import { AutoTextarea, FLASH_RING, SideCard } from "@/components/admin/blog/shell/parts"
 import type { SeoContextState } from "@/components/admin/blog/seo/useSeoContext"
 import type { OnPageResult, OnPageTarget } from "@/lib/seo/articles/onpage"
+import type { AutoLinksState } from "@/components/admin/blog/seo/useAutoLinks"
+import { linkGoal, linkStats } from "@/lib/seo/links/engine"
 
 /** Bloc d'un champ : anneau de la liste de contrôle, sans décaler la mise en page. */
 const FIELD_BLOCK = cn(FLASH_RING, "-mx-1.5 flex flex-col gap-1.5 px-1.5 py-1")
@@ -140,6 +142,115 @@ export function KeywordCard({
           gscConnected={seo.data?.gsc.connected ?? true}
           onPropose={onPropose}
         />
+      </div>
+    </SideCard>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Maillage interne                                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Liens vers les autres pages du site : combien il y en a, combien conviennent
+ * à la longueur du texte, et un bouton qui pose les liens manquants sur des
+ * expressions du texte (guides, modèles, outils, glossaire, autres articles),
+ * sans rien réécrire. Annulable d'un clic, ou par Ctrl+Z.
+ */
+export function LinksCard({
+  content,
+  state,
+  onRun,
+  onUndo,
+  onAddRelated,
+  onDismiss,
+  className,
+}: {
+  content: string
+  state: AutoLinksState
+  onRun: () => void
+  onUndo: () => void
+  onAddRelated: () => void
+  onDismiss: () => void
+  className?: string
+}) {
+  const stats = linkStats(content)
+  const goal = linkGoal(stats.words)
+  const empty = stats.words < 30
+  const level: "ok" | "warn" | "error" = stats.internal >= goal.min ? "ok" : stats.internal > 0 ? "warn" : "error"
+  const width = Math.min(100, Math.round((stats.internal / Math.max(goal.max, 1)) * 100))
+  const tone = level === "ok" ? "bg-[var(--q-ok)]" : level === "warn" ? "bg-[var(--q-warn)]" : "bg-[var(--q-danger)]"
+  return (
+    <SideCard id="carte-liens" icon={<Link2 />} title="Maillage interne" className={className}>
+      <div data-focus-target="links" className={cn(FLASH_RING, "-m-1.5 flex flex-col gap-3 p-1.5")}>
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="m-0 text-[15px] font-semibold text-[var(--q-ink)]">
+            <span className="q-num tabular-nums">{stats.internal}</span> lien{stats.internal > 1 ? "s" : ""} interne{stats.internal > 1 ? "s" : ""}
+          </p>
+          <p className="m-0 text-[12px] text-[var(--q-text-4)]">{empty ? "Texte à écrire" : `Conseillé : ${goal.min} à ${goal.max}`}</p>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-[var(--q-sunken)]" role="img" aria-label={`${stats.internal} liens internes sur ${goal.max} au plus conseillés`}>
+          <div className={cn("h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none", tone)} style={{ width: `${width}%` }} />
+        </div>
+        <p className="m-0 text-[12.5px] leading-snug text-[var(--q-text-3)]">
+          Vers les guides, modèles, outils et autres articles du site, sur des mots du texte. Rien n&apos;est réécrit.
+        </p>
+
+        <button id="blog-links-run" type="button" onClick={onRun} disabled={state.busy || empty} className="q-btn q-btn-secondary w-full max-md:h-12">
+          {state.busy ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : <Wand2 aria-hidden />}
+          {state.busy ? "Recherche des liens…" : "Ajouter les liens internes"}
+        </button>
+
+        <div aria-live="polite" className="flex flex-col gap-2.5">
+          {state.error && (
+            <p role="alert" className="q-field-error !text-[13px]">
+              {state.error}
+            </p>
+          )}
+          {state.last && (
+            <div className="flex flex-col gap-2 rounded-xl border border-[var(--q-ok-line)] bg-[var(--q-ok-bg)] p-3">
+              <p className="m-0 flex items-center gap-1.5 text-[13px] font-semibold text-[var(--q-ok)]">
+                <Check className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
+                {state.last.added.length > 0
+                  ? `${state.last.added.length} lien${state.last.added.length > 1 ? "s" : ""} ajouté${state.last.added.length > 1 ? "s" : ""}`
+                  : "Bloc « Pour aller plus loin » ajouté"}
+              </p>
+              {state.last.added.length > 0 && (
+                <ul className="m-0 flex list-none flex-col gap-1 p-0">
+                  {state.last.added.map((a) => (
+                    <li key={`${a.path}-${a.anchor}`} className="text-[12.5px] leading-snug text-[var(--q-text-2)]">
+                      <span className="font-medium text-[var(--q-ink)]">« {a.anchor} »</span> <span aria-hidden>→</span> <span className="sr-only">vers </span>
+                      {a.title}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <button type="button" onClick={onUndo} className="q-btn q-btn-ghost q-btn-sm max-md:!h-11">
+                  <Undo2 aria-hidden />
+                  Annuler
+                </button>
+                <span className="text-[12px] text-[var(--q-text-4)]">Ctrl+Z revient aussi en arrière.</span>
+              </div>
+            </div>
+          )}
+          {state.note && (
+            <p className="m-0 flex items-start gap-1.5 text-[12.5px] leading-snug text-[var(--q-text-3)]">
+              <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-[var(--q-text-4)]" aria-hidden />
+              <span className="min-w-0">
+                {state.note}{" "}
+                <button type="button" onClick={onDismiss} className="q-link text-[12.5px]">
+                  Fermer
+                </button>
+              </span>
+            </p>
+          )}
+          {state.relatedBlock && (
+            <button type="button" onClick={onAddRelated} className="q-btn q-btn-secondary q-btn-sm self-start max-md:!h-11">
+              Ajouter le bloc « Pour aller plus loin »
+            </button>
+          )}
+        </div>
       </div>
     </SideCard>
   )

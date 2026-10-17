@@ -23,6 +23,7 @@ import { DUPLICATE_THRESHOLD, isAllowedLink, titleSimilarity, wordCount } from "
 import { shortenTitle, SUFFIX, TITLE_MAX } from "@/lib/seo/meta"
 import { isSafeHref } from "@/lib/markdown"
 import { keywordArticleMismatch } from "@/lib/seo/articles/search-language"
+import { linkGoal } from "@/lib/seo/links/engine"
 import type { ArticleType } from "@/lib/seo/types"
 
 /* ------------------------------------------------------------------ */
@@ -32,7 +33,7 @@ import type { ArticleType } from "@/lib/seo/types"
 export type OnPageStatus = "ok" | "warn" | "error"
 
 /** Champ de l'éditeur auquel renvoie un contrôle (clic sur la ligne : le champ reçoit le focus). */
-export type OnPageTarget = "keyword" | "title" | "seoTitle" | "seoDescription" | "slug" | "excerpt" | "content" | "cover"
+export type OnPageTarget = "keyword" | "title" | "seoTitle" | "seoDescription" | "slug" | "excerpt" | "content" | "cover" | "links"
 
 export interface OnPageCheck {
   id: string
@@ -665,12 +666,13 @@ export function analyzeOnPage(input: OnPageInput): OnPageResult {
       weight: 2,
     })
   }
+  const links = linkGoal(stats.words)
   add({
     id: "internal-links",
     label: "Liens vers d'autres pages du site",
-    status: stats.internalLinks >= 2 ? "ok" : stats.internalLinks === 1 ? "warn" : "error",
-    detail: `${plural(stats.internalLinks, "lien interne", "liens internes")} (2 ou plus conseillés : guides, modèles, outils).`,
-    target: "content",
+    status: stats.internalLinks >= links.min ? "ok" : stats.internalLinks >= 1 ? "warn" : "error",
+    detail: `${plural(stats.internalLinks, "lien interne", "liens internes")} (${links.min} à ${links.max} conseillés pour ${stats.words.toLocaleString("fr-FR")} mots : guides, modèles, outils). « Ajouter les liens internes » les pose en un clic.`,
+    target: "links",
     weight: 6,
   })
   if (stats.nonOfficialLinks.length > 0) {

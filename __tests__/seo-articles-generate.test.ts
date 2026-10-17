@@ -5,6 +5,8 @@ import { findCompetitorMentions } from "@/lib/seo/competitors"
 
 const mocks = vi.hoisted(() => ({
   text: vi.fn(),
+  image: vi.fn(),
+  store: vi.fn(),
   cover: vi.fn(),
   revalidated: [] as string[],
 }))
@@ -12,6 +14,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/seo/articles/models", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/seo/articles/models")>()),
   generateText: mocks.text,
+  generateImage: mocks.image,
+}))
+vi.mock("@/lib/blog-images/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/blog-images/server")>()),
+  storeBlogImage: mocks.store,
 }))
 vi.mock("@/lib/blog-images/cover/make", () => ({ makeCover: mocks.cover }))
 vi.mock("next/cache", () => ({ revalidatePath: (p: string) => mocks.revalidated.push(p) }))
@@ -67,8 +74,29 @@ function scripted() {
     if (pass === "PASSE 2") return { text: writeContent, model, usage }
     if (pass === "PASSE 3") return { text: JSON.stringify({ problems: reviewProblems }), model, usage }
     if (pass === "PASSE 4") return { text: fixContent, model, usage }
+    // Lecture d'un passage pour une photo du texte (lib/blog-images/passage.ts)
+    if (pass === "PASSAGE" || pass === "PARAGRA") {
+      return {
+        text: JSON.stringify({
+          subject: "Relance d'une facture",
+          scene: "Un artisan au téléphone dans sa camionnette relance un client, tablette posée sur le tableau de bord, chantier visible derrière le pare-brise.",
+          styles: ["artisan", "vif"],
+          alt: "Un artisan relance un client au téléphone depuis sa camionnette",
+        }),
+        model,
+        usage,
+      }
+    }
     throw new Error(`passe inattendue : ${pass}`)
   })
+  mocks.image.mockImplementation(async ({ model }: { model: string }) => ({ data: Buffer.from("png"), mimeType: "image/png", model }))
+  let stored = 0
+  mocks.store.mockImplementation(async ({ hint }: { hint: string }) => ({
+    url: `https://stockage.test/blog-covers/editor/ia/2026/10/photo-${++stored}.webp#w=1600&h=900`,
+    width: 1600,
+    height: 900,
+    hint,
+  }))
   mocks.cover.mockImplementation(async ({ title }: { title: string }) => ({
     url: "https://stockage.test/blog-covers/covers/2026/10/relancer-facture-impayee-abc123.webp#w=1600&h=900",
     width: 1600,
@@ -98,7 +126,14 @@ function topicRow(over: Row = {}): Row {
 }
 
 function setup(topic: Row = topicRow(), extra: Record<string, Row[]> = {}): { db: FakeArticlesDb; client: SeoDb; topicId: string } {
-  const db = fakeArticlesDb({ seo_topics: [topic], blog_posts: [], seo_article_jobs: [], seo_settings: [], ...extra })
+  // Sans photo dans le texte par défaut : la passe « images » a ses propres tests (describe plus bas)
+  const db = fakeArticlesDb({
+    seo_topics: [topic],
+    blog_posts: [],
+    seo_article_jobs: [],
+    seo_settings: [{ key: "articles", value: { inlineImages: 0 }, updated_at: "2026-10-01T00:00:00Z" }],
+    ...extra,
+  })
   return { db, client: db.client as SeoDb, topicId: topic.id as string }
 }
 
@@ -127,6 +162,8 @@ beforeEach(() => {
   reviewProblems = []
   mocks.revalidated.length = 0
   mocks.text.mockReset()
+  mocks.image.mockReset()
+  mocks.store.mockReset()
   mocks.cover.mockReset()
   scripted()
 })
@@ -142,7 +179,7 @@ describe("rédaction en plusieurs passes", () => {
     expect(db.tables.seo_topics[0].status).toBe("generating")
 
     const outcomes = await runAll(client, job.id)
-    expect(outcomes.map((o) => o.ran)).toEqual(["plan", "write", "check", "cover", "save"])
+    expect(outcomes.map((o) => o.ran)).toEqual(["plan", "write", "check", "links", "cover", "save"])
     expect(outcomes.at(-1)).toMatchObject({ status: "done", step: "done" })
 
     // Claude partout par défaut : plan et contrôle par Sonnet 5.5, rédaction par Opus 5.5 ; Gemini seulement en secours
@@ -204,7 +241,7 @@ describe("rédaction en plusieurs passes", () => {
     const { db, client, topicId } = setup(topicRow({ publish_mode: "direct" }))
     const job = await startJob(client, topicId)
     const outcomes = await runAll(client, job.id)
-    expect(outcomes.map((o) => o.ran)).toEqual(["plan", "write", "check", "fix", "check", "cover", "save"])
+    expect(outcomes.map((o) => o.ran)).toEqual(["plan", "write", "check", "fix", "check", "links", "cover", "save"])
     const fix = calls.find((c) => c.pass === "PASSE 4")!
     expect(fix.model).toBe("claude-opus-5-5")
     expect(fix.prompt).toContain("Anciens seuils de franchise de TVA")
@@ -655,7 +692,7 @@ describe("garde-fous de la rédaction", () => {
     const b = setup()
     const jobB = await startJob(b.client, b.topicId)
     await runAll(b.client, jobB.id)
-    expect((b.db.tables.seo_article_jobs[0].state as { passes: number }).passes).toBe(5)
+    expect((b.db.tables.seo_article_jobs[0].state as { passes: number }).passes).toBe(6)
   })
 
   it("contrôle : un chevron dans le titre ou la description bloque aussi la publication manuelle", async () => {
@@ -688,5 +725,229 @@ describe("tâche planifiée et lectures", () => {
       await expect(loadTopics(db.client as SeoDb, new Date(), { archived: false })).rejects.toBeInstanceOf(SeoDbError)
       await expect(loadGenerateDialog(db.client as SeoDb, new Date())).rejects.toBeInstanceOf(SeoDbError)
     }
+  })
+})
+
+describe("maillage interne des articles générés", () => {
+  const withPhrases = (content: string) => content.replace("Introduction sur les relances.", "Introduction : rappelez les mentions obligatoires d'un devis, lisez [un guide](/guide/guide-invente) et [la TVA](https://qonforme.fr/guide/tva-travaux).")
+
+  it("la consigne de rédaction liste les pages du site à lier et le nombre de liens attendu", async () => {
+    const { client, topicId } = setup()
+    const job = await startJob(client, topicId)
+    await runAll(client, job.id)
+    const write = calls.find((c) => c.pass === "PASSE 2")!
+    expect(write.prompt).toContain("MAILLAGE INTERNE")
+    expect(write.prompt).toMatch(/entre \d+ et \d+ liens/)
+    expect(write.prompt).toMatch(/- \/(guide|modele|outils|blog)\/[a-z0-9-]+ : /)
+    expect(write.prompt).toContain("n'inventez aucune adresse interne")
+    // Aucun concurrent dans la consigne (garde-fou commun)
+    expect(findCompetitorMentions(write.prompt, competitors)).toEqual([])
+  })
+
+  it("adresse inventée retirée, adresse complète ramenée au chemin, liens complétés sur le texte", async () => {
+    writeContent = withPhrases(CLEAN)
+    const { db, client, topicId } = setup()
+    const job = await startJob(client, topicId)
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.map((o) => o.ran)).toContain("links")
+    const content = db.tables.blog_posts[0].content as string
+    expect(content).not.toContain("/guide/guide-invente")
+    expect(content).toContain("lisez un guide et")
+    expect(content).toContain("[la TVA](/guide/tva-travaux)")
+    expect(content).toContain("[mentions obligatoires d'un devis](/guide/mentions-obligatoires-devis)")
+    const state = db.tables.seo_article_jobs[0].state as { links: { before: number; after: number; added: { path: string }[]; removed: string[] }; notices?: string[] }
+    expect(state.links.removed).toEqual(["/guide/guide-invente"])
+    expect(state.links.added.map((a) => a.path)).toContain("/guide/mentions-obligatoires-devis")
+    expect(state.notices?.join(" ")).toMatch(/1 lien vers des pages qui n'existent pas retiré/)
+  })
+
+  it("un texte sans expression à lier reçoit le bloc « Pour aller plus loin » sous le minimum", async () => {
+    writeContent = CLEAN.replace("## Pour aller plus loin\n\nEssayez Qonforme pour vos devis.", "## Conclusion\n\nEssayez Qonforme.")
+    const { db, client, topicId } = setup()
+    const job = await startJob(client, topicId)
+    await runAll(client, job.id)
+    const content = db.tables.blog_posts[0].content as string
+    expect(content).toMatch(/## Pour aller plus loin\n\n- \[[^\]]+\]\(\/[a-z0-9/-]+\)/)
+    // Chaque lien du bloc mène à une page connue
+    const paths = Array.from(content.matchAll(/\]\((\/[^)]+)\)/g)).map((m) => m[1])
+    expect(paths.length).toBeGreaterThan(0)
+    const state = db.tables.seo_article_jobs[0].state as { links: { related: number } }
+    expect(state.links.related).toBe(paths.length)
+  })
+
+  it("préférence « Liens internes automatiques » désactivée : ni liste de pages, ni passe de maillage", async () => {
+    const { db, client, topicId } = setup(topicRow(), { seo_settings: [{ key: "articles", value: { autoLinks: false, inlineImages: 0 }, updated_at: "2026-10-01T00:00:00Z" }] })
+    writeContent = withPhrases(CLEAN)
+    const job = await startJob(client, topicId)
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.map((o) => o.ran)).toEqual(["plan", "write", "check", "cover", "save"])
+    expect(calls.find((c) => c.pass === "PASSE 2")!.prompt).not.toContain("MAILLAGE INTERNE")
+    expect((db.tables.seo_article_jobs[0].state as { input: { autoLinks: boolean } }).input.autoLinks).toBe(false)
+  })
+
+  it("un travail créé avant le maillage (sans la préférence) suit le maillage automatique", async () => {
+    const { db, client, topicId } = setup()
+    const job = await startJob(client, topicId)
+    const state = db.tables.seo_article_jobs[0].state as { input: Record<string, unknown> }
+    delete state.input.autoLinks
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.map((o) => o.ran)).toContain("links")
+  })
+})
+
+describe("photos du texte des articles générés", () => {
+  const SECTIONS = ["Quand relancer", "Que dire au client", "Les pénalités de retard", "Quel courrier envoyer"]
+  const section = (title: string, i: number) =>
+    `## ${title}\n\nPremier paragraphe de la section ${title.toLowerCase()}, avec assez de mots pour porter une photo qui l'illustre bien. ${words(25)}\n\n${words(380).replace(/chantier/g, `part${i}x`)}`
+  const IMAGED = `Introduction sur les relances.\n\n${SECTIONS.map(section).join("\n\n")}\n\n## Questions fréquentes\n\n### Combien de relances envoyer ?\nDeux ou trois.\n\n### Faut-il un courrier ?\nPas toujours.\n\n### Quelles pénalités ?\nCelles du Code de commerce.\n\n## Pour aller plus loin\n\nEssayez Qonforme pour vos devis.`
+  const withPhotos = (inlineImages: number | undefined = 4) =>
+    setup(topicRow(), { seo_settings: [{ key: "articles", value: inlineImages === undefined ? {} : { inlineImages }, updated_at: "2026-10-01T00:00:00Z" }] })
+  const stateOf = (db: FakeArticlesDb) =>
+    db.tables.seo_article_jobs[0].state as { passes: number; images: { heading: string; url?: string; error?: string }[]; notices?: string[]; imageSlots: unknown[] }
+  const imageLines = (content: string) => Array.from(content.matchAll(/^!\[([^\]]*)\]\(([^)]+)\)$/gm))
+
+  it("une photo par section choisie, une par passe : lue, générée, enregistrée, insérée après le premier paragraphe", async () => {
+    writeContent = IMAGED
+    const { db, client, topicId } = withPhotos()
+    const job = await startJob(client, topicId)
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.map((o) => o.ran)).toEqual(["plan", "write", "check", "links", "images", "images", "images", "images", "cover", "save"])
+    expect(outcomes.at(-1)?.status).toBe("done")
+
+    // Quatre photos de format paysage, la scène lue dans le passage, jamais d'autre texte que la description
+    expect(mocks.image).toHaveBeenCalledTimes(4)
+    const first = mocks.image.mock.calls[0][0] as { model: string; prompt: string; aspect: string }
+    expect(first.aspect).toBe("16:9")
+    expect(first.prompt).toContain("Un artisan au téléphone dans sa camionnette")
+    // Enregistrées comme des illustrations générées, avec les métadonnées de Qonforme
+    expect(mocks.store).toHaveBeenCalledTimes(4)
+    const store = mocks.store.mock.calls[0][0] as { generated: boolean; hint: string; meta: { creator: string; source: string; description: string } }
+    expect(store.generated).toBe(true)
+    expect(store.hint).toContain("Quand relancer")
+    expect(store.meta).toMatchObject({ creator: "Qonforme", source: "ai", description: "Un artisan relance un client au téléphone depuis sa camionnette" })
+
+    const content = db.tables.blog_posts[0].content as string
+    const images = imageLines(content)
+    expect(images).toHaveLength(4)
+    expect(images[0][1]).toBe("Un artisan relance un client au téléphone depuis sa camionnette")
+    // Chaque photo vient juste après le premier paragraphe de sa section, jamais sous le titre, jamais dans la FAQ
+    for (const title of SECTIONS) {
+      expect(content).toMatch(new RegExp(`## ${title}\\n\\nPremier paragraphe[^\\n]+\\n\\n!\\[[^\\]]+\\]\\(https://stockage\\.test/[^)]+\\)\\n\\n`))
+    }
+    expect(content.slice(content.indexOf("## Questions fréquentes"))).not.toContain("![")
+
+    const state = stateOf(db)
+    expect(state.images.map((i) => i.heading)).toEqual(SECTIONS)
+    expect(state.images.every((i) => i.url && !i.error)).toBe(true)
+    // La couverture n'est pas dans le texte et la photo n'a pas pris sa place
+    expect(db.tables.blog_posts[0].cover_url).toContain("covers/")
+    expect(db.tables.blog_posts[0].ai_model).toContain("photos ")
+    expect(state.passes).toBe(10)
+  })
+
+  it("le plafond des Préférences borne le nombre de photos", async () => {
+    writeContent = IMAGED
+    const { db, client, topicId } = withPhotos(2)
+    const job = await startJob(client, topicId)
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.filter((o) => o.ran === "images")).toHaveLength(2)
+    expect(imageLines(db.tables.blog_posts[0].content as string)).toHaveLength(2)
+  })
+
+  it("préférence à zéro, ou travail créé avant la préférence : aucune passe de photos", async () => {
+    writeContent = IMAGED
+    const none = withPhotos(0)
+    const jobA = await startJob(none.client, none.topicId)
+    expect((await runAll(none.client, jobA.id)).map((o) => o.ran)).not.toContain("images")
+
+    const old = withPhotos()
+    const jobB = await startJob(old.client, old.topicId)
+    delete (old.db.tables.seo_article_jobs[0].state as { input: Record<string, unknown> }).input.inlineImages
+    const outcomes = await runAll(old.client, jobB.id)
+    expect(outcomes.map((o) => o.ran)).not.toContain("images")
+    expect(mocks.image).not.toHaveBeenCalled()
+  })
+
+  it("une photo qui échoue est notée et passée : l'article sort avec les autres", async () => {
+    writeContent = IMAGED
+    const { ModelError } = await import("@/lib/seo/articles/models")
+    let n = 0
+    mocks.image.mockImplementation(async ({ model }: { model: string }) => {
+      if (++n === 2) throw new ModelError("http", "Gemini indisponible (503).")
+      return { data: Buffer.from("png"), mimeType: "image/png", model }
+    })
+    const { db, client, topicId } = withPhotos()
+    const job = await startJob(client, topicId)
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.at(-1)?.status).toBe("done")
+    expect(outcomes.filter((o) => o.ran === "images")).toHaveLength(4)
+    expect(imageLines(db.tables.blog_posts[0].content as string)).toHaveLength(3)
+    const state = stateOf(db)
+    expect(state.images[1]).toMatchObject({ heading: SECTIONS[1], error: "Gemini indisponible (503)." })
+    expect(state.notices?.join(" ")).toContain(`Photo de « ${SECTIONS[1]} » non créée`)
+  })
+
+  it("quota épuisé : les photos restantes sont abandonnées d'un coup, l'article sort quand même", async () => {
+    writeContent = IMAGED
+    const { ModelError } = await import("@/lib/seo/articles/models")
+    mocks.image.mockRejectedValue(new ModelError("quota", "Google refuse le modèle d'image (429) : quota épuisé.", false))
+    const { db, client, topicId } = withPhotos()
+    const job = await startJob(client, topicId)
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.at(-1)?.status).toBe("done")
+    expect(outcomes.filter((o) => o.ran === "images")).toHaveLength(1)
+    expect(mocks.image).toHaveBeenCalledTimes(1)
+    expect(imageLines(db.tables.blog_posts[0].content as string)).toHaveLength(0)
+    expect(stateOf(db).notices?.join(" ")).toContain("Photos du texte non créées")
+  })
+
+  it("clé du modèle d'image absente : rien n'est lu ni payé, une seule passe, l'article sort", async () => {
+    writeContent = IMAGED
+    const { db, client, topicId } = withPhotos()
+    const job = await startJob(client, topicId)
+    delete process.env.GEMINI_API_KEY
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.at(-1)?.status).toBe("done")
+    expect(outcomes.filter((o) => o.ran === "images")).toHaveLength(1)
+    expect(mocks.image).not.toHaveBeenCalled()
+    expect(calls.filter((c) => c.pass === "PASSAGE" || c.pass === "PARAGRA")).toHaveLength(0)
+    expect(stateOf(db).notices?.join(" ")).toContain("clé GEMINI_API_KEY absente")
+    expect(imageLines(db.tables.blog_posts[0].content as string)).toHaveLength(0)
+  })
+
+  it("modèle de lecture indisponible : la scène vient des mots du passage, la photo est quand même créée", async () => {
+    writeContent = IMAGED
+    const { ModelError } = await import("@/lib/seo/articles/models")
+    const scripted = mocks.text.getMockImplementation()!
+    mocks.text.mockImplementation(async (input: { prompt: string }) => {
+      if (input.prompt.startsWith("PASSAGE") || input.prompt.startsWith("PARAGRA")) throw new ModelError("quota", "Quota épuisé", false)
+      return scripted(input)
+    })
+    const { db, client, topicId } = withPhotos(1)
+    const job = await startJob(client, topicId)
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.at(-1)?.status).toBe("done")
+    expect(mocks.image).toHaveBeenCalledTimes(1)
+    expect(imageLines(db.tables.blog_posts[0].content as string)).toHaveLength(1)
+  })
+
+  it("aucune section ne se prête à une photo : une note, pas d'échec", async () => {
+    writeContent = CLEAN
+    const { db, client, topicId } = withPhotos()
+    const job = await startJob(client, topicId)
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.at(-1)?.status).toBe("done")
+    expect(mocks.image).toHaveBeenCalledTimes(1)
+    // CLEAN n'a qu'une section de développement : une photo, pas quatre
+    expect(imageLines(db.tables.blog_posts[0].content as string)).toHaveLength(1)
+    writeContent = "Introduction sans aucun titre de section.\n\n" + words(1700)
+    fixContent = writeContent
+    const flat = withPhotos()
+    mocks.image.mockClear()
+    const job2 = await startJob(flat.client, flat.topicId)
+    const flatOutcomes = await runAll(flat.client, job2.id)
+    expect(flatOutcomes.at(-1)?.status).toBe("done")
+    expect(mocks.image).not.toHaveBeenCalled()
+    expect(stateOf(flat.db).notices?.join(" ")).toContain("aucune section ne s'y prête")
   })
 })

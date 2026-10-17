@@ -2,7 +2,7 @@
  * Rédaction d'un article en plusieurs passes, une passe par appel, avec reprise
  * (table seo_article_jobs) :
  *
- *   plan → rédaction → contrôle → [correction → contrôle] → couverture → enregistrement
+ *   plan → rédaction → contrôle → [correction → contrôle] → maillage → couverture → enregistrement
  *
  * - plan : titre (70 caractères au plus), adresse, sections, questions de la FAQ,
  *   mots-clés, sources officielles ;
@@ -13,8 +13,11 @@
  *   (règles de lib/blog-audit.ts, concurrents, longueur, titres, liens, doublons) ;
  * - correction : une seule passe ciblée, par le modèle de rédaction (même
  *   auteur), sur la liste des problèmes, puis nouveau contrôle ;
- * - couverture : photo d'artisan du bâtiment, sans texte ni logo, 16:9, dans
- *   le stockage « blog-covers » ; un échec n'empêche pas l'article ;
+ * - maillage : liens internes (lib/seo/links) : adresses inventées retirées,
+ *   liens complétés jusqu'à l'objectif de la longueur de l'article ; sans
+ *   modèle, un échec n'empêche pas l'article ;
+ * - couverture : image dessinée par le code (lib/blog-images/cover), dans le
+ *   stockage « blog-covers » ; un échec n'empêche pas l'article ;
  * - enregistrement : blog_posts (brouillon, « À relire » ou publication selon
  *   le mode du sujet) et sujet « Rédigé ».
  *
@@ -39,9 +42,19 @@ import { auditArticle } from "@/lib/blog-audit"
 import { fitDescription } from "@/lib/seo/meta"
 import { revalidateBlog } from "@/lib/blog-revalidate"
 import { makeCover } from "@/lib/blog-images/cover/make"
+import { describePassage } from "@/lib/blog-images/describe"
 import { readImageSize } from "@/lib/blog-images/policy"
+import { altFromDescription, buildImagePrompt } from "@/lib/blog-images/prompt"
+import { descriptionFromSuggestion } from "@/lib/blog-images/passage"
+import { BlogImageError, storeBlogImage } from "@/lib/blog-images/server"
+import { MAX_INLINE_IMAGES, imageMarkdown, insertImageAfterParagraph, inlineImageCount, planImageSlots, type ImageSlot } from "@/lib/seo/articles/images"
+import { wordCount } from "@/lib/seo/links/text"
+import { loadLinkCandidates, validLinkPaths } from "@/lib/seo/links/catalog"
+import { cleanInternalLinks, linkGoal, rankRelated, topUpLinks } from "@/lib/seo/links/engine"
 import type { ArticleType, PublishMode } from "@/lib/seo/types"
 import {
+  findImageModel,
+  generateImage,
   generateText,
   hasKey,
   modelLabel,
@@ -65,6 +78,7 @@ import {
   type ArticleBrief,
   type ArticlePlan,
   type FixInstruction,
+  type LinkGuide,
 } from "@/lib/seo/articles/prompt"
 import {
   auditResultOf,
@@ -85,7 +99,7 @@ import { TOPIC_COLUMNS, type TopicRow } from "@/lib/seo/articles/status"
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
 
-export type JobStep = "plan" | "write" | "check" | "fix" | "cover" | "save" | "done"
+export type JobStep = "plan" | "write" | "check" | "fix" | "links" | "images" | "cover" | "save" | "done"
 export type JobStatus = "queued" | "running" | "done" | "failed"
 
 export const STEP_LABELS: Record<JobStep, string> = {
@@ -93,6 +107,8 @@ export const STEP_LABELS: Record<JobStep, string> = {
   write: "Rédaction…",
   check: "Contrôle…",
   fix: "Correction…",
+  links: "Maillage…",
+  images: "Photos…",
   cover: "Image…",
   save: "Enregistrement…",
   done: "Article prêt",
@@ -117,6 +133,20 @@ export interface JobInput {
   reviewModel: string
   coverImage: boolean
   imageModel: string
+  /** Liens internes automatiques (Préférences) ; absent d'un travail créé avant : activé. */
+  autoLinks?: boolean
+  /** Plafond de photos dans le texte (Préférences) ; absent d'un travail créé avant : aucune. */
+  inlineImages?: number
+}
+
+/** Une photo du texte : créée et insérée, ou le motif pour lequel elle ne l'a pas été. */
+export interface InlineImageResult {
+  h2Index: number
+  heading: string
+  url?: string
+  alt?: string
+  model?: string
+  error?: string
 }
 
 export interface JobState {
@@ -127,6 +157,11 @@ export interface JobState {
   issues?: CheckIssue[]
   autoFixes?: string[]
   fixed?: boolean
+  /** Maillage interne : liens avant et après la passe, ajoutés par le code, adresses retirées. */
+  links?: { before: number; after: number; added: { path: string; anchor: string }[]; related: number; removed: string[] }
+  /** Photos du texte : sections choisies (figées à la première passe) et résultat de chacune, dans l'ordre. */
+  imageSlots?: ImageSlot[]
+  images?: InlineImageResult[]
   cover?: { url: string; alt: string; model: string } | null
   coverError?: string | null
   slug?: string
@@ -162,11 +197,12 @@ export const JOB_COLUMNS = "id, topic_id, status, step, state, model, attempts, 
 export const MAX_ATTEMPTS = 3
 /**
  * Passes jouées au plus par une rédaction (réussies ou non) : le parcours le
- * plus long avec tous ses nouveaux essais en compte 19 (plan, rédaction,
- * contrôle, correction, contrôle et enregistrement à 3 essais, image à 1).
+ * plus long avec tous ses nouveaux essais en compte 22 (plan, rédaction,
+ * contrôle, correction, contrôle, maillage et enregistrement à 3 essais, image à 1),
+ * plus une passe par photo du texte (6 au plus, chacune à 1 essai : un échec de photo n'empêche jamais l'article).
  * Au-delà, la rédaction s'arrête : aucune boucle d'appels payants.
  */
-export const MAX_PASSES = 20
+export const MAX_PASSES = 24 + MAX_INLINE_IMAGES
 /** Verrou d'une passe (une passe dure au plus 300 s dans la route). */
 const STEP_LOCK_MS = 5 * 60_000
 
@@ -176,6 +212,8 @@ export const STEP_BUDGET_MS: Record<Exclude<JobStep, "done">, { min: number; max
   write: { min: 120_000, max: 250_000 },
   check: { min: 40_000, max: 120_000 },
   fix: { min: 120_000, max: 250_000 },
+  links: { min: 8_000, max: 25_000 },
+  images: { min: 60_000, max: 110_000 },
   cover: { min: 15_000, max: 45_000 },
   save: { min: 5_000, max: 20_000 },
 }
@@ -257,6 +295,8 @@ export function buildJobInput(topic: Pick<TopicRow, "title" | "keyword" | "artic
     reviewModel: prefs.reviewModel,
     coverImage: prefs.coverImage,
     imageModel: prefs.imageModel,
+    autoLinks: prefs.autoLinks,
+    inlineImages: prefs.inlineImages,
   }
 }
 
@@ -574,10 +614,37 @@ async function stepPlan(env: StepEnv): Promise<StepResult> {
   return { next: "write", state: { plan, planError: null, ...trace(env.job.state, "plan", res) } }
 }
 
+/** Sujet d'un article pour le maillage : titre, mot-clé, sections et mots-clés du plan. */
+function topicOf(state: JobState): string {
+  const { input, plan } = state
+  return [plan?.title ?? input.title, input.keyword, ...(plan?.outline.map((s) => s.h2) ?? []), ...(plan?.keywords ?? [])].filter(Boolean).join(" ")
+}
+
+/** Pages que le rédacteur peut lier et nombre de liens attendu ; null sans liens automatiques ou si le catalogue est illisible. */
+async function linkGuideFor(env: StepEnv): Promise<LinkGuide | null> {
+  const { state } = env.job
+  if (state.input.autoLinks === false || !state.plan) return null
+  try {
+    const candidates = await loadLinkCandidates(env.db)
+    const words = Math.round((state.input.lengthMin + state.input.lengthMax) / 2)
+    const goal = linkGoal(words)
+    const pages = rankRelated(topicOf(state), candidates, { limit: 14, keyword: state.input.keyword, exclude: [`/blog/${state.plan.slug}`] })
+    if (pages.length === 0) return null
+    return {
+      min: goal.min,
+      max: goal.max,
+      pages: pages.map((c) => ({ path: c.path, title: c.title, anchors: c.phrases.filter((p): p is string => typeof p === "string").slice(0, 2) })),
+    }
+  } catch (error) {
+    console.error("[seo-articles] liste de pages à lier indisponible", error instanceof Error ? error.message.slice(0, 160) : "")
+    return null
+  }
+}
+
 async function stepWrite(env: StepEnv): Promise<StepResult> {
   const { input, plan } = env.job.state
   if (!plan) return { next: "plan", state: {} }
-  const prompt = buildWritePrompt(briefOf(input), plan, env.ctx.brand.name || "Qonforme")
+  const prompt = buildWritePrompt(briefOf(input), plan, env.ctx.brand.name || "Qonforme", await linkGuideFor(env))
   const res = await callText(env, "write", prompt, { maxOutputTokens: writeTokens(input) })
   const { content, autoFixes } = normalizeContent(res.text, plan.title)
   // Texte vide une fois nettoyé (bloc vide, images seules) : un essai de plus, jamais une boucle
@@ -636,8 +703,65 @@ async function stepCheck(env: StepEnv): Promise<StepResult> {
   const review = await factualReview(env)
   const issues = [...review.issues, ...runChecks(state, env.ctx, await existingArticles(env.db))]
   const fixable = issues.some((i) => i.fixable)
-  const next: JobStep = fixable && !state.fixed ? "fix" : state.input.coverImage ? "cover" : "save"
+  const next: JobStep = fixable && !state.fixed ? "fix" : afterCheck(state)
   return { next, state: { ...review.patch, issues } }
+}
+
+/** Passe qui suit le contrôle définitif : maillage, photos du texte, couverture, puis enregistrement. */
+function afterCheck(state: JobState): JobStep {
+  if (state.input.autoLinks !== false) return "links"
+  return afterLinks(state)
+}
+
+function afterLinks(state: JobState): JobStep {
+  if ((state.input.inlineImages ?? 0) > 0) return "images"
+  return afterImages(state)
+}
+
+function afterImages(state: JobState): JobStep {
+  return state.input.coverImage ? "cover" : "save"
+}
+
+/**
+ * Maillage interne : les adresses inventées par le modèle sont retirées (le
+ * texte reste), les liens sont complétés jusqu'à l'objectif de la longueur,
+ * puis, s'il en manque encore, un bloc « Pour aller plus loin » les ajoute.
+ * Sans modèle ni appel payant ; une erreur n'empêche pas l'article.
+ */
+async function stepLinks(env: StepEnv): Promise<StepResult> {
+  const { state } = env.job
+  const plan = state.plan
+  if (!state.content || !plan) return { next: "write", state: {} }
+  try {
+    const candidates = await loadLinkCandidates(env.db)
+    const cleaned = cleanInternalLinks(state.content, validLinkPaths(candidates))
+    const result = topUpLinks(cleaned.markdown, candidates, {
+      selfPath: `/blog/${plan.slug}`,
+      keyword: state.input.keyword,
+      topic: topicOf(state),
+      allowRelatedBlock: true,
+    })
+    const notice = cleaned.removed.length > 0 ? `${cleaned.removed.length} lien${cleaned.removed.length > 1 ? "s" : ""} vers des pages qui n'existent pas retiré${cleaned.removed.length > 1 ? "s" : ""}.` : null
+    return {
+      next: afterLinks(state),
+      state: {
+        content: result.markdown,
+        links: {
+          before: result.before,
+          after: result.after,
+          added: result.added.map((p) => ({ path: p.path, anchor: p.anchor })),
+          related: result.relatedAdded,
+          removed: cleaned.removed,
+        },
+        notices: withNotice(state, notice),
+      },
+    }
+  } catch (error) {
+    // Un échec de maillage n'empêche jamais l'article
+    const message = error instanceof Error ? error.message : "Maillage indisponible"
+    console.error("[seo-articles] maillage non fait", message)
+    return { next: afterLinks(state), state: { notices: withNotice(state, `Maillage interne non fait : ${message.slice(0, 160)}`) } }
+  }
 }
 
 export function fixInstructions(issues: CheckIssue[]): FixInstruction[] {
@@ -699,6 +823,124 @@ async function stepFix(env: StepEnv): Promise<StepResult> {
   }
 }
 
+/** Format des photos du texte : paysage, comme la couverture. */
+const INLINE_ASPECT = "16:9"
+/** Lecture du passage (modèle du plan) : au-delà, la proposition vient des mots du passage. */
+const DESCRIBE_TIMEOUT_MS = 15_000
+/** Marge gardée pour l'enregistrement de la photo après sa génération. */
+const STORE_MARGIN_MS = 8_000
+
+/** Motif court d'un échec de photo (jamais un secret : les erreurs de modèle sont rédigées pour l'écran). */
+function imageFailure(error: unknown): { message: string; stop: boolean } {
+  if (error instanceof ModelError) return { message: error.message, stop: error.kind === "not_configured" || error.kind === "quota" || error.kind === "unknown_model" }
+  if (error instanceof BlogImageError) return { message: error.message, stop: error.code === "upload" }
+  return { message: error instanceof Error ? error.message : "Image indisponible", stop: false }
+}
+
+/**
+ * Photos du texte, une par passe (20 à 40 secondes chacune) : le modèle lit le
+ * premier paragraphe de la section et décrit la photo (sujet, scène, style),
+ * le modèle d'image la crée, elle est enregistrée en WebP sans métadonnées
+ * inutiles (stockage du blog, « Illustration générée par IA » sur la page) puis
+ * insérée juste après ce paragraphe (lib/seo/articles/images.ts : nombre et
+ * places). Les sections sont choisies à la première passe et gardées dans l'état.
+ *
+ * Une photo qui échoue est notée et passée : l'article sort avec les autres.
+ * Clé absente ou quota épuisé : les photos restantes sont abandonnées d'un coup
+ * (rien ne sert de réessayer), et l'écran le dit. Chaque photo est facturée par
+ * Google : jamais de nouvel essai automatique.
+ */
+async function stepImages(env: StepEnv): Promise<StepResult> {
+  const { state } = env.job
+  const plan = state.plan
+  if (!state.content || !plan) return { next: "write", state: {} }
+  const cap = state.input.inlineImages ?? 0
+  if (cap <= 0) return { next: afterImages(state), state: {} }
+
+  const wanted = inlineImageCount(wordCount(state.content), cap)
+  const slots = state.imageSlots ?? planImageSlots(state.content, wanted)
+  const results = state.images ?? []
+  if (results.length >= slots.length) {
+    const none = slots.length === 0 && wanted > 0 ? "Aucune photo dans le texte : aucune section ne s'y prête (FAQ et conclusion exclues)." : null
+    return { next: afterImages(state), state: { imageSlots: slots, images: results, notices: withNotice(state, none) } }
+  }
+  const slot = slots[results.length]
+  // Clé du modèle d'image absente : rien n'est lu ni payé, les photos sont abandonnées d'un coup
+  const keyEnv = findImageModel(state.input.imageModel)?.envKey
+  if (keyEnv && !hasKey(keyEnv)) {
+    const skipped = slots.slice(results.length).map((s): InlineImageResult => ({ h2Index: s.h2Index, heading: s.heading, error: "Abandonnée." }))
+    return {
+      next: afterImages(state),
+      state: {
+        imageSlots: slots,
+        images: [...results, ...skipped],
+        notices: withNotice(state, `Photos du texte non créées : clé ${keyEnv} absente (Paramètres › Connexions).`),
+      },
+    }
+  }
+  const done = (result: InlineImageResult, extra: Partial<JobState> = {}): StepResult => {
+    const images = [...results, result]
+    return { next: images.length >= slots.length ? afterImages(state) : "images", state: { imageSlots: slots, images, ...extra } }
+  }
+
+  try {
+    const startedAt = Date.now()
+    // Le titre de l'article et le mot-clé nomment le fichier public et ses métadonnées : jamais un concurrent
+    assertNoCompetitorInPrompt(`${plan.title}\n${state.input.keyword ?? ""}`, env.ctx.competitors)
+    const described = await describePassage({
+      passage: slot.passage,
+      title: plan.title,
+      keyword: state.input.keyword,
+      competitors: env.ctx.competitors,
+      model: state.input.planModel,
+      fallbackModel: state.input.textModel,
+      timeoutMs: Math.min(DESCRIBE_TIMEOUT_MS, env.timeoutMs),
+    })
+    const description = descriptionFromSuggestion(described)
+    const generated = await generateImage({
+      model: state.input.imageModel,
+      prompt: buildImagePrompt({ description, aspect: INLINE_ASPECT, purpose: "inline" }),
+      aspect: INLINE_ASPECT,
+      timeoutMs: Math.max(20_000, env.timeoutMs - (Date.now() - startedAt) - STORE_MARGIN_MS),
+    })
+    const alt = described.alt || altFromDescription(description)
+    const hint = [slot.heading, state.input.keyword].filter(Boolean).join(" ")
+    const stored = await storeBlogImage({
+      data: generated.data,
+      hint,
+      // Rangée sous editor/ia/ : le blog affiche « Illustration générée par IA » sous elle
+      generated: true,
+      meta: { title: slot.heading, description: alt, keywords: [state.input.keyword], creator: "Qonforme", source: "ai" },
+      maxBytes: 15 * 1024 * 1024,
+    })
+    // Le texte a pu changer depuis le choix des sections (jamais pendant une passe, mais après un « Réessayer ») :
+    // la section est retrouvée par son rang et son titre
+    const inserted = insertImageAfterParagraph(state.content, slot, imageMarkdown(alt, stored.url))
+    if (!inserted) return done({ h2Index: slot.h2Index, heading: slot.heading, error: "Section introuvable ou déjà illustrée." })
+    const notice = generated.fallbackFrom ? `Photo par ${modelLabel(generated.model)} au lieu de ${modelLabel(generated.fallbackFrom.model)} : ${generated.fallbackFrom.reason}` : null
+    return done(
+      { h2Index: slot.h2Index, heading: slot.heading, url: readImageSize(stored.url).src, alt, model: modelLabel(generated.model) },
+      { content: inserted, notices: withNotice(state, notice) },
+    )
+  } catch (error) {
+    // Un échec de photo n'empêche jamais l'article
+    const { message, stop } = imageFailure(error)
+    console.error("[seo-articles] photo du texte non créée", message)
+    const failed: InlineImageResult = { h2Index: slot.h2Index, heading: slot.heading, error: message.slice(0, 300) }
+    if (!stop) return done(failed, { notices: withNotice(state, `Photo de « ${slot.heading.slice(0, 60)} » non créée : ${message.slice(0, 140)}`) })
+    // Clé absente, quota épuisé, stockage en panne : les photos restantes sont abandonnées
+    const skipped = slots.slice(results.length + 1).map((s): InlineImageResult => ({ h2Index: s.h2Index, heading: s.heading, error: "Abandonnée." }))
+    return {
+      next: afterImages(state),
+      state: {
+        imageSlots: slots,
+        images: [...results, failed, ...skipped],
+        notices: withNotice(state, `Photos du texte non créées : ${message.slice(0, 160)}`),
+      },
+    }
+  }
+}
+
 /** Nom du « modèle » d'une couverture dessinée par le code (colonne ai_model) : aucun modèle d'IA, aucun coût. */
 export const COVER_MODEL = "couverture Qonforme"
 
@@ -734,7 +976,7 @@ async function uniqueSlug(db: SeoDb, base: string): Promise<string> {
 }
 
 /** Modèles réellement utilisés, passe par passe (colonne ai_model). */
-export function aiModelOf(state: Pick<JobState, "models" | "input" | "cover">): string {
+export function aiModelOf(state: Pick<JobState, "models" | "input" | "cover" | "images">): string {
   const used = (pass: ModelPass, fallback: string) => state.models?.[pass]?.model ?? fallback
   const parts = [
     `plan ${used("plan", state.input.planModel)}`,
@@ -742,6 +984,8 @@ export function aiModelOf(state: Pick<JobState, "models" | "input" | "cover">): 
     `contrôle ${used("review", state.input.reviewModel)}`,
   ]
   if (state.cover?.model) parts.push(`image ${state.cover.model}`)
+  const photos = Array.from(new Set((state.images ?? []).filter((i) => i.url && i.model).map((i) => i.model as string)))
+  if (photos.length > 0) parts.push(`photos ${photos.join(", ")}`)
   return parts.join(" · ")
 }
 
@@ -835,6 +1079,8 @@ const STEP_FNS: Record<Exclude<JobStep, "done">, (env: StepEnv) => Promise<StepR
   write: stepWrite,
   check: stepCheck,
   fix: stepFix,
+  links: stepLinks,
+  images: stepImages,
   cover: stepCover,
   save: stepSave,
 }

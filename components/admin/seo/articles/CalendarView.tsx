@@ -653,7 +653,7 @@ export function CalendarView({
         initialDay={planSlot?.day ?? null}
         initialTime={planSlot?.time ?? null}
       />
-      <TopicDialog topic={topic} onClose={() => setTopic(null)} slots={data.slots} coverImage={data.coverImage} />
+      <TopicDialog topic={topic} onClose={() => setTopic(null)} slots={data.slots} coverImage={data.coverImage} inlineImages={data.inlineImages} />
       <ArticleDetailsDialog postId={postId} onClose={() => setPostId(null)} />
       {generate && (
         <GenerateDialog

@@ -2,7 +2,7 @@
 
 /**
  * Avancement d'une rédaction : passes (Plan, Rédaction, Contrôle, Correction,
- * Image, Enregistrement), passe en cours annoncée aux lecteurs d'écran,
+ * Maillage, Photos du texte, Image, Enregistrement), passe en cours annoncée aux lecteurs d'écran,
  * replis et erreurs affichés, lien « Relire l'article » à la fin.
  */
 import { Check, CircleAlert, Info, Loader2 } from "lucide-react"
@@ -14,6 +14,8 @@ const LABELS: Record<Exclude<RunnerStep, "done">, string> = {
   write: "Rédaction",
   check: "Contrôle",
   fix: "Correction",
+  links: "Liens internes",
+  images: "Photos du texte",
   cover: "Image",
   save: "Enregistrement",
 }
@@ -23,14 +25,18 @@ const RUNNING: Record<RunnerStep, string> = {
   write: "Rédaction…",
   check: "Contrôle…",
   fix: "Correction…",
+  links: "Maillage…",
+  images: "Photos…",
   cover: "Image…",
   save: "Enregistrement…",
   done: "Article prêt",
 }
 
-export function JobProgress({ state, withCover }: { state: RunnerState; withCover: boolean }) {
+export function JobProgress({ state, withCover, withPhotos = false }: { state: RunnerState; withCover: boolean; withPhotos?: boolean }) {
   const steps: Exclude<RunnerStep, "done">[] = ["plan", "write", "check"]
   if (state.done.includes("fix") || state.step === "fix") steps.push("fix")
+  steps.push("links")
+  if (withPhotos || state.done.includes("images") || state.step === "images") steps.push("images")
   if (withCover || state.done.includes("cover") || state.step === "cover") steps.push("cover")
   steps.push("save")
   const finished = state.status === "done"

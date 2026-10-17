@@ -49,6 +49,8 @@ import { browserParseHtml, compareRendering } from "@/lib/blog-editor/fidelity"
 import { readImageSize } from "@/lib/blog-images/policy"
 import type { PickedImage } from "@/lib/seo/articles/editor-types"
 import { buildExtensions, HIGHLIGHT_KEY, insertBlock, setHighlightTerms } from "@/components/admin/blog/editor/extensions"
+import { illustrationPosition, passageAt } from "@/components/admin/blog/editor/passage"
+import type { PassageContext } from "@/lib/blog-images/passage"
 import { Toolbar, type EditorMode } from "@/components/admin/blog/editor/Toolbar"
 import { SelectionMenu } from "@/components/admin/blog/editor/SelectionMenu"
 import { LinkPopover } from "@/components/admin/blog/editor/LinkPopover"
@@ -78,8 +80,11 @@ export interface RichEditorProps {
   highlightTerms?: string[]
   keyword?: string | null
   articleTitle?: string
-  /** Ouvre le studio d'images ; résout l'image à insérer. */
-  onRequestImage: () => Promise<PickedImage | null>
+  /**
+   * Ouvre le studio d'images ; résout l'image à insérer. Le passage (texte
+   * sélectionné, paragraphe du curseur) sert à détecter ce que montre l'image.
+   */
+  onRequestImage: (passage?: PassageContext | null) => Promise<PickedImage | null>
   /** Mode à l'ouverture : « markdown » rouvre la zone de texte Markdown (page de l'article juste créé). */
   initialMode?: EditorMode
   className?: string
@@ -458,7 +463,7 @@ export const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function
     setImageBusy(true)
     let picked: PickedImage | null = null
     try {
-      picked = await onRequestImage()
+      picked = await onRequestImage(passageAt(editor.state))
     } catch {
       toast.error("Le studio d'images n'a pas pu s'ouvrir. Réessayez.")
     } finally {
@@ -470,11 +475,16 @@ export const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function
       return
     }
     const { src } = readImageSize(picked.url)
-    // Au premier niveau (après la liste, la citation ou le tableau du curseur) : le blog n'affiche les images qu'ainsi
-    insertBlock(editor, {
-      type: "image",
-      attrs: { src, alt: picked.alt, title: picked.caption?.trim() || null, width: picked.width || null, height: picked.height || null },
-    })
+    // Au premier niveau, après le bloc du passage (liste, citation, tableau, titre et son premier paragraphe) :
+    // le blog n'affiche les images qu'ainsi, et un texte sélectionné n'est jamais remplacé par la photo
+    insertBlock(
+      editor,
+      {
+        type: "image",
+        attrs: { src, alt: picked.alt, title: picked.caption?.trim() || null, width: picked.width || null, height: picked.height || null },
+      },
+      { at: illustrationPosition(editor.state) },
+    )
   }, [editor, imageBusy, onRequestImage])
 
   /* ---------------------------------------------------------------- */
@@ -637,6 +647,7 @@ export const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function
             onLink={openLink}
             linkOpen={linkOpen}
             onRequestImage={onRequestImage}
+            onIllustrate={() => void insertImage()}
           />
         )}
         {editor && <LinkPopover editor={editor} open={linkOpen && visual} onClose={closeLink} container={contentRef.current} />}

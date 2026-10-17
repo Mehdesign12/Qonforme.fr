@@ -8,6 +8,7 @@
  * - POST /api/admin/blog/suggest                     → SuggestResponse
  * - POST /api/admin/blog/assist                      → AssistResponse
  * - GET  /api/admin/blog/link-targets                → LinkTargetsResponse
+ * - POST /api/admin/blog/auto-links                  → AutoLinksResponse
  * - POST /api/admin/blog/images/generate             → StoredImage & { model, notice }
  * - POST /api/admin/blog/images/upload               → StoredImage
  * - GET  /api/admin/seo/articles/posts/<id>          → ArticleDetails
@@ -154,6 +155,33 @@ export interface LinkTargetsResponse {
   targets: LinkTarget[]
 }
 
+/** Lien interne proposé par le maillage automatique (lib/seo/links/engine.ts). */
+export interface AutoLinkProposal {
+  path: string
+  title: string
+  kind: LinkTargetKind
+  /** Texte de l'article qui devient le lien. */
+  anchor: string
+  /** Jusqu'à 40 caractères de texte brut qui précèdent l'ancre. */
+  before: string
+  /** Section « ## » de l'ancre (0 : introduction). */
+  section: number
+}
+
+export interface AutoLinksResponse {
+  /** Liens internes avant, et après la pose des propositions. */
+  before: number
+  after: number
+  /** Combien de liens conviennent à la longueur : minimum, objectif, maximum. */
+  goal: { min: number; goal: number; max: number }
+  words: number
+  proposals: AutoLinkProposal[]
+  /** Le texte avec les liens posés (mode Markdown). */
+  markdown: string
+  /** Bloc « Pour aller plus loin » à ajouter quand le texte ne se prête pas à assez de liens ; null sinon. */
+  relatedBlock: string | null
+}
+
 /* ------------------------------------------------------------------ */
 /* Images                                                              */
 /* ------------------------------------------------------------------ */
@@ -169,6 +197,21 @@ export interface GeneratedImageResponse extends StoredImage {
   /** Modèle qui a produit l'image. */
   model: string
   /** Repli utilisé (« Image par Nano Banana 2 au lieu de… »). */
+  notice: string | null
+}
+
+/**
+ * Ce que montre la photo d'un passage (POST /api/admin/blog/images/describe) :
+ * sujet repéré, scène, puces de style, texte alternatif. `source` dit si la
+ * proposition vient du modèle ou du repli sans modèle (clé absente, panne, quota).
+ */
+export interface DescribePassageResponse {
+  subject: string
+  scene: string
+  styles: string[]
+  alt: string
+  source: "model" | "heuristic"
+  /** Pourquoi le repli a servi (clé absente, quota…), sinon null. */
   notice: string | null
 }
 

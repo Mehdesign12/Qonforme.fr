@@ -583,6 +583,7 @@ function calendar(): CalendarData {
     slots: [],
     defaultMode: "draft",
     coverImage: true,
+    inlineImages: 4,
     publishTime: "08:00",
   }
 }

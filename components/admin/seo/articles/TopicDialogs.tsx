@@ -203,6 +203,7 @@ export function TopicDialog({
   onClose,
   slots,
   coverImage,
+  inlineImages,
   initialView = "info",
 }: {
   topic: TopicLite | null
@@ -210,6 +211,7 @@ export function TopicDialog({
   slots: Slot[]
   /** Préférence « image de couverture » : la passe Image n'est montrée que si elle a lieu. */
   coverImage: boolean
+  inlineImages: number
   /** « reschedule » : ouvre directement le choix de la date (« Planifier » de l'écran Sujets). */
   initialView?: "info" | "reschedule"
 }) {
@@ -304,7 +306,7 @@ export function TopicDialog({
           </>
         }
       >
-        <JobProgress state={runner.state} withCover={coverImage} />
+        <JobProgress state={runner.state} withCover={coverImage} withPhotos={inlineImages > 0} />
       </DialogShell>
     )
   }

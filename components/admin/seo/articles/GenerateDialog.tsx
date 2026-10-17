@@ -225,7 +225,7 @@ export function GenerateDialog({
         {jobId ? (
           <>
             <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 pt-2">
-              <JobProgress state={runner.state} withCover={data.coverImage} />
+              <JobProgress state={runner.state} withCover={data.coverImage} withPhotos={data.inlineImages > 0} />
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--q-line-soft)] px-6 py-3.5">
               <button type="button" onClick={close} className="q-btn q-btn-ghost">
@@ -386,7 +386,8 @@ export function GenerateDialog({
             <div className="flex items-start gap-2.5 border-t border-[var(--q-line-soft)] bg-[var(--q-surface-2)] px-6 py-3 text-[13px] text-[var(--q-text-3)]">
               <Sparkles className="mt-0.5 size-4 shrink-0 text-[var(--q-accent)]" aria-hidden />
               <span className="min-w-0 flex-1">
-                {data.summary} · {data.coverImage ? "image de couverture incluse" : "sans image de couverture"}
+                {data.summary} · {data.coverImage ? "image de couverture incluse" : "sans image de couverture"} ·{" "}
+                {data.inlineImages > 0 ? `jusqu'à ${data.inlineImages} photo${data.inlineImages > 1 ? "s" : ""} dans le texte` : "sans photo dans le texte"}
                 {data.fallbacks.map((f) => (
                   <span key={f} className="mt-1 flex items-start gap-1.5 text-[var(--q-warn)]">
                     <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />

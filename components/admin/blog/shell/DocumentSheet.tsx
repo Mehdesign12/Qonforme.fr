@@ -35,6 +35,7 @@ import { AutoTextarea, FLASH_RING } from "@/components/admin/blog/shell/parts"
 import type { RichEditorHandle } from "@/components/admin/blog/editor/RichEditor"
 import type { EditorMode } from "@/components/admin/blog/editor/Toolbar"
 import type { PickedImage } from "@/lib/seo/articles/editor-types"
+import type { PassageContext } from "@/lib/blog-images/passage"
 
 /**
  * Éditeur intégré à la feuille : ni bordure, ni ombre, ni rayon propres ;
@@ -101,7 +102,7 @@ export function DocumentSheet({
   onOutline: (headings: { level: number; text: string }[]) => void
   highlightTerms: string[]
   editorRef: React.RefObject<RichEditorHandle>
-  onRequestImage: () => Promise<PickedImage | null>
+  onRequestImage: (passage?: PassageContext | null) => Promise<PickedImage | null>
   excerptSuggest: SuggestController
   /** Mode de l'éditeur à l'ouverture (repris après la création de l'article). */
   editorMode?: EditorMode

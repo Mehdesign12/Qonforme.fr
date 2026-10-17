@@ -19,6 +19,7 @@ vi.mock("sonner", () => {
 import { CoverField } from "@/components/admin/blog/CoverField"
 import { useImageStudio } from "@/components/admin/blog/images/useImageStudio"
 import type { PickedImage } from "@/lib/seo/articles/editor-types"
+import type { PassageContext } from "@/lib/blog-images/passage"
 
 const SUPABASE = "https://proj.supabase.co"
 const STORED = `${SUPABASE}/storage/v1/object/public/blog-covers/editor/2026/10/plombier-abc.jpg`
@@ -279,8 +280,8 @@ function pasteEvent(file: File) {
 const imageFile = () => new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "photo.png", { type: "image/png" })
 
 /** Studio des images du texte ouvert ; rend la promesse de requestImage. */
-async function openInlineStudio() {
-  let request: (() => Promise<PickedImage | null>) | null = null
+async function openInlineStudio(passage?: PassageContext | null) {
+  let request: ((passage?: PassageContext | null) => Promise<PickedImage | null>) | null = null
   function Host() {
     const studio = useImageStudio({ title: "Poser un carrelage", keyword: null })
     request = studio.requestImage
@@ -289,7 +290,7 @@ async function openInlineStudio() {
   await act(async () => root.render(createElement(Host)))
   const outcome: { value: PickedImage | null | undefined } = { value: undefined }
   await act(async () => {
-    void request!().then((r) => {
+    void request!(passage).then((r) => {
       outcome.value = r
     })
   })
@@ -356,6 +357,108 @@ describe("ImageStudioDialog", () => {
     await flush()
     expect(outcome.value).toBeNull()
     expect(document.querySelector('[role="dialog"]')).toBeNull()
+  })
+})
+
+describe("ImageStudioDialog : passage illustré", () => {
+  const passage: PassageContext = {
+    text: "Pour poser un grand carreau au sol, étalez la colle avec une spatule crantée.",
+    heading: "Poser le carrelage au sol",
+    before: "La salle de bains est vidée.",
+    after: "Laissez sécuriser 24 heures.",
+    selected: true,
+  }
+  const SCENE = "Un carreleur à genoux pose un grand carreau sur la colle dans une salle de bains en rénovation, spatule crantée à portée de main."
+  const described = (over: Record<string, unknown> = {}) =>
+    new Response(
+      JSON.stringify({ subject: "Pose de carrelage au sol", scene: SCENE, styles: ["artisan", "interieur"], alt: "Un carreleur pose un grand carreau au sol", source: "model", notice: null, ...over }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    )
+  const chip = (dialog: HTMLElement, label: string) => buttonByText(label, dialog.querySelector("form")!)
+
+  it("sujet, scène et style détectés avant de générer ; puces actives ; texte alternatif du modèle", async () => {
+    let release: (r: Response) => void = () => {}
+    const fetchMock = vi.fn((url: string) => {
+      if (url === "/api/admin/blog/images/describe") return new Promise<Response>((r) => (release = r))
+      return Promise.resolve(
+        new Response(JSON.stringify({ url: `${STORED}#w=1600&h=900`, width: 1600, height: 900, model: "Nano Banana 2.1", notice: null }), { status: 200, headers: { "Content-Type": "application/json" } }),
+      )
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    const { dialog } = await openInlineStudio(passage)
+
+    // Pendant la lecture : carte de chargement, « Générer » bloqué
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe("/api/admin/blog/images/describe")
+    expect(JSON.parse(init.body as string)).toMatchObject({ passage: { text: passage.text, heading: passage.heading, selected: true }, title: "Poser un carrelage" })
+    expect(dialog.querySelector('[data-testid="passage-card"]')?.textContent).toContain("Lecture du passage…")
+    expect(buttonByText(/Lecture du passage…/, dialog.querySelector("form")!).disabled).toBe(true)
+
+    await act(async () => release(described()))
+    await flush()
+    const card = dialog.querySelector('[data-testid="passage-card"]') as HTMLElement
+    expect(card.textContent).toContain("Sujet repéré")
+    expect(card.textContent).toContain("Pose de carrelage au sol")
+    expect(card.textContent).toContain("Texte sélectionné")
+    // Le style détecté est lu dans la carte, même quand les puces sont hors de l'écran
+    expect(card.textContent).toContain("Style : Intérieur rénové · Artisan au travail")
+    const description = (dialog.querySelector("textarea") as HTMLTextAreaElement).value
+    expect(description.startsWith(SCENE)).toBe(true)
+    expect(chip(dialog, "Artisan au travail").getAttribute("aria-pressed")).toBe("true")
+    expect(chip(dialog, "Intérieur rénové").getAttribute("aria-pressed")).toBe("true")
+    expect(chip(dialog, "Photo de chantier").getAttribute("aria-pressed")).toBe("false")
+    const generate = buttonByText(/^Générer/, dialog.querySelector("form")!)
+    expect(generate.disabled).toBe(false)
+
+    await click(generate)
+    const [, genInit] = fetchMock.mock.calls[1] as unknown as [string, RequestInit]
+    expect(JSON.parse(genInit.body as string).description).toBe(description.trim())
+    // Texte alternatif de la détection, tant que la description n'a pas été retouchée
+    expect((dialog.querySelector('input[id$="-alt"], input[name="alt"]') as HTMLInputElement | null)?.value ?? "").toBe("Un carreleur pose un grand carreau au sol")
+  })
+
+  it("écrire pendant la lecture l'arrête : le texte de la personne est gardé, la réponse tardive est ignorée", async () => {
+    let release: (r: Response) => void = () => {}
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((r) => (release = r))))
+    const { dialog } = await openInlineStudio(passage)
+    const textarea = dialog.querySelector("textarea") as HTMLTextAreaElement
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!
+    await act(async () => {
+      setter.call(textarea, "Un plaquiste monte une cloison dans un couloir.")
+      textarea.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    expect(dialog.querySelector('[data-testid="passage-card"]')?.textContent).toContain("Lecture interrompée")
+    await act(async () => release(described()))
+    await flush()
+    expect((dialog.querySelector("textarea") as HTMLTextAreaElement).value).toBe("Un plaquiste monte une cloison dans un couloir.")
+    expect(buttonByText(/^Générer/, dialog.querySelector("form")!).disabled).toBe(false)
+  })
+
+  it("connexion impossible : proposition d'après les mots du passage, jamais une fenêtre vide", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("réseau") }))
+    const { dialog } = await openInlineStudio(passage)
+    const card = dialog.querySelector('[data-testid="passage-card"]') as HTMLElement
+    expect(card.textContent).toContain("Connexion impossible")
+    expect((dialog.querySelector("textarea") as HTMLTextAreaElement).value.length).toBeGreaterThan(30)
+    expect(buttonByText(/^Générer/, dialog.querySelector("form")!).disabled).toBe(false)
+  })
+
+  it("repli du serveur (source « heuristic ») : le motif est affiché ; « Relire le passage » relance la lecture", async () => {
+    const fetchMock = vi.fn(async () => described({ source: "heuristic", notice: "Quota du modèle atteint : proposition d'après les mots du passage." }))
+    vi.stubGlobal("fetch", fetchMock)
+    const { dialog } = await openInlineStudio(passage)
+    expect(dialog.querySelector('[data-testid="passage-card"]')?.textContent).toContain("Quota du modèle atteint")
+    await click(buttonByText("Relire le passage", dialog))
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it("sans passage : aucune lecture, proposition d'après le titre comme avant", async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal("fetch", fetchMock)
+    const { dialog } = await openInlineStudio(null)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(dialog.querySelector('[data-testid="passage-card"]')).toBeNull()
+    expect((dialog.querySelector("textarea") as HTMLTextAreaElement).value).toMatch(/^Un carreleur/)
   })
 })
 

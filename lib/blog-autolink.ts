@@ -6,7 +6,7 @@
  * or HTML attributes. Each keyword is linked at most once per article.
  */
 
-const KEYWORD_LINKS: { pattern: RegExp; href: string }[] = [
+export const KEYWORD_LINKS: { pattern: RegExp; href: string }[] = [
   // Guides
   { pattern: /mentions?\s+obligatoires?\s+(sur\s+une\s+)?facture/i, href: "/guide/mentions-obligatoires-facture" },
   { pattern: /mentions?\s+obligatoires?\s+(d['’]un|du|sur\s+un)\s+devis/i, href: "/guide/mentions-obligatoires-devis" },

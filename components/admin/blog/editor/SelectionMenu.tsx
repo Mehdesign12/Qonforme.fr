@@ -3,7 +3,9 @@
 /**
  * Menu flottant de l'éditeur d'articles (BubbleMenu de Tiptap).
  *
- * - Texte sélectionné : Gras, Italique, Lien | « Assistant » → Reformuler,
+ * - Texte sélectionné : Gras, Italique, Lien | « Illustrer » (studio d'images
+ *   sur le passage : sujet et style détectés, photo insérée après lui) |
+ *   « Assistant » → Reformuler,
  *   Raccourcir, Développer, Simplifier, Corriger l'orthographe, Intégrer le
  *   mot-clé « … » (désactivé sans mot-clé principal). L'assistant reçoit le
  *   passage en Markdown et 500 caractères de contexte avant et après
@@ -70,6 +72,7 @@ import { docToMarkdown } from "@/lib/blog-editor/serialize"
 import { ASSIST_LABELS } from "@/lib/blog-editor/assist"
 import type { AssistAction, AssistResponse, PickedImage } from "@/lib/seo/articles/editor-types"
 import { readImageSize } from "@/lib/blog-images/policy"
+import type { PassageContext } from "@/lib/blog-images/passage"
 import { shortcut, ToolButton, ToolSeparator, TOOL_BUTTON, useIsMac, useRovingFocus } from "@/components/admin/blog/editor/Toolbar"
 
 const MENU_KEY = new PluginKey("qSelectionMenu")
@@ -153,10 +156,12 @@ export interface SelectionMenuProps {
   onLink: () => void
   /** Fenêtre de lien ouverte : le menu se cache. */
   linkOpen: boolean
-  onRequestImage: () => Promise<PickedImage | null>
+  onRequestImage: (passage?: PassageContext | null) => Promise<PickedImage | null>
+  /** « Illustrer » : ouvre le studio d'images sur le passage sélectionné et insère la photo après lui. */
+  onIllustrate: () => void
 }
 
-export function SelectionMenu({ editor, keyword, articleTitle, onLink, linkOpen, onRequestImage }: SelectionMenuProps) {
+export function SelectionMenu({ editor, keyword, articleTitle, onLink, linkOpen, onRequestImage, onIllustrate }: SelectionMenuProps) {
   const isMac = useIsMac()
   const [view, setViewState] = useState<View>({ kind: "format" })
   const viewRef = useRef<View>(view)
@@ -665,6 +670,17 @@ export function SelectionMenu({ editor, keyword, articleTitle, onLink, linkOpen,
             <ToolButton label="Italique" keys={shortcut(isMac, "I")} icon={<Italic aria-hidden />} active={!!selection?.italic} onClick={() => editor.chain().focus().toggleItalic().run()} />
             <ToolButton label="Lien" keys={shortcut(isMac, "K")} icon={<Link2 aria-hidden />} active={!!selection?.link} onClick={onLink} haspopup="dialog" />
             <ToolSeparator />
+            <button
+              type="button"
+              data-tb=""
+              title="Générer ou importer une photo pour ce passage"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onIllustrate}
+              className={cn(TOOL_BUTTON, "!w-auto gap-1.5 px-2.5 text-[13px] font-semibold")}
+            >
+              <ImagePlus aria-hidden />
+              Illustrer
+            </button>
             <button
               type="button"
               data-tb=""
