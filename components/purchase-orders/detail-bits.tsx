@@ -11,7 +11,7 @@
  */
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Check, ChevronRight, Info, Loader2, X, type LucideIcon } from "lucide-react"
+import { ChevronRight, CircleCheck, CircleX, Info, Loader2, type LucideIcon } from "lucide-react"
 import { initialsOf } from "@/components/app/kit"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
@@ -204,14 +204,10 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
           <li key={i} className="flex gap-3">
             <span className="flex flex-col items-center">
               {e.state === "done" && (
-                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--q-accent)] text-white">
-                  <Check className="size-3" strokeWidth={3} aria-hidden />
-                </span>
+                <CircleCheck className="size-5 shrink-0 text-[var(--q-accent)]" strokeWidth={2} aria-hidden />
               )}
               {e.state === "refused" && (
-                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--q-danger)] text-white">
-                  <X className="size-3" strokeWidth={3} aria-hidden />
-                </span>
+                <CircleX className="size-5 shrink-0 text-[var(--q-danger)]" strokeWidth={2} aria-hidden />
               )}
               {e.state === "todo" && <span className="size-5 shrink-0 rounded-full border-2 border-dashed border-[var(--q-placeholder)] bg-[var(--q-surface)]" />}
               {!last && <span className={cn("min-h-[18px] w-0.5 flex-1", e.state === "done" ? "bg-[var(--q-accent)]" : "bg-[var(--q-line)]")} />}
@@ -318,11 +314,8 @@ export function MoreRow({
   const cls = "flex min-h-[60px] w-full items-center gap-3 border-b border-[var(--q-line-soft)] px-1 py-2 text-left last:border-b-0"
   const content = (
     <>
-      <span className={cn(
-        "grid size-10 shrink-0 place-items-center rounded-[11px]",
-        danger ? "bg-[var(--q-danger-bg)] text-[var(--q-danger)]" : "bg-[var(--q-wash)] text-[var(--q-accent-strong)]",
-      )}>
-        <Icon className="size-[18px]" aria-hidden />
+      <span className={cn("q-glyph size-10", danger ? "text-[var(--q-danger)]" : "text-[var(--q-accent-strong)]")}>
+        <Icon aria-hidden />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className={cn("text-base font-semibold", danger ? "text-[var(--q-danger)]" : "text-[var(--q-ink)]")}>{label}</span>
@@ -355,7 +348,7 @@ export function LinkedRow({ href, icon, title, sub, mono }: { href?: string; ico
 /** Pictogramme carré en lavis bleu (cartes « Liés à ce document »). */
 export function WashIcon({ icon: Icon }: { icon: LucideIcon }) {
   return (
-    <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+    <span className="grid size-8 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
       <Icon className="size-4" aria-hidden />
     </span>
   )

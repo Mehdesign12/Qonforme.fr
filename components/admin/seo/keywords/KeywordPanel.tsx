@@ -512,7 +512,7 @@ function Measure({ label, children, small }: { label: string; children: React.Re
 function EmptyBox({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-[var(--q-line)] bg-[var(--q-surface-2)] p-3.5">
-      <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">{icon}</span>
+      <span className="grid size-9 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">{icon}</span>
       <p className="text-sm text-[var(--q-text-3)]">{children}</p>
     </div>
   )

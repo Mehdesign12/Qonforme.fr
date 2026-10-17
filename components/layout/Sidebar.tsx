@@ -239,7 +239,7 @@ function CreateSheet({ open, onOpenChange, mode }: { open: boolean; onOpenChange
             const Icon = c.icon
             return (
               <Link key={c.key} href={hrefFor(c, mode)} onClick={() => onOpenChange(false)} className="q-list-row">
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+                <span className="grid size-10 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
                   <Icon className="size-[18px]" aria-hidden />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
@@ -266,8 +266,8 @@ function SheetRow({ href, onClick, icon: Icon, label, hint, danger }: {
 }) {
   const inner = (
     <>
-      <span className={cn("grid size-9 shrink-0 place-items-center rounded-[10px]", danger ? "bg-[var(--q-danger-bg)] text-[var(--q-danger)]" : "bg-[var(--q-sunken)] text-[var(--q-text-2)]")}>
-        <Icon className="size-[17px]" strokeWidth={1.75} aria-hidden />
+      <span className={cn("q-glyph size-9", danger ? "text-[var(--q-danger)]" : "text-[var(--q-text-2)]")}>
+        <Icon aria-hidden />
       </span>
       <span className="flex min-w-0 flex-1 flex-col text-left">
         <span className={cn("text-base font-semibold", danger && "text-[var(--q-danger)]")}>{label}</span>

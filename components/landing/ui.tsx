@@ -74,10 +74,11 @@ export function SectionTitle({
    Élément flottant (notification) près d'une maquette.
    Toujours décoratif : aria-hidden, le contenu est dit ailleurs.
 ───────────────────────────────────────────────────────── */
+/** Couleur de l'icône seule (jamais de pastille derrière : règle de marque, CLAUDE.md). */
 const TONES = {
-  ok: "bg-q-ok-bg text-q-ok",
-  info: "bg-q-info-bg text-q-info",
-  warn: "bg-q-warn-bg text-q-warn",
+  ok: "text-q-ok",
+  info: "text-q-info",
+  warn: "text-q-warn",
 } as const
 
 export function Floater({
@@ -101,8 +102,8 @@ export function Floater({
         bob === 1 ? "lp-bob" : bob === 2 ? "lp-bob-2" : "lp-bob-3",
       )}
     >
-      <span className={cn("grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[10px]", TONES[tone])}>
-        <Icon className="h-4 w-4" strokeWidth={1.75} />
+      <span className={cn("q-glyph size-8", TONES[tone])}>
+        <Icon />
       </span>
       <span className="flex flex-col gap-px">
         <span className="text-[13px] font-semibold text-q-ink-strong">{title}</span>

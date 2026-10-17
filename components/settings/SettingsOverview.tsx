@@ -196,8 +196,8 @@ function Row({
       <span
         className={
           tone === "warn"
-            ? "grid size-9 shrink-0 place-items-center rounded-[11px] bg-[var(--q-warn-bg)] text-[var(--q-warn)]"
-            : "grid size-9 shrink-0 place-items-center rounded-[11px] bg-[var(--q-sunken)] text-[var(--q-text-3)]"
+            ? "grid size-9 shrink-0 place-items-center text-[var(--q-warn)] q-glyph"
+            : "grid size-9 shrink-0 place-items-center text-[var(--q-text-3)] q-glyph"
         }
       >
         <Icon className="size-[18px]" strokeWidth={1.75} aria-hidden />

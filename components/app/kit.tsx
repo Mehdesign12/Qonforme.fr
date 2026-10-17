@@ -9,6 +9,7 @@
 import { Children } from "react"
 import Link from "next/link"
 import { Check, Clock, Send, X, Undo2, Search } from "lucide-react"
+import { PictoCluster } from "@/components/brand/PictoCluster"
 import { cn } from "@/lib/utils"
 
 /* ------------------------------------------------------------------ */
@@ -324,7 +325,8 @@ export function EmptyState({
 }) {
   return (
     <div className={cn("q-empty", className)}>
-      {icon && <span className="q-empty-icon">{icon}</span>}
+      {/* Pictogrammes de marque : l'icône du sujet entre deux outils du bâtiment */}
+      {icon && <PictoCluster icon={icon} className="mb-1" />}
       <p className="text-base font-semibold text-[var(--q-ink)]">{title}</p>
       {text && <p className="max-w-sm text-sm text-[var(--q-text-4)]">{text}</p>}
       {action && <div className="mt-2 flex flex-wrap justify-center gap-2">{action}</div>}

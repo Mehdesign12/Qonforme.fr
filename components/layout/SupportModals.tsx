@@ -35,8 +35,8 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 function SuccessState({ message, onReset }: { message: string; onReset: () => void }) {
   return (
     <div className="flex flex-col items-center gap-3 py-6 text-center">
-      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[var(--q-ok-bg)]">
-        <CheckCircle className="w-6 h-6 text-[var(--q-ok)]" />
+      <div className="q-glyph size-12 text-[var(--q-ok)]">
+        <CheckCircle aria-hidden />
       </div>
       <p className="text-sm text-muted-foreground max-w-[280px]">{message}</p>
       <DialogClose render={
@@ -101,8 +101,8 @@ export function BugReportModal({ open, onOpenChange }: { open: boolean; onOpenCh
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--q-danger-bg)] shrink-0">
-              <Bug className="w-4 h-4 text-[var(--q-danger)]" />
+            <div className="q-glyph size-8 text-[var(--q-danger)]">
+              <Bug aria-hidden />
             </div>
             <DialogTitle className="text-base font-semibold">Signaler un problème</DialogTitle>
           </div>
@@ -219,8 +219,8 @@ export function ContactModal({ open, onOpenChange }: { open: boolean; onOpenChan
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--q-wash)] shrink-0">
-              <MessageSquare className="w-4 h-4 text-[var(--q-accent-strong)]" />
+            <div className="q-glyph size-8 text-[var(--q-accent-strong)]">
+              <MessageSquare aria-hidden />
             </div>
             <DialogTitle className="text-base font-semibold">Nous écrire</DialogTitle>
           </div>

@@ -43,7 +43,7 @@ export function TelechargerModele({
               download={`${fichier}.${ext}`}
               className="group flex h-full items-center gap-3 rounded-2xl border border-q-line bg-q-surface px-4 py-3.5 transition-colors hover:border-q-accent hover:bg-q-wash"
             >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-q-wash text-q-accent-strong">
+              <span className="grid h-10 w-10 shrink-0 place-items-center text-q-accent-strong q-glyph">
                 <Icon className="h-5 w-5" strokeWidth={1.8} aria-hidden />
               </span>
               <span className="min-w-0">

@@ -4,6 +4,8 @@ import PricingSelector from '@/components/billing/PricingSelector'
 import PlanComparison from '@/components/billing/PlanComparison'
 import Footer from '@/components/layout/Footer'
 import PublicHeaderWrapper from '@/components/layout/PublicHeaderWrapper'
+import { Doodles } from '@/components/brand/Doodles'
+import { pictosFor } from '@/components/brand/pictos'
 import { MetaPixelEvent } from '@/components/shared/MetaPixelEvent'
 import { PLANS, formatEuros } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
@@ -68,7 +70,8 @@ export default async function PricingPage() {
 
         <main className="relative">
           {/* Titre */}
-          <header className="mx-auto flex max-w-[1200px] flex-col items-center gap-[18px] px-4 pt-[120px] text-center sm:px-6 sm:pt-[152px]">
+          <header className="relative mx-auto flex max-w-[1200px] flex-col items-center gap-[18px] px-4 pt-[120px] text-center sm:px-6 sm:pt-[152px]">
+            <Doodles layout="page" {...pictosFor("Tarifs : paiement de la facture, devis gratuits")} />
             <h1 className="max-w-[860px] font-display text-[clamp(38px,4.6vw,64px)] font-semibold leading-[1.04] tracking-[-0.035em] text-q-ink-strong [text-wrap:balance]">
               <span className="sm:block">Vos devis sont gratuits.</span>{' '}
               <span className="q-serif sm:block">Vous payez quand vous facturez.</span>

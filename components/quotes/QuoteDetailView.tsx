@@ -19,7 +19,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
-  Check, CheckCircle2, ChevronLeft, ChevronRight, Clock, Copy, Download, FileText, Info,
+  Check, CheckCircle2, ChevronLeft, ChevronRight, CircleCheck, CircleX, Clock, Copy, Download, FileText, Info,
   Loader2, MoreHorizontal, Pencil, Printer, RefreshCw, Send, Trash2, Undo2, X, type LucideIcon,
 } from "lucide-react"
 import { DocStatusPill, INVOICE_PILLS, Initials, Kpi, KpiGrid, StatusPill, initialsOf } from "@/components/app/kit"
@@ -537,7 +537,7 @@ export function QuoteDetailView({
                 {quote.converted_invoice && (
                   <LinkedRow
                     href={quote.converted_invoice.href}
-                    icon={<span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]"><FileText className="size-4" aria-hidden /></span>}
+                    icon={<span className="grid size-8 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph"><FileText className="size-4" aria-hidden /></span>}
                     title={invoiceNumber ?? "Facture"}
                     sub={`Facture${quote.converted_invoice.status ? ` · ${(INVOICE_PILLS[quote.converted_invoice.status]?.label ?? quote.converted_invoice.status).toLowerCase()}` : ""}`}
                   />
@@ -578,7 +578,8 @@ export function QuoteDetailView({
             {expired
               ? <BarBtn primary label="Renouveler le devis" icon={Copy} onClick={actions.onDuplicate} loading={busy.duplicate} />
               : <BarBtn primary label="Renvoyer par email" icon={RefreshCw} onClick={openModal("send")} loading={busy.send} />}
-            <div className="grid grid-cols-2 gap-2.5">
+            {/* 3/2 : « Marquer accepté » tient sur une ligne dès 375 px, « PDF » n'en a pas besoin */}
+            <div className="grid grid-cols-[3fr_2fr] gap-2.5">
               <BarBtn label="Marquer accepté" icon={Check} onClick={openModal("accept")} loading={busy.status} />
               <BarBtn label="PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
             </div>
@@ -857,14 +858,10 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
           <li key={i} className="flex gap-3">
             <span className="flex flex-col items-center">
               {e.state === "done" && (
-                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--q-accent)] text-white">
-                  <Check className="size-3" strokeWidth={3} aria-hidden />
-                </span>
+                <CircleCheck className="size-5 shrink-0 text-[var(--q-accent)]" strokeWidth={2} aria-hidden />
               )}
               {e.state === "refused" && (
-                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--q-danger)] text-white">
-                  <X className="size-3" strokeWidth={3} aria-hidden />
-                </span>
+                <CircleX className="size-5 shrink-0 text-[var(--q-danger)]" strokeWidth={2} aria-hidden />
               )}
               {e.state === "todo" && <span className="size-5 shrink-0 rounded-full border-2 border-dashed border-[var(--q-placeholder)] bg-[var(--q-surface)]" />}
               {!last && <span className={cn("min-h-[18px] w-0.5 flex-1", e.state === "done" ? "bg-[var(--q-accent)]" : "bg-[var(--q-line)]")} />}
@@ -953,11 +950,8 @@ function MoreRow({
   const cls = "flex min-h-[60px] w-full items-center gap-3 border-b border-[var(--q-line-soft)] px-1 py-2 text-left last:border-b-0"
   const content = (
     <>
-      <span className={cn(
-        "grid size-10 shrink-0 place-items-center rounded-[11px]",
-        danger ? "bg-[var(--q-danger-bg)] text-[var(--q-danger)]" : "bg-[var(--q-wash)] text-[var(--q-accent-strong)]",
-      )}>
-        <Icon className="size-[18px]" aria-hidden />
+      <span className={cn("q-glyph size-10", danger ? "text-[var(--q-danger)]" : "text-[var(--q-accent-strong)]")}>
+        <Icon aria-hidden />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className={cn("text-base font-semibold", danger ? "text-[var(--q-danger)]" : "text-[var(--q-ink)]")}>{label}</span>

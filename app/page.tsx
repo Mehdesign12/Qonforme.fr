@@ -13,7 +13,7 @@ import { LandingHero } from "@/components/landing/LandingHero"
 import { PublicHeader } from "@/components/layout/PublicHeader"
 import { StorySection } from "@/components/landing/StorySection"
 import { MacBook, IPhone, SCREENS } from "@/components/landing/devices"
-import { Doodles } from "@/components/landing/Doodles"
+import { Doodles } from "@/components/brand/Doodles"
 import { Chip, CtaButtons, Floater, PanPhoto, PhotoBand, SectionTitle } from "@/components/landing/ui"
 import { StepCatalogue, StepCompany, StepQuote } from "@/components/landing/mini-ui"
 import { EXAMPLES } from "@/components/landing/examples"
@@ -59,7 +59,7 @@ const SECTION = "px-6 py-[clamp(88px,9vw,120px)]"
 const WRAP = "mx-auto w-full max-w-[1200px]"
 
 /*
- * Icônes au trait fin de chaque section (components/landing/Doodles.tsx), tirées de
+ * Icônes au trait fin de chaque section (components/brand/Doodles.tsx), tirées de
  * celles des couvertures d'articles (lib/blog-images/cover/icon-markup.ts). L'ordre
  * suit les emplacements du décor : les icônes en bleu plein sont les premières
  * (et la quatrième, pour les décors à quatre ou six icônes).
@@ -600,7 +600,7 @@ function IncludedSection() {
         <ul className="mt-12 grid grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-8 lg:grid-cols-4">
           {INCLUDED.map((f, i) => (
             <li key={f.title} className={cn("lp-reveal flex flex-col gap-3 border-t border-q-line pt-5", i % 4 === 1 && "lp-d1", i % 4 >= 2 && "lp-d2")}>
-              <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-q-wash text-q-accent-strong">
+              <span className="grid h-9 w-9 place-items-center text-q-accent-strong q-glyph">
                 <f.icon className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
               </span>
               <span>
@@ -684,7 +684,7 @@ function CommitmentsSection() {
                 i === 2 && "lp-d2",
               )}
             >
-              <span className={cn("grid h-10 w-10 place-items-center rounded-[12px]", i === 2 ? "bg-white/10 text-[#7FA6FF]" : "bg-q-wash text-q-accent-strong")}>
+              <span className={cn("q-glyph h-10 w-10", i === 2 ? "text-[#7FA6FF]" : "text-q-accent-strong")}>
                 <c.icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
               </span>
               <h3 className={cn("font-display text-[20px] font-semibold tracking-[-0.02em]", i === 2 ? "text-white" : "text-q-ink-strong")}>{c.title}</h3>
@@ -895,8 +895,6 @@ export default function HomePage() {
   return (
     <div className="min-h-screen overflow-x-clip bg-q-surface">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSONLD) }} />
-      {/* Progression de la lecture (CSS seul, masquée sans support ou avec « Réduire les animations ») */}
-      <span aria-hidden className="lp-progress" />
       <PublicHeader isLandingPage />
       <main>
         <LandingHero />

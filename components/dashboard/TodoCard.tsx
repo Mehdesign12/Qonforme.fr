@@ -22,23 +22,18 @@ const ICONS: Record<TodoIcon, typeof Clock> = {
   draft: FilePen,
 }
 
+/** Couleur de l'icône seule : jamais de pastille derrière (règle de marque, CLAUDE.md). */
 const TONES: Record<TodoTone, string> = {
-  warn: "bg-[var(--q-warn-bg)] text-[var(--q-warn)]",
-  info: "bg-[var(--q-wash)] text-[var(--q-accent-strong)]",
-  neutral: "bg-[var(--q-sunken)] text-[var(--q-text-3)]",
+  warn: "text-[var(--q-warn)]",
+  info: "text-[var(--q-accent-strong)]",
+  neutral: "text-[var(--q-text-3)]",
 }
 
 function IconTile({ item, large }: { item: TodoItem; large?: boolean }) {
   const Icon = ICONS[item.icon]
   return (
-    <span
-      className={cn(
-        "grid shrink-0 place-items-center",
-        large ? "size-9 rounded-[11px]" : "size-8 rounded-[9px]",
-        TONES[item.tone],
-      )}
-    >
-      <Icon className={large ? "size-[17px]" : "size-4"} strokeWidth={2} aria-hidden />
+    <span className={cn("q-glyph", large ? "size-9" : "size-8", TONES[item.tone])}>
+      <Icon aria-hidden />
     </span>
   )
 }

@@ -18,7 +18,7 @@ export function PersonalizeTip({
 }) {
   return (
     <div className="q-banner items-center">
-      <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[var(--q-surface)] text-[var(--q-accent-strong)]">
+      <span className="grid size-9 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
         <Sparkles className="size-[18px]" strokeWidth={1.75} aria-hidden />
       </span>
       <span className="min-w-0 flex-1">

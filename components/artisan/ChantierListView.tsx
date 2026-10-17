@@ -142,7 +142,7 @@ function ChantierRow({ chantier: c, href }: { chantier: ChantierWithSummary; hre
   return (
     <li>
       <Link href={href} className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--q-row-hover)] sm:px-5">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+        <span className="grid size-10 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
           <HardHat className="size-5" aria-hidden />
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-1.5">

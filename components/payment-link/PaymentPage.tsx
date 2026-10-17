@@ -120,8 +120,8 @@ function StateCard({ icon, tone = "neutral", title, children, action }: {
   return (
     <section className="q-card flex flex-col items-center gap-3 px-5 py-10 text-center md:py-14">
       <span className={cn(
-        "grid size-12 place-items-center rounded-2xl",
-        tone === "ok" ? "bg-[var(--q-ok-bg)] text-[var(--q-ok)]" : "bg-[var(--q-neutral-bg)] text-[var(--q-neutral)]",
+        "q-glyph size-12",
+        tone === "ok" ? "text-[var(--q-ok)]" : "text-[var(--q-neutral)]",
       )}>
         {icon}
       </span>

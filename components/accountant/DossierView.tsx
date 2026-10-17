@@ -243,7 +243,7 @@ function ExportsCard({ mode, exportUrl, period, docCount, hasSiren }: {
                 disabled={disabled}
                 className="flex w-full items-center gap-3 rounded-xl border border-[var(--q-line)] bg-[var(--q-surface)] p-3 text-left transition-colors hover:border-[var(--q-field)] hover:bg-[var(--q-hover)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <span className="grid size-9 shrink-0 place-items-center rounded-[11px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">{e.icon}</span>
+                <span className="grid size-9 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">{e.icon}</span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="text-[15px] font-semibold text-[var(--q-ink)]">{e.title}</span>
                   <span className="text-[13px] leading-snug text-[var(--q-text-4)]">

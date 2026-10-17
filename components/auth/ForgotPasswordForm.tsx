@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { ChevronLeft, MailCheck } from "lucide-react"
 import { AUTH_INPUT, AuthSubmit, Field } from "@/components/auth/fields"
 import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
+import { PictoCluster } from "@/components/brand/PictoCluster"
 
 /** Lien « ‹ Retour à la connexion » au-dessus du titre (canevas « Connexion »). */
 function BackToLogin() {
@@ -57,9 +58,7 @@ export default function ForgotPasswordForm() {
   if (submitted) {
     return (
       <div className="flex flex-col">
-        <span className="mb-[22px] grid h-14 w-14 place-items-center rounded-2xl bg-q-wash text-q-accent-strong">
-          <MailCheck className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-        </span>
+        <PictoCluster icon={<MailCheck />} className="mb-[22px] -ml-1" />
         <AuthTitle>Regardez votre <Serif>boîte mail</Serif>.</AuthTitle>
         <AuthLead>
           Si un compte existe pour{" "}

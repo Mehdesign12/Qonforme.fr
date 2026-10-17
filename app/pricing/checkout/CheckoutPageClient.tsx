@@ -14,6 +14,7 @@ import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { trackEvent } from '@/lib/meta-pixel'
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from '@/lib/brand'
 import { cn } from '@/lib/utils'
+import { PictoCluster } from '@/components/brand/PictoCluster'
 
 /** « 10 € » avec une espace insécable avant le symbole. */
 const eur = (amount: number) => formatEuros(amount).replace(/ €$/, '\u00A0€')
@@ -478,16 +479,7 @@ function StateBlock({
 }) {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center py-12 text-center">
-      <div
-        className={cn(
-          'mb-5 grid h-14 w-14 place-items-center rounded-2xl',
-          tone === 'ok' && 'bg-q-ok-bg text-q-ok',
-          tone === 'danger' && 'bg-q-danger-bg text-q-danger',
-          tone === 'accent' && 'bg-q-wash text-q-accent-strong',
-        )}
-      >
-        {icon}
-      </div>
+      <PictoCluster icon={icon} tone={tone} className="mb-5" />
       <h2 className="mb-2 font-display text-xl font-semibold tracking-[-0.02em] text-q-ink-strong">{title}</h2>
       {children}
     </div>

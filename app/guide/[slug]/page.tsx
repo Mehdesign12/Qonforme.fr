@@ -154,7 +154,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                   <ul className="mt-4 flex flex-col gap-3">
                     {guide.essentiel.map((item) => (
                       <li key={item} className="flex items-start gap-3 text-[15px] leading-[1.55] text-q-text-2">
-                        <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-q-surface text-q-accent-strong">
+                        <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center text-q-accent-strong q-glyph [&>svg]:size-4 [&>svg]:[stroke-width:2]">
                           <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
                         </span>
                         {fr(item)}

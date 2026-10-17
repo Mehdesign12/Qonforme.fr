@@ -64,8 +64,9 @@ function CreateMenu({ identity }: { identity: ShellIdentity }) {
           const Icon = c.icon
           return (
             <DropdownMenuItem key={c.key} onClick={() => go(hrefFor(c, mode))} className="gap-3 py-2">
-              <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
-                <Icon className="!size-4" aria-hidden />
+              <span className="grid size-8 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
+                {/* size-5 : écarte la taille de 16 px que le menu impose aux icônes sans classe size-* */}
+                <Icon className="size-5" aria-hidden />
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-px">
                 <span className="text-sm font-semibold text-[var(--q-ink)]">{c.label}</span>
