@@ -1,6 +1,7 @@
 import { getImageProps } from "next/image"
-import { BellRing, Check, ChevronRight, CircleCheck, FileCheck2 } from "lucide-react"
+import { BellRing, Calculator, Check, ChevronRight, CircleCheck, FileCheck2, FileText, Hammer, HardHat, ReceiptText, Ruler } from "lucide-react"
 import { MacBook, IPhone, SCREENS } from "@/components/landing/devices"
+import { Doodles } from "@/components/landing/Doodles"
 import { CtaButtons, Floater } from "@/components/landing/ui"
 import { EXAMPLES } from "@/components/landing/examples"
 import { formatCurrency } from "@/lib/utils/invoice"
@@ -19,6 +20,9 @@ import { formatCurrency } from "@/lib/utils/invoice"
  * Entrée en CSS pur (.lp-fade-up, .lp-tilt, .lp-phone-in) : elle joue avant
  * l'hydratation, et « Réduire les animations » l'annule.
  */
+
+/** Décor du héros : devis et facture en bleu plein, l'outillage du chantier en bleu pâle (gauche ×3, droite ×3). */
+const DOODLE_ICONS = [FileText, Ruler, HardHat, Hammer, ReceiptText, Calculator]
 
 const PROMISES = ["Devis gratuits et illimités", "Sans carte bancaire", "Vous payez à la première facture"]
 
@@ -76,6 +80,7 @@ function HeroDevices() {
 function Hero() {
   return (
     <section aria-labelledby="hero-title" className="relative bg-q-surface px-6">
+      <Doodles layout="hero" icons={DOODLE_ICONS} />
       <div className="mx-auto flex max-w-[1200px] flex-col items-center pt-[120px] text-center sm:pt-[150px]">
         <a
           href="#reforme"

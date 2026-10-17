@@ -55,9 +55,9 @@ export function OutilsHero({ icon, badge, title, accent, subtitle, crumb, checks
         )}
 
         {(icon || badge) && (
-          <p className="mb-5 inline-flex h-9 items-center gap-2 rounded-full border border-q-line bg-q-surface py-1 pl-1 pr-3.5 text-[13px] font-medium text-q-text-2 shadow-[shadow:var(--q-shadow-card)]">
+          <p className={cn("mb-5 inline-flex h-9 items-center gap-2 rounded-full border border-q-line bg-q-surface py-1 pr-3.5 text-[13px] font-medium text-q-text-2 shadow-[shadow:var(--q-shadow-card)]", icon ? "pl-3" : "pl-3.5")}>
             {icon && (
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-q-wash text-q-accent-strong [&_svg]:h-[15px] [&_svg]:w-[15px]" aria-hidden>
+              <span className="grid h-5 w-5 place-items-center text-q-accent-strong [&_svg]:h-[18px] [&_svg]:w-[18px] [&_svg]:[stroke-width:1.6]" aria-hidden>
                 {icon}
               </span>
             )}
