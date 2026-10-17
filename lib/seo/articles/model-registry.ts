@@ -59,6 +59,14 @@ export interface TextModelDef {
   temperature?: number
   /** Ancien modèle : gardé en option, pas pour un nouveau réglage. */
   legacy?: string
+  /**
+   * Modèle de repli quand le fournisseur reste indisponible (surcharge, 5xx)
+   * malgré les nouveaux essais de l'appel : celui des modèles les plus proches
+   * en qualité (Opus → Sonnet) ou l'autre fournisseur, dont la capacité est
+   * indépendante (Gemini ↔ Claude). Utilisé seulement si sa clé est présente ;
+   * l'écran le dit (« Plan par … au lieu de … »).
+   */
+  fallback?: string
 }
 
 export type ImageApi = "interactions" | "generateContent"
@@ -95,6 +103,7 @@ export const TEXT_MODELS: TextModelDef[] = [
     priceNote: "Jusqu'au 31/12/2026, puis 1,50 $ / 7,50 $ dès le 01/01/2027",
     thinking: "dynamic",
     maxOutputTokens: 65_536,
+    fallback: "claude-sonnet-5-5",
   },
   {
     id: "claude-opus-5-5",
@@ -106,6 +115,7 @@ export const TEXT_MODELS: TextModelDef[] = [
     outputPerMTok: 20,
     thinking: "always",
     maxOutputTokens: 128_000,
+    fallback: "claude-sonnet-5-5",
   },
   {
     id: "claude-sonnet-5-5",
@@ -117,6 +127,7 @@ export const TEXT_MODELS: TextModelDef[] = [
     outputPerMTok: 10,
     thinking: "adaptive",
     maxOutputTokens: 128_000,
+    fallback: "gemini-3.8-flash",
   },
   {
     id: "claude-haiku-5-5",
@@ -129,6 +140,7 @@ export const TEXT_MODELS: TextModelDef[] = [
     priceNote: "Jusqu'à 100 000 jetons de consigne",
     thinking: "adaptive",
     maxOutputTokens: 128_000,
+    fallback: "gemini-3.8-flash",
   },
   {
     id: "gemini-2.5-flash",

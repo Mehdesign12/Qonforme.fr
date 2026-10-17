@@ -18,21 +18,30 @@ import {
   passesSummary,
   resolvePassModel,
   setAnthropicFactoryForTests,
+  setSleepForTests,
   textModelOptions,
 } from "@/lib/seo/articles/models"
 
 const PNG = Buffer.from("image").toString("base64")
 const env = { ...process.env }
 
+/** Pauses demandées entre deux essais d'un appel (jamais attendues dans les tests). */
+let pauses: number[] = []
+
 beforeEach(() => {
   process.env.GEMINI_API_KEY = "cle-gemini-test"
   process.env.ANTHROPIC_API_KEY = "cle-anthropic-test"
+  pauses = []
+  setSleepForTests(async (ms) => {
+    pauses.push(ms)
+  })
 })
 
 afterEach(() => {
   process.env = { ...env }
   vi.unstubAllGlobals()
   setAnthropicFactoryForTests(null)
+  setSleepForTests(null)
 })
 
 function json(body: unknown, status = 200) {
@@ -161,6 +170,152 @@ describe("rédaction par Claude (SDK, en flux)", () => {
     await expect(generateText({ model: "claude-opus-5-5", system: "S", prompt: "P", maxOutputTokens: 100 })).rejects.toMatchObject({ kind: "refused", retryable: false })
     setAnthropicFactoryForTests(fakeClient({ stop_reason: "max_tokens", content: [{ type: "text", text: "dé", citations: null }] as Anthropic.Message["content"] }, {}))
     await expect(generateText({ model: "claude-opus-5-5", system: "S", prompt: "P", maxOutputTokens: 100 })).rejects.toMatchObject({ kind: "truncated" })
+  })
+})
+
+describe("surcharge du fournisseur : nouveaux essais puis repli", () => {
+  const ASK = { model: "gemini-3.8-flash", system: "S", prompt: "P", maxOutputTokens: 100 }
+  const OK = { candidates: [{ content: { parts: [{ text: "Texte" }] }, finishReason: "STOP" }] }
+
+  function fakeClaude(text: string, seen: { params?: Record<string, unknown> } = {}) {
+    return () =>
+      ({
+        messages: {
+          stream: (params: Record<string, unknown>) => {
+            seen.params = params
+            return { finalMessage: async () => ({ content: [{ type: "text", text, citations: null }], stop_reason: "end_turn", usage: { input_tokens: 3, output_tokens: 4 } }) }
+          },
+        },
+      }) as unknown as Anthropic
+  }
+
+  it("un 503 passager est rejoué après 2 s puis 6 s, et l'appel aboutit", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(json({ error: { message: "overloaded" } }, 503)).mockResolvedValueOnce(json({}, 503)).mockResolvedValueOnce(json(OK))
+    vi.stubGlobal("fetch", fetchMock)
+    const res = await generateText(ASK)
+    expect(res.text).toBe("Texte")
+    expect(res.fallbackFrom).toBeUndefined()
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(pauses).toEqual([2_000, 6_000])
+  })
+
+  it("429, 500, 502 et 504 sont rejoués comme 503 ; 400, 401 et 404 ne le sont jamais", async () => {
+    for (const status of [429, 500, 502, 504]) {
+      const fetchMock = vi.fn().mockResolvedValueOnce(json({}, status)).mockResolvedValueOnce(json(OK))
+      vi.stubGlobal("fetch", fetchMock)
+      await expect(generateText(ASK)).resolves.toMatchObject({ text: "Texte" })
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    }
+    for (const status of [400, 401, 403, 404]) {
+      const fetchMock = vi.fn(async () => json({ error: { message: "non" } }, status))
+      vi.stubGlobal("fetch", fetchMock)
+      await expect(generateText(ASK)).rejects.toBeInstanceOf(ModelError)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    }
+    expect(pauses).toEqual([2_000, 2_000, 2_000, 2_000])
+  })
+
+  it("« Retry-After » est respecté, borné entre 1 s et 10 s", async () => {
+    const withRetryAfter = (value: string, status = 503) => new Response("{}", { status, headers: { "Retry-After": value } })
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(withRetryAfter("4")).mockResolvedValueOnce(withRetryAfter("120")).mockResolvedValueOnce(json(OK)))
+    await generateText(ASK)
+    expect(pauses).toEqual([4_000, 10_000])
+    pauses = []
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(withRetryAfter("pas un nombre")).mockResolvedValueOnce(json(OK)))
+    await generateText(ASK)
+    expect(pauses).toEqual([2_000])
+  })
+
+  it("sans assez de temps devant soi, l'appel n'est pas rejoué", async () => {
+    const fetchMock = vi.fn(async () => json({}, 503))
+    vi.stubGlobal("fetch", fetchMock)
+    await expect(generateText({ ...ASK, model: "gemini-3.8-flash", timeoutMs: 10_000 })).rejects.toMatchObject({ kind: "http", retryable: true })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(pauses).toEqual([])
+  })
+
+  it("un délai dépassé n'est jamais rejoué ni remplacé par un autre modèle", async () => {
+    const fetchMock = vi.fn(async () => {
+      throw Object.assign(new Error("délai"), { name: "TimeoutError" })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    const seen: { params?: Record<string, unknown> } = {}
+    setAnthropicFactoryForTests(fakeClaude("Repli", seen))
+    await expect(generateText(ASK)).rejects.toMatchObject({ kind: "timeout" })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(seen.params).toBeUndefined()
+  })
+
+  it("Gemini toujours surchargé après trois essais : Claude Sonnet 5.5 prend la même consigne, et le dit", async () => {
+    const fetchMock = vi.fn(async () => json({}, 503))
+    vi.stubGlobal("fetch", fetchMock)
+    const seen: { params?: Record<string, unknown> } = {}
+    setAnthropicFactoryForTests(fakeClaude("Plan de repli", seen))
+    const res = await generateText({ ...ASK, system: "Consigne système", prompt: "Consigne" })
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(res).toMatchObject({ text: "Plan de repli", model: "claude-sonnet-5-5", fallbackFrom: { model: "gemini-3.8-flash", reason: "Gemini indisponible (503)" } })
+    expect(seen.params).toMatchObject({ model: "claude-sonnet-5-5", system: "Consigne système" })
+  })
+
+  it("Claude Opus 5.5 indisponible : repli sur Claude Sonnet 5.5", async () => {
+    const calls: string[] = []
+    setAnthropicFactoryForTests(
+      () =>
+        ({
+          messages: {
+            stream: (params: { model: string }) => {
+              calls.push(params.model)
+              return {
+                finalMessage: async () => {
+                  if (params.model === "claude-opus-5-5") throw Object.assign(new Error("overloaded"), { name: "InternalServerError" })
+                  return { content: [{ type: "text", text: "Rédigé par Sonnet", citations: null }], stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 } }
+                },
+              }
+            },
+          },
+        }) as unknown as Anthropic,
+    )
+    // Erreur générique du SDK : « Appel au modèle impossible » est une panne passagère (http), donc éligible au repli
+    const res = await generateText({ model: "claude-opus-5-5", system: "S", prompt: "P", maxOutputTokens: 100 })
+    expect(res).toMatchObject({ text: "Rédigé par Sonnet", model: "claude-sonnet-5-5", fallbackFrom: { model: "claude-opus-5-5" } })
+    expect(calls).toEqual(["claude-opus-5-5", "claude-sonnet-5-5"])
+  })
+
+  it("sans clé du modèle de repli, ou si le repli échoue aussi, l'erreur d'origine est rendue", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({}, 503)))
+    delete process.env.ANTHROPIC_API_KEY
+    await expect(generateText(ASK)).rejects.toMatchObject({ kind: "http", message: expect.stringContaining("Gemini indisponible (503)") })
+
+    process.env.ANTHROPIC_API_KEY = "cle-anthropic-test"
+    setAnthropicFactoryForTests(
+      () =>
+        ({
+          messages: { stream: () => ({ finalMessage: async () => ({ content: [], stop_reason: "refusal", usage: {} }) }) },
+        }) as unknown as Anthropic,
+    )
+    await expect(generateText(ASK)).rejects.toMatchObject({ kind: "http", message: expect.stringContaining("Gemini indisponible (503)") })
+  })
+
+  it("une réponse vide, coupée ou refusée ne déclenche pas de repli : le fournisseur répond", async () => {
+    const seen: { params?: Record<string, unknown> } = {}
+    setAnthropicFactoryForTests(fakeClaude("Repli", seen))
+    vi.stubGlobal("fetch", vi.fn(async () => json({ candidates: [{ content: { parts: [] }, finishReason: "STOP" }] })))
+    await expect(generateText(ASK)).rejects.toMatchObject({ kind: "empty" })
+    vi.stubGlobal("fetch", vi.fn(async () => json({ candidates: [{ finishReason: "SAFETY" }] })))
+    await expect(generateText(ASK)).rejects.toMatchObject({ kind: "refused" })
+    expect(seen.params).toBeUndefined()
+  })
+
+  it("le registre : chaque repli existe, diffère du modèle et n'est jamais un ancien modèle", () => {
+    for (const def of TEXT_MODELS) {
+      if (!def.fallback) continue
+      const fb = findTextModel(def.fallback)
+      expect(fb, def.id).not.toBeNull()
+      expect(fb?.id).not.toBe(def.id)
+      expect(fb?.legacy).toBeUndefined()
+    }
+    expect(findTextModel("gemini-3.8-flash")?.fallback).toBe("claude-sonnet-5-5")
+    expect(findTextModel("claude-opus-5-5")?.fallback).toBe("claude-sonnet-5-5")
   })
 })
 
