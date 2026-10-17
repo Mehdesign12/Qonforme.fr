@@ -38,9 +38,10 @@ import { assertNoCompetitorInPrompt, CompetitorLeakError, findCompetitorMentions
 import { auditArticle } from "@/lib/blog-audit"
 import { fitDescription } from "@/lib/seo/meta"
 import { revalidateBlog } from "@/lib/blog-revalidate"
+import { makeCover } from "@/lib/blog-images/cover/make"
+import { readImageSize } from "@/lib/blog-images/policy"
 import type { ArticleType, PublishMode } from "@/lib/seo/types"
 import {
-  generateImage,
   generateText,
   hasKey,
   modelLabel,
@@ -53,7 +54,6 @@ import {
 import {
   PLAN_JSON_SCHEMA,
   REVIEW_JSON_SCHEMA,
-  buildCoverPrompt,
   buildFixPrompt,
   buildPlanPrompt,
   buildReviewPrompt,
@@ -176,7 +176,7 @@ export const STEP_BUDGET_MS: Record<Exclude<JobStep, "done">, { min: number; max
   write: { min: 120_000, max: 250_000 },
   check: { min: 40_000, max: 120_000 },
   fix: { min: 120_000, max: 250_000 },
-  cover: { min: 40_000, max: 90_000 },
+  cover: { min: 15_000, max: 45_000 },
   save: { min: 5_000, max: 20_000 },
 }
 
@@ -699,38 +699,29 @@ async function stepFix(env: StepEnv): Promise<StepResult> {
   }
 }
 
+/** Nom du « modèle » d'une couverture dessinée par le code (colonne ai_model) : aucun modèle d'IA, aucun coût. */
+export const COVER_MODEL = "couverture Qonforme"
+
 async function stepCover(env: StepEnv): Promise<StepResult> {
   const { state } = env.job
   const plan = state.plan
   if (!state.input.coverImage || !plan) return { next: "save", state: { cover: null } }
   try {
-    const prompt = buildCoverPrompt({ keyword: state.input.keyword, title: plan.title, seed: Date.parse(env.job.created_at) || 0 })
-    assertNoCompetitorInPrompt(prompt, env.ctx.competitors)
-    const image = await generateImage({ model: state.input.imageModel, prompt, aspect: "16:9", timeoutMs: env.timeoutMs })
-    // Le compartiment est public : seuls des types d'image sûrs y sont servis
-    const ext = COVER_TYPES[image.mimeType]
-    if (!ext) throw new Error(`Type d'image refusé (${image.mimeType.slice(0, 40)})`)
-    const path = `seo/${plan.slug || "article"}-${Date.now().toString(36)}.${ext}`
-    const bucket = env.db.storage.from("blog-covers")
-    const { error } = await bucket.upload(path, image.data, { contentType: image.mimeType, upsert: true })
-    if (error) throw new Error("Téléversement de l'image impossible")
-    const url = bucket.getPublicUrl(path).data.publicUrl
-    const notice = image.fallbackFrom
-      ? `Image par ${modelLabel(image.model)} au lieu de ${modelLabel(image.fallbackFrom.model)} : ${image.fallbackFrom.reason}`
-      : null
+    // Le titre est écrit sur l'image publique : jamais un concurrent
+    assertNoCompetitorInPrompt(`${plan.title}\n${state.input.keyword ?? ""}`, env.ctx.competitors)
+    const cover = await makeCover({ title: plan.title, keyword: state.input.keyword })
     return {
       next: "save",
-      state: { cover: { url, alt: "Artisan du bâtiment au travail sur un chantier", model: image.model }, coverError: null, notices: withNotice(state, notice) },
+      // Adresse sans le fragment des dimensions : la couverture est toujours affichée en 16:9
+      state: { cover: { url: readImageSize(cover.url).src, alt: cover.alt, model: COVER_MODEL }, coverError: null },
     }
   } catch (error) {
     // Un échec d'image n'empêche jamais l'article
     const message = error instanceof Error ? error.message : "Image indisponible"
-    console.error("[seo-articles] couverture non générée", message)
+    console.error("[seo-articles] couverture non créée", message)
     return { next: "save", state: { cover: null, coverError: message.slice(0, 300), notices: withNotice(state, `Article sans image de couverture : ${message.slice(0, 160)}`) } }
   }
 }
-
-const COVER_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }
 
 /** Adresse libre : « mon-article », sinon « mon-article-2 », « -3 »… */
 async function uniqueSlug(db: SeoDb, base: string): Promise<string> {

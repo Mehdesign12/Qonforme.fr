@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 import { SETTINGS_DEFAULTS } from "@/lib/seo/settings-schema"
 import { competitorTerms, findCompetitorMentions } from "@/lib/seo/competitors"
 import {
-  buildCoverPrompt,
   buildFixPrompt,
   buildPlanPrompt,
   buildReviewPrompt,
@@ -71,7 +70,6 @@ describe("consigne du générateur", () => {
       buildWritePrompt(brief, plan, "Qonforme"),
       buildReviewPrompt({ title: plan.title, content: "## Section\n\nTexte.", lengthMin: 1500, lengthMax: 2500, faq: null }),
       buildFixPrompt("## Section\n\nTexte.", [{ problem: "Titres répétés", fix: "Changez-les" }]),
-      buildCoverPrompt({ keyword: brief.keyword, title: plan.title, seed: 3 }),
     ]
     for (const p of prompts) {
       expect(findCompetitorMentions(p, competitors)).toEqual([])
@@ -115,13 +113,5 @@ describe("consigne du générateur", () => {
     expect(isOfficialUrl("http://www.impots.gouv.fr/")).toBe(false)
     expect(isOfficialUrl("https://gouv.fr.exemple.com/")).toBe(false)
     expect(isOfficialUrl("https://www.exemple.fr/")).toBe(false)
-  })
-
-  it("demande une photo d'artisan sans texte ni logo, en 16:9", () => {
-    const prompt = buildCoverPrompt({ keyword: "facture peintre", title: "Facture de peintre", seed: 1 })
-    expect(prompt).toContain("16:9")
-    expect(prompt).toMatch(/painter/)
-    expect(prompt).toMatch(/No text/)
-    expect(prompt).toMatch(/logos/)
   })
 })

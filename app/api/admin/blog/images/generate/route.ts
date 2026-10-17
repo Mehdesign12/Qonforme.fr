@@ -29,7 +29,7 @@ import { zodError } from "@/lib/seo/articles/input"
 import { ModelError, generateImage, modelLabel } from "@/lib/seo/articles/models"
 import { findCompetitorMentions } from "@/lib/seo/competitors"
 import { IMAGE_ASPECTS } from "@/lib/blog-images/policy"
-import { MAX_IMAGE_DESCRIPTION, buildImagePrompt } from "@/lib/blog-images/prompt"
+import { MAX_IMAGE_DESCRIPTION, altFromDescription, buildImagePrompt } from "@/lib/blog-images/prompt"
 import { BlogImageError, storeBlogImage } from "@/lib/blog-images/server"
 import type { GeneratedImageResponse } from "@/lib/seo/articles/editor-types"
 
@@ -51,6 +51,8 @@ const schema = z.object({
   aspect: z.enum(IMAGE_ASPECTS, { message: "Format inconnu : 16:9, 4:3 ou 1:1." }),
   purpose: z.enum(["cover", "inline"], { message: "Usage inconnu : couverture ou image du texte." }),
   title: z.string().trim().max(200, "Titre trop long : 200 caractères au plus.").optional(),
+  /** Mot-clé principal de l'article : nom du fichier et mots-clés de l'image. */
+  keyword: z.string().trim().max(120, "Mot-clé trop long : 120 caractères au plus.").optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -78,8 +80,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "La description nomme un concurrent : retirez-le.", code: "competitor" }, { status: 422 })
   }
   const prompt = buildImagePrompt({ description: input.description, aspect, purpose: input.purpose })
-  // Le titre ne part pas au modèle ; il nomme le fichier public, sauf s'il cite un concurrent
-  const hint = input.title && findCompetitorMentions(input.title, competitors).length === 0 ? input.title : input.description
+  // Ni le titre ni le mot-clé ne partent au modèle ; ils nomment le fichier public et ses métadonnées,
+  // sauf s'ils citent un concurrent
+  const clean = (value: string | undefined) => (value && findCompetitorMentions(value, competitors).length === 0 ? value : undefined)
+  const title = clean(input.title)
+  const keyword = clean(input.keyword)
+  const hint = keyword || title || input.description
+  const caption = altFromDescription(input.description)
 
   let image: Awaited<ReturnType<typeof generateImage>>
   try {
@@ -104,9 +111,15 @@ export async function POST(request: NextRequest) {
     const stored = await storeBlogImage({
       data: image.data,
       hint,
-      photo: true,
       // Rangée sous editor/ia/ : le blog affiche « Illustration générée par IA » sous elle
       generated: true,
+      meta: {
+        title: title || caption || undefined,
+        description: caption || title || undefined,
+        keywords: [keyword],
+        creator: "Qonforme",
+        source: "ai",
+      },
       maxBytes: GENERATED_MAX_BYTES,
     })
     const notice = image.fallbackFrom

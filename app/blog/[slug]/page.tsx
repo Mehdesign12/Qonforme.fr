@@ -13,6 +13,7 @@ import {
 } from "@/lib/blog-utils"
 import ArticleView from "@/components/blog/ArticleView"
 import { fitDescription, fitTitle } from "@/lib/seo/meta"
+import { isQonformeCover, readImageSize } from "@/lib/blog-images/policy"
 import { seoDb } from "@/lib/seo/db"
 import { getSettings } from "@/lib/seo/settings"
 
@@ -124,7 +125,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       description: post.excerpt ? fitDescription(post.excerpt) : undefined,
       type: "article",
       publishedTime: post.published_at || undefined,
-      images: [{ url: `/api/og?title=${encodeURIComponent(post.title)}&subtitle=Blog%20Qonforme`, width: 1200, height: 630 }],
+      // Une couverture Qonforme (titre et logo au centre) sert d'image de partage ; sinon l'image du titre
+      images: isQonformeCover(post.cover_url)
+        ? [{ url: readImageSize(post.cover_url as string).src, width: 1600, height: 900, alt: (post.cover_alt as string | null) || post.title }]
+        : [{ url: `/api/og?title=${encodeURIComponent(post.title)}&subtitle=Blog%20Qonforme`, width: 1200, height: 630 }],
     },
   }
 }

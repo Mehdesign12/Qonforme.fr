@@ -79,6 +79,9 @@ export function isBlogImageUrl(url: string, supabaseUrl: string | undefined = pr
   return true
 }
 
+/** Dossier des couvertures dessinées par le code (lib/blog-images/cover/). */
+const COVERS_DIR = "covers/"
+
 /** Dossier des images générées par IA dans le compartiment du blog. */
 const GENERATED_DIR = "editor/ia/"
 
@@ -86,6 +89,16 @@ const GENERATED_DIR = "editor/ia/"
 export function isGeneratedBlogImage(url: string | null | undefined, supabaseUrl: string | undefined = process.env.NEXT_PUBLIC_SUPABASE_URL): boolean {
   if (!url || !isBlogImageUrl(url, supabaseUrl)) return false
   return new URL(url).pathname.startsWith(`${PUBLIC_PATH}${GENERATED_DIR}`)
+}
+
+/**
+ * Vrai pour une couverture Qonforme (dessinée par le code, rangée sous covers/) :
+ * son titre et son logo restent dans la zone centrale, que le partage 1,91 pour 1
+ * ne rogne pas ; elle sert donc aussi d'image de partage de l'article.
+ */
+export function isQonformeCover(url: string | null | undefined, supabaseUrl: string | undefined = process.env.NEXT_PUBLIC_SUPABASE_URL): boolean {
+  if (!url || !isBlogImageUrl(url, supabaseUrl)) return false
+  return new URL(url).pathname.startsWith(`${PUBLIC_PATH}${COVERS_DIR}`)
 }
 
 /** Ajoute (ou remplace) les dimensions dans le fragment de l'adresse. */
@@ -108,9 +121,10 @@ export function readImageSize(url: string): { src: string; width: number | null;
 
 /**
  * Chemin de stockage d'une image de l'éditeur : editor/AAAA/MM/<indice>-<horodatage><aléa>.<ext>,
- * ou editor/ia/AAAA/MM/… pour une image générée par IA (`generated`).
+ * editor/ia/AAAA/MM/… pour une image générée par IA (`generated`),
+ * covers/AAAA/MM/… pour une couverture dessinée par le code (`cover`).
  */
-export function editorImagePath(input: { hint: string; ext: string; now: Date; random: string; generated?: boolean }): string {
+export function editorImagePath(input: { hint: string; ext: string; now: Date; random: string; generated?: boolean; cover?: boolean }): string {
   const slug =
     input.hint
       .normalize("NFD")
@@ -123,5 +137,5 @@ export function editorImagePath(input: { hint: string; ext: string; now: Date; r
   const y = input.now.getUTCFullYear()
   const m = String(input.now.getUTCMonth() + 1).padStart(2, "0")
   const rand = input.random.replace(/[^a-z0-9]/gi, "").slice(0, 6).toLowerCase() || "0"
-  return `${input.generated ? GENERATED_DIR : "editor/"}${y}/${m}/${slug}-${input.now.getTime().toString(36)}${rand}.${input.ext}`
+  return `${input.cover ? COVERS_DIR : input.generated ? GENERATED_DIR : "editor/"}${y}/${m}/${slug}-${input.now.getTime().toString(36)}${rand}.${input.ext}`
 }

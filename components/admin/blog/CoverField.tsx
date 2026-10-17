@@ -4,10 +4,12 @@
  * Image de couverture d'un article, dans l'éditeur du blog.
  *
  * - Vide : zone pointillée (≈ 200 px de haut) « Ajouter une image de
- *   couverture », boutons « Générer avec Gemini » et « Importer » (studio
- *   d'images sur l'onglet voulu) ; une image glissée dans la zone est envoyée
- *   tout de suite.
- * - Remplie : image en 16:9 (comme sur le blog), actions « Remplacer » et
+ *   couverture », boutons « Créer la couverture » (la couverture Qonforme :
+ *   titre, logo et icônes du sujet, dessinée par le code, sans coût),
+ *   « Importer » et « Photo avec Gemini » (studio d'images sur l'onglet
+ *   voulu) ; une image glissée dans la zone est envoyée tout de suite.
+ * - Remplie : image en 16:9 (comme sur le blog), actions « Recréer » (la
+ *   couverture Qonforme avec le titre du moment), « Remplacer » et
  *   « Retirer » en surimpression (au survol ou au clavier sur ordinateur,
  *   toujours visibles sur écran tactile), badge « Image externe » pour une
  *   adresse hors du stockage du blog, tuile « Image introuvable » si elle ne
@@ -25,7 +27,7 @@
  */
 import { useEffect, useId, useRef, useState } from "react"
 import { toast } from "sonner"
-import { ChevronRight, Globe, ImageOff, ImagePlus, Loader2, RefreshCw, Sparkles, Trash2, TriangleAlert, Upload } from "lucide-react"
+import { ChevronRight, Globe, ImageOff, ImagePlus, LayoutTemplate, Loader2, RefreshCw, Sparkles, Trash2, TriangleAlert, Upload } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { isBlogImageUrl, readImageSize } from "@/lib/blog-images/policy"
 import { ALT_MAX, ALT_MIN } from "@/lib/blog-images/prompt"
@@ -83,6 +85,7 @@ export function CoverField({
   const [studio, setStudio] = useState<StudioTab | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [broken, setBroken] = useState(false)
   const [altTouched, setAltTouched] = useState(false)
@@ -128,6 +131,45 @@ export function CoverField({
     setAltTouched(false)
     toast.success(hasCover ? "Couverture remplacée : décrivez-la en une phrase." : "Couverture ajoutée : décrivez-la en une phrase.")
     focusAltSoon()
+  }
+
+  /** Couverture Qonforme : le titre du moment, le logo et les icônes du sujet (POST /api/admin/blog/images/cover). */
+  async function createCover() {
+    if (creating || uploading) return
+    const text = title.trim()
+    if (text.length < 3) {
+      const message = "Écrivez d'abord le titre : il figure sur la couverture."
+      setError(message)
+      toast.error(message)
+      return
+    }
+    setCreating(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/admin/blog/images/cover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: text.slice(0, 200), ...(keyword?.trim() ? { keyword: keyword.trim().slice(0, 120) } : {}) }),
+        cache: "no-store",
+      })
+      const json = (await res.json().catch(() => null)) as { url?: string; alt?: string; error?: string } | null
+      if (!res.ok || !json?.url) {
+        const message = res.status === 401 ? "Session expirée : reconnectez-vous." : (json?.error ?? "La couverture n'a pas pu être créée. Réessayez dans un instant.")
+        setError(message)
+        toast.error(message)
+        return
+      }
+      // Le texte alternatif est le titre, texte de l'image
+      onChange({ url: coverUrlOf(json.url), alt: json.alt ?? text })
+      setAltTouched(false)
+      toast.success(hasCover ? "Couverture recréée avec le titre actuel" : "Couverture créée : vérifiez le titre sur l'image.")
+    } catch {
+      const message = "Connexion impossible. Vérifiez votre réseau puis réessayez."
+      setError(message)
+      toast.error(message)
+    } finally {
+      setCreating(false)
+    }
   }
 
   function remove() {
@@ -318,13 +360,17 @@ export function CoverField({
               <span className="text-[15px] font-semibold text-[var(--q-ink)]">Ajouter une image de couverture</span>
               <span className="text-[13px] text-[var(--q-text-4)]">Glissez une image ici, ou :</span>
               <span className="mt-1 flex flex-wrap justify-center gap-2">
-                <button ref={firstActionRef} type="button" onClick={() => setStudio("generate")} className="q-btn q-btn-secondary q-btn-sm max-md:min-h-11">
-                  <Sparkles className="text-[var(--q-accent)]" aria-hidden />
-                  Générer avec Gemini
+                <button ref={firstActionRef} type="button" onClick={() => void createCover()} disabled={creating} className="q-btn q-btn-primary q-btn-sm max-md:min-h-11">
+                  {creating ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : <LayoutTemplate aria-hidden />}
+                  {creating ? "Création…" : "Créer la couverture"}
                 </button>
-                <button type="button" onClick={() => setStudio("import")} className="q-btn q-btn-secondary q-btn-sm max-md:min-h-11">
+                <button type="button" onClick={() => setStudio("import")} disabled={creating} className="q-btn q-btn-secondary q-btn-sm max-md:min-h-11">
                   <Upload aria-hidden />
                   Importer
+                </button>
+                <button type="button" onClick={() => setStudio("generate")} disabled={creating} className="q-btn q-btn-secondary q-btn-sm max-md:min-h-11">
+                  <Sparkles className="text-[var(--q-accent)]" aria-hidden />
+                  Photo avec Gemini
                 </button>
               </span>
             </>
@@ -390,9 +436,13 @@ export function CoverField({
                 (uploading || dragOver) && "invisible",
               )}
             >
-              <button ref={firstActionRef} type="button" onClick={() => setStudio("generate")} className={overlayButton}>
+              <button ref={firstActionRef} type="button" onClick={() => void createCover()} disabled={creating} className={overlayButton}>
+                {creating ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : <LayoutTemplate aria-hidden />}
+                <span className="max-sm:sr-only">{creating ? "Création…" : "Recréer"}</span>
+              </button>
+              <button type="button" onClick={() => setStudio("generate")} disabled={creating} className={overlayButton}>
                 <RefreshCw aria-hidden />
-                Remplacer
+                <span className="max-sm:sr-only">Remplacer</span>
               </button>
               <button type="button" onClick={remove} className={overlayButton} aria-label="Retirer la couverture">
                 <Trash2 aria-hidden />

@@ -169,7 +169,7 @@ describe("écrans Articles", () => {
 
   it("préférences : cartes, modèles par passe, règles du contrôle", () => {
     const out = html(createElement(PreferencesForm, { initial: SETTINGS_DEFAULTS.articles, textModels: textModelOptions(), imageModels: imageModelOptions(), auditRules: AUDIT_RULES.map((r) => r.label) }))
-    for (const title of ["Publication", "Rythme", "Rédaction", "Image de couverture", "Contrôle automatique", "Liens automatiques vers les guides"]) expect(out).toContain(title)
+    for (const title of ["Publication", "Rythme", "Rédaction", "Images", "Créer une couverture avec chaque article", "Modèle d&#x27;image des photos de l&#x27;éditeur", "Contrôle automatique", "Liens automatiques vers les guides"]) expect(out).toContain(title)
     expect(out).toContain("Recommandé")
     expect(out).toContain("Le contrôle automatique retient toujours un article qui cite une valeur périmée ou une affirmation interdite.")
     expect(out).toContain(`${AUDIT_RULES.length} règles actives`)

@@ -5,15 +5,15 @@ import { findCompetitorMentions } from "@/lib/seo/competitors"
 
 const mocks = vi.hoisted(() => ({
   text: vi.fn(),
-  image: vi.fn(),
+  cover: vi.fn(),
   revalidated: [] as string[],
 }))
 
 vi.mock("@/lib/seo/articles/models", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/seo/articles/models")>()),
   generateText: mocks.text,
-  generateImage: mocks.image,
 }))
+vi.mock("@/lib/blog-images/cover/make", () => ({ makeCover: mocks.cover }))
 vi.mock("next/cache", () => ({ revalidatePath: (p: string) => mocks.revalidated.push(p) }))
 
 import { createJob, loadGenerationContext, MAX_PASSES, readTopic, retryFailedJob, runJobStep, type JobRow, type StepOutcome } from "@/lib/seo/articles/generate"
@@ -69,7 +69,13 @@ function scripted() {
     if (pass === "PASSE 4") return { text: fixContent, model, usage }
     throw new Error(`passe inattendue : ${pass}`)
   })
-  mocks.image.mockImplementation(async ({ model }: { model: string }) => ({ data: Buffer.from("img"), mimeType: "image/jpeg", model }))
+  mocks.cover.mockImplementation(async ({ title }: { title: string }) => ({
+    url: "https://stockage.test/blog-covers/covers/2026/10/relancer-facture-impayee-abc123.webp#w=1600&h=900",
+    width: 1600,
+    height: 900,
+    alt: title,
+    family: "papiers",
+  }))
 }
 
 function topicRow(over: Row = {}): Row {
@@ -121,7 +127,7 @@ beforeEach(() => {
   reviewProblems = []
   mocks.revalidated.length = 0
   mocks.text.mockReset()
-  mocks.image.mockReset()
+  mocks.cover.mockReset()
   scripted()
 })
 
@@ -163,14 +169,16 @@ describe("rédaction en plusieurs passes", () => {
       held_reason: null,
       seo_title: PLAN.title,
       seo_description: PLAN.metaDescription,
-      ai_model: "plan claude-sonnet-5-5 · rédaction claude-opus-5-5 · contrôle claude-sonnet-5-5 · image gemini-nano-banana-2.1",
+      ai_model: "plan claude-sonnet-5-5 · rédaction claude-opus-5-5 · contrôle claude-sonnet-5-5 · image couverture Qonforme",
     })
     expect((post.seo_description as string).length).toBeGreaterThanOrEqual(120)
     expect((post.seo_description as string).length).toBeLessThanOrEqual(155)
-    expect(post.cover_url).toMatch(/^https:\/\/stockage\.test\/blog-covers\/seo\/relancer-facture-impayee-/)
+    // Couverture dessinée par le code : adresse sans le fragment des dimensions, texte alternatif = titre
+    expect(post.cover_url).toBe("https://stockage.test/blog-covers/covers/2026/10/relancer-facture-impayee-abc123.webp")
+    expect(post.cover_alt).toBe(PLAN.title)
+    expect(mocks.cover).toHaveBeenCalledWith({ title: PLAN.title, keyword: "relances automatiques factures" })
     expect(post.audit_result).toMatchObject({ version: 1, issues: [], blocking: 0 })
     expect(post.ai_keywords).toEqual(["relances automatiques factures", "relance facture", "facture impayée"])
-    expect(db.uploads[0]).toMatchObject({ bucket: "blog-covers", contentType: "image/jpeg" })
     expect(db.tables.seo_topics[0]).toMatchObject({ status: "drafted", post_id: post.id })
     expect(db.tables.seo_article_jobs[0]).toMatchObject({ status: "done", post_id: post.id })
     // Seules les sources officielles restent dans le plan envoyé à la rédaction
@@ -273,23 +281,16 @@ describe("rédaction en plusieurs passes", () => {
     expect(db.tables.seo_article_jobs).toHaveLength(1)
   })
 
-  it("image : le repli est noté, et un échec d'image n'empêche pas l'article", async () => {
-    mocks.image.mockImplementationOnce(async () => ({ data: Buffer.from("img"), mimeType: "image/png", model: "gemini-3.1-flash-image", fallbackFrom: { model: "gemini-nano-banana-2.1", reason: "503" } }))
+  it("couverture : un échec de dessin ou de stockage n'empêche pas l'article", async () => {
+    mocks.cover.mockImplementationOnce(async () => {
+      throw new Error("Stockage du blog indisponible.")
+    })
     const a = setup()
     const jobA = await startJob(a.client, a.topicId)
     const outA = await runAll(a.client, jobA.id)
-    expect(outA.at(-1)?.notices.join(" ")).toContain("Image par Nano Banana 2 au lieu de Nano Banana 2.1")
-    expect(a.db.tables.blog_posts[0].ai_model).toContain("image gemini-3.1-flash-image")
-
-    mocks.image.mockImplementationOnce(async () => {
-      throw new Error("Aucune image renvoyée par le modèle.")
-    })
-    const b = setup()
-    const jobB = await startJob(b.client, b.topicId)
-    const outB = await runAll(b.client, jobB.id)
-    expect(outB.at(-1)?.status).toBe("done")
-    expect(b.db.tables.blog_posts[0].cover_url).toBeNull()
-    expect(outB.at(-1)?.notices.join(" ")).toContain("Article sans image de couverture")
+    expect(outA.at(-1)?.status).toBe("done")
+    expect(a.db.tables.blog_posts[0].cover_url).toBeNull()
+    expect(outA.at(-1)?.notices.join(" ")).toContain("Article sans image de couverture")
   })
 
   it("plan refusé : nouvel essai avec le motif, puis échec au troisième", async () => {
