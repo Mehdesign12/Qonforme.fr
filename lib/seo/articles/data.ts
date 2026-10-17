@@ -78,7 +78,7 @@ export interface GenerateDialogData {
   lengthMin: number
   lengthMax: number
   coverImage: boolean
-  /** « Plan et contrôle par Gemini 3.8 Flash · rédaction par Claude Opus 5.5 » (modèles réellement utilisables). */
+  /** « Plan et contrôle par Claude Sonnet 5.5 · rédaction par Claude Opus 5.5 » (modèles réellement utilisables). */
   summary: string
   /** Replis prévus (clé absente) : affichés sous le résumé. */
   fallbacks: string[]

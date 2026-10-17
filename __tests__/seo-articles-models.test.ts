@@ -19,6 +19,7 @@ import {
   resolvePassModel,
   setAnthropicFactoryForTests,
   setSleepForTests,
+  textFallbackChain,
   textModelOptions,
 } from "@/lib/seo/articles/models"
 
@@ -92,11 +93,19 @@ describe("registre des modèles", () => {
     expect(resolvePassModel("modele-inconnu", "gemini-3.8-flash", () => true).fallbackReason).toMatch(/inconnu/)
     // Aucune clé utilisable : on garde le modèle demandé (l'appel dira « Clé … absente »)
     expect(resolvePassModel("claude-opus-5-5", "gemini-3.8-flash", () => false).model).toBe("claude-opus-5-5")
+    // Claude partout (réglages par défaut) et clé Anthropic pas encore ajoutée : Gemini prend la passe, sans erreur
+    expect(resolvePassModel("claude-opus-5-5", "claude-sonnet-5-5", onlyGemini)).toEqual({
+      model: "gemini-3.8-flash",
+      requested: "claude-opus-5-5",
+      fallbackReason: "Clé ANTHROPIC_API_KEY absente",
+    })
+    expect(resolvePassModel("claude-sonnet-5-5", "claude-sonnet-5-5", onlyGemini)).toMatchObject({ model: "gemini-3.8-flash", fallbackReason: "Clé ANTHROPIC_API_KEY absente" })
+    expect(resolvePassModel("claude-sonnet-5-5", "claude-sonnet-5-5", () => true)).toEqual({ model: "claude-sonnet-5-5", requested: "claude-sonnet-5-5", fallbackReason: null })
   })
 
   it("résume les modèles par passe pour la fenêtre « Générer »", () => {
-    expect(passesSummary({ plan: "gemini-3.8-flash", write: "claude-opus-5-5", review: "gemini-3.8-flash" })).toBe(
-      "Plan et contrôle par Gemini 3.8 Flash · rédaction par Claude Opus 5.5",
+    expect(passesSummary({ plan: "claude-sonnet-5-5", write: "claude-opus-5-5", review: "claude-sonnet-5-5" })).toBe(
+      "Plan et contrôle par Claude Sonnet 5.5 · rédaction par Claude Opus 5.5",
     )
     expect(passesSummary({ plan: "gemini-3.8-flash", write: "claude-opus-5-5", review: "claude-sonnet-5-5" })).toBe(
       "Plan par Gemini 3.8 Flash · rédaction par Claude Opus 5.5 · contrôle par Claude Sonnet 5.5",
@@ -257,7 +266,7 @@ describe("surcharge du fournisseur : nouveaux essais puis repli", () => {
     expect(seen.params).toMatchObject({ model: "claude-sonnet-5-5", system: "Consigne système" })
   })
 
-  it("Claude Opus 5.5 indisponible : repli sur Claude Sonnet 5.5", async () => {
+  it("Claude Opus 5.5 indisponible : repli sur Claude Sonnet 5.5 ; si Sonnet l'est aussi, sur Gemini 3.8 Flash", async () => {
     const calls: string[] = []
     setAnthropicFactoryForTests(
       () =>
@@ -279,6 +288,35 @@ describe("surcharge du fournisseur : nouveaux essais puis repli", () => {
     const res = await generateText({ model: "claude-opus-5-5", system: "S", prompt: "P", maxOutputTokens: 100 })
     expect(res).toMatchObject({ text: "Rédigé par Sonnet", model: "claude-sonnet-5-5", fallbackFrom: { model: "claude-opus-5-5" } })
     expect(calls).toEqual(["claude-opus-5-5", "claude-sonnet-5-5"])
+
+    // Toute la famille Claude en panne : Gemini prend le relais, avec le motif de la première panne
+    calls.length = 0
+    setAnthropicFactoryForTests(
+      () =>
+        ({
+          messages: {
+            stream: (params: { model: string }) => {
+              calls.push(params.model)
+              return { finalMessage: async () => Promise.reject(Object.assign(new Error("overloaded"), { name: "InternalServerError" })) }
+            },
+          },
+        }) as unknown as Anthropic,
+    )
+    const fetchMock = vi.fn(async () => json(OK))
+    vi.stubGlobal("fetch", fetchMock)
+    const all = await generateText({ model: "claude-opus-5-5", system: "S", prompt: "P", maxOutputTokens: 100 })
+    expect(calls).toEqual(["claude-opus-5-5", "claude-sonnet-5-5"])
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(all).toMatchObject({ text: "Texte", model: "gemini-3.8-flash", fallbackFrom: { model: "claude-opus-5-5", reason: "Appel au modèle impossible pour le moment" } })
+  })
+
+  it("la chaîne de repli du registre : Opus → Sonnet → Gemini, jamais deux fois le même modèle", () => {
+    const ids = (id: string) => textFallbackChain(findTextModel(id)!).map((m) => m.id)
+    expect(ids("claude-opus-5-5")).toEqual(["claude-sonnet-5-5", "gemini-3.8-flash"])
+    expect(ids("claude-sonnet-5-5")).toEqual(["gemini-3.8-flash"])
+    expect(ids("claude-haiku-5-5")).toEqual(["gemini-3.8-flash", "claude-sonnet-5-5"])
+    expect(ids("gemini-3.8-flash")).toEqual(["claude-sonnet-5-5"])
+    expect(ids("gemini-2.5-flash")).toEqual([])
   })
 
   it("sans clé du modèle de repli, ou si le repli échoue aussi, l'erreur d'origine est rendue", async () => {

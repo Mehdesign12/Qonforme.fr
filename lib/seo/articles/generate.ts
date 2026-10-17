@@ -7,9 +7,9 @@
  * - plan : titre (70 caractères au plus), adresse, sections, questions de la FAQ,
  *   mots-clés, sources officielles ;
  * - rédaction : article complet en Markdown du blog ;
- * - contrôle : relecture factuelle par le modèle de contrôle (une autre famille
- *   que la rédaction : il relit l'article contre les faits de référence et
- *   rend une liste précise de problèmes), puis lib/seo/articles/check.ts
+ * - contrôle : relecture factuelle par le modèle de contrôle (il relit
+ *   l'article contre les faits de référence et rend une liste précise de
+ *   problèmes ; un autre modèle que la rédaction), puis lib/seo/articles/check.ts
  *   (règles de lib/blog-audit.ts, concurrents, longueur, titres, liens, doublons) ;
  * - correction : une seule passe ciblée, par le modèle de rédaction (même
  *   auteur), sur la liste des problèmes, puis nouveau contrôle ;

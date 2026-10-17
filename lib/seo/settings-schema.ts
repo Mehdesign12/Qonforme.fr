@@ -109,9 +109,10 @@ export const articlesSchema = z.object({
   alternateAngles: z.boolean(),
   /**
    * Modèles par passe (lib/seo/articles/model-registry.ts) : plan et contrôle
-   * par un modèle, rédaction par un autre (relecture par une autre famille).
-   * Choix du 09/10/2026 d'après l'analyse des benchmarks
-   * (scratchpad benchmark-ia/RAPPORT.md, résumé dans PLAN-SEO-INTERNE-2026-10.md).
+   * par Claude Sonnet 5.5, rédaction par Claude Opus 5.5 ; Gemini en secours
+   * seulement (panne du fournisseur, clé Anthropic absente), choix du
+   * 17/10/2026. Avant : plan et contrôle par Gemini 3.8 Flash (09/10/2026,
+   * analyse des benchmarks résumée dans PLAN-SEO-INTERNE-2026-10.md).
    */
   planModel: text(80).min(1),
   /** Rédaction. */
@@ -265,9 +266,9 @@ export const SETTINGS_DEFAULTS: { [K in SettingsKey]: SettingsValue<K> } = {
     faqMax: 5,
     officialSources: true,
     alternateAngles: true,
-    planModel: "gemini-3.8-flash",
+    planModel: "claude-sonnet-5-5",
     textModel: "claude-opus-5-5",
-    reviewModel: "gemini-3.8-flash",
+    reviewModel: "claude-sonnet-5-5",
     coverImage: true,
     imageModel: "gemini-nano-banana-2.1",
     autoLinks: true,

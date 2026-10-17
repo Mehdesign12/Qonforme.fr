@@ -9,10 +9,13 @@
  * fournisseur. Les deux diffèrent quand un fournisseur renomme un modèle : le
  * réglage enregistré reste valable.
  *
- * Choix par passe (09/10/2026, d'après l'analyse des benchmarks, valeurs par
- * défaut de lib/seo/settings.ts) : plan et contrôle par Gemini 3.8 Flash,
- * rédaction par Claude Opus 5.5 (relecture par une autre famille de modèles que
- * la rédaction), couverture par Nano Banana 2.1 avec repli sur Nano Banana 2.
+ * Choix par passe (valeurs par défaut de lib/seo/settings.ts). 09/10/2026 :
+ * plan et contrôle par Gemini 3.8 Flash, rédaction par Claude Opus 5.5 (d'après
+ * l'analyse des benchmarks). 17/10/2026, à la demande du fondateur : Claude
+ * partout (plan et contrôle par Claude Sonnet 5.5, rédaction par Claude Opus
+ * 5.5) et Gemini en secours seulement (`fallback` de chaque modèle), pour une
+ * panne du fournisseur ou une clé Anthropic absente. Couverture par Nano Banana
+ * 2.1 avec repli sur Nano Banana 2.
  *
  * Prix indicatifs en dollars US, relevés le 9 octobre 2026 :
  * - Anthropic : https://platform.claude.com/docs/en/about-claude/pricing
@@ -211,9 +214,9 @@ export const IMAGE_MODELS: ImageModelDef[] = [
  * Modèles par défaut, une constante par passe : mêmes valeurs que les réglages
  * par défaut (lib/seo/settings.ts). Un réglage enregistré garde son choix.
  */
-export const DEFAULT_PLAN_MODEL = "gemini-3.8-flash"
+export const DEFAULT_PLAN_MODEL = "claude-sonnet-5-5"
 export const DEFAULT_TEXT_MODEL = "claude-opus-5-5"
-export const DEFAULT_REVIEW_MODEL = "gemini-3.8-flash"
+export const DEFAULT_REVIEW_MODEL = "claude-sonnet-5-5"
 export const DEFAULT_IMAGE_MODEL = "gemini-nano-banana-2.1"
 
 export type ModelPass = "plan" | "write" | "review"
@@ -222,6 +225,21 @@ export const PASS_LABELS: Record<ModelPass, string> = { plan: "Plan", write: "R�
 
 export function findTextModel(id: string | null | undefined): TextModelDef | null {
   return TEXT_MODELS.find((m) => m.id === id) ?? null
+}
+
+/**
+ * Modèles de repli d'un modèle de texte, dans l'ordre d'essai : son `fallback`,
+ * puis le `fallback` de celui-ci, sans jamais revenir sur un modèle déjà vu
+ * (Claude Opus 5.5 → Claude Sonnet 5.5 → Gemini 3.8 Flash).
+ */
+export function textFallbackChain(def: TextModelDef): TextModelDef[] {
+  const chain: TextModelDef[] = []
+  const seen = new Set([def.id])
+  for (let next = def.fallback ? findTextModel(def.fallback) : null; next && !seen.has(next.id); next = next.fallback ? findTextModel(next.fallback) : null) {
+    chain.push(next)
+    seen.add(next.id)
+  }
+  return chain
 }
 
 export function findImageModel(id: string | null | undefined): ImageModelDef | null {
@@ -280,10 +298,13 @@ export interface PassModelChoice {
 export function resolvePassModel(requested: string, planModel: string, hasKey: (env: ModelKeyEnv) => boolean): PassModelChoice {
   const def = findTextModel(requested) ?? findTextModel(planModel)
   if (def && hasKey(def.envKey)) return { model: def.id, requested, fallbackReason: def.id === requested ? null : `Modèle « ${requested} » inconnu` }
+  const reason = def ? `Clé ${def.envKey} absente` : `Modèle « ${requested} » inconnu`
   const plan = findTextModel(planModel)
-  if (plan && plan.id !== def?.id && hasKey(plan.envKey)) {
-    return { model: plan.id, requested, fallbackReason: def ? `Clé ${def.envKey} absente` : `Modèle « ${requested} » inconnu` }
-  }
+  if (plan && plan.id !== def?.id && hasKey(plan.envKey)) return { model: plan.id, requested, fallbackReason: reason }
+  // Ni le modèle demandé ni celui du plan n'ont de clé (Claude partout, clé Anthropic pas encore ajoutée) :
+  // le premier modèle de repli du registre dont la clé est présente (Gemini) prend la passe
+  const spare = def ? textFallbackChain(def).find((m) => hasKey(m.envKey)) : undefined
+  if (spare) return { model: spare.id, requested, fallbackReason: reason }
   return { model: def?.id ?? requested, requested, fallbackReason: null }
 }
 
