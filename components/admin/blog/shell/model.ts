@@ -56,6 +56,8 @@ export interface EditorPost {
   seo_title?: string | null
   seo_description?: string | null
   target_keyword?: string | null
+  /** howto, guide, news ou faq (articles rédigés par le générateur) ; absent d'un article écrit à la main. */
+  article_type?: string | null
   review_status?: string | null
   audit_result?: unknown
   held_reason?: string | null

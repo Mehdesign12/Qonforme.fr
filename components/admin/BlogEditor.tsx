@@ -47,6 +47,8 @@ import { Loader2, LogOut, PenLine, Save, Search, Send, Trash2, TriangleAlert } f
 import { toast } from 'sonner'
 import { slugify } from '@/lib/seo/articles/check'
 import { analyzeOnPage, scoreTone } from '@/lib/seo/articles/onpage'
+import { inferArticleType } from '@/lib/seo/articles/search-language'
+import type { ArticleType } from '@/lib/seo/types'
 import { api } from '@/components/admin/seo/articles/api'
 import { useImageStudio } from '@/components/admin/blog/images/useImageStudio'
 import { useSeoContext } from '@/components/admin/blog/seo/useSeoContext'
@@ -273,6 +275,13 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
   const deferredDraft = useDeferredValue(draft)
   const deferredHighlighted = useDeferredValue(highlighted)
   const otherTitles = useMemo(() => seo.data?.others.map((o) => ({ id: o.id, title: o.title, slug: o.slug })), [seo.data])
+  // Type enregistré par le générateur ; sinon déduit du mot-clé et du titre (« comment … » = how-to)
+  const savedType = post?.article_type
+  const articleTypeOf = useCallback(
+    (keyword: string | null, title: string): ArticleType =>
+      savedType === 'howto' || savedType === 'guide' || savedType === 'news' || savedType === 'faq' ? savedType : inferArticleType(keyword, title),
+    [savedType],
+  )
   const analysis = useMemo(
     () =>
       analyzeOnPage({
@@ -283,6 +292,7 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
         excerpt: deferredDraft.excerpt,
         content: deferredDraft.content,
         keyword: deferredDraft.keyword,
+        articleType: articleTypeOf(deferredDraft.keyword, deferredDraft.title),
         secondary: deferredHighlighted,
         coverUrl: deferredDraft.coverUrl.trim() || null,
         coverAlt: deferredDraft.coverAlt.trim() || null,
@@ -292,7 +302,7 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
         lengthMax: seo.data?.prefs.lengthMax,
         competitors: seo.data?.competitors,
       }),
-    [deferredDraft.title, deferredDraft.seoTitle, deferredDraft.seoDescription, deferredDraft.slug, deferredDraft.excerpt, deferredDraft.content, deferredDraft.keyword, deferredHighlighted, deferredDraft.coverUrl, deferredDraft.coverAlt, otherTitles, seo.data, id],
+    [deferredDraft.title, deferredDraft.seoTitle, deferredDraft.seoDescription, deferredDraft.slug, deferredDraft.excerpt, deferredDraft.content, deferredDraft.keyword, deferredHighlighted, deferredDraft.coverUrl, deferredDraft.coverAlt, otherTitles, seo.data, id, articleTypeOf],
   )
 
   const highlightTerms = useMemo(() => {
@@ -312,6 +322,7 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
       const current = field === 'seoTitle' ? d.seoTitle : field === 'seoDescription' ? d.seoDescription : field === 'slug' ? d.slug : field === 'excerpt' ? d.excerpt : d.title
       return {
         keyword: d.keyword ?? '',
+        articleType: articleTypeOf(d.keyword, d.title),
         secondary: highlightedRef.current,
         title: d.title,
         excerpt: d.excerpt,
@@ -320,7 +331,7 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
       }
     }
     return { seoTitle: base('seoTitle'), seoDescription: base('seoDescription'), slug: base('slug'), excerpt: base('excerpt') }
-  }, [])
+  }, [articleTypeOf])
   const suggestSeoTitle = useSuggest({ field: 'seoTitle', getRequest: requestFor.seoTitle, onUse: (text) => patch({ seoTitle: text }), disabledReason: suggestReason })
   const suggestSeoDescription = useSuggest({ field: 'seoDescription', getRequest: requestFor.seoDescription, onUse: (text) => patch({ seoDescription: text }), disabledReason: suggestReason })
   const suggestSlug = useSuggest({
