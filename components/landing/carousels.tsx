@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils"
 const INTERVAL_MS = 5500
 const EASE = "cubic-bezier(.22,1,.36,1)"
 
-function usePrefersReducedMotion() {
+export function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false)
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -38,9 +38,11 @@ function usePrefersReducedMotion() {
 
 /**
  * État commun : écran actif, lecture (bouton), visibilité, survol et focus.
- * `running` dit si la barre de progression avance.
+ * `running` dit si la barre de progression avance ; `visible` si le carrousel
+ * est à l'écran (les scènes animées de steps-showcase.tsx s'en servent pour
+ * rejouer à chaque retour).
  */
-function useCarousel(count: number) {
+export function useCarousel(count: number) {
   const rootRef = useRef<HTMLDivElement>(null)
   const [active, setActive] = useState(0)
   const [playing, setPlaying] = useState(true)
@@ -91,11 +93,21 @@ function useCarousel(count: number) {
     },
   }
 
-  return { rootRef, active, go, next, prev, playing, setPlaying, autoplay, running, reduced, handlers }
+  return { rootRef, active, go, next, prev, playing, setPlaying, autoplay, running, visible, reduced, handlers }
 }
 
 /** Barre de progression de l'onglet actif : sa fin passe à l'écran suivant. */
-function Progress({ on, running, autoplay, onDone, tone }: { on: boolean; running: boolean; autoplay: boolean; onDone: () => void; tone: "light" | "dark" }) {
+export function Progress({
+  on, running, autoplay, onDone, tone, duration = INTERVAL_MS,
+}: {
+  on: boolean
+  running: boolean
+  autoplay: boolean
+  onDone: () => void
+  tone: "light" | "dark"
+  /** Durée de l'écran en millisecondes. */
+  duration?: number
+}) {
   return (
     <span aria-hidden className={cn("absolute inset-x-0 bottom-0 h-[2px] overflow-hidden rounded-full", tone === "dark" ? "bg-white/15" : "bg-q-line")}>
       {on && (
@@ -103,7 +115,7 @@ function Progress({ on, running, autoplay, onDone, tone }: { on: boolean; runnin
           className={cn("lp-progress-fill absolute inset-0 origin-left", tone === "dark" ? "bg-white" : "bg-q-accent")}
           style={
             autoplay
-              ? { animationDuration: `${INTERVAL_MS}ms`, animationPlayState: running ? "running" : "paused" }
+              ? { animationDuration: `${duration}ms`, animationPlayState: running ? "running" : "paused" }
               : { animation: "none" }
           }
           onAnimationEnd={onDone}
@@ -113,7 +125,15 @@ function Progress({ on, running, autoplay, onDone, tone }: { on: boolean; runnin
   )
 }
 
-function PlayPause({ playing, onToggle, tone }: { playing: boolean; onToggle: () => void; tone: "light" | "dark" }) {
+export function PlayPause({
+  playing, onToggle, tone, compact = false,
+}: {
+  playing: boolean
+  onToggle: () => void
+  tone: "light" | "dark"
+  /** Petit bouton (28 px) pour une barre de fenêtre. */
+  compact?: boolean
+}) {
   const Icon = playing ? Pause : Play
   return (
     <button
@@ -121,13 +141,14 @@ function PlayPause({ playing, onToggle, tone }: { playing: boolean; onToggle: ()
       onClick={onToggle}
       aria-label={playing ? "Mettre le défilement en pause" : "Reprendre le défilement"}
       className={cn(
-        "grid h-10 w-10 shrink-0 place-items-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+        "grid shrink-0 place-items-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+        compact ? "h-7 w-7" : "h-10 w-10",
         tone === "dark"
           ? "border-white/20 text-white hover:border-white/40 focus-visible:outline-white"
           : "border-q-line bg-q-surface text-q-ink-strong hover:border-q-field focus-visible:outline-q-accent",
       )}
     >
-      <Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
+      <Icon className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} aria-hidden />
     </button>
   )
 }

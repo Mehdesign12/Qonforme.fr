@@ -47,7 +47,7 @@ const FROM = { 1100: "min-[1100px]:block", 1180: "min-[1180px]:block", 1280: "mi
 
 export type DoodleLayout =
   | "right" | "right-short" | "sides" | "hero" | "frame"
-  | "page" | "page-right" | "auth" | "auth-column"
+  | "page" | "page-right" | "article" | "auth" | "auth-column"
 
 const LAYOUTS: Record<DoodleLayout, Layout> = {
   /** Accueil, titre à gauche : un groupe en haut à droite, dans la bande du titre. */
@@ -128,6 +128,21 @@ const LAYOUTS: Record<DoodleLayout, Layout> = {
       { top: 178, right: 236, size: 72, rotate: -12, wide: true },
       { top: 204, right: -14, size: 80, rotate: -4 },
       { top: 262, right: 150, size: 64, rotate: 6, wide: true },
+    ],
+  },
+  /**
+   * En-tête d'un article du blog (colonne de lecture centrée, partage à gauche,
+   * sommaire à droite sous le titre) : une icône de chaque côté, dans la bande du
+   * titre, au-dessus du partage et du sommaire. À poser très discrètement
+   * (`className="opacity-60"`) : la couverture porte déjà les mêmes icônes.
+   */
+  article: {
+    show: "min-[1180px]:block",
+    frame: cn(COLUMN, "top-0"),
+    slots: [
+      { top: 150, right: 4, size: 84, rotate: 10, accent: true },
+      { top: 244, right: 100, size: 58, rotate: -12, wide: true },
+      { top: 176, left: 6, size: 66, rotate: -8 },
     ],
   },
   /** Page d'accès sur une seule colonne (mot de passe, étapes d'inscription) : de chaque côté du formulaire. */

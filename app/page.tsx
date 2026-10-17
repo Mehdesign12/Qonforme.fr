@@ -16,7 +16,9 @@ import { IPhone, SCREENS } from "@/components/landing/devices"
 import { Doodles } from "@/components/brand/Doodles"
 import { CtaButtons, PanPhoto, PhotoBand, SectionTitle } from "@/components/landing/ui"
 import { PhoneCarousel, ScreenCarousel } from "@/components/landing/carousels"
-import { StepCatalogue, StepCompany, StepQuote } from "@/components/landing/mini-ui"
+import { StepsShowcase, type StepsData } from "@/components/landing/steps-showcase"
+import { EXAMPLE_COMPANY, EXAMPLE_PRODUCTS, EXAMPLES } from "@/components/landing/examples"
+import { DEMO_PRODUCTS } from "@/lib/demo/data"
 import Footer from "@/components/layout/Footer"
 import PricingSelector from "@/components/billing/PricingSelector"
 import { PLANS } from "@/lib/stripe/plans"
@@ -531,13 +533,16 @@ function TradesSection() {
 }
 
 /* ─────────────────────────────────────────────────────────
-   8 — Démarrage en trois étapes
+   8 — Démarrage en trois étapes : trois scènes animées dans une
+   fenêtre d'application (components/landing/steps-showcase.tsx),
+   sur les données d'exemple de la démo
 ───────────────────────────────────────────────────────── */
-const STEPS = [
-  { title: "Votre SIREN", text: "Le nom, l'adresse et le numéro de TVA de votre entreprise se remplissent seuls.", ui: <StepCompany /> },
-  { title: "Vos prestations", text: "Votre catalogue, avec vos unités et vos prix, prêt pour tous vos devis.", ui: <StepCatalogue /> },
-  { title: "Votre premier devis", text: "Envoyé par email, gratuit, sans carte bancaire.", ui: <StepQuote /> },
-]
+const STEPS_DATA: StepsData = {
+  company: EXAMPLE_COMPANY,
+  products: EXAMPLE_PRODUCTS,
+  newProduct: DEMO_PRODUCTS.find((p) => p.id === "ba13")!,
+  quote: EXAMPLES.devis,
+}
 
 function StepsSection() {
   return (
@@ -545,19 +550,7 @@ function StepsSection() {
       <Doodles layout="right" icons={DOODLES.steps} />
       <div className={WRAP}>
         <SectionTitle title="Trois étapes," accent="et votre premier devis est parti." />
-        <ol className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
-          {STEPS.map((s, i) => (
-            <li key={s.title} data-reveal="" className={cn("flex min-w-0 flex-col", i === 1 && "lp-d1", i === 2 && "lp-d2")}>
-              <div className="flex items-center gap-3">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-q-ink-strong text-[14px] font-semibold text-q-surface">{i + 1}</span>
-                <span aria-hidden data-reveal="line" className={cn("h-px flex-1 bg-q-accent", i === 0 ? "lp-d1" : i === 1 ? "lp-d2" : "lp-d3")} />
-              </div>
-              <h3 className="mt-5 text-[18px] font-semibold text-q-ink-strong">{s.title}</h3>
-              <p className="mt-1.5 text-[15px] leading-[1.55] text-q-text-3">{s.text}</p>
-              <div className="mt-5">{s.ui}</div>
-            </li>
-          ))}
-        </ol>
+        <StepsShowcase data={STEPS_DATA} />
         <CtaButtons reveal className="mt-12" secondary={null} />
       </div>
     </section>
