@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState } from "react"
 import { ArrowLeft, ArrowRight, ChevronDown, Menu, X } from "lucide-react"
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from "@/lib/brand"
 import { OUTILS_CATEGORIES, OUTILS_COUNT, OUTILS_ESSENTIELS } from "@/components/layout/public-links"
+import { ScrollReveal } from "@/components/motion/ScrollReveal"
 import { cn } from "@/lib/utils"
 
 export interface PublicNavProps {
@@ -162,6 +163,8 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
 
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-[100] px-4 pt-4 sm:px-6">
+      {/* Apparitions au défilement de la page (data-reveal) */}
+      <ScrollReveal />
       <nav
         ref={navRef}
         aria-label="Navigation principale"

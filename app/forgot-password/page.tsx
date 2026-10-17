@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm"
 import AuthLayout from "@/components/auth/AuthLayout"
-import AuthBenefits from "@/components/auth/AuthBenefits"
+import { AuthPhotoPanel } from "@/components/auth/AuthPhotoPanel"
+import { LOGIN_PHOTO } from "@/components/auth/photos"
 
 export const metadata: Metadata = {
   title: "Mot de passe oublié",
@@ -12,7 +13,7 @@ export const dynamic = "force-dynamic"
 
 export default function ForgotPasswordPage() {
   return (
-    <AuthLayout aside={<AuthBenefits />}>
+    <AuthLayout aside={<AuthPhotoPanel {...LOGIN_PHOTO} />} asideVariant="photo">
       {/* Titre dans le formulaire : il change une fois le lien envoyé */}
       <ForgotPasswordForm />
     </AuthLayout>

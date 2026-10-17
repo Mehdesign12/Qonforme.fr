@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { ArrowRight, Briefcase } from "lucide-react"
 import { METIERS, getMetierBySlug } from "@/lib/pseo/metiers"
 import { getInstallationBySlug } from "@/lib/pseo/installation"
-import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, FaqList, SectionHeading, WRAP } from "@/components/content/ui"
+import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, FaqList, InlineCta, SectionHeading, WRAP } from "@/components/content/ui"
 import { MetierFeatures, MetierObligations, tradeHeroPhoto } from "@/components/content/metier"
 import { fr, lcFirst } from "@/components/content/text"
 
@@ -87,6 +87,15 @@ export default async function MetierPage({ params }: { params: Promise<{ slug: s
         </ContentHero>
 
         <MetierFeatures metier={metier} />
+
+        <div className="px-4 pt-16 sm:px-6 sm:pt-20">
+          <InlineCta
+            className={WRAP}
+            title={`Votre prochain devis ${/^[aeiouéèê]/i.test(metier.nom) ? "d’" : "de "}${lcFirst(metier.nom)},`}
+            accent="prêt en quelques minutes."
+          />
+        </div>
+
         <MetierObligations metier={metier} />
 
         {/* Intention « je démarre » : guide d'installation du même métier */}

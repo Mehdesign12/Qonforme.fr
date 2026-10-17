@@ -3,26 +3,25 @@ import Link from "next/link"
 import Image from "next/image"
 import {
   ArrowRight, ArrowRightLeft, BadgeCheck, Bell, BellRing, BrickWall, Cable, CalendarClock, Calculator, Check,
-  ChevronDown, CircleCheck, CircleDashed, ClipboardCheck, ClipboardList, Construction, DoorOpen, Download, Drill, Droplets,
-  Euro, Eye, FileMinus, FileText, FolderOpen, Grid3x3, HandCoins, House, Lamp, Layers, Mail, Package,
-  PaintRoller, Paintbrush, Palette, Percent, PencilRuler, Pickaxe, PlugZap, ReceiptText, RotateCcw, Ruler, Scale,
-  Send, ShieldCheck, Signature, Smartphone, Stamp, Unlock, Users, Wrench,
+  ChevronDown, CircleDashed, ClipboardCheck, ClipboardList, Construction, DoorOpen, Download, Drill, Droplets,
+  Euro, FileMinus, FileText, FolderOpen, Grid3x3, HandCoins, House, Lamp, Layers, Mail, Package,
+  PaintRoller, Paintbrush, Palette, PencilRuler, Pickaxe, PlugZap, ReceiptText, RotateCcw, Ruler, Scale,
+  Send, Signature, Smartphone, Stamp, Unlock, Users, Wrench,
 } from "lucide-react"
 
 import { LandingHero } from "@/components/landing/LandingHero"
 import { PublicHeader } from "@/components/layout/PublicHeader"
 import { StorySection } from "@/components/landing/StorySection"
-import { MacBook, IPhone, SCREENS } from "@/components/landing/devices"
+import { IPhone, SCREENS } from "@/components/landing/devices"
 import { Doodles } from "@/components/brand/Doodles"
-import { Chip, CtaButtons, Floater, PanPhoto, PhotoBand, SectionTitle } from "@/components/landing/ui"
+import { CtaButtons, PanPhoto, PhotoBand, SectionTitle } from "@/components/landing/ui"
+import { PhoneCarousel, ScreenCarousel } from "@/components/landing/carousels"
 import { StepCatalogue, StepCompany, StepQuote } from "@/components/landing/mini-ui"
-import { EXAMPLES } from "@/components/landing/examples"
 import Footer from "@/components/layout/Footer"
 import PricingSelector from "@/components/billing/PricingSelector"
 import { PLANS } from "@/lib/stripe/plans"
 import { GUARANTEE_DAYS } from "@/lib/stripe/access"
 import { PHOTOS, type LandingPhoto } from "@/lib/landing/photos"
-import { formatCurrency } from "@/lib/utils/invoice"
 import { cn } from "@/lib/utils"
 
 /*
@@ -38,8 +37,12 @@ import { cn } from "@/lib/utils"
  *    italique bleu) ; couleurs par jetons --q-* (thème sombre compris) ;
  *  - captures : le vrai produit (pages de démo, données d'exemple) ;
  *  - photos : illustrations d'artisans (Pexels), jamais présentées comme des clients ;
- *  - mouvement en CSS seul (classes lp-* de app/globals.css), sans
- *    backdrop-filter, will-change ni animation infinie (règle iOS).
+ *  - aucun élément flottant (notifications, puces) : décision du fondateur du 17/10/2026 ;
+ *  - mouvement : apparitions au défilement dans les deux sens (data-reveal,
+ *    components/motion/ScrollReveal.tsx), carrousels des vraies captures
+ *    (components/landing/carousels.tsx), classes lp-* de app/globals.css ; sans
+ *    backdrop-filter, will-change ni animation infinie (règle iOS) ;
+ *  - un appel à l'action après chaque grand moment de la page, au libellé vrai.
  */
 
 /* Title et description : ceux par défaut du layout racine. Le canonical de l'accueil vit
@@ -50,7 +53,6 @@ export const metadata: Metadata = {
 
 const essentiel = PLANS.starter
 const artisan = PLANS.pro
-const { relance: RELANCE, payee: PAYEE, envoyee: ENVOYEE, devis: DEVIS } = EXAMPLES
 
 /** Montant en euros sans centimes, espace insécable avant le symbole. */
 const euros = (n: number) => `${n} €`
@@ -134,7 +136,7 @@ function ReformSection() {
           accent="Voici où en est Qonforme."
           sub="La facture électronique arrive dans le bâtiment. Le calendrier est fixé ; votre logiciel suit."
         />
-        <div className="lp-reveal lp-clip mt-10 grid grid-cols-1 divide-y divide-q-line rounded-[18px] border border-q-line bg-q-surface md:grid-cols-3 md:divide-x md:divide-y-0">
+        <div data-reveal="" className="lp-clip mt-10 grid grid-cols-1 divide-y divide-q-line rounded-[18px] border border-q-line bg-q-surface md:grid-cols-3 md:divide-x md:divide-y-0">
           {REFORM.map((r) => (
             <div key={r.date} className="flex flex-col gap-3 p-6 sm:p-7">
               <p className="font-display text-[26px] font-semibold leading-tight tracking-[-0.03em] text-q-ink-strong">{r.date}</p>
@@ -163,7 +165,12 @@ function ReformSection() {
             </ul>
           </div>
         </div>
-        <p className="mt-4 text-[12.5px] text-q-text-4">Calendrier officiel de la réforme, publié par l&apos;administration fiscale.</p>
+        <div className="mt-4 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[12.5px] text-q-text-4">Calendrier officiel de la réforme, publié par l&apos;administration fiscale.</p>
+          <Link data-reveal="" href="/guide/facture-electronique-2026" className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-q-accent-strong hover:underline">
+            Ce que la réforme change pour vous <ArrowRight className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          </Link>
+        </div>
       </div>
     </section>
   )
@@ -233,9 +240,10 @@ function ProfilesSection() {
           {PROFILES.map((p, i) => (
             <article
               key={p.kicker}
-              className={cn("lp-reveal lp-card-scope lp-zoom-host lp-clip relative flex flex-col rounded-[22px] border border-q-line bg-q-surface", i === 1 && "lp-d1", i === 2 && "lp-d2")}
+              data-reveal=""
+              className={cn("lp-zoom-host lp-clip relative flex flex-col rounded-[22px] border border-q-line bg-q-surface", i === 1 && "lp-d1", i === 2 && "lp-d2")}
             >
-              <span aria-hidden className="lp-fill absolute left-0 top-0 z-[1] h-[3px] bg-q-accent" style={{ width: `${((i + 1) / PROFILES.length) * 100}%` }} />
+              <span aria-hidden data-reveal="line" className={cn("absolute left-0 top-0 z-[1] h-[3px] bg-q-accent", i === 0 ? "lp-d1" : i === 1 ? "lp-d2" : "lp-d3")} style={{ width: `${((i + 1) / PROFILES.length) * 100}%` }} />
               {p.photo && (
                 <div className="lp-clip relative aspect-[4/3] bg-q-sunken">
                   <Image
@@ -275,13 +283,15 @@ function ProfilesSection() {
             </article>
           ))}
         </div>
+        <CtaButtons reveal className="mt-12" primary={{ href: "/signup", label: "Commencer gratuitement" }} secondary={{ href: "/pricing", label: "Comparer les formules" }} />
       </div>
     </section>
   )
 }
 
 /* ─────────────────────────────────────────────────────────
-   3 — Le devis, sur l'ordinateur
+   3 — Du devis à la facture, sur l'ordinateur : carrousel des
+   vraies captures (devis, facture, suivi)
 ───────────────────────────────────────────────────────── */
 function QuoteSection() {
   return (
@@ -294,27 +304,15 @@ function QuoteSection() {
           accent="La facture suit d'elle-même."
           sub="Vos prestations sont prêtes dans le catalogue, la TVA se choisit ligne par ligne et l'aperçu PDF est à un clic. Une fois accepté, le devis devient facture en un clic."
         />
-        <div className="relative mx-auto mt-12 max-w-[1040px] sm:mt-14">
-          <div className="lp-zoomin hidden sm:block">
-            <MacBook screen={{ ...SCREENS.devis, sizes: "(min-width: 1088px) 1040px, 92vw" }} />
-          </div>
-          <div className="lp-reveal mx-auto w-[min(300px,72%)] sm:hidden">
-            <IPhone screen={{ ...SCREENS.mobileDevis, sizes: "300px" }} />
-          </div>
-          {/* Puces : seulement quand elles tiennent hors de l'écran de l'ordinateur */}
-          <div aria-hidden className="absolute left-[-96px] top-[16%] z-[5] hidden xl:block">
-            <Chip icon={Package} label="Vos prestations" bob={1} />
-          </div>
-          <div aria-hidden className="absolute left-[-72px] top-[52%] z-[5] hidden xl:block">
-            <Chip icon={Percent} label="TVA par ligne" bob={2} />
-          </div>
-          <div aria-hidden className="absolute right-[-96px] top-[18%] z-[5] hidden xl:block">
-            <Chip icon={Eye} label="Aperçu PDF" bob={3} />
-          </div>
-          <div aria-hidden className="absolute right-[-64px] top-[58%] z-[5] hidden xl:block">
-            <Chip icon={ShieldCheck} label="Mention décennale" bob={1} />
-          </div>
+        <div data-reveal="zoom" className="relative mx-auto mt-12 max-w-[1040px] sm:mt-14">
+          <ScreenCarousel />
         </div>
+        <CtaButtons
+          reveal
+          className="mt-12"
+          primary={{ href: "/signup", label: "Faire mon premier devis" }}
+          secondary={{ href: "/demo/quotes/d-2026-035", label: "Voir un devis dans la démo" }}
+        />
       </div>
     </section>
   )
@@ -329,24 +327,20 @@ const MANIFESTO_ACCENT = "Le soir, l'essentiel est déjà prêt."
 function ManifestoSection() {
   const words = MANIFESTO.split(" ")
   const accent = MANIFESTO_ACCENT.split(" ")
-  const total = words.length + accent.length
-  // Chaque mot s'encre sur 30 % de l'entrée à l'écran, décalé d'un cran sur le précédent.
-  const range = (i: number) => {
-    const a = Math.round((i / total) * 62)
-    return { "--lp-a": `${a}%`, "--lp-b": `${a + 30}%` } as React.CSSProperties
-  }
+  // Rang de chaque mot : il s'encre à son tour quand la phrase entre à l'écran
+  const rank = (i: number) => ({ "--rv-i": i }) as React.CSSProperties
   return (
     <section className="relative bg-q-surface px-6 py-[clamp(88px,11vw,150px)]">
       <Doodles layout="frame" icons={DOODLES.manifesto} />
-      <p className="lp-ink-scope mx-auto max-w-[860px] text-center font-display text-[clamp(30px,4vw,48px)] font-semibold leading-[1.14] tracking-[-0.03em] text-q-ink-strong [text-wrap:balance]">
+      <p data-reveal="words" className="mx-auto max-w-[860px] text-center font-display text-[clamp(30px,4vw,48px)] font-semibold leading-[1.14] tracking-[-0.03em] text-q-ink-strong [text-wrap:balance]">
         {words.map((w, i) => (
           <span key={i}>
-            <span className="lp-w" style={range(i)}>{w}</span>{" "}
+            <span className="lp-w" style={rank(i)}>{w}</span>{" "}
           </span>
         ))}
         {accent.map((w, i) => (
           <span key={`a${i}`}>
-            <span className="lp-wb text-q-accent" style={range(words.length + i)}>{w}</span>
+            <span className="lp-w text-q-accent" style={rank(words.length + i)}>{w}</span>
             {i < accent.length - 1 && " "}
           </span>
         ))}
@@ -372,7 +366,7 @@ function MobileSection() {
             accent="Qonforme dans l'autre."
             sub="Un devis chiffré devant le client, une facture envoyée avant de remonter dans le camion. Qonforme s'ouvre dans le navigateur et s'ajoute à l'écran d'accueil de votre téléphone, sans passer par un store."
           />
-          <ul className="lp-reveal mt-7 flex flex-wrap gap-2.5">
+          <ul data-reveal="" className="lp-d1 mt-7 flex flex-wrap gap-2.5">
             {MOBILE_CHIPS.map((c) => (
               <li key={c} className="inline-flex h-9 items-center gap-2 rounded-full border border-white/15 bg-white/[.06] px-3.5 text-[13.5px] font-medium text-[#D5DBE5]">
                 <Check className="h-3.5 w-3.5 text-[#7FA6FF]" strokeWidth={2.25} aria-hidden />
@@ -380,23 +374,22 @@ function MobileSection() {
               </li>
             ))}
           </ul>
+          <CtaButtons
+            reveal
+            align="start"
+            className="mt-8"
+            primary={{ href: "/signup", label: "Essayer sur mon téléphone" }}
+            secondary={null}
+          />
           {photo && (
-            <div className="lp-reveal lp-clip relative mt-10 aspect-[16/10] max-w-[480px] rounded-[20px] bg-[#1B2333]">
+            <div data-reveal="" className="lp-clip relative mt-10 aspect-[16/10] max-w-[480px] rounded-[20px] bg-[#1B2333]">
               <PanPhoto photo={photo} sizes="(min-width: 1024px) 480px, 90vw" />
             </div>
           )}
         </div>
 
-        <div className="relative mx-auto flex w-full max-w-[560px] items-start justify-center gap-[4%]">
-          <div className="lp-drift-v mt-[26%] hidden w-[30%] sm:block">
-            <IPhone screen={{ ...SCREENS.mobileDevis, sizes: "(min-width: 1024px) 170px, 30vw" }} />
-          </div>
-          <div className="mt-[10%] w-[64%] sm:w-[34%]">
-            <IPhone screen={{ ...SCREENS.mobileFacture, sizes: "(min-width: 1024px) 190px, (min-width: 640px) 34vw, 64vw" }} />
-          </div>
-          <div className="lp-drift-v hidden w-[30%] sm:block">
-            <IPhone screen={{ ...SCREENS.mobileTableauDeBord, sizes: "(min-width: 1024px) 170px, 30vw" }} />
-          </div>
+        <div data-reveal="right">
+          <PhoneCarousel />
         </div>
       </div>
     </section>
@@ -420,12 +413,8 @@ function PaidSection() {
       <div className={cn(WRAP, "grid grid-cols-1 items-center gap-14 lg:grid-cols-2 lg:gap-20")}>
         <div className="relative mx-auto w-full max-w-[460px] py-6">
           <div aria-hidden className="absolute inset-x-0 bottom-0 top-[14%] rounded-[28px] border border-q-line bg-q-bg" />
-          <IPhone className="lp-reveal relative z-[2] mx-auto w-[min(260px,62%)]" screen={{ ...SCREENS.mobileFacture, sizes: "260px" }} />
-          <div aria-hidden className="absolute right-[-4%] top-[6%] z-[5] hidden sm:block">
-            <Floater icon={BellRing} tone="warn" title="Relance envoyée" sub={`${RELANCE.client.name} · ${RELANCE.invoice_number}`} bob={2} />
-          </div>
-          <div aria-hidden className="absolute bottom-[6%] left-[-6%] z-[5] hidden sm:block">
-            <Floater icon={CircleCheck} tone="ok" title={`Facture ${PAYEE.invoice_number} payée`} sub={`${PAYEE.client.name} · ${formatCurrency(PAYEE.total_ttc)}`} bob={3} />
+          <div data-reveal="" className="relative z-[2] mx-auto w-[min(260px,62%)]">
+            <IPhone screen={{ ...SCREENS.mobileFacture, sizes: "260px" }} />
           </div>
         </div>
 
@@ -437,7 +426,7 @@ function PaidSection() {
           />
           <ol className="mt-8 border-b border-q-line">
             {PAID_STEPS.map((s, i) => (
-              <li key={s.tag} className={cn("lp-reveal grid grid-cols-[64px_minmax(0,1fr)] gap-4 border-t border-q-line py-4 sm:grid-cols-[72px_minmax(0,1fr)]", i % 2 === 1 && "lp-d1")}>
+              <li key={s.tag} data-reveal="" className={cn("grid grid-cols-[64px_minmax(0,1fr)] gap-4 border-t border-q-line py-4 sm:grid-cols-[72px_minmax(0,1fr)]", i % 2 === 1 && "lp-d1")}>
                 <span className="pt-0.5 font-mono text-[13px] font-medium text-q-accent-strong">{s.tag}</span>
                 <span className="flex flex-col gap-1">
                   <span className="text-[16px] font-semibold text-q-ink-strong">{s.title}</span>
@@ -450,6 +439,13 @@ function PaidSection() {
             Besoin de relancer plus tôt&nbsp;? Le bouton «&nbsp;Relancer&nbsp;» de la facture envoie un rappel quand vous le décidez.
             Envoi et relances avec la formule {essentiel.name}.
           </p>
+          <CtaButtons
+            reveal
+            align="start"
+            className="mt-8"
+            primary={{ href: "/signup", label: "Essayer gratuitement" }}
+            secondary={{ href: "#pricing", label: "Voir les tarifs" }}
+          />
         </div>
       </div>
     </section>
@@ -549,12 +545,12 @@ function StepsSection() {
       <Doodles layout="right" icons={DOODLES.steps} />
       <div className={WRAP}>
         <SectionTitle title="Trois étapes," accent="et votre premier devis est parti." />
-        <ol className="lp-steps-scope mt-12 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
+        <ol className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
           {STEPS.map((s, i) => (
-            <li key={s.title} className={cn("lp-reveal flex min-w-0 flex-col", i === 1 && "lp-d1", i === 2 && "lp-d2")}>
+            <li key={s.title} data-reveal="" className={cn("flex min-w-0 flex-col", i === 1 && "lp-d1", i === 2 && "lp-d2")}>
               <div className="flex items-center gap-3">
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-q-ink-strong text-[14px] font-semibold text-q-surface">{i + 1}</span>
-                <span aria-hidden className="lp-line-x h-px flex-1 bg-q-accent" />
+                <span aria-hidden data-reveal="line" className={cn("h-px flex-1 bg-q-accent", i === 0 ? "lp-d1" : i === 1 ? "lp-d2" : "lp-d3")} />
               </div>
               <h3 className="mt-5 text-[18px] font-semibold text-q-ink-strong">{s.title}</h3>
               <p className="mt-1.5 text-[15px] leading-[1.55] text-q-text-3">{s.text}</p>
@@ -562,12 +558,7 @@ function StepsSection() {
             </li>
           ))}
         </ol>
-        <div className="mt-12 flex justify-center">
-          <Link href="/signup" className="lp-btn-p">
-            Créer mon premier devis
-            <ArrowRight className="lp-btn-arrow h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
-          </Link>
-        </div>
+        <CtaButtons reveal className="mt-12" secondary={null} />
       </div>
     </section>
   )
@@ -599,7 +590,7 @@ function IncludedSection() {
         <SectionTitle title="Tout ce qu'il faut." accent="Rien de superflu." />
         <ul className="mt-12 grid grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-8 lg:grid-cols-4">
           {INCLUDED.map((f, i) => (
-            <li key={f.title} className={cn("lp-reveal flex flex-col gap-3 border-t border-q-line pt-5", i % 4 === 1 && "lp-d1", i % 4 >= 2 && "lp-d2")}>
+            <li key={f.title} data-reveal="" className={cn("flex flex-col gap-3 border-t border-q-line pt-5", i % 4 === 1 && "lp-d1", i % 4 === 2 && "lp-d2", i % 4 === 3 && "lp-d3")}>
               <span className="grid h-9 w-9 place-items-center text-q-accent-strong q-glyph">
                 <f.icon className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
               </span>
@@ -610,6 +601,7 @@ function IncludedSection() {
             </li>
           ))}
         </ul>
+        <CtaButtons reveal className="mt-14" primary={{ href: "/signup", label: "Créer mon compte gratuit" }} />
       </div>
     </section>
   )
@@ -630,10 +622,10 @@ function PricingSection() {
           sub={`Sans carte bancaire pour commencer. La formule se choisit au moment d'envoyer votre première facture, satisfait ou remboursé pendant ${GUARANTEE_DAYS} jours.`}
           className="mb-12"
         />
-        <div className="lp-reveal">
+        <div data-reveal="">
           <PricingSelector />
         </div>
-        <div className="mt-10 flex justify-center">
+        <div data-reveal="" className="mt-10 flex justify-center">
           <Link href="/pricing" className="lp-btn-s">
             <span className="lp-btn-s-ic" aria-hidden>
               <ArrowRight className="h-[15px] w-[15px]" strokeWidth={2} />
@@ -677,8 +669,9 @@ function CommitmentsSection() {
           {COMMITMENTS.map((c, i) => (
             <article
               key={c.title}
+              data-reveal=""
               className={cn(
-                "lp-reveal flex flex-col gap-3 rounded-[22px] border p-7",
+                "flex flex-col gap-3 rounded-[22px] border p-7",
                 i === 2 ? "q-on-ink border-[#0A1122] bg-[#0A1122]" : "border-q-line bg-q-surface",
                 i === 1 && "lp-d1",
                 i === 2 && "lp-d2",
@@ -750,7 +743,7 @@ function FAQSection() {
       <Doodles layout="sides" icons={DOODLES.faq} />
       <div className="mx-auto w-full max-w-[800px]">
         <SectionTitle title="Questions" accent="fréquentes" className="mb-10" />
-        <div className="lp-reveal border-b border-q-line">
+        <div data-reveal="" className="border-b border-q-line">
           {FAQ_ITEMS.map((item, i) => (
             // <details> natif : s'ouvre au clavier et sans JavaScript ; la première réponse est ouverte.
             <details key={item.q} open={i === 0} className="group border-t border-q-line">
@@ -761,6 +754,16 @@ function FAQSection() {
               <p className="max-w-[680px] pb-6 text-[15px] leading-[1.65] text-q-text-3">{fr(item.a)}</p>
             </details>
           ))}
+        </div>
+        <div data-reveal="" className="mt-10 flex flex-col items-start gap-5 rounded-[22px] border border-q-line bg-q-bg p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+          <p className="text-[15px] leading-[1.6] text-q-text-3">
+            <span className="block text-[16px] font-semibold text-q-ink-strong">Une autre question&nbsp;?</span>
+            Le plus simple est d&apos;essayer&nbsp;: vos devis sont gratuits, sans carte bancaire.
+          </p>
+          <Link href="/signup" className="lp-btn-p shrink-0">
+            Essayer gratuitement
+            <ArrowRight className="lp-btn-arrow h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+          </Link>
         </div>
       </div>
     </section>
@@ -819,7 +822,7 @@ function ResourcesSection() {
       <Doodles layout="right-short" icons={DOODLES.resources} />
       <div className={WRAP}>
         <SectionTitle title="Pour aller plus loin," accent="gratuitement." />
-        <div className="mt-10">
+        <div data-reveal="" className="mt-10">
           <p className="text-[15px] font-semibold text-q-ink-strong">Facturation par métier</p>
           <ul className="mt-4 flex flex-wrap gap-2">
             {TRADES.map((t) => (
@@ -840,8 +843,8 @@ function ResourcesSection() {
           </ul>
         </div>
         <div className="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-3">
-          {columns.map((col) => (
-            <div key={col.title}>
+          {columns.map((col, i) => (
+            <div key={col.title} data-reveal="" className={cn(i === 1 && "lp-d1", i === 2 && "lp-d2")}>
               <p className="text-[15px] font-semibold text-q-ink-strong">{col.title}</p>
               <ul className="mt-4 flex flex-col gap-3">
                 {col.links.map((l) => (
@@ -867,7 +870,7 @@ function FinalCta() {
   const photo = PHOTOS.appelFinal
   return (
     <section className="bg-q-surface px-6 py-[clamp(72px,8vw,104px)]">
-      <div className={cn(WRAP, "lp-reveal lp-clip grid grid-cols-1 rounded-[28px] border border-q-line md:grid-cols-2")}>
+      <div data-reveal="scale" className={cn(WRAP, "lp-clip grid grid-cols-1 rounded-[28px] border border-q-line md:grid-cols-2")}>
         <div className="flex flex-col items-start bg-q-bg px-6 py-12 sm:px-12 sm:py-16">
           <SectionTitle title="Votre premier devis" accent="en quelques minutes." sub="Gratuit, sans carte bancaire. Vous ne payez qu'à partir de votre première facture." />
           <CtaButtons align="start" className="mt-9" />
@@ -875,12 +878,6 @@ function FinalCta() {
         {photo && (
           <div className="relative min-h-[320px] bg-q-sunken">
             <Image src={photo.src} alt={photo.alt} fill sizes="(min-width: 768px) 600px, 100vw" loading="lazy" className="object-cover" />
-            <div aria-hidden className="absolute left-4 top-4 z-[2] sm:left-5 sm:top-5">
-              <Floater icon={Check} tone="ok" title="Devis envoyé" sub={`${DEVIS.client.name} · ${formatCurrency(DEVIS.subtotal_ht)} HT`} bob={1} />
-            </div>
-            <div aria-hidden className="absolute bottom-4 right-4 z-[2] hidden sm:bottom-5 sm:right-5 sm:block">
-              <Floater icon={ShieldCheck} tone="info" title="Mentions obligatoires" sub="SIREN, TVA, durée de validité" bob={2} />
-            </div>
           </div>
         )}
       </div>
@@ -906,7 +903,6 @@ export default function HomePage() {
             label="Pour ceux qui facturent le soir"
             title="Pour ceux qui facturent le soir,"
             accent="après le chantier."
-            floater={<Floater icon={Send} tone="info" title={`Facture ${ENVOYEE.invoice_number} envoyée`} sub={`${ENVOYEE.client.name} · 21:47`} bob={1} />}
           />
         )}
         <ProfilesSection />
@@ -922,7 +918,6 @@ export default function HomePage() {
             title="Le camion se range."
             accent="Les relances partent sans vous."
             stack
-            floater={<Floater icon={BellRing} tone="warn" title="Relance envoyée" sub={`${RELANCE.invoice_number} · ${formatCurrency(RELANCE.total_ttc)}`} bob={2} />}
           />
         )}
         <TradesSection />

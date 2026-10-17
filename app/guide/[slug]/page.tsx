@@ -3,7 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowRight, BookOpen, Check, ExternalLink } from "lucide-react"
 import { GUIDES, getGuideBySlug } from "@/lib/pseo/guides"
-import { ChipLinks, ContentCta, ContentHero, ContentPage, FaqList, SectionHeading, WRAP } from "@/components/content/ui"
+import { ChipLinks, ContentCta, ContentHero, ContentPage, FaqList, InlineCta, SectionHeading, WRAP } from "@/components/content/ui"
 import { dateFr, fr } from "@/components/content/text"
 import { ExempleDevisCard } from "@/components/content/ExempleDevis"
 import { fitDescription, fitTitle } from "@/lib/seo/meta"
@@ -181,6 +181,8 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               </div>
 
               {guide.exemple && <ExempleDevisCard exemple={guide.exemple} id="exemple" />}
+
+              <InlineCta className="mt-14" title="Mettez ce guide en pratique :" />
 
               {faq.length > 0 && (
                 <section aria-labelledby="faq" className="mt-16 max-w-[68ch]">

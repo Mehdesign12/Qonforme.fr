@@ -58,7 +58,7 @@ export function StorySection() {
             {STORY.map((step, i) => {
               const on = active === i
               return (
-                <li key={step.n} className={cn("lp-reveal", i % 2 === 1 && "lp-d1")}>
+                <li key={step.n} data-reveal="" className={cn(i % 2 === 1 && "lp-d1")}>
                   <button
                     type="button"
                     aria-pressed={on}
@@ -83,21 +83,23 @@ export function StorySection() {
         {/* Le téléphone montre l'écran de l'étape choisie, sur une photo d'illustration */}
         <div className="relative mx-auto w-full max-w-[360px] pt-10 lg:pt-16">
           {photo && (
-            <div className="lp-reveal lp-clip absolute right-[-6%] top-0 aspect-[4/3] w-[78%] rounded-[22px] bg-q-sunken lg:right-[-24%]">
+            <div data-reveal="right" className="lp-clip absolute right-[-6%] top-0 aspect-[4/3] w-[78%] rounded-[22px] bg-q-sunken lg:right-[-24%]">
               <Image src={photo.src} alt={photo.alt} fill sizes="(min-width: 1024px) 280px, 70vw" loading="lazy" className="object-cover" />
             </div>
           )}
-          <IPhone className="lp-reveal lp-d1 relative z-[2] w-[min(290px,72%)] lg:ml-[-4%]">
-            {STORY.map((step, i) => (
-              <div
-                key={step.n}
-                aria-hidden={active !== i}
-                className={cn("absolute inset-0 transition-opacity duration-500 motion-reduce:transition-none", active === i ? "opacity-100" : "opacity-0")}
-              >
-                <Image src={step.screen.src} alt={step.screen.alt} fill sizes="290px" loading="lazy" className="object-cover object-top" />
-              </div>
-            ))}
-          </IPhone>
+          <div data-reveal="" className="lp-d1 relative z-[2] w-[min(290px,72%)] lg:ml-[-4%]">
+            <IPhone>
+              {STORY.map((step, i) => (
+                <div
+                  key={step.n}
+                  aria-hidden={active !== i}
+                  className={cn("absolute inset-0 transition-opacity duration-500 motion-reduce:transition-none", active === i ? "opacity-100" : "opacity-0")}
+                >
+                  <Image src={step.screen.src} alt={step.screen.alt} fill sizes="290px" loading="lazy" className="object-cover object-top" />
+                </div>
+              ))}
+            </IPhone>
+          </div>
           <p className="relative z-[2] mt-4 w-[min(290px,72%)] text-center text-[13px] text-q-text-4 lg:ml-[-4%]" aria-live="polite">
             Étape {STORY[active].n}
           </p>

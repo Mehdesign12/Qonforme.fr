@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils"
  *  - par défaut (« Connexion », « Onb-1-Inscription ») : colonne blanche avec
  *    le logo et le formulaire, `aside` à droite sur fond #F6F8FB (≥ lg) ;
  *    sans `aside`, une seule colonne centrée ;
- *  - avec `asideVariant="photo"` (inscription, maquette validée le 06/10/2026) :
+ *  - avec `asideVariant="photo"` (inscription, maquette validée le 06/10/2026 ;
+ *    connexion et mot de passe depuis le 17/10/2026, AuthPhotoPanel) :
  *    page blanche, `aside` en photo pleine hauteur dans un cadre arrondi (marge
  *    16 px, sans bord ni fond), fixe au défilement ; sous 1024 px, `mobileBand`
  *    (bande photo) sous le logo et `topRight` (lien) à droite du logo ;

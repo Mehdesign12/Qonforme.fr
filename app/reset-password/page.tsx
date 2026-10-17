@@ -2,14 +2,15 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm"
 import AuthLayout from "@/components/auth/AuthLayout"
-import AuthBenefits from "@/components/auth/AuthBenefits"
+import { AuthPhotoPanel } from "@/components/auth/AuthPhotoPanel"
+import { LOGIN_PHOTO } from "@/components/auth/photos"
 
 export const metadata: Metadata = { title: "Nouveau mot de passe" }
 export const dynamic = "force-dynamic"
 
 export default function ResetPasswordPage() {
   return (
-    <AuthLayout aside={<AuthBenefits />}>
+    <AuthLayout aside={<AuthPhotoPanel {...LOGIN_PHOTO} />} asideVariant="photo">
       {/* Titre dans le formulaire : il suit l'état du lien (vérification, invalide, réussi).
           Suspense requis — ResetPasswordForm utilise useSearchParams() */}
       <Suspense fallback={

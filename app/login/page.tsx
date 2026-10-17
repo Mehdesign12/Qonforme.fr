@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import LoginForm from "@/components/auth/LoginForm"
 import AuthLayout from "@/components/auth/AuthLayout"
-import AuthBenefits from "@/components/auth/AuthBenefits"
+import { AuthPhotoBand, AuthPhotoPanel } from "@/components/auth/AuthPhotoPanel"
+import { LOGIN_PHOTO } from "@/components/auth/photos"
 import { safeNextPath } from "@/lib/stripe/access"
 import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
 
@@ -19,16 +20,23 @@ export const dynamic = "force-dynamic"
 export default function LoginPage({ searchParams }: { searchParams?: { next?: string } }) {
   // Retour après connexion (LoginForm), gardé si l'on passe par l'inscription
   const next = safeNextPath(searchParams?.next)
+  const signupHref = next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"
   return (
-    <AuthLayout aside={<AuthBenefits />}>
+    <AuthLayout
+      aside={<AuthPhotoPanel {...LOGIN_PHOTO} />}
+      asideVariant="photo"
+      mobileBand={<AuthPhotoBand {...LOGIN_PHOTO} />}
+      topRight={<Link href={signupHref} className="q-link text-[14px] lg:hidden">Créer un compte</Link>}
+    >
       <AuthTitle>Content de vous <Serif>revoir</Serif>.</AuthTitle>
       <AuthLead>Retrouvez vos devis, vos factures et vos clients.</AuthLead>
 
       <LoginForm />
 
-      <p className="mt-7 text-[14px] text-q-text-3">
+      {/* Sur téléphone, « Créer un compte » est en haut à droite */}
+      <p className="mt-7 hidden text-[14px] text-q-text-3 lg:block">
         Pas encore de compte ?{" "}
-        <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"} className="q-link">Créer un compte<span className="hidden sm:inline"> gratuitement</span></Link>
+        <Link href={signupHref} className="q-link">Créer un compte gratuitement</Link>
       </p>
     </AuthLayout>
   )
