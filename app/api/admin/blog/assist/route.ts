@@ -100,6 +100,9 @@ export async function POST(request: NextRequest) {
         // « Clé … absente : ajoutez-la dans les variables d'environnement (Paramètres › Connexions). »
         return NextResponse.json({ error: error.message, code: "not_configured" }, { status: 503 })
       }
+      if (error.kind === "quota") {
+        return NextResponse.json({ error: error.message, code: "quota" }, { status: 502 })
+      }
       if (error.kind === "refused") {
         return NextResponse.json({ error: "Le modèle a refusé de réécrire ce passage. Modifiez la sélection, ou changez de modèle de rédaction dans les Préférences." }, { status: 502 })
       }

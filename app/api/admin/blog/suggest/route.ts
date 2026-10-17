@@ -141,6 +141,9 @@ export async function POST(request: NextRequest) {
       if (error.kind === "not_configured") {
         return NextResponse.json({ error: `Les propositions ne sont pas configurées : ${error.message}`, code: "not_configured" }, { status: 503 })
       }
+      if (error.kind === "quota") {
+        return NextResponse.json({ error: error.message, code: "quota" }, { status: 502 })
+      }
       if (error.kind === "timeout") {
         return NextResponse.json({ error: "Le modèle n'a pas répondu à temps. Réessayez dans un instant." }, { status: 502 })
       }
