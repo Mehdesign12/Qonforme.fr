@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, BadgeCheck, Check, ChevronDown, FolderOpen, Lamp, Lock, Stamp, Wrench } from "lucide-react"
+import { ArrowRight, BadgeCheck, Check, ChevronDown, FolderOpen, HardHat, Lamp, Lock, PaintRoller, Ruler, Stamp, Wrench } from "lucide-react"
 import { Doodles } from "@/components/brand/Doodles"
 import { D_SECTION, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
 import { SOLUTION_COMPATIBLE, SolutionCompatible } from "@/components/brand/SolutionCompatible"
@@ -153,8 +153,10 @@ export function Commitments() {
 ───────────────────────────────────────────────────────── */
 export function FinalBand() {
   return (
-    <section className="q-on-ink lp-clip bg-[#0A1122] px-6 py-[clamp(72px,9vw,96px)]">
-      <div data-reveal="scale" className={cn(D_WRAP, "flex flex-col items-center text-center")}>
+    <section className="q-on-ink lp-clip relative bg-[#0A1122] px-6 py-[clamp(72px,9vw,96px)]">
+      {/* Pictogrammes de marque en blanc sur le fond marine, de chaque côté du texte (grand écran seulement) */}
+      <Doodles layout="frame" tone="light" icons={[HardHat, Ruler, PaintRoller, Wrench]} />
+      <div data-reveal="scale" className={cn(D_WRAP, "relative flex flex-col items-center text-center")}>
         <h2 className="max-w-[820px] font-display text-[clamp(32px,4vw,52px)] font-semibold leading-[1.08] tracking-[-0.03em] text-white [text-wrap:balance]">
           {`Prêt${NB}? Votre premier devis`} <span className="q-serif inline-block !text-[#9DBBFF]">est gratuit.</span>
         </h2>

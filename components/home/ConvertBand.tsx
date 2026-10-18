@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ArrowRight, Check, FilePen, MousePointer2, ReceiptText, RotateCcw, Send } from "lucide-react"
+import { ArrowRight, Check, FileCheck, FilePen, Mail, MousePointer2, ReceiptText, RotateCcw, Send, Stamp } from "lucide-react"
 
+import { Doodles } from "@/components/brand/Doodles"
 import { CheckList, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
 import { usePrefersReducedMotion } from "@/components/landing/carousels"
 import { PLANS } from "@/lib/stripe/plans"
@@ -344,6 +345,8 @@ export function ConvertBand({ data }: { data: ConvertBandData }) {
   // Ordre du document = ordre de lecture sur téléphone (texte, puis carte) ; la carte passe à gauche sur grand écran
   return (
     <section aria-labelledby="convert-title" className="lp-clip relative bg-[#1E40AF] px-6 py-[clamp(72px,8vw,112px)] text-white">
+      {/* Pictogrammes de marque en blanc sur le fond bleu : dans les coins du haut, entre la carte et le texte, sous le bouton (grand écran seulement) */}
+      <Doodles layout="band-split" tone="light" icons={[ReceiptText, Send, Stamp, Mail, FileCheck]} />
       <div className={cn(D_WRAP, "grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10")}>
         <div data-reveal="right" className="flex flex-col items-start lg:col-span-6 lg:col-start-7 lg:row-start-1 lg:pl-6">
           <p className="inline-flex h-8 items-center rounded-full border border-white/25 bg-white/10 px-3.5 text-[13px] font-semibold text-white">

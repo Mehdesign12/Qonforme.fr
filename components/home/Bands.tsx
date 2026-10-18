@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { CalendarClock, Check, FileText, PencilRuler, ReceiptText, RotateCcw, Send } from "lucide-react"
+import { CalendarClock, Check, FileText, Globe, Monitor, PencilRuler, ReceiptText, RotateCcw, Send, Smartphone } from "lucide-react"
 
 import { Doodles } from "@/components/brand/Doodles"
 
@@ -42,8 +42,10 @@ const SIMPLE_POINTS = [
 
 export function SimpleBand() {
   return (
-    <section className="bg-[#2563EB] px-6 py-[clamp(56px,6vw,72px)] text-white">
-      <div className={cn(D_WRAP, "flex flex-col items-center text-center")}>
+    <section className="relative bg-[#2563EB] px-6 py-[clamp(56px,6vw,72px)] text-white">
+      {/* Pictogrammes de marque en blanc sur le fond bleu, dans les marges de chaque côté (grand écran seulement) */}
+      <Doodles layout="band" tone="light" icons={[Monitor, Smartphone, FileText, Globe]} />
+      <div className={cn(D_WRAP, "relative flex flex-col items-center text-center")}>
         <h2
           data-reveal=""
           className="max-w-[860px] font-display text-[clamp(28px,3.4vw,42px)] font-semibold leading-[1.1] tracking-[-0.03em] text-white [text-wrap:balance]"
