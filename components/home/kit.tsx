@@ -5,9 +5,9 @@ import { IPhone, type ScreenProps } from "@/components/landing/devices"
 import { cn } from "@/lib/utils"
 
 /**
- * Briques de la variante B de l'accueil (/design, test A/B) : la structure de
- * la page d'un concurrent (note interne ANALYSE-LANDING-CONCURRENT-2026-10.md),
- * au langage de Qonforme (jetons --q-*, titres en deux voix, boutons lp-btn-*).
+ * Briques de l'accueil (app/page.tsx) : la structure et le rythme d'une page
+ * de référence (note interne ANALYSE-LANDING-CONCURRENT-2026-10.md), au langage
+ * de Qonforme (jetons --q-*, titres en deux voix, boutons lp-btn-*).
  *
  * Mêmes règles que l'accueil : contenu vrai seulement, aucun élément flottant
  * posé sur une photo ou une maquette, apparitions au défilement par data-reveal
@@ -18,12 +18,11 @@ export const D_SECTION = "relative px-6 py-[clamp(80px,9vw,120px)]"
 export const D_WRAP = "mx-auto w-full max-w-[1200px]"
 
 /**
- * Lien d'inscription de la variante (boutons de la page et de l'en-tête) : le
- * formulaire transmet ?ab=design, enregistré dans user_metadata.landing_variant
- * du compte créé (lib/auth/signup-input.ts). Un visiteur qui quitte /design avant
- * de s'inscrire n'est pas compté.
+ * Lien d'inscription des boutons de la page. Pour un futur test A/B, marquer le
+ * lien de la variante par ?ab=<nom> (nom déclaré dans LANDING_VARIANTS,
+ * lib/auth/signup-input.ts) : il est enregistré dans user_metadata.landing_variant.
  */
-export const SIGNUP_HREF = "/signup?ab=design"
+export const SIGNUP_HREF = "/signup"
 
 /* ─────────────────────────────────────────────────────────
    Liste à coches : les puces des blocs de fonctions

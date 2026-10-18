@@ -24,9 +24,6 @@ export async function updateSession(request: NextRequest) {
     '/outils',
     '/plan-du-site',
     '/devenir-a-son-compte',
-    // Variante B de l'accueil (test A/B) : page publique identique pour tous,
-    // sans renvoi vers le tableau de bord pour pouvoir la relire connecté.
-    '/design',
     '/api/webhooks/stripe',
     '/api/og',
     '/api/cron',

@@ -845,7 +845,7 @@ html[data-standalone="true"] [role="button"] {
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
- * Variante B de l'accueil (/design, components/design/) — classes préfixées dz-
+ * Accueil (app/page.tsx, components/home/) — classes préfixées dz-
  *
  * Mêmes règles que lp- : entrée du héros en CSS pur, une seule fois ; trait du
  * ✓ (stroke-dashoffset) et étincelles du bandeau « du devis à la facture »,

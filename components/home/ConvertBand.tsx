@@ -4,15 +4,15 @@ import Link from "next/link"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ArrowRight, Check, FilePen, MousePointer2, ReceiptText, RotateCcw, Send } from "lucide-react"
 
-import { CheckList, D_WRAP, SIGNUP_HREF } from "@/components/design/kit"
+import { CheckList, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
 import { usePrefersReducedMotion } from "@/components/landing/carousels"
 import { PLANS } from "@/lib/stripe/plans"
 import { cn } from "@/lib/utils"
 
 /**
- * Bandeau « Du devis accepté à la facture envoyée » de la variante B de
- * l'accueil (/design). Il tient la place du bandeau de signature électronique
- * de la page de référence : la signature en ligne n'est pas encore vendue
+ * Bandeau « Du devis accepté à la facture envoyée » de l'accueil. Il tient la
+ * place d'un bandeau de signature électronique : la signature en ligne n'est
+ * pas encore vendue
  * (« à venir » dans lib/stripe/plans.ts), le passage du devis à la facture l'est.
  *
  * La carte joue le vrai parcours quand elle entre à l'écran : le pointeur clique

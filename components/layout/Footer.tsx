@@ -8,7 +8,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: "Produit",
     links: [
-      { label: "Fonctionnalités", href: "/#features" },
+      { label: "Fonctionnalités", href: "/#devis" },
       { label: "Tarifs", href: "/pricing" },
       { label: "Démo interactive", href: "/demo" },
     ],

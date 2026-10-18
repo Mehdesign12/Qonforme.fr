@@ -3,8 +3,8 @@ import { CalendarClock, Check, FileText, PencilRuler, ReceiptText, RotateCcw, Se
 
 import { Doodles } from "@/components/brand/Doodles"
 
-import { CountUp } from "@/components/design/CountUp"
-import { D_SECTION, D_WRAP, SIGNUP_HREF } from "@/components/design/kit"
+import { CountUp } from "@/components/home/CountUp"
+import { D_SECTION, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
 import { CtaButtons, SectionTitle } from "@/components/landing/ui"
 import { TRADE_CATALOGUES } from "@/lib/catalogue/trades"
 import { GUARANTEE_DAYS } from "@/lib/stripe/access"
@@ -12,11 +12,11 @@ import { PLANS } from "@/lib/stripe/plans"
 import { cn } from "@/lib/utils"
 
 /**
- * Bandeaux de la variante B de l'accueil (/design) : le bandeau bleu « aussi
+ * Bandeaux de l'accueil : le bandeau bleu « aussi
  * simple », les quatre chiffres de l'offre et les trois cartes « gagnez du temps ».
  *
- * Les chiffres d'utilisateurs, de devis ou de chantiers de la page de référence
- * ne sont pas repris : Qonforme n'en publie aucun. Chaque nombre affiché vient
+ * Aucun chiffre d'utilisateurs, de devis ou de chantiers : Qonforme n'en
+ * publie aucun. Chaque nombre affiché vient
  * de la source qui fait foi (grille de lib/stripe/plans.ts, garantie de
  * lib/stripe/access.ts, catalogues de lib/catalogue/trades.ts) : il change
  * avec elle, jamais à la main.

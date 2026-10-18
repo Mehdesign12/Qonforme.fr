@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { ArrowRight, BadgeCheck, Check, ChevronDown, FolderOpen, Lamp, Lock, Stamp, Wrench } from "lucide-react"
 import { Doodles } from "@/components/brand/Doodles"
-import { D_SECTION, D_WRAP, SIGNUP_HREF } from "@/components/design/kit"
+import { D_SECTION, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
 import { SOLUTION_COMPATIBLE, SolutionCompatible } from "@/components/brand/SolutionCompatible"
 import { CtaButtons, SectionTitle } from "@/components/landing/ui"
 import { GUARANTEE_DAYS } from "@/lib/stripe/access"
@@ -9,18 +9,17 @@ import { PLANS } from "@/lib/stripe/plans"
 import { cn } from "@/lib/utils"
 
 /**
- * Fin de la variante B de l'accueil (/design) : garanties, engagements, appel
- * final et questions fréquentes. À la place des badges, des avis clients et du
- * nombre d'utilisateurs de la page de référence : ce que Qonforme garantit
- * vraiment, tel qu'écrit dans ses conditions générales (article 4). Aucun avis,
- * aucune note, aucun chiffre d'utilisateurs.
+ * Fin de l'accueil : garanties, engagements, appel final et questions
+ * fréquentes. Ce que Qonforme garantit vraiment, tel qu'écrit dans ses
+ * conditions générales (article 4) : aucun avis, aucune note, aucun chiffre
+ * d'utilisateurs.
  *
  * Prix et durée de la garantie lus dans lib/stripe (jamais recopiés). Le label
  * « Solution compatible » et ce qui le décrit disparaissent avec le logotype si
  * SOLUTION_COMPATIBLE passe à false. Couleurs par jetons --q-* (thème sombre
  * compris), sauf l'appel final marine, identique dans les deux thèmes.
  * Apparitions au défilement par data-reveal ; la FAQ s'ouvre sans JavaScript
- * (<details> natif) et ne porte pas de JSON-LD (déjà sur l'accueil).
+ * (<details> natif) ; `FAQ_ITEMS` alimente aussi le JSON-LD FAQPage de app/page.tsx.
  */
 
 const NB = "\u00a0"
@@ -172,7 +171,7 @@ export function FinalBand() {
 /* ─────────────────────────────────────────────────────────
    N — Questions fréquentes (sans JSON-LD : déjà sur l'accueil)
 ───────────────────────────────────────────────────────── */
-const FAQ_ITEMS: { q: string; a: string; logo?: boolean }[] = [
+export const FAQ_ITEMS: { q: string; a: string; logo?: boolean }[] = [
   {
     q: "Puis-je essayer Qonforme gratuitement ?",
     a: `Oui. Les devis, les clients, le catalogue et les factures en brouillon sont gratuits, sans limite de durée et sans carte bancaire. Une formule n'est demandée qu'au moment d'envoyer une facture : ${essentiel.name}, ${ht(essentiel.monthlyPrice)} par mois ou ${ht(essentiel.yearlyPrice)} par an.`,
@@ -209,7 +208,7 @@ const FAQ_ITEMS: { q: string; a: string; logo?: boolean }[] = [
   },
 ]
 
-export function DesignFaq() {
+export function HomeFaq() {
   return (
     <section className={cn(D_SECTION, "bg-q-surface")}>
       <Doodles layout="sides-short" icons={[Lamp, Wrench]} />

@@ -62,7 +62,6 @@ const CACHEABLE_PAGE_PREFIXES = [
   '/outils',
   '/plan-du-site',
   '/devenir-a-son-compte',
-  '/design',
 ]
 
 /** Nombre maximum de pages publiques conservées, pour borner le stockage. */
