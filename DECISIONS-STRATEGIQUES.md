@@ -542,11 +542,11 @@ Le fondateur déclare le 17/10/2026 que Qonforme a obtenu le label de la DGFiP. 
 
 ### Où il s'affiche
 
-Un seul composant, `components/brand/SolutionCompatible.tsx` (interrupteur `SOLUTION_COMPATIBLE`, à passer à `false` pour tout retirer d'un coup si le label est perdu) : héros, « Où en est Qonforme » (section de la réforme), tarifs, bandeau sous les engagements (`SolutionCompatibleNote`), réponse « Qonforme est-il une plateforme agréée ? » de la FAQ, appel final et pied de page (donc toutes les pages publiques).
+Un seul composant, `components/brand/SolutionCompatible.tsx` (interrupteur `SOLUTION_COMPATIBLE`, à passer à `false` pour tout retirer d'un coup si le label est perdu) : héros (`components/home/HomeHero.tsx`), bandeau « facture électronique » du même fichier, bandeau des engagements, réponse « Qonforme est-il une plateforme agréée ? » de la FAQ et appel final (`components/home/Closing.tsx`), pied de page (`components/layout/Footer.tsx`, donc toutes les pages publiques). Depuis le remplacement de l'accueil par l'ancienne variante B (18/10/2026), la carte « Où en est Qonforme », la section tarifs de l'accueil et `SolutionCompatibleNote` n'existent plus ; `/pricing` n'affiche pas le label (choix à confirmer).
 
 ### Textes changés pour rester d'accord avec le logotype
 
-Accueil : réponse de la FAQ, 3ᵉ ligne de « Où en est Qonforme ». Guide « Plateforme agréée » : « Et avec Qonforme ? ».
+Accueil : réponse de la FAQ (la 3ᵉ ligne de « Où en est Qonforme » a disparu avec l'ancien accueil). Guide « Plateforme agréée » : « Et avec Qonforme ? ».
 
 ### À revoir : textes qui disent encore « en préparation » (décision en attente)
 

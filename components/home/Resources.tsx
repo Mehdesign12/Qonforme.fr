@@ -29,7 +29,7 @@ const TRADES = [
 const GUIDES = [
   { href: "/guide/comment-faire-un-devis", label: "Comment faire un devis" },
   { href: "/guide/premiere-facture", label: "Comment faire une facture" },
-  { href: "/guide/tva-travaux", label: "TVA des travaux : 20, 10 ou 5,5 %" },
+  { href: "/guide/tva-travaux", label: "TVA des travaux : 20, 10 ou 5,5 %" },
   { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires sur une facture" },
   { href: "/guide/facture-electronique-2026", label: "La facture électronique" },
   { href: "/guide/plateforme-agreee", label: "Choisir sa plateforme agréée" },

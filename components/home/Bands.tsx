@@ -164,7 +164,7 @@ export function TimeBand() {
               data-reveal=""
               className={cn("flex flex-col rounded-[20px] border border-q-line bg-q-surface p-7 sm:p-8", DELAYS[i])}
             >
-              <p className="font-display text-[52px] font-semibold leading-none tracking-[-0.035em] text-q-accent-strong md:text-[clamp(40px,4.6vw,60px)]">
+              <p className="font-display text-[clamp(38px,13vw,52px)] font-semibold leading-none tracking-[-0.035em] text-q-accent-strong md:text-[clamp(40px,4.6vw,60px)]">
                 {fact.value === 0 ? (
                   <span className="tabular-nums">0{fact.suffix}</span>
                 ) : (
