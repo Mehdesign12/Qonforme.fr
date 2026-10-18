@@ -3,6 +3,7 @@ import Image from "next/image"
 import { ArrowRight, Check, Linkedin, Mail, Monitor } from "lucide-react"
 import { LOGO_LONG_LIGHT } from "@/lib/brand"
 import { SolutionCompatible } from "@/components/brand/SolutionCompatible"
+import { CookieSettingsLink } from "@/components/consent/CookieSettingsLink"
 
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
@@ -151,6 +152,11 @@ export default function Footer({ showCta = true }: { showCta?: boolean } = {}) {
                     </Link>
                   </li>
                 ))}
+                {col.title === "Légal" && (
+                  <li>
+                    <CookieSettingsLink className="inline-block py-1.5 text-left text-[#94A3B8] transition-colors hover:text-white" />
+                  </li>
+                )}
               </ul>
             </nav>
           ))}
