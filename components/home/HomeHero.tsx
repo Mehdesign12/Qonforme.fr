@@ -66,25 +66,26 @@ function HeroPhoto() {
 
 export function HomeHero() {
   return (
-    <section aria-labelledby="hero-title" className="relative bg-q-surface px-6 pb-[clamp(48px,6vw,80px)] pt-[112px] sm:pt-[136px]">
+    <section aria-labelledby="hero-title" className="relative bg-q-surface px-6 pb-[clamp(32px,6vw,80px)] pt-[100px] sm:pt-[136px]">
       {/* Fond en lignes pointillées, le même que la section « Créez vos devis » */}
       <GridLines />
-      <div className={cn(D_WRAP, "grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10")}>
+      <div className={cn(D_WRAP, "grid grid-cols-1 items-center gap-8 sm:gap-12 lg:grid-cols-12 lg:gap-10")}>
         <div className="flex flex-col items-start lg:col-span-7">
           <a
             href="#facture-electronique"
-            className="lp-fade-up group flex max-w-full flex-col items-start gap-2.5 text-[13.5px] leading-[1.35] text-q-text-2 sm:flex-row sm:items-center sm:rounded-full sm:border sm:border-q-line sm:bg-q-surface sm:py-[5px] sm:pl-[5px] sm:pr-3.5 sm:shadow-[0_1px_2px_rgba(10,17,34,.04)] sm:transition-[border-color,box-shadow] sm:hover:border-q-field sm:hover:shadow-[0_1px_2px_rgba(10,17,34,.05),0_8px_20px_-12px_rgba(10,17,34,.22)]"
+            className="lp-fade-up group flex max-w-full items-center gap-2 rounded-full border border-q-line bg-q-surface py-[3px] pl-[3px] pr-2.5 text-[12px] leading-[1.3] text-q-text-2 sm:gap-2.5 sm:py-[5px] sm:pl-[5px] sm:pr-3.5 sm:text-[13.5px] sm:shadow-[0_1px_2px_rgba(10,17,34,.04)] sm:transition-[border-color,box-shadow] sm:hover:border-q-field sm:hover:shadow-[0_1px_2px_rgba(10,17,34,.05),0_8px_20px_-12px_rgba(10,17,34,.22)]"
           >
-            <span className="shrink-0 whitespace-nowrap rounded-full bg-[#0A1122] px-2.5 py-1 text-[12px] font-semibold tracking-[.01em] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.14)]">
+            <span className="shrink-0 whitespace-nowrap rounded-full bg-[#0A1122] px-2 py-0.5 text-[11px] sm:px-2.5 sm:py-1 sm:text-[12px] font-semibold tracking-[.01em] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.14)]">
               Nouveau
             </span>
-            <span>Qonforme est solution compatible facturation électronique</span>
+            <span className="sm:hidden">Solution compatible facturation électronique</span>
+            <span className="hidden sm:inline">Qonforme est solution compatible facturation électronique</span>
             <ChevronRight className="hidden h-3.5 w-3.5 shrink-0 text-q-text-4 transition-transform group-hover:translate-x-0.5 sm:block" strokeWidth={2} aria-hidden />
           </a>
 
           <h1
             id="hero-title"
-            className="lp-fade-up mt-7 font-display text-[clamp(38px,4.6vw,62px)] font-semibold leading-[1.04] tracking-[-0.04em] text-q-ink-strong [text-wrap:balance]"
+            className="lp-fade-up mt-5 font-display text-[clamp(31px,8.6vw,38px)] sm:mt-7 sm:text-[clamp(38px,4.6vw,62px)] font-semibold leading-[1.04] tracking-[-0.04em] text-q-ink-strong [text-wrap:balance]"
             style={{ animationDelay: ".08s" }}
           >
             Le logiciel des artisans du bâtiment{" "}
@@ -92,17 +93,17 @@ export function HomeHero() {
             <span className="q-serif sm:block">pour vos devis et factures.</span>
           </h1>
 
-          <div className="lp-fade-up mt-8" style={{ animationDelay: ".16s" }}>
-            <CheckList items={PROMISES} />
+          <div className="lp-fade-up mt-4 sm:mt-8" style={{ animationDelay: ".16s" }}>
+            <CheckList items={PROMISES} className="gap-1.5 sm:gap-3" />
           </div>
 
-          <div className="lp-fade-up mt-9 w-full" style={{ animationDelay: ".24s" }}>
+          <div className="lp-fade-up mt-5 w-full max-sm:[&_.lp-btn-s]:hidden sm:mt-9" style={{ animationDelay: ".24s" }}>
             <CtaButtons align="start" primary={{ href: SIGNUP_HREF, label: "Essayer gratuitement" }} />
           </div>
 
           {/* Label de la DGFiP : règles de la charte dans components/brand/SolutionCompatible.tsx */}
           <div
-            className="lp-fade-up mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5"
+            className="lp-fade-up mt-5 flex flex-col items-start gap-3 sm:mt-8 sm:flex-row sm:items-center sm:gap-5"
             style={{ animationDelay: ".32s" }}
           >
             <SolutionCompatible priority />

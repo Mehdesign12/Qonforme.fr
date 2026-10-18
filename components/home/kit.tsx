@@ -43,12 +43,12 @@ export function CheckList({
         <li
           key={i}
           className={cn(
-            "flex gap-3 text-[16px] leading-[1.55] sm:text-[17px]",
+            "flex gap-3 text-[15px] leading-[1.45] sm:text-[17px] sm:leading-[1.55]",
             tone === "dark" ? "text-[#D5DBE5]" : "text-q-text-2",
           )}
         >
           <Check
-            className={cn("mt-[5px] h-[17px] w-[17px] shrink-0", tone === "dark" ? "text-[#9DBBFF]" : "text-q-accent")}
+            className={cn("mt-[4px] h-[17px] w-[17px] sm:mt-[5px] shrink-0", tone === "dark" ? "text-[#9DBBFF]" : "text-q-accent")}
             strokeWidth={2.25}
             aria-hidden
           />
