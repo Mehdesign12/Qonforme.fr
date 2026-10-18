@@ -134,7 +134,7 @@ Environ 55 % du chiffre d'affaires des entreprises de 10 salariés ou moins vien
 
 ### 4.3 Vidéo courte et communautés (gratuit, demande de la régularité)
 
-- **Vidéos de 30 à 45 secondes** : captures de la démo avec voix off, une idée par vidéo (scripts en annexe C). Diffusion : YouTube Shorts, TikTok, Instagram Reels, Facebook. Une vidéo par semaine, quatre en stock avant de commencer.
+- **Vidéos** : **orientation du 18/10/2026 au § 8** (YouTube en socle, vidéos sans visage en motion graphic, titres en deux couches). Les scripts de l'annexe C restent la matière première.
 - **Communautés** : groupes d'artisans et d'auto-entrepreneurs, forums du bâtiment. **Répondre aux vraies questions** (TVA des travaux, mentions d'un devis, relance d'un impayé), en disant d'où l'on parle, sans lien dans chaque message, en respectant le règlement du groupe. Annexe D.
 - **Créateurs de contenu pour artisans** : leur offrir un compte, jamais d'avis écrit à leur place ni de faux témoignage (règle « aucun faux avis »).
 
@@ -212,10 +212,58 @@ Les étapes 3 à 7 se lisent dans la base (`companies`, `quotes`, `invoices`, `s
 1. **Premier message à un prescripteur.** « Aucun démarchage » vise les artisans. Autorisez-vous **un seul message de présentation** à une institution ou une entreprise qui prescrit (BGE, chambre de métiers, courtier, plateforme de formalités), sans relance au-delà d'un rappel ? Sinon, seule la voie entrante reste : formulaires de partenariat des prescripteurs, salons, publications. Elle est plus lente.
 2. **Rémunération des prescripteurs.** 30 € par abonné (recommandé), ou compte gratuit seulement. À faire relire par un juriste, en particulier pour les experts-comptables.
 3. **Parrainage artisan à artisan.** Un mois offert de chaque côté, oui ou non.
-4. **Qui est à l'image dans les vidéos ?** Vous, une voix off sur des captures de la démo (recommandé pour démarrer, aucune contrainte), ou un créateur.
+4. ~~Qui est à l'image dans les vidéos ?~~ **Tranchée le 18/10/2026 : personne.** Vidéos sans visage, en motion graphic (§ 8). Reste ouvert : **la voix** (la vôtre, ou une voix de synthèse dont le rendu est à juger sur l'essai).
 5. **Budget et temps par semaine.** Zéro euro est tenable pour les canaux 1 à 4. Un test Meta de 300 € est la seule dépense proposée. Combien d'heures par semaine pour les partenaires et les vidéos ?
 6. **Les vrais chiffres.** Donner à la session un accès en lecture au tableau de bord Stripe, aux comptes Supabase de production ou à GA4, ou coller ici : inscriptions par mois, abonnés, revenu mensuel, principales sources de trafic. C'est ce qui permet de remplacer les hypothèses de ce plan.
 7. **La preuve du label** « Solution compatible » (plateforme raccordée, date, fonctions couvertes), à noter au § 13 de `DECISIONS-STRATEGIQUES.md`. Le logotype est un argument fort, mais il peut être contrôlé et retiré.
+
+---
+
+## 8. Réseaux sociaux : orientation du 18/10/2026
+
+> Discutée avec le fondateur le 18/10/2026 ; **à reprendre plus tard** (le calendrier et l'essai ne sont pas lancés). Ce qui est retenu est séparé de ce qui reste ouvert.
+
+### Retenu
+
+| Réseau | Rôle | Contenu |
+|---|---|---|
+| **YouTube** | Socle : les artisans y cherchent la réponse au moment de rédiger leur devis, et une vidéo reste utile des années | Un tuto long toutes les deux semaines, plus 2 ou 3 extraits verticaux de 30 à 45 secondes (Shorts) |
+| **Facebook** | Relais et groupes | Les mêmes vidéos (longues et Reels) ; partage des **guides, modèles et exemples chiffrés** plutôt que des articles du blog dont la qualité n'est pas vérifiée ; réponses utiles dans les groupes d'artisans (annexe D) |
+| **LinkedIn** | **Présence minimale** : les artisans n'y sont presque pas et les comptables ne s'inscrivent pas, ils recommandent | Page entreprise (pas de profil du fondateur : « fondateur visible » abandonné, DECISIONS § 9) qui reprend les meilleures vidéos, environ un quart d'heure par semaine. Pas d'articles soignés. À revoir si les prescripteurs (§ 4.1) deviennent un vrai chantier |
+
+Instagram reçoit les mêmes Reels par publication croisée, sans priorité. TikTok : plus tard, si une vidéo décolle.
+
+### Les vidéos
+
+- **Sans visage, en motion graphic**, construites en code (scènes recomposables en 16:9 et en 9:16, pas de recadrage). Le contenu est administratif (devis, TVA, mentions, relances), donc il ne demande ni filmer un chantier ni un savoir-faire technique ; **jamais de sujet technique de chantier**.
+- **Chaque script part d'un guide vérifié** du site (`lib/pseo/guides.ts`, page de relance, exemples chiffrés), avec la **source et la date de vérification affichées à l'écran**. Une erreur sur la TVA coûterait plus cher qu'une vidéo ratée.
+- **Jamais de comparatif de logiciels** (« meilleur logiciel de devis ») : il pousse à nommer un concurrent, ce qui est interdit.
+- **Style de marque** : fond blanc, titres en deux voix, icônes au trait fin, ni dégradé ni halo.
+- **Sur le site** : toute vidéo s'intègre par une **image cliquable**, jamais par l'iframe YouTube directe (elle déposerait des cookies sans accord, et ralentirait la page sur mobile).
+
+### Titres : deux couches
+
+La **miniature** porte l'accroche (3 à 4 mots), le **titre** porte le mot-clé et une promesse. Pas de chiffre inventé, pas de peur (« pas de marketing de la peur »), aucun concurrent.
+
+| Accroche (miniature) | Titre | Base |
+|---|---|---|
+| « PLUS D'ATTESTATION » | Fini l'attestation de TVA à faire signer : ce qu'il faut écrire à la place sur votre devis | guide TVA travaux (140 recherches par mois) |
+| « 10 % OU 20 % ? » | TVA sur vos travaux : la règle en 2 minutes, avec des exemples | guide TVA travaux |
+| « À COPIER » | Exemple de devis d'électricien : remplacement de tableau, chiffré ligne par ligne | exemple chiffré (390 recherches par mois) |
+| « SANS TVA » | Devis d'auto-entrepreneur sans TVA : la mention exacte et un exemple | 480 recherches par mois |
+| « IL NE PAIE PAS » | Client qui ne paie pas : 3 mails à copier et la lettre de mise en demeure | page de relance |
+| « 15 € PAR OUBLI » | Facture d'artisan : les mentions qui peuvent coûter 15 € chacune | guide facture ; exact mais proche du ton de peur : à doser, en dernier |
+
+Le fondateur a trouvé ces titres meilleurs que « Attestation de TVA à 10 % : elle n'existe plus » (trop descriptif, ne fait pas cliquer). **Vidéo d'essai proposée : la première ligne** (choix à confirmer).
+
+### À reprendre
+
+1. Choisir la vidéo d'essai, puis la construire (une seule, en 16:9 et 9:16) et juger la qualité avant d'en faire d'autres.
+2. Décider de **la voix** : celle du fondateur, ou une voix de synthèse.
+3. Calendrier des quatre premières vidéos (titres, mots-clés, descriptions avec lien vers la page correspondante).
+4. **Préalable de mesure** : enregistrer la provenance à l'inscription (`?source=youtube`, `facebook`, `linkedin`), sinon on ne saura pas quelle vidéo apporte quoi. On jugera sur les **inscriptions par vidéo**, pas sur les vues.
+5. **Zernio** est relié à la session mais **aucun réseau social n'y est connecté** (un seul profil vide, relevé du 18/10/2026) : relier YouTube, Facebook et LinkedIn permettrait de lire les abonnés et les statistiques, et de programmer les publications (rien ne se publie sans accord du fondateur).
+6. Charge de travail : une seule personne ; ne pas démarrer plus vite qu'une vidéo longue toutes les deux semaines.
 
 ---
 
