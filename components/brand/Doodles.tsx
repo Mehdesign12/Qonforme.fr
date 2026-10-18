@@ -14,6 +14,13 @@ import { cn } from "@/lib/utils"
  * iOS de CLAUDE.md). Chaque cadrage n'apparaît qu'à partir de la largeur où les
  * icônes ne touchent jamais le texte ; le téléphone reste sobre.
  *
+ * Sur un fond bleu ou marine (bandeaux de l'accueil), `tone="light"` : les mêmes
+ * pictogrammes en blanc, le sujet presque plein (.9), le reste atténué (.34).
+ * Les cadrages `hero-split`, `band` et `band-split` ont été réglés de 1 100 à
+ * 2 560 px avec le contrôle de chevauchement du 18/10/2026 (texte, boutons,
+ * label, arche de la photo : jamais touchés) ; tout nouveau cadrage se règle de
+ * la même façon, dans le navigateur, à la largeur du seuil.
+ *
  * À placer comme premier enfant d'un bloc `relative`. Les cadrages « colonne »
  * se calent sur la colonne de 1 200 px du contenu (gouttières de 24 px), les
  * cadrages « bloc » sur le bloc lui-même.
@@ -46,7 +53,7 @@ const COLUMN = "inset-x-6 mx-auto max-w-[1200px]"
 const FROM = { 1100: "min-[1100px]:block", 1180: "min-[1180px]:block", 1280: "min-[1280px]:block" } as const
 
 export type DoodleLayout =
-  | "right" | "right-short" | "sides" | "sides-short" | "hero" | "frame"
+  | "right" | "right-short" | "sides" | "sides-short" | "hero" | "hero-split" | "frame" | "band" | "band-split"
   | "page" | "page-right" | "article" | "auth" | "auth-column"
 
 const LAYOUTS: Record<DoodleLayout, Layout> = {
@@ -104,6 +111,59 @@ const LAYOUTS: Record<DoodleLayout, Layout> = {
       { top: 136, right: -8, size: 124, rotate: 10 },
       { top: 316, right: 76, size: 104, rotate: -14, accent: true },
       { top: 476, right: 8, size: 84, rotate: 0 },
+    ],
+  },
+  /**
+   * Héros de l'accueil en deux colonnes (texte à gauche, photo en arche à droite),
+   * sur un fond blanc : dans les vides du héros. Au-dessus de la photo (gauche et
+   * coin droit), à droite des deux premières lignes du titre, dans la gouttière
+   * entre les coches et la photo, puis sous la photo (le bas se cale sur le bas
+   * du héros). Mesuré de 1 100 à 1 920 px : aucune icône ne touche le texte, les
+   * boutons, le label ni l'arche (liseré compris).
+   */
+  "hero-split": {
+    show: "min-[1100px]:block",
+    frame: cn(COLUMN, "inset-y-0"),
+    slots: [
+      { top: 92, right: 440, size: 76, rotate: -10 },
+      { top: 90, right: 0, size: 84, rotate: 8, accent: true },
+      { top: 700, left: 560, size: 52, rotate: 12 },
+      { top: 430, left: 480, size: 88, rotate: -8, accent: true },
+      { top: 560, left: 548, size: 48, rotate: 10 },
+      { bottom: 24, right: 100, size: 64, rotate: -12 },
+      { bottom: 30, right: 230, size: 52, rotate: 10 },
+      { top: 98, left: 540, size: 54, rotate: 10, wide: true },
+    ],
+  },
+  /**
+   * Bandeau plein écran à texte centré et peu haut (le bandeau bleu « aussi
+   * simple ») : dans les marges de chaque côté, en haut, jamais sur les coches.
+   * À poser en ton clair (`tone="light"`).
+   */
+  band: {
+    show: "min-[1100px]:block",
+    frame: cn(COLUMN, "inset-y-0"),
+    slots: [
+      { top: 28, left: 0, size: 64, rotate: -8, accent: true },
+      { top: 120, left: 20, size: 44, rotate: 10 },
+      { top: 24, right: 8, size: 56, rotate: 10 },
+      { top: 112, right: 28, size: 48, rotate: -12, accent: true },
+    ],
+  },
+  /**
+   * Bandeau à deux colonnes (la carte du devis à gauche, le texte à droite) :
+   * dans les coins du haut, dans la gouttière entre les deux colonnes et, dès
+   * 1 280 px, sous le bouton. En ton clair.
+   */
+  "band-split": {
+    show: "min-[1100px]:block",
+    frame: cn(COLUMN, "inset-y-0"),
+    slots: [
+      { top: 10, left: 0, size: 52, rotate: -10, accent: true },
+      { top: 14, right: 0, size: 52, rotate: 10 },
+      { top: 190, left: 480, size: 56, rotate: 8 },
+      { bottom: 190, left: 470, size: 48, rotate: -10, accent: true },
+      { bottom: 20, right: 120, size: 56, rotate: -8, wide: true },
     ],
   },
   /** Texte centré entouré de grandes marges verticales : icônes dans le vide du haut et du bas (haut-gauche, bas-gauche, haut-droite, bas-droite). */
@@ -216,6 +276,7 @@ export function Doodles({
   accent,
   soft,
   from,
+  tone = "default",
   className,
 }: {
   layout: DoodleLayout
@@ -226,6 +287,8 @@ export function Doodles({
   soft?: readonly Picto[]
   /** Seuil d'affichage, à la place de celui du cadrage (contenu plus large que prévu). */
   from?: keyof typeof FROM
+  /** `light` : sur un fond bleu ou marine, en blanc (le sujet plein, le reste atténué). */
+  tone?: "default" | "light"
   className?: string
 }) {
   const { frame, slots } = LAYOUTS[layout]
@@ -240,8 +303,11 @@ export function Doodles({
           <span
             key={i}
             className={cn(
-              "absolute block text-q-accent",
-              !slot.accent && "opacity-[.42]",
+              "absolute block",
+              tone === "light" ? "text-white" : "text-q-accent",
+              // Ton clair : un peu plus atténué que le bleu pâle, pour ne jamais concurrencer le titre sur le fond bleu
+              !slot.accent && (tone === "light" ? "opacity-[.34]" : "opacity-[.42]"),
+              slot.accent && tone === "light" && "opacity-[.9]",
               slot.wide && "max-[1279px]:hidden",
               // Icône déjà rendue : même trait fin, en pixels d'écran
               isValidElement(Icon) && "[&>svg]:size-full [&>svg]:[stroke-width:2.4] [&_svg_*]:[vector-effect:non-scaling-stroke]",

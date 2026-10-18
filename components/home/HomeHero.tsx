@@ -1,8 +1,10 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, BrickWall, ChevronRight, Droplets, Grid3x3, Hammer, House, PaintRoller, PlugZap } from "lucide-react"
+import { ArrowRight, Calculator, ChevronRight, Euro, FileText, Hammer, HardHat, PencilRuler, ReceiptText, Wrench } from "lucide-react"
 import { CheckList, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
+import { TradesStripLive, type TradeItem } from "@/components/home/TradesStrip"
 import { CtaButtons } from "@/components/landing/ui"
+import { Doodles } from "@/components/brand/Doodles"
 import { SolutionCompatible } from "@/components/brand/SolutionCompatible"
 import { PHOTOS } from "@/lib/landing/photos"
 import { cn } from "@/lib/utils"
@@ -66,6 +68,8 @@ function HeroPhoto() {
 export function HomeHero() {
   return (
     <section aria-labelledby="hero-title" className="relative bg-q-surface px-6 pb-[clamp(48px,6vw,80px)] pt-[112px] sm:pt-[136px]">
+      {/* Pictogrammes de marque dans les vides du héros (grand écran seulement) : ni sur le texte, ni sur la photo */}
+      <Doodles layout="hero-split" icons={[HardHat, ReceiptText, PencilRuler, FileText, Euro, Wrench, Hammer, Calculator]} />
       <div className={cn(D_WRAP, "grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10")}>
         <div className="flex flex-col items-start lg:col-span-7">
           <a
@@ -172,19 +176,20 @@ export function EInvoicingBand() {
 }
 
 /* ─────────────────────────────────────────────────────────
-   C — Rangée des métiers (à la place des logos de presse)
+   C — Rangée des métiers (à la place des logos de presse) :
+   des liens vers les pages métier ; au survol, la carte photo
+   du métier suit la souris (components/home/TradesStrip.tsx)
 ───────────────────────────────────────────────────────── */
-const TRADES = [
-  { label: "Électriciens", slug: "electricien", Icon: PlugZap },
-  { label: "Plombiers", slug: "plombier", Icon: Droplets },
-  { label: "Maçons", slug: "macon", Icon: BrickWall },
-  { label: "Peintres", slug: "peintre", Icon: PaintRoller },
-  { label: "Carreleurs", slug: "carreleur", Icon: Grid3x3 },
-  { label: "Menuisiers", slug: "menuisier", Icon: Hammer },
-  { label: "Couvreurs", slug: "couvreur", Icon: House },
-]
-
-const STAGGER = ["", "lp-d1", "lp-d2", "lp-d3"]
+const TRADES: TradeItem[] = [
+  // La photo « sansLogiciel » est celle de l'électricien (lib/landing/photos.ts), « appelFinal » celle du peintre
+  { label: "Électriciens", slug: "electricien", photo: PHOTOS.sansLogiciel, focus: "50% 12%" },
+  { label: "Plombiers", slug: "plombier", photo: PHOTOS.plombier, focus: "50% 45%" },
+  { label: "Maçons", slug: "macon", photo: PHOTOS.macon, focus: "50% 40%" },
+  { label: "Peintres", slug: "peintre", photo: PHOTOS.appelFinal, focus: "50% 28%" },
+  { label: "Carreleurs", slug: "carreleur", photo: PHOTOS.carreleur, focus: "50% 55%" },
+  { label: "Menuisiers", slug: "menuisier", photo: PHOTOS.menuisier, focus: "50% 55%" },
+  { label: "Couvreurs", slug: "couvreur", photo: PHOTOS.couvreur, focus: "50% 40%" },
+].map((t) => ({ ...t, photo: t.photo ? { src: t.photo.src, width: t.photo.width, height: t.photo.height } : null }))
 
 export function TradesStrip() {
   return (
@@ -194,19 +199,7 @@ export function TradesStrip() {
           Pensé pour les artisans du bâtiment
         </p>
         {/* Rangées incomplètes centrées : 2 par ligne sur téléphone, 4 sur tablette, 7 sur grand écran */}
-        <ul className="mt-7 flex flex-wrap justify-center gap-y-6">
-          {TRADES.map(({ label, slug, Icon }, i) => (
-            <li key={slug} data-reveal="" className={cn("flex w-1/2 justify-center sm:w-1/4 lg:w-auto lg:flex-1", STAGGER[i % STAGGER.length])}>
-              <Link
-                href={`/facturation/${slug}`}
-                className="inline-flex items-center gap-2.5 font-display text-[17px] font-semibold tracking-[-0.02em] text-q-text-4 transition-colors hover:text-q-accent-strong"
-              >
-                <Icon className="h-[22px] w-[22px] shrink-0" strokeWidth={1.75} aria-hidden />
-                {label}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <TradesStripLive items={TRADES} />
       </div>
     </section>
   )
