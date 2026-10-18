@@ -1,10 +1,9 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Calculator, ChevronRight, Euro, FileText, Hammer, HardHat, PencilRuler, ReceiptText, Wrench } from "lucide-react"
-import { CheckList, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
+import { ArrowRight, ChevronRight } from "lucide-react"
+import { CheckList, D_WRAP, GridLines, SIGNUP_HREF } from "@/components/home/kit"
 import { TradesStripLive, type TradeItem } from "@/components/home/TradesStrip"
 import { CtaButtons } from "@/components/landing/ui"
-import { Doodles } from "@/components/brand/Doodles"
 import { SolutionCompatible } from "@/components/brand/SolutionCompatible"
 import { PHOTOS } from "@/lib/landing/photos"
 import { cn } from "@/lib/utils"
@@ -68,8 +67,8 @@ function HeroPhoto() {
 export function HomeHero() {
   return (
     <section aria-labelledby="hero-title" className="relative bg-q-surface px-6 pb-[clamp(48px,6vw,80px)] pt-[112px] sm:pt-[136px]">
-      {/* Pictogrammes de marque dans les vides du héros (grand écran seulement) : ni sur le texte, ni sur la photo */}
-      <Doodles layout="hero-split" icons={[HardHat, ReceiptText, PencilRuler, FileText, Euro, Wrench, Hammer, Calculator]} />
+      {/* Fond en lignes pointillées, le même que la section « Créez vos devis » */}
+      <GridLines />
       <div className={cn(D_WRAP, "grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10")}>
         <div className="flex flex-col items-start lg:col-span-7">
           <a
