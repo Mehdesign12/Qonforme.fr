@@ -120,6 +120,7 @@
     - Fondations : jetons de couleur `--q-*` (clair et sombre) et kit `q-*` dans `app/globals.css`, composants partagés dans `components/app/kit.tsx`, Instrument Serif pour la seconde voix des titres publics, montants en DM Sans à chiffres tabulaires, références en DM Mono.
     - Application et démo sur la même coque (barre latérale blanche, barre supérieure flottante avec recherche ⌘K et menu « Nouveau », barre flottante du bas sur mobile) et sur les mêmes vues : la démo ne peut plus diverger du produit.
     - Écarts volontaires avec le canevas : aucune entrée ni aucun écran pour ce qui n'est pas livré (chantiers, réception, trésorerie, situations, retenue, autoliquidation, transmission, lien de paiement, signature en ligne, équipe) ; « Facturé » plutôt qu'« Encaissé » au tableau de bord ; « En préparation » pour la transmission.
+  - **Accueil remplacé le 17/10/2026 (décision du fondateur) :** l'accueil reprend la structure et le rythme d'une page de référence (analyse interne : `ANALYSE-LANDING-CONCURRENT-2026-10.md`), au langage de Qonforme et avec un contenu vrai (`app/page.tsx`, `components/home/`). Titre : « Le logiciel des artisans du bâtiment *pour vos devis et factures.* ». Les chiffres d'utilisateurs, les avis, les logos de presse et la signature électronique (pas encore vendue) n'y sont pas repris ; leurs places sont tenues par le label « Solution compatible », les métiers, les faits de l'offre lus dans le code, les engagements des CGU et le passage du devis à la facture. L'ancien accueil est récupérable dans l'historique git (commit `a78a9cd`). Plus de section tarifs sur l'accueil : « Tarifs » mène à `/pricing`, l'inscription étant gratuite et sans carte. Un futur test A/B reste possible : `?ab=<nom>` enregistre la variante dans `user_metadata.landing_variant` (`lib/auth/signup-input.ts`).
 
 ## 7. Questions ouvertes
 
@@ -541,11 +542,11 @@ Le fondateur déclare le 17/10/2026 que Qonforme a obtenu le label de la DGFiP. 
 
 ### Où il s'affiche
 
-Un seul composant, `components/brand/SolutionCompatible.tsx` (interrupteur `SOLUTION_COMPATIBLE`, à passer à `false` pour tout retirer d'un coup si le label est perdu) : héros, « Où en est Qonforme » (section de la réforme), tarifs, bandeau sous les engagements (`SolutionCompatibleNote`), réponse « Qonforme est-il une plateforme agréée ? » de la FAQ, appel final et pied de page (donc toutes les pages publiques).
+Un seul composant, `components/brand/SolutionCompatible.tsx` (interrupteur `SOLUTION_COMPATIBLE`, à passer à `false` pour tout retirer d'un coup si le label est perdu) : héros (`components/home/HomeHero.tsx`), bandeau « facture électronique » du même fichier, bandeau des engagements, réponse « Qonforme est-il une plateforme agréée ? » de la FAQ et appel final (`components/home/Closing.tsx`), pied de page (`components/layout/Footer.tsx`, donc toutes les pages publiques). Depuis le remplacement de l'accueil par l'ancienne variante B (18/10/2026), la carte « Où en est Qonforme », la section tarifs de l'accueil et `SolutionCompatibleNote` n'existent plus ; `/pricing` n'affiche pas le label (choix à confirmer).
 
 ### Textes changés pour rester d'accord avec le logotype
 
-Accueil : réponse de la FAQ, 3ᵉ ligne de « Où en est Qonforme ». Guide « Plateforme agréée » : « Et avec Qonforme ? ».
+Accueil : réponse de la FAQ (la 3ᵉ ligne de « Où en est Qonforme » a disparu avec l'ancien accueil). Guide « Plateforme agréée » : « Et avec Qonforme ? ».
 
 ### À revoir : textes qui disent encore « en préparation » (décision en attente)
 

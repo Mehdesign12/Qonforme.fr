@@ -5,14 +5,14 @@ import Link from "next/link"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ArrowRight, BrickWall, ChevronLeft, ChevronRight, PlugZap } from "lucide-react"
 import { Doodles } from "@/components/brand/Doodles"
-import { D_WRAP } from "@/components/design/kit"
+import { D_WRAP } from "@/components/home/kit"
 import { usePrefersReducedMotion } from "@/components/landing/carousels"
 import { SectionTitle } from "@/components/landing/ui"
 import { PHOTOS, type LandingPhoto } from "@/lib/landing/photos"
 import { cn } from "@/lib/utils"
 
 /**
- * Carrousel des métiers de la variante B de l'accueil (/design) : une carte par
+ * Carrousel des métiers de l'accueil : une carte par
  * métier du bâtiment, vers sa page « Logiciel de devis pour … ».
  *
  *  - défilement natif (scroll-snap) : au doigt, au pavé tactile, au clavier

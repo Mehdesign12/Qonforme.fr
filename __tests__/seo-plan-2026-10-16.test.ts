@@ -145,7 +145,7 @@ describe("layout racine et démo", () => {
   })
 
   it("accueil et blog parlent des artisans du bâtiment", () => {
-    expect(lire("components/landing/LandingHero.tsx")).toContain("La facturation des artisans du bâtiment,")
+    expect(lire("components/home/HomeHero.tsx")).toContain("Le logiciel des artisans du bâtiment")
     const blog = lire("app/blog/page.tsx")
     expect(blog).toContain('title: "Blog : devis, factures et TVA pour artisans du bâtiment"')
     expect(blog).not.toMatch(/artisans et TPE/)

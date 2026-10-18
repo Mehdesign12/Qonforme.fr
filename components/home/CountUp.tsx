@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { usePrefersReducedMotion } from "@/components/landing/carousels"
 
 /**
- * Nombre qui se compte quand il entre à l'écran (variante B de l'accueil, /design),
+ * Nombre qui se compte quand il entre à l'écran (accueil),
  * à la descente comme à la remontée, comme les apparitions de ScrollReveal.
  *
  * Sûr par défaut : le rendu du serveur, l'absence de JavaScript et « Réduire les

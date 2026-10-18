@@ -1,17 +1,17 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, BrickWall, ChevronRight, Droplets, Grid3x3, Hammer, House, PaintRoller, PlugZap } from "lucide-react"
-import { CheckList, D_WRAP, SIGNUP_HREF } from "@/components/design/kit"
+import { CheckList, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
 import { CtaButtons } from "@/components/landing/ui"
 import { SolutionCompatible } from "@/components/brand/SolutionCompatible"
 import { PHOTOS } from "@/lib/landing/photos"
 import { cn } from "@/lib/utils"
 
 /**
- * Haut de la variante B de l'accueil (/design) : héros en deux colonnes, bandeau
- * de la facture électronique, rangée des métiers. Sur le modèle du concurrent :
- * la note Google devient le label « Solution compatible » (DGFiP), les logos de
- * presse deviennent les métiers du bâtiment.
+ * Haut de l'accueil : héros en deux colonnes, bandeau de la facture
+ * électronique, rangée des métiers. Le label « Solution compatible » (DGFiP)
+ * tient la place d'une note d'avis, les métiers du bâtiment celle de logos de
+ * presse : aucun avis, aucune note, aucun logo qui ne soit vrai.
  *
  * Règles (CLAUDE.md) : contenu vrai seulement ; RIEN posé sur la photo (aucun
  * élément flottant, décision du fondateur) ; icônes au trait, sans tuile ni
@@ -63,7 +63,7 @@ function HeroPhoto() {
   )
 }
 
-export function DesignHero() {
+export function HomeHero() {
   return (
     <section aria-labelledby="hero-title" className="relative bg-q-surface px-6 pb-[clamp(48px,6vw,80px)] pt-[112px] sm:pt-[136px]">
       <div className={cn(D_WRAP, "grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10")}>

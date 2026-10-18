@@ -1,9 +1,9 @@
-import { FeatureBlock, ScreenPair, SIGNUP_HREF } from "@/components/design/kit"
+import { FeatureBlock, ScreenPair, SIGNUP_HREF } from "@/components/home/kit"
 import { SCREENS, type ScreenProps } from "@/components/landing/devices"
 import { PLANS } from "@/lib/stripe/plans"
 
 /**
- * Blocs de fonctions de la variante B de l'accueil (/design) : texte, coches et
+ * Blocs de fonctions de l'accueil : texte, coches et
  * bouton d'un côté, vraie capture d'ordinateur avec son téléphone de l'autre
  * (pages de démo, données d'exemple), en alternance.
  *

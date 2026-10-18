@@ -22,7 +22,7 @@ export const revalidate = 3600
  * façon significative.
  */
 const MAJ: Record<string, string> = {
-  "/": "2026-10-16",
+  "/": "2026-10-17",
   "/pricing": "2026-10-02",
   "/demo": "2026-10-04",
   "/signup": "2026-10-06",
