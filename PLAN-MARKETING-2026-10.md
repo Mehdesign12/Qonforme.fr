@@ -32,7 +32,7 @@
 
 ### Ce que le code mesure aujourd'hui
 
-- **Pixel Meta seulement** : `Lead` (compte créé), `CompleteRegistration` (entreprise renseignée), `InitiateCheckout` (mur de paiement ou tarifs), `Purchase`, `Schedule` (générateur gratuit). Pas de « premier devis envoyé », pas de « première facture ».
+- **Pixel Meta seulement** : `Lead` (compte créé), `CompleteRegistration` (entreprise renseignée), `InitiateCheckout` (mur de paiement ou tarifs), `Purchase`, `Schedule` (générateur gratuit). Pas de « premier devis envoyé », pas de « première facture ». **Depuis le 18/10/2026 le pixel ne se charge qu'après l'accord du visiteur** (bandeau de cookies) : Meta Events Manager ne compte plus que les visiteurs qui acceptent, donc un minimum. Il envoyait avant sans bandeau, ce que la politique de confidentialité démentait.
 - **Provenance** : l'inscription ne garde que `?ab=` (`landing_variant`). Le `?source=email-facture`, `pdf-devis`… des liens « Propulsé par Qonforme » (`lib/utils/powered-by.ts`) n'est **pas enregistré sur le compte**. La boucle de bouche-à-oreille construite le 10/10 n'est donc pas mesurable au niveau du compte.
 - **Aucun programme de prescripteurs ni de parrainage** dans le code : ni lien dédié, ni suivi, ni versement.
 
@@ -152,7 +152,7 @@ Environ 55 % du chiffre d'affaires des entreprises de 10 salariés ou moins vien
 
 - **Google Ads « logiciel devis … » : non** (§ 2).
 - **Meta Ads (facebook, instagram) : un test borné à 300 €**, une fois les événements de la semaine 1 en place et au moins 100 inscrits pour calibrer le taux de passage. Cible : métiers du bâtiment, créateurs d'entreprise. Message : la phrase pivot. Critère d'arrêt : plus de 5 € par inscrit après 300 €.
-- **Reciblage** des visiteurs des outils gratuits et du générateur de devis (le pixel est déjà là) : le seul usage payant qui a une chance de rester sous le plafond.
+- **Reciblage** des visiteurs des outils gratuits et du générateur de devis (le pixel est déjà là, mais seuls les visiteurs qui ont accepté les cookies entrent dans l'audience, donc elle sera plus petite) : le seul usage payant qui a une chance de rester sous le plafond.
 
 ### Répartition visée en avril 2027 *(hypothèse)*
 

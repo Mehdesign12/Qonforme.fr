@@ -7,6 +7,7 @@ import { Share, SquarePlus, X, Download } from 'lucide-react'
 import { usePlatform } from '@/lib/pwa/hooks'
 import { isInstallPromptSnoozed, snoozeInstallPrompt } from '@/lib/pwa/client'
 import { cn } from '@/lib/utils'
+import { ROUTES_WITH_BOTTOM_NAV } from '@/lib/bottom-nav-routes'
 
 /**
  * Événement Chromium — absent des types DOM standard car non normalisé.
@@ -16,19 +17,6 @@ type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
-
-/** Sections dont le layout affiche une barre de navigation basse sur mobile. */
-const ROUTES_WITH_BOTTOM_NAV = [
-  '/dashboard',
-  '/invoices',
-  '/quotes',
-  '/clients',
-  '/products',
-  '/purchase-orders',
-  '/credit-notes',
-  '/settings',
-  '/demo',
-]
 
 /** Délai avant affichage — laisse la page se stabiliser avant d'interrompre. */
 const APPEARANCE_DELAY_MS = 4000
