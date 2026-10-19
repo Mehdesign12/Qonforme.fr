@@ -19,7 +19,7 @@ describe("lien « Propulsé par Qonforme »", () => {
   it("emails : « Qonforme » est un lien avec la provenance du modèle", () => {
     const html = emailBase({ companyName: "Garnier", preheader: "x", body: "<p>x</p>", source: "email-devis" })
     expect(html).toContain('href="https://qonforme.fr/?source=email-devis"')
-    expect(html.match(/source=email-devis/g)).toHaveLength(2)
+    expect(html.match(/source=email-devis/g)).toHaveLength(1)
   })
 
   it("PDF : annotation de lien vers le site, imprimable (PDF/A)", async () => {

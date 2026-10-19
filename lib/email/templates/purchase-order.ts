@@ -1,4 +1,4 @@
-import { emailBase, fmtEur, fmtDate, amountBlock, ctaButton } from "./base"
+import { emailBase, fmtEur, fmtDate, amountBlock, ctaButton, notesBlock } from "./base"
 
 interface PurchaseOrderEmailData {
   poNumber:      string
@@ -21,60 +21,31 @@ export function buildPurchaseOrderEmail(d: PurchaseOrderEmailData): { subject: s
   const subject = `Bon de commande ${d.poNumber} — ${d.companyName}`
 
   const body = `
-    <p style="margin:0 0 6px;font-size:15px;color:#475569;">Bonjour,</p>
-    <p style="margin:0 0 24px;font-size:15px;color:#1E293B;line-height:1.6;">
-      Veuillez trouver ci-joint le bon de commande <strong>${d.poNumber}</strong>
+    <p style="margin:0 0 8px;font-size:15.5px;color:#2B2E35;line-height:1.7;">Bonjour,</p>
+    <p style="margin:0;font-size:15.5px;color:#2B2E35;line-height:1.7;">
+      Voici le bon de commande <strong>${d.poNumber}</strong>
       émis le <strong>${fmtDate(d.issueDate)}</strong>.
       ${d.deliveryDate ? `Livraison souhaitée le <strong>${fmtDate(d.deliveryDate)}</strong>.` : ""}
+      ${d.reference ? `Votre référence : <strong>${d.reference}</strong>.` : ""}
     </p>
 
-    <!-- Bloc infos BdC -->
-    <table width="100%" cellpadding="0" cellspacing="0"
-           style="border:1px solid #E2E8F0;border-radius:10px;overflow:hidden;margin-bottom:4px;">
-      <tr style="background-color:#F8FAFC;">
-        <td colspan="2" style="padding:14px 20px;font-size:12px;font-weight:600;color:#94A3B8;letter-spacing:0.8px;text-transform:uppercase;">
-          Détail du bon de commande
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:10px 20px;font-size:13px;color:#64748B;border-top:1px solid #F1F5F9;">Numéro</td>
-        <td style="padding:10px 20px;font-size:13px;color:#1E293B;font-weight:600;text-align:right;border-top:1px solid #F1F5F9;">${d.poNumber}</td>
-      </tr>
-      <tr style="background-color:#FAFAFA;">
-        <td style="padding:10px 20px;font-size:13px;color:#64748B;">Date d'émission</td>
-        <td style="padding:10px 20px;font-size:13px;color:#1E293B;text-align:right;">${fmtDate(d.issueDate)}</td>
-      </tr>
-      ${d.deliveryDate ? `
-      <tr>
-        <td style="padding:10px 20px;font-size:13px;color:#64748B;border-top:1px solid #F1F5F9;">Livraison souhaitée</td>
-        <td style="padding:10px 20px;font-size:13px;color:#1E293B;font-weight:500;text-align:right;border-top:1px solid #F1F5F9;">${fmtDate(d.deliveryDate)}</td>
-      </tr>` : ""}
-      ${d.reference ? `
-      <tr style="background-color:#FAFAFA;">
-        <td style="padding:10px 20px;font-size:13px;color:#64748B;">Référence client</td>
-        <td style="padding:10px 20px;font-size:13px;color:#1E293B;text-align:right;font-family:monospace;">${d.reference}</td>
-      </tr>` : ""}
-    </table>
+    
 
     ${amountBlock(d.subtotalHt, d.totalVat, d.totalTtc, d.accentColor)}
 
-    ${d.notes ? `
-    <div style="margin-top:20px;padding:16px 20px;background-color:#EEF2FF;border:1px solid #C7D2FE;border-radius:8px;">
-      <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#3730A3;text-transform:uppercase;letter-spacing:0.6px;">Notes / Conditions</p>
-      <p style="margin:0;font-size:13px;color:#3730A3;line-height:1.5;">${d.notes}</p>
-    </div>` : ""}
+    ${d.notes ? notesBlock(d.notes) : ""}
 
     ${d.link ? ctaButton(d.link.mode === "sign" ? "Consulter et signer" : "Consulter en ligne", d.link.url.replace(/"/g, "&quot;"), d.accentColor) : ""}
 
-    <p style="margin:28px 0 0;font-size:13px;color:#64748B;line-height:1.6;">
+    <p style="margin:30px 0 0;font-size:12.5px;color:#4F5257;line-height:1.55;">
       ${d.link?.mode === "sign"
         ? "Le bon de commande est joint à cet email en format PDF. Vous pouvez aussi le lire en entier et le signer en ligne pour confirmer la commande : ce lien vous est personnel."
         : "Le bon de commande est joint à cet email en format PDF. Pour confirmer la commande ou nous contacter, répondez simplement à cet email."}
     </p>
 
-    <p style="margin:20px 0 0;font-size:14px;color:#475569;">
+    <p style="margin:30px 0 0;font-size:14.5px;color:#2B2E35;line-height:1.65;">
       Cordialement,<br/>
-      <strong style="color:#1E293B;">${d.companyName}</strong>
+      <strong style="color:#15171C;">${d.companyName}</strong>
     </p>
   `
 
@@ -85,6 +56,9 @@ export function buildPurchaseOrderEmail(d: PurchaseOrderEmailData): { subject: s
       accentColor: d.accentColor,
       companyName: d.companyName,
       preheader:   `Bon de commande ${d.poNumber} — ${fmtEur(d.totalTtc)} TTC`,
+      reference:   `N° ${d.poNumber}`,
+      headline:    "Votre bon de commande,",
+      headlineAccent: d.link?.mode === "sign" ? "à confirmer en ligne." : "joint à cet email.",
       body,
     }),
   }
