@@ -60,19 +60,19 @@ function ResumeTile({ inscription, mode }: { inscription: DashInscription; mode:
       <span className="text-[15px] leading-normal text-[var(--q-text-3)]">
         {inscription.draft ? "Vos saisies sont gardées : reprenez où vous en étiez." : RESUME_TEXT[inscription.step]}
       </span>
-      <span className="mt-1.5 flex items-center gap-2.5">
+      <span className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
         <span className="flex gap-1" aria-hidden>
           {Array.from({ length: inscription.total }, (_, i) => (
             <span
               key={i}
-              className={cn("h-1 w-[22px] rounded-full", i < done ? "bg-[var(--q-accent)]" : "bg-[var(--q-line)]")}
+              className={cn("h-1 w-4 rounded-full", i < done ? "bg-[var(--q-accent)]" : "bg-[var(--q-line)]")}
             />
           ))}
         </span>
         <span className="whitespace-nowrap text-[13px] text-[var(--q-text-4)]">
           Étape {inscription.number} sur {inscription.total}
         </span>
-        <span className="ml-auto whitespace-nowrap text-[14px] font-semibold text-[var(--q-accent-strong)]">
+        <span className="ml-auto shrink-0 whitespace-nowrap text-[14px] font-semibold text-[var(--q-accent-strong)]">
           Reprendre <span aria-hidden>→</span>
         </span>
       </span>

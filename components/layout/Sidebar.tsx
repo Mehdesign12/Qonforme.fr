@@ -17,7 +17,7 @@ import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import {
-  Plus, Ellipsis, ChevronRight, ShieldCheck, Sparkles, Bug, MessageSquare,
+  Plus, Ellipsis, ChevronRight, ShieldCheck, Bug, MessageSquare,
   LogOut, House, CreditCard, Building2, FileCog, FlaskConical, ArrowRight, Search,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -119,13 +119,7 @@ function StatusCard({ identity }: { identity: ShellIdentity }) {
   if (!identity.planName) {
     return (
       <Link href="/settings/billing" className="block rounded-xl border border-[var(--q-wash-line)] bg-[var(--q-wash)] p-3 text-[var(--q-ink)]">
-        <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--q-accent-strong)]">
-          <Sparkles className="size-4" aria-hidden />
-          Version gratuite
-        </span>
-        <span className="mt-1 block text-xs leading-relaxed text-[var(--q-text-3)]">
-          Devis, clients et brouillons illimités. L&apos;envoi des factures demande la formule Essentiel.
-        </span>
+        <span className="block text-[13px] font-semibold text-[var(--q-accent-strong)]">Version gratuite</span>
         <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--q-accent-strong)]">
           Voir les formules <ArrowRight className="size-3.5" aria-hidden />
         </span>
