@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 import { AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
 import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
 import { cn } from "@/lib/utils"
+import { PictoCluster } from "@/components/brand/PictoCluster"
 
 type Status = "verifying" | "idle" | "loading" | "success" | "invalid"
 
@@ -164,9 +165,7 @@ export default function ResetPasswordForm() {
   if (status === "invalid") {
     return (
       <div className="flex flex-col">
-        <span className="mb-[22px] grid h-14 w-14 place-items-center rounded-2xl bg-q-danger-bg text-q-danger">
-          <Link2Off className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-        </span>
+        <PictoCluster icon={<Link2Off />} tone="danger" className="mb-[22px] -ml-1" />
         <AuthTitle>Ce lien n’est plus <Serif>valable</Serif>.</AuthTitle>
         <AuthLead>
           Les liens de réinitialisation expirent au bout d’une heure et ne servent qu’une fois.
@@ -182,9 +181,7 @@ export default function ResetPasswordForm() {
   if (status === "success") {
     return (
       <div className="flex flex-col">
-        <span className="mb-[22px] grid h-14 w-14 place-items-center rounded-2xl bg-q-ok-bg text-q-ok">
-          <CircleCheck className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-        </span>
+        <PictoCluster icon={<CircleCheck />} tone="ok" className="mb-[22px] -ml-1" />
         <AuthTitle>Mot de passe <Serif>modifié</Serif>.</AuthTitle>
         <AuthLead>Votre nouveau mot de passe est enregistré. Vous pouvez vous connecter.</AuthLead>
         <AuthSubmit type="button" className="mt-8" onClick={() => router.push("/login")}>

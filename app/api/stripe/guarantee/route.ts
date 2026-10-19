@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getStripe, modeOfSubscription } from '@/lib/stripe/mode'
 import { getSubscriptionByUserId, updateSubscriptionStatus } from '@/lib/stripe/subscription'
 import { applyGuarantee, GuaranteeError } from '@/lib/stripe/guarantee'
 
@@ -19,7 +20,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Aucun paiement à rembourser.' }, { status: 404 })
     }
 
-    const { refunded, canceledSubscriptionIds } = await applyGuarantee(sub.stripe_customer_id)
+    const { refunded, canceledSubscriptionIds } = await applyGuarantee(getStripe(modeOfSubscription(sub)), sub.stripe_customer_id)
 
     // Le webhook customer.subscription.deleted fera de même ; on n'attend pas
     // pour que la page Abonnement affiche tout de suite la version gratuite.

@@ -58,7 +58,7 @@ export function DepositCard({ deposit, companyName, consumer }: { deposit: Publi
   if (deposit.timing === "later" || !deposit.account) {
     return (
       <section aria-labelledby="acompte-titre" className="q-card flex items-start gap-3.5 p-5">
-        <span className="grid size-11 shrink-0 place-items-center rounded-[14px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+        <span className="grid size-11 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
           <CalendarClock className="size-5" aria-hidden />
         </span>
         <div className="flex min-w-0 flex-col gap-1">

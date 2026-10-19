@@ -1,7 +1,9 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, ChevronDown, ChevronRight, Monitor, ShieldCheck } from "lucide-react"
+import { ArrowRight, ChevronDown, ChevronRight, Monitor } from "lucide-react"
 import PublicHeaderWrapper from "@/components/layout/PublicHeaderWrapper"
+import { Doodles } from "@/components/brand/Doodles"
+import { pictosFor } from "@/components/brand/pictos"
 import Footer from "@/components/layout/Footer"
 import { PHOTOS } from "@/lib/landing/photos"
 import { cn } from "@/lib/utils"
@@ -15,6 +17,9 @@ import { fr } from "./text"
  *
  * Couleurs par jetons --q-* (thème sombre compris). Aucun backdrop-filter,
  * aucun will-change, aucune animation infinie (règles iOS de CLAUDE.md).
+ * Titres de section, cartes, questions et appels à l'action apparaissent au
+ * défilement, dans les deux sens (data-reveal, components/motion/ScrollReveal.tsx) ;
+ * le texte courant ne bouge jamais.
  */
 
 /** Largeur des pages de contenu : celle de l'en-tête public flottant. */
@@ -128,6 +133,7 @@ export function ContentHero({
   size = "lg",
   children,
   media,
+  topic,
   className,
 }: {
   crumbs?: Crumb[]
@@ -143,9 +149,18 @@ export function ContentHero({
   children?: React.ReactNode
   /** Visuel à droite sur grand écran, sous le texte sur mobile (photo de métier). */
   media?: React.ReactNode
+  /**
+   * Sujet de la page pour choisir ses pictogrammes de marque (même règle que les
+   * couvertures d'articles) ; par défaut, le titre et sa seconde voix.
+   */
+  topic?: string
   className?: string
 }) {
   const center = align === "center" && !media
+  // Pictogrammes de marque : autour du titre centré, ou à sa droite ; une page
+  // avec une photo de métier n'en a pas besoin (la photo occupe la droite)
+  const subject = topic ?? [title, accent, eyebrow].filter((t): t is string => typeof t === "string").join(" ")
+  const doodles = media ? null : <Doodles layout={center ? "page" : "page-right"} {...pictosFor(subject)} />
   const text = (
     <div className={cn("flex min-w-0 flex-col", center ? "items-center text-center" : "items-start")}>
       {crumbs && <Breadcrumbs items={crumbs} className="mb-6" />}
@@ -175,13 +190,14 @@ export function ContentHero({
       className={cn("relative px-4 pb-10 pt-[112px] sm:px-6 sm:pb-14 sm:pt-[140px]", className)}
       style={{ backgroundImage: "var(--q-glow)" }}
     >
+      {doodles}
       {media ? (
-        <div className={cn(WRAP, "grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-14")}>
+        <div className={cn(WRAP, "relative grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-14")}>
           {text}
           {media}
         </div>
       ) : (
-        <div className={WRAP}>{text}</div>
+        <div className={cn(WRAP, "relative")}>{text}</div>
       )}
     </header>
   )
@@ -210,7 +226,7 @@ export function SectionHeading({
   as?: "h2" | "h3"
 }) {
   return (
-    <div className={cn("flex flex-col", align === "center" && "items-center text-center", className)}>
+    <div data-reveal="" className={cn("flex flex-col", align === "center" && "items-center text-center", className)}>
       {eyebrow && <p className="q-eyebrow mb-3">{eyebrow}</p>}
       <Tag id={id} className="scroll-mt-28 font-display text-[clamp(26px,2.8vw,36px)] font-semibold leading-[1.1] tracking-[-0.03em] text-q-ink-strong [text-wrap:balance]">
         {title}
@@ -251,6 +267,8 @@ export function LinkCard({
   return (
     <Link
       href={href}
+      data-reveal=""
+      data-reveal-item=""
       className={cn(
         "group flex flex-col rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[shadow:var(--q-shadow-card)] transition-[border-color,box-shadow,transform] duration-200",
         "hover:-translate-y-0.5 hover:border-q-wash-line hover:shadow-[0_18px_36px_-22px_rgba(10,17,34,.35)] motion-reduce:hover:translate-y-0",
@@ -260,7 +278,7 @@ export function LinkCard({
     >
       {(icon || kicker) && (
         <div className="mb-5 flex items-center justify-between gap-3">
-          {icon && <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-q-wash text-q-accent-strong [&_svg]:h-5 [&_svg]:w-5">{icon}</span>}
+          {icon && <span className="grid h-10 w-10 shrink-0 place-items-center text-q-accent-strong q-glyph">{icon}</span>}
           {kicker}
         </div>
       )}
@@ -305,7 +323,7 @@ export function ChipLinks({ links, className }: { links: { href: string; label: 
 ───────────────────────────────────────────────────────── */
 export function FaqList({ items, className }: { items: { question: string; answer: string }[]; className?: string }) {
   return (
-    <div className={cn("border-b border-q-line", className)}>
+    <div data-reveal="" className={cn("border-b border-q-line", className)}>
       {items.map((item, i) => (
         <details key={item.question} open={i === 0} className="group border-t border-q-line">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-left [&::-webkit-details-marker]:hidden">
@@ -341,7 +359,7 @@ export function ContentCta({
   const photo = PHOTOS.appelFinal
   return (
     <section className={cn("px-4 py-16 sm:px-6 sm:py-20", className)}>
-      <div className={cn(WRAP, "grid grid-cols-1 overflow-hidden rounded-[28px] border border-q-line bg-q-surface md:grid-cols-[1.1fr_1fr]")}>
+      <div data-reveal="scale" className={cn(WRAP, "grid grid-cols-1 overflow-hidden rounded-[28px] border border-q-line bg-q-surface md:grid-cols-[1.1fr_1fr]")}>
         <div className="flex flex-col items-start px-6 py-10 sm:px-12 sm:py-14">
           <h2 className="font-display text-[clamp(30px,3.4vw,44px)] font-semibold leading-[1.06] tracking-[-0.03em] text-q-ink-strong [text-wrap:balance]">
             {title}
@@ -358,15 +376,6 @@ export function ContentCta({
         {photo && (
           <div className="relative min-h-[240px] bg-q-sunken md:min-h-[360px]">
             <Image src={photo.src} alt={photo.alt} fill sizes="(min-width: 1200px) 560px, (min-width: 768px) 48vw, 100vw" loading="lazy" className="object-cover" />
-            <div aria-hidden className="absolute bottom-4 left-4 flex items-center gap-3 rounded-2xl border border-q-line bg-q-surface px-3.5 py-2.5 shadow-[shadow:var(--q-shadow-pop)] sm:bottom-5 sm:left-5">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-q-wash text-q-accent-strong">
-                <ShieldCheck className="h-4 w-4" />
-              </span>
-              <span className="flex flex-col">
-                <span className="text-[13px] font-semibold text-q-ink">Mentions obligatoires</span>
-                <span className="text-[12px] text-q-text-4">SIREN, TVA, durée de validité</span>
-              </span>
-            </div>
           </div>
         )}
       </div>
@@ -384,5 +393,57 @@ export function ContentCta({
         </nav>
       )}
     </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────
+   Appel à l'action dans le fil d'une page (après le texte d'un
+   guide, d'un modèle, d'un article) : une phrase, un bouton,
+   un lien vers la démo. Promesse vraie uniquement.
+───────────────────────────────────────────────────────── */
+export function InlineCta({
+  title = "Passez à la pratique :",
+  accent = "votre premier devis est gratuit.",
+  sub = "Sans carte bancaire. Vous ne choisissez une formule qu'à l'envoi de votre première facture.",
+  primary = { href: "/signup", label: "Créer mon premier devis" },
+  secondary = { href: "/demo", label: "Voir la démo" },
+  className,
+}: {
+  title?: React.ReactNode
+  accent?: React.ReactNode
+  sub?: React.ReactNode
+  primary?: { href: string; label: string }
+  secondary?: { href: string; label: string } | null
+  className?: string
+}) {
+  return (
+    <aside
+      data-reveal=""
+      aria-label="Essayer Qonforme"
+      className={cn(
+        "relative flex flex-col gap-6 overflow-hidden rounded-[22px] border border-q-line bg-q-surface p-6 shadow-[shadow:var(--q-shadow-card)] sm:p-8 md:flex-row md:items-center md:justify-between",
+        className,
+      )}
+    >
+      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-q-accent" />
+      <div className="min-w-0 max-w-[520px]">
+        <p className="font-display text-[clamp(21px,2.2vw,25px)] font-semibold leading-[1.18] tracking-[-0.025em] text-q-ink-strong [text-wrap:balance]">
+          {typeof title === "string" ? fr(title) : title} <span className="q-serif">{typeof accent === "string" ? fr(accent) : accent}</span>
+        </p>
+        {sub && <p className="mt-2 text-[15px] leading-[1.6] text-q-text-3">{typeof sub === "string" ? fr(sub) : sub}</p>}
+      </div>
+      <div className="flex shrink-0 flex-col items-stretch gap-3 sm:flex-row sm:items-center md:flex-col md:items-end">
+        <Link href={primary.href} className="lp-btn-p">
+          {primary.label}
+          <ArrowRight className="lp-btn-arrow h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+        </Link>
+        {secondary && (
+          <Link href={secondary.href} className="inline-flex items-center justify-center gap-1.5 text-[14.5px] font-semibold text-q-accent-strong hover:underline">
+            {secondary.label}
+            <ArrowRight className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          </Link>
+        )}
+      </div>
+    </aside>
   )
 }

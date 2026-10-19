@@ -7,10 +7,11 @@ import { useEffect, useId, useRef, useState } from "react"
 import { ArrowLeft, ArrowRight, ChevronDown, Menu, X } from "lucide-react"
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from "@/lib/brand"
 import { OUTILS_CATEGORIES, OUTILS_COUNT, OUTILS_ESSENTIELS } from "@/components/layout/public-links"
+import { ScrollReveal } from "@/components/motion/ScrollReveal"
 import { cn } from "@/lib/utils"
 
 export interface PublicNavProps {
-  /** Accueil : ancres locales (#features) au lieu de chemins absolus (/#features). */
+  /** Accueil : ancres locales (#devis) au lieu de chemins absolus (/#devis). */
   isLandingPage?: boolean
   /** Lien de retour propre à une rubrique (blog, outils), après le logo et en tête du menu mobile. */
   backLink?: { href: string; label: string }
@@ -38,7 +39,8 @@ const SHADOW_SCROLLED = "0 1px 2px rgba(10,17,34,.05), 0 14px 34px -18px rgba(10
  *
  * Fond opaque sur tous les écrans : aucun backdrop-filter ni will-change
  * (règle iOS de CLAUDE.md). Sous 1024 px, les liens passent dans un menu
- * déroulant sous la pilule (cibles de 44 px).
+ * déroulant sous la pilule (cibles de 44 px). La barre de lecture (progression
+ * du défilement) remplit le bord bas de la pilule, sur ordinateur comme sur téléphone.
  */
 export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavProps) {
   const pathname = usePathname() ?? "/"
@@ -47,6 +49,7 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
   const [outilsOpen, setOutilsOpen] = useState(false)
   const [outilsMobileOpen, setOutilsMobileOpen] = useState(false)
   const navRef = useRef<HTMLElement>(null)
+  const progressRef = useRef<HTMLSpanElement>(null)
   const outilsRef = useRef<HTMLDivElement>(null)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const outilsButtonRef = useRef<HTMLButtonElement>(null)
@@ -56,11 +59,31 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
   const menuId = useId()
   const outilsId = useId()
 
+  // Ombre de la pilule et barre de lecture. La barre est pilotée ici, et non par
+  // animation-timeline : iOS ne la connaît qu'à partir de Safari 26. Une mise à
+  // jour par image au plus, transformation seule (ni will-change ni transition).
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12)
-    onScroll()
-    window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
+    let frame = 0
+    const update = () => {
+      frame = 0
+      setScrolled(window.scrollY > 12)
+      const max = document.documentElement.scrollHeight - window.innerHeight
+      const ratio = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0
+      if (progressRef.current) progressRef.current.style.transform = `scaleX(${ratio})`
+    }
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(update) }
+    update()
+    window.addEventListener("scroll", schedule, { passive: true })
+    window.addEventListener("resize", schedule)
+    // La page grandit en chargeant ses images : la longueur de la barre suit
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule)
+    observer?.observe(document.body)
+    return () => {
+      if (frame) cancelAnimationFrame(frame)
+      window.removeEventListener("scroll", schedule)
+      window.removeEventListener("resize", schedule)
+      observer?.disconnect()
+    }
   }, [])
 
   // Chaque navigation referme les menus
@@ -127,8 +150,8 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
   // Libellés du canevas (Produit, Tarifs, Réforme 2027, Outils gratuits), vers
   // des destinations qui existent ; Blog et Démo restent accessibles.
   const leading = [
-    { label: "Produit", href: `${prefix}#features`, current: undefined },
-    { label: "Tarifs", href: isLandingPage ? "#pricing" : "/pricing", current: current("/pricing") },
+    { label: "Produit", href: `${prefix}#devis`, current: undefined },
+    { label: "Tarifs", href: "/pricing", current: current("/pricing") },
     { label: "Réforme 2027", href: REFORME_HREF, current: current(REFORME_HREF) },
   ]
   const trailing = [
@@ -140,12 +163,23 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
 
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-[100] px-4 pt-4 sm:px-6">
+      {/* Apparitions au défilement de la page (data-reveal) */}
+      <ScrollReveal />
       <nav
         ref={navRef}
         aria-label="Navigation principale"
         className="pointer-events-auto relative mx-auto flex max-w-[1200px] items-center justify-between gap-2 rounded-full border border-q-line bg-q-surface py-2 pl-3.5 pr-2 transition-shadow duration-300 sm:pl-5 lg:gap-4 xl:grid xl:grid-cols-[1fr_auto_1fr]"
         style={{ boxShadow: scrolled || menuOpen ? SHADOW_SCROLLED : SHADOW_REST }}
       >
+        {/* Barre de lecture : remplit le bord bas de la pilule, découpée par ses arrondis */}
+        <span aria-hidden className="pointer-events-none absolute inset-[-1px] overflow-hidden rounded-full">
+          <span
+            ref={progressRef}
+            className="absolute inset-x-0 bottom-0 h-[2px] origin-left bg-q-accent"
+            style={{ transform: "scaleX(0)" }}
+          />
+        </span>
+
         {/* Logo (et retour de rubrique sur grand écran) */}
         <div className="flex min-w-0 items-center gap-3 justify-self-start">
           <Link
@@ -212,8 +246,8 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
                                 aria-current={current(item.href)}
                                 className="group flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-q-hover aria-[current=page]:bg-q-wash"
                               >
-                                <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-q-wash text-q-accent-strong">
-                                  <item.icon className="h-4 w-4" aria-hidden />
+                                <span className="mt-px grid h-6 w-6 shrink-0 place-items-center text-q-accent-strong">
+                                  <item.icon className="h-5 w-5" strokeWidth={1.6} aria-hidden />
                                 </span>
                                 <span className="min-w-0">
                                   <span className="block text-[13px] font-semibold leading-tight text-q-ink">{item.label}</span>
@@ -314,8 +348,8 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
                           aria-current={current(item.href)}
                           className="flex min-h-[44px] items-center gap-3 rounded-[10px] px-3 text-sm font-medium text-q-text-2 transition-colors hover:bg-q-hover hover:text-q-ink aria-[current=page]:text-q-ink"
                         >
-                          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-q-wash text-q-accent-strong">
-                            <item.icon className="h-3.5 w-3.5" aria-hidden />
+                          <span className="grid h-6 w-6 shrink-0 place-items-center text-q-accent-strong">
+                            <item.icon className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden />
                           </span>
                           {item.label}
                         </Link>

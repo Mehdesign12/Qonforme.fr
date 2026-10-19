@@ -9,20 +9,30 @@ import {
 } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { Check, ArrowLeft, ChevronDown, Clock, Lock, RefreshCw, ShieldCheck } from 'lucide-react'
-import { PLANS, formatEuros, withVat, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { PLANS, VAT_COLLECTED, formatEuros, withVat, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { trackEvent } from '@/lib/meta-pixel'
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from '@/lib/brand'
 import { cn } from '@/lib/utils'
+import { PictoCluster } from '@/components/brand/PictoCluster'
 
 /** « 10 € » avec une espace insécable avant le symbole. */
 const eur = (amount: number) => formatEuros(amount).replace(/ €$/, '\u00A0€')
 
-/* ─── Stripe singleton ───────────────────────────────────────────────────── */
-const stripeKey     = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''
-// Stripe.js bloqué (réseau, bloqueur de publicités) : null au lieu d'une
-// promesse rejetée, pour afficher un message plutôt qu'un panneau vide.
-const stripePromise = stripeKey ? loadStripe(stripeKey).catch(() => null) : null
+/* ─── Stripe.js ──────────────────────────────────────────────────────────── */
+// Une promesse par clé publique (production ou bac à sable). Stripe.js bloqué
+// (réseau, bloqueur de publicités) : null au lieu d'une promesse rejetée, pour
+// afficher un message plutôt qu'un panneau vide.
+const stripePromises = new Map<string, ReturnType<typeof loadStripe>>()
+function stripePromiseFor(key: string) {
+  if (!key) return null
+  let promise = stripePromises.get(key)
+  if (!promise) {
+    promise = loadStripe(key).catch(() => null)
+    stripePromises.set(key, promise)
+  }
+  return promise
+}
 
 /* ─── Props ──────────────────────────────────────────────────────────────── */
 interface CheckoutPageClientProps {
@@ -30,12 +40,16 @@ interface CheckoutPageClientProps {
   billingPeriod: BillingPeriod
   /** Chemin interne où revenir une fois la formule active (ex. la facture à envoyer). */
   next:          string | null
+  /** Clé publique Stripe du mode du compte (production, ou bac à sable pour un compte d'essai). */
+  publishableKey: string
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
    COMPONENT
 ══════════════════════════════════════════════════════════════════════════ */
-export default function CheckoutPageClient({ planId, billingPeriod, next }: CheckoutPageClientProps) {
+export default function CheckoutPageClient({ planId, billingPeriod, next, publishableKey }: CheckoutPageClientProps) {
+  const stripeKey     = publishableKey
+  const stripePromise = stripePromiseFor(stripeKey)
   const router = useRouter()
   const plan   = PLANS[planId]
   
@@ -45,9 +59,13 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
   const destination = next ?? '/dashboard'
   const plansHref   = next ? `/signup/plan?next=${encodeURIComponent(next)}` : '/signup/plan'
   const chargeHt    = billingPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
-  const chargeLine  = billingPeriod === 'monthly'
-    ? `Soit ${eur(withVat(chargeHt))} TTC par mois`
-    : `Facturé ${eur(chargeHt)} HT par an · ${eur(withVat(chargeHt))} TTC`
+  const chargeLine  = VAT_COLLECTED
+    ? billingPeriod === 'monthly'
+      ? `Soit ${eur(withVat(chargeHt))} TTC par mois`
+      : `Facturé ${eur(chargeHt)} HT par an · ${eur(withVat(chargeHt))} TTC`
+    : billingPeriod === 'monthly'
+      ? 'Sans engagement'
+      : `Facturé ${eur(chargeHt)} par an`
 
   /* ── State ────────────────────────────────────────────────────────────── */
   const [fetchError,      setFetchError]      = useState<string | null>(null)
@@ -61,7 +79,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
     let active = true
     stripePromise?.then((loaded) => { if (active && !loaded) setStripeUnavailable(true) })
     return () => { active = false }
-  }, [])
+  }, [stripePromise])
 
   /* ── Handlers ─────────────────────────────────────────────────────────── */
   const handleComplete = useCallback(() => { setIsComplete(true) }, [])
@@ -215,7 +233,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
             <span className="font-display text-[22px] font-semibold leading-none tracking-[-0.03em] tabular-nums text-q-ink-strong">
               {eur(price)}
             </span>
-            <span className="text-[13px] text-q-text-3">HT / mois</span>
+            <span className="text-[13px] text-q-text-3">{VAT_COLLECTED ? 'HT / mois' : '/ mois'}</span>
             {billingPeriod === 'yearly' && (
               <span className="q-pill q-pill-ok">2 mois offerts</span>
             )}
@@ -264,7 +282,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
             <span className="font-display text-[52px] font-semibold leading-none tracking-[-0.04em] tabular-nums text-q-ink-strong">
               {eur(price)}
             </span>
-            <span className="text-sm text-q-text-3">HT / mois</span>
+            <span className="text-sm text-q-text-3">{VAT_COLLECTED ? 'HT / mois' : '/ mois'}</span>
             {billingPeriod === 'yearly' && (
               <span className="q-pill q-pill-ok ml-1 self-center">2 mois offerts</span>
             )}
@@ -478,16 +496,7 @@ function StateBlock({
 }) {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center py-12 text-center">
-      <div
-        className={cn(
-          'mb-5 grid h-14 w-14 place-items-center rounded-2xl',
-          tone === 'ok' && 'bg-q-ok-bg text-q-ok',
-          tone === 'danger' && 'bg-q-danger-bg text-q-danger',
-          tone === 'accent' && 'bg-q-wash text-q-accent-strong',
-        )}
-      >
-        {icon}
-      </div>
+      <PictoCluster icon={icon} tone={tone} className="mb-5" />
       <h2 className="mb-2 font-display text-xl font-semibold tracking-[-0.02em] text-q-ink-strong">{title}</h2>
       {children}
     </div>

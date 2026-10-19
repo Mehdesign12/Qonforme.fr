@@ -111,7 +111,7 @@ export function OnboardingEmailsCard({ mode }: { mode: ShellMode }) {
 
       {reminder && now && (
         <div className="q-inset flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center">
-          <span className="grid size-9 shrink-0 place-items-center rounded-[11px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+          <span className="grid size-9 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
             <AlarmClock className="size-[18px]" strokeWidth={1.75} aria-hidden />
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">

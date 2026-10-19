@@ -5,7 +5,7 @@
  * Maillage, Photos du texte, Image, Enregistrement), passe en cours annoncée aux lecteurs d'écran,
  * replis et erreurs affichés, lien « Relire l'article » à la fin.
  */
-import { Check, CircleAlert, Info, Loader2 } from "lucide-react"
+import { Check, CircleAlert, CircleCheck, Info, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { RunnerState, RunnerStep } from "@/components/admin/seo/articles/job-runner"
 
@@ -62,11 +62,11 @@ export function JobProgress({ state, withCover, withPhotos = false }: { state: R
               <span
                 className={cn(
                   "grid size-6 shrink-0 place-items-center rounded-full border",
-                  passed ? "border-transparent bg-[var(--q-ok-bg)] text-[var(--q-ok)]" : current ? "border-[var(--q-accent)] text-[var(--q-accent)]" : "border-[var(--q-line)] text-[var(--q-text-4)]",
+                  passed ? "border-transparent text-[var(--q-ok)]" : current ? "border-[var(--q-accent)] text-[var(--q-accent)]" : "border-[var(--q-line)] text-[var(--q-text-4)]",
                 )}
                 aria-hidden
               >
-                {passed ? <Check className="size-3.5" strokeWidth={2.75} /> : current ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" /> : null}
+                {passed ? <CircleCheck className="size-6" strokeWidth={1.75} /> : current ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" /> : null}
               </span>
               <span className={cn(passed || current ? "text-[var(--q-ink)]" : "text-[var(--q-text-4)]", current && "font-semibold")}>
                 {LABELS[s]}

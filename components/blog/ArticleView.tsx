@@ -2,10 +2,11 @@ import Link from "next/link"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
-import { Breadcrumbs, ChipLinks, ContentCta, ContentPage, SectionHeading, WRAP } from "@/components/content/ui"
+import { Breadcrumbs, ChipLinks, ContentCta, ContentPage, InlineCta, SectionHeading, WRAP } from "@/components/content/ui"
+import { Doodles } from "@/components/brand/Doodles"
+import { pictosFor } from "@/components/brand/pictos"
 import ArticleCard, { CoverFallback, coverAltOf, type ArticleCardPost } from "./ArticleCard"
 import CategoryBadge from "./CategoryBadge"
-import ReadingProgressBar from "./ReadingProgressBar"
 import ShareButtons from "./ShareButtons"
 import TableOfContents from "./TableOfContents"
 import { isGeneratedBlogImage } from "@/lib/blog-images/policy"
@@ -53,10 +54,10 @@ const RESOURCES = [
 export default function ArticleView({ post, category, readingTime, keywords, headings, contentHtml, similar, adjacent }: ArticleViewProps) {
   return (
     <ContentPage bottomBarSpace>
-      <ReadingProgressBar />
-
-      <div className="px-4 pb-10 pt-[112px] sm:px-6 sm:pt-[140px]" style={{ backgroundImage: "var(--q-glow)" }}>
-        <div className={`${WRAP} lg:grid lg:grid-cols-[44px_minmax(0,1fr)] lg:gap-10 xl:grid-cols-[44px_minmax(0,1fr)_220px]`}>
+      <div className="relative px-4 pb-10 pt-[112px] sm:px-6 sm:pt-[140px]" style={{ backgroundImage: "var(--q-glow)" }}>
+        {/* Marque très discrète : les pictogrammes de la couverture, choisis d'après le sujet de l'article */}
+        <Doodles layout="article" className="opacity-60" {...pictosFor(post.title, keywords[0])} />
+        <div className={`${WRAP} relative lg:grid lg:grid-cols-[44px_minmax(0,1fr)] lg:gap-10 xl:grid-cols-[44px_minmax(0,1fr)_220px]`}>
           {/* Partage : colonne collée à gauche (ordinateur), barre fixée en bas (mobile) */}
           <div className="lg:pt-[190px]">
             <ShareButtons title={post.title} slug={post.slug} />
@@ -110,6 +111,8 @@ export default function ArticleView({ post, category, readingTime, keywords, hea
 
             {/* Contenu : typographie .blog-prose (app/globals.css) */}
             <div className="blog-prose mt-10" dangerouslySetInnerHTML={{ __html: contentHtml }} />
+
+            <InlineCta className="mt-14" title="Mettez cet article en pratique :" />
 
             {/* Article précédent / suivant */}
             {(adjacent.prev || adjacent.next) && (
@@ -169,8 +172,8 @@ export default function ArticleView({ post, category, readingTime, keywords, hea
           <div className={WRAP}>
             <SectionHeading title="Articles" accent="similaires." className="mb-8" />
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-              {similar.map((s, i) => (
-                <ArticleCard key={s.slug} post={s} index={i} as="h3" />
+              {similar.map((s) => (
+                <ArticleCard key={s.slug} post={s} as="h3" />
               ))}
             </div>
           </div>

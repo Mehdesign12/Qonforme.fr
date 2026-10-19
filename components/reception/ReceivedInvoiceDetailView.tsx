@@ -12,7 +12,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import {
-  AlertTriangle, Check, ChevronLeft, CircleDot, Download, Eye, FileText, Inbox, MoreHorizontal,
+  AlertTriangle, Check, ChevronLeft, CircleCheck, CircleDot, Download, Eye, FileText, Inbox, MoreHorizontal,
   PauseCircle, Send, Trash2, X, type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -481,8 +481,8 @@ function Timeline({ events, invoice, year }: { events: ReceivedEvent[]; invoice:
         return (
           <li key={e.id} className="flex gap-3">
             <span className="flex flex-col items-center">
-              <span className={cn("grid size-5 shrink-0 place-items-center rounded-full text-white", warn ? "bg-[var(--q-warn)]" : "bg-[var(--q-accent)]")}>
-                {e.actor === "import" ? <Inbox className="size-3" strokeWidth={2.5} aria-hidden /> : <Check className="size-3" strokeWidth={3} aria-hidden />}
+              <span className={cn("q-glyph size-5 [&>svg]:size-5 [&>svg]:[stroke-width:2]", warn ? "text-[var(--q-warn)]" : "text-[var(--q-accent)]")}>
+                {e.actor === "import" ? <Inbox aria-hidden /> : <CircleCheck aria-hidden />}
               </span>
               {!last && <span className="min-h-[18px] w-0.5 flex-1 bg-[var(--q-accent)]" />}
             </span>

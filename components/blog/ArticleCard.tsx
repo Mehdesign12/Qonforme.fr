@@ -19,8 +19,6 @@ export interface ArticleCardPost {
 
 interface Props {
   post: ArticleCardPost
-  /** Rang dans la grille, pour décaler l'apparition des cartes. */
-  index?: number
   /** Titre de carte : h2 dans la liste du blog, h3 sous un article. */
   as?: "h2" | "h3"
   sizes?: string
@@ -51,16 +49,17 @@ export function CoverFallback({ size = 56 }: { size?: number }) {
  * Carte d'article du blog (canevas « Main » : carte blanche r20, photo en
  * tête, pastille de catégorie, méta discrète, lien « Lire » en bleu).
  */
-export default function ArticleCard({ post, index = 0, as: Tag = "h2", sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px" }: Props) {
+export default function ArticleCard({ post, as: Tag = "h2", sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px" }: Props) {
   return (
     <Link
       href={`/blog/${post.slug}`}
+      data-reveal=""
+      data-reveal-item=""
       className={cn(
-        "group blog-card-animate flex flex-col overflow-hidden rounded-[20px] border border-q-line bg-q-surface shadow-[shadow:var(--q-shadow-card)]",
+        "group flex flex-col overflow-hidden rounded-[20px] border border-q-line bg-q-surface shadow-[shadow:var(--q-shadow-card)]",
         "transition-[border-color,box-shadow] duration-300 hover:border-q-wash-line hover:shadow-[0_18px_36px_-22px_rgba(10,17,34,.35)]",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent",
       )}
-      style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-q-sunken">
         {post.cover_url ? (

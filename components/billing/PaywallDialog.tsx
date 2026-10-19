@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Check, ShieldCheck } from 'lucide-react'
+import { BellRing, Check, Construction, Send, ShieldCheck, Signature } from 'lucide-react'
+import { PictoCluster } from '@/components/brand/PictoCluster'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import { PLANS, formatEuros, withVat, type BillingPeriod } from '@/lib/stripe/plans'
+import { PLANS, VAT_COLLECTED, formatEuros, withVat, type BillingPeriod } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS, SUBSCRIPTION_REQUIRED } from '@/lib/stripe/access'
 import { ARTISAN_REQUIRED } from '@/lib/artisan/plan'
 import { trackEvent } from '@/lib/meta-pixel'
@@ -73,6 +74,12 @@ export function PaywallDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto p-[22px] sm:max-w-[460px]">
         <div className="flex flex-col gap-1.5 pr-8">
+          {/* Pictogrammes de marque : ce que débloque la formule */}
+          <PictoCluster
+            size="sm"
+            className="mb-2"
+            icon={artisan ? <Construction /> : reason === 'remind' ? <BellRing /> : reason === 'signature' ? <Signature /> : <Send />}
+          />
           <DialogTitle className="q-display text-[22px] leading-tight text-[var(--q-ink)]">
             {artisan
               ? `Cette fonction fait partie de la formule ${plan.name}.`
@@ -119,7 +126,7 @@ export function PaywallDialog({
                   {p === 'yearly' ? 'Annuel' : 'Mensuel'}
                 </span>
                 <span className="text-lg font-semibold tabular-nums text-[var(--q-ink)]">
-                  {formatEuros(perMonth)} <span className="text-xs font-normal text-[var(--q-text-4)]">HT / mois</span>
+                  {formatEuros(perMonth)} <span className="text-xs font-normal text-[var(--q-text-4)]">{VAT_COLLECTED ? 'HT / mois' : '/ mois'}</span>
                 </span>
                 <span className={cn('text-xs font-semibold', p === 'yearly' ? 'text-[var(--q-ok)]' : 'text-[var(--q-text-4)]')}>
                   {p === 'yearly' ? '2 mois offerts' : 'Sans engagement'}
@@ -161,7 +168,7 @@ export function PaywallDialog({
             {reason === 'send' ? `Choisir ${plan.name} et envoyer ma facture` : `Choisir ${plan.name}`}
           </button>
           <p className="text-center text-[13px] tabular-nums text-[var(--q-text-4)]">
-            {formatEuros(chargeHt)} HT {period === 'monthly' ? 'par mois' : 'par an'}, soit {formatEuros(withVat(chargeHt))} TTC
+            {formatEuros(chargeHt)}{VAT_COLLECTED ? ' HT' : ''} {period === 'monthly' ? 'par mois' : 'par an'}{VAT_COLLECTED && <>, soit {formatEuros(withVat(chargeHt))} TTC</>}
           </p>
           <p className="flex items-center justify-center gap-1.5 text-center text-[13px] text-[var(--q-text-4)]">
             <ShieldCheck className="size-4 text-[var(--q-ok)]" aria-hidden />

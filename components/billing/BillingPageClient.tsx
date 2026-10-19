@@ -28,7 +28,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
-import { PLANS, FREE_FEATURES, formatEuros, withVat } from '@/lib/stripe/plans'
+import { PLANS, FREE_FEATURES, TAX_SUFFIX, VAT_COLLECTED, formatEuros, withVat } from '@/lib/stripe/plans'
 import { canIssueInvoices, GUARANTEE_DAYS } from '@/lib/stripe/access'
 import type { Subscription } from '@/lib/stripe/subscription'
 import { formatCurrency } from '@/lib/utils/invoice'
@@ -198,11 +198,11 @@ export default function BillingPageClient({
         <SettingsCard id="emettre" title="Pour émettre vos factures">
           <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
             Vous ne payez qu&apos;à votre première facture. La formule {essentiel.name} :{' '}
-            <strong className="font-semibold text-[var(--q-ink)]">{formatEuros(essentiel.monthlyPrice)} HT par mois</strong>, ou{' '}
-            {formatEuros(essentiel.yearlyMonthlyEquivalent)} HT par mois à l&apos;année ({formatEuros(essentiel.yearlyPrice)} HT,
-            soit {formatEuros(withVat(essentiel.yearlyPrice))} TTC).{' '}
+            <strong className="font-semibold text-[var(--q-ink)]">{formatEuros(essentiel.monthlyPrice)}{TAX_SUFFIX} par mois</strong>, ou{' '}
+            {formatEuros(essentiel.yearlyMonthlyEquivalent)}{TAX_SUFFIX} par mois à l&apos;année ({formatEuros(essentiel.yearlyPrice)}{TAX_SUFFIX}
+            {VAT_COLLECTED && <>, soit {formatEuros(withVat(essentiel.yearlyPrice))} TTC</>}).{' '}
             {artisan.available
-              ? <>La formule {artisan.name} ({formatEuros(artisan.monthlyPrice)} HT par mois) ajoute chantiers, acomptes, situations de travaux, retenue de garantie et autoliquidation.</>
+              ? <>La formule {artisan.name} ({formatEuros(artisan.monthlyPrice)}{TAX_SUFFIX} par mois) ajoute chantiers, acomptes, situations de travaux, retenue de garantie et autoliquidation.</>
               : <>La formule {artisan.name} (chantiers, situations, retenue de garantie, autoliquidation) n&apos;est pas encore en vente : essayez-la dans la démo.</>}
           </p>
           <FeatureList items={essentiel.features} />
@@ -261,8 +261,8 @@ export default function BillingPageClient({
             <span className="text-sm text-[var(--q-text-4)]">
               {chargeHt !== null && (
                 <>
-                  <span className="font-semibold tabular-nums text-[var(--q-ink)]">{formatEuros(chargeHt)} HT</span>{' '}
-                  {monthly ? 'par mois' : 'par an'} ({formatEuros(withVat(chargeHt))} TTC)
+                  <span className="font-semibold tabular-nums text-[var(--q-ink)]">{formatEuros(chargeHt)}{TAX_SUFFIX}</span>{' '}
+                  {monthly ? 'par mois' : 'par an'}{VAT_COLLECTED && <> ({formatEuros(withVat(chargeHt))} TTC)</>}
                 </>
               )}
               {subscription.current_period_end && (
@@ -293,7 +293,7 @@ export default function BillingPageClient({
         <SettingsCard id="artisan" title={`Formule ${artisan.name}`}>
           <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
             {artisan.available
-              ? <>Chantiers, factures d&apos;acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance, pour {formatEuros(artisan.monthlyPrice)} HT par mois ({formatEuros(artisan.yearlyMonthlyEquivalent)} HT par mois à l&apos;année). Le changement se fait au prorata.</>
+              ? <>Chantiers, factures d&apos;acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance, pour {formatEuros(artisan.monthlyPrice)}{TAX_SUFFIX} par mois ({formatEuros(artisan.yearlyMonthlyEquivalent)}{TAX_SUFFIX} par mois à l&apos;année). Le changement se fait au prorata.</>
               : <>Chantiers, factures d&apos;acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance. La formule n&apos;est pas encore en vente : {demo ? <>ses fonctions sont ouvertes dans cette démo.</> : <>essayez ses fonctions dans la démo.</>}</>}
           </p>
           <FeatureList items={artisan.features} />

@@ -2,6 +2,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowLeft, FileX, Monitor } from "lucide-react"
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from "@/lib/brand"
+import { Doodles } from "@/components/brand/Doodles"
+import { pictosFor } from "@/components/brand/pictos"
 
 /**
  * Page 404, dans la langue du canevas : titre en deux voix, document « 404 »
@@ -22,8 +24,10 @@ export default function NotFound() {
       </header>
 
       <main className="relative flex flex-1 flex-col items-center justify-center px-4 pb-16 pt-10 text-center sm:px-6">
+        {/* Pictogrammes de marque de chaque côté (grand écran) */}
+        <Doodles layout="auth" {...pictosFor("Document introuvable : devis et facture")} />
         {/* Illustration : un document qui n'existe pas */}
-        <div aria-hidden className="q-card mb-10 w-[264px] p-5 text-left">
+        <div aria-hidden className="q-card relative mb-10 w-[264px] p-5 text-left">
           <div className="flex items-center justify-between gap-3">
             <span className="font-mono text-[13px] text-q-text-3">P-0404</span>
             <span className="q-pill q-pill-warn">
@@ -39,7 +43,7 @@ export default function NotFound() {
           </div>
         </div>
 
-        <p className="q-eyebrow">Erreur 404</p>
+        <p className="q-eyebrow relative">Erreur 404</p>
         <h1 className="mt-3 font-display text-[clamp(36px,6vw,60px)] font-semibold leading-[1.05] tracking-[-0.035em] text-q-ink [text-wrap:balance]">
           Cette page est <span className="q-serif">introuvable.</span>
         </h1>

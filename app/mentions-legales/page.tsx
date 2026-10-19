@@ -14,7 +14,7 @@ export default function MentionsLegalesPage() {
       titleAccent="légales"
       path="/mentions-legales"
       subtitle="Informations légales obligatoires conformément à la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN)."
-      lastUpdated="15 mars 2026"
+      lastUpdated="18 octobre 2026"
     >
       <h2>1. Éditeur du site</h2>
       <p>
@@ -88,8 +88,10 @@ export default function MentionsLegalesPage() {
 
       <h2>5. Cookies</h2>
       <p>
-        Qonforme utilise uniquement des cookies strictement nécessaires au fonctionnement du service
-        (session d&apos;authentification, préférences de thème). Aucun cookie publicitaire ou de traçage tiers n&apos;est déposé.
+        Qonforme utilise des cookies strictement nécessaires au fonctionnement du service (session d&apos;authentification,
+        préférences de thème). Les cookies publicitaires et de mesure d&apos;audience (pixel Meta, PostHog) ne sont
+        déposés qu&apos;avec votre accord, que vous pouvez refuser ou retirer à tout moment. Le détail figure dans la{" "}
+        <a href="/confidentialite#cookies">politique de confidentialité</a>.
       </p>
 
       <h2>6. Liens hypertextes</h2>

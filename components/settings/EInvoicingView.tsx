@@ -88,7 +88,7 @@ function StatusRow({ icon: Icon, title, text, tone, pill, action }: {
 }) {
   return (
     <li className="flex gap-3 border-t border-[var(--q-line-soft)] py-3.5 first:border-t-0 first:pt-1">
-      <span className="grid size-9 shrink-0 place-items-center rounded-[11px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+      <span className="grid size-9 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
         <Icon className="size-[18px]" strokeWidth={1.75} aria-hidden />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -249,7 +249,7 @@ export function EInvoicingView({ mode }: { mode: ShellMode }) {
           <ol className="flex flex-col">
             {STEPS.map(({ icon: Icon, title, text }) => (
               <li key={title} className="flex gap-3 border-t border-[var(--q-line-soft)] py-3 first:border-t-0 first:pt-1">
-                <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+                <span className="grid size-8 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
                   <Icon className="size-4" strokeWidth={1.75} aria-hidden />
                 </span>
                 <span className="flex min-w-0 flex-col gap-0.5">

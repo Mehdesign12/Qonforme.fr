@@ -242,7 +242,7 @@ export function AccountantAccessView({ mode, demoOverview }: { mode: ShellMode; 
           <SettingsCard id="en-cours" title="Accès en cours">
             {data.accesses.length === 0 ? (
               <div className="q-inset flex items-center gap-3 p-3.5">
-                <span className="grid size-9 shrink-0 place-items-center rounded-[11px] bg-[var(--q-sunken)] text-[var(--q-text-3)]">
+                <span className="grid size-9 shrink-0 place-items-center text-[var(--q-text-3)] q-glyph">
                   <UserPlus className="size-[18px]" strokeWidth={1.75} aria-hidden />
                 </span>
                 <p className="text-[13px] leading-relaxed text-[var(--q-text-3)]">
@@ -419,7 +419,7 @@ function EventItem({ event: e }: { event: EventView }) {
   ].filter(Boolean).join(" · ")
   return (
     <li className="flex items-start gap-3 border-t border-[var(--q-line-soft)] px-5 py-3">
-      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-[10px] bg-[var(--q-sunken)] text-[var(--q-text-3)]">
+      <span className="mt-0.5 grid size-8 shrink-0 place-items-center text-[var(--q-text-3)] q-glyph">
         <Icon className="size-4" strokeWidth={1.75} aria-hidden />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">

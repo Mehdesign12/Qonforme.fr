@@ -18,6 +18,18 @@ export const SIGNUP_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export const SIGNUP_REQUIRED_ERROR = "Adresse email et mot de passe requis."
 
+/**
+ * Variantes de l'accueil en test A/B (/design) : la page d'arrivée passe ?ab=…
+ * à l'inscription, qui l'enregistre dans user_metadata.landing_variant. Liste
+ * blanche : toute autre valeur est ignorée, jamais une erreur.
+ */
+export const LANDING_VARIANTS = ["design"] as const
+export type LandingVariant = (typeof LANDING_VARIANTS)[number]
+
+export function isLandingVariant(value: unknown): value is LandingVariant {
+  return typeof value === "string" && (LANDING_VARIANTS as readonly string[]).includes(value)
+}
+
 export interface SignupInput {
   /** Nettoyée et en minuscules. */
   email: string
@@ -25,6 +37,8 @@ export interface SignupInput {
   /** Facultatifs : le formulaire ne les demande plus (fenêtre « Bienvenue »). */
   first_name?: string
   last_name?: string
+  /** Variante de l'accueil d'où vient l'inscription (test A/B). */
+  landing_variant?: LandingVariant
 }
 
 export type SignupParse = { ok: true; value: SignupInput } | { ok: false; error: string }
@@ -47,7 +61,7 @@ function optionalName(raw: unknown, key: keyof typeof NAME_LABELS): { ok: true; 
   return { ok: true, value }
 }
 
-/** Corps de POST /api/auth/signup : `{ email, password, first_name?, last_name? }`. */
+/** Corps de POST /api/auth/signup : `{ email, password, first_name?, last_name?, landing_variant? }`. */
 export function parseSignupInput(body: unknown): SignupParse {
   const b = (body && typeof body === "object" ? body : {}) as Record<string, unknown>
   const email = typeof b.email === "string" ? b.email.trim().toLowerCase() : ""
@@ -72,6 +86,7 @@ export function parseSignupInput(body: unknown): SignupParse {
   const value: SignupInput = { email, password }
   if (first.value) value.first_name = first.value
   if (last.value) value.last_name = last.value
+  if (isLandingVariant(b.landing_variant)) value.landing_variant = b.landing_variant
   return { ok: true, value }
 }
 
@@ -84,6 +99,7 @@ export function signupMetadata(input: SignupInput): Record<string, string | bool
   const meta: Record<string, string | boolean> = { signup_wizard: true }
   if (input.first_name) meta.first_name = input.first_name
   if (input.last_name) meta.last_name = input.last_name
+  if (input.landing_variant) meta.landing_variant = input.landing_variant
   return meta
 }
 

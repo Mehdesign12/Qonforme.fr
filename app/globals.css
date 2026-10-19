@@ -420,26 +420,6 @@ a,
   }
 }
 
-/* ── Blog — apparition décalée des cartes (une fois, jamais en boucle) ────── */
-.blog-card-animate {
-  animation: blogCardIn 0.45s cubic-bezier(.22, 1, .36, 1) both;
-}
-
-@keyframes blogCardIn {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .blog-card-animate { animation: none; }
-}
-
 /* ── Contenus — typographie des articles et des guides ───────────────────────
  * Canevas « Main » : texte DM Sans sur jetons --q-* (thème sombre compris),
  * titres Bricolage, mesure d'environ 68 caractères, accent bleu unique.
@@ -747,10 +727,12 @@ html[data-standalone="true"] [role="button"] {
   transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s cubic-bezier(.2,.8,.2,1), border-color .2s ease;
   -webkit-tap-highlight-color: transparent;
 }
+/* Icône du bouton secondaire : seule, sans pastille (règle de marque, CLAUDE.md) */
 .lp-btn-s-ic {
-  display: inline-grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 999px;
-  background-color: #F1F3F6; color: #0A1122; transition: background-color .2s ease, color .2s ease;
+  display: inline-grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0;
+  color: #0A1122; transition: color .2s ease;
 }
+.lp-btn-s-ic svg { width: 19px; height: 19px; stroke-width: 1.75; }
 .lp-btn-arrow { flex-shrink: 0; transition: transform .2s cubic-bezier(.2,.8,.2,1); }
 .lp-btn-p:hover, .lp-btn-p:active { color: #FFFFFF; }
 .lp-btn-s:hover, .lp-btn-s:active { color: #0A1122; }
@@ -759,7 +741,7 @@ html[data-standalone="true"] [role="button"] {
   .lp-btn-p:hover::after { transform: translateX(110%); transition: transform .8s cubic-bezier(.2,.7,.2,1); }
   .lp-btn-p:hover .lp-btn-arrow { transform: translateX(3px); }
   .lp-btn-s:hover { border-color: #C6CCD6; transform: translateY(-1px); box-shadow: inset 0 1px 0 #FFFFFF, inset 0 -1px 0 rgba(10,17,34,.04), 0 2px 4px rgba(10,17,34,.06), 0 14px 28px -14px rgba(10,17,34,.24); }
-  .lp-btn-s:hover .lp-btn-s-ic { background-color: #0A1122; color: #FFFFFF; }
+  .lp-btn-s:hover .lp-btn-s-ic { color: #1D4ED8; }
 }
 .lp-btn-p:active { transform: translateY(0) scale(.985); background-color: #1D4ED8; box-shadow: inset 0 1px 2px rgba(10,17,34,.30), 0 1px 1px rgba(10,17,34,.10); transition-duration: .06s; }
 .lp-btn-s:active { transform: translateY(0) scale(.985); background-color: #F4F6F8; background-image: none; box-shadow: inset 0 1px 2px rgba(10,17,34,.10); transition-duration: .06s; }
@@ -767,73 +749,126 @@ html[data-standalone="true"] [role="button"] {
 .lp-btn-p:disabled, .lp-btn-s:disabled, .lp-btn-p[aria-disabled="true"], .lp-btn-s[aria-disabled="true"] { opacity: .6; pointer-events: none; transform: none; }
 /* Bouton secondaire en thème sombre : mêmes jetons que les cartes */
 .dark .lp-btn-s, .dark .lp-btn-s:hover, .dark .lp-btn-s:active { color: var(--q-ink); background-color: var(--q-surface); background-image: none; border-color: var(--q-line); box-shadow: none; }
-.dark .lp-btn-s-ic { background-color: var(--q-sunken); color: var(--q-ink); }
+.dark .lp-btn-s-ic { color: var(--q-ink); }
 
 /* Découpe sans conteneur de défilement : overflow:hidden capterait les
-   animations view() des éléments contenus (elles resteraient figées). */
+   animations view() des éléments contenus (photos qui glissent, rangées). */
 .lp-clip { overflow: hidden; overflow: clip; }
 
 /* Bandeau des métiers : fondu sur les bords ; il glisse avec la page, jamais en boucle. */
 .lp-marquee { -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
 .lp-marquee-track { display: flex; width: max-content; }
 
-/* Portées des frises nommées (manifeste, cartes de profil, étapes) */
-.lp-ink-scope { view-timeline: --lp-ink block; }
-.lp-card-scope { view-timeline: --lp-card block; }
-.lp-steps-scope { view-timeline: --lp-steps block; }
-.lp-progress { display: none; }
-
 @keyframes lp-fade-up { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
 @keyframes lp-tilt { from { opacity: 0; transform: perspective(2000px) rotateX(20deg) translateY(48px) scale(.95); } to { opacity: 1; transform: none; } }
 @keyframes lp-phone-in { from { opacity: 0; transform: translateY(90px); } to { opacity: 1; transform: none; } }
-@keyframes lp-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-@keyframes lp-rise { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
-@keyframes lp-zoomin { from { opacity: .35; transform: perspective(2000px) rotateX(14deg) scale(.86) translateY(60px); } to { opacity: 1; transform: none; } }
 @keyframes lp-pan { from { transform: translateY(-7%); } to { transform: translateY(7%); } }
 @keyframes lp-drift { from { transform: translateY(0); } to { transform: translateY(-80px); } }
 @keyframes lp-rail-l { from { transform: translateX(0); } to { transform: translateX(-22%); } }
 @keyframes lp-rail-r { from { transform: translateX(-8%); } to { transform: translateX(8%); } }
-@keyframes lp-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes lp-ink { from { color: var(--q-field); } to { color: var(--q-ink-strong); } }
-@keyframes lp-ink-accent { from { color: var(--q-field); } to { color: var(--q-accent); } }
+@keyframes lp-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Barre de progression d'un carrousel (components/landing/carousels.tsx) : sa fin passe à l'écran suivant */
+.lp-progress-fill { animation: lp-progress linear both; }
 
 @media (prefers-reduced-motion: no-preference) {
   /* Entrée du héros : jouée avant l'hydratation, sans attendre le JavaScript */
   .lp-fade-up { animation: lp-fade-up .9s cubic-bezier(.22,1,.36,1) both; }
   .lp-tilt { transform-origin: 50% 100%; animation: lp-tilt 1.4s cubic-bezier(.22,1,.36,1) .3s both; }
   .lp-phone-in { animation: lp-phone-in 1.2s cubic-bezier(.22,1,.36,1) .9s both; }
-  /* Ondulation des notifications : quelques allers-retours, puis immobile */
-  .lp-bob { animation: lp-bob 6s ease-in-out 5; }
-  .lp-bob-2 { animation: lp-bob 7s ease-in-out 1.2s 4; }
-  .lp-bob-3 { animation: lp-bob 8s ease-in-out 2.4s 4; }
   .lp-zoom { transition: transform 1.2s cubic-bezier(.22,1,.36,1); }
 
+  /* Mouvements liés au défilement (photos, rangées, téléphone du héros) : ils
+     suivent la position de la page, dans un sens comme dans l'autre */
   @supports (animation-timeline: view()) {
-    .lp-reveal { animation: lp-rise cubic-bezier(.22,1,.36,1) both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
-    .lp-d1 { animation-range: entry 20% entry 100%; }
-    .lp-d2 { animation-range: entry 40% entry 100%; }
     .lp-pan { animation: lp-pan linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
     .lp-drift { animation: lp-drift linear both; animation-timeline: scroll(root); animation-range: 0px 900px; }
     .lp-drift-v { animation: lp-drift linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
-    .lp-zoomin { transform-origin: 50% 100%; animation: lp-zoomin cubic-bezier(.22,1,.36,1) both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
     .lp-rail-l, .lp-marquee-track { animation: lp-rail-l linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
     .lp-rail-r { animation: lp-rail-r linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
-    .lp-fill { transform-origin: 0 50%; animation: lp-grow-x cubic-bezier(.22,1,.36,1) both; animation-timeline: --lp-card; animation-range: entry 30% entry 100%; }
-    .lp-line-x { transform-origin: 0 50%; animation: lp-grow-x cubic-bezier(.22,1,.36,1) both; animation-timeline: --lp-steps; animation-range: entry 20% entry 100%; }
-    /* Manifeste : chaque mot s'encre à son tour (plage posée en ligne, mot par mot) */
-    .lp-w { animation: lp-ink linear both; animation-timeline: --lp-ink; }
-    .lp-wb { animation: lp-ink-accent linear both; animation-timeline: --lp-ink; }
-    .lp-w, .lp-wb { animation-range: entry var(--lp-a, 0%) entry var(--lp-b, 30%); }
-    .lp-progress {
-      display: block; position: fixed; inset-inline: 0; top: 0; z-index: 110; height: 3px; pointer-events: none;
-      background: var(--q-accent); transform-origin: 0 50%; transform: scaleX(0);
-      animation: lp-grow-x linear both; animation-timeline: scroll(root);
-    }
   }
+
+  /*
+   * Apparitions au défilement, à la descente comme à la remontée
+   * (components/motion/ScrollReveal.tsx). data-rv : "in" à l'écran, "below"
+   * ou "above" hors de l'écran, du côté d'où l'élément reviendra. Sans
+   * data-rv (pas de JavaScript, pas encore enregistré), tout est visible.
+   * Le délai (--rv-delay, classes lp-d1 à lp-d3) ne s'applique qu'à l'entrée.
+   * Propriétés translate et scale (et non transform) : le survol d'une carte,
+   * qui passe par transform, reste vif et indépendant.
+   */
+  [data-rv] {
+    transition: opacity .8s cubic-bezier(.22,1,.36,1), translate 1.05s cubic-bezier(.22,1,.36,1), scale 1.05s cubic-bezier(.22,1,.36,1), transform 1.05s cubic-bezier(.22,1,.36,1);
+  }
+  [data-rv="in"] { transition-delay: var(--rv-delay, 0s); }
+  [data-rv="below"], [data-rv="above"] { opacity: 0; }
+  [data-rv="below"] { translate: 0 var(--rv-y, 40px); }
+  [data-rv="above"] { translate: 0 calc(var(--rv-y, 40px) * -1); }
+
+  /* Maquettes : se redressent en grandissant */
+  [data-reveal="zoom"] { transform-origin: 50% 100%; }
+  [data-reveal="zoom"][data-rv="below"] { translate: none; transform: perspective(2000px) rotateX(12deg) translateY(64px) scale(.9); }
+  [data-reveal="zoom"][data-rv="above"] { translate: none; transform-origin: 50% 0; transform: perspective(2000px) rotateX(-10deg) translateY(-48px) scale(.92); }
+  /* Colonnes : glissent depuis leur côté */
+  [data-reveal="left"][data-rv="below"], [data-reveal="left"][data-rv="above"] { translate: -56px 0; }
+  [data-reveal="right"][data-rv="below"], [data-reveal="right"][data-rv="above"] { translate: 56px 0; }
+  /* Grands blocs (bandes photo, appels finals) : légère mise au point */
+  [data-reveal="scale"][data-rv="below"], [data-reveal="scale"][data-rv="above"] { translate: none; scale: .94; }
+  [data-reveal="fade"][data-rv="below"], [data-reveal="fade"][data-rv="above"] { translate: none; }
+  /* Filets (barre d'une carte, trait des étapes) : se tracent de gauche à droite */
+  [data-reveal="line"] { transform-origin: 0 50%; }
+  [data-reveal="line"][data-rv="below"], [data-reveal="line"][data-rv="above"] { opacity: 1; translate: none; scale: 0 1; }
+  [data-reveal="line"][data-rv="in"] { transition-duration: .8s, 1.05s, 1.3s, 1.05s; }
+
+  /* Manifeste : le bloc reste en place, les mots s'encrent l'un après l'autre */
+  [data-reveal="words"][data-rv] { opacity: 1; translate: none; }
+  [data-reveal="words"] .lp-w { transition: color .55s ease; }
+  [data-reveal="words"][data-rv="in"] .lp-w { transition-delay: calc(var(--rv-i, 0) * 55ms + .1s); }
+  [data-reveal="words"][data-rv="below"] .lp-w, [data-reveal="words"][data-rv="above"] .lp-w { color: var(--q-field); }
+
+  /* Cartes-liens : apparition lente, survol vif (bordure, ombre, léger soulèvement) */
+  [data-reveal-item][data-rv] {
+    transition: opacity .8s cubic-bezier(.22,1,.36,1), translate 1.05s cubic-bezier(.22,1,.36,1), border-color .2s, box-shadow .2s, transform .2s;
+  }
+  [data-reveal-item][data-rv="in"] { transition-delay: var(--rv-delay, 0s), var(--rv-delay, 0s), 0s, 0s, 0s; }
+
+  /* Décalages d'une série (cartes, colonnes) */
+  .lp-d1 { --rv-delay: .09s; }
+  .lp-d2 { --rv-delay: .18s; }
+  .lp-d3 { --rv-delay: .27s; }
+  /* Cartes d'une grille de contenu : décalées par colonne */
+  [data-reveal-item]:nth-child(3n+2) { --rv-delay: .08s; }
+  [data-reveal-item]:nth-child(3n) { --rv-delay: .16s; }
 }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .lp-zoom-host:hover .lp-zoom { transform: scale(1.045); }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Accueil (app/page.tsx, components/home/) — classes préfixées dz-
+ *
+ * Mêmes règles que lp- : entrée du héros en CSS pur, une seule fois ; trait du
+ * ✓ (stroke-dashoffset) et étincelles du bandeau « du devis à la facture »,
+ * pilotés par l'attribut data-play posé par le composant. Sans JavaScript ou
+ * avec « Réduire les animations » : état final, immobile.
+ * ────────────────────────────────────────────────────────────────────────── */
+@keyframes dz-arch-in { from { opacity: 0; transform: translateY(28px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes dz-kenburns { from { transform: scale(1.08); } to { transform: scale(1); } }
+@keyframes dz-draw { from { stroke-dashoffset: var(--dz-len, 60); } to { stroke-dashoffset: 0; } }
+@keyframes dz-spark { 0% { opacity: 0; transform: rotate(var(--dz-a)) translateY(0) scaleY(.4); } 35% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--dz-a)) translateY(-26px) scaleY(1); } }
+
+/* Piste du carrousel des métiers : défilement natif, barre masquée */
+.dz-snap { scrollbar-width: none; -ms-overflow-style: none; }
+.dz-snap::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .dz-arch-in { animation: dz-arch-in 1.2s cubic-bezier(.22,1,.36,1) .2s both; }
+  .dz-kenburns { animation: dz-kenburns 7s cubic-bezier(.22,1,.36,1) both; }
+  [data-play="on"] .dz-draw { stroke-dasharray: var(--dz-len, 60); animation: dz-draw .7s cubic-bezier(.65,0,.35,1) var(--dz-delay, 0s) both; }
+  [data-play="on"] .dz-spark { animation: dz-spark .65s cubic-bezier(.22,1,.36,1) var(--dz-delay, .45s) both; }
+}
+/* Étincelles : invisibles hors animation (état final sans mouvement) */
+.dz-spark { opacity: 0; transform-origin: 50% 100%; }
 @media (prefers-reduced-motion: reduce) {
   .lp-btn-p, .lp-btn-s, .lp-btn-s-ic, .lp-btn-arrow { transition: none; }
   .lp-btn-p::after { display: none; }
@@ -1060,7 +1095,16 @@ html[data-standalone="true"] [role="button"] {
 
   /* État vide */
   .q-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 48px 24px; }
-  .q-empty-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: var(--q-wash); color: var(--q-accent-strong); }
+  .q-empty-icon { display: grid; place-items: center; width: 48px; height: 48px; color: var(--q-accent-strong); }
+  .q-empty-icon > svg { width: 34px; height: 34px; stroke-width: 1.5; }
+
+  /*
+   * Icône seule (règle de marque, CLAUDE.md) : jamais de tuile ni de pastille de
+   * couleur derrière une icône. La boîte garde sa taille pour l'alignement, l'icône
+   * en occupe 62 % au trait fin ; la couleur vient de la classe text-* posée à côté.
+   */
+  .q-glyph { display: inline-grid; place-items: center; flex-shrink: 0; }
+  .q-glyph > svg { width: 62%; height: 62%; stroke-width: 1.6; }
 }
 
 /*

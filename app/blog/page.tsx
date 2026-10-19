@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server"
 import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { BookOpen, Briefcase, FileText, Library } from "lucide-react"
 import { getReadingTime, getCategoryFromPrompt } from "@/lib/blog-utils"
+import { PictoCluster } from "@/components/brand/PictoCluster"
 import type { TopicCategory } from "@/lib/ai/seo-topics"
 import CategoryFilter from "@/components/blog/CategoryFilter"
 import { ContentCta, ContentHero, ContentPage, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
@@ -88,9 +89,7 @@ export default async function BlogPage() {
         <div className={WRAP}>
           {posts.length === 0 ? (
             <div className="q-card q-empty">
-              <span className="q-empty-icon">
-                <FileText className="h-6 w-6" aria-hidden />
-              </span>
+              <PictoCluster icon={<FileText />} className="mb-1" />
               <p className="font-display text-[20px] font-semibold tracking-[-0.02em] text-q-ink-strong">Bientôt disponible</p>
               <p className="max-w-[420px] text-[15px] text-q-text-3">
                 Les premiers articles arrivent. En attendant, nos guides pratiques répondent aux questions les plus courantes.

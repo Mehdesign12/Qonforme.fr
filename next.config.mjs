@@ -32,6 +32,8 @@ const nextConfig = {
       // contenu public (CLAUDE.md). Redirection permanente pour les liens indexés.
       { source: '/comparatif', destination: '/pricing', permanent: true },
       { source: '/comparatif/:slug*', destination: '/pricing', permanent: true },
+      // Ancienne adresse de la variante B de l'accueil (17/10/2026), devenue l'accueil.
+      { source: '/design', destination: '/', permanent: true },
     ]
   },
 

@@ -7,14 +7,16 @@ import { ThemeProvider } from "next-themes";
 import { AutoDarkMode } from "@/components/layout/AutoDarkMode";
 import { PostHogProvider } from "@/components/shared/PostHogProvider";
 import { Analytics } from "@vercel/analytics/react";
-import Script from "next/script";
 import { AppleSplashScreens } from "@/components/pwa/AppleSplashScreens";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { ThemeColorSync } from "@/components/pwa/ThemeColorSync";
 import { StandaloneFlag } from "@/components/pwa/StandaloneFlag";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { PLANS, VAT_COLLECTED } from "@/lib/stripe/plans";
 import { SentryReplay } from "@/components/shared/SentryReplay";
+import { CookieBanner } from "@/components/consent/CookieBanner";
+import { TrackingLoader } from "@/components/consent/TrackingLoader";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -191,17 +193,17 @@ export default function RootLayout({
                     {
                       "@type": "Offer",
                       name: "Essentiel",
-                      price: "12",
+                      price: String(PLANS.starter.monthlyPrice),
                       priceCurrency: "EUR",
                       priceSpecification: {
                         "@type": "UnitPriceSpecification",
-                        price: "12",
+                        price: String(PLANS.starter.monthlyPrice),
                         priceCurrency: "EUR",
                         unitText: "MONTH",
-                        valueAddedTaxIncluded: false,
+                        // Sans TVA collectée, le prix affiché est le prix payé
+                        ...(VAT_COLLECTED ? { valueAddedTaxIncluded: false } : {}),
                       },
-                      description:
-                        "Factures et avoirs illimites, envoi par email, relances automatiques, export FEC. 10 EUR HT par mois a l'annee.",
+                      description: `Factures et avoirs illimites, envoi par email, relances automatiques, export FEC. ${PLANS.starter.yearlyMonthlyEquivalent} EUR par mois a l'annee.`,
                     },
                   ],
                 },
@@ -213,18 +215,6 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${dmMono.variable} ${bricolageGrotesque.variable} ${instrumentSerif.variable} font-sans antialiased bg-background text-foreground`}
       >
-        {/* Meta Pixel — noscript fallback */}
-        {/*
-         * En HTML brut : rendue par React, l'image était préchargée dans le
-         * <head> de chaque page (<link rel="preload">), donc envoyée à Meta
-         * même avec JavaScript actif, y compris sur les pages exclues plus bas,
-         * et en concurrence avec le contenu principal (LCP mobile, PushRank).
-         */}
-        <noscript
-          dangerouslySetInnerHTML={{
-            __html: '<img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1280812480690943&ev=PageView&noscript=1" alt="" />',
-          }}
-        />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
@@ -246,28 +236,14 @@ export default function RootLayout({
             </ReduxProvider>
           </PostHogProvider>
           <Analytics />
+          {/*
+           * Traceurs publicitaires (pixel Meta) : chargés seulement après l'accord du
+           * visiteur, jamais sur les pages des clients de l'artisan (lib/consent.ts).
+           * Pas de balise <noscript> de suivi : sans JavaScript, aucun traceur ne part.
+           */}
+          <TrackingLoader />
+          <CookieBanner />
         </ThemeProvider>
-        {/* Meta Pixel — script */}
-        <Script
-          id="meta-pixel"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            // Jamais sur les pages destinées aux clients de l'artisan (règlement, signature :
-            // le jeton de règlement figure dans l'adresse), ni sur l'admin ou l'invitation comptable
-            __html: `
-              if (!/^\\/((demo\\/)?regler\\/|s\\/|signer(\\/|$)|admin(\\/|$)|invitation-comptable)/.test(location.pathname)) {
-              !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){
-              n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-              n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;
-              s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
-              (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-              fbq('init','1280812480690943');
-              fbq('track','PageView');
-              }
-            `,
-          }}
-        />
       </body>
     </html>
   );

@@ -549,7 +549,7 @@ export function InvoiceList({
       {!loading && (
         <section className="q-card q-list overflow-hidden rounded-[18px] md:hidden">
           <Link href={creditNotesHref} className="q-list-row">
-            <span className="grid size-9 shrink-0 place-items-center rounded-[11px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+            <span className="grid size-9 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
               <RotateCcw className="size-4" aria-hidden />
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">

@@ -346,10 +346,10 @@ function StateCard({ icon: Icon, title, tone, children }: { icon: LucideIcon; ti
   return (
     <section role="status" className={cn("q-card flex items-start gap-3.5 p-5", tone === "ok" && "border-[var(--q-ok-line)]")}>
       <span className={cn(
-        "grid size-11 shrink-0 place-items-center rounded-[14px]",
-        tone === "ok" ? "bg-[var(--q-ok-bg)] text-[var(--q-ok)]" : tone === "warn" ? "bg-[var(--q-warn-bg)] text-[var(--q-warn)]" : "bg-[var(--q-wash)] text-[var(--q-accent-strong)]",
+        "q-glyph size-11",
+        tone === "ok" ? "text-[var(--q-ok)]" : tone === "warn" ? "text-[var(--q-warn)]" : "text-[var(--q-accent-strong)]",
       )}>
-        <Icon className="size-5" aria-hidden />
+        <Icon aria-hidden />
       </span>
       <div className="flex min-w-0 flex-col gap-1">
         <h2 className="text-[17px] font-semibold text-[var(--q-ink)]">{title}</h2>

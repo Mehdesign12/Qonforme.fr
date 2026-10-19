@@ -1,4 +1,4 @@
-import { stripe } from './client'
+import { getStripe, type StripeMode } from './mode'
 import { upsertSubscription } from './subscription'
 import { getPlanByPriceId, isPlanId, type BillingPeriod, type PlanId } from './plans'
 import { mapStripeStatus } from './access'
@@ -11,8 +11,13 @@ import { mapStripeStatus } from './access'
  * Ne jamais appeler `redirect()` dans un try/catch autour de cette fonction :
  * Next.js lève une exception pour rediriger, que le catch intercepterait.
  */
-export async function recoverActiveSubscription(userId: string, stripeCustomerId: string): Promise<boolean> {
+export async function recoverActiveSubscription(
+  userId: string,
+  stripeCustomerId: string,
+  mode: StripeMode = 'live'
+): Promise<boolean> {
   try {
+    const stripe = getStripe(mode)
     const list = await stripe.subscriptions.list({ customer: stripeCustomerId, status: 'active', limit: 1 })
     const stripeSub = list.data[0]
     if (!stripeSub) return false
@@ -37,6 +42,7 @@ export async function recoverActiveSubscription(userId: string, stripeCustomerId
       billingPeriod: period,
       status: mapStripeStatus(stripeSub.status),
       currentPeriodEnd: ts ? new Date(ts * 1000) : null,
+      mode,
     })
 
     console.log(`[recoverActiveSubscription] Formule ${plan} retrouvée pour user ${userId}`)

@@ -2,12 +2,14 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, Check, Linkedin, Mail, Monitor } from "lucide-react"
 import { LOGO_LONG_LIGHT } from "@/lib/brand"
+import { SolutionCompatible } from "@/components/brand/SolutionCompatible"
+import { CookieSettingsLink } from "@/components/consent/CookieSettingsLink"
 
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: "Produit",
     links: [
-      { label: "Fonctionnalités", href: "/#features" },
+      { label: "Fonctionnalités", href: "/#devis" },
       { label: "Tarifs", href: "/pricing" },
       { label: "Démo interactive", href: "/demo" },
     ],
@@ -98,7 +100,7 @@ export default function Footer({ showCta = true }: { showCta?: boolean } = {}) {
               <ul className="mt-4 flex flex-col gap-3">
                 {PROMISES.map((p) => (
                   <li key={p} className="flex items-start gap-3 text-[15px] leading-snug text-q-text-2">
-                    <span className="mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full bg-q-wash text-q-accent-strong">
+                    <span className="mt-px grid h-5 w-5 shrink-0 place-items-center text-q-accent-strong q-glyph [&>svg]:size-4 [&>svg]:[stroke-width:2]">
                       <Check className="h-3 w-3" strokeWidth={2.5} aria-hidden />
                     </span>
                     {p}
@@ -118,6 +120,7 @@ export default function Footer({ showCta = true }: { showCta?: boolean } = {}) {
               <Image src={LOGO_LONG_LIGHT} alt="Qonforme" width={94} height={18} sizes="94px" loading="lazy" className="h-[18px] w-auto" />
             </Link>
             <p className="max-w-[300px] leading-[1.6]">Le logiciel de devis et de facturation des artisans du bâtiment.</p>
+            <SolutionCompatible size="sm" className="self-start" />
             <div className="mt-1 flex items-center gap-2">
               <a
                 href="https://www.linkedin.com/company/qonforme"
@@ -149,6 +152,11 @@ export default function Footer({ showCta = true }: { showCta?: boolean } = {}) {
                     </Link>
                   </li>
                 ))}
+                {col.title === "Légal" && (
+                  <li>
+                    <CookieSettingsLink className="inline-block py-1.5 text-left text-[#94A3B8] transition-colors hover:text-white" />
+                  </li>
+                )}
               </ul>
             </nav>
           ))}

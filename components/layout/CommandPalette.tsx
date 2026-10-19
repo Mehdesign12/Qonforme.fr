@@ -272,11 +272,8 @@ function OptionBody({ option, active, query }: { option: Option; active: boolean
     const Icon = option.icon
     return (
       <>
-        <span className={cn(
-          "grid size-[30px] shrink-0 place-items-center rounded-lg",
-          active ? "bg-white/[.18]" : "bg-[var(--q-neutral-bg)] text-[var(--q-text-3)]",
-        )}>
-          <Icon className="size-4" strokeWidth={2} aria-hidden />
+        <span className={cn("q-glyph size-[30px]", active ? "text-white" : "text-[var(--q-text-3)]")}>
+          <Icon aria-hidden />
         </span>
         <span className="flex min-w-0 flex-1 items-baseline gap-2">
           <span className={cn("truncate text-[15px]", active && "font-semibold")}>{option.label}</span>

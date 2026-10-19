@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Check, FileText, Wand2 } from "lucide-react"
 import { MODELES, getModeleBySlug } from "@/lib/pseo/modeles"
-import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
+import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, InlineCta, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
 import { fr } from "@/components/content/text"
 import ModelePaper from "@/components/content/ModelePaper"
 import { TelechargerModele } from "@/components/content/TelechargerModele"
@@ -122,7 +122,7 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
                   <ul className="flex flex-col gap-3 px-5 py-4">
                     {modele.contenu.map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-[14px] leading-[1.5] text-q-text-2">
-                        <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-q-ok-bg text-q-ok">
+                        <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center text-q-ok q-glyph [&>svg]:size-4 [&>svg]:[stroke-width:2]">
                           <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
                         </span>
                         {fr(item)}
@@ -206,6 +206,13 @@ export default async function ModelePage({ params }: { params: Promise<{ slug: s
                   ))}
                 </ol>
               </section>
+
+              <InlineCta
+                className="mt-14"
+                title="Plutôt qu'un modèle à remplir :"
+                accent="des devis qui se calculent seuls."
+                sub="Totaux, TVA par ligne et numérotation : Qonforme s'en charge. Devis gratuits, sans carte bancaire."
+              />
 
               {/* Maillage interne */}
               <section aria-labelledby="autres-modeles" className="mt-14">

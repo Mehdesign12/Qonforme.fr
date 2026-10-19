@@ -183,7 +183,7 @@ export function ClientsListView({
           ].map(({ icon: Icon, title, text }) => (
             <div key={title} className="q-card flex flex-col gap-2.5 p-[18px]">
               <span className="flex items-center gap-2.5">
-                <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+                <span className="grid size-8 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
                   <Icon className="size-4" aria-hidden />
                 </span>
                 <span className="q-h2">{title}</span>

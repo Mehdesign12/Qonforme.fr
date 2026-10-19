@@ -181,7 +181,7 @@ function PanelFrame({ title, lead, onBack, children }: { title: React.ReactNode;
 function Recipient({ email, hint }: { email: string; hint: string }) {
   return (
     <div className="q-inset flex items-center gap-3 p-3.5">
-      <span className="grid size-9 shrink-0 place-items-center rounded-[11px] bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+      <span className="grid size-9 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
         <Mail className="size-[18px]" strokeWidth={1.75} aria-hidden />
       </span>
       <span className="flex min-w-0 flex-col gap-0.5">

@@ -1,0 +1,206 @@
+import Image from "next/image"
+import Link from "next/link"
+import { ArrowRight, ChevronRight } from "lucide-react"
+import { CheckList, D_WRAP, GridLines, SIGNUP_HREF } from "@/components/home/kit"
+import { TradesStripLive, type TradeItem } from "@/components/home/TradesStrip"
+import { CtaButtons } from "@/components/landing/ui"
+import { SolutionCompatible } from "@/components/brand/SolutionCompatible"
+import { PHOTOS } from "@/lib/landing/photos"
+import { cn } from "@/lib/utils"
+
+/**
+ * Haut de l'accueil : héros en deux colonnes, bandeau de la facture
+ * électronique, rangée des métiers. Le label « Solution compatible » (DGFiP)
+ * tient la place d'une note d'avis, les métiers du bâtiment celle de logos de
+ * presse : aucun avis, aucune note, aucun logo qui ne soit vrai.
+ *
+ * Règles (CLAUDE.md) : contenu vrai seulement ; RIEN posé sur la photo (aucun
+ * élément flottant, décision du fondateur) ; icônes au trait, sans tuile ni
+ * pastille ; entrée du héros en CSS pur (.lp-fade-up, .dz-arch-in, .dz-kenburns),
+ * jouée une seule fois avant l'hydratation et annulée par « Réduire les
+ * animations » ; ni backdrop-filter ni will-change.
+ */
+
+/*
+ * Arche : coins du haut en demi-cercle, coins du bas arrondis à 28 px.
+ * Rayons du haut en pourcentages (50 % de la largeur, 40 % de la hauteur pour un
+ * cadre 4/5) et non « 999px » : le navigateur réduirait alors TOUS les rayons
+ * dans la même proportion, et les coins du bas tomberaient à 6 px environ.
+ */
+const ARCH = "aspect-[4/5] rounded-t-[50%_40%] rounded-b-[28px]"
+
+const PROMISES = [
+  "Vos devis, gratuits et sans limite",
+  "Vos factures envoyées par email, avec votre IBAN",
+  "Les relances des impayés, sans vous",
+  "Sur ordinateur et sur téléphone, rien à installer",
+]
+
+/* ─────────────────────────────────────────────────────────
+   A — Héros : texte à gauche (7/12), photo en arche (5/12)
+───────────────────────────────────────────────────────── */
+function HeroPhoto() {
+  const photo = PHOTOS.nouvelInstalle
+  if (!photo) return null
+  return (
+    <div className="lg:col-span-5">
+      {/* Marge droite et basse : la place du liseré décalé, sans débordement sur téléphone */}
+      <div className="dz-arch-in relative mx-auto w-full max-w-[376px] pb-4 pr-4 lg:max-w-[476px]">
+        <div className="relative">
+          <div aria-hidden className={cn(ARCH, "absolute inset-0 translate-x-4 translate-y-4 border border-q-wash-line")} />
+          <div className={cn(ARCH, "lp-clip relative bg-q-bg")}>
+            <Image
+              src={photo.src}
+              alt={photo.alt}
+              fill
+              priority
+              sizes="(min-width: 1024px) 460px, 360px"
+              className="dz-kenburns object-cover"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function HomeHero() {
+  return (
+    <section aria-labelledby="hero-title" className="relative bg-q-surface px-6 pb-[clamp(32px,6vw,80px)] pt-[100px] sm:pt-[136px]">
+      {/* Fond en lignes pointillées, le même que la section « Créez vos devis » */}
+      <GridLines />
+      <div className={cn(D_WRAP, "grid grid-cols-1 items-center gap-8 sm:gap-12 lg:grid-cols-12 lg:gap-10")}>
+        <div className="flex flex-col items-start lg:col-span-7">
+          <a
+            href="#facture-electronique"
+            className="lp-fade-up group flex max-w-full items-center gap-2 rounded-full border border-q-line bg-q-surface py-[3px] pl-[3px] pr-2.5 text-[12px] leading-[1.3] text-q-text-2 sm:gap-2.5 sm:py-[5px] sm:pl-[5px] sm:pr-3.5 sm:text-[13.5px] sm:shadow-[0_1px_2px_rgba(10,17,34,.04)] sm:transition-[border-color,box-shadow] sm:hover:border-q-field sm:hover:shadow-[0_1px_2px_rgba(10,17,34,.05),0_8px_20px_-12px_rgba(10,17,34,.22)]"
+          >
+            <span className="shrink-0 whitespace-nowrap rounded-full bg-[#0A1122] px-2 py-0.5 text-[11px] sm:px-2.5 sm:py-1 sm:text-[12px] font-semibold tracking-[.01em] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.14)]">
+              Nouveau
+            </span>
+            <span className="sm:hidden">Solution compatible facturation électronique</span>
+            <span className="hidden sm:inline">Qonforme est solution compatible facturation électronique</span>
+            <ChevronRight className="hidden h-3.5 w-3.5 shrink-0 text-q-text-4 transition-transform group-hover:translate-x-0.5 sm:block" strokeWidth={2} aria-hidden />
+          </a>
+
+          <h1
+            id="hero-title"
+            className="lp-fade-up mt-5 font-display text-[clamp(31px,8.6vw,38px)] sm:mt-7 sm:text-[clamp(38px,4.6vw,62px)] font-semibold leading-[1.04] tracking-[-0.04em] text-q-ink-strong [text-wrap:balance]"
+            style={{ animationDelay: ".08s" }}
+          >
+            Le logiciel des artisans du bâtiment{" "}
+            {/* Seconde voix sur sa propre ligne dès 640 px : elle ne se coupe pas après « pour » */}
+            <span className="q-serif sm:block">pour vos devis et factures.</span>
+          </h1>
+
+          <div className="lp-fade-up mt-4 sm:mt-8" style={{ animationDelay: ".16s" }}>
+            <CheckList items={PROMISES} className="gap-1.5 sm:gap-3" />
+          </div>
+
+          <div className="lp-fade-up mt-5 w-full max-sm:[&_.lp-btn-s]:hidden sm:mt-9" style={{ animationDelay: ".24s" }}>
+            <CtaButtons align="start" primary={{ href: SIGNUP_HREF, label: "Essayer gratuitement" }} />
+          </div>
+
+          {/* Label de la DGFiP : règles de la charte dans components/brand/SolutionCompatible.tsx */}
+          <div
+            className="lp-fade-up mt-5 flex flex-col items-start gap-3 sm:mt-8 sm:flex-row sm:items-center sm:gap-5"
+            style={{ animationDelay: ".32s" }}
+          >
+            <SolutionCompatible priority />
+            <p className="max-w-[300px] text-[14px] leading-[1.55] text-q-text-3">
+              Sans carte bancaire. Vous payez à partir de votre première facture.
+            </p>
+          </div>
+        </div>
+
+        <HeroPhoto />
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────
+   B — Bandeau de la facture électronique (cible de la
+   pastille du héros)
+───────────────────────────────────────────────────────── */
+const EINVOICING_PILLS = ["Factur-X", "Mentions obligatoires", "Numérotation continue"]
+
+export function EInvoicingBand() {
+  return (
+    <section
+      id="facture-electronique"
+      aria-labelledby="facture-electronique-title"
+      className="scroll-mt-24 bg-q-surface px-6 pb-[clamp(32px,4vw,48px)]"
+    >
+      <div
+        data-reveal=""
+        className={cn(
+          D_WRAP,
+          "grid grid-cols-1 items-center gap-8 rounded-[22px] border border-q-line bg-q-bg p-6 sm:p-9 md:grid-cols-[minmax(0,1fr)_auto] md:gap-12 lg:px-12 lg:py-10",
+        )}
+      >
+        <div className="flex flex-col items-start">
+          <h2
+            id="facture-electronique-title"
+            className="font-display text-[clamp(22px,2vw,24px)] font-semibold leading-[1.2] tracking-[-0.025em] text-q-ink-strong [text-wrap:balance]"
+          >
+            Solution compatible facturation électronique
+          </h2>
+          <p className="mt-3 max-w-[560px] text-[16px] leading-[1.6] text-q-text-3 [text-wrap:pretty]">
+            Qonforme est raccordé à une plateforme agréée. Le 1er&nbsp;septembre 2027, les TPE et PME émettront leurs factures entre entreprises en électronique&nbsp;: votre logiciel suit la réforme.
+          </p>
+          <Link
+            href="/guide/facture-electronique-2026"
+            className="mt-5 inline-flex items-center gap-1.5 text-[15px] font-semibold text-q-accent-strong hover:underline"
+          >
+            Ce que la réforme change pour vous <ArrowRight className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          </Link>
+        </div>
+
+        <div className="flex flex-col items-start gap-4 md:items-end">
+          <SolutionCompatible />
+          <ul className="flex flex-wrap gap-2 md:max-w-[300px] md:justify-end xl:max-w-none">
+            {EINVOICING_PILLS.map((p) => (
+              <li
+                key={p}
+                className="inline-flex h-8 items-center rounded-full border border-q-line bg-q-surface px-3.5 text-[13.5px] font-medium text-q-text-2"
+              >
+                {p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────
+   C — Rangée des métiers (à la place des logos de presse) :
+   des liens vers les pages métier ; au survol, la carte photo
+   du métier suit la souris (components/home/TradesStrip.tsx)
+───────────────────────────────────────────────────────── */
+const TRADES: TradeItem[] = [
+  // La photo « sansLogiciel » est celle de l'électricien (lib/landing/photos.ts), « appelFinal » celle du peintre
+  { label: "Électriciens", slug: "electricien", photo: PHOTOS.sansLogiciel, focus: "50% 12%" },
+  { label: "Plombiers", slug: "plombier", photo: PHOTOS.plombier, focus: "50% 45%" },
+  { label: "Maçons", slug: "macon", photo: PHOTOS.macon, focus: "50% 40%" },
+  { label: "Peintres", slug: "peintre", photo: PHOTOS.appelFinal, focus: "50% 28%" },
+  { label: "Carreleurs", slug: "carreleur", photo: PHOTOS.carreleur, focus: "50% 55%" },
+  { label: "Menuisiers", slug: "menuisier", photo: PHOTOS.menuisier, focus: "50% 55%" },
+  { label: "Couvreurs", slug: "couvreur", photo: PHOTOS.couvreur, focus: "50% 40%" },
+].map((t) => ({ ...t, photo: t.photo ? { src: t.photo.src, width: t.photo.width, height: t.photo.height } : null }))
+
+export function TradesStrip() {
+  return (
+    <section aria-labelledby="metiers-titre" className="bg-q-surface px-6 pb-[clamp(56px,7vw,88px)] pt-[clamp(16px,2vw,24px)]">
+      <div className={D_WRAP}>
+        <p id="metiers-titre" data-reveal="" className="text-center text-[13px] font-medium text-q-text-4">
+          Pensé pour les artisans du bâtiment
+        </p>
+        {/* Rangées incomplètes centrées : 2 par ligne sur téléphone, 4 sur tablette, 7 sur grand écran */}
+        <TradesStripLive items={TRADES} />
+      </div>
+    </section>
+  )
+}

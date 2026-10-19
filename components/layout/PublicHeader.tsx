@@ -3,7 +3,7 @@
 import { PublicNav } from "@/components/layout/PublicNav"
 
 interface PublicHeaderProps {
-  /** Accueil : ancres locales (#features) au lieu de chemins absolus (/#features). */
+  /** Accueil : ancres locales (#devis) au lieu de chemins absolus (/#devis). */
   isLandingPage?: boolean
 }
 

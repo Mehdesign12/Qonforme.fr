@@ -343,8 +343,8 @@ export function CoverField({
           <span
             aria-hidden
             className={cn(
-              "grid size-12 place-items-center rounded-full transition-colors duration-150 motion-reduce:transition-none",
-              dragOver ? "bg-[var(--q-accent)] text-white" : "bg-[var(--q-wash)] text-[var(--q-accent-strong)]",
+              "q-glyph size-12 transition-colors duration-150 motion-reduce:transition-none",
+              dragOver ? "text-[var(--q-accent)]" : "text-[var(--q-accent-strong)]",
             )}
           >
             {uploading ? <Loader2 className="size-5 animate-spin motion-reduce:animate-none" /> : <ImagePlus className="size-5" />}
@@ -384,7 +384,7 @@ export function CoverField({
         </div>
       ) : broken ? (
         <div className="flex aspect-video flex-col items-center justify-center gap-2.5 rounded-2xl border border-[var(--q-line)] bg-[var(--q-sunken)] p-6 text-center">
-          <span className="grid size-11 place-items-center rounded-full bg-[var(--q-surface)] text-[var(--q-text-4)]" aria-hidden>
+          <span className="grid size-11 place-items-center text-[var(--q-text-4)] q-glyph" aria-hidden>
             <ImageOff className="size-5" />
           </span>
           <span className="text-[15px] font-semibold text-[var(--q-ink)]">Image introuvable à cette adresse</span>

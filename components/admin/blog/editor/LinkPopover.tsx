@@ -357,7 +357,7 @@ export function LinkPopover({ editor, open, onClose, container }: LinkPopoverPro
             onMouseMove={() => setActive(0)}
             className={cn("flex min-h-11 cursor-pointer items-center gap-2.5 rounded-[9px] px-2.5 py-2", active === 0 && "bg-[var(--q-hover)]")}
           >
-            <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-[var(--q-wash)] text-[var(--q-accent-strong)]">
+            <span className="grid size-7 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
               {/^https?:/i.test(address.href) ? <ExternalLink className="size-3.5" aria-hidden /> : <Link2 className="size-3.5" aria-hidden />}
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
@@ -431,7 +431,7 @@ export function LinkPopover({ editor, open, onClose, container }: LinkPopoverPro
                     onMouseMove={() => setActive(index)}
                     className={cn("flex min-h-11 cursor-pointer items-center gap-2.5 rounded-[9px] px-2.5 py-1.5", selected && "bg-[var(--q-hover)]")}
                   >
-                    <span className="grid size-7 shrink-0 place-items-center rounded-lg border border-[var(--q-line)] bg-[var(--q-surface-2)] text-[var(--q-text-3)]">
+                    <span className="grid size-7 shrink-0 place-items-center text-[var(--q-text-3)] q-glyph">
                       <Icon className="size-3.5" aria-hidden />
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col">

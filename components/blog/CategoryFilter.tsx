@@ -71,8 +71,8 @@ export default function CategoryFilter({ posts }: Props) {
       )}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-        {grid.map((post, i) => (
-          <ArticleCard key={post.slug} post={post} index={i} />
+        {grid.map((post) => (
+          <ArticleCard key={post.slug} post={post} />
         ))}
       </div>
     </>

@@ -119,7 +119,7 @@ function PassageCard({ passage, detection, description }: { passage: PassageCont
       className="flex flex-col gap-1.5 rounded-xl border border-[var(--q-line)] bg-[var(--q-surface)] p-3"
     >
       <div className="flex items-center gap-2">
-        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-[var(--q-wash)] text-[var(--q-accent-strong)]" aria-hidden>
+        <span className="grid size-6 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph" aria-hidden>
           {loading ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" /> : <Sparkles className="size-3.5" />}
         </span>
         <span className="q-label !m-0">{loading ? "Lecture du passage…" : "Sujet repéré"}</span>
@@ -619,7 +619,7 @@ export function ImageStudioDialog({
         {/* En-tête */}
         <div className="flex shrink-0 flex-col gap-1 border-b border-[var(--q-line-soft)] px-5 pb-4 pr-16 pt-5 md:px-6 md:pr-16">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold tracking-[-0.01em] text-[var(--q-ink)]">
-            <span className="grid size-7 place-items-center rounded-lg bg-[var(--q-wash)] text-[var(--q-accent-strong)]" aria-hidden>
+            <span className="grid size-7 place-items-center text-[var(--q-accent-strong)] q-glyph" aria-hidden>
               <ImageIcon className="size-4" />
             </span>
             {cover ? "Image de couverture" : "Insérer une image"}
@@ -874,8 +874,8 @@ export function ImageStudioDialog({
                   <span
                     aria-hidden
                     className={cn(
-                      "pointer-events-none grid size-12 place-items-center rounded-full transition-colors duration-150 motion-reduce:transition-none",
-                      dragOver ? "bg-[var(--q-accent)] text-white" : "bg-[var(--q-wash)] text-[var(--q-accent-strong)]",
+                      "pointer-events-none q-glyph size-12 transition-colors duration-150 motion-reduce:transition-none",
+                      dragOver ? "text-[var(--q-accent)]" : "text-[var(--q-accent-strong)]",
                     )}
                   >
                     {busy === "import" ? <Loader2 className="size-5 animate-spin motion-reduce:animate-none" /> : <Upload className="size-5" />}
@@ -1208,7 +1208,7 @@ function HistoryThumb({ url }: { url: string }) {
 function EmptyPreview({ tab, uploading }: { tab: StudioTab; uploading: boolean }) {
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[radial-gradient(var(--q-line)_1px,transparent_1px)] p-6 text-center [background-size:16px_16px]">
-      <span className="grid size-14 place-items-center rounded-2xl border border-[var(--q-wash-line)] bg-[var(--q-surface)] text-[var(--q-accent-strong)] shadow-[shadow:var(--q-shadow-card)]" aria-hidden>
+      <span className="grid size-14 place-items-center text-[var(--q-accent-strong)] q-glyph" aria-hidden>
         {uploading ? <Loader2 className="size-6 animate-spin motion-reduce:animate-none" /> : <ImageIcon className="size-6" strokeWidth={1.75} />}
       </span>
       <span className="text-[14px] font-semibold text-[var(--q-ink)]">{uploading ? "Envoi de l'image…" : "Aperçu de l'image"}</span>

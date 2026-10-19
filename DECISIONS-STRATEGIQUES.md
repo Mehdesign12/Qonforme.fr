@@ -120,6 +120,7 @@
     - Fondations : jetons de couleur `--q-*` (clair et sombre) et kit `q-*` dans `app/globals.css`, composants partagés dans `components/app/kit.tsx`, Instrument Serif pour la seconde voix des titres publics, montants en DM Sans à chiffres tabulaires, références en DM Mono.
     - Application et démo sur la même coque (barre latérale blanche, barre supérieure flottante avec recherche ⌘K et menu « Nouveau », barre flottante du bas sur mobile) et sur les mêmes vues : la démo ne peut plus diverger du produit.
     - Écarts volontaires avec le canevas : aucune entrée ni aucun écran pour ce qui n'est pas livré (chantiers, réception, trésorerie, situations, retenue, autoliquidation, transmission, lien de paiement, signature en ligne, équipe) ; « Facturé » plutôt qu'« Encaissé » au tableau de bord ; « En préparation » pour la transmission.
+  - **Accueil remplacé le 17/10/2026 (décision du fondateur) :** l'accueil reprend la structure et le rythme d'une page de référence (analyse interne : `ANALYSE-LANDING-CONCURRENT-2026-10.md`), au langage de Qonforme et avec un contenu vrai (`app/page.tsx`, `components/home/`). Titre : « Le logiciel des artisans du bâtiment *pour vos devis et factures.* ». Les chiffres d'utilisateurs, les avis, les logos de presse et la signature électronique (pas encore vendue) n'y sont pas repris ; leurs places sont tenues par le label « Solution compatible », les métiers, les faits de l'offre lus dans le code, les engagements des CGU et le passage du devis à la facture. L'ancien accueil est récupérable dans l'historique git (commit `a78a9cd`). Plus de section tarifs sur l'accueil : « Tarifs » mène à `/pricing`, l'inscription étant gratuite et sans carte. Un futur test A/B reste possible : `?ab=<nom>` enregistre la variante dans `user_metadata.landing_variant` (`lib/auth/signup-input.ts`).
 
 ## 7. Questions ouvertes
 
@@ -521,3 +522,79 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 - **Formule annuelle :** pas de remboursement au prorata après les 30 jours. C'est la pratique retenue par défaut, à confirmer.
 - **CGV distinctes des CGU :** à faire relire par un juriste.
 - **Mentions légales :** il manque le SIREN, l'adresse du siège et le numéro de TVA de Qonforme SAS. Ils sont obligatoires sur le site comme sur les factures d'abonnement.
+
+---
+
+## 13. Label « Solution compatible – Facturation électronique » (déclaré obtenu le 17/10/2026)
+
+### La décision
+
+Le fondateur déclare le 17/10/2026 que Qonforme a obtenu le label de la DGFiP. Le logotype s'affiche donc sur l'accueil (§ « Où il s'affiche »). **Le dépôt ne contient pas la preuve** (date du raccordement, nom de la plateforme agréée, fonctions couvertes) : la noter ici dès qu'elle est sous la main, car la charte permet à l'État de contrôler l'usage et d'en exiger le retrait.
+
+> Preuve à consigner : plateforme agréée raccordée : ______ · date : ______ · fonctions couvertes (réception / émission / e-reporting) : ______
+
+### Ce que dit la charte (DGFiP, 30/07/2025)
+
+- **Qui :** un éditeur dont le logiciel sait recevoir des factures dans les formats de la réforme **et** est raccordé à au moins une plateforme agréée. S'il propose aussi l'émission, il doit aussi savoir émettre ; s'il propose le e-reporting, il doit savoir le transmettre. Le label s'apprécie fonction par fonction.
+- **Usage :** information générale seulement ; droit **non permanent, non exclusif, personnel, gratuit, limité au territoire français** ; l'État peut le retirer, et l'éditeur doit alors cesser tout usage sur tous ses supports sans indemnité.
+- **Graphisme :** logotype reproduit en entier avec son cartouche blanc, jamais déformé, incliné, recoloré, en transparence, ni avec une ombre ou un effet ; zone de protection respectée ; **cartouche « Solution compatible » d'au moins 12 px de haut** (soit 192 px de large pour le fichier `public/brand/solution-compatible-facturation-electronique.webp`) ; toujours accompagné de la mention « Solution compatible facturation électronique » (elle est dans le logotype et dans son texte alternatif).
+- **Interdits :** déposer une marque ou un nom de domaine proche, laisser croire à un agrément de l'État. La mention « Plateforme agréée » reste interdite à Qonforme.
+
+### Où il s'affiche
+
+Un seul composant, `components/brand/SolutionCompatible.tsx` (interrupteur `SOLUTION_COMPATIBLE`, à passer à `false` pour tout retirer d'un coup si le label est perdu) : héros (`components/home/HomeHero.tsx`), bandeau « facture électronique » du même fichier, bandeau des engagements, réponse « Qonforme est-il une plateforme agréée ? » de la FAQ et appel final (`components/home/Closing.tsx`), pied de page (`components/layout/Footer.tsx`, donc toutes les pages publiques). Depuis le remplacement de l'accueil par l'ancienne variante B (18/10/2026), la carte « Où en est Qonforme », la section tarifs de l'accueil et `SolutionCompatibleNote` n'existent plus ; `/pricing` n'affiche pas le label (choix à confirmer).
+
+### Textes changés pour rester d'accord avec le logotype
+
+Accueil : réponse de la FAQ (la 3ᵉ ligne de « Où en est Qonforme » a disparu avec l'ancien accueil). Guide « Plateforme agréée » : « Et avec Qonforme ? ».
+
+### À revoir : textes qui disent encore « en préparation » (décision en attente)
+
+Ils disent le contraire du logotype tant qu'ils ne sont pas relus avec ce que couvre le raccordement réel (réception seule, ou aussi émission) :
+
+- application : `components/reception/PlatformNotice.tsx`, `components/settings/{EInvoicingView,SettingsOverview}.tsx`, `components/layout/Sidebar.tsx`, `components/dashboard/ReformCard.tsx` ;
+- pages publiques : FAQ de `app/pricing/page.tsx`, `app/outils/{generateur-facture-gratuite,verificateur-conformite-facture}/page.tsx`, `lib/pseo/guides.ts` (guide auto-entrepreneur), `lib/pseo/metiers.ts` (plombier, peintre) ;
+- générateurs d'articles : `lib/ai/gemini.ts` et `lib/seo/articles/prompt.ts` (consigne « ne jamais écrire que Qonforme transmet les factures électroniques »), `lib/ai/reference-facts.ts` (faits de référence à relire) ; la vérification des articles (`lib/blog-audit.ts`) refuse « ni certifié ni homologué » : cela reste vrai pour « certifié », à ne pas assouplir.
+
+---
+
+## 14. Nouvelle grille, société américaine et TVA reportée (décidé le 19/10/2026)
+
+Remplace la grille du § 12 (12 € et 24 € HT). Décisions du fondateur, dans l'ordre où elles ont été prises.
+
+### Prix
+
+| | Mensuel | Annuel |
+|---|---|---|
+| Essentiel | 24 € | 240 € (20 € par mois) |
+| Artisan | 34 € | 340 € (28,33 € par mois) |
+
+Le prix affiché est le prix payé par le client. Une première version du canevas affichait 25 € et 34 € TTC (session « Révision modifications et incohérences », 14-16/10) : elle est abandonnée au profit de 24 € et 34 €, sans TVA ajoutée tant que § 14.3 n'est pas levé. Définis à un seul endroit : `lib/stripe/plans.ts`.
+
+### 14.1 Qui vend
+
+Les abonnements sont vendus par **Diez Agency LLC** (société du Wyoming, États-Unis) ; « Qonforme » est une marque, il n'existe pas de « Qonforme SAS ». Le compte Stripe est au nom de la LLC. Les mentions légales, les CGU et la politique de confidentialité nomment encore « Qonforme SAS » : **à corriger** (éditeur, responsable du traitement, adresse, responsable de publication ; en attente de l'adresse de la LLC et du nom du responsable de publication).
+
+### 14.2 Mode essai Stripe : des comptes d'essai, pas d'interrupteur général
+
+Un bac à sable Stripe (« Qonforme essai ») a ses propres clés, produits, prix et webhook. Variante retenue : **des comptes d'essai** cochés dans Admin › Paiements paient dans le bac à sable ; tous les autres restent en production en permanence. Un interrupteur général aurait coupé la vente à de vrais clients par un seul clic.
+
+- Variables : celles de la production, et les mêmes noms suffixés par `_TEST` (clé secrète, clé publique, clé du webhook, 4 prix). Jamais enregistrées en base ni affichées ; l'écran admin ne montre que leur présence.
+- Tables : `stripe_test_users` (comptes d'essai, serveur seulement) et `subscriptions.livemode` (faux pour un abonnement d'essai), migration `20261019_stripe_test_mode.sql`. Sans elle, tout le monde est en production comme avant.
+- Sûreté : en cas de doute sur le mode d'un compte, le paiement est refusé (503), jamais deviné ; un abonnement d'essai n'ouvre pas « déjà abonné » à un compte revenu en production ; retirer un compte d'essai efface son abonnement d'essai ; « Supprimer les abonnements d'essai » nettoie avant l'ouverture.
+- Un seul webhook (`/api/webhooks/stripe`, **sans `www`**) reçoit les deux modes : la clé de signature qui correspond donne le mode, et un message dont le mode contredit sa signature est refusé.
+
+### 14.3 TVA reportée, sous la responsabilité du fondateur
+
+La LLC n'est pas inscrite à la TVA et Stripe Tax n'est pas activé. Décision du fondateur, **vente ouverte quand même, sans TVA ajoutée**, son expert-comptable devant trouver une solution plus tard ; il assume la responsabilité de ce choix. Risque exposé avant la décision : une prestation de logiciel fournie à un client en France par une société hors Union européenne est taxable en France (autoliquidation par le client assujetti avec numéro de TVA ; TVA française due par le fournisseur pour les autres clients, via le guichet unique pour les sociétés hors Union ou une immatriculation en France) ; la TVA non collectée ne peut plus être refacturée au client et peut rester à la charge de la LLC, avec d'éventuelles pénalités.
+
+Mise en œuvre : `VAT_COLLECTED = false` dans `lib/stripe/plans.ts`. Tant qu'il vaut false : aucun taux de TVA ajouté, aucune mention HT ou TTC (page Tarifs, paiement, abonnement, emails, CGU, données structurées), l'abonnement est facturé au prix affiché. Une fois la LLC inscrite : activer Stripe Tax, passer le réglage à `true` (prix hors taxes, TVA calculée par Stripe, numéro de TVA des entreprises demandé au paiement, 0 % si valide), relire l'article 4 des CGU et ce paragraphe. **L'ancien taux fixe `STRIPE_TAX_RATE_ID` n'est plus utilisé.**
+
+### 14.4 À faire avant d'ouvrir la vente en production
+
+1. Créer en mode production les 2 produits et les 4 prix de la grille ci-dessus, puis renseigner `STRIPE_PRICE_ESSENTIEL_{MONTHLY,YEARLY}` et `STRIPE_PRICE_ARTISAN_{MONTHLY,YEARLY}` dans Vercel (Artisan se met en vente dès que ses deux prix existent ; valeur lue au build : redéployer).
+2. Corriger le webhook de production : adresse `https://qonforme.fr/api/webhooks/stripe` (celle en `www` reçoit une redirection que Stripe ne suit pas), les 7 événements du code (`.env.example`), puis recopier sa clé dans `STRIPE_WEBHOOK_SECRET`.
+3. Régler le portail client en production (changement de formule entre les deux produits, résiliation à la fin de la période).
+4. Appliquer `20261019_stripe_test_mode.sql`, puis « Supprimer les abonnements d'essai » dans Admin › Paiements.
+5. Corriger les mentions légales, les CGU et la confidentialité (§ 14.1).
+6. Représentant dans l'Union européenne pour le RGPD, et vérification que le label « Solution compatible » (§ 13) a été obtenu au nom de la LLC.

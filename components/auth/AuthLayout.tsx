@@ -1,4 +1,6 @@
 import AuthLogo from "@/components/auth/AuthLogo"
+import { Doodles } from "@/components/brand/Doodles"
+import { pictosFor } from "@/components/brand/pictos"
 import StepIndicator from "@/components/auth/StepIndicator"
 import { cn } from "@/lib/utils"
 
@@ -8,12 +10,16 @@ import { cn } from "@/lib/utils"
  *  - par défaut (« Connexion », « Onb-1-Inscription ») : colonne blanche avec
  *    le logo et le formulaire, `aside` à droite sur fond #F6F8FB (≥ lg) ;
  *    sans `aside`, une seule colonne centrée ;
- *  - avec `asideVariant="photo"` (inscription, maquette validée le 06/10/2026) :
+ *  - avec `asideVariant="photo"` (inscription, maquette validée le 06/10/2026 ;
+ *    connexion et mot de passe depuis le 17/10/2026, AuthPhotoPanel) :
  *    page blanche, `aside` en photo pleine hauteur dans un cadre arrondi (marge
  *    16 px, sans bord ni fond), fixe au défilement ; sous 1024 px, `mobileBand`
  *    (bande photo) sous le logo et `topRight` (lien) à droite du logo ;
  *  - avec `bar` (« Onb-2-Entreprise », « Onb-7-Bienvenue ») : barre blanche en
  *    haut (logo, étapes, lien à droite), contenu centré sur le fond.
+ * Pictogrammes de marque sur grand écran (components/brand/Doodles.tsx) : de
+ * chaque côté du contenu centré, ou dans les coins de la colonne du formulaire
+ * quand un panneau l'accompagne ; jamais par-dessus un contenu très large.
  * Ni backdrop-filter ni will-change (règle iOS de CLAUDE.md) ; couleurs par
  * les jetons --q-*, thème sombre compris.
  */
@@ -59,6 +65,9 @@ const SAFE_AREA: React.CSSProperties = {
   paddingRight: "env(safe-area-inset-right)",
 }
 
+/** Pictogrammes des pages d'accès : le devis et la facture, le casque et la maison. */
+const PICTOS = pictosFor("Devis et facture du chantier")
+
 /** Halo bleu discret en haut de page (fond mobile du canevas « Mobile-connexion »). */
 function Glow({ className }: { className?: string }) {
   return (
@@ -91,6 +100,7 @@ export default function AuthLayout({
           {bar.right && <div className="col-span-2 justify-self-end md:col-span-1">{bar.right}</div>}
         </header>
         <Glow className="top-[60px] hidden md:block" />
+        {maxWidth !== "wide" && <Doodles layout="auth" from={maxWidth === "2xl" ? 1180 : 1100} {...PICTOS} />}
         <main className={cn("relative mx-auto flex w-full flex-1 flex-col gap-5 px-4 pb-16 pt-8 sm:px-5 md:pt-14", widthMap[maxWidth])}>
           {children}
         </main>
@@ -116,6 +126,7 @@ export default function AuthLayout({
         )}
       >
         {!photo && <Glow className={aside ? "lg:hidden" : undefined} />}
+        <Doodles layout={aside ? "auth-column" : "auth"} {...PICTOS} />
         <div
           className={cn(
             "relative",
