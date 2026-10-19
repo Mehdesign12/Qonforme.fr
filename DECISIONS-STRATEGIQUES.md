@@ -476,7 +476,7 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 ### Décisions
 
 1. **Pas de Stripe Connect.** Qonforme n'encaisse pas pour le compte des artisans. Leurs clients les paient par virement sur leur propre IBAN. Le lien de paiement mène à une page de règlement : IBAN, BIC, montant, référence à copier, bouton « J'ai effectué le virement » qui prévient l'artisan. Pas de carte ni de prélèvement côté client, pas de frais de transaction.
-2. **Pas d'app native.** L'app iOS (Capacitor) est retirée du code. Le mobile passe par le site responsive, installable sur l'écran d'accueil (PWA). Raison : un abonnement vendu à un artisan seul relève de l'achat intégré d'Apple (règle 3.1.3(c)) ; l'autre voie (3.1.3(f)) interdit tout prix, bouton ou lien d'achat dans l'app, donc le mur de paiement à la première facture.
+2. **Pas d'app native.** *(Rouvert le 19/10/2026 : voir § 15.)* L'app iOS (Capacitor) est retirée du code. Le mobile passe par le site responsive, installable sur l'écran d'accueil (PWA). Raison : un abonnement vendu à un artisan seul relève de l'achat intégré d'Apple (règle 3.1.3(c)) ; l'autre voie (3.1.3(f)) interdit tout prix, bouton ou lien d'achat dans l'app, donc le mur de paiement à la première facture.
 3. **Grille appliquée à tous.** Aucun abonné payant à reprendre : pas d'ancien tarif à maintenir.
    - Essentiel : 12 € HT par mois, ou 120 € HT par an (10 € par mois).
    - Artisan : 24 € HT par mois, ou 240 € HT par an (20 € par mois). **Affiché « bientôt » et non vendu** tant que situations, retenue de garantie et autoliquidation n'existent pas : on ne vend pas ce qui n'existe pas (§ 2).
@@ -606,3 +606,13 @@ Mise en œuvre : `VAT_COLLECTED = false` dans `lib/stripe/plans.ts`. Tant qu'il 
 ### 14.5 Tests du 19/10/2026 sur le site en ligne (bac à sable, compte d'essai)
 
 Compte créé par la session (`claude-test-stripe-20261019@example.com`, à supprimer de l'admin) et ajouté aux comptes d'essai. Vérifiés avec un navigateur : page Tarifs (24 €, 34 €, aucun HT/TTC), paiement en production fermé pour un compte ordinaire (500 « momentanément indisponible »), paiement de 24 € par carte d'essai (activation, facture, moyen de paiement), webhook en 200 (`checkout.session.completed`, `invoice.paid`), passage Essentiel → Artisan par le portail (10,00 € au prorata, puis 34 €/mois), résiliation programmée, garantie de 30 jours (34 € remboursés, retour en version gratuite), formulaire sans Link. Non testés : prélèvement SEPA (réussi et refusé), année complète, TVA (Stripe Tax non activé), mode production.
+
+## 15. Application mobile native rouverte, sans achat dans l'app (orientation du 19/10/2026)
+
+Remplace le point 2 du § 12 (« Pas d'app native »). Décision du fondateur, prise en réponse à la question « App Mobile » : **rouvrir l'app native, sur iOS et Android, sans aucun achat dans l'app**. Le plan, ses risques et les décisions qui restent ouvertes (D1 à D7) sont dans `PLAN-APP-MOBILE-2026-10.md`. **Aucun code natif n'est écrit tant que ce plan n'est pas validé.**
+
+- **Voie retenue** : application gratuite, compagnon d'un outil payant en ligne (règle 3.1.3(f) d'Apple). Aucun prix, bouton, lien ni appel à l'action vers un achat, dans l'app comme vers l'extérieur ; l'abonnement se prend sur le site, par Stripe (§ 12 et § 14 inchangés).
+- **Conséquence produit** : un compte sans formule fait dans l'app tout ce qui est gratuit sur le site (devis, clients, catalogue, brouillons, consultation) ; à l'émission, l'app affiche un message sans prix ni lien au lieu de `PaywallDialog`. Le serveur continue de refuser (402).
+- **Prérequis hors code** : comptes développeur Apple et Google au nom de Diez Agency LLC, adresse du siège de la LLC (§ 14.1), coordonnées de professionnel pour la fiche UE.
+- **Manque constaté dans le code** : aucune suppression de compte par l'utilisateur (exigée par Apple, et par le RGPD) ; à construire avant la soumission, avec une règle pour les documents émis (D3).
+- **Non retenu** : achat intégré ; lien vers le site pour acheter (possible dans l'UE depuis le 1er octobre 2026, avec commission ; piste ultérieure à étudier si la conversion en souffre).
