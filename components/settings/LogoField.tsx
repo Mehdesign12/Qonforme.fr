@@ -151,10 +151,12 @@ export function LogoDropzone({
   if (logo.preview) {
     return (
       <div className="flex flex-col items-center justify-center gap-3.5 rounded-[14px] border border-[var(--q-line)] bg-[var(--q-surface)] px-5 py-6">
-        <span className="grid h-20 w-full max-w-[220px] place-items-center rounded-xl bg-white p-2">
+        {/* Boîte de taille fixe, image à 100 % de son contenu : dans un `grid` à ligne automatique,
+            `max-h-full` ne bornait rien et un logo carré de 480 px passait par-dessus le texte et les boutons. */}
+        <span className="block h-20 w-full max-w-[220px] overflow-hidden rounded-xl bg-white p-2">
           {/* Aperçu local (data: URL) ou fichier du Storage : <img> plutôt que next/image */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logo.preview} alt="Logo de l'entreprise" className="max-h-full max-w-full object-contain" />
+          <img src={logo.preview} alt="Logo de l'entreprise" className="size-full object-contain" />
         </span>
         <span className="flex items-center gap-1.5 text-[13px] text-[var(--q-ok)]">
           {logo.uploading
