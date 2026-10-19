@@ -259,7 +259,8 @@ export function ClientFormPage({
     <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-[18px]">
       <PageHeader
         title={title}
-        subtitle={subtitle}
+        // Le SIREN ne concerne que les professionnels : pas de sous-titre sur l'onglet Particulier
+        subtitle={isPro ? subtitle : undefined}
         backHref={backHref}
         backLabel={backLabel}
         className="md:items-center"
