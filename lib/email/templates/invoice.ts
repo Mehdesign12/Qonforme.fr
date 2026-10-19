@@ -1,4 +1,4 @@
-import { emailBase, fmtEur, fmtDate, amountBlock, ctaButton, retentionBlock } from "./base"
+import { emailBase, fmtEur, fmtDate, amountBlock, ctaButton, retentionBlock, notesBlock, monoLabel, FONT_MONO } from "./base"
 
 interface InvoiceEmailData {
   invoiceNumber:  string
@@ -25,73 +25,43 @@ interface InvoiceEmailData {
 export function buildInvoiceEmail(d: InvoiceEmailData): { subject: string; html: string } {
   const subject = `Facture ${d.invoiceNumber} — ${d.companyName}`
 
+  const label = d.docLabel ?? "facture"
   const body = `
-    <p style="margin:0 0 6px;font-size:15px;color:#475569;">Bonjour,</p>
-    <p style="margin:0 0 24px;font-size:15px;color:#1E293B;line-height:1.6;">
-      Veuillez trouver ci-joint votre ${d.docLabel ?? "facture"} <strong>${d.invoiceNumber}</strong>
-      du <strong>${fmtDate(d.issueDate)}</strong>, échéance le
-      <strong style="color:#DC2626;">${fmtDate(d.dueDate)}</strong>.
+    <p style="margin:0 0 8px;font-size:15.5px;color:#2B2E35;line-height:1.7;">Bonjour,</p>
+    <p style="margin:0;font-size:15.5px;color:#2B2E35;line-height:1.7;">
+      Voici votre ${label} <strong>${d.invoiceNumber}</strong> du <strong>${fmtDate(d.issueDate)}</strong>,
+      à régler avant le <strong style="color:#B42318;">${fmtDate(d.dueDate)}</strong>.
+      Elle est jointe à cet email au format PDF, avec ses données Factur-X.
     </p>
-
-    <!-- Bloc infos facture -->
-    <table width="100%" cellpadding="0" cellspacing="0"
-           style="border:1px solid #E2E8F0;border-radius:10px;overflow:hidden;margin-bottom:4px;">
-      <tr style="background-color:#F8FAFC;">
-        <td colspan="2" style="padding:14px 20px;font-size:12px;font-weight:600;color:#94A3B8;letter-spacing:0.8px;text-transform:uppercase;">
-          Détail de la facture
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:10px 20px;font-size:13px;color:#64748B;border-top:1px solid #F1F5F9;">Numéro</td>
-        <td style="padding:10px 20px;font-size:13px;color:#1E293B;font-weight:600;text-align:right;border-top:1px solid #F1F5F9;">${d.invoiceNumber}</td>
-      </tr>
-      <tr style="background-color:#FAFAFA;">
-        <td style="padding:10px 20px;font-size:13px;color:#64748B;">Date d'émission</td>
-        <td style="padding:10px 20px;font-size:13px;color:#1E293B;text-align:right;">${fmtDate(d.issueDate)}</td>
-      </tr>
-      <tr>
-        <td style="padding:10px 20px;font-size:13px;color:#64748B;">Date d'échéance</td>
-        <td style="padding:10px 20px;font-size:13px;color:#DC2626;font-weight:600;text-align:right;">${fmtDate(d.dueDate)}</td>
-      </tr>
-    </table>
 
     ${amountBlock(d.subtotalHt, d.totalVat, d.totalTtc, d.accentColor)}
     ${retentionBlock(d.totalTtc, d.retention)}
 
     ${d.companyIban ? `
-    <table width="100%" cellpadding="0" cellspacing="0"
-           style="margin-top:16px;background-color:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:0;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
       <tr>
-        <td style="padding:14px 20px;">
-          <p style="margin:0;font-size:12px;font-weight:600;color:#15803D;text-transform:uppercase;letter-spacing:0.6px;">
-            Coordonnées bancaires
-          </p>
-          <p style="margin:4px 0 0;font-size:13px;color:#166534;font-family:monospace;letter-spacing:0.5px;">
-            ${d.companyIban}
-          </p>
+        <td class="q-stack" style="font-size:13px;line-height:1.5;">
+          ${monoLabel("Virement sur")}<br/>
+          <span style="font-family:${FONT_MONO};font-size:13px;letter-spacing:0.3px;color:#15171C;">${d.companyIban}</span>
+        </td>
+        <td class="q-stack" align="right" style="font-size:13px;line-height:1.5;">
+          ${monoLabel("Référence")}<br/>
+          <span style="font-family:${FONT_MONO};font-size:13px;color:#15171C;">${d.invoiceNumber}</span>
         </td>
       </tr>
     </table>` : ""}
 
     ${d.paymentUrl ? `
-    ${ctaButton("Régler par virement", d.paymentUrl, d.accentColor)}
-    <p style="margin:10px 0 0;font-size:12px;color:#64748B;text-align:center;line-height:1.5;">
-      IBAN, montant et référence à copier, et un bouton pour signaler votre virement.
+    ${ctaButton("Voir les coordonnées de virement", d.paymentUrl, d.accentColor)}
+    <p style="margin:12px 0 0;font-size:12.5px;color:#4F5257;line-height:1.55;">
+      Le virement se fait depuis votre banque. Cette page donne l'IBAN, le montant et la référence à copier, et un bouton pour nous signaler votre virement.
     </p>` : ""}
 
-    ${d.notes ? `
-    <div style="margin-top:20px;padding:16px 20px;background-color:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;">
-      <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#92400E;text-transform:uppercase;letter-spacing:0.6px;">Notes</p>
-      <p style="margin:0;font-size:13px;color:#78350F;line-height:1.5;">${d.notes}</p>
-    </div>` : ""}
+    ${d.notes ? notesBlock(d.notes) : ""}
 
-    <p style="margin:28px 0 0;font-size:13px;color:#64748B;line-height:1.6;">
-      La facture est jointe à cet email au format PDF, avec ses données Factur-X.
-    </p>
-
-    <p style="margin:20px 0 0;font-size:14px;color:#475569;">
+    <p style="margin:30px 0 0;font-size:14.5px;color:#2B2E35;line-height:1.65;">
       Cordialement,<br/>
-      <strong style="color:#1E293B;">${d.companyName}</strong>
+      <strong style="color:#15171C;">${d.companyName}</strong>
     </p>
   `
 
@@ -102,6 +72,9 @@ export function buildInvoiceEmail(d: InvoiceEmailData): { subject: string; html:
       accentColor: d.accentColor,
       companyName: d.companyName,
       preheader:   `Facture ${d.invoiceNumber} — ${fmtEur(d.totalTtc)} TTC — échéance ${fmtDate(d.dueDate)}`,
+      reference:   `N° ${d.invoiceNumber}`,
+      headline:    `Votre ${label},`,
+      headlineAccent: d.paymentUrl || d.companyIban ? "à régler par virement." : "à régler avant l'échéance.",
       body,
     }),
   }
