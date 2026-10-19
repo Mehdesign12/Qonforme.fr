@@ -12,7 +12,7 @@
  * Prix lus dans lib/stripe/plans.ts : Essentiel seul est vendu, Artisan
  * reste « bientôt » (DECISIONS § 12). Même composant pour la démo (`mode="demo"`).
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -466,6 +466,15 @@ function GuaranteeCard({ guarantee, demo, onDone }: { guarantee: GuaranteeInfo; 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [refunded, setRefunded] = useState<number | null>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  // Sur téléphone, le bouton de confirmation apparaissait sous la barre de navigation
+  // flottante : on amène l'encadré au milieu de l'écran quand il s'ouvre.
+  useEffect(() => {
+    if (!confirming) return
+    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    panelRef.current?.scrollIntoView?.({ block: 'center', behavior: calm ? 'auto' : 'smooth' })
+  }, [confirming])
 
   if (!guarantee.eligible) {
     if (guarantee.reason !== 'processing') return null
@@ -528,7 +537,7 @@ function GuaranteeCard({ guarantee, demo, onDone }: { guarantee: GuaranteeInfo; 
           Être remboursé et arrêter ma formule
         </button>
       ) : (
-        <div className="q-inset flex flex-col gap-3 p-4">
+        <div ref={panelRef} className="q-inset flex flex-col gap-3 p-4">
           <p className="text-sm text-[var(--q-text-3)]">
             Votre formule s&apos;arrête tout de suite et votre compte repasse en version gratuite. Les factures
             déjà envoyées restent émises et consultables ; vous ne pourrez plus en envoyer de nouvelles.
