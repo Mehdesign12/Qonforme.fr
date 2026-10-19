@@ -598,3 +598,11 @@ Mise en œuvre : `VAT_COLLECTED = false` dans `lib/stripe/plans.ts`. Tant qu'il 
 4. Appliquer `20261019_stripe_test_mode.sql`, puis « Supprimer les abonnements d'essai » dans Admin › Paiements.
 5. Corriger les mentions légales, les CGU et la confidentialité (§ 14.1).
 6. Représentant dans l'Union européenne pour le RGPD, et vérification que le label « Solution compatible » (§ 13) a été obtenu au nom de la LLC.
+7. **Réglages Stripe à refaire en production** (le bac à sable et la production ont chacun les leurs ; rappel demandé par le fondateur le 19/10/2026) :
+   - **Nom public du compte** (Settings › Business › Public details) : il s'affiche dans le texte légal du formulaire de paiement (« vous autorisez … à vous débiter »), dans le portail client et sur les factures d'abonnement ; dans le bac à sable il vaut « Qonforme essai ». À régler, avec l'adresse et le numéro d'identification de la LLC pour les factures (Settings › Billing › Invoice template).
+   - **Link désactivé** (Settings › Payment methods › Link) : sinon Stripe coche « Enregistrer mes informations avec Link » et exige un numéro de téléphone, ce qui peut bloquer un client. Vérifié dans le bac à sable : plus de bouton ni de case Link.
+   - **Portail client** : motif de résiliation (la liste est en français, mais son libellé « Reason » reste en anglais ; à désactiver ou à garder).
+
+### 14.5 Tests du 19/10/2026 sur le site en ligne (bac à sable, compte d'essai)
+
+Compte créé par la session (`claude-test-stripe-20261019@example.com`, à supprimer de l'admin) et ajouté aux comptes d'essai. Vérifiés avec un navigateur : page Tarifs (24 €, 34 €, aucun HT/TTC), paiement en production fermé pour un compte ordinaire (500 « momentanément indisponible »), paiement de 24 € par carte d'essai (activation, facture, moyen de paiement), webhook en 200 (`checkout.session.completed`, `invoice.paid`), passage Essentiel → Artisan par le portail (10,00 € au prorata, puis 34 €/mois), résiliation programmée, garantie de 30 jours (34 € remboursés, retour en version gratuite), formulaire sans Link. Non testés : prélèvement SEPA (réussi et refusé), année complète, TVA (Stripe Tax non activé), mode production.
