@@ -15,13 +15,13 @@ import { useEffect, useId, useRef, useState } from "react"
 import { Check, CircleCheck, Loader2, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AUTH_INPUT, Field } from "@/components/auth/fields"
-import { validateCompanyInput, type CompanyInput } from "@/lib/onboarding/inscription"
+import { validateCompanyInput, type CompanyInput, type SignupDraft } from "@/lib/onboarding/inscription"
 import type { SireneCandidate } from "@/lib/utils/sirene"
 import { demoSearch } from "@/components/onboarding/inscription/demo"
 import {
   COMPANY_MAX_LENGTH, SEARCH_DEBOUNCE_MS, SEARCH_MIN, SEARCH_UNAVAILABLE,
-  candidateToInput, companyAsCandidate, companyErrorField, fullAddressOf, groupSiren, placeOf, sirenFromQuery,
-  type CompanyField, type InscriptionCompany,
+  candidateToInput, companyAsCandidate, companyErrorField, fullAddressOf, groupSiren, placeOf, sameCompany, sirenFromQuery,
+  type CompanyField, type InscriptionCompany, type SnapshotRef,
 } from "@/components/onboarding/inscription/model"
 import {
   FIELD_FOCUS_QUERY, STEP_PAD, Serif, StepError, StepFooter, StepHeader, StepLead, StepTitle, useInitialFocus,
@@ -50,11 +50,18 @@ export interface CompanyStepProps {
   onSubmit: (input: CompanyInput, candidate: SireneCandidate | null) => Promise<string | null>
   /** L'entreprise enregistrée est gardée telle quelle : étape suivante. */
   onKeep: () => void
+  /** Ce qu'il faut enregistrer si la fenêtre se ferme sans validation (voir StepSnapshot). */
+  snapshotRef: SnapshotRef
+  /** Saisies gardées à la dernière fermeture : reprises dans les champs. */
+  draft: SignupDraft["company"] | null
+  /** Échec d'un enregistrement en arrière-plan : message affiché à l'ouverture de l'étape. */
+  initialError: string | null
 }
 
 export function CompanyStep(props: CompanyStepProps) {
-  const [sub, setSub] = useState<"search" | "manual">("search")
-  const [form, setForm] = useState<ManualForm>(EMPTY_FORM)
+  const draft = props.draft
+  const [sub, setSub] = useState<"search" | "manual">(draft?.manual ? "manual" : "search")
+  const [form, setForm] = useState<ManualForm>(() => (draft?.manual ? { ...EMPTY_FORM, ...draftForm(draft) } : EMPTY_FORM))
   const [notFound, setNotFound] = useState<string | null>(null)
 
   const openManual = (prefill: Partial<ManualForm>, query: string | null) => {
@@ -83,6 +90,7 @@ export function CompanyStep(props: CompanyStepProps) {
 
 function SearchCompany({
   mode, titleId, progress, justCreated, saved, picked, onPick, busy, onSkip, onSubmit, onKeep, onManual,
+  snapshotRef, draft, initialError,
 }: CompanyStepProps & { onManual: (prefill: Partial<ManualForm>, query: string | null) => void }) {
   const uid = useId()
   const rootRef = useInitialFocus<HTMLFormElement>()
@@ -90,14 +98,33 @@ function SearchCompany({
   const listId = `${uid}-results`
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const [query, setQuery] = useState("")
+  const [query, setQuery] = useState(() => (draft && !draft.manual ? draft.name ?? draft.siren ?? "" : ""))
   const [status, setStatus] = useState<SearchStatus>("idle")
   const [results, setResults] = useState<SireneCandidate[]>([])
   const [searchError, setSearchError] = useState<string | null>(null)
   const [active, setActive] = useState(-1)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(initialError)
 
   const trimmed = query.trim()
+
+  // Fermeture sans « Continuer » : l'entreprise choisie s'enregistre, une recherche en cours reste en brouillon
+  useEffect(() => {
+    snapshotRef.current = () => {
+      if (picked && !picked.closed) {
+        const input = candidateToInput(picked)
+        if (sameCompany(saved, input)) return { draft: { company: null } }
+        return {
+          save: { step: "company", company: input },
+          draft: { company: null },
+          ifSaveFails: { company: { name: picked.name, address: picked.address, zip_code: picked.zip_code, city: picked.city, siren: picked.siren } },
+        }
+      }
+      if (!trimmed) return { draft: {} }
+      const siren = sirenFromQuery(trimmed)
+      return { draft: { company: siren ? { siren } : { name: trimmed } } }
+    }
+    return () => { snapshotRef.current = null }
+  })
 
   // Recherche différée ; la précédente est annulée à chaque frappe
   useEffect(() => {
@@ -331,6 +358,11 @@ function demoChecked(input: CompanyInput): ReturnType<typeof validateCompanyInpu
   return check.ok ? { ok: true, value: { ...check.value, siren: input.siren ?? null, siret: input.siret ?? null } } : check
 }
 
+/** Saisies du brouillon, reprises dans le formulaire à la main. */
+function draftForm(draft: NonNullable<SignupDraft["company"]>): Partial<ManualForm> {
+  return { name: draft.name ?? "", address: draft.address ?? "", zip_code: draft.zip_code ?? "", city: draft.city ?? "", siren: draft.siren ?? "" }
+}
+
 function savedAsForm(saved: InscriptionCompany): Partial<ManualForm> {
   return { name: saved.name, address: saved.address, zip_code: saved.zip_code, city: saved.city, siren: saved.siren ?? "" }
 }
@@ -398,7 +430,7 @@ function CandidateOption({
 /* ------------------------------------------------------------------ */
 
 function ManualCompany({
-  titleId, progress, busy, onSkip, onSubmit, form, setForm, notFound, onBackToSearch,
+  titleId, progress, busy, onSkip, onSubmit, form, setForm, notFound, onBackToSearch, saved, snapshotRef, initialError,
 }: CompanyStepProps & {
   form: ManualForm
   setForm: React.Dispatch<React.SetStateAction<ManualForm>>
@@ -407,7 +439,31 @@ function ManualCompany({
 }) {
   const uid = useId()
   const rootRef = useInitialFocus<HTMLFormElement>()
-  const [fieldError, setFieldError] = useState<{ field: CompanyField | null; message: string } | null>(null)
+  const [fieldError, setFieldError] = useState<{ field: CompanyField | null; message: string } | null>(
+    initialError ? { field: companyErrorField(initialError), message: initialError } : null,
+  )
+
+  // Fermeture sans « Continuer » : une saisie complète s'enregistre, sinon elle reste en brouillon
+  useEffect(() => {
+    snapshotRef.current = () => {
+      const check = validateCompanyInput({
+        name: form.name, address: form.address, zip_code: form.zip_code, city: form.city, siren: form.siren,
+      })
+      const filled = Object.fromEntries(
+        (Object.entries(form) as [CompanyField, string][]).map(([k, v]) => [k, v.trim()]).filter(([, v]) => v),
+      ) as Partial<ManualForm>
+      if (check.ok) {
+        if (sameCompany(saved, check.value)) return { draft: { company: null } }
+        return {
+          save: { step: "company", company: check.value },
+          draft: { company: null },
+          ifSaveFails: { company: { ...filled, manual: true } },
+        }
+      }
+      return Object.keys(filled).length > 0 ? { draft: { company: { ...filled, manual: true } } } : { draft: {} }
+    }
+    return () => { snapshotRef.current = null }
+  })
 
   const set = (field: CompanyField) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value

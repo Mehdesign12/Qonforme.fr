@@ -11,7 +11,9 @@
  *   catalogue (prix à compléter, sans doublon) ;
  * - `name` : prénom dans le compte (`user_metadata.first_name`) ;
  * - `close` : fenêtre fermée (`user_metadata.signup_window_closed`) et premiers
- *   pas vus, pour que l'ancienne fenêtre de bienvenue ne s'ouvre pas en plus.
+ *   pas vus, pour que l'ancienne fenêtre de bienvenue ne s'ouvre pas en plus ;
+ *   les saisies non validées partent dans `user_metadata.signup_draft`, reprises
+ *   à la réouverture (l'étape complète, elle, est enregistrée avant la fermeture).
  *
  * Le SIREN reste facultatif ici ; l'envoi le demande (lib/legal/issuer.ts).
  * Sans la colonne `companies.legal_profile` (migration non appliquée),
@@ -25,7 +27,7 @@ import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { buildImportRows, tradeItems } from "@/lib/catalogue/trades"
 import {
   INVALID_REQUEST, mergeCompanyProfile, mergeTradeProfile, parseInscriptionPatch, vatNumberAfterSirenChange,
-  vatNumberAfterTrade, type CompanyInput, type TradeInput,
+  vatNumberAfterTrade, type CompanyInput, type SignupDraft, type TradeInput,
 } from "@/lib/onboarding/inscription"
 
 export const dynamic = "force-dynamic"
@@ -61,7 +63,7 @@ export async function PATCH(request: NextRequest) {
         return json({ ok: true })
       }
       case "close":
-        return await closeWindow(supabase, user.id)
+        return await closeWindow(supabase, user.id, patch.draft)
       default:
         return json({ error: INVALID_REQUEST }, 400)
     }
@@ -207,8 +209,9 @@ async function saveTrade(supabase: SupabaseClient, userId: string, input: TradeI
 }
 
 /** « Passer au tableau de bord » ou fin de la fenêtre : elle ne s'ouvrira plus d'elle-même. */
-async function closeWindow(supabase: SupabaseClient, userId: string): Promise<NextResponse> {
-  const { error } = await supabase.auth.updateUser({ data: { signup_window_closed: true } })
+async function closeWindow(supabase: SupabaseClient, userId: string, draft: SignupDraft | null): Promise<NextResponse> {
+  // Le brouillon des saisies non validées remplace le précédent ; `null` l'efface
+  const { error } = await supabase.auth.updateUser({ data: { signup_window_closed: true, signup_draft: draft } })
   if (error) {
     console.error("[onboarding/inscription] fermeture :", error)
     return json({ error: "La fenêtre n'a pas pu être fermée. Réessayez." }, 500)

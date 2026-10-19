@@ -23,6 +23,7 @@ import {
   ADMIN_HOME, ADMIN_NAV, isAdminActive,
   type AdminBadge, type AdminNavLink,
 } from '@/components/admin/nav'
+import { SheetGrip } from "@/components/ui/sheet-grip"
 
 export interface AdminCounts {
   /** Messages de support non lus (null : lecture impossible). */
@@ -204,7 +205,7 @@ function PlusSheet({ open, onOpenChange, counts }: { open: boolean; onOpenChange
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[92dvh] gap-0 overflow-y-auto bg-[var(--q-bg)] px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-2">
-        <div className="q-sheet-grip" aria-hidden />
+        <SheetGrip />
         <SheetTitle className="flex items-center gap-2 px-1 pb-1 pt-4 font-display text-[30px] font-semibold tracking-[-0.03em] text-[var(--q-ink)]">
           Admin
         </SheetTitle>

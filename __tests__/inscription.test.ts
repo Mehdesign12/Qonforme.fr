@@ -15,7 +15,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => db.client, c
 
 import {
   COMPANY_REQUIRED, INSCRIPTION_STEPS, SIREN_INVALID, inscriptionStepNumber, inscriptionSteps, isCompanyRequired,
-  mergeCompanyProfile, mergeTradeProfile, parseInscriptionPatch, pendingInscriptionStep, validateCompanyInput,
+  mergeCompanyProfile, mergeSignupDraft, mergeTradeProfile, parseInscriptionPatch, parseSignupDraft, pendingInscriptionStep, validateCompanyInput,
   validateFirstName, validateTradeInput, vatNumberAfterSirenChange, vatNumberAfterTrade, type CompanyInput,
 } from "@/lib/onboarding/inscription"
 import { tradeItems } from "@/lib/catalogue/trades"
@@ -175,7 +175,7 @@ describe("prénom (étape 3)", () => {
 
 describe("corps de la requête", () => {
   it("une étape connue, sinon 400", () => {
-    expect(parseInscriptionPatch({ step: "close" })).toEqual({ ok: true, value: { step: "close" } })
+    expect(parseInscriptionPatch({ step: "close" })).toEqual({ ok: true, value: { step: "close", draft: null } })
     expect(parseInscriptionPatch({ step: "name", first_name: "Thomas" })).toEqual({ ok: true, value: { step: "name", first_name: "Thomas" } })
     expect(parseInscriptionPatch({ step: "company", company: GARNIER }).ok).toBe(true)
     expect(parseInscriptionPatch({ step: "plan" })).toEqual({ ok: false, error: "Requête invalide." })
@@ -442,4 +442,50 @@ describe("PATCH /api/onboarding/inscription", () => {
     expect(res.status).toBe(200)
     expect(db.tables.companies).toHaveLength(0)
   })
+
+  it("fermeture avec brouillon : les saisies sont gardées dans le compte, puis effacées", async () => {
+    const draft = { company: { name: "Garnier Plâtrerie", city: "Angers", manual: true } }
+    const res = await patch({ step: "close", draft })
+    expect(res.status).toBe(200)
+    expect(db.user?.user_metadata.signup_draft).toEqual(draft)
+    expect(db.tables.companies).toHaveLength(0) // jamais une entreprise à moitié remplie
+
+    await patch({ step: "close", draft: null })
+    expect(db.user?.user_metadata.signup_draft).toBeNull()
+  })
+
+  it("fermeture : un brouillon forgé est nettoyé avant d'être écrit", async () => {
+    await patch({
+      step: "close",
+      draft: {
+        company: { name: "  A\u0000B  ", zip_code: "49 100 xx", siren: "948 211 370", evil: "<script>" },
+        trade: { trade: "pirate", vat_regime: "assujetti" },
+        first_name: "x".repeat(200),
+        other: 1,
+      },
+    })
+    const saved = db.user?.user_metadata.signup_draft as Record<string, any>
+    expect(saved.company).toEqual({ name: "A B", zip_code: "49100", siren: "94821137" + "0" })
+    expect(saved.trade).toEqual({ vat_regime: "assujetti" })
+    expect(saved.first_name).toHaveLength(60)
+    expect(saved).not.toHaveProperty("other")
+  })
 })
+
+describe("brouillon des saisies", () => {
+  it("un brouillon vide ou invalide n'est pas gardé", () => {
+    expect(parseSignupDraft(null)).toBeNull()
+    expect(parseSignupDraft("x")).toBeNull()
+    expect(parseSignupDraft({ company: {}, trade: { trade: "pirate" }, first_name: "  " })).toBeNull()
+  })
+
+  it("fusion : une partie à null est effacée, une partie absente est gardée", () => {
+    const base = { company: { name: "Garnier" }, first_name: "Thomas" }
+    expect(mergeSignupDraft(base, { company: null })).toEqual({ first_name: "Thomas" })
+    expect(mergeSignupDraft(base, {})).toEqual(base)
+    expect(mergeSignupDraft(base, { trade: { vat_regime: "franchise" } })).toEqual({ ...base, trade: { vat_regime: "franchise" } })
+    expect(mergeSignupDraft({ first_name: "Thomas" }, { first_name: null })).toBeNull()
+    expect(mergeSignupDraft(null, { first_name: null })).toBeNull()
+  })
+})
+

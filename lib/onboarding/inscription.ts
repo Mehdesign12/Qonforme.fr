@@ -90,7 +90,7 @@ export type InscriptionPatch =
   | { step: "company"; company: CompanyInput }
   | { step: "trade"; trade: TradeInput }
   | { step: "name"; first_name: string }
-  | { step: "close" }
+  | { step: "close"; draft: SignupDraft | null }
 
 type Parsed<T> = { ok: true; value: T } | { ok: false; error: string }
 
@@ -226,10 +226,89 @@ export function parseInscriptionPatch(body: unknown): Parsed<InscriptionPatch> {
       return r.ok ? { ok: true, value: { step: "name", first_name: r.value } } : r
     }
     case "close":
-      return { ok: true, value: { step: "close" } }
+      return { ok: true, value: { step: "close", draft: parseSignupDraft(b.draft) } }
     default:
       return { ok: false, error: INVALID_REQUEST }
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Brouillon : ce qui est saisi quand la fenêtre se ferme sans validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Saisies gardées quand l'artisan passe au tableau de bord sans valider une
+ * étape (`user_metadata.signup_draft`). Rien n'y est contrôlé : ce sont des
+ * textes à reprendre dans les champs, jamais une entreprise enregistrée.
+ */
+export interface SignupDraft {
+  company?: {
+    name?: string
+    address?: string
+    zip_code?: string
+    city?: string
+    siren?: string
+    /** Saisie à la main (et non la recherche) : la fenêtre rouvre ce formulaire. */
+    manual?: boolean
+  }
+  trade?: { trade?: TradeId; vat_regime?: VatRegime }
+  first_name?: string
+}
+
+/** Changement d'un brouillon : une clé à `null` efface cette partie. */
+export type SignupDraftPatch = { [K in keyof SignupDraft]?: SignupDraft[K] | null }
+
+const DRAFT_TEXT_MAX = { name: INSCRIPTION_LIMITS.name, address: INSCRIPTION_LIMITS.address, city: INSCRIPTION_LIMITS.city, zip_code: 5, siren: 11 } as const
+
+/** Brouillon relu sans confiance (métadonnées du compte, corps d'une requête) ; null s'il est vide. */
+export function parseSignupDraft(x: unknown): SignupDraft | null {
+  if (!x || typeof x !== "object" || Array.isArray(x)) return null
+  const v = x as Record<string, unknown>
+  const out: SignupDraft = {}
+
+  const c = v.company
+  if (c && typeof c === "object" && !Array.isArray(c)) {
+    const r = c as Record<string, unknown>
+    const company: NonNullable<SignupDraft["company"]> = {}
+    for (const key of ["name", "address", "city"] as const) {
+      const value = line(r[key]).slice(0, DRAFT_TEXT_MAX[key])
+      if (value) company[key] = value
+    }
+    const zip = digits(r.zip_code).slice(0, DRAFT_TEXT_MAX.zip_code)
+    if (zip) company.zip_code = zip
+    const siren = digits(r.siren).slice(0, DRAFT_TEXT_MAX.siren)
+    if (siren) company.siren = siren
+    if (Object.keys(company).length > 0) {
+      if (r.manual === true) company.manual = true
+      out.company = company
+    }
+  }
+
+  const t = v.trade
+  if (t && typeof t === "object" && !Array.isArray(t)) {
+    const r = t as Record<string, unknown>
+    const trade: NonNullable<SignupDraft["trade"]> = {}
+    if (isTradeId(r.trade)) trade.trade = r.trade
+    if (r.vat_regime === "franchise" || r.vat_regime === "assujetti") trade.vat_regime = r.vat_regime
+    if (Object.keys(trade).length > 0) out.trade = trade
+  }
+
+  const first = line(v.first_name).slice(0, INSCRIPTION_LIMITS.first_name)
+  if (first) out.first_name = first
+
+  return Object.keys(out).length > 0 ? out : null
+}
+
+/** Brouillon après un changement : une partie à `null` est effacée, une partie absente est gardée. */
+export function mergeSignupDraft(base: SignupDraft | null | undefined, patch: SignupDraftPatch): SignupDraft | null {
+  const next: SignupDraft = { ...(base ?? {}) }
+  for (const key of ["company", "trade", "first_name"] as const) {
+    if (!(key in patch)) continue
+    const value = patch[key]
+    if (value === null || value === undefined) delete next[key]
+    else (next as Record<string, unknown>)[key] = value
+  }
+  return parseSignupDraft(next)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
