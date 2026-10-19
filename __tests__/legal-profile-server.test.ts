@@ -41,7 +41,10 @@ class FakeQuery {
       return { data: rows, error: null }
     }
     const rows = this.db.tables[this.table].filter((r) => this.filters.every(([c, v]) => r[c] === v))
-    return { data: rows, error: null }
+    // Comme PostgREST : seules les colonnes demandées reviennent
+    if (this.columns.trim() === "*") return { data: rows, error: null }
+    const wanted = this.columns.split(",").map((c) => c.trim())
+    return { data: rows.map((r) => Object.fromEntries(wanted.filter((c) => c in r).map((c) => [c, r[c]]))), error: null }
   }
   async maybeSingle() {
     const r = this.run()
@@ -74,6 +77,40 @@ describe("lecture du profil légal", () => {
     const r = await selectCompanyWithProfile(db as any, "name", "user-1")
     expect(r.profileAvailable).toBe(false)
     expect(r.error).toBeNull()
+    expect(r.data?.name).toBe("Garnier")
+  })
+
+  // Production du 19/10/2026 : `document_templates` existe, `legal_profile` pas encore.
+  // Les deux colonnes sont indépendantes : l'absence de l'une ne doit pas faire perdre l'autre
+  // (le modèle de mise en page choisi était ignoré, tous les PDF restaient en « Classique »).
+  it("seul legal_profile manque : le modèle de mise en page est quand même lu", async () => {
+    db.missingColumns.add("legal_profile")
+    db.tables.companies.push({ user_id: "user-1", name: "Garnier", document_templates: { invoice: "chantier" } })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r = await selectCompanyWithProfile(db as any, "name", "user-1")
+    expect(r.error).toBeNull()
+    expect(r.profileAvailable).toBe(false)
+    expect(r.data?.document_templates).toEqual({ invoice: "chantier" })
+  })
+
+  it("seul document_templates manque : le profil légal est quand même lu", async () => {
+    db.missingColumns.add("document_templates")
+    db.tables.companies.push({ user_id: "user-1", name: "Garnier", legal_profile: { trade: "plaquiste" } })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r = await selectCompanyWithProfile(db as any, "name", "user-1")
+    expect(r.error).toBeNull()
+    expect(r.profileAvailable).toBe(true)
+    expect(r.data?.legal_profile).toEqual({ trade: "plaquiste" })
+    expect(r.data?.document_templates).toBeUndefined()
+  })
+
+  it("les deux colonnes manquent : l'entreprise est lue sans elles, sans erreur", async () => {
+    db.missingColumns.add("legal_profile").add("document_templates")
+    db.tables.companies.push({ user_id: "user-1", name: "Garnier" })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r = await selectCompanyWithProfile(db as any, "name", "user-1")
+    expect(r.error).toBeNull()
+    expect(r.profileAvailable).toBe(false)
     expect(r.data?.name).toBe("Garnier")
   })
 })
