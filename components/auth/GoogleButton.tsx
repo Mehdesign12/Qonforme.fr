@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 import { safeNextPath } from "@/lib/stripe/access"
 import { oauthRedirectTo } from "@/lib/auth/oauth"
 import { cn } from "@/lib/utils"
+import { rememberAuthMethod } from "@/lib/auth/last-used"
 
 /** « G » de Google aux couleurs de la charte de marque Google (ne pas modifier). */
 function GoogleG({ className }: { className?: string }) {
@@ -25,11 +26,12 @@ function GoogleG({ className }: { className?: string }) {
  * Navigation complète vers Google (rien à charger de plus) ; au retour,
  * /api/auth/callback établit la session. Ni flou ni `will-change` (règle iOS).
  */
-export default function GoogleButton({ label = "Continuer avec Google", className }: { label?: string; className?: string }) {
+export default function GoogleButton({ label = "Continuer avec Google", className, lastUsed = false }: { label?: string; className?: string; lastUsed?: boolean }) {
   const [loading, setLoading] = useState(false)
 
   const onClick = async () => {
     setLoading(true)
+    rememberAuthMethod("google")
     try {
       const params = new URLSearchParams(window.location.search)
       const { error } = await createClient().auth.signInWithOAuth({
@@ -44,6 +46,7 @@ export default function GoogleButton({ label = "Continuer avec Google", classNam
         },
       })
       if (error) {
+        rememberAuthMethod(null)
         toast.error("Connexion avec Google impossible pour le moment. Réessayez ou utilisez votre email.")
         setLoading(false)
       }
@@ -55,6 +58,8 @@ export default function GoogleButton({ label = "Continuer avec Google", classNam
   }
 
   return (
+    <div className="relative">
+    {lastUsed && <LastUsedBadge />}
     <button
       type="button"
       onClick={onClick}
@@ -70,6 +75,16 @@ export default function GoogleButton({ label = "Continuer avec Google", classNam
       {loading ? <Loader2 className="size-[18px] animate-spin" aria-hidden /> : <GoogleG className="size-[18px]" />}
       {label}
     </button>
+    </div>
+  )
+}
+
+/** Pastille posée sur le bord haut d'un bouton : la méthode utilisée la dernière fois. */
+export function LastUsedBadge() {
+  return (
+    <span className="pointer-events-none absolute -top-2.5 right-5 z-10 rounded-full border border-[var(--q-wash-line)] bg-[var(--q-wash)] px-2.5 py-0.5 text-[11px] font-semibold leading-4 text-[var(--q-accent-strong)]">
+      Dernière utilisation
+    </span>
   )
 }
 

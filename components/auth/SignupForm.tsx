@@ -8,6 +8,7 @@ import { safeNextPath } from "@/lib/stripe/access"
 import { trackEvent } from "@/lib/meta-pixel"
 import { AUTH_INPUT, AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
 import GoogleButton, { OrDivider } from "@/components/auth/GoogleButton"
+import { rememberAuthMethod } from "@/lib/auth/last-used"
 import { SIGNUP_EMAIL_PATTERN, SIGNUP_PASSWORD_MIN } from "@/lib/auth/signup-input"
 
 /**
@@ -81,6 +82,7 @@ export default function SignupForm() {
         return
       }
 
+      rememberAuthMethod("email")
       trackEvent("Lead", { currency: "EUR", value: 0 })
       // Retour à la page qui a demandé l'inscription (invitation d'un comptable :
       // pas d'entreprise à créer) ; sinon le tableau de bord, où la fenêtre
