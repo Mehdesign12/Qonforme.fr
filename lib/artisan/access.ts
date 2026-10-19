@@ -12,7 +12,8 @@
  */
 import { NextResponse } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { PLANS } from "@/lib/stripe/plans"
+import { PLANS, isPlanAvailable } from "@/lib/stripe/plans"
+import { getUserStripeMode } from "@/lib/stripe/test-users"
 import { ARTISAN_REQUIRED, hasArtisanPlan } from "./plan"
 
 /** true / false selon la formule ; null si la lecture a échoué. */
@@ -32,7 +33,8 @@ export async function requireArtisanAccess(supabase: SupabaseClient, userId: str
     )
   }
   if (access) return null
-  const onSale = PLANS.pro.available
+  // Un compte d'essai voit la formule en vente dès que ses prix d'essai existent
+  const onSale = isPlanAvailable(PLANS.pro, (await getUserStripeMode(userId)) ?? "live")
   return NextResponse.json(
     {
       error: onSale
