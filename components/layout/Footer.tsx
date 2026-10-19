@@ -4,6 +4,7 @@ import { ArrowRight, Check, Linkedin, Mail, Monitor } from "lucide-react"
 import { LOGO_LONG_LIGHT } from "@/lib/brand"
 import { SolutionCompatible } from "@/components/brand/SolutionCompatible"
 import { CookieSettingsLink } from "@/components/consent/CookieSettingsLink"
+import { PUBLISHER } from "@/lib/legal/publisher"
 
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
@@ -163,7 +164,7 @@ export default function Footer({ showCta = true }: { showCta?: boolean } = {}) {
         </div>
 
         <div className="mx-auto mt-10 flex max-w-[1200px] flex-col gap-2 border-t border-white/[0.08] pt-5 text-xs sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} Qonforme SAS · Devis et factures des artisans du bâtiment.</p>
+          <p>© {new Date().getFullYear()} Qonforme, édité par {PUBLISHER.name} · Devis et factures des artisans du bâtiment.</p>
           <p>Vos devis sont gratuits&nbsp;: vous payez quand vous facturez.</p>
         </div>
       </footer>

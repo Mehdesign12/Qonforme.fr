@@ -573,7 +573,7 @@ Le prix affiché est le prix payé par le client. Une première version du canev
 
 ### 14.1 Qui vend
 
-Les abonnements sont vendus par **Diez Agency LLC** (société du Wyoming, États-Unis) ; « Qonforme » est une marque, il n'existe pas de « Qonforme SAS ». Le compte Stripe est au nom de la LLC. Les mentions légales, les CGU et la politique de confidentialité nomment encore « Qonforme SAS » : **à corriger** (éditeur, responsable du traitement, adresse, responsable de publication ; en attente de l'adresse de la LLC et du nom du responsable de publication).
+Les abonnements sont vendus par **Diez Agency LLC** (société du Wyoming, États-Unis) ; « Qonforme » est une marque, il n'existe pas de « Qonforme SAS ». Le compte Stripe est au nom de la LLC. **Corrigé le 19/10/2026** : les mentions légales, les CGU, la politique de confidentialité, le pied de page, la page 404 et les données structurées nomment Diez Agency LLC (éditeur, responsable du traitement, propriétaire des contenus), sous la marque Qonforme, à partir d'une seule fiche, `lib/legal/publisher.ts`. **Reste à fournir par le fondateur** : l'adresse du siège de la LLC et le nom du directeur de la publication (loi n° 2004-575, art. 6, III) : à renseigner dans cette fiche, ils apparaissent alors dans les mentions légales (rien ne s'affiche tant qu'ils sont vides). La politique de confidentialité dit désormais que le responsable du traitement est lui-même établi aux États-Unis ; les garanties du transfert vers la LLC et le représentant dans l'Union (RGPD art. 27) restent à valider avec l'expert-comptable ou un juriste.
 
 ### 14.2 Mode essai Stripe : des comptes d'essai, pas d'interrupteur général
 
@@ -596,7 +596,7 @@ Mise en œuvre : `VAT_COLLECTED = false` dans `lib/stripe/plans.ts`. Tant qu'il 
 2. Corriger le webhook de production : adresse `https://qonforme.fr/api/webhooks/stripe` (celle en `www` reçoit une redirection que Stripe ne suit pas), les 7 événements du code (`.env.example`), puis recopier sa clé dans `STRIPE_WEBHOOK_SECRET`.
 3. Régler le portail client en production (changement de formule entre les deux produits, résiliation à la fin de la période).
 4. Appliquer `20261019_stripe_test_mode.sql`, puis « Supprimer les abonnements d'essai » dans Admin › Paiements.
-5. Corriger les mentions légales, les CGU et la confidentialité (§ 14.1).
+5. Mentions légales, CGU et confidentialité : le nom de l'éditeur est corrigé (§ 14.1) ; **reste l'adresse du siège de la LLC et le nom du directeur de la publication** à renseigner dans `lib/legal/publisher.ts`.
 6. Représentant dans l'Union européenne pour le RGPD, et vérification que le label « Solution compatible » (§ 13) a été obtenu au nom de la LLC.
 7. **Réglages Stripe à refaire en production** (le bac à sable et la production ont chacun les leurs ; rappel demandé par le fondateur le 19/10/2026) :
    - **Nom public du compte** (Settings › Business › Public details) : il s'affiche dans le texte légal du formulaire de paiement (« vous autorisez … à vous débiter »), dans le portail client et sur les factures d'abonnement ; dans le bac à sable il vaut « Qonforme essai ». À régler, avec l'adresse et le numéro d'identification de la LLC pour les factures (Settings › Billing › Invoice template).

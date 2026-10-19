@@ -11,6 +11,7 @@ import { PLANS, VAT_COLLECTED, formatEuros, withVat, type BillingPeriod } from '
 import { GUARANTEE_DAYS, SUBSCRIPTION_REQUIRED } from '@/lib/stripe/access'
 import { ARTISAN_REQUIRED } from '@/lib/artisan/plan'
 import { trackEvent } from '@/lib/meta-pixel'
+import { useArtisanOnSale } from './useArtisanOnSale'
 
 /**
  * Mur de paiement « Votre facture est prête » — s'ouvre quand une route
@@ -52,7 +53,8 @@ export function PaywallDialog({
   const [period, setPeriod] = useState<BillingPeriod>('yearly')
   const artisan = reason === 'artisan'
   const plan = artisan ? PLANS.pro : PLANS.starter
-  const onSale = plan.available
+  const artisanOnSale = useArtisanOnSale()
+  const onSale = artisan ? artisanOnSale : plan.available
 
   const next = invoiceId ? `/invoices/${invoiceId}${reason === 'send' ? '?send=1' : ''}` : nextPath ?? null
   const chargeHt = period === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice

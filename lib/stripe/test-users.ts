@@ -21,17 +21,23 @@ export function isMissingSchema(error: DbError | null | undefined): boolean {
 
 /** Mode d'un utilisateur. `null` : lecture impossible (ne pas ouvrir de paiement). */
 export async function getUserStripeMode(userId: string): Promise<StripeMode | null> {
-  const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('stripe_test_users')
-    .select('user_id')
-    .eq('user_id', userId)
-    .maybeSingle()
+  try {
+    const admin = createAdminClient()
+    const { data, error } = await admin
+      .from('stripe_test_users')
+      .select('user_id')
+      .eq('user_id', userId)
+      .maybeSingle()
 
-  if (error) {
-    if (isMissingSchema(error)) return 'live'
-    console.error('[stripe/test-users] Lecture impossible:', error)
+    if (error) {
+      if (isMissingSchema(error)) return 'live'
+      console.error('[stripe/test-users] Lecture impossible:', error)
+      return null
+    }
+    return data ? 'test' : 'live'
+  } catch (err) {
+    // Client d'administration impossible à créer (variables manquantes) : mode illisible
+    console.error('[stripe/test-users] Lecture impossible:', err)
     return null
   }
-  return data ? 'test' : 'live'
 }

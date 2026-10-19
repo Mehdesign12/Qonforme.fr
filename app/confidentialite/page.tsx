@@ -1,6 +1,7 @@
 import { LegalLayout } from "@/components/legal/LegalLayout"
 import { CookieSettingsLink } from "@/components/consent/CookieSettingsLink"
 import type { Metadata } from "next"
+import { PUBLISHER } from "@/lib/legal/publisher"
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
@@ -18,13 +19,14 @@ export default function ConfidentialitePage() {
       titleAccent="confidentialité"
       path="/confidentialite"
       subtitle="Comment Qonforme collecte, utilise et protège vos données personnelles."
-      lastUpdated="18 octobre 2026"
+      lastUpdated="19 octobre 2026"
     >
       <h2>1. Responsable du traitement</h2>
       <p>
         Le responsable du traitement des données personnelles collectées sur le site <strong>qonforme.fr</strong> est
-        la société <strong>Qonforme SAS</strong>, joignable à l&apos;adresse{" "}
-        <a href="mailto:privacy@qonforme.fr">privacy@qonforme.fr</a>.
+        la société <strong>{PUBLISHER.name}</strong>, {PUBLISHER.form}, qui exploite le service sous la marque
+        Qonforme. Elle est joignable à l&apos;adresse{" "}
+        <a href={`mailto:${PUBLISHER.privacyEmail}`}>{PUBLISHER.privacyEmail}</a>.
       </p>
 
       <h2>2. Données collectées</h2>
@@ -126,7 +128,8 @@ export default function ConfidentialitePage() {
 
       <h2>7. Transferts hors UE</h2>
       <p>
-        Certains sous-traitants (Vercel, Stripe, Resend) sont établis aux États-Unis. Les transferts de données
+        Le responsable du traitement, {PUBLISHER.name}, est lui-même établi aux États-Unis. Certains sous-traitants
+        (Vercel, Stripe, Resend) le sont aussi. Les transferts de données
         sont encadrés par le EU-US Data Privacy Framework et/ou les clauses contractuelles types adoptées par la
         Commission européenne, garantissant un niveau de protection adéquat. Si vous acceptez les cookies, Meta peut
         aussi transférer des données vers les États-Unis, dans les conditions décrites dans sa politique de

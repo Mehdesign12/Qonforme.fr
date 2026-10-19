@@ -12,6 +12,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import type { Subscription } from '@/lib/stripe/subscription'
 import { canIssueInvoices, mapStripeStatus } from '@/lib/stripe/access'
 import { getGuaranteeState } from '@/lib/stripe/guarantee'
+import { artisanOnSaleFor } from '@/lib/stripe/availability'
 import { PageHeader } from '@/components/app/kit'
 import type Stripe from 'stripe'
 
@@ -155,8 +156,10 @@ export default async function BillingPage() {
   let paymentMethod: PaymentMethodInfo | null = null
   let invoices: BillingInvoice[] = []
   let identity: BillingIdentity | null = null
+  let artisanOnSale: boolean | undefined
 
   if (user) {
+    artisanOnSale = await artisanOnSaleFor(user.id)
     const [{ data: sub, error: subError }, { data: company }] = await Promise.all([
       supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('companies').select('name, address, zip_code, city, siren').eq('user_id', user.id).maybeSingle(),
@@ -236,6 +239,7 @@ export default async function BillingPage() {
             date: new Date(inv.created * 1000).toISOString(),
             amount: (inv.total ?? 0) / 100,
             status: inv.status ?? 'open',
+            refunded: (inv.post_payment_credit_notes_amount ?? 0) / 100,
             pdfUrl: inv.invoice_pdf ?? null,
           }))
       } catch (err) {
@@ -252,6 +256,7 @@ export default async function BillingPage() {
       paymentMethod={paymentMethod}
       invoices={invoices}
       identity={identity}
+      artisanOnSale={artisanOnSale}
     />
   )
 }

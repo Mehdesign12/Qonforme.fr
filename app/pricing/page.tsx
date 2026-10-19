@@ -9,6 +9,7 @@ import { pictosFor } from '@/components/brand/pictos'
 import { MetaPixelEvent } from '@/components/shared/MetaPixelEvent'
 import { PLANS, TAX_SUFFIX, VAT_COLLECTED, formatEuros } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
+import { artisanOnSaleFor } from '@/lib/stripe/availability'
 
 const essentiel = PLANS.starter
 
@@ -46,6 +47,7 @@ const FAQ = ([
 export default async function PricingPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const artisanOnSale = await artisanOnSaleFor(user?.id)
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -86,7 +88,7 @@ export default async function PricingPage() {
 
           {/* Formules */}
           <section aria-label="Formules" className="mx-auto max-w-[1200px] px-4 pt-8 sm:px-6 sm:pt-10">
-            <PricingSelector isAuthenticated={!!user} />
+            <PricingSelector isAuthenticated={!!user} artisanOnSale={artisanOnSale} />
           </section>
 
           {/* Comparaison */}
