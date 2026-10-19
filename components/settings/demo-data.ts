@@ -5,7 +5,7 @@
  * (lib/stripe/plans.ts), souscrite le 24 septembre 2026 : la garantie de
  * 30 jours court encore au « aujourd'hui » de la démo (1er octobre 2026).
  */
-import { PLANS, withVat } from "@/lib/stripe/plans"
+import { PLANS, payableAmount } from "@/lib/stripe/plans"
 import type { Subscription } from "@/lib/stripe/subscription"
 import { DEMO_COMPANY } from "@/lib/demo/data"
 import { DEMO_IDENTITY } from "@/components/layout/shell"
@@ -23,7 +23,7 @@ export const DEMO_RENEWS_AT = "2026-10-24T00:00:00.000Z"
 export const DEMO_PLAN = {
   name: PLANS.starter.name,
   period: "monthly" as const,
-  amountTtc: withVat(PLANS.starter.monthlyPrice),
+  amountTtc: payableAmount(PLANS.starter.monthlyPrice),
   renewsAt: DEMO_RENEWS_AT,
   pastDue: false,
 }
@@ -46,7 +46,7 @@ export const DEMO_SUBSCRIPTION: Subscription = {
 export const DEMO_GUARANTEE: GuaranteeInfo = {
   eligible: true,
   endsAt: DEMO_RENEWS_AT,
-  amountPaid: Math.round(withVat(PLANS.starter.monthlyPrice) * 100),
+  amountPaid: Math.round(payableAmount(PLANS.starter.monthlyPrice) * 100),
 }
 
 export const DEMO_PAYMENT_METHOD: PaymentMethodInfo = {
@@ -58,7 +58,7 @@ export const DEMO_BILLING_INVOICES: BillingInvoice[] = [
     id: "demo-1",
     number: "QF8K2D1A-0001",
     date: DEMO_SUBSCRIBED_AT,
-    amount: withVat(PLANS.starter.monthlyPrice),
+    amount: payableAmount(PLANS.starter.monthlyPrice),
     status: "paid",
     pdfUrl: null,
   },

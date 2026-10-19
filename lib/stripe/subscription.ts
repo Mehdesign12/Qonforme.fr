@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { PlanId, BillingPeriod } from './plans'
 import { canIssueInvoices, SUBSCRIPTION_REQUIRED, type SubscriptionStatus } from './access'
+import { isMissingSchema } from './test-users'
+import type { StripeMode } from './mode'
 
 export interface Subscription {
   id: string
@@ -16,6 +18,8 @@ export interface Subscription {
   status: SubscriptionStatus
   current_period_end: string | null
   canceled_at: string | null
+  /** false : abonnement du bac à sable Stripe (compte d'essai). Absent ou true : production. */
+  livemode?: boolean | null
   created_at: string
   updated_at: string
 }
@@ -84,6 +88,8 @@ export async function upsertSubscription(params: {
   status: Subscription['status']
   currentPeriodEnd: Date | null
   canceledAt?: Date | null
+  /** Mode Stripe de l'abonnement ; production par défaut. */
+  mode?: StripeMode
 }): Promise<void> {
   const supabase = createAdminClient()
 
@@ -104,9 +110,19 @@ export async function upsertSubscription(params: {
     upsertData.canceled_at = params.canceledAt.toISOString()
   }
 
-  const { error } = await supabase
+  let { error } = await supabase
     .from('subscriptions')
-    .upsert(upsertData, { onConflict: 'user_id' })
+    .upsert({ ...upsertData, livemode: (params.mode ?? 'live') === 'live' }, { onConflict: 'user_id' })
+
+  // Colonne `livemode` pas encore créée (migration 20261019 non appliquée) : un
+  // abonnement de production s'enregistre comme avant. Un abonnement d'essai
+  // sans cette colonne ne serait pas reconnu comme tel : on refuse.
+  if (error && isMissingSchema(error)) {
+    if (params.mode === 'test') {
+      throw new Error("Migration 20261019_stripe_test_mode.sql à appliquer avant d'utiliser le mode essai")
+    }
+    ;({ error } = await supabase.from('subscriptions').upsert(upsertData, { onConflict: 'user_id' }))
+  }
 
   if (error) {
     console.error('[upsertSubscription] Erreur:', error)

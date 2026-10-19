@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { stripe } from '@/lib/stripe/client'
+import { getStripe, type StripeMode } from '@/lib/stripe/mode'
+import { verifyStripeEvent, WebhookConfigError } from '@/lib/stripe/webhook-verify'
 import { getPlanByPriceId, isPlanId, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import {
   upsertSubscription,
@@ -44,7 +45,12 @@ function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
  * Appelé pour checkout.session.completed et checkout.session.async_payment_succeeded
  * (prélèvement SEPA confirmé) : idempotent.
  */
-async function activateFromCheckoutSession(session: Stripe.Checkout.Session, eventId: string): Promise<void> {
+async function activateFromCheckoutSession(
+  stripe: Stripe,
+  mode: StripeMode,
+  session: Stripe.Checkout.Session,
+  eventId: string
+): Promise<void> {
   if (session.mode !== 'subscription' || !session.subscription) return
 
   const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id
@@ -108,6 +114,7 @@ async function activateFromCheckoutSession(session: Stripe.Checkout.Session, eve
     billingPeriod: resolvedPeriod,
     status: mapStripeStatus(stripeSub.status),
     currentPeriodEnd: getPeriodEnd(stripeSub),
+    mode,
   })
 
   console.log(`[webhook] Formule ${resolvedPlan} activée pour user ${userId} (${stripeSub.status})`)
@@ -121,22 +128,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Signature Stripe manquante' }, { status: 400 })
   }
 
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
-  if (!webhookSecret) {
-    console.error('[webhook] STRIPE_WEBHOOK_SECRET non défini')
-    return NextResponse.json({ error: 'Configuration webhook manquante' }, { status: 500 })
-  }
-
   let event: Stripe.Event
+  let mode: StripeMode
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    ;({ event, mode } = verifyStripeEvent(body, signature))
   } catch (err) {
+    if (err instanceof WebhookConfigError) {
+      console.error('[webhook] Clé de signature non définie')
+      return NextResponse.json({ error: 'Configuration webhook manquante' }, { status: 500 })
+    }
     console.error('[webhook] Signature invalide:', err)
     return NextResponse.json({ error: 'Signature invalide' }, { status: 400 })
   }
 
-  console.log(`[webhook] Événement reçu: ${event.type}`)
+  const stripe = getStripe(mode)
+
+  console.log(`[webhook] Événement reçu: ${event.type} (${mode === 'test' ? 'essai' : 'production'})`)
 
   try {
     switch (event.type) {
@@ -144,7 +152,7 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed':
       // Prélèvement SEPA finalement confirmé
       case 'checkout.session.async_payment_succeeded': {
-        await activateFromCheckoutSession(event.data.object as Stripe.Checkout.Session, event.id)
+        await activateFromCheckoutSession(stripe, mode, event.data.object as Stripe.Checkout.Session, event.id)
         break
       }
 
@@ -185,6 +193,7 @@ export async function POST(request: NextRequest) {
             status,
             currentPeriodEnd: getPeriodEnd(stripeSub),
             canceledAt,
+            mode,
           })
         } else {
           await updateSubscriptionStatus(stripeSub.id, status, {

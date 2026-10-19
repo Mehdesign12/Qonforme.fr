@@ -107,7 +107,7 @@ describe("séquence", () => {
       "Votre devis est parti : la suite, c'est la facture",
       "Avant votre première facture : ce que change Essentiel",
     ])
-    expect(sent[1].html).toContain("12 €")
+    expect(sent[1].html).toContain("24 €")
     expect(sent[1].html).toContain("30&nbsp;jours")
   })
 

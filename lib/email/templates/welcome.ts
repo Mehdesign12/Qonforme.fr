@@ -17,7 +17,7 @@
  *   EN 16931 », ni délai de réponse promis, ni contact humain
  * - HTML inline-styles pour compatibilité maximale (Gmail, Outlook, Apple Mail…)
  */
-import { PLANS, FREE_FEATURES, formatEuros } from "@/lib/stripe/plans"
+import { PLANS, FREE_FEATURES, TAX_SUFFIX, formatEuros } from "@/lib/stripe/plans"
 import { GUARANTEE_DAYS } from "@/lib/stripe/access"
 import { escapeHtml } from "@/lib/email/templates/onboarding"
 
@@ -182,7 +182,7 @@ export function buildWelcomeEmail({
                     <table cellpadding="0" cellspacing="0" width="100%">
                       ${[
                         ...FREE_FEATURES,
-                        `Pour envoyer vos factures : formule ${PLANS.starter.name}, ${formatEuros(PLANS.starter.monthlyPrice)} HT par mois, satisfait ou remboursé ${GUARANTEE_DAYS} jours`,
+                        `Pour envoyer vos factures : formule ${PLANS.starter.name}, ${formatEuros(PLANS.starter.monthlyPrice)}${TAX_SUFFIX} par mois, satisfait ou remboursé ${GUARANTEE_DAYS} jours`,
                       ]
                         .map(
                           (item) => `

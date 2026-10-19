@@ -1,5 +1,6 @@
 import { LegalLayout } from "@/components/legal/LegalLayout"
 import type { Metadata } from "next"
+import { PLANS, VAT_COLLECTED, formatEuros } from "@/lib/stripe/plans"
 
 export const metadata: Metadata = {
   title: "Conditions Générales d'Utilisation",
@@ -68,15 +69,19 @@ export default function CGUPage() {
           et du catalogue, préparation de factures en brouillon, consultation et téléchargement des documents.
         </li>
         <li>
-          <strong>Formule Essentiel</strong> — 12 € HT par mois, ou 120 € HT par an : émission et envoi des factures et
+          <strong>Formule Essentiel</strong> — {formatEuros(PLANS.starter.monthlyPrice)}{VAT_COLLECTED ? " HT" : ""} par mois, ou {formatEuros(PLANS.starter.yearlyPrice)}{VAT_COLLECTED ? " HT" : ""} par an : émission et envoi des factures et
           des avoirs, relances des factures impayées, export comptable.
         </li>
         <li>
-          <strong>Formule Artisan</strong> — 24 € HT par mois, ou 240 € HT par an : proposée lorsque ses fonctionnalités
+          <strong>Formule Artisan</strong> — {formatEuros(PLANS.pro.monthlyPrice)}{VAT_COLLECTED ? " HT" : ""} par mois, ou {formatEuros(PLANS.pro.yearlyPrice)}{VAT_COLLECTED ? " HT" : ""} par an : proposée lorsque ses fonctionnalités
           propres (situations de travaux, retenue de garantie, autoliquidation) seront disponibles.
         </li>
       </ul>
-      <p>Les prix s&apos;entendent hors taxes ; la TVA au taux en vigueur (20 %) s&apos;y ajoute.</p>
+      <p>
+        {VAT_COLLECTED
+          ? "Les prix s'entendent hors taxes ; la TVA au taux en vigueur (20 %) s'y ajoute."
+          : "Les prix s'entendent en euros. Le montant affiché est le montant prélevé."}
+      </p>
       <h3>4.2 Paiement</h3>
       <p>
         Le paiement est traité par Stripe, par carte bancaire ou par prélèvement SEPA. L&apos;Utilisateur est débité à la

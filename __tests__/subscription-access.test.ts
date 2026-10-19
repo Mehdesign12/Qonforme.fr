@@ -87,17 +87,18 @@ describe('safeNextPath — pas de redirection ouverte après paiement', () => {
 })
 
 describe('grille de prix', () => {
-  it('Essentiel : 12 € HT par mois, 120 € HT par an', () => {
+  it('Essentiel : 24 € par mois, 240 € par an (grille du 19/10/2026)', () => {
     expect(PLANS.starter.name).toBe('Essentiel')
-    expect(PLANS.starter.monthlyPrice).toBe(12)
-    expect(PLANS.starter.yearlyPrice).toBe(120)
-    expect(PLANS.starter.yearlyMonthlyEquivalent).toBe(10)
+    expect(PLANS.starter.monthlyPrice).toBe(24)
+    expect(PLANS.starter.yearlyPrice).toBe(240)
+    expect(PLANS.starter.yearlyMonthlyEquivalent).toBe(20)
     expect(PLANS.starter.available).toBe(true)
   })
-  it('Artisan : 24 € HT, fonctions livrées, en vente seulement avec ses deux prix Stripe', () => {
+  it('Artisan : 34 € par mois, 340 €, fonctions livrées, en vente seulement avec ses deux prix Stripe', () => {
     expect(PLANS.pro.name).toBe('Artisan')
-    expect(PLANS.pro.monthlyPrice).toBe(24)
-    expect(PLANS.pro.yearlyPrice).toBe(240)
+    expect(PLANS.pro.monthlyPrice).toBe(34)
+    expect(PLANS.pro.yearlyPrice).toBe(340)
+    expect(PLANS.pro.yearlyMonthlyEquivalent).toBe(28.33)
     // Sans NEXT_PUBLIC_ARTISAN_ON_SALE (next.config.mjs), pas en vente
     expect(PLANS.pro.available).toBe(false)
     expect(PLANS.pro.features).toContain('Situations de travaux et factures d’acompte')

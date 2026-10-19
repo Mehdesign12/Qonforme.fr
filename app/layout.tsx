@@ -13,6 +13,7 @@ import { ThemeColorSync } from "@/components/pwa/ThemeColorSync";
 import { StandaloneFlag } from "@/components/pwa/StandaloneFlag";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { PLANS, VAT_COLLECTED } from "@/lib/stripe/plans";
 import { SentryReplay } from "@/components/shared/SentryReplay";
 import { CookieBanner } from "@/components/consent/CookieBanner";
 import { TrackingLoader } from "@/components/consent/TrackingLoader";
@@ -192,17 +193,17 @@ export default function RootLayout({
                     {
                       "@type": "Offer",
                       name: "Essentiel",
-                      price: "12",
+                      price: String(PLANS.starter.monthlyPrice),
                       priceCurrency: "EUR",
                       priceSpecification: {
                         "@type": "UnitPriceSpecification",
-                        price: "12",
+                        price: String(PLANS.starter.monthlyPrice),
                         priceCurrency: "EUR",
                         unitText: "MONTH",
-                        valueAddedTaxIncluded: false,
+                        // Sans TVA collectée, le prix affiché est le prix payé
+                        ...(VAT_COLLECTED ? { valueAddedTaxIncluded: false } : {}),
                       },
-                      description:
-                        "Factures et avoirs illimites, envoi par email, relances automatiques, export FEC. 10 EUR HT par mois a l'annee.",
+                      description: `Factures et avoirs illimites, envoi par email, relances automatiques, export FEC. ${PLANS.starter.yearlyMonthlyEquivalent} EUR par mois a l'annee.`,
                     },
                   ],
                 },

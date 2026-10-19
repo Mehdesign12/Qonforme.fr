@@ -11,7 +11,6 @@
  *   - les factures que l'artisan a déjà émises restent émises.
  */
 import type Stripe from 'stripe'
-import { stripe } from './client'
 import { guaranteeEndsAt, isWithinGuarantee } from './access'
 
 /** Clé posée sur le customer Stripe quand la garantie a servi. */
@@ -21,7 +20,7 @@ export type GuaranteeState =
   | { eligible: true; endsAt: Date; amountPaid: number }
   | { eligible: false; reason: 'used' | 'expired' | 'no_payment' | 'processing'; endsAt: Date | null }
 
-async function listPaidInvoices(customerId: string): Promise<Stripe.Invoice[]> {
+async function listPaidInvoices(stripe: Stripe, customerId: string): Promise<Stripe.Invoice[]> {
   const invoices: Stripe.Invoice[] = []
   for await (const invoice of stripe.invoices.list({ customer: customerId, status: 'paid', limit: 100 })) {
     invoices.push(invoice)
@@ -39,13 +38,13 @@ function refundable(invoice: Stripe.Invoice): number {
   return Math.max(0, (invoice.amount_paid ?? 0) - (invoice.post_payment_credit_notes_amount ?? 0))
 }
 
-export async function getGuaranteeState(customerId: string, now: Date = new Date()): Promise<GuaranteeState> {
+export async function getGuaranteeState(stripe: Stripe, customerId: string, now: Date = new Date()): Promise<GuaranteeState> {
   const customer = await stripe.customers.retrieve(customerId)
   if ('deleted' in customer && customer.deleted) {
     return { eligible: false, reason: 'no_payment', endsAt: null }
   }
 
-  const paid = await listPaidInvoices(customerId)
+  const paid = await listPaidInvoices(stripe, customerId)
   const paidDates = paid.map(paidAt).filter((d): d is Date => d !== null)
   const firstPaidAt = paidDates.length > 0 ? new Date(Math.min(...paidDates.map((d) => d.getTime()))) : null
   const endsAt = firstPaidAt ? guaranteeEndsAt(firstPaidAt) : null
@@ -71,18 +70,18 @@ export async function getGuaranteeState(customerId: string, now: Date = new Date
 }
 
 /**
- * Rembourse et arrête l'abonnement. Idempotent : les clés d'idempotence Stripe
+ * Rembourse et arrête l'abonnement (dans le mode Stripe du client : `stripe` en paramètre). Idempotent : les clés d'idempotence Stripe
  * empêchent un double remboursement si la demande est envoyée deux fois.
  * Renvoie le montant remboursé, en centimes.
  */
-export async function applyGuarantee(customerId: string): Promise<{ refunded: number; canceledSubscriptionIds: string[] }> {
-  const state = await getGuaranteeState(customerId)
+export async function applyGuarantee(stripe: Stripe, customerId: string): Promise<{ refunded: number; canceledSubscriptionIds: string[] }> {
+  const state = await getGuaranteeState(stripe, customerId)
   if (!state.eligible) {
     throw new GuaranteeError(state.reason)
   }
 
   let refunded = 0
-  for (const invoice of await listPaidInvoices(customerId)) {
+  for (const invoice of await listPaidInvoices(stripe, customerId)) {
     const amount = refundable(invoice)
     if (amount <= 0) continue
     await stripe.creditNotes.create(

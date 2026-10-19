@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { stripe } from '@/lib/stripe/client'
+import { getStripe, modeOfSubscription } from '@/lib/stripe/mode'
+import { getUserStripeMode } from '@/lib/stripe/test-users'
 import { getSubscriptionByUserId } from '@/lib/stripe/subscription'
 import { PLANS } from '@/lib/stripe/plans'
 import type Stripe from 'stripe'
@@ -20,6 +21,12 @@ export async function POST(request: NextRequest) {
     const action: 'manage' | 'upgrade' = body?.action ?? 'manage'
 
     const sub = await getSubscriptionByUserId(user.id)
+    // Mode de l'abonnement (production ou bac à sable) ; sans abonnement, celui du compte
+    const mode = sub ? modeOfSubscription(sub) : await getUserStripeMode(user.id)
+    if (!mode) {
+      return NextResponse.json({ error: 'Erreur serveur lors de la création du portail' }, { status: 503 })
+    }
+    const stripe = getStripe(mode)
     let stripeCustomerId = sub?.stripe_customer_id ?? null
     let stripeSubscriptionId = sub?.stripe_subscription_id ?? null
 
@@ -65,7 +72,7 @@ export async function POST(request: NextRequest) {
     if (action === 'upgrade' && stripeSubscriptionId) {
       // Récupérer la billing_period actuelle pour proposer le bon prix Pro
       const currentPeriod = sub?.billing_period ?? 'monthly'
-      const proPriceId = PLANS.pro.stripePriceIds[currentPeriod]
+      const proPriceId = (mode === 'test' ? PLANS.pro.stripePriceIdsTest : PLANS.pro.stripePriceIds)[currentPeriod]
 
       if (proPriceId) {
         try {
