@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { safeNextPath } from "@/lib/stripe/access"
 import { AUTH_INPUT, AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
+import GoogleButton, { OrDivider } from "@/components/auth/GoogleButton"
 
 export default function LoginForm() {
   const supabase = createClient()
@@ -13,6 +14,13 @@ export default function LoginForm() {
   const [password, setPassword] = useState("")
   const [errors, setErrors]     = useState<{ email?: string; password?: string }>({})
   const [loading, setLoading]   = useState(false)
+
+  // Retour de Google sans session (refus, fenêtre fermée, échange en échec)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("error") === "oauth") {
+      toast.error("La connexion avec Google n'a pas abouti. Réessayez ou utilisez votre email.")
+    }
+  }, [])
 
   /* Validation */
   const validate = () => {
@@ -56,7 +64,10 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-4" noValidate>
+    <div className="mt-8 flex flex-col gap-4">
+    <GoogleButton />
+    <OrDivider />
+    <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
 
       <Field id="email" label="Adresse email" error={errors.email}>
         <input
@@ -95,5 +106,6 @@ export default function LoginForm() {
       </AuthSubmit>
 
     </form>
+    </div>
   )
 }

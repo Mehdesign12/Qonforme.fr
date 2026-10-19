@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 import { safeNextPath } from "@/lib/stripe/access"
 import { trackEvent } from "@/lib/meta-pixel"
 import { AUTH_INPUT, AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
+import GoogleButton, { OrDivider } from "@/components/auth/GoogleButton"
 import { SIGNUP_EMAIL_PATTERN, SIGNUP_PASSWORD_MIN } from "@/lib/auth/signup-input"
 
 /**
@@ -98,7 +99,10 @@ export default function SignupForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4 sm:mt-8 sm:gap-[18px]" noValidate>
+    <div className="mt-6 flex flex-col gap-4 sm:mt-8 sm:gap-[18px]">
+    <GoogleButton label="S’inscrire avec Google" />
+    <OrDivider />
+    <form onSubmit={onSubmit} className="flex flex-col gap-4 sm:gap-[18px]" noValidate>
 
       {/* Email */}
       <Field id="email" label="Adresse email" error={errors.email}>
@@ -146,5 +150,6 @@ export default function SignupForm() {
         lien dans chacun permet de les arrêter.
       </p>
     </form>
+    </div>
   )
 }
