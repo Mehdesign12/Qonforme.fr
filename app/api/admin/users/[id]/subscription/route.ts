@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { stripe } from '@/lib/stripe/client'
+import { getStripe, modeOfSubscription } from '@/lib/stripe/mode'
 import { isAdminAuthenticated } from '@/lib/admin-require'
 
 export async function PATCH(
@@ -68,7 +68,7 @@ export async function PATCH(
 
     if (!resolvedSubId && sub.stripe_customer_id) {
       try {
-        const list = await stripe.subscriptions.list({
+        const list = await getStripe(modeOfSubscription(sub)).subscriptions.list({
           customer: sub.stripe_customer_id,
           status: 'active',
           limit: 1,
@@ -84,7 +84,7 @@ export async function PATCH(
     // Annuler dans Stripe si possible
     if (resolvedSubId) {
       try {
-        await stripe.subscriptions.cancel(resolvedSubId)
+        await getStripe(modeOfSubscription(sub)).subscriptions.cancel(resolvedSubId)
         console.log(`[admin/subscription] Stripe subscription ${resolvedSubId} annulée`)
       } catch (err) {
         console.error('[admin/subscription] Erreur annulation Stripe:', err)

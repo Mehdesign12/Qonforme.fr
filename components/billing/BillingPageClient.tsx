@@ -28,7 +28,8 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
-import { PLANS, FREE_FEATURES, formatEuros, withVat } from '@/lib/stripe/plans'
+import { invoiceBadge } from '@/lib/stripe/invoice-status'
+import { PLANS, FREE_FEATURES, TAX_SUFFIX, VAT_COLLECTED, formatEuros, withVat } from '@/lib/stripe/plans'
 import { canIssueInvoices, GUARANTEE_DAYS } from '@/lib/stripe/access'
 import type { Subscription } from '@/lib/stripe/subscription'
 import { formatCurrency } from '@/lib/utils/invoice'
@@ -57,6 +58,8 @@ export interface BillingInvoice {
   /** Montant TTC en euros. */
   amount: number
   status: string
+  /** Montant remboursé par avoir (garantie de 30 jours), en euros. */
+  refunded?: number
   pdfUrl: string | null
 }
 
@@ -76,6 +79,8 @@ interface BillingPageClientProps {
   invoices?: BillingInvoice[]
   identity?: BillingIdentity | null
   mode?: ShellMode
+  /** Artisan est-il vendable à ce compte ? Décidé côté serveur (un compte d'essai le voit en vente). */
+  artisanOnSale?: boolean
 }
 
 function formatDate(iso: string | null): string {
@@ -114,6 +119,7 @@ export default function BillingPageClient({
   invoices = [],
   identity = null,
   mode = 'app',
+  artisanOnSale,
 }: BillingPageClientProps) {
   const demo = mode === 'demo'
   const router = useRouter()
@@ -147,7 +153,7 @@ export default function BillingPageClient({
   }
 
   const essentiel = PLANS.starter
-  const artisan = PLANS.pro
+  const artisan = { ...PLANS.pro, available: artisanOnSale ?? PLANS.pro.available }
   const active = canIssueInvoices(subscription?.status)
   const plansHref = demo ? '/signup' : '/signup/plan'
 
@@ -198,11 +204,11 @@ export default function BillingPageClient({
         <SettingsCard id="emettre" title="Pour émettre vos factures">
           <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
             Vous ne payez qu&apos;à votre première facture. La formule {essentiel.name} :{' '}
-            <strong className="font-semibold text-[var(--q-ink)]">{formatEuros(essentiel.monthlyPrice)} HT par mois</strong>, ou{' '}
-            {formatEuros(essentiel.yearlyMonthlyEquivalent)} HT par mois à l&apos;année ({formatEuros(essentiel.yearlyPrice)} HT,
-            soit {formatEuros(withVat(essentiel.yearlyPrice))} TTC).{' '}
+            <strong className="font-semibold text-[var(--q-ink)]">{formatEuros(essentiel.monthlyPrice)}{TAX_SUFFIX} par mois</strong>, ou{' '}
+            {formatEuros(essentiel.yearlyMonthlyEquivalent)}{TAX_SUFFIX} par mois à l&apos;année ({formatEuros(essentiel.yearlyPrice)}{TAX_SUFFIX}
+            {VAT_COLLECTED && <>, soit {formatEuros(withVat(essentiel.yearlyPrice))} TTC</>}).{' '}
             {artisan.available
-              ? <>La formule {artisan.name} ({formatEuros(artisan.monthlyPrice)} HT par mois) ajoute chantiers, acomptes, situations de travaux, retenue de garantie et autoliquidation.</>
+              ? <>La formule {artisan.name} ({formatEuros(artisan.monthlyPrice)}{TAX_SUFFIX} par mois) ajoute chantiers, acomptes, situations de travaux, retenue de garantie et autoliquidation.</>
               : <>La formule {artisan.name} (chantiers, situations, retenue de garantie, autoliquidation) n&apos;est pas encore en vente : essayez-la dans la démo.</>}
           </p>
           <FeatureList items={essentiel.features} />
@@ -261,8 +267,8 @@ export default function BillingPageClient({
             <span className="text-sm text-[var(--q-text-4)]">
               {chargeHt !== null && (
                 <>
-                  <span className="font-semibold tabular-nums text-[var(--q-ink)]">{formatEuros(chargeHt)} HT</span>{' '}
-                  {monthly ? 'par mois' : 'par an'} ({formatEuros(withVat(chargeHt))} TTC)
+                  <span className="font-semibold tabular-nums text-[var(--q-ink)]">{formatEuros(chargeHt)}{TAX_SUFFIX}</span>{' '}
+                  {monthly ? 'par mois' : 'par an'}{VAT_COLLECTED && <> ({formatEuros(withVat(chargeHt))} TTC)</>}
                 </>
               )}
               {subscription.current_period_end && (
@@ -293,7 +299,7 @@ export default function BillingPageClient({
         <SettingsCard id="artisan" title={`Formule ${artisan.name}`}>
           <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
             {artisan.available
-              ? <>Chantiers, factures d&apos;acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance, pour {formatEuros(artisan.monthlyPrice)} HT par mois ({formatEuros(artisan.yearlyMonthlyEquivalent)} HT par mois à l&apos;année). Le changement se fait au prorata.</>
+              ? <>Chantiers, factures d&apos;acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance, pour {formatEuros(artisan.monthlyPrice)}{TAX_SUFFIX} par mois ({formatEuros(artisan.yearlyMonthlyEquivalent)}{TAX_SUFFIX} par mois à l&apos;année). Le changement se fait au prorata.</>
               : <>Chantiers, factures d&apos;acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance. La formule n&apos;est pas encore en vente : {demo ? <>ses fonctions sont ouvertes dans cette démo.</> : <>essayez ses fonctions dans la démo.</>}</>}
           </p>
           <FeatureList items={artisan.features} />
@@ -422,25 +428,20 @@ function IdentityCard({ identity, future }: { identity: BillingIdentity; future?
   )
 }
 
-const INVOICE_STATUS: Record<string, { label: string; tone: 'ok' | 'warn' | 'danger' | 'neutral' }> = {
-  paid: { label: 'Payée', tone: 'ok' },
-  open: { label: 'À régler', tone: 'warn' },
-  uncollectible: { label: 'Impayée', tone: 'danger' },
-  void: { label: 'Annulée', tone: 'neutral' },
-}
-
 function HistoryCard({ invoices, demo }: { invoices: BillingInvoice[]; demo: boolean }) {
   return (
     <section aria-labelledby="historique-titre" className="q-card overflow-hidden">
       <h2 id="historique-titre" className="q-h2 px-5 pb-3 pt-5">Historique de facturation</h2>
       <ul className="q-list border-t border-[var(--q-line-soft)]">
         {invoices.map((inv) => {
-          const st = INVOICE_STATUS[inv.status] ?? { label: inv.status, tone: 'neutral' as const }
+          const st = invoiceBadge(inv.status, inv.amount, inv.refunded ?? 0)
+          const partial = (inv.refunded ?? 0) > 0 && st.label !== 'Remboursée'
           return (
             <li key={inv.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3">
               <span className="w-[104px] shrink-0 text-sm text-[var(--q-text-3)]">{shortDate(inv.date)}</span>
               <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-[var(--q-ink)]">{inv.number ?? 'Facture d’abonnement'}</span>
               <span className="text-sm font-semibold tabular-nums text-[var(--q-ink)]">{formatCurrency(inv.amount)}</span>
+              {partial && <span className="text-xs tabular-nums text-[var(--q-text-4)]">dont {formatCurrency(inv.refunded ?? 0)} remboursés</span>}
               <StatusPill tone={st.tone} icon={st.tone === 'ok' ? <Check strokeWidth={2.75} aria-hidden /> : undefined}>{st.label}</StatusPill>
               {demo ? (
                 <button type="button" onClick={() => demoToast('télécharger vos factures')} className="q-btn q-btn-secondary q-btn-sm">

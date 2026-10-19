@@ -3,13 +3,17 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, Suspense } from "react";
 import type { PostHog } from "posthog-js";
+import { currentConsent, isTrackingPage } from "@/lib/consent";
+import { useConsent } from "@/components/consent/use-consent";
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
 /**
  * posthog-js (~56 Ko) n'est plus dans le JavaScript initial de chaque page
  * (LCP mobile, PushRank) : il se charge après l'affichage, et pas du tout
- * quand la clé n'est pas configurée au build.
+ * quand la clé n'est pas configurée au build. Il ne se charge non plus qu'après
+ * l'accord du visiteur (bandeau de cookies, lib/consent.ts) : posthog-js garde un
+ * identifiant dans le navigateur.
  */
 let client: Promise<PostHog> | null = null;
 
@@ -35,15 +39,29 @@ function loadPostHog(): Promise<PostHog> | null {
 function PostHogPageView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  // Relance l'effet quand le choix change ; la valeur utilisée est relue dans l'effet
+  // (le hook vaut null à l'hydratation, même pour un visiteur qui a déjà accepté).
+  const consent = useConsent();
 
   useEffect(() => {
     if (!pathname) return;
+    if (currentConsent() !== "accepted") {
+      // Refus ou retrait de l'accord : plus rien ne part (si posthog-js était chargé)
+      client?.then((ph) => ph.opt_out_capturing()).catch(() => {});
+      return;
+    }
+    if (!isTrackingPage(pathname)) return;
     let url = window.origin + pathname;
     if (searchParams.toString()) {
       url += "?" + searchParams.toString();
     }
-    loadPostHog()?.then((ph) => ph.capture("$pageview", { $current_url: url })).catch(() => {});
-  }, [pathname, searchParams]);
+    loadPostHog()
+      ?.then((ph) => {
+        if (ph.has_opted_out_capturing()) ph.opt_in_capturing({ captureEventName: false });
+        ph.capture("$pageview", { $current_url: url });
+      })
+      .catch(() => {});
+  }, [pathname, searchParams, consent]);
 
   return null;
 }

@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import PricingSelector from '@/components/billing/PricingSelector'
 import { canIssueInvoices, safeNextPath } from '@/lib/stripe/access'
 import { recoverActiveSubscription } from '@/lib/stripe/recovery'
+import { modeOfSubscription } from '@/lib/stripe/mode'
+import { artisanOnSaleFor } from '@/lib/stripe/availability'
 import AuthLayout from '@/components/auth/AuthLayout'
 import { Serif } from '@/components/auth/AuthHeading'
 
@@ -32,16 +34,18 @@ export default async function ChoosePlanPage({
   const { data: { user } } = await supabase.auth.getUser()
 
   let alreadyActive = false
+  // Artisan est-il vendable à ce compte ? (un compte d'essai voit les mêmes écrans que la production)
+  const artisanOnSale = await artisanOnSaleFor(user?.id)
   if (user) {
     const { data: sub } = await supabase
       .from('subscriptions')
-      .select('status, stripe_customer_id')
+      .select('*') // `*` : la colonne livemode n'existe qu'après la migration 20261019
       .eq('user_id', user.id)
       .maybeSingle()
 
     alreadyActive = canIssueInvoices(sub?.status)
     if (!alreadyActive && sub?.stripe_customer_id) {
-      alreadyActive = await recoverActiveSubscription(user.id, sub.stripe_customer_id)
+      alreadyActive = await recoverActiveSubscription(user.id, sub.stripe_customer_id, modeOfSubscription(sub))
     }
   }
 
@@ -71,7 +75,7 @@ export default async function ChoosePlanPage({
         </p>
       </div>
 
-      <PricingSelector isAuthenticated={!!user} backHref={backHref} next={next} showFree={!user} />
+      <PricingSelector isAuthenticated={!!user} backHref={backHref} next={next} showFree={!user} artisanOnSale={artisanOnSale} />
     </AuthLayout>
   )
 }

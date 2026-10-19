@@ -476,7 +476,7 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 ### Décisions
 
 1. **Pas de Stripe Connect.** Qonforme n'encaisse pas pour le compte des artisans. Leurs clients les paient par virement sur leur propre IBAN. Le lien de paiement mène à une page de règlement : IBAN, BIC, montant, référence à copier, bouton « J'ai effectué le virement » qui prévient l'artisan. Pas de carte ni de prélèvement côté client, pas de frais de transaction.
-2. **Pas d'app native.** L'app iOS (Capacitor) est retirée du code. Le mobile passe par le site responsive, installable sur l'écran d'accueil (PWA). Raison : un abonnement vendu à un artisan seul relève de l'achat intégré d'Apple (règle 3.1.3(c)) ; l'autre voie (3.1.3(f)) interdit tout prix, bouton ou lien d'achat dans l'app, donc le mur de paiement à la première facture.
+2. **Pas d'app native.** *(Rouvert le 19/10/2026 : voir § 15.)* L'app iOS (Capacitor) est retirée du code. Le mobile passe par le site responsive, installable sur l'écran d'accueil (PWA). Raison : un abonnement vendu à un artisan seul relève de l'achat intégré d'Apple (règle 3.1.3(c)) ; l'autre voie (3.1.3(f)) interdit tout prix, bouton ou lien d'achat dans l'app, donc le mur de paiement à la première facture.
 3. **Grille appliquée à tous.** Aucun abonné payant à reprendre : pas d'ancien tarif à maintenir.
    - Essentiel : 12 € HT par mois, ou 120 € HT par an (10 € par mois).
    - Artisan : 24 € HT par mois, ou 240 € HT par an (20 € par mois). **Affiché « bientôt » et non vendu** tant que situations, retenue de garantie et autoliquidation n'existent pas : on ne vend pas ce qui n'existe pas (§ 2).
@@ -555,3 +555,64 @@ Ils disent le contraire du logotype tant qu'ils ne sont pas relus avec ce que co
 - application : `components/reception/PlatformNotice.tsx`, `components/settings/{EInvoicingView,SettingsOverview}.tsx`, `components/layout/Sidebar.tsx`, `components/dashboard/ReformCard.tsx` ;
 - pages publiques : FAQ de `app/pricing/page.tsx`, `app/outils/{generateur-facture-gratuite,verificateur-conformite-facture}/page.tsx`, `lib/pseo/guides.ts` (guide auto-entrepreneur), `lib/pseo/metiers.ts` (plombier, peintre) ;
 - générateurs d'articles : `lib/ai/gemini.ts` et `lib/seo/articles/prompt.ts` (consigne « ne jamais écrire que Qonforme transmet les factures électroniques »), `lib/ai/reference-facts.ts` (faits de référence à relire) ; la vérification des articles (`lib/blog-audit.ts`) refuse « ni certifié ni homologué » : cela reste vrai pour « certifié », à ne pas assouplir.
+
+---
+
+## 14. Nouvelle grille, société américaine et TVA reportée (décidé le 19/10/2026)
+
+Remplace la grille du § 12 (12 € et 24 € HT). Décisions du fondateur, dans l'ordre où elles ont été prises.
+
+### Prix
+
+| | Mensuel | Annuel |
+|---|---|---|
+| Essentiel | 24 € | 240 € (20 € par mois) |
+| Artisan | 34 € | 340 € (28,33 € par mois) |
+
+Le prix affiché est le prix payé par le client. Une première version du canevas affichait 25 € et 34 € TTC (session « Révision modifications et incohérences », 14-16/10) : elle est abandonnée au profit de 24 € et 34 €, sans TVA ajoutée tant que § 14.3 n'est pas levé. Définis à un seul endroit : `lib/stripe/plans.ts`.
+
+### 14.1 Qui vend
+
+Les abonnements sont vendus par **Diez Agency LLC** (société du Wyoming, États-Unis) ; « Qonforme » est une marque, il n'existe pas de « Qonforme SAS ». Le compte Stripe est au nom de la LLC. **Corrigé le 19/10/2026** : les mentions légales, les CGU, la politique de confidentialité, le pied de page, la page 404 et les données structurées nomment Diez Agency LLC (éditeur, responsable du traitement, propriétaire des contenus), sous la marque Qonforme, à partir d'une seule fiche, `lib/legal/publisher.ts`. **Reste à fournir par le fondateur** : l'adresse du siège de la LLC et le nom du directeur de la publication (loi n° 2004-575, art. 6, III) : à renseigner dans cette fiche, ils apparaissent alors dans les mentions légales (rien ne s'affiche tant qu'ils sont vides). La politique de confidentialité dit désormais que le responsable du traitement est lui-même établi aux États-Unis ; les garanties du transfert vers la LLC et le représentant dans l'Union (RGPD art. 27) restent à valider avec l'expert-comptable ou un juriste.
+
+### 14.2 Mode essai Stripe : des comptes d'essai, pas d'interrupteur général
+
+Un bac à sable Stripe (« Qonforme essai ») a ses propres clés, produits, prix et webhook. Variante retenue : **des comptes d'essai** cochés dans Admin › Paiements paient dans le bac à sable ; tous les autres restent en production en permanence. Un interrupteur général aurait coupé la vente à de vrais clients par un seul clic.
+
+- Variables : celles de la production, et les mêmes noms suffixés par `_TEST` (clé secrète, clé publique, clé du webhook, 4 prix). Jamais enregistrées en base ni affichées ; l'écran admin ne montre que leur présence.
+- Tables : `stripe_test_users` (comptes d'essai, serveur seulement) et `subscriptions.livemode` (faux pour un abonnement d'essai), migration `20261019_stripe_test_mode.sql`. Sans elle, tout le monde est en production comme avant.
+- Sûreté : en cas de doute sur le mode d'un compte, le paiement est refusé (503), jamais deviné ; un abonnement d'essai n'ouvre pas « déjà abonné » à un compte revenu en production ; retirer un compte d'essai efface son abonnement d'essai ; « Supprimer les abonnements d'essai » nettoie avant l'ouverture.
+- Un seul webhook (`/api/webhooks/stripe`, **sans `www`**) reçoit les deux modes : la clé de signature qui correspond donne le mode, et un message dont le mode contredit sa signature est refusé.
+
+### 14.3 TVA reportée, sous la responsabilité du fondateur
+
+La LLC n'est pas inscrite à la TVA et Stripe Tax n'est pas activé. Décision du fondateur, **vente ouverte quand même, sans TVA ajoutée**, son expert-comptable devant trouver une solution plus tard ; il assume la responsabilité de ce choix. Risque exposé avant la décision : une prestation de logiciel fournie à un client en France par une société hors Union européenne est taxable en France (autoliquidation par le client assujetti avec numéro de TVA ; TVA française due par le fournisseur pour les autres clients, via le guichet unique pour les sociétés hors Union ou une immatriculation en France) ; la TVA non collectée ne peut plus être refacturée au client et peut rester à la charge de la LLC, avec d'éventuelles pénalités.
+
+Mise en œuvre : `VAT_COLLECTED = false` dans `lib/stripe/plans.ts`. Tant qu'il vaut false : aucun taux de TVA ajouté, aucune mention HT ou TTC (page Tarifs, paiement, abonnement, emails, CGU, données structurées), l'abonnement est facturé au prix affiché. Une fois la LLC inscrite : activer Stripe Tax, passer le réglage à `true` (prix hors taxes, TVA calculée par Stripe, numéro de TVA des entreprises demandé au paiement, 0 % si valide), relire l'article 4 des CGU et ce paragraphe. **L'ancien taux fixe `STRIPE_TAX_RATE_ID` n'est plus utilisé.**
+
+### 14.4 À faire avant d'ouvrir la vente en production
+
+1. Créer en mode production les 2 produits et les 4 prix de la grille ci-dessus, puis renseigner `STRIPE_PRICE_ESSENTIEL_{MONTHLY,YEARLY}` et `STRIPE_PRICE_ARTISAN_{MONTHLY,YEARLY}` dans Vercel (Artisan se met en vente dès que ses deux prix existent ; valeur lue au build : redéployer).
+2. Corriger le webhook de production : adresse `https://qonforme.fr/api/webhooks/stripe` (celle en `www` reçoit une redirection que Stripe ne suit pas), les 7 événements du code (`.env.example`), puis recopier sa clé dans `STRIPE_WEBHOOK_SECRET`.
+3. Régler le portail client en production (changement de formule entre les deux produits, résiliation à la fin de la période).
+4. Appliquer `20261019_stripe_test_mode.sql`, puis « Supprimer les abonnements d'essai » dans Admin › Paiements.
+5. Mentions légales, CGU et confidentialité : le nom de l'éditeur est corrigé (§ 14.1) ; **reste l'adresse du siège de la LLC et le nom du directeur de la publication** à renseigner dans `lib/legal/publisher.ts`.
+6. Représentant dans l'Union européenne pour le RGPD, et vérification que le label « Solution compatible » (§ 13) a été obtenu au nom de la LLC.
+7. **Réglages Stripe à refaire en production** (le bac à sable et la production ont chacun les leurs ; rappel demandé par le fondateur le 19/10/2026) :
+   - **Nom public du compte** (Settings › Business › Public details) : il s'affiche dans le texte légal du formulaire de paiement (« vous autorisez … à vous débiter »), dans le portail client et sur les factures d'abonnement ; dans le bac à sable il vaut « Qonforme essai ». À régler, avec l'adresse et le numéro d'identification de la LLC pour les factures (Settings › Billing › Invoice template).
+   - **Link désactivé** (Settings › Payment methods › Link) : sinon Stripe coche « Enregistrer mes informations avec Link » et exige un numéro de téléphone, ce qui peut bloquer un client. Vérifié dans le bac à sable : plus de bouton ni de case Link.
+   - **Portail client** : motif de résiliation (la liste est en français, mais son libellé « Reason » reste en anglais ; à désactiver ou à garder).
+
+### 14.5 Tests du 19/10/2026 sur le site en ligne (bac à sable, compte d'essai)
+
+Compte créé par la session (`claude-test-stripe-20261019@example.com`, à supprimer de l'admin) et ajouté aux comptes d'essai. Vérifiés avec un navigateur : page Tarifs (24 €, 34 €, aucun HT/TTC), paiement en production fermé pour un compte ordinaire (500 « momentanément indisponible »), paiement de 24 € par carte d'essai (activation, facture, moyen de paiement), webhook en 200 (`checkout.session.completed`, `invoice.paid`), passage Essentiel → Artisan par le portail (10,00 € au prorata, puis 34 €/mois), résiliation programmée, garantie de 30 jours (34 € remboursés, retour en version gratuite), formulaire sans Link. Non testés : prélèvement SEPA (réussi et refusé), année complète, TVA (Stripe Tax non activé), mode production.
+
+## 15. Application mobile native rouverte, sans achat dans l'app (orientation du 19/10/2026)
+
+Remplace le point 2 du § 12 (« Pas d'app native »). Décision du fondateur, prise en réponse à la question « App Mobile » : **rouvrir l'app native, sur iOS et Android, sans aucun achat dans l'app**. Le plan, ses risques et les décisions qui restent ouvertes (D1 à D7) sont dans `PLAN-APP-MOBILE-2026-10.md`. **Aucun code natif n'est écrit tant que ce plan n'est pas validé.**
+
+- **Voie retenue** : application gratuite, compagnon d'un outil payant en ligne (règle 3.1.3(f) d'Apple). Aucun prix, bouton, lien ni appel à l'action vers un achat, dans l'app comme vers l'extérieur ; l'abonnement se prend sur le site, par Stripe (§ 12 et § 14 inchangés).
+- **Conséquence produit** : un compte sans formule fait dans l'app tout ce qui est gratuit sur le site (devis, clients, catalogue, brouillons, consultation) ; à l'émission, l'app affiche un message sans prix ni lien au lieu de `PaywallDialog`. Le serveur continue de refuser (402).
+- **Prérequis hors code** : comptes développeur Apple et Google au nom de Diez Agency LLC, adresse du siège de la LLC (§ 14.1), coordonnées de professionnel pour la fiche UE.
+- **Manque constaté dans le code** : aucune suppression de compte par l'utilisateur (exigée par Apple, et par le RGPD) ; à construire avant la soumission, avec une règle pour les documents émis (D3).
+- **Non retenu** : achat intégré ; lien vers le site pour acheter (possible dans l'UE depuis le 1er octobre 2026, avec commission ; piste ultérieure à étudier si la conversion en souffre).

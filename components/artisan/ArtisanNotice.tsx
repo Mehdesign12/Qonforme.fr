@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * Bandeaux d'état de la formule Artisan, communs aux écrans Chantiers :
  * - formule non souscrite (ou pas encore en vente) : ce que fait la formule,
@@ -8,9 +10,10 @@
 import Link from "next/link"
 import { HardHat, Info } from "lucide-react"
 import { PLANS } from "@/lib/stripe/plans"
+import { useArtisanOnSale } from "@/components/billing/useArtisanOnSale"
 
 export function ArtisanLockedBanner({ onChoose, demoHref = "/demo/chantiers" }: { onChoose?: () => void; demoHref?: string }) {
-  const plan = PLANS.pro
+  const plan = { ...PLANS.pro, available: useArtisanOnSale() }
   return (
     <div className="q-banner items-start text-[14px] leading-normal" role="note">
       <HardHat className="mt-0.5 size-4 shrink-0" aria-hidden />

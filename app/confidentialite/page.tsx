@@ -1,5 +1,7 @@
 import { LegalLayout } from "@/components/legal/LegalLayout"
+import { CookieSettingsLink } from "@/components/consent/CookieSettingsLink"
 import type { Metadata } from "next"
+import { PUBLISHER } from "@/lib/legal/publisher"
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
@@ -17,13 +19,14 @@ export default function ConfidentialitePage() {
       titleAccent="confidentialité"
       path="/confidentialite"
       subtitle="Comment Qonforme collecte, utilise et protège vos données personnelles."
-      lastUpdated="12 avril 2026"
+      lastUpdated="19 octobre 2026"
     >
       <h2>1. Responsable du traitement</h2>
       <p>
         Le responsable du traitement des données personnelles collectées sur le site <strong>qonforme.fr</strong> est
-        la société <strong>Qonforme SAS</strong>, joignable à l&apos;adresse{" "}
-        <a href="mailto:privacy@qonforme.fr">privacy@qonforme.fr</a>.
+        la société <strong>{PUBLISHER.name}</strong>, {PUBLISHER.form}, qui exploite le service sous la marque
+        Qonforme. Elle est joignable à l&apos;adresse{" "}
+        <a href={`mailto:${PUBLISHER.privacyEmail}`}>{PUBLISHER.privacyEmail}</a>.
       </p>
 
       <h2>2. Données collectées</h2>
@@ -56,6 +59,11 @@ export default function ConfidentialitePage() {
       <ul>
         <li>Logs de connexion (adresse IP, date, heure)</li>
         <li>Préférences d&apos;interface (thème sombre/clair)</li>
+        <li>Votre choix de cookies (accepté ou refusé), conservé sur votre appareil</li>
+        <li>
+          Seulement si vous acceptez les cookies : identifiant de navigateur et évènements de navigation transmis à
+          nos outils de mesure d&apos;audience et de publicité (section 8)
+        </li>
       </ul>
 
       <h2>3. Finalités du traitement</h2>
@@ -66,13 +74,16 @@ export default function ConfidentialitePage() {
         <li><strong>Intérêt légitime</strong> — sécurité du service, prévention de la fraude, amélioration du produit</li>
         <li><strong>Intérêt légitime</strong> — conseils de démarrage par e-mail pendant les 30 jours qui suivent la création du compte (premier devis, passage du devis à la facture, formule Essentiel). Chaque e-mail contient un lien pour ne plus les recevoir, sans connexion ; le réglage existe aussi dans Paramètres › Relances (article L34-5 du Code des postes et des communications électroniques)</li>
         <li><strong>Gestion des abonnements</strong> — traitement des paiements via Stripe</li>
+        <li><strong>Consentement</strong> — mesure de la fréquentation du site et de l&apos;efficacité de nos annonces publicitaires (pixel Meta, mesure d&apos;audience), seulement si vous acceptez les cookies</li>
       </ul>
 
       <h2>4. Base légale</h2>
       <p>
         Le traitement des données repose sur l&apos;exécution du contrat (article 6.1.b du RGPD) pour la fourniture du
         service, sur l&apos;obligation légale (article 6.1.c) pour l&apos;archivage comptable, et sur l&apos;intérêt légitime
-        (article 6.1.f) pour la sécurité et l&apos;amélioration du service.
+        (article 6.1.f) pour la sécurité et l&apos;amélioration du service. Les cookies et traceurs qui ne sont pas
+        strictement nécessaires (publicité, mesure d&apos;audience) reposent sur votre consentement (article 6.1.a du
+        RGPD et article 82 de la loi Informatique et Libertés), que vous pouvez retirer à tout moment.
       </p>
 
       <h2>5. Durée de conservation</h2>
@@ -80,6 +91,8 @@ export default function ConfidentialitePage() {
         <li><strong>Données du compte</strong> — conservées pendant toute la durée de l&apos;abonnement, puis 3 ans après la suppression du compte</li>
         <li><strong>Documents comptables</strong> (factures, avoirs) — 10 ans conformément au Code de commerce</li>
         <li><strong>Logs de connexion</strong> — 12 mois</li>
+        <li><strong>Votre choix de cookies</strong> — 6 mois sur votre appareil, puis il vous est redemandé</li>
+        <li><strong>Cookies du pixel Meta</strong> — 90 jours au plus, et seulement si vous avez accepté</li>
         <li><strong>Données de paiement</strong> — conservées par Stripe selon sa propre politique de conservation</li>
       </ul>
 
@@ -90,10 +103,10 @@ export default function ConfidentialitePage() {
       </p>
       <ul>
         <li><strong>Supabase Inc.</strong> — hébergement de la base de données (région eu-west-3, Paris, France)</li>
-        <li><strong>Vercel Inc.</strong> — hébergement de l&apos;application web</li>
+        <li><strong>Vercel Inc.</strong> — hébergement de l&apos;application web et mesure de fréquentation (Vercel Web Analytics : pages vues, pays, type d&apos;appareil, sans cookie ni identifiant persistant)</li>
         <li><strong>Stripe Inc.</strong> — traitement des paiements (certifié PCI-DSS)</li>
         <li><strong>Resend Inc.</strong> — envoi d&apos;e-mails transactionnels (factures, relances, bienvenue)</li>
-        <li><strong>PostHog Inc.</strong> — mesure d&apos;audience anonymisée (aucun profil individuel créé, pas de cookie publicitaire)</li>
+        <li><strong>PostHog Inc.</strong> — mesure d&apos;audience (pages vues, provenance des visites), chargée seulement si vous acceptez les cookies</li>
         <li><strong>Sentry (Functional Software Inc.)</strong> — surveillance des erreurs techniques et stabilité du service</li>
         <li><strong>Google LLC (Gemini API)</strong> — génération de contenu éditorial pour le blog (aucune donnée utilisateur transmise)</li>
       </ul>
@@ -103,36 +116,75 @@ export default function ConfidentialitePage() {
         adéquates (clauses contractuelles types de la Commission européenne).
       </p>
 
-      <h2>7. Transferts hors UE</h2>
+      <h3>Partenaire publicitaire (avec votre accord seulement)</h3>
       <p>
-        Certains sous-traitants (Vercel, Stripe, Resend) sont établis aux États-Unis. Les transferts de données
-        sont encadrés par le EU-US Data Privacy Framework et/ou les clauses contractuelles types adoptées par la
-        Commission européenne, garantissant un niveau de protection adéquat.
+        <strong>Meta Platforms Ireland Limited</strong> (Dublin, Irlande) reçoit les données du pixel Meta décrit en
+        section 8, si vous acceptez les cookies. Meta n&apos;agit pas comme sous-traitant de Qonforme pour ces données :
+        Meta et Qonforme sont responsables conjoints de leur collecte et de leur transmission à Meta, selon l&apos;
+        <a href="https://www.facebook.com/legal/controller_addendum" target="_blank" rel="noopener noreferrer">addendum
+        de Meta</a>. L&apos;utilisation que Meta en fait ensuite relève de sa{" "}
+        <a href="https://www.facebook.com/privacy/policy" target="_blank" rel="noopener noreferrer">politique de confidentialité</a>.
       </p>
 
-      <h2>8. Cookies</h2>
+      <h2>7. Transferts hors UE</h2>
       <p>
-        Qonforme utilise exclusivement des <strong>cookies strictement nécessaires</strong> au fonctionnement du service :
+        Le responsable du traitement, {PUBLISHER.name}, est lui-même établi aux États-Unis. Certains sous-traitants
+        (Vercel, Stripe, Resend) le sont aussi. Les transferts de données
+        sont encadrés par le EU-US Data Privacy Framework et/ou les clauses contractuelles types adoptées par la
+        Commission européenne, garantissant un niveau de protection adéquat. Si vous acceptez les cookies, Meta peut
+        aussi transférer des données vers les États-Unis, dans les conditions décrites dans sa politique de
+        confidentialité.
       </p>
+
+      <h2 id="cookies">8. Cookies et traceurs</h2>
+      <p>
+        Qonforme distingue deux catégories. La première ne demande pas votre accord. Pour la seconde, vous choisissez
+        avec le bandeau affiché à votre première visite : <strong>accepter</strong> ou <strong>refuser</strong>, avec le
+        même effort. Ne pas répondre équivaut à refuser. Vous pouvez modifier votre choix à tout moment :{" "}
+        <CookieSettingsLink className="font-medium text-q-accent-strong underline underline-offset-2 hover:no-underline" />.
+      </p>
+
+      <h3>8.1 Strictement nécessaires (sans consentement)</h3>
       <ul>
-        <li><strong>Cookie de session</strong> — authentification Supabase (durée : session)</li>
-        <li><strong>Préférence de thème</strong> — stockage local (localStorage, clé &laquo;theme&raquo;)</li>
+        <li><strong>Cookie de session</strong> — authentification Supabase (durée : session)</li>
+        <li><strong>Préférence de thème</strong> — stockage local (localStorage, clé &laquo;&nbsp;theme&nbsp;&raquo;)</li>
+        <li><strong>Votre choix de cookies</strong> — stockage local (localStorage, clé &laquo;&nbsp;qonforme-cookie-consent&nbsp;&raquo;), 6 mois</li>
+        <li><strong>Paiement</strong> — Stripe peut déposer des cookies de sécurité et de prévention de la fraude au moment de régler un abonnement</li>
+      </ul>
+
+      <h3>8.2 Soumis à votre accord</h3>
+      <ul>
+        <li>
+          <strong>Pixel Meta</strong> (Meta Platforms Ireland Limited) — cookies <code>_fbp</code> et <code>_fbc</code>,
+          90 jours au plus. Finalités : mesurer l&apos;efficacité de nos annonces et les présenter à des personnes qui
+          ont déjà visité le site. Données transmises à Meta : l&apos;adresse de la page, le type d&apos;action (visite,
+          consultation des tarifs, de la démo ou des outils gratuits, création de compte, entreprise renseignée,
+          début de paiement, abonnement, génération d&apos;un document avec l&apos;outil gratuit), le montant et la
+          devise d&apos;un abonnement, votre adresse IP, votre navigateur et l&apos;identifiant du cookie.
+        </li>
+        <li>
+          <strong>PostHog</strong> — mesure d&apos;audience (pages vues, provenance des visites). Un identifiant est
+          alors enregistré dans votre navigateur.
+        </li>
       </ul>
       <p>
-        <strong>Aucun cookie publicitaire ou de traçage n&apos;est déposé.</strong> Qonforme
-        n&apos;utilise ni Google Analytics, ni Facebook Pixel, ni aucun outil de tracking publicitaire.
+        <strong>Sans votre accord, ces outils ne sont pas chargés</strong> : aucun cookie ni identifiant n&apos;est déposé
+        et aucune donnée ne leur est transmise. Si vous refusez ou retirez votre accord, les cookies Meta existants sont
+        supprimés. Ces outils ne sont jamais chargés sur les pages destinées aux clients de nos utilisateurs (règlement
+        d&apos;une facture, signature d&apos;un devis) ni dans l&apos;espace d&apos;administration.
       </p>
       <p>
-        Qonforme utilise <strong>PostHog</strong> pour la mesure d&apos;audience anonymisée (pages vues, sources de trafic).
-        Cet outil fonctionne <strong>sans création de profil individuel</strong> (mode &laquo;&nbsp;identified_only&nbsp;&raquo;)
-        et sans dépôt de cookie publicitaire. Les données collectées sont agrégées et ne permettent pas
-        d&apos;identifier personnellement un visiteur. Cette mesure d&apos;audience est exemptée de consentement
-        conformément aux recommandations de la CNIL (délibération n° 2020-091).
+        Votre choix est conservé six mois sur votre appareil, puis nous vous le redemandons. Vous pouvez aussi
+        paramétrer votre navigateur pour bloquer ou supprimer les cookies ; certaines parties du service (connexion)
+        ne fonctionnent pas sans les cookies de la première catégorie.
       </p>
+
+      <h3>8.3 Sans cookie</h3>
       <p>
-        <strong>Sentry</strong> est utilisé pour la détection automatique des erreurs techniques.
-        Il ne collecte aucune donnée personnelle identifiante et fonctionne exclusivement pour assurer
-        la stabilité du service.
+        <strong>Vercel Web Analytics</strong> mesure la fréquentation sans cookie et sans identifiant persistant.{" "}
+        <strong>Sentry</strong> sert uniquement à détecter et corriger les erreurs techniques ; dans l&apos;application
+        (hors pages de contenu), une erreur peut déclencher l&apos;enregistrement de la session, dont les textes et les
+        champs de saisie sont masqués par défaut.
       </p>
 
       <h2>9. Vos droits</h2>
@@ -146,6 +198,7 @@ export default function ConfidentialitePage() {
         <li><strong>Droit à la portabilité</strong> — recevoir vos données dans un format structuré et lisible (export FEC disponible)</li>
         <li><strong>Droit d&apos;opposition</strong> — vous opposer au traitement fondé sur l&apos;intérêt légitime</li>
         <li><strong>Droit à la limitation</strong> — restreindre temporairement le traitement de vos données</li>
+        <li><strong>Retrait du consentement</strong> — à tout moment, avec le lien &laquo;&nbsp;Gérer les cookies&nbsp;&raquo; du pied de page, sans effet sur ce qui s&apos;est passé avant</li>
       </ul>
       <p>
         Pour exercer ces droits, contactez-nous à <a href="mailto:privacy@qonforme.fr">privacy@qonforme.fr</a>.

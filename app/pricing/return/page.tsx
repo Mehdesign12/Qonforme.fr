@@ -16,7 +16,7 @@
  */
 import { redirect } from 'next/navigation'
 import Stripe from 'stripe'
-import { stripe } from '@/lib/stripe/client'
+import { getStripe, modeFromStripeId } from '@/lib/stripe/mode'
 import { upsertSubscription } from '@/lib/stripe/subscription'
 import { getPlanByPriceId, isPlanId, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { mapStripeStatus, safeNextPath } from '@/lib/stripe/access'
@@ -46,6 +46,9 @@ export default async function PricingReturnPage({ searchParams }: ReturnPageProp
   let destination = backToPlans
 
   try {
+    // Le mode se lit dans l'identifiant de la session (cs_test_… ou cs_live_…)
+    const mode = modeFromStripeId(session_id)
+    const stripe = getStripe(mode)
     const session = await stripe.checkout.sessions.retrieve(session_id)
 
     if (session.status === 'complete') {
@@ -85,6 +88,7 @@ export default async function PricingReturnPage({ searchParams }: ReturnPageProp
                 billingPeriod: resolvedPeriod,
                 status: mapStripeStatus(stripeSub.status),
                 currentPeriodEnd: getPeriodEnd(stripeSub),
+                mode,
               })
               console.log(`[/pricing/return] Formule ${resolvedPlan} (${resolvedPeriod}) activée pour user ${userId}`)
             } else {

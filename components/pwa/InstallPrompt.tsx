@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Share, SquarePlus, X, Download } from 'lucide-react'
 import { usePlatform } from '@/lib/pwa/hooks'
 import { isInstallPromptSnoozed, snoozeInstallPrompt } from '@/lib/pwa/client'
+import { INSTALL_PROMPT_ENABLED } from '@/lib/pwa/config'
 import { cn } from '@/lib/utils'
 
 /**
@@ -16,19 +17,6 @@ type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
-
-/** Sections dont le layout affiche une barre de navigation basse sur mobile. */
-const ROUTES_WITH_BOTTOM_NAV = [
-  '/dashboard',
-  '/invoices',
-  '/quotes',
-  '/clients',
-  '/products',
-  '/purchase-orders',
-  '/credit-notes',
-  '/settings',
-  '/demo',
-]
 
 /** Délai avant affichage — laisse la page se stabiliser avant d'interrompre. */
 const APPEARANCE_DELAY_MS = 4000
@@ -69,14 +57,22 @@ export function InstallPrompt() {
   const canPromptNatively = deferredPrompt !== null
   const canShowIosGuide = isIOS && isSafari
 
+  // Désactivée pour l'instant (lib/pwa/config.ts). Une fois réactivée : seulement sur le
+  // tableau de bord, jamais sur le site public (accueil, tarifs, blog, inscription), où
+  // l'invite recouvrait le contenu et le bandeau de cookies dès la première visite, ni
+  // dans un formulaire, où elle cachait le bouton d'envoi.
+  const inApp = INSTALL_PROMPT_ENABLED && pathname === '/dashboard'
+
   useEffect(() => {
-    if (!ready || isStandalone) return
+    if (!ready || isStandalone || !inApp) return
     if (!canPromptNatively && !canShowIosGuide) return
     if (isInstallPromptSnoozed()) return
+    // Pas par-dessus la fenêtre « Bienvenue » de l'inscription
+    if (new URLSearchParams(window.location.search).has('bienvenue')) return
 
     const timer = window.setTimeout(() => setVisible(true), APPEARANCE_DELAY_MS)
     return () => window.clearTimeout(timer)
-  }, [ready, isStandalone, canPromptNatively, canShowIosGuide])
+  }, [ready, isStandalone, inApp, canPromptNatively, canShowIosGuide])
 
   const dismiss = useCallback(() => {
     setVisible(false)
@@ -94,14 +90,13 @@ export function InstallPrompt() {
     setVisible(false)
   }, [deferredPrompt])
 
-  if (!visible) return null
+  if (!visible || !inApp) return null
   // Pages de règlement et de signature : c'est le client de l'artisan qui les
   // consulte, pas un utilisateur de Qonforme
   if (pathname.startsWith('/regler/') || pathname.startsWith('/demo/regler/') || pathname.startsWith('/signer')) return null
 
-  const hasBottomNav = ROUTES_WITH_BOTTOM_NAV.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  )
+  // Sur le tableau de bord, la barre de navigation basse est toujours là
+  const hasBottomNav = inApp
 
   return (
     <div

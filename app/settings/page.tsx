@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
-import { PLANS, isPlanId, periodPrice, withVat } from "@/lib/stripe/plans"
+import { PLANS, isPlanId, payableAmount, periodPrice } from "@/lib/stripe/plans"
 import { canIssueInvoices } from "@/lib/stripe/access"
 import { SettingsOverview, type OverviewCompany, type OverviewPlan } from "@/components/settings/SettingsOverview"
 
@@ -34,7 +34,7 @@ export default async function SettingsPage() {
         plan = {
           name: p.name,
           period,
-          amountTtc: withVat(periodPrice(p, period)),
+          amountTtc: payableAmount(periodPrice(p, period)),
           renewsAt: sub.current_period_end ?? null,
           pastDue: sub.status === "past_due",
         }
