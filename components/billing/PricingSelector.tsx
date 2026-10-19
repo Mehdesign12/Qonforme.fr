@@ -6,7 +6,9 @@ import { ArrowLeft, Check, Clock, ShieldCheck } from 'lucide-react'
 import {
   PLANS,
   FREE_FEATURES,
+  VAT_COLLECTED,
   formatEuros,
+  isPlanAvailable,
   withVat,
   type BillingPeriod,
   type Plan,
@@ -29,8 +31,11 @@ export default function PricingSelector({
   backHref,
   next = null,
   showFree = true,
+  testMode = false,
 }: {
   isAuthenticated?: boolean
+  /** Compte d'essai : les formules vendables dans le bac à sable Stripe sont proposées. */
+  testMode?: boolean
   /** Colonne « Devis » gratuite — masquée pour un compte qui l'a déjà et vient choisir sa formule. */
   showFree?: boolean
   /** Lien « retour » affiché au-dessus de la grille (absent sur la page Tarifs). */
@@ -39,8 +44,9 @@ export default function PricingSelector({
   next?: string | null
 }) {
   const [period, setPeriod] = useState<BillingPeriod>('yearly')
-  const essentiel = PLANS.starter
-  const artisan = PLANS.pro
+  const mode = testMode ? 'test' : 'live'
+  const essentiel = { ...PLANS.starter, available: isPlanAvailable(PLANS.starter, mode) || PLANS.starter.available }
+  const artisan = { ...PLANS.pro, available: isPlanAvailable(PLANS.pro, mode) }
 
   const checkoutHref = (plan: Plan) => {
     const params = new URLSearchParams({ plan: plan.id, period })
@@ -197,7 +203,7 @@ export default function PricingSelector({
           Satisfait ou remboursé {GUARANTEE_DAYS}&nbsp;jours
         </li>
         <li>Sans engagement</li>
-        <li>Prix hors taxes, TVA 20&nbsp;% en sus</li>
+        {VAT_COLLECTED && <li>Prix hors taxes, TVA 20&nbsp;% en sus</li>}
         <li>Vos factures restent consultables après résiliation</li>
       </ul>
     </div>
@@ -279,12 +285,16 @@ function PriceBlock({ plan, period, ink = false }: { plan: Plan; period: Billing
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline gap-1.5">
         <Amount ink={ink}>{eur(perMonth)}</Amount>
-        <span className={cn('text-sm', ink ? 'text-[#AFBDD3]' : 'text-q-text-3')}>HT / mois</span>
+        <span className={cn('text-sm', ink ? 'text-[#AFBDD3]' : 'text-q-text-3')}>{VAT_COLLECTED ? 'HT / mois' : '/ mois'}</span>
       </div>
       <span className={cn('text-[13px] tabular-nums', ink ? 'text-[#94A3B8]' : 'text-q-text-4')}>
-        {period === 'monthly'
-          ? `Soit ${eur(withVat(plan.monthlyPrice))} TTC par mois`
-          : `Facturé ${eur(plan.yearlyPrice)} HT par an · ${eur(withVat(plan.yearlyPrice))} TTC`}
+        {VAT_COLLECTED
+          ? period === 'monthly'
+            ? `Soit ${eur(withVat(plan.monthlyPrice))} TTC par mois`
+            : `Facturé ${eur(plan.yearlyPrice)} HT par an · ${eur(withVat(plan.yearlyPrice))} TTC`
+          : period === 'monthly'
+            ? 'Sans engagement'
+            : `Facturé ${eur(plan.yearlyPrice)} par an`}
       </span>
     </div>
   )

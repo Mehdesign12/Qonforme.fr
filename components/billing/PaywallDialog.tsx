@@ -7,7 +7,7 @@ import { BellRing, Check, Construction, Send, ShieldCheck, Signature } from 'luc
 import { PictoCluster } from '@/components/brand/PictoCluster'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import { PLANS, formatEuros, withVat, type BillingPeriod } from '@/lib/stripe/plans'
+import { PLANS, VAT_COLLECTED, formatEuros, withVat, type BillingPeriod } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS, SUBSCRIPTION_REQUIRED } from '@/lib/stripe/access'
 import { ARTISAN_REQUIRED } from '@/lib/artisan/plan'
 import { trackEvent } from '@/lib/meta-pixel'
@@ -126,7 +126,7 @@ export function PaywallDialog({
                   {p === 'yearly' ? 'Annuel' : 'Mensuel'}
                 </span>
                 <span className="text-lg font-semibold tabular-nums text-[var(--q-ink)]">
-                  {formatEuros(perMonth)} <span className="text-xs font-normal text-[var(--q-text-4)]">HT / mois</span>
+                  {formatEuros(perMonth)} <span className="text-xs font-normal text-[var(--q-text-4)]">{VAT_COLLECTED ? 'HT / mois' : '/ mois'}</span>
                 </span>
                 <span className={cn('text-xs font-semibold', p === 'yearly' ? 'text-[var(--q-ok)]' : 'text-[var(--q-text-4)]')}>
                   {p === 'yearly' ? '2 mois offerts' : 'Sans engagement'}
@@ -168,7 +168,7 @@ export function PaywallDialog({
             {reason === 'send' ? `Choisir ${plan.name} et envoyer ma facture` : `Choisir ${plan.name}`}
           </button>
           <p className="text-center text-[13px] tabular-nums text-[var(--q-text-4)]">
-            {formatEuros(chargeHt)} HT {period === 'monthly' ? 'par mois' : 'par an'}, soit {formatEuros(withVat(chargeHt))} TTC
+            {formatEuros(chargeHt)}{VAT_COLLECTED ? ' HT' : ''} {period === 'monthly' ? 'par mois' : 'par an'}{VAT_COLLECTED && <>, soit {formatEuros(withVat(chargeHt))} TTC</>}
           </p>
           <p className="flex items-center justify-center gap-1.5 text-center text-[13px] text-[var(--q-text-4)]">
             <ShieldCheck className="size-4 text-[var(--q-ok)]" aria-hidden />

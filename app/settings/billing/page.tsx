@@ -6,7 +6,7 @@ import BillingPageClient, {
   type GuaranteeInfo,
   type PaymentMethodInfo,
 } from '@/components/billing/BillingPageClient'
-import { stripe } from '@/lib/stripe/client'
+import { getStripe, modeOfSubscription } from '@/lib/stripe/mode'
 import { getPlanByPriceId, PLANS } from '@/lib/stripe/plans'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { Subscription } from '@/lib/stripe/subscription'
@@ -76,6 +76,7 @@ async function applyStripeData(
 }
 
 async function syncFromStripe(
+  stripe: Stripe,
   sub: Subscription,
   userId: string,
   userEmail: string | undefined
@@ -186,16 +187,19 @@ export default async function BillingPage() {
       const missingDetails = !enriched.current_period_end || !enriched.stripe_subscription_id
 
       if (enriched.stripe_customer_id && (planIsUnknown || statusStale || missingDetails)) {
-        subscription = await syncFromStripe(enriched, user.id, user.email)
+        subscription = await syncFromStripe(getStripe(modeOfSubscription(enriched)), enriched, user.id, user.email)
       } else {
         subscription = enriched
       }
     }
 
+    // Les lectures Stripe suivantes se font dans le mode de l'abonnement (production ou essai)
+    const stripe = subscription?.stripe_customer_id ? getStripe(modeOfSubscription(subscription)) : null
+
     // Formule en cours : garantie, résiliation programmée et moyen de paiement lus chez Stripe
-    if (subscription?.stripe_customer_id && canIssueInvoices(subscription.status)) {
+    if (stripe && subscription?.stripe_customer_id && canIssueInvoices(subscription.status)) {
       try {
-        const state = await getGuaranteeState(subscription.stripe_customer_id)
+        const state = await getGuaranteeState(stripe, subscription.stripe_customer_id)
         guarantee = state.eligible
           ? { eligible: true, endsAt: state.endsAt.toISOString(), amountPaid: state.amountPaid }
           : { eligible: false, reason: state.reason, endsAt: state.endsAt?.toISOString() ?? null }
@@ -221,7 +225,7 @@ export default async function BillingPage() {
     }
 
     // Factures d'abonnement (aussi après résiliation : elles restent téléchargeables)
-    if (subscription?.stripe_customer_id) {
+    if (stripe && subscription?.stripe_customer_id) {
       try {
         const list = await stripe.invoices.list({ customer: subscription.stripe_customer_id, limit: 12 })
         invoices = list.data
