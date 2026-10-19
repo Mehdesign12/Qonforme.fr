@@ -105,6 +105,7 @@ export default function ConfidentialitePage() {
         <li><strong>Supabase Inc.</strong> — hébergement de la base de données (région eu-west-3, Paris, France)</li>
         <li><strong>Vercel Inc.</strong> — hébergement de l&apos;application web et mesure de fréquentation (Vercel Web Analytics : pages vues, pays, type d&apos;appareil, sans cookie ni identifiant persistant)</li>
         <li><strong>Stripe Inc.</strong> — traitement des paiements (certifié PCI-DSS)</li>
+        <li><strong>Google LLC</strong> — connexion et inscription avec Google, à votre initiative seulement : Google transmet à Qonforme votre adresse email, votre prénom et votre nom ; Qonforme ne reçoit pas votre mot de passe Google</li>
         <li><strong>Resend Inc.</strong> — envoi d&apos;e-mails transactionnels (factures, relances, bienvenue)</li>
         <li><strong>PostHog Inc.</strong> — mesure d&apos;audience (pages vues, provenance des visites), chargée seulement si vous acceptez les cookies</li>
         <li><strong>Sentry (Functional Software Inc.)</strong> — surveillance des erreurs techniques et stabilité du service</li>
