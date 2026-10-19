@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Share, SquarePlus, X, Download } from 'lucide-react'
 import { usePlatform } from '@/lib/pwa/hooks'
 import { isInstallPromptSnoozed, snoozeInstallPrompt } from '@/lib/pwa/client'
+import { INSTALL_PROMPT_ENABLED } from '@/lib/pwa/config'
 import { cn } from '@/lib/utils'
 
 /**
@@ -56,10 +57,11 @@ export function InstallPrompt() {
   const canPromptNatively = deferredPrompt !== null
   const canShowIosGuide = isIOS && isSafari
 
-  // Seulement sur le tableau de bord : jamais sur le site public (accueil, tarifs, blog,
-  // inscription), où l'invite recouvrait le contenu et le bandeau de cookies dès la
-  // première visite, ni dans un formulaire, où elle cachait le bouton d'envoi.
-  const inApp = pathname === '/dashboard'
+  // Désactivée pour l'instant (lib/pwa/config.ts). Une fois réactivée : seulement sur le
+  // tableau de bord, jamais sur le site public (accueil, tarifs, blog, inscription), où
+  // l'invite recouvrait le contenu et le bandeau de cookies dès la première visite, ni
+  // dans un formulaire, où elle cachait le bouton d'envoi.
+  const inApp = INSTALL_PROMPT_ENABLED && pathname === '/dashboard'
 
   useEffect(() => {
     if (!ready || isStandalone || !inApp) return
