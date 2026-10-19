@@ -187,6 +187,8 @@ export interface DashInscription {
   /** Numéro de l'étape restante (à partir de 1) et nombre d'étapes affichées. */
   number: number
   total: number
+  /** Des saisies non validées ont été gardées à la fermeture : la tuile le dit. */
+  draft?: true
 }
 
 /** Ce que la page sait du compte pour décider d'ouvrir la fenêtre « Bienvenue ». */
@@ -197,6 +199,8 @@ export interface InscriptionFacts extends InscriptionState {
   windowClosed: boolean
   /** Réouverture demandée par la tuile (`?inscription=reprendre`). */
   resume: boolean
+  /** Saisies non validées gardées à la fermeture (`user_metadata.signup_draft`). */
+  draft?: boolean
 }
 
 /**
@@ -208,7 +212,7 @@ export function inscriptionTile(f: InscriptionFacts): DashInscription | null {
   const step = pendingInscriptionStep(f)
   if (!step || (f.company && !f.wizard)) return null
   const steps = inscriptionSteps(f.profileAvailable)
-  return { step, number: Math.max(1, steps.indexOf(step) + 1), total: steps.length }
+  return { step, number: Math.max(1, steps.indexOf(step) + 1), total: steps.length, ...(f.draft ? { draft: true as const } : {}) }
 }
 
 /**

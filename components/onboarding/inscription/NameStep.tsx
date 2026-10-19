@@ -5,11 +5,12 @@
  * de bord et les emails (planche « Bienvenue-3 »). Prérempli par le prénom
  * d'un entrepreneur individuel trouvé au répertoire Sirene.
  */
-import { useId, useState } from "react"
+import { useEffect, useId, useState } from "react"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AUTH_INPUT, Field } from "@/components/auth/fields"
 import { INSCRIPTION_LIMITS, validateFirstName } from "@/lib/onboarding/inscription"
+import type { SnapshotRef } from "@/components/onboarding/inscription/model"
 import {
   STEP_PAD, Serif, StepFooter, StepHeader, StepLead, StepTitle, useInitialFocus,
 } from "@/components/onboarding/inscription/ui"
@@ -22,14 +23,32 @@ export interface NameStepProps {
   onSkip: () => void
   onBack: (() => void) | undefined
   onSubmit: (firstName: string) => Promise<string | null>
+  /** Prénom déjà enregistré dans le compte ('' s'il n'y en a pas). */
+  savedName: string
+  /** Ce qu'il faut enregistrer si la fenêtre se ferme sans validation (voir StepSnapshot). */
+  snapshotRef: SnapshotRef
+  /** Échec d'un enregistrement en arrière-plan : message affiché à l'ouverture de l'étape. */
+  initialError: string | null
 }
 
-export function NameStep({ titleId, progress, initialValue, busy, onSkip, onBack, onSubmit }: NameStepProps) {
+export function NameStep({ titleId, progress, initialValue, busy, onSkip, onBack, onSubmit, savedName, snapshotRef, initialError }: NameStepProps) {
   const uid = useId()
   const rootRef = useInitialFocus<HTMLFormElement>()
   const id = `${uid}-first-name`
   const [value, setValue] = useState(initialValue)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(initialError)
+
+  // Fermeture sans « Terminer » : un prénom saisi s'enregistre ; un prénom seulement proposé (répertoire Sirene) n'est pas écrit
+  useEffect(() => {
+    snapshotRef.current = () => {
+      const check = validateFirstName(value)
+      if (check.ok && check.value !== savedName && value !== initialValue) {
+        return { save: { step: "name", first_name: check.value }, draft: { first_name: null }, ifSaveFails: { first_name: check.value } }
+      }
+      return { draft: {} }
+    }
+    return () => { snapshotRef.current = null }
+  })
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -1,6 +1,8 @@
 import { Sidebar, MobileBottomNav } from "@/components/layout/Sidebar"
 import { Header } from "@/components/layout/Header"
+import { Suspense } from "react"
 import { CrumbProvider } from "@/components/layout/crumb"
+import { NavigationProgress } from "@/components/layout/NavigationProgress"
 import type { ShellIdentity } from "@/components/layout/shell"
 
 /**
@@ -15,6 +17,9 @@ import type { ShellIdentity } from "@/components/layout/shell"
 export function AppShellFrame({ identity, children }: { identity: ShellIdentity; children: React.ReactNode }) {
   return (
     <CrumbProvider>
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
       <div className="flex h-[100dvh] overflow-hidden bg-[var(--q-bg)] print:block print:h-auto print:overflow-visible print:bg-white">
         <Sidebar identity={identity} />
         <div

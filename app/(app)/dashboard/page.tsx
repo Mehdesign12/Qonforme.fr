@@ -6,6 +6,7 @@ import { hasDossiers } from '@/lib/accountant/server'
 import { isMissingSchemaError } from '@/lib/supabase/schema-guard'
 import { parseLegalProfile, type TradeId, type VatRegime } from '@/lib/legal/profile'
 import { loadPendingReminder } from '@/lib/onboarding/store'
+import { parseSignupDraft, type SignupDraft } from '@/lib/onboarding/inscription'
 import DashboardClient, { type InscriptionLaunch } from '@/components/dashboard/DashboardClient'
 import { DashboardBody } from '@/components/dashboard/DashboardBody'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
@@ -60,6 +61,7 @@ interface InscriptionContext {
   company: InscriptionLaunch['company']
   trade: TradeId | null
   vatRegime: VatRegime | null
+  draft: SignupDraft | null
 }
 
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
@@ -87,6 +89,8 @@ export default async function DashboardPage({
       // Prénom depuis user_metadata (titre d'accueil d'un compte neuf)
       firstName = str(meta.first_name)
 
+      // Saisies non validées gardées quand l'artisan a passé au tableau de bord
+      const draft = parseSignupDraft(meta.signup_draft)
       const read = await readCompany(supabase, user.id)
       // Aucune ligne → entreprise jamais créée ; une erreur (réseau) n'ouvre rien et ne redirige pas
       if (!read.failed) {
@@ -108,6 +112,7 @@ export default async function DashboardPage({
             wizard: meta.signup_wizard === true,
             windowClosed: meta.signup_window_closed === true,
             resume: searchParams?.inscription === 'reprendre',
+            draft: !!draft,
           },
           justCreated: searchParams?.bienvenue === '1',
           email: user.email ?? '',
@@ -123,6 +128,7 @@ export default async function DashboardPage({
             : null,
           trade: profile?.trade ?? null,
           vatRegime: profile?.vat_regime ?? null,
+          draft,
         }
       }
     }
@@ -194,6 +200,7 @@ async function DashboardContent({
       company: inscription.company,
       trade: inscription.trade,
       vatRegime: inscription.vatRegime,
+      draft: inscription.draft,
     }
   }
 
