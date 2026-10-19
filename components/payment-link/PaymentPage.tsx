@@ -88,10 +88,11 @@ function CompanyHeader({ company }: { company: PublicCompany }) {
   return (
     <header className="flex items-center gap-3">
       {company.logoUrl ? (
-        <span className="grid h-12 w-[72px] shrink-0 place-items-center overflow-hidden rounded-xl border border-[var(--q-line)] bg-white p-1.5">
-          {/* Logo du bucket Storage du projet (vérifié côté serveur) : <img>, comme dans les réglages */}
+        <span className="block h-12 w-[72px] shrink-0 overflow-hidden rounded-xl border border-[var(--q-line)] bg-white p-1.5">
+          {/* Logo du bucket Storage du projet (vérifié côté serveur) : <img>, comme dans les réglages.
+              `size-full` : dans un `grid`, `max-h-full` ne bornait pas un grand logo (même défaut que dans LogoField). */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={company.logoUrl} alt="" className="max-h-full max-w-full object-contain" />
+          <img src={company.logoUrl} alt="" className="size-full object-contain" />
         </span>
       ) : (
         <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-xl bg-[var(--q-ink)] text-base font-semibold text-[var(--q-surface)]">
