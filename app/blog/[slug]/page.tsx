@@ -12,6 +12,7 @@ import {
   extractFaqItems,
   stripLeadingTitle,
 } from "@/lib/blog-utils"
+import { fixForeignBrandLinks } from "@/lib/blog-brand-links"
 import ArticleView from "@/components/blog/ArticleView"
 import { fitDescription, fitTitle } from "@/lib/seo/meta"
 import { isQonformeCover, readImageSize } from "@/lib/blog-images/policy"
@@ -160,7 +161,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   if (!post) notFound()
 
   // Sans un premier titre qui répète le h1 de la page
-  const content = stripLeadingTitle(post.content ?? "", post.title)
+  const content = fixForeignBrandLinks(stripLeadingTitle(post.content ?? "", post.title))
   const [similar, adjacent, autoLinks] = await Promise.all([
     getSimilarPosts(post.slug, post.ai_prompt),
     getAdjacentPosts(post.published_at ?? new Date().toISOString()),

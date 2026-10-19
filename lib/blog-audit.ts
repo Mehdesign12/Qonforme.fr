@@ -86,6 +86,12 @@ export const AUDIT_RULES: AuditRule[] = [
     correction: "Depuis le 1er avril 2017 (arrêté du 24 janvier 2017), le devis détaillé est obligatoire chez un particulier avant tout dépannage, toute réparation ou tout entretien dans le bâtiment, quel qu'en soit le montant. Le seuil de 150 € n'existe plus.",
   },
   {
+    id: "domaine-qonforme",
+    label: "Adresse d'un autre site que qonforme.fr",
+    pattern: /\bqonforme\.(?:com|net|org|io|eu|app|co)\b/gi,
+    correction: "Le site de Qonforme est https://qonforme.fr (qonforme.com est un autre éditeur). Pour inviter à essayer, lier /signup ; ne jamais écrire une adresse qu'on ne connaît pas.",
+  },
+  {
     id: "pdp",
     label: "Ancien nom des plateformes agréées (PDP)",
     pattern: /\bPDP\b|plateformes? de dématérialisation partenaires?/g,
