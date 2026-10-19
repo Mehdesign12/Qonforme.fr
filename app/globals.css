@@ -1087,7 +1087,10 @@ html[data-standalone="true"] [role="button"] {
 
   /* Feuille du bas (mobile) */
   .q-sheet { background: var(--q-surface); border-radius: 24px 24px 0 0; box-shadow: 0 -10px 40px -12px rgba(10,17,34,.3); }
-  .q-sheet-grip { width: 40px; height: 5px; border-radius: 999px; background: var(--q-field); margin: 8px auto 0; }
+  /* La barre sert à tirer la feuille vers le bas (components/ui/sheet-grip.tsx) :
+     zone de toucher agrandie, et le doigt n'y fait pas défiler la page */
+  .q-sheet-grip { position: relative; width: 40px; height: 5px; border-radius: 999px; background: var(--q-field); margin: 8px auto 0; touch-action: none; }
+  .q-sheet-grip::before { content: ""; position: absolute; inset: -14px -48px; }
 
   /* Aperçu d'un document (feuille A4 sur fond grisé) */
   .q-paper-bed { background: var(--q-sunken); border: 1px solid var(--q-line); border-radius: 16px; padding: 24px; }

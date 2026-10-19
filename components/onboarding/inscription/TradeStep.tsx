@@ -11,14 +11,14 @@
  * remplace les 12 puces tant qu'il n'y a rien à changer. Boutons radio natifs
  * (flèches du clavier comprises), puces et cartes dessinées autour.
  */
-import { useId, useState, useRef } from "react"
+import { useEffect, useId, useState, useRef } from "react"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { TRADES, tradeLabel, type TradeId, type VatRegime } from "@/lib/legal/profile"
 import { VAT_CONTEXTS, type VatContext } from "@/lib/catalogue/trades"
 import { tradeFromApe } from "@/lib/legal/from-sirene"
-import type { TradeInput } from "@/lib/onboarding/inscription"
-import { vatNumberPreview } from "@/components/onboarding/inscription/model"
+import type { SignupDraft, TradeInput } from "@/lib/onboarding/inscription"
+import { vatNumberPreview, type SnapshotRef } from "@/components/onboarding/inscription/model"
 import {
   STEP_PAD, Serif, StepError, StepFooter, StepHeader, StepLead, StepTitle, useInitialFocus,
 } from "@/components/onboarding/inscription/ui"
@@ -56,6 +56,12 @@ export interface TradeStepProps {
   onSkip: () => void
   onBack: () => void
   onSubmit: (input: TradeInput) => Promise<string | null>
+  /** Ce qu'il faut enregistrer si la fenêtre se ferme sans validation (voir StepSnapshot). */
+  snapshotRef: SnapshotRef
+  /** Saisies gardées à la dernière fermeture. */
+  draft: SignupDraft["trade"] | null
+  /** Échec d'un enregistrement en arrière-plan : message affiché à l'ouverture de l'étape. */
+  initialError: string | null
 }
 
 /** Puce ou carte autour d'un bouton radio natif, masqué mais atteignable au clavier. */
@@ -97,18 +103,35 @@ function Chip({ name, checked, onSelect, children, size = "md", autofocus = fals
 
 export function TradeStep({
   mode, titleId, progress, trade: savedTrade, vatRegime: savedVat, siren, activityCode, legalForm,
-  busy, onSkip, onBack, onSubmit,
+  busy, onSkip, onBack, onSubmit, snapshotRef, draft, initialError,
 }: TradeStepProps) {
   const uid = useId()
   const rootRef = useInitialFocus<HTMLFormElement>()
   const apeTrade = tradeFromApe(activityCode)
-  const [trade, setTrade] = useState<TradeId | null>(savedTrade ?? apeTrade)
+  const [trade, setTrade] = useState<TradeId | null>(savedTrade ?? draft?.trade ?? apeTrade)
   const [expanded, setExpanded] = useState(false)
   const chipsRef = useRef<HTMLDivElement>(null)
-  const [vat, setVat] = useState<VatRegime | null>(savedVat ?? (legalForm === "societe" ? "assujetti" : null))
+  const [vat, setVat] = useState<VatRegime | null>(savedVat ?? draft?.vat_regime ?? (legalForm === "societe" ? "assujetti" : null))
   const [catalogue, setCatalogue] = useState(true)
   const [site, setSite] = useState<VatContext>("renovation")
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(initialError)
+
+  // Fermeture sans « Continuer » : métier et TVA choisis s'enregistrent (sans catalogue), sinon brouillon
+  useEffect(() => {
+    snapshotRef.current = () => {
+      if (trade && vat) {
+        if (trade === savedTrade && vat === savedVat) return { draft: { trade: null } }
+        return {
+          save: { step: "trade", trade: { trade, vat_regime: vat, catalogue: null } },
+          draft: { trade: null },
+          ifSaveFails: { trade: { trade, vat_regime: vat } },
+        }
+      }
+      if (trade || vat) return { draft: { trade: { ...(trade ? { trade } : {}), ...(vat ? { vat_regime: vat } : {}) } } }
+      return { draft: {} }
+    }
+    return () => { snapshotRef.current = null }
+  })
 
   // Mention « présélectionné » : seulement tant que le métier vient du code APE
   const fromApe = !savedTrade && !!apeTrade && trade === apeTrade && !!activityCode

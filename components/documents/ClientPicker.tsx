@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import { cn } from "@/lib/utils"
 import { clientSubtitle, type DocClient } from "./model"
 import { useIsMobile } from "./useIsMobile"
+import { SheetGrip } from "@/components/ui/sheet-grip"
 
 export function ClientPicker({
   clients,
@@ -164,7 +165,7 @@ export function ClientPicker({
             initialFocus={(type) => (type === "keyboard" ? true : sheetHeadRef.current)}
             className="max-h-[80dvh] gap-3 overflow-auto px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-2"
           >
-            <span className="q-sheet-grip !mt-0" aria-hidden />
+            <SheetGrip className="!mt-0" />
             <div ref={sheetHeadRef} tabIndex={-1} className="flex flex-col gap-1 pr-10 outline-none">
               <SheetTitle className="q-display text-[22px] text-[var(--q-ink)]">Pour qui ?</SheetTitle>
               <SheetDescription className="text-sm text-[var(--q-text-4)]">Choisissez un client existant.</SheetDescription>

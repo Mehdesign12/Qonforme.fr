@@ -35,6 +35,7 @@ import {
   daysBetween, daysLeft, dateTime, expiryHint, fmtAmount, fmtQty, fmtRate, fmtSiren, fmtUnit, longDate, parisDay, plural,
   quoteTitle, shortDate, vatBreakdown, vatRatesLabel, type QuoteStatus,
 } from "@/components/quotes/QuoteListHelpers"
+import { SheetGrip } from "@/components/ui/sheet-grip"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -715,7 +716,7 @@ export function QuoteDetailView({
       {/* Feuille « Plus d'actions » (mobile) */}
       <Sheet open={modal === "more"} onOpenChange={(o) => !o && closeModal()}>
         <SheetContent side="bottom" showCloseButton={false} className="max-h-[85dvh] gap-3 overflow-y-auto px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-2">
-          <div className="q-sheet-grip" aria-hidden />
+          <SheetGrip />
           <div className="flex flex-col gap-0.5 pt-1">
             <SheetTitle className="font-display text-[22px] font-semibold tracking-[-0.02em] text-[var(--q-ink)]">{quote.quote_number}</SheetTitle>
             <SheetDescription className="text-sm text-[var(--q-text-4)]">{clientName ?? "Sans client"}</SheetDescription>
@@ -1042,7 +1043,7 @@ function QuoteModal({
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="bottom" showCloseButton={false} className="max-h-[85dvh] gap-3 overflow-y-auto px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-2">
-          <div className="q-sheet-grip" aria-hidden />
+          <SheetGrip />
           <div className="flex flex-col gap-1 pt-1">
             <SheetTitle className="font-display text-[22px] font-semibold tracking-[-0.02em] text-[var(--q-ink)]">{title}</SheetTitle>
             {description && <SheetDescription className="text-sm leading-snug text-[var(--q-text-4)]">{description}</SheetDescription>}

@@ -15,6 +15,7 @@ import Image from 'next/image'
 import { UserPlus, FileText, FileCheck2, Building2, Loader2, ArrowRight } from 'lucide-react'
 import { LOGO_Q } from '@/lib/brand'
 import { markOnboardingSeen } from '@/components/dashboard/onboarding'
+import { SheetGrip } from "@/components/ui/sheet-grip"
 
 /* ── Actions ── */
 const ACTIONS = [
@@ -106,7 +107,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
         ].join(' ')}
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        <div className="q-sheet-grip sm:hidden" aria-hidden />
+        <SheetGrip className="sm:hidden" />
 
         {/* ── En-tête ── */}
         <div className="flex flex-col gap-3 px-6 pb-2 pt-6">

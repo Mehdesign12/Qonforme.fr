@@ -31,6 +31,7 @@ import {
 } from "@/components/layout/nav"
 import { type ShellIdentity, fullNameOf, formatSiren } from "@/components/layout/shell"
 import { useLogout } from "@/components/layout/useLogout"
+import { SheetGrip } from "@/components/ui/sheet-grip"
 
 /* ------------------------------------------------------------------ */
 /* Logo                                                                */
@@ -231,7 +232,7 @@ function CreateSheet({ open, onOpenChange, mode }: { open: boolean; onOpenChange
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[85dvh] gap-0 overflow-y-auto px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-2">
-        <div className="q-sheet-grip" aria-hidden />
+        <SheetGrip />
         <SheetTitle className="px-1 pb-1 pt-4 font-display text-[22px] font-semibold tracking-[-0.02em] text-[var(--q-ink)]">Créer</SheetTitle>
         <SheetDescription className="sr-only">Choisissez le document à créer.</SheetDescription>
         <div className="q-card q-list mt-3">
@@ -299,7 +300,7 @@ function PlusSheet({ open, onOpenChange, identity, onBug, onContact }: {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[92dvh] gap-0 overflow-y-auto bg-[var(--q-bg)] px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-2">
-        <div className="q-sheet-grip" aria-hidden />
+        <SheetGrip />
         <SheetTitle className="px-1 pb-1 pt-4 font-display text-[30px] font-semibold tracking-[-0.03em] text-[var(--q-ink)]">Plus</SheetTitle>
         <SheetDescription className="sr-only">Toutes les rubriques et votre compte.</SheetDescription>
 

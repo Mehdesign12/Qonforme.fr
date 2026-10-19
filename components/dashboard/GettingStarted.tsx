@@ -13,6 +13,7 @@
  * fenêtre à cette étape. Sur téléphone, le logo long Qonforme coiffe la page.
  */
 import Link from "next/link"
+import { ResumeTileLink } from "@/components/dashboard/ResumeTileLink"
 import { ArrowRight, Building2, FileCheck2, FileText, ImagePlus, UserPlus } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { cn } from "@/lib/utils"
@@ -51,12 +52,14 @@ function resumeHref(mode: DashMode): string {
 function ResumeTile({ inscription, mode }: { inscription: DashInscription; mode: DashMode }) {
   const done = inscription.number - 1
   return (
-    <Link href={resumeHref(mode)} className={cn(TILE, "!border-[var(--q-wash-line)]")}>
+    <ResumeTileLink href={resumeHref(mode)} className={cn(TILE, "!border-[var(--q-wash-line)]")}>
       <span className="mb-2.5 flex items-start">
         <Building2 className="size-[26px] shrink-0" strokeWidth={1.25} aria-hidden />
       </span>
       <span className="text-lg font-semibold tracking-[-0.01em]">Terminer votre inscription</span>
-      <span className="text-[15px] leading-normal text-[var(--q-text-3)]">{RESUME_TEXT[inscription.step]}</span>
+      <span className="text-[15px] leading-normal text-[var(--q-text-3)]">
+        {inscription.draft ? "Vos saisies sont gardées : reprenez où vous en étiez." : RESUME_TEXT[inscription.step]}
+      </span>
       <span className="mt-1.5 flex items-center gap-2.5">
         <span className="flex gap-1" aria-hidden>
           {Array.from({ length: inscription.total }, (_, i) => (
@@ -73,7 +76,7 @@ function ResumeTile({ inscription, mode }: { inscription: DashInscription; mode:
           Reprendre <span aria-hidden>→</span>
         </span>
       </span>
-    </Link>
+    </ResumeTileLink>
   )
 }
 

@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { fmtAmount, fmtQty, fmtRate, fmtSiren, fmtUnit, vatBreakdown } from "@/components/quotes/QuoteListHelpers"
 import { PaperMentions } from "@/components/documents/PaperMentions"
+import { SheetGrip } from "@/components/ui/sheet-grip"
 
 /** Montant d'avoir : « − 2 400,00 € » (signe moins typographique, espace insécable). */
 export function negCurrency(n: number): string {
@@ -417,7 +418,7 @@ export function DocModal({
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="bottom" showCloseButton={false} className="max-h-[85dvh] gap-3 overflow-y-auto px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-2">
-          <div className="q-sheet-grip" aria-hidden />
+          <SheetGrip />
           <div className="flex flex-col gap-1 pt-1">
             <SheetTitle className="font-display text-[22px] font-semibold tracking-[-0.02em] text-[var(--q-ink)]">{title}</SheetTitle>
             {description && <SheetDescription className="text-sm leading-snug text-[var(--q-text-4)]">{description}</SheetDescription>}

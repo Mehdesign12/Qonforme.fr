@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AutoDarkMode } from "@/components/layout/AutoDarkMode";
 import { PostHogProvider } from "@/components/shared/PostHogProvider";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AppleSplashScreens } from "@/components/pwa/AppleSplashScreens";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { ThemeColorSync } from "@/components/pwa/ThemeColorSync";
@@ -238,6 +239,7 @@ export default function RootLayout({
             </ReduxProvider>
           </PostHogProvider>
           <Analytics />
+          <SpeedInsights />
           {/*
            * Traceurs publicitaires (pixel Meta) : chargés seulement après l'accord du
            * visiteur, jamais sur les pages des clients de l'artisan (lib/consent.ts).
