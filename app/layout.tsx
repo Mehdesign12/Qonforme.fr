@@ -14,6 +14,7 @@ import { StandaloneFlag } from "@/components/pwa/StandaloneFlag";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { PLANS, VAT_COLLECTED } from "@/lib/stripe/plans";
+import { PUBLISHER } from "@/lib/legal/publisher";
 import { SentryReplay } from "@/components/shared/SentryReplay";
 import { CookieBanner } from "@/components/consent/CookieBanner";
 import { TrackingLoader } from "@/components/consent/TrackingLoader";
@@ -159,6 +160,7 @@ export default function RootLayout({
                 {
                   "@type": "Organization",
                   name: "Qonforme",
+                  legalName: PUBLISHER.name,
                   url: "https://qonforme.fr",
                   logo: "https://qonforme.fr/og-image.png",
                   description:
