@@ -97,15 +97,28 @@ export async function GET() {
         ? run("id, invoice_number, total_ttc, due_date, client:clients(name)")
         : withRetention
     })(),
-    // Devis envoyés sans réponse (sans date d'envoi : la date d'émission en tient lieu)
-    supabase
-      .from("quotes")
-      .select("id, quote_number, sent_at, issue_date, client:clients(name)", { count: "exact" })
-      .eq("user_id", user.id)
-      .eq("status", "sent")
-      .or(`sent_at.lt.${cutoff},and(sent_at.is.null,issue_date.lt.${cutoff})`)
-      .order("issue_date", { ascending: true })
-      .limit(ATTENTION_LIMIT),
+    // Devis envoyés sans réponse (sans date d'envoi : la date d'émission en tient lieu).
+    // Colonne `sent_at` absente de `quotes` tant que 20261019_quotes_sent_at.sql n'est pas
+    // appliquée : la cloche entière répondait 500. Sans elle, la date d'émission seule.
+    (async () => {
+      const withSentAt = await supabase
+        .from("quotes")
+        .select("id, quote_number, sent_at, issue_date, client:clients(name)", { count: "exact" })
+        .eq("user_id", user.id)
+        .eq("status", "sent")
+        .or(`sent_at.lt.${cutoff},and(sent_at.is.null,issue_date.lt.${cutoff})`)
+        .order("issue_date", { ascending: true })
+        .limit(ATTENTION_LIMIT)
+      if (!withSentAt.error || !isMissingSchemaError(withSentAt.error)) return withSentAt
+      return supabase
+        .from("quotes")
+        .select("id, quote_number, issue_date, client:clients(name)", { count: "exact" })
+        .eq("user_id", user.id)
+        .eq("status", "sent")
+        .lt("issue_date", cutoff)
+        .order("issue_date", { ascending: true })
+        .limit(ATTENTION_LIMIT)
+    })(),
     supabase
       .from("invoices")
       .select("id, invoice_number, created_at, client:clients(name)", { count: "exact" })
@@ -140,9 +153,11 @@ export async function GET() {
     dueDate: (r.due_date as string | null) ?? null,
   }, today, `/invoices/${r.id}`))
 
-  const quotes = (quotesRes.data ?? []).map((r) => quoteItem({
-    id: r.id as string,
-    number: r.quote_number as string,
+  // Avec ou sans `sent_at` selon que la migration est appliquée : lignes non typées par le client
+  type QuoteRow = { id: string; quote_number: string; sent_at?: string | null; issue_date: string; client: Parameters<typeof clientName>[0] }
+  const quotes = ((quotesRes.data ?? []) as unknown as QuoteRow[]).map((r) => quoteItem({
+    id: r.id,
+    number: r.quote_number,
     client: clientName(r.client),
     sentDay: String(r.sent_at ?? r.issue_date).slice(0, 10),
   }, today, `/quotes/${r.id}`))
