@@ -1,6 +1,6 @@
 import { LegalLayout } from "@/components/legal/LegalLayout"
 import type { Metadata } from "next"
-import { PLANS, VAT_COLLECTED, formatEuros } from "@/lib/stripe/plans"
+import { PAYMENT_METHODS_TEXT, PLANS, VAT_COLLECTED, formatEuros } from "@/lib/stripe/plans"
 import { PUBLISHER } from "@/lib/legal/publisher"
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export default function CGUPage() {
       titleAccent="d'utilisation"
       path="/cgu"
       subtitle="Merci de lire attentivement ces conditions avant d'utiliser Qonforme."
-      lastUpdated="19 octobre 2026"
+      lastUpdated="20 octobre 2026"
     >
       <h2>Article 1 — Objet</h2>
       <p>
@@ -86,7 +86,7 @@ export default function CGUPage() {
       </p>
       <h3>4.2 Paiement</h3>
       <p>
-        Le paiement est traité par Stripe, par carte bancaire ou par prélèvement SEPA. L&apos;Utilisateur est débité à la
+        Le paiement est traité par Stripe, par {PAYMENT_METHODS_TEXT}. L&apos;Utilisateur est débité à la
         souscription, puis automatiquement à chaque échéance (mensuelle ou annuelle). Les factures d&apos;abonnement sont
         disponibles depuis <strong>Paramètres → Abonnement</strong>.
       </p>
