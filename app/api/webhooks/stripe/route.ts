@@ -8,6 +8,7 @@ import {
   updateSubscriptionStatus,
   getSubscriptionByCustomerId,
 } from '@/lib/stripe/subscription'
+import { sendActivationEmail } from '@/lib/stripe/activation-email'
 import { mapStripeStatus } from '@/lib/stripe/access'
 import { logError } from '@/lib/logError'
 
@@ -105,7 +106,7 @@ async function activateFromCheckoutSession(
     return
   }
 
-  await upsertSubscription({
+  const { firstActivation } = await upsertSubscription({
     userId,
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscriptionId,
@@ -116,6 +117,10 @@ async function activateFromCheckoutSession(
     currentPeriodEnd: getPeriodEnd(stripeSub),
     mode,
   })
+
+  if (firstActivation) {
+    await sendActivationEmail({ userId, plan: resolvedPlan, period: resolvedPeriod, nextPaymentAt: getPeriodEnd(stripeSub) })
+  }
 
   console.log(`[webhook] Formule ${resolvedPlan} activée pour user ${userId} (${stripeSub.status})`)
 }

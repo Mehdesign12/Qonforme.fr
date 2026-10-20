@@ -3,6 +3,7 @@ import { Header } from "@/components/layout/Header"
 import { Suspense } from "react"
 import { CrumbProvider } from "@/components/layout/crumb"
 import { NavigationProgress } from "@/components/layout/NavigationProgress"
+import { ActivationDialog } from "@/components/billing/ActivationDialog"
 import type { ShellIdentity } from "@/components/layout/shell"
 
 /**
@@ -20,6 +21,12 @@ export function AppShellFrame({ identity, children }: { identity: ShellIdentity;
       <Suspense fallback={null}>
         <NavigationProgress />
       </Suspense>
+      {/* « Abonnement activé » : seulement dans l'application, jamais dans la démo */}
+      {identity.mode === "app" && (
+        <Suspense fallback={null}>
+          <ActivationDialog />
+        </Suspense>
+      )}
       <div className="flex h-[100dvh] overflow-hidden bg-[var(--q-bg)] print:block print:h-auto print:overflow-visible print:bg-white">
         <Sidebar identity={identity} />
         <div

@@ -18,8 +18,10 @@ import { redirect } from 'next/navigation'
 import Stripe from 'stripe'
 import { getStripe, modeFromStripeId } from '@/lib/stripe/mode'
 import { upsertSubscription } from '@/lib/stripe/subscription'
+import { sendActivationEmail } from '@/lib/stripe/activation-email'
 import { getPlanByPriceId, isPlanId, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { mapStripeStatus, safeNextPath } from '@/lib/stripe/access'
+import { withActivationParam } from '@/lib/stripe/activation'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,7 +56,7 @@ export default async function PricingReturnPage({ searchParams }: ReturnPageProp
     if (session.status === 'complete') {
       // Le paiement est terminé : l'artisan repart vers sa facture, même si
       // l'activation ci-dessous échoue (le webhook l'activera de son côté).
-      destination = target
+      destination = withActivationParam(target)
 
       const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id
       const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id
@@ -79,7 +81,7 @@ export default async function PricingReturnPage({ searchParams }: ReturnPageProp
               stripeSub.metadata?.user_id
 
             if (resolvedPlan && userId) {
-              await upsertSubscription({
+              const { firstActivation } = await upsertSubscription({
                 userId,
                 stripeCustomerId: customerId,
                 stripeSubscriptionId: subscriptionId,
@@ -90,6 +92,9 @@ export default async function PricingReturnPage({ searchParams }: ReturnPageProp
                 currentPeriodEnd: getPeriodEnd(stripeSub),
                 mode,
               })
+              if (firstActivation) {
+                await sendActivationEmail({ userId, plan: resolvedPlan, period: resolvedPeriod, nextPaymentAt: getPeriodEnd(stripeSub) })
+              }
               console.log(`[/pricing/return] Formule ${resolvedPlan} (${resolvedPeriod}) activée pour user ${userId}`)
             } else {
               console.warn(`[/pricing/return] Formule ou user_id introuvable — session ${session_id} — activation via webhook attendue`)
