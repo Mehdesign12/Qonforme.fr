@@ -15,6 +15,7 @@ import { trackEvent } from '@/lib/meta-pixel'
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from '@/lib/brand'
 import { cn } from '@/lib/utils'
 import { PictoCluster } from '@/components/brand/PictoCluster'
+import { withActivationParam } from '@/lib/stripe/activation'
 
 /** « 10 € » avec une espace insécable avant le symbole. */
 const eur = (amount: number) => formatEuros(amount).replace(/ €$/, '\u00A0€')
@@ -104,7 +105,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next, publis
         content_ids: [planId],
         num_items: 1,
       })
-      router.replace(destination)
+      router.replace(withActivationParam(destination))
     }
 
     let slowTimer: ReturnType<typeof setInterval> | null = null
@@ -391,7 +392,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next, publis
                   </p>
                   <button
                     type="button"
-                    onClick={() => router.replace(destination)}
+                    onClick={() => router.replace(withActivationParam(destination))}
                     className="q-btn q-btn-primary q-btn-lg mt-6 w-full max-w-[280px] lg:h-10 lg:rounded-[10px] lg:text-sm"
                   >
                     {next ? 'Reprendre ma facture' : 'Accéder à mon espace'}
