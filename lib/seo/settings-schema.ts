@@ -123,7 +123,7 @@ export const articlesSchema = z.object({
   imageModel: text(80).min(1),
   /**
    * Photos dans le texte des articles générés : plafond (0 = aucune). Le
-   * nombre réel suit la longueur (une par tranche de 400 mots), voir
+   * nombre réel suit la longueur (une par tranche de 450 mots), voir
    * lib/seo/articles/images.ts. Chaque photo est facturée par Google.
    */
   inlineImages: z.number().int().min(0).max(6),

@@ -318,7 +318,7 @@ export function PreferencesForm({
               <p className="flex items-start gap-2 text-[13px] text-[var(--q-text-3)]">
                 <Info className="mt-px size-4 shrink-0" aria-hidden />
                 <span>
-                  Une photo environ tous les 400 mots (2 000 mots : 4 photos), placée juste après le premier paragraphe d&apos;une section et jamais dans l&apos;introduction, la FAQ ni la conclusion. Le modèle lit le paragraphe pour choisir la scène et rédige le texte alternatif. Chaque photo prend 20 à 40 secondes et est facturée par Google ; une photo qui échoue n&apos;empêche jamais l&apos;article.
+                  Une photo environ tous les 450 mots : 3 pour un article de 1 500 mots, 4 à partir de 1 600 mots. Elles sont réparties à intervalles réguliers (250 mots au moins entre deux), chacune juste après un paragraphe, jamais sous un titre ni dans l&apos;introduction, la FAQ ou la conclusion. Le modèle lit le paragraphe pour choisir la scène et rédige le texte alternatif. Chaque photo prend 20 à 40 secondes et est facturée par Google ; une photo qui échoue n&apos;empêche jamais l&apos;article.
                 </span>
               </p>
             </div>

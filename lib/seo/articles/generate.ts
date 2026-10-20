@@ -141,7 +141,7 @@ export interface JobInput {
 
 /** Une photo du texte : créée et insérée, ou le motif pour lequel elle ne l'a pas été. */
 export interface InlineImageResult {
-  h2Index: number
+  headingIndex: number
   heading: string
   url?: string
   alt?: string
@@ -858,29 +858,35 @@ async function stepImages(env: StepEnv): Promise<StepResult> {
   if (cap <= 0) return { next: afterImages(state), state: {} }
 
   const wanted = inlineImageCount(wordCount(state.content), cap)
-  const slots = state.imageSlots ?? planImageSlots(state.content, wanted)
-  const results = state.images ?? []
+  // Créneaux gardés d'une rédaction commencée avec l'ancien plan (sans rang de titre) : refaits
+  const kept = state.imageSlots?.every((s) => typeof s.headingIndex === "number" && typeof s.paragraphIndex === "number") ? state.imageSlots : undefined
+  const slots = kept ?? planImageSlots(state.content, wanted)
+  const results = kept ? (state.images ?? []) : []
+  // Moins de photos que prévu : le texte n'offre pas assez de places espacées (dit une fois, à la première passe)
+  const shortNote =
+    !kept && slots.length > 0 && slots.length < wanted ? `${slots.length} photo${slots.length > 1 ? "s" : ""} au lieu de ${wanted} : le texte n'offre pas assez de places espacées d'au moins 250 mots.` : null
+  const base: JobState = shortNote ? { ...state, notices: withNotice(state, shortNote) } : state
   if (results.length >= slots.length) {
     const none = slots.length === 0 && wanted > 0 ? "Aucune photo dans le texte : aucune section ne s'y prête (FAQ et conclusion exclues)." : null
-    return { next: afterImages(state), state: { imageSlots: slots, images: results, notices: withNotice(state, none) } }
+    return { next: afterImages(state), state: { imageSlots: slots, images: results, notices: withNotice(base, none) } }
   }
   const slot = slots[results.length]
   // Clé du modèle d'image absente : rien n'est lu ni payé, les photos sont abandonnées d'un coup
   const keyEnv = findImageModel(state.input.imageModel)?.envKey
   if (keyEnv && !hasKey(keyEnv)) {
-    const skipped = slots.slice(results.length).map((s): InlineImageResult => ({ h2Index: s.h2Index, heading: s.heading, error: "Abandonnée." }))
+    const skipped = slots.slice(results.length).map((s): InlineImageResult => ({ headingIndex: s.headingIndex, heading: s.heading, error: "Abandonnée." }))
     return {
       next: afterImages(state),
       state: {
         imageSlots: slots,
         images: [...results, ...skipped],
-        notices: withNotice(state, `Photos du texte non créées : clé ${keyEnv} absente (Paramètres › Connexions).`),
+        notices: withNotice(base, `Photos du texte non créées : clé ${keyEnv} absente (Paramètres › Connexions).`),
       },
     }
   }
   const done = (result: InlineImageResult, extra: Partial<JobState> = {}): StepResult => {
     const images = [...results, result]
-    return { next: images.length >= slots.length ? afterImages(state) : "images", state: { imageSlots: slots, images, ...extra } }
+    return { next: images.length >= slots.length ? afterImages(state) : "images", state: { imageSlots: slots, images, notices: base.notices, ...extra } }
   }
 
   try {
@@ -916,26 +922,26 @@ async function stepImages(env: StepEnv): Promise<StepResult> {
     // Le texte a pu changer depuis le choix des sections (jamais pendant une passe, mais après un « Réessayer ») :
     // la section est retrouvée par son rang et son titre
     const inserted = insertImageAfterParagraph(state.content, slot, imageMarkdown(alt, stored.url))
-    if (!inserted) return done({ h2Index: slot.h2Index, heading: slot.heading, error: "Section introuvable ou déjà illustrée." })
+    if (!inserted) return done({ headingIndex: slot.headingIndex, heading: slot.heading, error: "Section introuvable ou déjà illustrée." })
     const notice = generated.fallbackFrom ? `Photo par ${modelLabel(generated.model)} au lieu de ${modelLabel(generated.fallbackFrom.model)} : ${generated.fallbackFrom.reason}` : null
     return done(
-      { h2Index: slot.h2Index, heading: slot.heading, url: readImageSize(stored.url).src, alt, model: modelLabel(generated.model) },
-      { content: inserted, notices: withNotice(state, notice) },
+      { headingIndex: slot.headingIndex, heading: slot.heading, url: readImageSize(stored.url).src, alt, model: modelLabel(generated.model) },
+      { content: inserted, notices: withNotice(base, notice) },
     )
   } catch (error) {
     // Un échec de photo n'empêche jamais l'article
     const { message, stop } = imageFailure(error)
     console.error("[seo-articles] photo du texte non créée", message)
-    const failed: InlineImageResult = { h2Index: slot.h2Index, heading: slot.heading, error: message.slice(0, 300) }
-    if (!stop) return done(failed, { notices: withNotice(state, `Photo de « ${slot.heading.slice(0, 60)} » non créée : ${message.slice(0, 140)}`) })
+    const failed: InlineImageResult = { headingIndex: slot.headingIndex, heading: slot.heading, error: message.slice(0, 300) }
+    if (!stop) return done(failed, { notices: withNotice(base, `Photo de « ${slot.heading.slice(0, 60)} » non créée : ${message.slice(0, 140)}`) })
     // Clé absente, quota épuisé, stockage en panne : les photos restantes sont abandonnées
-    const skipped = slots.slice(results.length + 1).map((s): InlineImageResult => ({ h2Index: s.h2Index, heading: s.heading, error: "Abandonnée." }))
+    const skipped = slots.slice(results.length + 1).map((s): InlineImageResult => ({ headingIndex: s.headingIndex, heading: s.heading, error: "Abandonnée." }))
     return {
       next: afterImages(state),
       state: {
         imageSlots: slots,
         images: [...results, failed, ...skipped],
-        notices: withNotice(state, `Photos du texte non créées : ${message.slice(0, 160)}`),
+        notices: withNotice(base, `Photos du texte non créées : ${message.slice(0, 160)}`),
       },
     }
   }

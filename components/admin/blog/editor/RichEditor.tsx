@@ -192,6 +192,9 @@ export const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function
 
   /** Markdown chargé et sa réécriture par l'éditeur : une réécriture identique rend le texte d'origine. */
   const baseline = useRef<{ md: string; rt: string }>({ md: value, rt: value })
+  // Faux jusqu'à onCreate : la mise en page de l'éditeur (paragraphe final) déclenche une mise à jour avant que
+  // le Markdown d'origine et celui que l'éditeur écrirait (baseline) soient connus ; ce n'est pas une modification
+  const created = useRef(false)
   /** Dernière valeur rendue au parent (ou reçue de lui). */
   const lastEmitted = useRef(value)
   /** Valeurs émises ces dernières secondes (échos en retard du parent). */
@@ -292,6 +295,7 @@ export const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function
     shouldRerenderOnTransaction: false,
     editorProps,
     onCreate: ({ editor: e }) => {
+      created.current = true
       let md = initialValue.current
       // Valeur changée entre le montage et la création de l'éditeur (hors historique : rien à annuler)
       if (valueRef.current !== md) {
@@ -318,7 +322,7 @@ export const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function
       countHighlights(e)
     },
     onUpdate: ({ editor: e }) => {
-      if (modeRef.current !== "visual") return
+      if (modeRef.current !== "visual" || !created.current) return
       const md = docToMarkdown(e.getJSON())
       emit(md === baseline.current.rt ? baseline.current.md : md)
       emitOutline(outlineOfDoc(e.state.doc).headings)

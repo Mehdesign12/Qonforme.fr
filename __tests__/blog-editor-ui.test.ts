@@ -82,6 +82,25 @@ describe("éditeur d'articles", () => {
     expect(ref.current?.getMarkdown()).toBe(MD)
   })
 
+  it("liste collée sous une ligne en gras (article généré) : pas de puce vide, l'article s'ouvre en mode visuel sans être réécrit", async () => {
+    const glued = "Intro.\n\n**Tableau**\n- Dépose de l'ancien tableau\n- Fourniture d'un tableau 3 rangées\n\n**Cuisine**\n- Circuit spécialisé"
+    const { ref, editor, onChange } = await mount({ value: glued })
+    const items: string[] = []
+    editor.state.doc.descendants((node) => {
+      if (node.type.name === "listItem") items.push(node.textContent)
+      return true
+    })
+    expect(items).toEqual(["Dépose de l'ancien tableau", "Fourniture d'un tableau 3 rangées", "Circuit spécialisé"])
+    expect(host!.querySelector("textarea")).toBeNull()
+    expect(onChange).not.toHaveBeenCalled()
+    expect(ref.current?.getMarkdown()).toBe(glued)
+    // Une première modification enregistre un Markdown propre : ligne vide avant chaque liste
+    await act(async () => {
+      editor.commands.insertContentAt(3, "X")
+    })
+    expect(onChange).toHaveBeenLastCalledWith("InXtro.\n\n**Tableau**\n\n- Dépose de l'ancien tableau\n- Fourniture d'un tableau 3 rangées\n\n**Cuisine**\n\n- Circuit spécialisé")
+  })
+
   it("mode Markdown : texte enregistré, plan, retour au visuel", async () => {
     const { ref, onChange } = await mount({ value: MD })
     await act(async () => button("Markdown").click())
