@@ -112,6 +112,62 @@ export function isAllowedLink(url: string): boolean {
   return isOfficialUrl(url)
 }
 
+const BULLET_LINE = /^[-*+][ \t]+\S/
+const ORDERED_LINE = /^\d+\.[ \t]+\S/
+const HEADING_LINE = /^#{1,6}[ \t]+\S/
+
+/**
+ * Une ligne vide autour des listes et des titres, et des puces « - » : le
+ * modèle écrit souvent « **Tableau** » puis, à la ligne suivante, « - Dépose… »
+ * sans ligne vide. Le moteur Markdown du blog (comme CommonMark) lit alors une
+ * liste dans un paragraphe : trous dans la liste de l'éditeur, espaces en trop
+ * sur la page. Les blocs de code, les lignes indentées (suite d'une puce) et
+ * le texte de chaque ligne sont laissés tels quels ; deux lignes de texte
+ * consécutives restent un seul paragraphe.
+ */
+export function separateBlocks(markdown: string): { text: string; changed: boolean } {
+  const out: string[] = []
+  let fence = false
+  let changed = false
+  // Type de la liste en cours (puces ou numéros), tant que les lignes la prolongent
+  let list: "bullet" | "ordered" | null = null
+  for (const raw of markdown.split("\n")) {
+    if (/^\s*(```|~~~)/.test(raw)) {
+      fence = !fence
+      list = null
+      out.push(raw)
+      continue
+    }
+    if (fence) {
+      out.push(raw)
+      continue
+    }
+    if (raw.trim() === "") {
+      list = null
+      out.push(raw)
+      continue
+    }
+    const kind = BULLET_LINE.test(raw) ? "bullet" : ORDERED_LINE.test(raw) ? "ordered" : null
+    // Puces « * » et « + » en « - » (seule syntaxe de liste à puces du moteur)
+    const line = kind === "bullet" ? raw.replace(/^[*+][ \t]+/, "- ") : raw
+    if (line !== raw) changed = true
+    const isHeading = HEADING_LINE.test(line)
+    const indented = /^\s/.test(line)
+    const prev = out.length > 0 ? out[out.length - 1] : ""
+    if (prev.trim() !== "") {
+      const start = (kind !== null && list !== kind) || isHeading || HEADING_LINE.test(prev) || (kind === null && list !== null && !indented)
+      if (start) {
+        out.push("")
+        changed = true
+      }
+    }
+    if (kind !== null) list = kind
+    else if (!indented || isHeading) list = null
+    out.push(line)
+  }
+  return { text: out.join("\n"), changed }
+}
+
 /**
  * Nettoie le Markdown renvoyé par le modèle, sans rien inventer :
  * bloc de code englobant, images, titre répété en tête, titres de niveau 1
@@ -130,6 +186,10 @@ export function normalizeContent(raw: string, title: string): { content: string;
   const withoutImages = md.replace(/!\[[^\]]*\]\([^)]*\)/g, "")
   if (withoutImages !== md) fixes.push("Images du texte retirées")
   md = withoutImages
+
+  const spaced = separateBlocks(md)
+  if (spaced.changed) fixes.push("Listes et titres séparés du texte par une ligne vide")
+  md = spaced.text
 
   // Aucun HTML actif : neutralisé en une fois (pas de balise reconstituée après un retrait)
   const withoutHtml = md.replace(/</g, "&lt;")
