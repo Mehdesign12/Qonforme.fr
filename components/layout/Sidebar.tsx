@@ -17,8 +17,8 @@ import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import {
-  Plus, Ellipsis, ChevronRight, ShieldCheck, Bug, MessageSquare,
-  LogOut, House, CreditCard, Building2, FileCog, FlaskConical, ArrowRight, Search, Send, Loader2,
+  Ellipsis, ChevronRight, ShieldCheck, Bug, MessageSquare,
+  LogOut, House, CreditCard, Building2, FileCog, FlaskConical, ArrowRight, Search,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from "@/lib/brand"
@@ -31,6 +31,7 @@ import {
 } from "@/components/layout/nav"
 import { type ShellIdentity, fullNameOf, formatSiren } from "@/components/layout/shell"
 import { useLogout } from "@/components/layout/useLogout"
+import { MorphButton } from "@/components/layout/MorphButton"
 import { useEditorAction } from "@/lib/ui/editor-action"
 import { SheetGrip } from "@/components/ui/sheet-grip"
 
@@ -423,25 +424,7 @@ export function MobileBottomNav({ identity }: { identity: ShellIdentity }) {
         style={{ bottom: "max(16px, env(safe-area-inset-bottom))" }}
       >
         {tabs.map((t) => <Tab key={t.link.key} {...t} />)}
-        <div className="q-nav-slot" data-send={action ? "true" : "false"}>
-          <button
-            type="button"
-            onClick={() => (action ? action.onSend() : setCreateOpen(true))}
-            disabled={action ? action.disabled : false}
-            aria-label={action ? action.label : "Créer un document"}
-            aria-haspopup={action ? undefined : "dialog"}
-            data-send={action ? "true" : "false"}
-            className="q-morph touch-manipulation"
-          >
-            <span className="q-morph-layer q-morph-plus" aria-hidden>
-              <Plus className="size-6" strokeWidth={2.25} />
-            </span>
-            <span className="q-morph-layer q-morph-send" aria-hidden>
-              {action?.sending ? <Loader2 className="size-[18px] animate-spin" /> : <Send className="size-[18px]" strokeWidth={2} />}
-              Envoyer
-            </span>
-          </button>
-        </div>
+        <MorphButton action={action} onCreate={() => setCreateOpen(true)} />
         {tabsRight.map((t) => <Tab key={t.link.key} {...t} />)}
         <button
           type="button"
