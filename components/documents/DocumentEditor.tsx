@@ -12,11 +12,13 @@
  * Purement présentationnel : chaque formulaire fournit l'état (useDocumentForm)
  * et ses actions (API réelles, ou toasts en démo).
  */
+import { useEffect, useRef } from "react"
 import Link from "next/link"
 import { Eye, Loader2, Plus, Send } from "lucide-react"
 import { PageHeader } from "@/components/app/kit"
 import type { ProductSuggestion } from "@/components/products/ProductCombobox"
 import { cn } from "@/lib/utils"
+import { setEditorAction, type EditorAction } from "@/lib/ui/editor-action"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { ClientPicker } from "./ClientPicker"
 import { LinesEditor } from "./LinesEditor"
@@ -86,6 +88,17 @@ export function DocumentEditor({
   const sendLabel = actions.sendLabel ?? text.sendLabel
   const busy = actions.saving || actions.sending
 
+  // Mobile : le bouton central de la barre de navigation devient « Envoyer »
+  const label = client ? `Envoyer à ${client.name}` : "Envoyer"
+  const sendRef = useRef(actions.onSend)
+  sendRef.current = actions.onSend
+  const sending = actions.sending
+  useEffect(() => {
+    const action: EditorAction = { label, onSend: () => sendRef.current(), sending, disabled: busy }
+    setEditorAction(action)
+  }, [label, sending, busy])
+  useEffect(() => () => setEditorAction(null), [])
+
   const previewButton = actions.onPreviewPdf && (
     <button
       type="button"
@@ -99,7 +112,7 @@ export function DocumentEditor({
   )
 
   return (
-    <div className="flex flex-col gap-5 pb-[112px] lg:pb-0">
+    <div className="flex flex-col gap-5 pb-[104px] lg:pb-0">
       <PageHeader
         title={title}
         subtitle={<span className="font-mono text-[13px] md:text-sm">{status}</span>}
@@ -127,6 +140,18 @@ export function DocumentEditor({
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px] min-[1400px]:grid-cols-[minmax(0,1fr)_460px]">
         {/* ── Colonne de saisie ── */}
         <div className="flex min-w-0 flex-col gap-4">
+          {/* Mobile : total et enregistrement en tête (la barre du bas ne garde que « Envoyer ») */}
+          <div className="flex items-end justify-between gap-3 lg:hidden">
+            <button type="button" onClick={actions.onSaveDraft} disabled={busy} className="q-btn q-btn-secondary q-btn-sm">
+              {actions.saving && <Loader2 className="animate-spin" aria-hidden />}
+              {saveLabel}
+            </button>
+            <div className="text-right tabular-nums">
+              <div className="text-[11px] font-medium uppercase tracking-[.06em] text-[var(--q-text-3)]">Total TTC</div>
+              <div className="text-[22px] font-semibold leading-tight tracking-[-0.01em] text-[var(--q-ink)]">{formatCurrency(doc.totals.total_ttc)}</div>
+              <div className="text-xs text-[var(--q-text-3)]">{formatCurrency(doc.totals.subtotal_ht)} HT · TVA {formatCurrency(doc.totals.total_vat)}</div>
+            </div>
+          </div>
           <ClientCard
             kind={kind}
             doc={doc}
@@ -173,31 +198,6 @@ export function DocumentEditor({
         </aside>
       </div>
 
-      {/* ── Barre d'actions mobile, au-dessus de la barre de navigation ── */}
-      <div
-        className="fixed inset-x-3 z-30 flex flex-col gap-2.5 rounded-3xl border border-[var(--q-line)] bg-[var(--q-surface)] px-3.5 pb-3.5 pt-3 shadow-[shadow:var(--q-shadow-float)] lg:hidden"
-        style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
-      >
-        <div className="flex items-center justify-between gap-3 text-[13px] tabular-nums text-[var(--q-text-3)]">
-          <span className="truncate">
-            {formatCurrency(doc.totals.subtotal_ht)} HT · TVA {formatCurrency(doc.totals.total_vat)}
-          </span>
-          <span className="flex shrink-0 items-baseline gap-2">
-            Total
-            <span className="text-xl font-semibold tracking-[-0.01em] text-[var(--q-ink)]">{formatCurrency(doc.totals.total_ttc)}</span>
-          </span>
-        </div>
-        <div className="flex gap-2">
-          <button type="button" onClick={actions.onSaveDraft} disabled={busy} className="q-btn q-btn-secondary q-btn-lg shrink-0 !px-4">
-            {actions.saving ? <Loader2 className="animate-spin" aria-hidden /> : null}
-            Brouillon
-          </button>
-          <button type="button" onClick={actions.onSend} disabled={busy} className="q-btn q-btn-primary q-btn-lg min-w-0 flex-1">
-            {actions.sending ? <Loader2 className="animate-spin" aria-hidden /> : <Send aria-hidden strokeWidth={2} />}
-            <span className="truncate">{client ? `Envoyer à ${client.name}` : "Envoyer"}</span>
-          </button>
-        </div>
-      </div>
     </div>
   )
 }
