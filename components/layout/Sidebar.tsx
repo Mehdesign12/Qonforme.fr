@@ -18,7 +18,7 @@ import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import {
   Plus, Ellipsis, ChevronRight, ShieldCheck, Bug, MessageSquare,
-  LogOut, House, CreditCard, Building2, FileCog, FlaskConical, ArrowRight, Search,
+  LogOut, House, CreditCard, Building2, FileCog, FlaskConical, ArrowRight, Search, Send, Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from "@/lib/brand"
@@ -31,6 +31,7 @@ import {
 } from "@/components/layout/nav"
 import { type ShellIdentity, fullNameOf, formatSiren } from "@/components/layout/shell"
 import { useLogout } from "@/components/layout/useLogout"
+import { useEditorAction } from "@/lib/ui/editor-action"
 import { SheetGrip } from "@/components/ui/sheet-grip"
 
 /* ------------------------------------------------------------------ */
@@ -371,6 +372,7 @@ function PlusSheet({ open, onOpenChange, identity, onBug, onContact }: {
 export function MobileBottomNav({ identity }: { identity: ShellIdentity }) {
   const pathname = usePathname()
   const mode = identity.mode
+  const action = useEditorAction()
   const [createOpen, setCreateOpen] = useState(false)
   const [plusOpen, setPlusOpen] = useState(false)
   const [bugOpen, setBugOpen] = useState(false)
@@ -421,15 +423,23 @@ export function MobileBottomNav({ identity }: { identity: ShellIdentity }) {
         style={{ bottom: "max(16px, env(safe-area-inset-bottom))" }}
       >
         {tabs.map((t) => <Tab key={t.link.key} {...t} />)}
-        <div className="flex flex-1 items-center justify-center">
+        <div className="q-nav-slot" data-send={action ? "true" : "false"}>
           <button
             type="button"
-            onClick={() => setCreateOpen(true)}
-            aria-label="Créer un document"
-            aria-haspopup="dialog"
-            className="grid size-[52px] place-items-center rounded-[18px] bg-[var(--q-accent)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.25),0_8px_18px_-6px_rgba(37,99,235,.7)] touch-manipulation active:scale-95"
+            onClick={() => (action ? action.onSend() : setCreateOpen(true))}
+            disabled={action ? action.disabled : false}
+            aria-label={action ? action.label : "Créer un document"}
+            aria-haspopup={action ? undefined : "dialog"}
+            data-send={action ? "true" : "false"}
+            className="q-morph touch-manipulation"
           >
-            <Plus className="size-6" strokeWidth={2.25} aria-hidden />
+            <span className="q-morph-layer q-morph-plus" aria-hidden>
+              <Plus className="size-6" strokeWidth={2.25} />
+            </span>
+            <span className="q-morph-layer q-morph-send" aria-hidden>
+              {action?.sending ? <Loader2 className="size-[18px] animate-spin" /> : <Send className="size-[18px]" strokeWidth={2} />}
+              Envoyer
+            </span>
           </button>
         </div>
         {tabsRight.map((t) => <Tab key={t.link.key} {...t} />)}
