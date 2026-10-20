@@ -10,7 +10,7 @@
  * case de 132 px ne bouge jamais, les onglets restent immobiles).
  * Avec « Réduire les animations », la bascule est immédiate.
  */
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Loader2, Plus, Send } from "lucide-react"
 import type { EditorAction } from "@/lib/ui/editor-action"
 
@@ -35,7 +35,10 @@ export function MorphButton({
   const raf = useRef(0)
   const last = useRef(0)
   const timer = useRef<ReturnType<typeof setTimeout>>()
+  const settle = useRef<ReturnType<typeof setTimeout>>()
   const first = useRef(true)
+  // Case du bouton : large pendant et après la goutte, resserrée autour du « + » une fois le bouton redevenu rond
+  const [wide, setWide] = useState(on)
 
   function paint() {
     const s = sim.current
@@ -86,8 +89,11 @@ export function MorphButton({
     const target = on ? PILL : ROUND
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     clearTimeout(timer.current)
+    clearTimeout(settle.current)
+    if (on) setWide(true)
     if (reduce || first.current) {
       first.current = false
+      setWide(on)
       cancelAnimationFrame(raf.current)
       raf.current = 0
       Object.assign(sim.current, { w: target.w, h: target.h, vw: 0, vh: 0, tw: target.w, th: target.h })
@@ -97,6 +103,8 @@ export function MorphButton({
     // 1. la goutte se forme, 2. elle s'étale (ou se rétracte en rond)
     aim(on ? DROP.w : DROP.w, on ? DROP.h : 58)
     timer.current = setTimeout(() => aim(target.w, target.h), on ? 170 : 150)
+    // Retour au « + » : les onglets se rapprochent du centre une fois la goutte rétractée
+    if (!on) settle.current = setTimeout(() => setWide(false), 900)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [on])
 
@@ -104,13 +112,17 @@ export function MorphButton({
     () => () => {
       cancelAnimationFrame(raf.current)
       clearTimeout(timer.current)
+      clearTimeout(settle.current)
     },
     [],
   )
 
   const layer = "absolute inset-0 flex items-center justify-center gap-2 whitespace-nowrap text-base font-semibold"
   return (
-    <div className="flex h-[60px] w-[132px] shrink-0 items-center justify-center">
+    <div
+      className="flex h-[60px] shrink-0 items-center justify-center motion-safe:transition-[width] motion-safe:duration-300 motion-safe:ease-out"
+      style={{ width: wide ? 132 : 68 }}
+    >
       <button
         ref={btn}
         type="button"
