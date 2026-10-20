@@ -102,8 +102,6 @@ export default function SignupForm() {
 
   return (
     <div className="mt-6 flex flex-col gap-4 sm:mt-8 sm:gap-[18px]">
-    <GoogleButton label="S’inscrire avec Google" />
-    <OrDivider />
     <form onSubmit={onSubmit} className="flex flex-col gap-4 sm:gap-[18px]" noValidate>
 
       {/* Email */}
@@ -152,6 +150,8 @@ export default function SignupForm() {
         lien dans chacun permet de les arrêter.
       </p>
     </form>
+    <OrDivider />
+    <GoogleButton label="S’inscrire avec Google" />
     </div>
   )
 }

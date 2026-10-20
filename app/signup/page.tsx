@@ -2,8 +2,6 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import SignupForm from "@/components/auth/SignupForm"
 import AuthLayout from "@/components/auth/AuthLayout"
-import { AuthPhotoBand, AuthPhotoPanel } from "@/components/auth/AuthPhotoPanel"
-import { SIGNUP_PHOTO } from "@/components/auth/photos"
 import { safeNextPath } from "@/lib/stripe/access"
 import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
 
@@ -19,8 +17,8 @@ export const dynamic = "force-dynamic"
 
 /**
  * Inscription en deux champs (maquettes « Main » et « Mobile-Inscription »,
- * validées le 06/10/2026) : adresse email et mot de passe ; photo d'artisan à
- * droite (≥ 1024 px) ou en bande sous le logo (téléphone). Le reste de
+ * validées le 06/10/2026) : adresse email et mot de passe, dans une carte
+ * centrée sans photo (20/10/2026). Le reste de
  * l'inscription se fait dans la fenêtre « Bienvenue » du tableau de bord.
  */
 export default function SignupPage({ searchParams }: { searchParams?: { next?: string } }) {
@@ -44,23 +42,20 @@ export default function SignupPage({ searchParams }: { searchParams?: { next?: s
 
   return (
     <AuthLayout
-      aside={<AuthPhotoPanel {...SIGNUP_PHOTO} />}
-      asideVariant="photo"
-      mobileBand={<AuthPhotoBand {...SIGNUP_PHOTO} />}
-      topRight={<Link href={loginHref} className="q-link text-[14px] lg:hidden">Se connecter</Link>}
+      card
+      topRight={
+        <p className="m-0 text-[14px] text-q-text-3">
+          <span className="hidden sm:inline">Déjà un compte ? </span>
+          <Link href={loginHref} className="q-link">Se connecter</Link>
+        </p>
+      }
     >
-      <AuthTitle>Votre premier <Serif>devis</Serif>, sans attendre.</AuthTitle>
-      <AuthLead>
-        Devis gratuits et illimités. Vous ne choisissez une formule qu’à l’envoi de votre première facture.
-      </AuthLead>
+      <div className="text-center">
+        <AuthTitle className="lg:text-[38px]">On commence <Serif>quand vous voulez</Serif>.</AuthTitle>
+        <AuthLead className="!mt-2.5 !text-[15.5px]">Créez votre compte en quelques secondes.</AuthLead>
+      </div>
 
       <SignupForm />
-
-      {/* Sur téléphone, « Se connecter » est en haut à droite */}
-      <p className="mt-[26px] hidden text-[14px] text-q-text-3 lg:block">
-        Déjà un compte ?{" "}
-        <Link href={loginHref} className="q-link">Se connecter</Link>
-      </p>
     </AuthLayout>
   )
 }
