@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getStripe, isStripeConfigured, modeOfSubscription, publishableKeyFor } from '@/lib/stripe/mode'
 import { getUserStripeMode } from '@/lib/stripe/test-users'
-import { PLANS, VAT_COLLECTED, isPlanAvailable, isPlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { PLANS, SUBSCRIPTION_PAYMENT_METHODS, VAT_COLLECTED, isPlanAvailable, isPlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { getSubscriptionByUserId } from '@/lib/stripe/subscription'
 import { canIssueInvoices, safeNextPath, GUARANTEE_DAYS } from '@/lib/stripe/access'
 
@@ -15,8 +15,10 @@ import { canIssueInvoices, safeNextPath, GUARANTEE_DAYS } from '@/lib/stripe/acc
  * s'affiche à l'envoi de la première facture. `next` ramène l'artisan à cette
  * facture une fois le paiement confirmé.
  *
- * Moyens de paiement : carte et prélèvement SEPA. Le prélèvement met quelques
- * jours ouvrés à être confirmé ; l'accès est ouvert dès la fin du paiement
+ * Moyens de paiement : `SUBSCRIPTION_PAYMENT_METHODS` (lib/stripe/plans.ts), la carte
+ * bancaire seulement depuis le 20/10/2026 : le prélèvement SEPA demande des
+ * vérifications d'identité que le fondateur n'a pas voulu faire. S'il est rouvert, il
+ * met quelques jours ouvrés à être confirmé ; l'accès est ouvert dès la fin du paiement
  * (l'abonnement est actif chez Stripe) et retiré si le prélèvement est rejeté
  * (webhook : checkout.session.async_payment_failed, invoice.payment_failed).
  *
@@ -191,7 +193,7 @@ export async function POST(request: NextRequest) {
       customer: stripeCustomerId,
       ui_mode: 'embedded',
       mode: 'subscription',
-      payment_method_types: ['card', 'sepa_debit'],
+      payment_method_types: SUBSCRIPTION_PAYMENT_METHODS,
       line_items: [{ price: priceId, quantity: 1 }],
       // Triple filet pour retrouver le user_id dans le webhook
       client_reference_id: user.id,

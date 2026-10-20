@@ -487,7 +487,7 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 - **Comptes gratuits :** pas de client Stripe ni d'abonnement tant que l'artisan n'émet pas de facture.
 - **Mur de paiement côté serveur, à l'émission :** envoi d'une facture, passage hors brouillon, relance. Le brouillon reste gratuit ; son PDF porte le filigrane « BROUILLON » et n'embarque pas de Factur-X, pour qu'il ne circule pas comme une vraie facture.
 - **Après paiement,** retour sur la facture qui attendait, prête à partir.
-- **Moyens de paiement :** carte et prélèvement SEPA. Le prélèvement est confirmé en quelques jours ; l'accès est ouvert dès la fin du paiement et retiré si le prélèvement est rejeté.
+- **Moyens de paiement :** carte bancaire seulement depuis le 20/10/2026 (§ 14.7) ; le prélèvement SEPA, prévu à l'origine, est abandonné. Si un jour il est rouvert, il est confirmé en quelques jours ; l'accès est ouvert dès la fin du paiement et retiré si le prélèvement est rejeté.
 - **TVA :** prix hors taxes, TVA 20 % ajoutée par un taux Stripe. Sans ce taux configuré, le paiement est refusé plutôt que vendu sans TVA. **À confirmer :** que Qonforme SAS facture bien la TVA (n'est pas en franchise).
 - **Factures d'abonnement :** nom, adresse et SIREN de l'entreprise de l'artisan. Elles restent émises par Stripe pour l'instant. Avant septembre 2027, Qonforme devra émettre ses propres factures électroniques via la plateforme agréée.
 - **Garantie 30 jours en libre-service :** depuis Paramètres › Abonnement, sans contact humain. Remboursement par avoir Stripe, arrêt immédiat, une fois par compte.
@@ -501,7 +501,7 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 1. Créer les deux prix Essentiel (12 € HT par mois et 120 € HT par an), récurrents, en tarification hors taxes.
 2. Créer le taux de TVA 20 % France, exclusif.
 3. Renseigner `STRIPE_PRICE_ESSENTIEL_MONTHLY`, `STRIPE_PRICE_ESSENTIEL_YEARLY` et `STRIPE_TAX_RATE_ID` dans Vercel.
-4. Activer le prélèvement SEPA dans le tableau de bord Stripe.
+4. ~~Activer le prélèvement SEPA dans le tableau de bord Stripe.~~ Abandonné le 20/10/2026 (§ 14.7).
 5. Ajouter au webhook les événements `checkout.session.async_payment_succeeded` et `checkout.session.async_payment_failed`.
 6. Configurer le portail client : nouveaux prix, résiliation en fin de période.
 7. Appliquer la migration `20261002_subscriptions_server_write_only.sql`. Elle ferme la faille : un utilisateur pouvait s'écrire lui-même un abonnement actif.
@@ -614,6 +614,14 @@ Compte `claude-test-mobile-20261019@example.com` (à supprimer de l'admin), ajou
 Défauts trouvés et corrigés : l'invite « Installer Qonforme » cachait le bouton d'enregistrement d'un formulaire (désactivée sur tout le site) ; le sous-titre « SIREN » restait sur la fiche d'un particulier ; le bouton « Confirmer le remboursement » apparaissait sous la barre de navigation flottante (l'encadré se centre maintenant à l'écran à son ouverture).
 
 À savoir : l'email d'envoi de la facture a échoué pendant le test (« La facture est émise, mais l'email n'est pas parti ») parce que le service d'envoi (Resend) refuse les adresses en `example.com` : `Invalid to field. Please use our testing email address instead of domains like example.com`. Ce n'est pas un défaut en production (la facture reste émise et l'action « Renvoyer par email » existe), mais un test d'envoi doit viser une vraie adresse. Non testés : prélèvement SEPA (réussi et refusé), renouvellement, page Admin › Paiements sur téléphone, mode production.
+
+### 14.7 Ouverture de la vente en production (20/10/2026) : carte bancaire seulement
+
+**Constat dans Vercel** (lecture des noms de variables, jamais des valeurs) : la production avait ses trois clés (secrète, publique, webhook) mais **aucun des 4 prix** (`STRIPE_PRICE_ESSENTIEL_*`, `STRIPE_PRICE_ARTISAN_*`) : le paiement d'un compte ordinaire répondait « momentanément indisponible ». Le webhook de production pointait sur l'adresse en `www` (redirection 308 que Stripe ne suit pas ; aucun événement livré) et n'écoutait que 5 événements sur 7 : corrigé par le fondateur (adresse sans `www`, plus `checkout.session.async_payment_succeeded` et `checkout.session.async_payment_failed`). Les 4 prix de production existent dans Stripe (Qonforme Essentiel 24 €/mois et 240 €/an, Qonforme Artisan 34 €/mois et 340 €/an).
+
+**Décision du fondateur : pas de prélèvement SEPA.** Pour l'activer, Stripe demande des vérifications d'identité supplémentaires sur le compte de la LLC ; le fondateur préfère ne pas les faire. L'abonnement se paie donc **par carte bancaire seulement**, dans les deux modes (même écran en essai et en production). Mise en œuvre : `SEPA_DEBIT_ENABLED = false` dans `lib/stripe/plans.ts`, qui fixe `SUBSCRIPTION_PAYMENT_METHODS` (liste du Checkout) et `PAYMENT_METHODS_TEXT` (page Tarifs, FAQ, paiement, CGU article 4.2). Ne jamais écrire « SEPA » en dur dans un texte d'abonnement. Pour rouvrir le prélèvement un jour : activer « SEPA Direct Debit » dans Stripe (production et bac à sable), passer le réglage à `true`, tester un prélèvement. Les écouteurs des événements `async_payment_*` et l'affichage d'un prélèvement dans Paramètres › Abonnement restent en place (sans effet tant qu'aucun prélèvement n'existe). Les virements SEPA des clients de l'artisan (page de règlement, QR code) n'ont aucun rapport : ils n'ont pas changé.
+
+**Reste avant d'ouvrir** : désactiver Link, nom public « Qonforme » et libellé de relevé `QONFORME`, image de marque, portail client de production (§ 14.4), puis ajouter les 4 prix dans Vercel et redéployer (valeur d'Artisan lue au build), paiement réel de 24 € et remboursement par la garantie. Le projet Vercel est au plan Hobby, réservé à un usage non commercial : passer au plan Pro avant d'encaisser des abonnements.
 
 ## 15. Application mobile native rouverte, sans achat dans l'app (orientation du 19/10/2026)
 

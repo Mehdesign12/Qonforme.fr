@@ -9,7 +9,7 @@ import {
 } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { Check, ArrowLeft, ChevronDown, Clock, Lock, RefreshCw, ShieldCheck } from 'lucide-react'
-import { PLANS, VAT_COLLECTED, formatEuros, withVat, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { PAYMENT_METHODS_TEXT, PLANS, VAT_COLLECTED, formatEuros, withVat, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { trackEvent } from '@/lib/meta-pixel'
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from '@/lib/brand'
@@ -477,7 +477,7 @@ function Assurance({ className }: { className?: string }) {
       </li>
       <li className="flex items-center gap-2">
         <Lock className="h-4 w-4 shrink-0 text-q-text-4" aria-hidden />
-        Carte bancaire ou prélèvement SEPA, paiement traité par Stripe
+        Paiement par {PAYMENT_METHODS_TEXT}, traité par Stripe
       </li>
     </ul>
   )

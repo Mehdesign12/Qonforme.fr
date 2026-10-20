@@ -40,6 +40,25 @@ export const VAT_COLLECTED = false
 /** Suffixe des prix : « 24 € HT » seulement quand la TVA est ajoutée par-dessus. */
 export const TAX_SUFFIX = VAT_COLLECTED ? ' HT' : ''
 
+/**
+ * Le prélèvement SEPA est-il proposé pour l'abonnement ? false depuis le 20/10/2026
+ * (décision du fondateur) : Stripe demande des vérifications d'identité supplémentaires
+ * pour l'activer sur le compte de la LLC, l'abonnement se paie donc par carte bancaire.
+ * À true, après avoir activé « SEPA Direct Debit » dans Stripe (Settings › Payment
+ * methods, en production et dans le bac à sable) : le paiement propose aussi le
+ * prélèvement et les textes l'annoncent. Ne jamais écrire « SEPA » en dur dans un texte
+ * d'abonnement : passer par `PAYMENT_METHODS_TEXT`.
+ */
+export const SEPA_DEBIT_ENABLED = false
+
+/** Moyens de paiement du Checkout de l'abonnement (app/api/stripe/checkout/route.ts). */
+export const SUBSCRIPTION_PAYMENT_METHODS: Array<'card' | 'sepa_debit'> = SEPA_DEBIT_ENABLED
+  ? ['card', 'sepa_debit']
+  : ['card']
+
+/** Pour les textes : « carte bancaire », ou « carte bancaire ou prélèvement SEPA ». */
+export const PAYMENT_METHODS_TEXT = SEPA_DEBIT_ENABLED ? 'carte bancaire ou prélèvement SEPA' : 'carte bancaire'
+
 /** Vrai si les deux prix de la formule Artisan sont renseignés (même règle que next.config.mjs). */
 export function isArtisanOnSale(monthly: string | undefined | null, yearly: string | undefined | null): boolean {
   return Boolean(monthly?.trim()) && Boolean(yearly?.trim())

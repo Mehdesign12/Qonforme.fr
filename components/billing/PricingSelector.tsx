@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Check, Clock, ShieldCheck } from 'lucide-react'
 import {
+  PAYMENT_METHODS_TEXT,
   PLANS,
   FREE_FEATURES,
   VAT_COLLECTED,
@@ -150,7 +151,7 @@ export default function PricingSelector({
               <SoonButton />
             )}
             <p className="text-center text-xs text-q-text-4">
-              {isAuthenticated ? 'Carte bancaire ou prélèvement SEPA' : 'La formule se choisit à votre première facture'}
+              {isAuthenticated ? `Paiement par ${PAYMENT_METHODS_TEXT}` : 'La formule se choisit à votre première facture'}
             </p>
           </div>
           <FeatureList items={essentiel.features} />
