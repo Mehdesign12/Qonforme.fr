@@ -26,6 +26,21 @@ function validate(fields: { email: string; password: string }) {
   return errs
 }
 
+/** Mentions sous le formulaire : tout en bas de la page d'inscription. */
+export function SignupLegal() {
+  return (
+    <p className="m-0 mt-5 text-[13px] leading-[1.55] text-q-text-4">
+      En créant un compte, vous acceptez les{" "}
+      <a href="/cgu" className="q-link !font-medium">conditions d’utilisation</a>{" "}
+      et la{" "}
+      <a href="/confidentialite" className="q-link !font-medium">politique de confidentialité</a>.
+      {/* Information à la collecte (CPCE art. L34-5, CNIL) : voir lib/onboarding/unsubscribe.ts */}
+      {" "}Qonforme peut vous envoyer quelques conseils de démarrage par email pendant vos 30&nbsp;premiers jours&nbsp;; un
+      lien dans chacun permet de les arrêter.
+    </p>
+  )
+}
+
 export default function SignupForm() {
   const router   = useRouter()
   const supabase = createClient()
@@ -139,16 +154,6 @@ export default function SignupForm() {
         Créer mon compte
       </AuthSubmit>
 
-      {/* CGU */}
-      <p className="m-0 text-[13px] leading-[1.55] text-q-text-4">
-        En créant un compte, vous acceptez les{" "}
-        <a href="/cgu" className="q-link !font-medium">conditions d’utilisation</a>{" "}
-        et la{" "}
-        <a href="/confidentialite" className="q-link !font-medium">politique de confidentialité</a>.
-        {/* Information à la collecte (CPCE art. L34-5, CNIL) : voir lib/onboarding/unsubscribe.ts */}
-        {" "}Qonforme peut vous envoyer quelques conseils de démarrage par email pendant vos 30&nbsp;premiers jours&nbsp;; un
-        lien dans chacun permet de les arrêter.
-      </p>
     </form>
     <OrDivider />
     <GoogleButton label="S’inscrire avec Google" />
