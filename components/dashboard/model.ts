@@ -150,6 +150,7 @@ export interface DashboardView {
   today: string
   dateLong: string
   dateShort: string
+  greeting: { word: "Bonjour" | "Bonsoir"; emoji: string }
   firstName: string
   companyName: string | null
   isNewAccount: boolean
@@ -187,6 +188,8 @@ export interface DashInscription {
   /** Numéro de l'étape restante (à partir de 1) et nombre d'étapes affichées. */
   number: number
   total: number
+  /** Des saisies non validées ont été gardées à la fermeture : la tuile le dit. */
+  draft?: true
 }
 
 /** Ce que la page sait du compte pour décider d'ouvrir la fenêtre « Bienvenue ». */
@@ -197,6 +200,8 @@ export interface InscriptionFacts extends InscriptionState {
   windowClosed: boolean
   /** Réouverture demandée par la tuile (`?inscription=reprendre`). */
   resume: boolean
+  /** Saisies non validées gardées à la fermeture (`user_metadata.signup_draft`). */
+  draft?: boolean
 }
 
 /**
@@ -208,7 +213,7 @@ export function inscriptionTile(f: InscriptionFacts): DashInscription | null {
   const step = pendingInscriptionStep(f)
   if (!step || (f.company && !f.wizard)) return null
   const steps = inscriptionSteps(f.profileAvailable)
-  return { step, number: Math.max(1, steps.indexOf(step) + 1), total: steps.length }
+  return { step, number: Math.max(1, steps.indexOf(step) + 1), total: steps.length, ...(f.draft ? { draft: true as const } : {}) }
 }
 
 /**
@@ -235,6 +240,17 @@ export function todayInParis(now: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
   }).format(now)
+}
+
+/** Heure à Paris (0 à 23). */
+export function hourInParis(now: Date = new Date()): number {
+  const h = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" }).format(now)
+  return Number(h) % 24
+}
+
+/** Salutation selon l'heure de Paris : « Bonjour » de 5 h à 17 h 59, « Bonsoir » ensuite. */
+export function greetingFor(hour: number): { word: "Bonjour" | "Bonsoir"; emoji: string } {
+  return hour >= 18 || hour < 5 ? { word: "Bonsoir", emoji: "\u{1F319}" } : { word: "Bonjour", emoji: "\u{1F44B}" }
 }
 
 function parts(iso: string): [number, number, number] {
@@ -583,6 +599,7 @@ export function buildDashboardView(input: DashboardInput): DashboardView {
     today,
     dateLong: formatLongDate(today),
     dateShort: formatLongDate(today, false),
+    greeting: greetingFor(hourInParis()),
     firstName: input.firstName.trim(),
     companyName: company?.name?.trim() || null,
     isNewAccount,

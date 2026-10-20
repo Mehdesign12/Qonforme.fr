@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AutoDarkMode } from "@/components/layout/AutoDarkMode";
 import { PostHogProvider } from "@/components/shared/PostHogProvider";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AppleSplashScreens } from "@/components/pwa/AppleSplashScreens";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { ThemeColorSync } from "@/components/pwa/ThemeColorSync";
@@ -14,6 +15,7 @@ import { StandaloneFlag } from "@/components/pwa/StandaloneFlag";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { PLANS, VAT_COLLECTED } from "@/lib/stripe/plans";
+import { PUBLISHER } from "@/lib/legal/publisher";
 import { SentryReplay } from "@/components/shared/SentryReplay";
 import { CookieBanner } from "@/components/consent/CookieBanner";
 import { TrackingLoader } from "@/components/consent/TrackingLoader";
@@ -159,6 +161,7 @@ export default function RootLayout({
                 {
                   "@type": "Organization",
                   name: "Qonforme",
+                  legalName: PUBLISHER.name,
                   url: "https://qonforme.fr",
                   logo: "https://qonforme.fr/og-image.png",
                   description:
@@ -236,6 +239,7 @@ export default function RootLayout({
             </ReduxProvider>
           </PostHogProvider>
           <Analytics />
+          <SpeedInsights />
           {/*
            * Traceurs publicitaires (pixel Meta) : chargés seulement après l'accord du
            * visiteur, jamais sur les pages des clients de l'artisan (lib/consent.ts).

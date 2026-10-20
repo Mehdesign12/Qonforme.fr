@@ -1,5 +1,6 @@
 import { LegalLayout } from "@/components/legal/LegalLayout"
 import type { Metadata } from "next"
+import { PUBLISHER } from "@/lib/legal/publisher"
 
 export const metadata: Metadata = {
   title: "Mentions légales",
@@ -14,14 +15,20 @@ export default function MentionsLegalesPage() {
       titleAccent="légales"
       path="/mentions-legales"
       subtitle="Informations légales obligatoires conformément à la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN)."
-      lastUpdated="18 octobre 2026"
+      lastUpdated="19 octobre 2026"
     >
       <h2>1. Éditeur du site</h2>
       <p>
-        Le site <strong>qonforme.fr</strong> est édité par la société <strong>Qonforme SAS</strong>.
-        Pour toute demande, vous pouvez nous contacter à l&apos;adresse{" "}
-        <a href="mailto:contact@qonforme.fr">contact@qonforme.fr</a>.
+        Le site <strong>qonforme.fr</strong> est édité par la société <strong>{PUBLISHER.name}</strong>,{" "}
+        {PUBLISHER.form}. Elle exploite le service sous la marque <strong>Qonforme</strong>, qui n&apos;est pas une
+        société distincte.
       </p>
+      <ul>
+        <li><strong>Société :</strong> {PUBLISHER.name}</li>
+        {PUBLISHER.address && <li><strong>Siège social :</strong> {PUBLISHER.address}</li>}
+        {PUBLISHER.manager && <li><strong>Directeur de la publication :</strong> {PUBLISHER.manager}</li>}
+        <li><strong>Contact :</strong> <a href={`mailto:${PUBLISHER.contactEmail}`}>{PUBLISHER.contactEmail}</a></li>
+      </ul>
 
       <h2>2. Hébergement</h2>
 
@@ -40,7 +47,7 @@ export default function MentionsLegalesPage() {
       <h2>3. Propriété intellectuelle</h2>
       <p>
         L&apos;ensemble des contenus présents sur le site qonforme.fr (textes, images, logos, icônes, code source, interface
-        graphique) est la propriété exclusive de Qonforme SAS ou de ses partenaires, et est protégé par les lois françaises
+        graphique) est la propriété exclusive de {PUBLISHER.name} ou de ses partenaires, et est protégé par les lois françaises
         et internationales relatives à la propriété intellectuelle.
       </p>
       <p>
@@ -50,7 +57,7 @@ export default function MentionsLegalesPage() {
 
       <h2>4. Protection des données personnelles</h2>
       <p>
-        Qonforme SAS est responsable du traitement des données personnelles collectées sur le site, conformément au
+        {PUBLISHER.name} est responsable du traitement des données personnelles collectées sur le site, conformément au
         Règlement (UE) 2016/679 (RGPD) et à la loi n° 78-17 du 6 janvier 1978 modifiée.
       </p>
 

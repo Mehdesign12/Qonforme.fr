@@ -17,6 +17,7 @@
  */
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 import { Loader2, Search, CheckCircle2, Wand2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { isValidSiren, sirenToVAT } from "@/lib/utils/invoice"
@@ -73,6 +74,7 @@ export function CompanySettingsForm({
   initial?: Partial<CompanyFields> & { logo_url?: string | null; legal_profile?: LegalProfile | null; legal_notice?: string | null }
 }) {
   const demo = mode === "demo"
+  const router = useRouter()
   const { logo_url: initialLogo, legal_profile: initialProfile, legal_notice: initialNotice, ...initialFields } = initial ?? {}
   const start: CompanyFields = { ...EMPTY, ...initialFields }
   const startProfile = formFromProfile(initialProfile)
@@ -298,6 +300,8 @@ export function CompanySettingsForm({
       setSaved({ ...fields })
       setSavedProfile(profile)
       toast.success("Informations enregistrées")
+      // La coque (barre latérale, menu du compte) n'est plus relue à chaque navigation : elle reprend le nouveau nom
+      if (!demo) router.refresh()
     } catch (err) {
       console.error(err)
       toast.error("Erreur réseau")

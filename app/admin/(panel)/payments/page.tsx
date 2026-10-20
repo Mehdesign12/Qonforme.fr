@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { isAdminAuthenticated } from "@/lib/admin-require"
 import { CircleCheck, CircleX } from "lucide-react"
 import { PageHeader, Panel, StatusPill } from "@/components/app/kit"
+import { ActivityPanels, ModeTabs } from "@/components/admin/payments/ActivityPanels"
+import { loadActivity } from "@/lib/stripe/admin-activity"
 import { TestAccountsPanel } from "@/components/admin/payments/TestAccountsPanel"
 import { listTestAccounts } from "@/lib/stripe/test-accounts"
 import { stripeEnvStatus, type StripeMode } from "@/lib/stripe/mode"
@@ -38,17 +40,22 @@ function EnvList({ mode }: { mode: StripeMode }) {
   )
 }
 
-export default async function AdminPaymentsPage() {
+export default async function AdminPaymentsPage({ searchParams }: { searchParams: Promise<{ mode?: string }> }) {
   if (!(await isAdminAuthenticated())) redirect("/admin/login")
 
-  const accounts = await listTestAccounts()
+  const { mode: rawMode } = await searchParams
+  const mode: StripeMode = rawMode === "test" ? "test" : "live"
+  const [accounts, activity] = await Promise.all([listTestAccounts(), loadActivity(mode)])
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Paiements"
-        subtitle="Production et bac à sable Stripe, comptes d’essai"
+        subtitle="Encaissements, remboursements et abonnements Stripe, comptes d’essai"
+        actions={<ModeTabs mode={mode} />}
       />
+
+      <ActivityPanels mode={mode} activity={activity} />
 
       <Panel title="TVA sur l’abonnement" bodyClassName="px-5 pb-5">
         <p className="text-sm text-[var(--q-text-3)]">

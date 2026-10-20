@@ -5,7 +5,7 @@ import PricingSelector from '@/components/billing/PricingSelector'
 import { canIssueInvoices, safeNextPath } from '@/lib/stripe/access'
 import { recoverActiveSubscription } from '@/lib/stripe/recovery'
 import { modeOfSubscription } from '@/lib/stripe/mode'
-import { getUserStripeMode } from '@/lib/stripe/test-users'
+import { artisanOnSaleFor } from '@/lib/stripe/availability'
 import AuthLayout from '@/components/auth/AuthLayout'
 import { Serif } from '@/components/auth/AuthHeading'
 
@@ -34,8 +34,8 @@ export default async function ChoosePlanPage({
   const { data: { user } } = await supabase.auth.getUser()
 
   let alreadyActive = false
-  // Compte d'essai (Admin › Paiements) : il voit les formules vendables dans le bac à sable
-  const stripeMode = user ? await getUserStripeMode(user.id) : 'live'
+  // Artisan est-il vendable à ce compte ? (un compte d'essai voit les mêmes écrans que la production)
+  const artisanOnSale = await artisanOnSaleFor(user?.id)
   if (user) {
     const { data: sub } = await supabase
       .from('subscriptions')
@@ -75,7 +75,7 @@ export default async function ChoosePlanPage({
         </p>
       </div>
 
-      <PricingSelector isAuthenticated={!!user} backHref={backHref} next={next} showFree={!user} testMode={stripeMode === 'test'} />
+      <PricingSelector isAuthenticated={!!user} backHref={backHref} next={next} showFree={!user} artisanOnSale={artisanOnSale} />
     </AuthLayout>
   )
 }

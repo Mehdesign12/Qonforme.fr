@@ -1,0 +1,356 @@
+'use client'
+
+export const dynamic = "force-dynamic"
+
+import { downloadPdf, PdfDownloadError } from "@/lib/utils/download-pdf"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { toast } from "sonner"
+import { toastCompanyRequired } from "@/components/shared/company-required"
+import { FileX2, Loader2 } from "lucide-react"
+import { EmptyState } from "@/components/app/kit"
+import { createClient } from "@/lib/supabase/client"
+import {
+  QuoteDetailView, type QuoteDetailBusy, type QuoteDetailCompany, type QuoteDetailData,
+} from "@/components/quotes/QuoteDetailView"
+import { addDays, daysBetween, todayISO, type QuoteStatus } from "@/components/quotes/QuoteListHelpers"
+import { PaywallDialog } from "@/components/billing/PaywallDialog"
+import { SignaturePanel } from "@/components/signature/SignaturePanel"
+import { useSignaturePanel } from "@/components/signature/useSignaturePanel"
+import { selectCompanyWithProfile } from "@/lib/legal/db"
+import { QuoteBillingPanel } from "@/components/artisan/QuoteBillingPanel"
+import { useQuoteBilling } from "@/components/artisan/useQuoteBilling"
+import { conversionBlockedBy } from "@/lib/artisan/quote-billing"
+import { snapshotOf } from "@/lib/legal/mentions"
+
+/* ------------------------------------------------------------------ */
+/* Types                                                                */
+/* ------------------------------------------------------------------ */
+
+interface QuoteLine {
+  description: string
+  quantity: number
+  unit_price_ht: number
+  vat_rate: number
+  total_ht: number
+  total_vat?: number
+  total_ttc: number
+}
+
+interface Quote {
+  id: string
+  quote_number: string
+  status: QuoteStatus
+  issue_date: string
+  valid_until: string
+  lines: QuoteLine[]
+  subtotal_ht: number
+  total_vat: number
+  total_ttc: number
+  notes: string | null
+  client_id: string | null
+  converted_invoice_id: string | null
+  created_at: string
+  sent_at?: string | null
+  /** Mentions figées à l'envoi (lib/legal/mentions.ts) ; absent avant la migration. */
+  legal_snapshot?: unknown
+  client: {
+    id: string
+    name: string
+    email: string | null
+    address: string | null
+    zip_code: string | null
+    city: string | null
+    siren: string | null
+  } | null
+}
+
+const STATUS_LABELS: Record<QuoteStatus, string> = {
+  draft:    "Brouillon",
+  sent:     "Envoyé",
+  accepted: "Accepté",
+  rejected: "Refusé",
+  withdrawn: "Rétracté",
+}
+
+/* ------------------------------------------------------------------ */
+/* Composant                                                            */
+/* ------------------------------------------------------------------ */
+
+export default function QuoteDetailPage({ params }: { params: { id: string } }) {
+  const router = useRouter()
+  const [today] = useState(todayISO)
+  const [quote, setQuote]     = useState<Quote | null>(null)
+  const [company, setCompany] = useState<QuoteDetailCompany | null>(null)
+  const [invoice, setInvoice] = useState<{ invoice_number: string | null; status: string } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy]       = useState<QuoteDetailBusy>({})
+
+  const setFlag = (k: keyof QuoteDetailBusy, v: boolean) => setBusy((b) => ({ ...b, [k]: v }))
+
+  useEffect(() => {
+    const supabase = createClient()
+    Promise.all([
+      fetch(`/api/quotes/${params.id}`).then(r => r.json()),
+      // Mentions libres et profil légal (s'il existe) : pied de l'aperçu, comme le PDF
+      selectCompanyWithProfile(supabase, "name,address,zip_code,city,siret,siren,vat_number,legal_notice"),
+    ]).then(([json, { data: comp }]) => {
+      if (json.quote) setQuote(json.quote)
+      if (comp) setCompany(comp as QuoteDetailCompany)
+    }).finally(() => setLoading(false))
+  }, [params.id])
+
+  // Signature en ligne : le panneau se masque tant que la migration n'est pas appliquée.
+  // Un envoi pour signature fait sortir un brouillon ; une signature ou un refus change le statut.
+  const sig = useSignaturePanel("quote", params.id, (reason) => {
+    if (reason === "sent") {
+      setQuote((prev) => prev && prev.status === "draft" ? { ...prev, status: "sent" } : prev)
+      return
+    }
+    fetch(`/api/quotes/${params.id}`).then(r => r.json()).then((json) => {
+      if (json.quote) setQuote(json.quote)
+    }).catch(() => {})
+  })
+
+  // Facturation par acomptes et situations (formule Artisan) : devis accepté seulement
+  const artisan = useQuoteBilling(params.id, quote?.status === "accepted")
+
+  // Facture issue de la conversion : numéro et statut pour « Liés à ce devis »
+  const convertedId = quote?.converted_invoice_id ?? null
+  useEffect(() => {
+    if (!convertedId) { setInvoice(null); return }
+    createClient()
+      .from("invoices")
+      .select("invoice_number,status")
+      .eq("id", convertedId)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setInvoice(data) })
+  }, [convertedId])
+
+  /* ── Actions ── */
+
+  // Les changements de statut sont vérifiés par la route (lib/utils/document-status.ts)
+  const changeStatus = async (newStatus: "sent" | "accepted" | "rejected"): Promise<boolean> => {
+    if (!quote) return false
+    setFlag("status", true)
+    try {
+      const res  = await fetch(`/api/quotes/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error); return false }
+      // La route renvoie un client réduit : on garde la fiche client complète déjà chargée
+      setQuote((prev) => prev ? { ...prev, ...json.quote, client: prev.client } : json.quote)
+      toast.success(`Statut mis à jour : ${STATUS_LABELS[newStatus]}`)
+      return true
+    } catch { toast.error("Erreur réseau"); return false }
+    finally { setFlag("status", false) }
+  }
+
+  const downloadPDF = async () => {
+    if (!quote) return
+    setFlag("pdf", true)
+    try {
+      await downloadPdf(`/api/quotes/${params.id}/pdf`, `${quote.quote_number}.pdf`)
+      toast.success("PDF téléchargé")
+    } catch (e) { toast.error(e instanceof PdfDownloadError ? e.message : "Erreur lors du téléchargement") }
+    finally { setFlag("pdf", false) }
+  }
+
+  const deleteQuote = async () => {
+    if (!quote) return
+    setFlag("delete", true)
+    try {
+      const res = await fetch(`/api/quotes/${params.id}`, { method: "DELETE" })
+      if (res.ok) { toast.success("Brouillon supprimé"); router.push("/quotes") }
+      else { const json = await res.json(); toast.error(json.error) }
+    } catch { toast.error("Erreur réseau") }
+    finally { setFlag("delete", false) }
+  }
+
+  // Envoi (brouillon) ou renvoi (devis déjà envoyé) : la route ne change pas un statut accepté ou refusé
+  const sendByEmail = async (): Promise<boolean> => {
+    if (!quote) return false
+    setFlag("send", true)
+    try {
+      const res  = await fetch(`/api/quotes/${params.id}/send`, { method: "POST" })
+      const json = await res.json()
+      if (toastCompanyRequired(res.status, json)) return false
+      if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return false }
+      setQuote({
+        ...quote,
+        status: quote.status === "draft" ? "sent" : quote.status,
+        sent_at: new Date().toISOString(),
+        // Un brouillon envoyé a désormais ses mentions figées (relues au prochain chargement)
+        legal_snapshot: quote.legal_snapshot ?? (quote.status === "draft" ? snapshotOf(company) : undefined),
+      })
+      toast.success(`Devis envoyé à ${json.sentTo}`)
+      void sig.reload()
+      return true
+    } catch { toast.error("Erreur réseau"); return false }
+    finally { setFlag("send", false) }
+  }
+
+  // Conversion sans mur de paiement : la facture naît en brouillon, l'émission reste contrôlée à l'envoi
+  const convertToInvoice = async () => {
+    if (!quote) return
+    setFlag("convert", true)
+    try {
+      const res  = await fetch(`/api/quotes/${params.id}/convert`, { method: "POST" })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error); return }
+      toast.success("Devis converti en facture")
+      router.push(`/invoices/${json.invoice.id}`)
+    } catch { toast.error("Erreur réseau") }
+    finally { setFlag("convert", false) }
+  }
+
+  // Duplication : un nouveau brouillon (création toujours en brouillon côté serveur), même client,
+  // mêmes lignes, daté du jour avec la même durée de validité.
+  const duplicate = async () => {
+    if (!quote) return
+    setFlag("duplicate", true)
+    try {
+      const validity = Math.max(1, daysBetween(quote.issue_date, quote.valid_until) || 30)
+      const res = await fetch("/api/quotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id:   quote.client_id ?? quote.client?.id ?? null,
+          issue_date:  today,
+          valid_until: addDays(today, validity),
+          notes:       quote.notes,
+          // Totaux de ligne recalculés si une ancienne ligne n'en a pas : la route additionne total_ht et total_vat
+          lines: (quote.lines ?? []).map((l) => {
+            const total_ht  = Number(l.total_ht) || 0
+            const total_vat = l.total_vat ?? Math.round(total_ht * Number(l.vat_rate)) / 100
+            return { ...l, total_ht, total_vat, total_ttc: l.total_ttc ?? Math.round((total_ht + total_vat) * 100) / 100 }
+          }),
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.quote) { toast.error(json.error ?? "La copie n'a pas pu être créée"); return }
+      toast.success(`Copie créée : ${json.quote.quote_number}`)
+      router.push(`/quotes/${json.quote.id}/edit`)
+    } catch { toast.error("Erreur réseau") }
+    finally { setFlag("duplicate", false) }
+  }
+
+  /* ── Render ── */
+  if (loading) return (
+    <div className="grid min-h-[50vh] place-items-center">
+      <Loader2 className="size-7 animate-spin text-[var(--q-accent)]" aria-label="Chargement du devis" />
+    </div>
+  )
+
+  if (!quote) return (
+    <div className="q-card">
+      <EmptyState
+        icon={<FileX2 className="size-6" strokeWidth={1.75} aria-hidden />}
+        title="Devis introuvable"
+        text="Il a peut-être été supprimé, ou le lien est incomplet."
+        action={<Link href="/quotes" className="q-btn q-btn-secondary">Retour aux devis</Link>}
+      />
+    </div>
+  )
+
+  const data: QuoteDetailData = {
+    id: quote.id,
+    quote_number: quote.quote_number,
+    status: quote.status,
+    issue_date: quote.issue_date,
+    valid_until: quote.valid_until,
+    created_at: quote.created_at,
+    sent_at: quote.sent_at ?? null,
+    lines: (quote.lines ?? []).map((l) => ({
+      description: l.description,
+      quantity: Number(l.quantity) || 0,
+      unit_price_ht: Number(l.unit_price_ht) || 0,
+      vat_rate: Number(l.vat_rate) || 0,
+      total_ht: Number(l.total_ht) || 0,
+      total_vat: l.total_vat ?? null,
+      vat_treatment: (l as { vat_treatment?: string | null }).vat_treatment ?? null,
+    })),
+    subtotal_ht: Number(quote.subtotal_ht) || 0,
+    total_vat: Number(quote.total_vat) || 0,
+    total_ttc: Number(quote.total_ttc) || 0,
+    notes: quote.notes,
+    client: quote.client ? { ...quote.client, href: `/clients/${quote.client.id}` } : null,
+    converted: !!quote.converted_invoice_id,
+    converted_invoice: quote.converted_invoice_id
+      ? { number: invoice?.invoice_number ?? null, status: invoice?.status ?? null, href: `/invoices/${quote.converted_invoice_id}` }
+      : null,
+    legal_snapshot: quote.legal_snapshot,
+  }
+
+  const signature = sig.data?.available ? (
+    <SignaturePanel
+      docType="quote"
+      docNumber={quote.quote_number}
+      docStatus={quote.status}
+      totalTtc={data.total_ttc}
+      validUntil={quote.valid_until}
+      today={today}
+      clientName={quote.client?.name ?? null}
+      clientEmail={quote.client?.email ?? null}
+      clientHref={quote.client ? `/clients/${quote.client.id}` : null}
+      data={sig.data}
+      busy={sig.busy}
+      actions={sig.actions}
+      settingsHref="/settings/invoices"
+    />
+  ) : undefined
+  const sendNote = sig.data?.available
+    ? sig.data.access && sig.data.enabled
+      ? "L'email contient aussi un lien pour lire et signer le devis en ligne."
+      : "L'email contient aussi un lien pour consulter le devis en ligne."
+    : undefined
+
+  const billingData = artisan.data?.available && artisan.data.billing ? artisan.data.billing : null
+  const billing = billingData && quote.status === "accepted" ? (
+    <QuoteBillingPanel
+      billing={billingData}
+      artisan={artisan.data?.artisan ?? null}
+      clientName={quote.client?.name ?? null}
+      today={today}
+      invoiceHref={(inv) => `/invoices/${inv.id}`}
+      chantierHref={(id) => `/chantiers/${id}`}
+      freeDeposits={artisan.data?.freeDeposits ?? []}
+      creating={artisan.creating}
+      onCreate={artisan.create}
+      onAttachDeposit={artisan.attachDeposit}
+      onLocked={() => artisan.setPaywall(true)}
+    />
+  ) : undefined
+
+  return (
+    <>
+    <PaywallDialog open={sig.paywall} onOpenChange={sig.setPaywall} reason="signature" nextPath={`/quotes/${params.id}`} />
+    <PaywallDialog open={artisan.paywall} onOpenChange={artisan.setPaywall} reason="artisan" nextPath={`/quotes/${params.id}`} />
+    <QuoteDetailView
+      quote={data}
+      company={company}
+      today={today}
+      busy={busy}
+      signature={signature}
+      sendNote={sendNote}
+      billing={billing}
+      conversionBlocked={billingData ? conversionBlockedBy(billingData.invoices) : null}
+      links={{ list: "/quotes", newQuote: "/quotes/new", companySettings: "/settings/company" }}
+      actions={{
+        onDownloadPdf: downloadPDF,
+        onPrint: () => window.print(),
+        onDuplicate: duplicate,
+        editHref: quote.status === "draft" ? `/quotes/${params.id}/edit` : undefined,
+        onDelete: deleteQuote,
+        onSend: sendByEmail,
+        onSetStatus: changeStatus,
+        onConvert: convertToInvoice,
+      }}
+    />
+    </>
+  )
+}

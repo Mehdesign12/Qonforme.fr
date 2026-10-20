@@ -7,8 +7,9 @@ import PublicHeaderWrapper from '@/components/layout/PublicHeaderWrapper'
 import { Doodles } from '@/components/brand/Doodles'
 import { pictosFor } from '@/components/brand/pictos'
 import { MetaPixelEvent } from '@/components/shared/MetaPixelEvent'
-import { PLANS, TAX_SUFFIX, VAT_COLLECTED, formatEuros } from '@/lib/stripe/plans'
+import { PAYMENT_METHODS_TEXT, PLANS, TAX_SUFFIX, VAT_COLLECTED, formatEuros } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
+import { artisanOnSaleFor } from '@/lib/stripe/availability'
 
 const essentiel = PLANS.starter
 
@@ -31,11 +32,11 @@ export const dynamic = 'force-dynamic'
 const nbsp = (text: string) => text.replace(/ ([?:;!€%])/g, '\u00A0$1')
 
 const FAQ = ([
-  { question: "Faut-il une carte bancaire pour commencer ?", reponse: "Non. Les devis sont gratuits et illimités. La carte bancaire ou le prélèvement SEPA ne sont demandés qu'au moment d'envoyer votre première facture." },
+  { question: "Faut-il une carte bancaire pour commencer ?", reponse: "Non. Les devis sont gratuits et illimités. Le moyen de paiement n'est demandé qu'au moment d'envoyer votre première facture." },
   { question: `Que comprend la formule ${essentiel.name} ?`, reponse: `${essentiel.features.map((f, i) => (i === 0 ? f : f.charAt(0).toLowerCase() + f.slice(1))).join(', ')}. ${formatEuros(essentiel.monthlyPrice)}${TAX_SUFFIX} par mois, ou ${formatEuros(essentiel.yearlyPrice)}${TAX_SUFFIX} par an.` },
   { question: "Et si Qonforme ne me convient pas ?", reponse: `Vous êtes remboursé intégralement dans les ${GUARANTEE_DAYS} jours qui suivent votre premier paiement, sans avoir à vous justifier, directement depuis votre espace. Vos documents restent consultables et téléchargeables.` },
   { question: "Puis-je résilier à tout moment ?", reponse: "Oui, sans engagement. La résiliation se fait depuis Paramètres › Abonnement et prend effet à la fin de la période déjà payée. Vos factures restent consultables après résiliation." },
-  { question: "Comment payer ?", reponse: VAT_COLLECTED ? "Par carte bancaire ou par prélèvement SEPA. Les prix sont hors taxes : la TVA à 20 % s'y ajoute." : "Par carte bancaire ou par prélèvement SEPA. Le prix affiché est le montant prélevé." },
+  { question: "Comment payer ?", reponse: VAT_COLLECTED ? `Par ${PAYMENT_METHODS_TEXT}. Les prix sont hors taxes : la TVA à 20 % s'y ajoute.` : `Par ${PAYMENT_METHODS_TEXT}. Le prix affiché est le montant prélevé.` },
   PLANS.pro.available
     ? { question: `Que comprend la formule ${PLANS.pro.name} ?`, reponse: `Tout ${essentiel.name}, plus le suivi par chantier, les factures d'acompte, les situations de travaux, la retenue de garantie et l'autoliquidation en sous-traitance. ${formatEuros(PLANS.pro.monthlyPrice)}${TAX_SUFFIX} par mois, ou ${formatEuros(PLANS.pro.yearlyPrice)}${TAX_SUFFIX} par an.` }
     : { question: `La formule ${PLANS.pro.name} est-elle disponible ?`, reponse: `Ses fonctions sont prêtes : suivi par chantier, factures d'acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance. Vous pouvez les essayer dans la démo. La formule n'est pas encore en vente.` },
@@ -46,6 +47,7 @@ const FAQ = ([
 export default async function PricingPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const artisanOnSale = await artisanOnSaleFor(user?.id)
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -86,7 +88,7 @@ export default async function PricingPage() {
 
           {/* Formules */}
           <section aria-label="Formules" className="mx-auto max-w-[1200px] px-4 pt-8 sm:px-6 sm:pt-10">
-            <PricingSelector isAuthenticated={!!user} />
+            <PricingSelector isAuthenticated={!!user} artisanOnSale={artisanOnSale} />
           </section>
 
           {/* Comparaison */}

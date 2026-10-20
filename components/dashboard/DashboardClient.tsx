@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { hasSeenOnboardingLocally, markOnboardingSeen } from '@/components/dashboard/onboarding'
+import { RESUME_INSCRIPTION_EVENT } from '@/components/dashboard/resume-inscription'
 import type { InscriptionDialogProps } from '@/components/onboarding/InscriptionDialog'
 
 // Chargement lazy du modal (évite d'alourdir le bundle principal)
@@ -53,6 +54,31 @@ export default function DashboardClient({ showWelcome, inline = false, inscripti
   // Rouvre seulement quand la page le demande (ouverture, ou tuile « Reprendre »)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wantsOpen, resume])
+
+  // Tuile « Terminer votre inscription » : la fenêtre s'ouvre sur place, sans navigation
+  useEffect(() => {
+    if (!inscription) return
+    const onResume = (e: Event) => {
+      e.preventDefault()
+      setLaunch({ ...inscription, open: true, resume: true })
+    }
+    window.addEventListener(RESUME_INSCRIPTION_EVENT, onResume)
+    return () => window.removeEventListener(RESUME_INSCRIPTION_EVENT, onResume)
+  }, [inscription])
+
+  // Le code de la fenêtre se charge dès que la page est au repos : le toucher de la tuile ne l'attend pas
+  const hasInscription = !!inscription
+  useEffect(() => {
+    if (!hasInscription) return
+    const preload = () => { void import('@/components/onboarding/InscriptionDialog') }
+    const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback
+    if (idle) {
+      const id = idle(preload, { timeout: 3000 })
+      return () => (window as Window & { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback?.(id)
+    }
+    const t = setTimeout(preload, 1500)
+    return () => clearTimeout(t)
+  }, [hasInscription])
 
   useEffect(() => {
     if (!showWelcome) return

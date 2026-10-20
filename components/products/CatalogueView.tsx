@@ -21,6 +21,7 @@ import { formatCurrency, VAT_RATES } from "@/lib/utils/invoice"
 import { cn } from "@/lib/utils"
 import type { TradeId, VatRegime } from "@/lib/legal/profile"
 import { TradeImportDialog, type TradeImportRequest } from "@/components/products/TradeImportDialog"
+import { SheetGrip } from "@/components/ui/sheet-grip"
 
 export interface CatalogueProduct {
   id: string
@@ -538,7 +539,7 @@ function ProductDialog({
         )}
       >
         <form onSubmit={handleSubmit} noValidate className="flex min-h-0 flex-1 flex-col">
-          <span className="q-sheet-grip md:hidden" aria-hidden />
+          <SheetGrip className="md:hidden" />
           <div className="flex items-start justify-between gap-3 px-4 pt-3 md:px-[22px] md:pt-5">
             <div className="flex flex-col gap-1">
               <DialogTitle className="q-display text-[22px] font-semibold leading-tight tracking-[-0.02em]">

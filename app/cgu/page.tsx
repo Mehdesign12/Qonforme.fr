@@ -1,6 +1,7 @@
 import { LegalLayout } from "@/components/legal/LegalLayout"
 import type { Metadata } from "next"
-import { PLANS, VAT_COLLECTED, formatEuros } from "@/lib/stripe/plans"
+import { PAYMENT_METHODS_TEXT, PLANS, VAT_COLLECTED, formatEuros } from "@/lib/stripe/plans"
+import { PUBLISHER } from "@/lib/legal/publisher"
 
 export const metadata: Metadata = {
   title: "Conditions Générales d'Utilisation",
@@ -15,12 +16,13 @@ export default function CGUPage() {
       titleAccent="d'utilisation"
       path="/cgu"
       subtitle="Merci de lire attentivement ces conditions avant d'utiliser Qonforme."
-      lastUpdated="2 octobre 2026"
+      lastUpdated="20 octobre 2026"
     >
       <h2>Article 1 — Objet</h2>
       <p>
         Les présentes Conditions Générales d&apos;Utilisation (ci-après « CGU ») régissent l&apos;accès et l&apos;utilisation
-        du service Qonforme (ci-après « le Service »), éditée par la société Qonforme SAS.
+        du service Qonforme (ci-après « le Service »), édité par la société {PUBLISHER.name}, {PUBLISHER.form}.
+        « Qonforme » désigne la marque sous laquelle {PUBLISHER.name} exploite le Service et le vend à l&apos;Utilisateur.
         En créant un compte, l&apos;Utilisateur accepte sans réserve les présentes CGU.
       </p>
 
@@ -84,7 +86,7 @@ export default function CGUPage() {
       </p>
       <h3>4.2 Paiement</h3>
       <p>
-        Le paiement est traité par Stripe, par carte bancaire ou par prélèvement SEPA. L&apos;Utilisateur est débité à la
+        Le paiement est traité par Stripe, par {PAYMENT_METHODS_TEXT}. L&apos;Utilisateur est débité à la
         souscription, puis automatiquement à chaque échéance (mensuelle ou annuelle). Les factures d&apos;abonnement sont
         disponibles depuis <strong>Paramètres → Abonnement</strong>.
       </p>
@@ -127,7 +129,7 @@ export default function CGUPage() {
       <h2>Article 6 — Propriété intellectuelle</h2>
       <p>
         L&apos;ensemble des éléments constitutifs du Service (code source, interfaces, graphismes, marques, logos) est la
-        propriété exclusive de Qonforme SAS ou de ses concédants. Toute reproduction, représentation ou utilisation à des
+        propriété exclusive de {PUBLISHER.name} ou de ses concédants. Toute reproduction, représentation ou utilisation à des
         fins autres que l&apos;usage personnel du Service est interdite sans autorisation écrite préalable.
       </p>
       <p>

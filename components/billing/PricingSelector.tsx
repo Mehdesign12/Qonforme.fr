@@ -4,11 +4,11 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Check, Clock, ShieldCheck } from 'lucide-react'
 import {
+  PAYMENT_METHODS_TEXT,
   PLANS,
   FREE_FEATURES,
   VAT_COLLECTED,
   formatEuros,
-  isPlanAvailable,
   withVat,
   type BillingPeriod,
   type Plan,
@@ -31,11 +31,11 @@ export default function PricingSelector({
   backHref,
   next = null,
   showFree = true,
-  testMode = false,
+  artisanOnSale,
 }: {
   isAuthenticated?: boolean
-  /** Compte d'essai : les formules vendables dans le bac à sable Stripe sont proposées. */
-  testMode?: boolean
+  /** Artisan est-il vendable à ce compte ? Décidé côté serveur (un compte d'essai le voit en vente). */
+  artisanOnSale?: boolean
   /** Colonne « Devis » gratuite — masquée pour un compte qui l'a déjà et vient choisir sa formule. */
   showFree?: boolean
   /** Lien « retour » affiché au-dessus de la grille (absent sur la page Tarifs). */
@@ -44,9 +44,8 @@ export default function PricingSelector({
   next?: string | null
 }) {
   const [period, setPeriod] = useState<BillingPeriod>('yearly')
-  const mode = testMode ? 'test' : 'live'
-  const essentiel = { ...PLANS.starter, available: isPlanAvailable(PLANS.starter, mode) || PLANS.starter.available }
-  const artisan = { ...PLANS.pro, available: isPlanAvailable(PLANS.pro, mode) }
+  const essentiel = PLANS.starter
+  const artisan = { ...PLANS.pro, available: artisanOnSale ?? PLANS.pro.available }
 
   const checkoutHref = (plan: Plan) => {
     const params = new URLSearchParams({ plan: plan.id, period })
@@ -152,7 +151,7 @@ export default function PricingSelector({
               <SoonButton />
             )}
             <p className="text-center text-xs text-q-text-4">
-              {isAuthenticated ? 'Carte bancaire ou prélèvement SEPA' : 'La formule se choisit à votre première facture'}
+              {isAuthenticated ? `Paiement par ${PAYMENT_METHODS_TEXT}` : 'La formule se choisit à votre première facture'}
             </p>
           </div>
           <FeatureList items={essentiel.features} />

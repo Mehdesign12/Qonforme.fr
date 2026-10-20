@@ -314,3 +314,44 @@ describe("routes admin des comptes d'essai", () => {
     expect(res.status).toBe(400)
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Le compte d'essai voit les mêmes écrans que la production
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { artisanOnSaleFor } from "@/lib/stripe/availability"
+import { requireArtisanAccess } from "@/lib/artisan/access"
+import { createClient } from "@/lib/supabase/server"
+import { GET as subscriptionStatus } from "@/app/api/subscription/status/route"
+
+describe("Artisan : vendable à un compte d'essai dès ses prix d'essai, comme en production", () => {
+  beforeEach(() => { state.userMode = "live"; state.subscription = null })
+
+  it("décidé côté serveur : essai → en vente, production → réglage public", async () => {
+    state.userMode = "test"
+    expect(await artisanOnSaleFor("user-1")).toBe(true)
+    state.userMode = "live"
+    expect(await artisanOnSaleFor("user-1")).toBe(PLANS.pro.available)
+    state.userMode = null // mode illisible : jamais deviné, réglage public
+    expect(await artisanOnSaleFor("user-1")).toBe(PLANS.pro.available)
+    expect(await artisanOnSaleFor(null)).toBe(PLANS.pro.available)
+  })
+
+  it("/api/subscription/status le transmet aux écrans du navigateur", async () => {
+    state.userMode = "test"
+    expect(await (await subscriptionStatus()).json()).toEqual({ status: null, plan: null, artisanOnSale: true })
+    state.userMode = "live"
+    expect((await (await subscriptionStatus()).json()).artisanOnSale).toBe(PLANS.pro.available)
+  })
+
+  it("le mur Artisan (402) annonce la formule en vente à un compte d'essai", async () => {
+    const supabase = await createClient()
+    state.userMode = "test"
+    const test = await requireArtisanAccess(supabase as never, "user-1")
+    expect(test?.status).toBe(402)
+    expect((await test!.json()).onSale).toBe(true)
+    state.userMode = "live"
+    const live = await requireArtisanAccess(supabase as never, "user-1")
+    expect((await live!.json()).onSale).toBe(PLANS.pro.available)
+  })
+})

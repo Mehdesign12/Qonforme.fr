@@ -50,7 +50,7 @@
 
 Dans l'ordre. Les étapes 1 à 4 se font cette semaine.
 
-0. **Vérifier la société éditrice.** Super PDP exige pour la production un représentant légal et une entreprise vérifiés. Les mentions légales du site citent « Qonforme SAS » sans SIREN : les compléter.
+0. **Vérifier la société éditrice.** Super PDP exige pour la production un représentant légal et une entreprise vérifiés. Les mentions légales du site citaient « Qonforme SAS » sans SIREN ; l'éditeur est en réalité Diez Agency LLC (Wyoming), corrigé le 19/10/2026 (DECISIONS § 14.1) : la vérification demandée par la plateforme porte donc sur la LLC.
 1. **Ouvrir le bac à sable** (15 min) : compte « Développeur⋅euse » sur superpdp.tech, création d'une application OAuth de test. Les clés vont seulement dans l'environnement Preview de Vercel.
 2. **Archiver en PDF** la page tarifs, les CG, la politique de données et la liste DGFiP : ces pages changent sans prévenir.
 3. **Écrire à Super PDP** avec les questions de la section 8 et demander des réponses écrites. C'est un achat chez un fournisseur, pas du démarchage. **Pas d'ouverture à tous avant ces réponses.**
@@ -200,7 +200,7 @@ Les fourchettes viennent de ce que la grille ne dit pas : les paliers s'applique
 - Accès à l'annuaire avec les identifiants de Qonforme, portée des limites d'appels, paramètre exact de téléchargement de l'original.
 - Délais de revue manuelle et d'activation de l'annuaire (les « 3 jours ouvrés » du concurrent sont son affirmation).
 - Hébergement de Super PDP en France ou seulement dans l'Union européenne.
-- Existence et SIREN de la société éditrice « Qonforme SAS ».
+- Existence de la société éditrice, Diez Agency LLC (société du Wyoming, pas de SIREN français : vérifier ce que la plateforme accepte).
 - Efforts de développement et volumes par artisan : estimations.
 - Conformité du Factur-X de Qonforme aux règles de juin 2026 et acceptation par Super PDP en émission.
 

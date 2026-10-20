@@ -13,6 +13,7 @@
  * fenêtre à cette étape. Sur téléphone, le logo long Qonforme coiffe la page.
  */
 import Link from "next/link"
+import { ResumeTileLink } from "@/components/dashboard/ResumeTileLink"
 import { ArrowRight, Building2, FileCheck2, FileText, ImagePlus, UserPlus } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { cn } from "@/lib/utils"
@@ -51,29 +52,33 @@ function resumeHref(mode: DashMode): string {
 function ResumeTile({ inscription, mode }: { inscription: DashInscription; mode: DashMode }) {
   const done = inscription.number - 1
   return (
-    <Link href={resumeHref(mode)} className={cn(TILE, "!border-[var(--q-wash-line)]")}>
+    <ResumeTileLink href={resumeHref(mode)} className={cn(TILE, "!border-[var(--q-wash-line)] !bg-[var(--q-wash)]")}>
       <span className="mb-2.5 flex items-start">
-        <Building2 className="size-[26px] shrink-0" strokeWidth={1.25} aria-hidden />
+        <Building2 className="size-[26px] shrink-0 text-[var(--q-accent)]" strokeWidth={1.25} aria-hidden />
       </span>
       <span className="text-lg font-semibold tracking-[-0.01em]">Terminer votre inscription</span>
-      <span className="text-[15px] leading-normal text-[var(--q-text-3)]">{RESUME_TEXT[inscription.step]}</span>
-      <span className="mt-1.5 flex items-center gap-2.5">
-        <span className="flex gap-1" aria-hidden>
-          {Array.from({ length: inscription.total }, (_, i) => (
-            <span
-              key={i}
-              className={cn("h-1 w-[22px] rounded-full", i < done ? "bg-[var(--q-accent)]" : "bg-[var(--q-line)]")}
-            />
-          ))}
+      <span className="text-[15px] leading-normal text-[var(--q-text-3)]">
+        {inscription.draft ? "Vos saisies sont gardées : reprenez où vous en étiez." : RESUME_TEXT[inscription.step]}
+      </span>
+      <span className="mt-1.5 flex flex-col items-start gap-2">
+        <span className="flex items-center gap-2.5">
+          <span className="flex gap-1" aria-hidden>
+            {Array.from({ length: inscription.total }, (_, i) => (
+              <span
+                key={i}
+                className={cn("h-1 w-4 rounded-full", i < done ? "bg-[var(--q-accent)]" : "bg-[var(--q-line)]")}
+              />
+            ))}
+          </span>
+          <span className="whitespace-nowrap text-[13px] text-[var(--q-text-4)]">
+            Étape {inscription.number} sur {inscription.total}
+          </span>
         </span>
-        <span className="whitespace-nowrap text-[13px] text-[var(--q-text-4)]">
-          Étape {inscription.number} sur {inscription.total}
-        </span>
-        <span className="ml-auto whitespace-nowrap text-[14px] font-semibold text-[var(--q-accent-strong)]">
+        <span className="whitespace-nowrap text-[14px] font-semibold text-[var(--q-accent-strong)]">
           Reprendre <span aria-hidden>→</span>
         </span>
       </span>
-    </Link>
+    </ResumeTileLink>
   )
 }
 
@@ -101,7 +106,11 @@ export function GettingStarted({ view }: { view: DashboardView }) {
 
       <div className="flex flex-col gap-1.5">
         <span className="text-sm text-[var(--q-text-4)]">{view.dateLong}</span>
-        <h1 className="q-h1">{view.firstName ? `Bienvenue, ${view.firstName}.` : "Bienvenue."}</h1>
+        <h1 className="q-h1" suppressHydrationWarning>
+          {view.greeting.word}
+          {view.firstName ? <>, <em className="q-serif">{view.firstName}</em></> : null}
+          <span aria-hidden className="ml-2 inline-block text-[.82em]">{view.greeting.emoji}</span>
+        </h1>
         <p className="text-base text-[var(--q-text-3)]">Explorez librement&nbsp;: rien ne part sans vous.</p>
       </div>
 
@@ -112,7 +121,7 @@ export function GettingStarted({ view }: { view: DashboardView }) {
           {tiles.map(({ key, path, Icon, title, text }) => (
             <Link key={key} href={hrefFor(view.mode, path)} className={TILE}>
               <span className="mb-2.5 flex items-start justify-between">
-                <Icon className="size-[26px] shrink-0" strokeWidth={1.25} aria-hidden />
+                <Icon className="size-[26px] shrink-0 text-[var(--q-accent)]" strokeWidth={1.25} aria-hidden />
                 <ArrowRight
                   className="size-[18px] shrink-0 text-[var(--q-placeholder)] transition-[color,transform] duration-200 group-hover:translate-x-[3px] group-hover:text-[var(--q-accent-strong)] motion-reduce:group-hover:translate-x-0"
                   strokeWidth={1.25}
