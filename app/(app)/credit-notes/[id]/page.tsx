@@ -2,6 +2,7 @@
 
 export const dynamic = "force-dynamic"
 
+import { downloadPdf, PdfDownloadError } from "@/lib/utils/download-pdf"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -88,16 +89,9 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
     if (!note) return
     setPdfLoading(true)
     try {
-      const res = await fetch(`/api/credit-notes/${params.id}/pdf`)
-      if (!res.ok) { toast.error("Erreur lors de la génération du PDF"); return }
-      const blob = await res.blob()
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement("a")
-      a.href = url; a.download = `${note.credit_note_number}.pdf`
-      document.body.appendChild(a); a.click()
-      document.body.removeChild(a); URL.revokeObjectURL(url)
+      await downloadPdf(`/api/credit-notes/${params.id}/pdf`, `${note.credit_note_number}.pdf`)
       toast.success("PDF téléchargé")
-    } catch { toast.error("Erreur lors du téléchargement") }
+    } catch (e) { toast.error(e instanceof PdfDownloadError ? e.message : "Erreur lors du téléchargement") }
     finally { setPdfLoading(false) }
   }
 

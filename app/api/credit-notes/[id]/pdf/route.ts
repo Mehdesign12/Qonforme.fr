@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     const buffer = await generateCreditNotePdf({ creditNote, company })
 
-    return new Response(buffer.buffer as ArrayBuffer, {
+    return new Response(new Uint8Array(buffer), {
       status: 200,
       headers: {
         "Content-Type":        "application/pdf",

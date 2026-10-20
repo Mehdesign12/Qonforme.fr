@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       watermark: "APERÇU",
     })
 
-    return new Response(buffer.buffer as ArrayBuffer, {
+    return new Response(new Uint8Array(buffer), {
       status: 200,
       headers: {
         "Content-Type":        "application/pdf",
