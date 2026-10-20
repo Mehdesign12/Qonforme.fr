@@ -43,6 +43,12 @@ interface AuthLayoutProps {
     right?: React.ReactNode
     logoHref?: string
   }
+  /**
+   * Carte centrée sur le fond, sans photo (connexion et inscription, piste « A »
+   * choisie le 20/10/2026) : logo et `topRight` en haut sur toute la largeur,
+   * contenu dans une carte blanche.
+   */
+  card?: boolean
   /** Largeur de la colonne de contenu (défaut md = 448 px, 400 px avec `aside`). */
   maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "wide"
 }
@@ -80,7 +86,7 @@ function Glow({ className }: { className?: string }) {
 }
 
 export default function AuthLayout({
-  children, aside, asideVariant = "panel", mobileBand, topRight, bar, maxWidth = "md",
+  children, aside, asideVariant = "panel", mobileBand, topRight, bar, card, maxWidth = "md",
 }: AuthLayoutProps) {
   const photo = Boolean(aside) && asideVariant === "photo"
 
@@ -103,6 +109,23 @@ export default function AuthLayout({
         {maxWidth !== "wide" && <Doodles layout="auth" from={maxWidth === "2xl" ? 1180 : 1100} {...PICTOS} />}
         <main className={cn("relative mx-auto flex w-full flex-1 flex-col gap-5 px-4 pb-16 pt-8 sm:px-5 md:pt-14", widthMap[maxWidth])}>
           {children}
+        </main>
+      </div>
+    )
+  }
+
+  /* ── Carte centrée, sans photo ──────────────────────────────────────── */
+  if (card) {
+    return (
+      <div className="relative flex flex-col bg-q-bg px-4 sm:px-8" style={SAFE_AREA}>
+        <header className="relative mx-auto flex min-h-8 w-full max-w-[1200px] items-center justify-between gap-4 pb-2 pt-[22px] sm:pt-7">
+          <AuthLogo height={20} />
+          {topRight}
+        </header>
+        <main className="relative mx-auto flex w-full max-w-[480px] flex-1 flex-col justify-start pb-10 pt-4 sm:justify-center sm:pb-16 sm:pt-6">
+          <div className="rounded-[24px] border border-q-line bg-q-surface px-5 pb-6 pt-7 sm:px-12 sm:pb-10 sm:pt-11">
+            {children}
+          </div>
         </main>
       </div>
     )
