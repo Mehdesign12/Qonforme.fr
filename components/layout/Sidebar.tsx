@@ -17,7 +17,7 @@ import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import {
-  Plus, Ellipsis, ChevronRight, ShieldCheck, Sparkles, Bug, MessageSquare,
+  Ellipsis, ChevronRight, ShieldCheck, Bug, MessageSquare,
   LogOut, House, CreditCard, Building2, FileCog, FlaskConical, ArrowRight, Search,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -31,6 +31,8 @@ import {
 } from "@/components/layout/nav"
 import { type ShellIdentity, fullNameOf, formatSiren } from "@/components/layout/shell"
 import { useLogout } from "@/components/layout/useLogout"
+import { MorphButton } from "@/components/layout/MorphButton"
+import { useEditorAction } from "@/lib/ui/editor-action"
 import { SheetGrip } from "@/components/ui/sheet-grip"
 
 /* ------------------------------------------------------------------ */
@@ -119,13 +121,7 @@ function StatusCard({ identity }: { identity: ShellIdentity }) {
   if (!identity.planName) {
     return (
       <Link href="/settings/billing" className="block rounded-xl border border-[var(--q-wash-line)] bg-[var(--q-wash)] p-3 text-[var(--q-ink)]">
-        <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--q-accent-strong)]">
-          <Sparkles className="size-4" aria-hidden />
-          Version gratuite
-        </span>
-        <span className="mt-1 block text-xs leading-relaxed text-[var(--q-text-3)]">
-          Devis, clients et brouillons illimités. L&apos;envoi des factures demande la formule Essentiel.
-        </span>
+        <span className="block text-[13px] font-semibold text-[var(--q-accent-strong)]">Version gratuite</span>
         <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--q-accent-strong)]">
           Voir les formules <ArrowRight className="size-3.5" aria-hidden />
         </span>
@@ -377,6 +373,7 @@ function PlusSheet({ open, onOpenChange, identity, onBug, onContact }: {
 export function MobileBottomNav({ identity }: { identity: ShellIdentity }) {
   const pathname = usePathname()
   const mode = identity.mode
+  const action = useEditorAction()
   const [createOpen, setCreateOpen] = useState(false)
   const [plusOpen, setPlusOpen] = useState(false)
   const [bugOpen, setBugOpen] = useState(false)
@@ -427,17 +424,7 @@ export function MobileBottomNav({ identity }: { identity: ShellIdentity }) {
         style={{ bottom: "max(16px, env(safe-area-inset-bottom))" }}
       >
         {tabs.map((t) => <Tab key={t.link.key} {...t} />)}
-        <div className="flex flex-1 items-center justify-center">
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            aria-label="Créer un document"
-            aria-haspopup="dialog"
-            className="grid size-[52px] place-items-center rounded-[18px] bg-[var(--q-accent)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.25),0_8px_18px_-6px_rgba(37,99,235,.7)] touch-manipulation active:scale-95"
-          >
-            <Plus className="size-6" strokeWidth={2.25} aria-hidden />
-          </button>
-        </div>
+        <MorphButton action={action} onCreate={() => setCreateOpen(true)} />
         {tabsRight.map((t) => <Tab key={t.link.key} {...t} />)}
         <button
           type="button"
