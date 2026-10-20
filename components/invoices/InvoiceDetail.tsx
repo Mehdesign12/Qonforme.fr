@@ -4,6 +4,7 @@
  * Fiche facture réelle : chargement, actions (API) et fenêtres (envoi, avoir,
  * mur de paiement). L'affichage est InvoiceDetailView, partagé avec la démo.
  */
+import { downloadPdf, PdfDownloadError } from "@/lib/utils/download-pdf"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -425,16 +426,9 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     if (!invoice) return
     setPdfLoading(true)
     try {
-      const res = await fetch(`/api/invoices/${invoiceId}/pdf`)
-      if (!res.ok) { toast.error("Erreur lors de la génération du PDF"); return }
-      const blob = await res.blob()
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement("a")
-      a.href = url; a.download = `${invoice.status === "draft" ? `brouillon-${invoice.invoice_number ?? "facture"}` : invoice.invoice_number}.pdf`
-      document.body.appendChild(a); a.click()
-      document.body.removeChild(a); URL.revokeObjectURL(url)
+      await downloadPdf(`/api/invoices/${invoiceId}/pdf`, `${invoice.status === "draft" ? `brouillon-${invoice.invoice_number ?? "facture"}` : invoice.invoice_number}.pdf`)
       toast.success("PDF téléchargé")
-    } catch { toast.error("Erreur lors du téléchargement") }
+    } catch (e) { toast.error(e instanceof PdfDownloadError ? e.message : "Erreur lors du téléchargement") }
     finally { setPdfLoading(false) }
   }
 

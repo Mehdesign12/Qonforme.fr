@@ -47,7 +47,7 @@ export async function GET(request: NextRequest, { params }: Params) {
       ? (invoice.invoice_number ? `brouillon-${invoice.invoice_number}` : `brouillon-facture-${String(invoice.id).slice(0, 8)}`)
       : number
 
-    return new Response(buffer.buffer as ArrayBuffer, {
+    return new Response(new Uint8Array(buffer), {
       status: 200,
       headers: {
         "Content-Type":        "application/pdf",
