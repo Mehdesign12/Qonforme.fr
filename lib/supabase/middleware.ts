@@ -45,6 +45,12 @@ export async function updateSession(request: NextRequest) {
     '/scan',
     '/scan-telephone',
     '/api/scan/pair',
+    // Discussion avec Christophe : page Contact, lien « Ouvrir la conversation »
+    // des emails (/contact/c/<jeton>) et envoi des messages, sans connexion.
+    // Propre à un visiteur : absent du service worker. /api/support/contact
+    // (formulaire de l'application) reste réservé au compte connecté.
+    '/contact',
+    '/api/support/chat',
   ]
 
   const isPurePublic = purePublicPaths.some((path) =>
