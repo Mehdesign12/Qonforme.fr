@@ -1,5 +1,5 @@
 import { Check, Clock } from 'lucide-react'
-import { PLANS } from '@/lib/stripe/plans'
+import { PLANS, SHARED_UPCOMING } from '@/lib/stripe/plans'
 
 /**
  * Tableau « Comparer les offres » de la page Tarifs (planche « Tarifs »).
@@ -28,6 +28,7 @@ const ROWS: { label: string; cells: [Cell, Cell, Cell] }[] = [
   { label: 'Factures', cells: [yes('Brouillon'), yes('Illimitées'), yes('Illimitées')] },
   { label: 'Envoi des factures par email, avec le PDF', cells: [no, yes(), yes()] },
   { label: 'Relances des impayés', cells: [no, yes(), yes()] },
+  ...SHARED_UPCOMING.map((label) => ({ label, cells: [soon, soon, soon] as [Cell, Cell, Cell] })),
   ...PLANS.starter.upcoming.map((label) => ({ label, cells: [no, soon, soon] as [Cell, Cell, Cell] })),
   ...PLANS.pro.features.map((label) => ({ label, cells: [no, no, yes()] as [Cell, Cell, Cell] })),
   ...PLANS.pro.upcoming.map((label) => ({ label, cells: [no, no, soon] as [Cell, Cell, Cell] })),
