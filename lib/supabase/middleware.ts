@@ -39,6 +39,12 @@ export async function updateSession(request: NextRequest) {
     '/s',
     '/signer',
     '/api/signature/public',
+    // Scan depuis un téléphone appairé (QR code de l'ordinateur) : accès par
+    // jeton, sans connexion. Propre à un compte : absent du service worker.
+    // /api/scan/pairings (création, état) reste réservé au compte connecté.
+    '/scan',
+    '/scan-telephone',
+    '/api/scan/pair',
   ]
 
   const isPurePublic = purePublicPaths.some((path) =>

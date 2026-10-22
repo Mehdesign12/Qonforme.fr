@@ -117,4 +117,8 @@ export const demoScanApi: ScanApi = {
   },
   async remove(id) { store = store.filter((d) => d.id !== id) },
   pdfHref: () => null,
+  // Démo : pas de vrai téléphone à appairer, le code mène à la démo elle-même
+  async createPairing() { return { id: "demo", url: `${window.location.origin}/demo/documents?scanner=1`, expiresAt: new Date(Date.now() + 15 * 60_000).toISOString() } },
+  async pairingStatus() { return { state: "active", claimed: false, documents: 0 } },
+  async revokePairing() {},
 }

@@ -30,7 +30,7 @@ export type ConsentChoice = "accepted" | "refused"
  * pages destinées aux clients de l'artisan (règlement et signature : le jeton
  * figure dans l'adresse), admin, invitation du comptable.
  */
-export const NO_TRACKING_PATHS = /^\/((demo\/)?regler\/|s\/|signer(\/|$)|admin(\/|$)|invitation-comptable)/
+export const NO_TRACKING_PATHS = /^\/((demo\/)?regler\/|s\/|scan(\/|-telephone)|signer(\/|$)|admin(\/|$)|invitation-comptable)/
 
 export function isTrackingPage(pathname: string): boolean {
   return !NO_TRACKING_PATHS.test(pathname)

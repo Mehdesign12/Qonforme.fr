@@ -28,6 +28,10 @@ export interface ScanFieldsInput {
   chantier_id?: string | null
 }
 
+/** Code d'appairage d'un téléphone (QR code affiché sur l'ordinateur). */
+export interface PairingInfo { id: string; url: string; expiresAt: string }
+export interface PairingStatus { state: "active" | "expired" | "revoked"; claimed: boolean; documents: number }
+
 export interface ScanListResult {
   available: boolean
   documents: ScanDocument[]
@@ -44,6 +48,10 @@ export interface ScanApi {
   remove(id: string): Promise<void>
   /** Adresse du PDF ; null en démo (rien à télécharger). */
   pdfHref(id: string): string | null
+  /** Appairage d'un téléphone (ordinateur) : absent sur le téléphone lui-même. */
+  createPairing?(): Promise<PairingInfo>
+  pairingStatus?(id: string): Promise<PairingStatus>
+  revokePairing?(id: string): Promise<void>
 }
 
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
@@ -81,4 +89,31 @@ export const appScanApi: ScanApi = {
   async update(id, fields) { return (await call<{ document: ScanDocument }>(`/api/scan/documents/${id}`, send("PATCH", fields))).document },
   async remove(id) { await call(`/api/scan/documents/${id}`, { method: "DELETE" }) },
   pdfHref: (id) => `/api/scan/documents/${id}/pdf`,
+  async createPairing() {
+    const res = await call<{ id: string; url: string; expires_at: string }>("/api/scan/pairings", { method: "POST" })
+    return { id: res.id, url: res.url, expiresAt: res.expires_at }
+  },
+  async pairingStatus(id) { return call<PairingStatus>(`/api/scan/pairings/${id}`) },
+  async revokePairing(id) { await call(`/api/scan/pairings/${id}`, { method: "DELETE" }) },
+}
+
+/**
+ * API du téléphone appairé : le cookie posé par /scan/p/<jeton> autorise l'envoi
+ * de documents au compte de l'appairage, et rien d'autre (pas de liste, de
+ * fiche ni de modification : le classement se termine sur l'ordinateur).
+ */
+const unsupported = () => Promise.reject(new ScanApiError("Cette action se fait sur votre ordinateur."))
+export const pairScanApi: ScanApi = {
+  list: unsupported,
+  get: unsupported,
+  update: unsupported,
+  async create(fields) { return (await call<{ document: ScanDocument }>("/api/scan/pair/documents", send("POST", fields))).document },
+  async uploadPage(documentId, position, blob) {
+    const form = new FormData()
+    form.set("file", blob, `page-${position}.jpg`)
+    form.set("position", String(position))
+    await call(`/api/scan/pair/documents/${documentId}/pages`, { method: "POST", body: form })
+  },
+  async remove(id) { await call(`/api/scan/pair/documents/${id}`, { method: "DELETE" }) },
+  pdfHref: () => null,
 }
