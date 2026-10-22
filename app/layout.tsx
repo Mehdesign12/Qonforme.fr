@@ -18,6 +18,7 @@ import { PLANS, VAT_COLLECTED } from "@/lib/stripe/plans";
 import { PUBLISHER } from "@/lib/legal/publisher";
 import { SentryReplay } from "@/components/shared/SentryReplay";
 import { CookieBanner } from "@/components/consent/CookieBanner";
+import { SupportChat } from "@/components/support/SupportChat";
 import { TrackingLoader } from "@/components/consent/TrackingLoader";
 
 const dmSans = DM_Sans({
@@ -247,6 +248,7 @@ export default function RootLayout({
            */}
           <TrackingLoader />
           <CookieBanner />
+          <SupportChat />
         </ThemeProvider>
       </body>
     </html>

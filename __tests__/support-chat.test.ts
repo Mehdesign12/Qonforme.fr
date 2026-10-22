@@ -379,3 +379,17 @@ describe("côté équipe", () => {
     expect((await patch({})).status).toBe(400)
   })
 })
+
+import { chatSurface } from "@/lib/support-chat/surface"
+describe("où s'affiche la bulle", () => {
+  it("pages publiques d'information et d'accès", () => {
+    for (const path of ["/", "/pricing", "/blog", "/blog/un-article", "/guide/tva-travaux", "/modele/devis-electricien", "/outils/calculateur-tva", "/facturation/plombier", "/glossaire/devis", "/login", "/signup", "/cgu"]) {
+      expect(chatSurface(path), path).toBe("bubble")
+    }
+  })
+  it("jamais sur la page Contact, les pages du client de l'artisan, le scan, l'admin ni l'application", () => {
+    for (const path of ["/contact", "/contact/c/abc", "/regler/abc", "/signer/abc", "/s/abc", "/scan/p/abc", "/scan-telephone", "/admin", "/admin/support", "/invitation-comptable", "/dashboard", "/invoices/1", "/demo", "/api/support/chat"]) {
+      expect(chatSurface(path), path).toBeNull()
+    }
+  })
+})

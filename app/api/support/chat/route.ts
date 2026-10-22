@@ -82,11 +82,11 @@ export async function GET(request: NextRequest) {
   if (asked && user) conversation = await findForUser(db, user.id, asked)
   if (!conversation) {
     const found = await findByToken(db, request.cookies.get(CHAT_COOKIE)?.value)
-    if (found.missing) return json(200, { available: false, conversation: null, messages: [], unread: 0 })
+    if (found.missing) return json(200, { available: false, conversation: null, messages: [], unread: 0, user: null })
     conversation = found.conversation
   }
 
-  const body: Record<string, unknown> = { available: true, conversation: null, messages: [], unread: 0 }
+  const body: Record<string, unknown> = { available: true, conversation: null, messages: [], unread: 0, user: user ? { email: user.email } : null }
   if (conversation) {
     const thread = await visitorThread(db, conversation, { markSeen })
     if (thread.status !== 200) return json(thread.status, thread.body)

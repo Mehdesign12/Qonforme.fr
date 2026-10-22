@@ -132,13 +132,13 @@ export default function Footer({ showCta = true }: { showCta?: boolean } = {}) {
               >
                 <Linkedin className="h-4 w-4" aria-hidden />
               </a>
-              <a
-                href="mailto:contact@qonforme.fr"
+              <Link
+                href="/contact"
                 className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-white/10 px-3 text-[13px] text-[#94A3B8] transition-colors hover:border-white/20 hover:text-white"
               >
                 <Mail className="h-4 w-4" aria-hidden />
-                contact@qonforme.fr
-              </a>
+                Nous écrire
+              </Link>
             </div>
           </div>
 
