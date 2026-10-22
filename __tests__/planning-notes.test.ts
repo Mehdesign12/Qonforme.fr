@@ -5,7 +5,7 @@ import { NextRequest } from "next/server"
 import { isLate, noteFromRow, parseNoteInput, parseNotePatch, splitNotes, type WorkNote } from "@/lib/planning/notes"
 
 const note = (id: string, over: Partial<WorkNote> = {}): WorkNote => ({
-  id, kind: "task", body: id, due_date: null, done_at: null, client_id: null, client_name: null, chantier_id: null,
+  id, kind: "task", body: id, due_date: null, done_at: null, remind_at: null, client_id: null, client_name: null, chantier_id: null,
   created_at: "2026-10-20T10:00:00.000Z", ...over,
 })
 

@@ -19,8 +19,8 @@ import { addDays } from "@/lib/utils/paris-date"
 
 const KIND_DOT: Record<Appointment["kind"], string> = {
   visite: "bg-[var(--q-accent)]",
-  chantier: "bg-[var(--q-ink)]",
-  livraison: "bg-[var(--q-text-4)]",
+  chantier: "bg-[var(--q-ok)]",
+  livraison: "bg-[var(--q-warn)]",
 }
 
 export function TodayCard({ mode, today }: { mode: "app" | "demo"; today: string }) {

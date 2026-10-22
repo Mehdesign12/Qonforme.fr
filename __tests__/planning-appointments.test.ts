@@ -12,7 +12,7 @@ import {
 
 const appt = (id: string, start: string, end: string, status: Appointment["status"] = "planned"): Appointment => ({
   id, kind: "visite", title: id, starts_at: start, ends_at: end, address: null, notes: null, status,
-  client_id: null, client_name: null, chantier_id: null,
+  client_id: null, client_name: null, chantier_id: null, reminder_minutes: null,
 })
 
 describe("heure de Paris", () => {

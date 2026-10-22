@@ -17,7 +17,7 @@ function appt(
   const starts_at = parisToIso(day, start)
   return {
     id, kind, title, starts_at, ends_at: new Date(new Date(starts_at).getTime() + minutes * 60_000).toISOString(),
-    address, notes: null, status, client_id: clientId, client_name: clientId ? clientName(clientId) : null, chantier_id: chantierId,
+    address, notes: null, status, client_id: clientId, client_name: clientId ? clientName(clientId) : null, chantier_id: chantierId, reminder_minutes: kind === "visite" ? 60 : null,
   }
 }
 

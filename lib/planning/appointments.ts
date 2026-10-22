@@ -33,11 +33,13 @@ export interface Appointment {
   client_id: string | null
   client_name: string | null
   chantier_id: string | null
+  /** Rappel par email avant le rendez-vous, en minutes (null : aucun). */
+  reminder_minutes: number | null
 }
 
 /** Colonnes lues en base (le chantier n'est pas joint : sa table est facultative). */
 export const APPOINTMENT_COLUMNS =
-  "id, kind, title, starts_at, ends_at, address, notes, status, client_id, chantier_id, client:clients(name)"
+  "id, kind, title, starts_at, ends_at, address, notes, status, client_id, chantier_id, reminder_minutes, client:clients(name)"
 
 type Join = { name?: string | null } | { name?: string | null }[] | null
 
@@ -56,6 +58,7 @@ export function appointmentFromRow(row: Record<string, unknown>): Appointment {
     client_id: (row.client_id as string | null) ?? null,
     client_name: client?.name ?? null,
     chantier_id: (row.chantier_id as string | null) ?? null,
+    reminder_minutes: typeof row.reminder_minutes === "number" ? row.reminder_minutes : null,
   }
 }
 
@@ -148,6 +151,10 @@ export function durationLabel(minutes: number): string {
   return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, "0")}`
 }
 
+/** Rappels proposés : une heure avant, ou la veille (24 h avant). Seuls ces délais sont acceptés. */
+export const REMINDER_CHOICES = [60, 1440] as const
+export const REMINDER_LABELS: Record<number, string> = { 60: "1 h avant", 1440: "La veille" }
+
 /** Durées proposées dans la fenêtre. */
 export const DURATION_CHOICES = [30, 60, 90, 120, 180, 240, 360, 480]
 
@@ -169,6 +176,7 @@ export interface AppointmentInput {
   ends_at: string
   address: string | null
   notes: string | null
+  reminder_minutes: number | null
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -219,11 +227,18 @@ export function parseAppointmentInput(
   if (address === "invalid") return { ok: false, error: "L'adresse est trop longue (300 caractères au plus)." }
   if (notes === "invalid") return { ok: false, error: "Les notes sont trop longues (2 000 caractères au plus)." }
 
+  let reminder: number | null = null
+  if (body.reminder_minutes !== undefined && body.reminder_minutes !== null && body.reminder_minutes !== "") {
+    const r = Number(body.reminder_minutes)
+    if (!(REMINDER_CHOICES as readonly number[]).includes(r)) return { ok: false, error: "Rappel invalide." }
+    reminder = r
+  }
+
   const starts_at = parisToIso(body.date, body.start)
   const ends_at = new Date(new Date(starts_at).getTime() + duration * 60_000).toISOString()
   return {
     ok: true,
-    value: { kind: kind as AppointmentKind, title, client_id: clientId, chantier_id: chantierId, starts_at, ends_at, address, notes },
+    value: { kind: kind as AppointmentKind, title, client_id: clientId, chantier_id: chantierId, starts_at, ends_at, address, notes, reminder_minutes: reminder },
   }
 }
 

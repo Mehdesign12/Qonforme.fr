@@ -10,12 +10,12 @@
  * annexe ne montre jamais d'erreur à la place de la page qui l'accueille.
  */
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Check, ChevronDown, Loader2, NotebookPen, Plus, Trash2 } from "lucide-react"
+import { Bell, Check, ChevronDown, Loader2, NotebookPen, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Panel } from "@/components/app/kit"
 import { cn } from "@/lib/utils"
 import { dayLabel, parisParts } from "@/lib/planning/appointments"
-import { isLate, splitNotes, type NoteKind, type WorkNote } from "@/lib/planning/notes"
+import { REMIND_CHOICES, REMIND_LABELS, isLate, splitNotes, type NoteKind, type RemindChoice, type WorkNote } from "@/lib/planning/notes"
 
 export interface NoteScope {
   chantier_id?: string | null
@@ -26,7 +26,7 @@ export interface NoteScope {
 
 export interface NotesApi {
   list(scope: NoteScope): Promise<{ available: boolean; today: string; notes: WorkNote[] }>
-  create(input: { kind: NoteKind; body: string; due_date: string | null; client_id: string | null; chantier_id: string | null }): Promise<WorkNote>
+  create(input: { kind: NoteKind; body: string; due_date: string | null; remind: RemindChoice | null; client_id: string | null; chantier_id: string | null }): Promise<WorkNote>
   patch(id: string, patch: { done?: boolean; body?: string; due_date?: string | null }): Promise<WorkNote>
   remove(id: string): Promise<void>
 }
@@ -62,6 +62,7 @@ export function NotesPanel({
   const [kind, setKind] = useState<NoteKind>("task")
   const [text, setText] = useState("")
   const [due, setDue] = useState("")
+  const [remind, setRemind] = useState<RemindChoice | "">("")
   const [adding, setAdding] = useState(false)
   const [showDone, setShowDone] = useState(false)
   const [confirming, setConfirming] = useState<string | null>(null)
@@ -101,12 +102,13 @@ export function NotesPanel({
     setAdding(true)
     try {
       const created = await api.create({
-        kind, body, due_date: kind === "task" && due ? due : null,
+        kind, body, due_date: kind === "task" && due ? due : null, remind: kind === "task" && due && remind ? remind : null,
         client_id: scope.client_id ?? null, chantier_id: scope.chantier_id ?? null,
       })
       setNotes((prev) => [created, ...(prev ?? [])])
       setText("")
       setDue("")
+      setRemind("")
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Impossible d'ajouter. Réessayez.")
     } finally {
@@ -152,7 +154,16 @@ export function NotesPanel({
             {kind === "task" && (
               <label className="flex items-center gap-2 text-sm text-[var(--q-text-3)]">
                 <span>Pour le</span>
-                <input type="date" className="q-input !h-10 w-auto" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Échéance (facultatif)" />
+                <input type="date" className="q-input !h-10 w-auto" value={due} onChange={(e) => { setDue(e.target.value); if (!e.target.value) setRemind("") }} aria-label="Échéance (facultatif)" />
+              </label>
+            )}
+            {kind === "task" && due && (
+              <label className="flex items-center gap-2 text-sm text-[var(--q-text-3)]">
+                <Bell className="size-4" aria-hidden />
+                <select className="q-input !h-10 w-auto" value={remind} onChange={(e) => setRemind(e.target.value as RemindChoice | "")} aria-label="Rappel par email">
+                  <option value="">Pas de rappel</option>
+                  {REMIND_CHOICES.map((c) => <option key={c} value={c}>Rappel {REMIND_LABELS[c].toLowerCase()}</option>)}
+                </select>
               </label>
             )}
           </div>
@@ -243,6 +254,7 @@ function TaskRow({ note: n, today, confirming, onToggle, onRemove }: {
             {n.due_date ? (late ? `En retard · ${dueLabel(n.due_date, today)}` : dueLabel(n.due_date, today)) : ""}
             {n.due_date && n.client_name ? " · " : ""}
             {n.client_name ?? ""}
+            {n.remind_at && !done && <Bell className="ml-1.5 inline size-3.5 align-[-2px]" aria-label="Rappel par email prévu" />}
           </p>
         )}
       </div>

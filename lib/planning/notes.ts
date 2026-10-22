@@ -5,7 +5,7 @@
  * coche ; une note (`note`) est un texte daté. Module pur : validation des
  * entrées des routes, ordre d'affichage, retard.
  */
-import { isIsoDay } from "@/lib/utils/paris-date"
+import { addDays, isIsoDay } from "@/lib/utils/paris-date"
 import { parisParts, parisToIso } from "@/lib/planning/appointments"
 
 export const NOTE_KINDS = ["note", "task"] as const
@@ -18,13 +18,15 @@ export interface WorkNote {
   /** Échéance d'une tâche : jour AAAA-MM-JJ à Paris, ou null. */
   due_date: string | null
   done_at: string | null
+  /** Rappel par email : heure (ISO) tant qu'il n'est pas parti, sinon null. */
+  remind_at: string | null
   client_id: string | null
   client_name: string | null
   chantier_id: string | null
   created_at: string
 }
 
-export const NOTE_COLUMNS = "id, kind, body, due_at, done_at, client_id, chantier_id, created_at, client:clients(name)"
+export const NOTE_COLUMNS = "id, kind, body, due_at, remind_at, reminder_sent_at, done_at, client_id, chantier_id, created_at, client:clients(name)"
 
 type Join = { name?: string | null } | { name?: string | null }[] | null
 
@@ -38,6 +40,7 @@ export function noteFromRow(row: Record<string, unknown>): WorkNote {
     body: String(row.body ?? ""),
     due_date: due,
     done_at: (row.done_at as string | null) ?? null,
+    remind_at: row.remind_at && !row.reminder_sent_at ? String(row.remind_at) : null,
     client_id: (row.client_id as string | null) ?? null,
     client_name: client?.name ?? null,
     chantier_id: (row.chantier_id as string | null) ?? null,
@@ -58,16 +61,27 @@ export function dueAtOf(day: string): string {
   return parisToIso(day, "12:00")
 }
 
+/** Rappel d'une tâche : le matin de l'échéance (8 h) ou la veille au soir (18 h), heure de Paris. */
+export const REMIND_CHOICES = ["morning", "eve"] as const
+export type RemindChoice = (typeof REMIND_CHOICES)[number]
+export const REMIND_LABELS: Record<RemindChoice, string> = { morning: "Le matin (8 h)", eve: "La veille (18 h)" }
+
+export function remindAtOf(day: string, choice: RemindChoice): string {
+  return choice === "morning" ? parisToIso(day, "08:00") : parisToIso(addDays(day, -1), "18:00")
+}
+
 export interface NoteInput {
   kind: NoteKind
   body: string
   due_at: string | null
+  remind_at: string | null
   client_id: string | null
   chantier_id: string | null
 }
 
 export function parseNoteInput(
   body: Record<string, unknown>,
+  now: Date = new Date(),
 ): { ok: true; value: NoteInput } | { ok: false; error: string } {
   const kind = body.kind ?? "note"
   if (typeof kind !== "string" || !(NOTE_KINDS as readonly string[]).includes(kind)) {
@@ -83,11 +97,19 @@ export function parseNoteInput(
     if (!isIsoDay(body.due_date)) return { ok: false, error: "Échéance invalide." }
     due_at = dueAtOf(body.due_date)
   }
+  let remind_at: string | null = null
+  if (body.remind !== undefined && body.remind !== null && body.remind !== "") {
+    if (!(REMIND_CHOICES as readonly unknown[]).includes(body.remind)) return { ok: false, error: "Rappel invalide." }
+    if (kind !== "task" || due_at === null) return { ok: false, error: "Un rappel demande une tâche avec une échéance." }
+    remind_at = remindAtOf(body.due_date as string, body.remind as RemindChoice)
+    // Un rappel à une heure déjà passée ne partirait jamais comme prévu : on le refuse plutôt que de l'envoyer tout de suite
+    if (new Date(remind_at).getTime() <= now.getTime()) return { ok: false, error: "Cette heure de rappel est déjà passée. Choisissez une autre échéance ou un autre rappel." }
+  }
   const clientId = idOf(body.client_id)
   const chantierId = idOf(body.chantier_id)
   if (clientId === "invalid") return { ok: false, error: "Client invalide." }
   if (chantierId === "invalid") return { ok: false, error: "Chantier invalide." }
-  return { ok: true, value: { kind: kind as NoteKind, body: text, due_at, client_id: clientId, chantier_id: chantierId } }
+  return { ok: true, value: { kind: kind as NoteKind, body: text, due_at, remind_at, client_id: clientId, chantier_id: chantierId } }
 }
 
 export interface NotePatch {

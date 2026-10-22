@@ -16,7 +16,7 @@ import { EmptyState, PageHeader, Panel } from "@/components/app/kit"
 import { cn } from "@/lib/utils"
 import { addDays } from "@/lib/utils/paris-date"
 import {
-  APPOINTMENT_KINDS, APPOINTMENT_KIND_LABELS, DURATION_CHOICES, GRID_END_HOUR, GRID_START_HOUR, HOUR_PX,
+  APPOINTMENT_KINDS, APPOINTMENT_KIND_LABELS, DURATION_CHOICES, REMINDER_CHOICES, REMINDER_LABELS, GRID_END_HOUR, GRID_START_HOUR, HOUR_PX,
   appointmentsOnDay, dayLabel, dayParts, durationLabel, minutesBetween, parisParts, placeDay, timeLabel, weekDays, weekLabel, weekStart,
   type Appointment, type AppointmentKind,
 } from "@/lib/planning/appointments"
@@ -30,6 +30,7 @@ export interface AppointmentFormValues {
   start: string
   duration_min: number
   address: string | null
+  reminder_minutes: number | null
 }
 
 export interface PlanningApi {
@@ -43,8 +44,8 @@ export interface PlanningClient { id: string; name: string; address?: string | n
 
 const KIND_STYLE: Record<AppointmentKind, string> = {
   visite: "border-[var(--q-accent)] bg-[var(--q-wash)] text-[var(--q-accent-strong)]",
-  chantier: "border-[var(--q-ink)] bg-[var(--q-ink)] text-[var(--q-surface)]",
-  livraison: "border-[var(--q-line)] bg-[var(--q-surface-2)] text-[var(--q-ink)]",
+  chantier: "border-[var(--q-ok-line)] bg-[var(--q-ok-bg)] text-[var(--q-ok)]",
+  livraison: "border-[var(--q-warn-line)] bg-[var(--q-warn-bg)] text-[var(--q-warn)]",
 }
 
 const hours = Array.from({ length: GRID_END_HOUR - GRID_START_HOUR }, (_, i) => GRID_START_HOUR + i)
@@ -54,14 +55,14 @@ function mapsHref(address: string): string {
 }
 
 function emptyValues(date: string, start = "09:00"): AppointmentFormValues {
-  return { kind: "visite", title: "", client_id: null, chantier_id: null, date, start, duration_min: 60, address: null }
+  return { kind: "visite", title: "", client_id: null, chantier_id: null, date, start, duration_min: 60, address: null, reminder_minutes: null }
 }
 
 function toValues(a: Appointment): AppointmentFormValues {
   const s = parisParts(a.starts_at)
   return {
     kind: a.kind, title: a.title, client_id: a.client_id, chantier_id: a.chantier_id,
-    date: s.date, start: s.time, duration_min: minutesBetween(a.starts_at, a.ends_at) || 60, address: a.address,
+    date: s.date, start: s.time, duration_min: minutesBetween(a.starts_at, a.ends_at) || 60, address: a.address, reminder_minutes: a.reminder_minutes,
   }
 }
 
@@ -142,7 +143,7 @@ export function PlanningView({
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Planning"
+        title="Planning et notes"
         eyebrow={dayLabel(today)}
         actions={
           <button type="button" onClick={() => openCreate()} disabled={unavailable} className="q-btn q-btn-primary h-11">
@@ -483,6 +484,18 @@ function AppointmentDialog({
               <MapPin className="size-4" aria-hidden />Voir l&apos;itinéraire
             </a>
           )}
+          <fieldset className="flex flex-col gap-2">
+            <legend className="q-label mb-1.5">Me rappeler par email</legend>
+            <div className="q-seg self-start" role="group" aria-label="Rappel">
+              <button type="button" aria-pressed={v.reminder_minutes === null} onClick={() => set("reminder_minutes", null)} className="!h-11">Aucun</button>
+              {REMINDER_CHOICES.map((m) => (
+                <button key={m} type="button" aria-pressed={v.reminder_minutes === m} onClick={() => set("reminder_minutes", m)} className="!h-11">{REMINDER_LABELS[m]}</button>
+              ))}
+            </div>
+            {v.reminder_minutes !== null && (
+              <span className="q-field-hint">Un email vous est envoyé à l&apos;adresse de votre compte, au plus 15 minutes après l&apos;heure prévue.</span>
+            )}
+          </fieldset>
           {error && <p role="alert" className="q-field-error">{error}</p>}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             {editing && (
