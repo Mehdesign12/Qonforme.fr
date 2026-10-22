@@ -165,7 +165,8 @@ export default function ConfidentialitePage() {
           devise d&apos;un abonnement, votre adresse IP, votre navigateur et l&apos;identifiant du cookie.
         </li>
         <li>
-          <strong>PostHog</strong> — mesure d&apos;audience (pages vues, provenance des visites) et enregistrement de
+          <strong>PostHog</strong> — mesure d&apos;audience (pages vues, provenance des visites, quelques actions clés
+          comme l&apos;affichage du mur de paiement ou le choix d&apos;une formule, sans aucune donnée de vos documents) et enregistrement de
           vos parcours (clics, défilement, pages visitées, comme une vidéo de la navigation), pour repérer ce qui
           bloque les utilisateurs et améliorer le service. Un identifiant est alors enregistré dans votre navigateur.
           L&apos;enregistrement masque tous les champs de saisie ; dans l&apos;application, il masque aussi les

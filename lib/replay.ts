@@ -9,7 +9,9 @@
  *    les données de l'artisan ni de ses clients ;
  *  - le texte n'est lisible que sur les pages publiques de la liste blanche
  *    ci-dessous (contenu identique pour tous, démo à données fictives). Une
- *    nouvelle route est donc masquée tant qu'on ne l'a pas ajoutée ici.
+ *    nouvelle route est donc masquée tant qu'on ne l'a pas ajoutée ici ;
+ *  - exceptions explicites : `data-replay-clear` (bloc d'interface fixe, sans
+ *    donnée : le mur de paiement) et `data-replay-mask` (donnée à l'intérieur).
  */
 
 /** Pages publiques dont le texte peut être enregistré en clair. */
@@ -42,6 +44,10 @@ export function maskReplayText(
   element?: MaskElement | null,
   pathname: string = typeof window === "undefined" ? "" : window.location.pathname,
 ): string {
+  // Marqueurs explicites : `data-replay-mask` l'emporte toujours ; `data-replay-clear`
+  // rend lisible un bloc d'interface fixe (fenêtre du mur de paiement) dans l'application.
+  if (element?.closest?.("[data-replay-mask]")) return mask(text)
+  if (element?.closest?.("[data-replay-clear]")) return text
   if (REPLAY_CLEAR_TEXT_PATHS.test(pathname)) return text
   const label = element?.closest?.(INTERFACE_LABEL)
   if (!label) return mask(text)

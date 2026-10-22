@@ -44,6 +44,19 @@ function loadPostHog(): Promise<PostHog> | null {
   return client;
 }
 
+/**
+ * Événement d'entonnoir (mur de paiement, choix d'une formule…), après accord du
+ * visiteur seulement. Aucune donnée personnelle dans les propriétés : ni nom, ni
+ * montant d'un document, ni numéro de facture, ni adresse email.
+ */
+export function captureEvent(name: string, properties?: Record<string, string | number | boolean>): void {
+  if (typeof window === "undefined" || !POSTHOG_KEY) return;
+  if (currentConsent() !== "accepted" || !isTrackingPage(window.location.pathname)) return;
+  loadPostHog()
+    ?.then((ph) => ph.capture(name, properties))
+    .catch(() => {});
+}
+
 function PostHogPageView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
