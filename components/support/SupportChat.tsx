@@ -17,12 +17,27 @@ type View = "home" | "thread" | "history" | "help" | "sent"
 const INTRO_KEY = "q_support_intro"
 /** La bulle reste grande ce temps-là, puis se réduit pour ne rien cacher. */
 const INTRO_MS = 6000
+/**
+ * Bulle de discussion pleine, trois points évidés : plus nette et plus « produit » que le
+ * pictogramme au trait. Les points sont des trous (fill-rule evenodd), donc de la couleur du bouton.
+ */
+function ChatGlyph({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden fill="currentColor">
+      <path
+        fillRule="evenodd"
+        d="M12 2.25c-5.38 0-9.75 3.9-9.75 8.85 0 2.5 1.1 4.75 2.9 6.35-.08 1.15-.55 2.3-1.45 3.3-.3.33-.05.85.4.83 2.25-.1 4.05-.85 5.3-1.75.84.2 1.7.3 2.6.3 5.38 0 9.75-3.9 9.75-8.85S17.38 2.25 12 2.25ZM8 10a1.25 1.25 0 1 0 0 2.5A1.25 1.25 0 0 0 8 10Zm4 0a1.25 1.25 0 1 0 0 2.5A1.25 1.25 0 0 0 12 10Zm4 0a1.25 1.25 0 1 0 0 2.5A1.25 1.25 0 0 0 16 10Z"
+      />
+    </svg>
+  )
+}
+
 const BLUE_RELIEF = "[box-shadow:inset_0_1px_0_rgba(255,255,255,.25),0_10px_28px_-8px_rgba(37,99,235,.65)]"
 
 /**
  * Bulle de contact et panneau de discussion avec Christophe (pages publiques).
  * Ordinateur : bulle en bas à droite, grande 6 secondes puis ronde, panneau flottant.
- * Téléphone : une languette au bord droit (rien d'autre à l'écran), feuille pleine hauteur.
+ * Téléphone : un bouton rond en bas à droite (la languette au bord, essayée le 22/10/2026, a été refusée), feuille pleine hauteur.
  * Réponses par email : aucun délai n'est promis. Ni `backdrop-filter` ni `will-change`
  * (règle iOS de CLAUDE.md) ; seules la largeur du libellé et l'opacité sont animées.
  */
@@ -184,23 +199,24 @@ export function SupportChat() {
           <span className="q-display whitespace-nowrap text-[17px] font-bold">Une question ?</span>
           <span className="whitespace-nowrap text-[14px] font-medium">Écrivez à {PERSONA.name}</span>
         </span>
-        {open ? <ChevronDown className="size-6" aria-hidden /> : <MessageCircle className={cn("shrink-0", wide ? "size-5" : "size-6")} aria-hidden />}
+        {open ? <ChevronDown className="size-6" aria-hidden /> : <ChatGlyph className={cn("shrink-0", wide ? "size-6" : "size-7")} />}
         {!open && badge}
       </button>
 
-      {/* Téléphone : la languette au bord droit */}
+      {/* Téléphone : un bouton rond, au-dessus du bandeau de cookies tant qu'il est affiché */}
       {!open && (
         <button
           type="button"
           onClick={() => void openPanel()}
           aria-label={label}
           className={cn(
-            "fixed right-0 bottom-[34%] z-[60] flex h-[76px] w-[38px] items-center justify-center rounded-l-[19px] bg-q-accent text-white outline-none hover:bg-q-accent-strong focus-visible:ring-4 focus-visible:ring-[#BFD3FB] md:hidden",
+            "fixed right-4 z-[60] flex size-14 items-center justify-center rounded-full bg-q-accent text-white outline-none transition-[bottom] duration-300 hover:bg-q-accent-strong focus-visible:ring-4 focus-visible:ring-[#BFD3FB] md:hidden",
             BLUE_RELIEF,
+            bannerShown ? "bottom-[calc(env(safe-area-inset-bottom,0px)+8.5rem)]" : "bottom-[calc(env(safe-area-inset-bottom,0px)+1.25rem)]",
           )}
         >
-          <MessageCircle className="size-[22px]" aria-hidden />
-          {unread > 0 && <span className="absolute -left-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#DC2626] px-1 text-[11px] font-bold leading-none text-white" aria-hidden>{unread}</span>}
+          <ChatGlyph className="size-7" />
+          {unread > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#DC2626] px-1 text-[11px] font-bold leading-none text-white" aria-hidden>{unread}</span>}
         </button>
       )}
 
