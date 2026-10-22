@@ -22,6 +22,7 @@ import { QuickActions } from "@/components/dashboard/QuickActions"
 import { RevenueChart } from "@/components/dashboard/RevenueChart"
 import { RecentInvoices } from "@/components/dashboard/RecentInvoices"
 import { TodoCard } from "@/components/dashboard/TodoCard"
+import { TodayCard } from "@/components/dashboard/TodayCard"
 import { TopClients } from "@/components/dashboard/TopClients"
 import { ReformCard } from "@/components/dashboard/ReformCard"
 import { GettingStarted } from "@/components/dashboard/GettingStarted"
@@ -111,6 +112,9 @@ export function DashboardBody({ view }: { view: DashboardView }) {
           </div>
         </div>
         <div className={COLUMN}>
+          <div className="order-1 min-[1100px]:order-none empty:hidden">
+            <TodayCard mode={view.mode} today={view.today} />
+          </div>
           <div className="order-1 min-[1100px]:order-none">
             <TodoCard todos={view.todos} mode={view.mode} />
           </div>
