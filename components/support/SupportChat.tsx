@@ -23,11 +23,9 @@ const INTRO_MS = 6000
  */
 function ChatGlyph({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden fill="currentColor">
-      <path
-        fillRule="evenodd"
-        d="M12 2.25c-5.38 0-9.75 3.9-9.75 8.85 0 2.5 1.1 4.75 2.9 6.35-.08 1.15-.55 2.3-1.45 3.3-.3.33-.05.85.4.83 2.25-.1 4.05-.85 5.3-1.75.84.2 1.7.3 2.6.3 5.38 0 9.75-3.9 9.75-8.85S17.38 2.25 12 2.25ZM8 10a1.25 1.25 0 1 0 0 2.5A1.25 1.25 0 0 0 8 10Zm4 0a1.25 1.25 0 1 0 0 2.5A1.25 1.25 0 0 0 12 10Zm4 0a1.25 1.25 0 1 0 0 2.5A1.25 1.25 0 0 0 16 10Z"
-      />
+    <svg viewBox="0 0 24 24" className={className} aria-hidden fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
+      <path d="M12 3c-5.1 0-9 3.5-9 8.1 0 2.3 1 4.3 2.7 5.8-.1 1.2-.6 2.4-1.5 3.4-.3.3-.1.8.3.8 2.2-.1 3.9-.8 5.1-1.7.8.2 1.6.3 2.4.3 5.1 0 9-3.5 9-8.1S17.1 3 12 3Z" />
+      <path d="M8 11.2h.01M12 11.2h.01M16 11.2h.01" strokeWidth="2.4" />
     </svg>
   )
 }
@@ -146,7 +144,7 @@ export function SupportChat() {
     setSending(true)
     setError(null)
     const result = await sendMessage(
-      { message: text.trim(), email: hasConversation || thread?.user ? "" : email.trim(), source: "bubble", path: window.location.pathname },
+      { message: text.trim(), email: hasConversation || thread?.user ? "" : email.trim(), source: surface === "app" ? "app" : "bubble", path: window.location.pathname },
       files,
     )
     setSending(false)
@@ -160,7 +158,7 @@ export function SupportChat() {
   }
 
   const bannerShown = consent === null
-  const wide = (intro || hovered || focused) && !open
+  const wide = ((intro && surface === "bubble") || hovered || focused) && !open
   const label = unread > 0 ? `Ouvrir la discussion, ${unread} nouveau${unread > 1 ? "x" : ""} message${unread > 1 ? "s" : ""}` : "Discuter avec Christophe"
   const badge = unread > 0 && (
     <span className="absolute -right-1 -top-1 flex h-[22px] min-w-[22px] items-center justify-center rounded-full border-2 border-white bg-[#DC2626] px-1 text-[12px] font-bold leading-none text-white" aria-hidden>{unread}</span>
@@ -204,7 +202,7 @@ export function SupportChat() {
       </button>
 
       {/* Téléphone : un bouton rond, au-dessus du bandeau de cookies tant qu'il est affiché */}
-      {!open && (
+      {!open && surface === "bubble" && (
         <button
           type="button"
           onClick={() => void openPanel()}

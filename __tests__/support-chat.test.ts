@@ -387,8 +387,13 @@ describe("où s'affiche la bulle", () => {
       expect(chatSurface(path), path).toBe("bubble")
     }
   })
+  it("application et démo : surface « app » (bouton rond, ordinateur seulement)", () => {
+    for (const path of ["/dashboard", "/invoices/1", "/planning", "/documents", "/settings/billing", "/demo", "/demo/invoices"]) {
+      expect(chatSurface(path), path).toBe("app")
+    }
+  })
   it("jamais sur la page Contact, les pages du client de l'artisan, le scan, l'admin ni l'application", () => {
-    for (const path of ["/contact", "/contact/c/abc", "/regler/abc", "/signer/abc", "/s/abc", "/scan/p/abc", "/scan-telephone", "/admin", "/admin/support", "/invitation-comptable", "/dashboard", "/invoices/1", "/demo", "/api/support/chat"]) {
+    for (const path of ["/contact", "/contact/c/abc", "/regler/abc", "/signer/abc", "/s/abc", "/scan/p/abc", "/scan-telephone", "/admin", "/admin/support", "/invitation-comptable", "/demo/regler/abc", "/api/support/chat"]) {
       expect(chatSurface(path), path).toBeNull()
     }
   })
