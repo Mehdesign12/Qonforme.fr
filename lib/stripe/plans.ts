@@ -95,36 +95,42 @@ export interface Plan {
   }
 }
 
-/** Ce que fait un compte sans formule. */
-export const FREE_FEATURES = [
-  'Devis illimités',
-  'Clients et catalogue de prestations',
-  'Factures préparées en brouillon',
-  'Documents émis toujours consultables',
-]
-
 /**
- * Fonctions annoncées, ouvertes à tous les comptes (gratuits compris) : planning de
- * rendez-vous, notes et rappels, scan de documents. Toujours dites « à venir » tant
- * qu'elles ne sont pas livrées : les retirer de cette liste, et les ajouter à
- * FREE_FEATURES, le jour de leur mise en ligne (même livraison que le code).
- */
-export const SHARED_UPCOMING = [
-  'Planning de rendez-vous',
-  'Notes et rappels, par client ou par chantier',
-  'Scan des devis, bons de commande et bons de livraison',
-]
-
-/**
- * Limites de stockage du scan de documents (étape 5, lib/scan). Une seule source :
- * jamais de quota écrit en dur dans un composant. Un dépassement bloque seulement
- * l'ajout d'un nouveau scan, jamais la consultation ni la suppression.
+ * Limites de stockage du scan de documents (lib/scan). Une seule source : jamais de
+ * quota écrit en dur dans un composant. Un dépassement bloque seulement l'ajout d'un
+ * nouveau scan, jamais la consultation ni la suppression.
  */
 export const SCAN_QUOTAS: Record<'free' | PlanId, { documents: number; megabytes: number }> = {
   free: { documents: 50, megabytes: 200 },
   starter: { documents: 2000, megabytes: 5120 },
   pro: { documents: 2000, megabytes: 5120 },
 }
+
+/** « 200 Mo », « 5 Go » : pour les textes de quota. */
+function quotaSize(mb: number): string {
+  return mb >= 1024 ? `${(mb / 1024).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} Go` : `${mb.toLocaleString('fr-FR')} Mo`
+}
+
+/** « 50 documents scannés (200 Mo) » : le quota d'une formule, pour les tarifs et les CGU. */
+export function scanQuotaText(plan: 'free' | PlanId): string {
+  const q = SCAN_QUOTAS[plan]
+  return `${q.documents.toLocaleString('fr-FR')} documents scannés (${quotaSize(q.megabytes)})`
+}
+
+/**
+ * Ce que fait un compte sans formule. Planning, notes et scan sont ouverts à tous les
+ * comptes, gratuits compris (livrés le 22/10/2026) ; seul l'espace de scan grandit
+ * avec une formule payante (SCAN_QUOTAS).
+ */
+export const FREE_FEATURES = [
+  'Devis illimités',
+  'Clients et catalogue de prestations',
+  'Factures préparées en brouillon',
+  'Documents émis toujours consultables',
+  'Planning de rendez-vous',
+  'Notes et rappels, par client ou par chantier',
+  'Scan des devis, bons de commande et bons de livraison',
+]
 
 export const PLANS: Record<PlanId, Plan> = {
   starter: {
@@ -170,8 +176,9 @@ export const PLANS: Record<PlanId, Plan> = {
       'Retenue de garantie suivie',
       'Autoliquidation en sous-traitance',
       'Suivi par chantier',
+      'Notes, rappels et documents scannés rattachés à chaque chantier',
     ],
-    upcoming: ['Notes, rappels et documents scannés rattachés à chaque chantier'],
+    upcoming: [],
     stripePriceIds: {
       monthly: process.env.STRIPE_PRICE_ARTISAN_MONTHLY ?? '',
       yearly: process.env.STRIPE_PRICE_ARTISAN_YEARLY ?? '',
