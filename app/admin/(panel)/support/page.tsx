@@ -3,6 +3,7 @@ import { Bug, Check, Inbox, Mail, MessageSquare } from 'lucide-react'
 import { EmptyState, PageHeader, StatusPill, type Tone } from '@/components/app/kit'
 import { FilterBar, FilterSelect, LoadError, StatLink, fmtDateTime, fmtInt, plural } from '@/components/admin/ui'
 import { SupportActions } from '@/components/admin/SupportActions'
+import { SupportTabs } from '@/components/admin/SupportTabs'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -85,6 +86,7 @@ export default async function AdminSupportPage({
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title="Support" subtitle={subtitle} />
+      <SupportTabs active="reports" />
 
       <nav aria-label="Résumé du support" className="grid grid-cols-3 gap-3">
         <StatLink

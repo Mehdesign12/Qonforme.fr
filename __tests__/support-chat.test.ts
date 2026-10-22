@@ -393,3 +393,26 @@ describe("où s'affiche la bulle", () => {
     }
   })
 })
+
+import { adminThread } from "@/lib/support-chat/server"
+import { createAdminClient } from "@/lib/supabase/server"
+describe("boîte admin : fiche d'une conversation", () => {
+  it("rend les notes internes et les pièces jointes avec lien signé", async () => {
+    h.on = world({
+      existing: conv(),
+      messages: [{ id: MID, sender: "note", body: "À suivre", created_at: "2026-10-22T10:00:00Z", visitor_seen_at: null, emailed_at: null, email_error: null }],
+      attachments: [{ id: "a1", message_id: MID, storage_path: `${CID}/a.webp`, file_name: "a.webp", mime_type: "image/webp", size_bytes: 10 }],
+    })
+    const res = await adminThread(createAdminClient() as never, CID)
+    expect(res.status).toBe(200)
+    const msgs = res.body.messages as { sender: string; attachments: { url: string }[] }[]
+    expect(msgs[0].sender).toBe("note")
+    expect(msgs[0].attachments[0].url).toContain("https://files.test/")
+  })
+  it("503 avant la migration, 404 si la conversation n'existe pas", async () => {
+    h.on = world({ missing: true })
+    expect((await adminThread(createAdminClient() as never, CID)).status).toBe(503)
+    h.on = world({ existing: null })
+    expect((await adminThread(createAdminClient() as never, CID)).status).toBe(404)
+  })
+})
