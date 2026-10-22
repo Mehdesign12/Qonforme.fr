@@ -11,6 +11,7 @@
  * est retiré et rien ne reste à moitié.
  */
 import { useCallback, useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { Loader2, Plus, RotateCw, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -180,7 +181,10 @@ export function ScanFlow({
   const page = pages[current]
   const dark = step !== "classify"
 
-  return (
+  // Posé directement dans <body> : dans la coque de l'application, un contexte d'empilement plus bas
+  // laissait la barre de navigation du bas passer par-dessus les boutons « Tourner » et « Supprimer ».
+  if (typeof document === "undefined") return null
+  return createPortal(
     <div role="dialog" aria-modal="true" aria-label="Scanner un document" className={cn("fixed inset-0 z-[70] flex flex-col", dark ? "bg-[#0B1220] text-white" : "bg-[var(--q-bg)] text-[var(--q-ink)]")}>
       {step === "capture" && (
         <CameraCapture
@@ -297,6 +301,7 @@ export function ScanFlow({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   )
 }

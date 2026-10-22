@@ -532,9 +532,9 @@ ses vraies captures, en carrousel ; le mouvement accompagne le défilement, dans
   `will-change`. Ne pas en faire un modèle pour d'autres éléments.
   **Seconde exception, voulue par le fondateur (22/10/2026) :** la bulle de contact
   (`components/support/SupportChat.tsx`, montée dans `app/layout.tsx`) : en bas à droite sur ordinateur
-  (grande 6 secondes, puis ronde ; relevée au-dessus du bandeau de cookies tant qu'il est là), une
-  **languette collée au bord droit** sur téléphone (jamais de bulle permanente : elle prendrait trop de
-  place). Seulement sur les pages listées dans `lib/support-chat/surface.ts` : jamais sur `/contact`,
+  (grande 6 secondes, puis ronde ; relevée au-dessus du bandeau de cookies tant qu'il est là), un
+  **bouton rond de 56 px** en bas à droite sur téléphone (la languette au bord, essayée le 22/10/2026, a
+  été refusée par le fondateur ; pictogramme `ChatGlyph`, bulle pleine aux trois points évidés) Seulement sur les pages listées dans `lib/support-chat/surface.ts` : jamais sur `/contact`,
   règlement, signature, scan, admin ni invitation du comptable. Ni `backdrop-filter` ni `will-change`
   (animation de la largeur du libellé et de l'opacité seulement) ; feuille pleine hauteur sur téléphone
   (`SheetGrip`), au-dessus de l'en-tête (z 200) ; aucun traceur ; la bulle ne demande rien au serveur
