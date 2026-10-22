@@ -103,6 +103,29 @@ export const FREE_FEATURES = [
   'Documents émis toujours consultables',
 ]
 
+/**
+ * Fonctions annoncées, ouvertes à tous les comptes (gratuits compris) : planning de
+ * rendez-vous, notes et rappels, scan de documents. Toujours dites « à venir » tant
+ * qu'elles ne sont pas livrées : les retirer de cette liste, et les ajouter à
+ * FREE_FEATURES, le jour de leur mise en ligne (même livraison que le code).
+ */
+export const SHARED_UPCOMING = [
+  'Planning de rendez-vous',
+  'Notes et rappels, par client ou par chantier',
+  'Scan des devis, bons de commande et bons de livraison',
+]
+
+/**
+ * Limites de stockage du scan de documents (étape 5, lib/scan). Une seule source :
+ * jamais de quota écrit en dur dans un composant. Un dépassement bloque seulement
+ * l'ajout d'un nouveau scan, jamais la consultation ni la suppression.
+ */
+export const SCAN_QUOTAS: Record<'free' | PlanId, { documents: number; megabytes: number }> = {
+  free: { documents: 50, megabytes: 200 },
+  starter: { documents: 2000, megabytes: 5120 },
+  pro: { documents: 2000, megabytes: 5120 },
+}
+
 export const PLANS: Record<PlanId, Plan> = {
   starter: {
     id: 'starter',
@@ -148,7 +171,7 @@ export const PLANS: Record<PlanId, Plan> = {
       'Autoliquidation en sous-traitance',
       'Suivi par chantier',
     ],
-    upcoming: [],
+    upcoming: ['Notes, rappels et documents scannés rattachés à chaque chantier'],
     stripePriceIds: {
       monthly: process.env.STRIPE_PRICE_ARTISAN_MONTHLY ?? '',
       yearly: process.env.STRIPE_PRICE_ARTISAN_YEARLY ?? '',

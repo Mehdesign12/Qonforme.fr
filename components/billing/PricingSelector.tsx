@@ -7,6 +7,7 @@ import {
   PAYMENT_METHODS_TEXT,
   PLANS,
   FREE_FEATURES,
+  SHARED_UPCOMING,
   VAT_COLLECTED,
   formatEuros,
   withVat,
@@ -126,6 +127,7 @@ export default function PricingSelector({
               {isAuthenticated ? 'Faire un devis' : 'Créer mon premier devis'}
             </Link>
             <FeatureList items={[...FREE_FEATURES, 'Envoi des devis par email, avec le PDF']} />
+            <UpcomingList items={SHARED_UPCOMING} />
           </PlanCard>
         )}
 

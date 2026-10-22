@@ -103,7 +103,7 @@ describe('grille de prix', () => {
     expect(PLANS.pro.available).toBe(false)
     expect(PLANS.pro.features).toContain('Situations de travaux et factures d’acompte')
     expect(PLANS.pro.features).toContain('Suivi par chantier')
-    expect(PLANS.pro.upcoming).toEqual([])
+    expect(PLANS.pro.upcoming).toEqual(['Notes, rappels et documents scannés rattachés à chaque chantier'])
   })
   it('TVA 20 % arrondie au centime', () => {
     expect(withVat(12)).toBe(14.4)
