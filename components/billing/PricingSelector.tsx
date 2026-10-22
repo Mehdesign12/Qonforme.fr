@@ -16,6 +16,7 @@ import {
 } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { trackEvent } from '@/lib/meta-pixel'
+import { captureEvent } from '@/components/shared/PostHogProvider'
 import { cn } from '@/lib/utils'
 
 /**
@@ -55,6 +56,7 @@ export default function PricingSelector({
   }
 
   const onChoose = (plan: Plan) => {
+    captureEvent('pricing_plan_chosen', { plan: plan.id, period })
     trackEvent('InitiateCheckout', {
       currency: 'EUR',
       value: period === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice,

@@ -5,6 +5,7 @@ import { useEffect, Suspense } from "react";
 import type { PostHog } from "posthog-js";
 import { currentConsent, isTrackingPage } from "@/lib/consent";
 import { useConsent } from "@/components/consent/use-consent";
+import { SESSION_RECORDING_CONFIG } from "@/lib/replay";
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
@@ -16,6 +17,12 @@ const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
  * identifiant dans le navigateur.
  */
 let client: Promise<PostHog> | null = null;
+/**
+ * Dernière page vue. Avec `capture_pageview: false`, posthog-js n'envoie `$pageleave`
+ * qu'à la fermeture de l'onglet : sans celui-ci, la durée et le rebond d'une visite
+ * qui change de page sans recharger (navigation interne) seraient faux.
+ */
+let lastUrl: string | null = null;
 
 function loadPostHog(): Promise<PostHog> | null {
   const key = POSTHOG_KEY;
@@ -26,6 +33,13 @@ function loadPostHog(): Promise<PostHog> | null {
       person_profiles: "identified_only",
       capture_pageview: false, // on le fait manuellement ci-dessous
       capture_pageleave: true,
+      // Pages vues seulement : le texte des liens et boutons (noms de clients, montants)
+      // ne part jamais dans un événement. Les clics se voient dans l'enregistrement.
+      autocapture: false,
+      disable_surveys: true,
+      // Enregistrement des sessions : champs et données masqués (lib/replay.ts).
+      // À activer aussi dans PostHog : Paramètres du projet › Session replay.
+      session_recording: SESSION_RECORDING_CONFIG,
       // Page de règlement (/regler/<jeton>) : le jeton donne accès à une facture,
       // il ne part jamais chez un tiers. Aucun événement n'est envoyé depuis cette page.
       before_send: (event) =>
@@ -34,6 +48,19 @@ function loadPostHog(): Promise<PostHog> | null {
     return posthog;
   });
   return client;
+}
+
+/**
+ * Événement d'entonnoir (mur de paiement, choix d'une formule…), après accord du
+ * visiteur seulement. Aucune donnée personnelle dans les propriétés : ni nom, ni
+ * montant d'un document, ni numéro de facture, ni adresse email.
+ */
+export function captureEvent(name: string, properties?: Record<string, string | number | boolean>): void {
+  if (typeof window === "undefined" || !POSTHOG_KEY) return;
+  if (currentConsent() !== "accepted" || !isTrackingPage(window.location.pathname)) return;
+  loadPostHog()
+    ?.then((ph) => ph.capture(name, properties))
+    .catch(() => {});
 }
 
 function PostHogPageView() {
@@ -50,7 +77,18 @@ function PostHogPageView() {
       client?.then((ph) => ph.opt_out_capturing()).catch(() => {});
       return;
     }
-    if (!isTrackingPage(pathname)) return;
+    if (!isTrackingPage(pathname)) {
+      // Page sans traceur (règlement, signature, admin) atteinte depuis le site : on clôt la page
+      // précédente et on arrête l'enregistrement de la session tant qu'on y reste.
+      client
+        ?.then((ph) => {
+          if (lastUrl) ph.capture("$pageleave", { $current_url: lastUrl });
+          lastUrl = null;
+          ph.stopSessionRecording();
+        })
+        .catch(() => {});
+      return;
+    }
     let url = window.origin + pathname;
     if (searchParams.toString()) {
       url += "?" + searchParams.toString();
@@ -58,7 +96,10 @@ function PostHogPageView() {
     loadPostHog()
       ?.then((ph) => {
         if (ph.has_opted_out_capturing()) ph.opt_in_capturing({ captureEventName: false });
+        if (lastUrl && lastUrl !== url) ph.capture("$pageleave", { $current_url: lastUrl });
+        lastUrl = url;
         ph.capture("$pageview", { $current_url: url });
+        if (!ph.sessionRecordingStarted()) ph.startSessionRecording();
       })
       .catch(() => {});
   }, [pathname, searchParams, consent]);
