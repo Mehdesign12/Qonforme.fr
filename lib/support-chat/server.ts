@@ -365,3 +365,33 @@ export async function adminUpdate(db: SupabaseClient, conversationId: string, pa
   if (!data || (Array.isArray(data) && data.length === 0)) return fail(404, "Conversation introuvable")
   return { status: 200, body: { ok: true } }
 }
+
+/** Une conversation entière pour la boîte admin : notes internes comprises, pièces jointes avec lien signé d'une heure. */
+export async function adminThread(db: SupabaseClient, conversationId: string): Promise<ServiceResult> {
+  const conv = await db.from("support_conversations")
+    .select("id, email, name, user_id, source, subject, category, status, admin_unread, origin_path, device, created_at, last_message_at")
+    .eq("id", conversationId).maybeSingle()
+  if (conv.error) return isMissingSchemaError(conv.error) ? fail(503, NOT_ACTIVE) : fail(500, "Impossible de charger la conversation.")
+  if (!conv.data) return fail(404, "Conversation introuvable")
+  const msgs = await db.from("support_chat_messages")
+    .select("id, sender, body, created_at, visitor_seen_at, emailed_at, email_error")
+    .eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(MAX_MESSAGES_PER_CONVERSATION)
+  if (msgs.error) return fail(500, "Impossible de charger les messages.")
+  const rows = (msgs.data ?? []) as (MessageRow & { emailed_at: string | null; email_error: string | null })[]
+  let attachments: AttachmentRow[] = []
+  if (rows.length) {
+    const att = await db.from("support_chat_attachments").select("id, message_id, storage_path, file_name, mime_type, size_bytes").in("message_id", rows.map((r) => r.id))
+    attachments = (att.data ?? []) as AttachmentRow[]
+  }
+  const urls = await signedUrls(db, attachments.map((a) => a.storage_path))
+  return {
+    status: 200,
+    body: {
+      conversation: conv.data,
+      messages: rows.map((r) => ({
+        id: r.id, sender: r.sender, body: r.body, createdAt: r.created_at, seenAt: r.visitor_seen_at, emailedAt: r.emailed_at, emailError: r.email_error,
+        attachments: attachments.filter((a) => a.message_id === r.id).map((a) => ({ id: a.id, name: a.file_name, mime: a.mime_type, size: a.size_bytes, url: urls.get(a.storage_path) ?? null })),
+      })),
+    },
+  }
+}
