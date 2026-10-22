@@ -91,7 +91,7 @@ export default function ConfidentialitePage() {
         <li><strong>Données du compte</strong> — conservées pendant toute la durée de l&apos;abonnement, puis 3 ans après la suppression du compte</li>
         <li><strong>Documents comptables</strong> (factures, avoirs) — 10 ans conformément au Code de commerce</li>
         <li><strong>Logs de connexion</strong> — 12 mois</li>
-        <li><strong>Votre choix de cookies</strong> — 6 mois sur votre appareil, puis il vous est redemandé</li>
+        <li><strong>Votre choix de cookies</strong> — 13 mois sur votre appareil si vous acceptez, 6 mois si vous refusez, puis il vous est redemandé</li>
         <li><strong>Cookies du pixel Meta</strong> — 90 jours au plus, et seulement si vous avez accepté</li>
         <li><strong>Enregistrements de parcours (PostHog)</strong> — 30 jours au plus, et seulement si vous avez accepté</li>
         <li><strong>Données de paiement</strong> — conservées par Stripe selon sa propre politique de conservation</li>
@@ -150,7 +150,7 @@ export default function ConfidentialitePage() {
       <ul>
         <li><strong>Cookie de session</strong> — authentification Supabase (durée : session)</li>
         <li><strong>Préférence de thème</strong> — stockage local (localStorage, clé &laquo;&nbsp;theme&nbsp;&raquo;)</li>
-        <li><strong>Votre choix de cookies</strong> — stockage local (localStorage, clé &laquo;&nbsp;qonforme-cookie-consent&nbsp;&raquo;), 6 mois</li>
+        <li><strong>Votre choix de cookies</strong> — stockage local (localStorage, clé &laquo;&nbsp;qonforme-cookie-consent&nbsp;&raquo;), 13 mois si vous acceptez, 6 mois si vous refusez</li>
         <li><strong>Paiement</strong> — Stripe peut déposer des cookies de sécurité et de prévention de la fraude au moment de régler un abonnement</li>
       </ul>
 
@@ -183,7 +183,7 @@ export default function ConfidentialitePage() {
         d&apos;une facture, signature d&apos;un devis) ni dans l&apos;espace d&apos;administration.
       </p>
       <p>
-        Votre choix est conservé six mois sur votre appareil, puis nous vous le redemandons. Vous pouvez aussi
+        Votre choix est conservé sur votre appareil, 13 mois si vous acceptez et 6 mois si vous refusez, puis nous vous le redemandons. Vous pouvez aussi
         paramétrer votre navigateur pour bloquer ou supprimer les cookies ; certaines parties du service (connexion)
         ne fonctionnent pas sans les cookies de la première catégorie.
       </p>

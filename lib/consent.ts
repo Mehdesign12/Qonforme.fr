@@ -4,8 +4,10 @@
  * Le pixel Meta dépose le cookie `_fbp` : il demande l'accord préalable du
  * visiteur (CNIL, article 82 de la loi Informatique et Libertés). Rien n'est
  * chargé tant que le visiteur n'a pas accepté ; refuser est aussi simple
- * qu'accepter. Le choix est gardé six mois sur l'appareil (durée conseillée
- * par la CNIL), puis redemandé.
+ * qu'accepter. Le choix est gardé sur l'appareil : 13 mois après un accord (durée
+ * de vie maximale d'un traceur selon la CNIL : le bandeau ne revient pas avant),
+ * 6 mois après un refus. Il revient aussi si le visiteur vide les données de son
+ * navigateur ou clique sur « Gérer les cookies ».
  *
  * Ce module ne dépend pas de React : la logique pure se teste sans navigateur.
  * Le hook est dans `components/consent/use-consent.ts`.
@@ -16,8 +18,10 @@ export const CONSENT_KEY = "qonforme-cookie-consent"
 export const CONSENT_EVENT = "qonforme:consent"
 /** Évènement interne : rouvrir le bandeau (pied de page, politique de confidentialité). */
 export const SETTINGS_EVENT = "qonforme:cookie-settings"
-/** Six mois : durée de validité du choix. */
-export const CONSENT_MAX_AGE_MS = 182 * 24 * 60 * 60 * 1000
+/** Six mois : durée de validité d'un refus. */
+export const CONSENT_REFUSED_MAX_AGE_MS = 182 * 24 * 60 * 60 * 1000
+/** Treize mois : durée de validité d'un accord (on ne redemande pas à qui a déjà accepté). */
+export const CONSENT_ACCEPTED_MAX_AGE_MS = 395 * 24 * 60 * 60 * 1000
 
 export type ConsentChoice = "accepted" | "refused"
 
@@ -41,7 +45,8 @@ export function parseConsent(raw: string | null | undefined, now: number = Date.
     if (value.choice !== "accepted" && value.choice !== "refused") return null
     if (typeof value.at !== "number" || !Number.isFinite(value.at)) return null
     // Date dans le futur (horloge déréglée) ou choix trop ancien : on redemande
-    if (value.at > now + 60_000 || now - value.at > CONSENT_MAX_AGE_MS) return null
+    const maxAge = value.choice === "accepted" ? CONSENT_ACCEPTED_MAX_AGE_MS : CONSENT_REFUSED_MAX_AGE_MS
+    if (value.at > now + 60_000 || now - value.at > maxAge) return null
     return value.choice
   } catch {
     return null
