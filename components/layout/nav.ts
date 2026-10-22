@@ -34,7 +34,7 @@ export const NAV_MAIN: NavLink[] = [
   { key: "dashboard", label: "Tableau de bord", href: "/dashboard", demoHref: "/demo", icon: LayoutDashboard },
   { key: "invoices", label: "Factures", href: "/invoices", demoHref: "/demo/invoices", icon: FileText, hint: "Toutes vos factures" },
   { key: "quotes", label: "Devis", href: "/quotes", demoHref: "/demo/quotes", icon: FileCheck2, hint: "Gratuits et illimités" },
-  { key: "planning", label: "Planning", href: "/planning", demoHref: "/demo/planning", icon: CalendarDays, hint: "Visites, chantiers, livraisons" },
+  { key: "planning", label: "Planning et notes", href: "/planning", demoHref: "/demo/planning", icon: CalendarDays, hint: "Rendez-vous, tâches et notes" },
   { key: "chantiers", label: "Chantiers", href: "/chantiers", demoHref: "/demo/chantiers", icon: HardHat, hint: "Acomptes, situations, retenues" },
   { key: "purchase-orders", label: "Bons de commande", href: "/purchase-orders", demoHref: "/demo/purchase-orders", icon: ShoppingCart, hint: "Facultatifs" },
   { key: "credit-notes", label: "Avoirs", href: "/credit-notes", demoHref: "/demo/credit-notes", icon: ReceiptText, hint: "Corrections de factures" },
@@ -95,7 +95,7 @@ export function isActivePath(pathname: string, href: string): boolean {
 const SECTION_TITLES: { prefix: string; title: string; href: string }[] = [
   { prefix: "/invoices", title: "Factures", href: "/invoices" },
   { prefix: "/quotes", title: "Devis", href: "/quotes" },
-  { prefix: "/planning", title: "Planning", href: "/planning" },
+  { prefix: "/planning", title: "Planning et notes", href: "/planning" },
   { prefix: "/chantiers", title: "Chantiers", href: "/chantiers" },
   { prefix: "/clients", title: "Clients", href: "/clients" },
   { prefix: "/products", title: "Catalogue", href: "/products" },

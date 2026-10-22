@@ -5,7 +5,7 @@
 import { DEMO_CLIENTS, DEMO_SUB_CHANTIER_ID, DEMO_TODAY } from "@/lib/demo/data"
 import { addDays } from "@/lib/utils/paris-date"
 import type { NoteScope, NotesApi } from "@/components/planning/NotesPanel"
-import { parseNoteInput, type WorkNote } from "@/lib/planning/notes"
+import { parseNoteInput, remindAtOf, type WorkNote } from "@/lib/planning/notes"
 
 const name = (id: string | null) => (id ? DEMO_CLIENTS.find((c) => c.id === id)?.name ?? null : null)
 
@@ -14,7 +14,7 @@ function note(
 ): WorkNote {
   const { daysAgo = 0, ...rest } = extra
   return {
-    id, kind, body, due_date: null, done_at: null, client_id: null, client_name: null, chantier_id: null,
+    id, kind, body, due_date: null, done_at: null, remind_at: null, client_id: null, client_name: null, chantier_id: null,
     created_at: `${addDays(DEMO_TODAY, -daysAgo)}T10:00:00.000Z`, ...rest,
   }
 }
@@ -42,11 +42,12 @@ export function demoNotesApi(): NotesApi {
       return { available: true, today: DEMO_TODAY, notes: list }
     },
     async create(input) {
-      const parsed = parseNoteInput({ ...input })
+      // La démo n'envoie rien : le rappel est seulement montré (pas de contrôle d'heure passée sur la date fictive)
+      const parsed = parseNoteInput({ ...input, remind: null })
       if (!parsed.ok) throw new Error(parsed.error)
       const created: WorkNote = {
         id: `demo-note-${++seq}`, kind: parsed.value.kind, body: parsed.value.body, due_date: input.due_date,
-        done_at: null, client_id: input.client_id, client_name: name(input.client_id), chantier_id: input.chantier_id,
+        done_at: null, remind_at: input.due_date && input.remind ? remindAtOf(input.due_date, input.remind) : null, client_id: input.client_id, client_name: name(input.client_id), chantier_id: input.chantier_id,
         created_at: new Date().toISOString(),
       }
       store = [created, ...store]

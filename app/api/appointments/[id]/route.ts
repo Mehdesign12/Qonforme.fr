@@ -35,6 +35,11 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
     }
     update = { ...parsed.value }
+    // Heure ou rappel changés : le rappel repart pour la nouvelle échéance (jamais pour une simple retouche)
+    const { data: current } = await supabase.from("appointments").select("starts_at, reminder_minutes").eq("id", id).eq("user_id", user.id).maybeSingle()
+    if (current && (new Date(current.starts_at as string).getTime() !== new Date(parsed.value.starts_at).getTime() || (current.reminder_minutes ?? null) !== parsed.value.reminder_minutes)) {
+      update.reminder_sent_at = null
+    }
     if (body.status !== undefined) {
       const status = parseStatus(body.status)
       if (!status) return NextResponse.json({ error: "État inconnu." }, { status: 400 })

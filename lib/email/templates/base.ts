@@ -48,6 +48,7 @@ export function emailBase({
   reference,
   headline,
   headlineAccent,
+  replyNote = "Répondez à cet email pour toute question",
 }: {
   accentColor?: string
   companyName: string
@@ -60,6 +61,8 @@ export function emailBase({
   /** Titre en deux voix : première ligne en caractères droits, seconde en italique à la couleur de l'entreprise. */
   headline?: string
   headlineAccent?: string
+  /** Mention à droite du pied ; "" pour la retirer (email sans réponse possible). */
+  replyNote?: string
 }): string {
   const qonforme = `<a href="${poweredByUrl(source)}" style="color:${INK};font-weight:700;text-decoration:underline;" target="_blank" rel="noopener">Qonforme</a>`
   return `<!DOCTYPE html>
@@ -128,7 +131,7 @@ export function emailBase({
               <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${RULE};">
                 <tr>
                   <td class="q-stack" style="padding:18px 0 22px;font-family:${FONT_BODY};font-size:12px;line-height:1.6;color:${MUTED};">Envoyé par <strong style="font-weight:600;">${companyName}</strong> avec ${qonforme}</td>
-                  <td class="q-stack" align="right" style="padding:18px 0 22px;font-family:${FONT_BODY};font-size:12px;line-height:1.6;color:${MUTED};">Répondez à cet email pour toute question</td>
+                  <td class="q-stack" align="right" style="padding:18px 0 22px;font-family:${FONT_BODY};font-size:12px;line-height:1.6;color:${MUTED};">${replyNote}</td>
                 </tr>
               </table>
             </td>
