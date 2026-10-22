@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     console.error("[cron/onboarding] tables illisibles :", probe.error.message)
     return NextResponse.json({ error: "Tables du démarrage illisibles" }, { status: 500 })
   }
-  if (!probe.available) return NextResponse.json({ ok: true, mode: "inactive", planning })
+  if (!probe.available) return NextResponse.json({ ok: true, mode: "inactive" })
 
   const reminders = await sendDueReminders(admin, now)
   const sequence = isSequenceSendingTime(now) ? await sendSequence(admin, now) : { ...summary(), outsideHours: true }
