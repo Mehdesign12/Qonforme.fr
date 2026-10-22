@@ -9,6 +9,8 @@ import { toast } from "sonner"
 import { HardHat, Loader2 } from "lucide-react"
 import { EmptyState } from "@/components/app/kit"
 import { ChantierDetailView } from "@/components/artisan/ChantierDetailView"
+import { NotesPanel } from "@/components/planning/NotesPanel"
+import { appNotesApi } from "@/lib/planning/notes-api"
 import { ChantierFormDialog, chantierFormBody, chantierToForm, type ChantierFormValues } from "@/components/artisan/ChantierFormDialog"
 import { AttachDocumentDialog, type AttachCandidateView } from "@/components/artisan/AttachDocumentDialog"
 import { FreeDepositDialog } from "@/components/artisan/FreeDepositDialog"
@@ -213,6 +215,7 @@ export default function ChantierPage({ params }: { params: { id: string } }) {
         clientHref={c.client_id ? `/clients/${c.client_id}` : null}
         newQuoteHref={c.client_id ? `/quotes/new?client=${c.client_id}` : "/quotes/new"}
         busy={busy}
+        notes={<NotesPanel api={appNotesApi} scope={{ chantier_id: c.id }} title="À faire et notes du chantier" />}
         actions={{
           onEdit: openEdit,
           onAttach: openAttach,

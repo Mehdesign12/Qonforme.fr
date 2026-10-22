@@ -2,11 +2,14 @@
 
 export const dynamic = "force-dynamic"
 
+import { useMemo } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { HardHat } from "lucide-react"
 import { EmptyState } from "@/components/app/kit"
 import { ChantierDetailView } from "@/components/artisan/ChantierDetailView"
+import { NotesPanel } from "@/components/planning/NotesPanel"
+import { demoNotesApi } from "@/lib/demo/notes"
 import { DEMO_TODAY } from "@/lib/demo/data"
 import { demoChantier, demoChantierDocs, demoChantierSummary } from "@/lib/demo/chantiers"
 import type { ChantierDoc } from "@/lib/artisan/chantier"
@@ -22,6 +25,7 @@ const DOC_PATHS: Record<ChantierDoc["type"], string> = {
 /** Miroir de /chantiers/[id] : même fiche, chantier fictif, rien n'est enregistré. */
 export default function DemoChantierPage({ params }: { params: { id: string } }) {
   const c = demoChantier(params.id)
+  const notesApi = useMemo(() => demoNotesApi(), [])
   if (!c) return (
     <div className="q-card">
       <EmptyState
@@ -44,6 +48,7 @@ export default function DemoChantierPage({ params }: { params: { id: string } })
       docHref={(d) => `${DOC_PATHS[d.type]}/${d.id}`}
       clientHref={c.client_id ? `/demo/clients/${c.client_id}` : null}
       newQuoteHref="/demo/quotes/new"
+      notes={<NotesPanel api={notesApi} scope={{ chantier_id: c.id }} title="À faire et notes du chantier" />}
       actions={{
         onEdit: () => ctaToast("modifier vos chantiers"),
         onAttach: () => ctaToast("rattacher vos documents à un chantier"),

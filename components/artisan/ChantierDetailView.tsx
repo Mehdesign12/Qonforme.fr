@@ -53,6 +53,8 @@ export interface ChantierDetailViewProps {
   actions: ChantierDetailActions
   busy?: { reception?: boolean; release?: boolean; pdf?: boolean; delete?: boolean }
   demoHref?: string
+  /** Panneau « À faire et notes » du chantier (fourni par la page : routes réelles ou démo). */
+  notes?: React.ReactNode
 }
 
 const GROUPS: { type: ChantierDoc["type"]; title: string; icon: typeof FileText }[] = [
@@ -63,7 +65,7 @@ const GROUPS: { type: ChantierDoc["type"]; title: string; icon: typeof FileText 
 ]
 
 export function ChantierDetailView({
-  chantier: c, documents, summary: s, today, artisan, backHref, docHref, clientHref, newQuoteHref, actions, busy = {}, demoHref,
+  chantier: c, documents, summary: s, today, artisan, backHref, docHref, clientHref, newQuoteHref, actions, busy = {}, demoHref, notes,
 }: ChantierDetailViewProps) {
   const [reception, setReception] = useState(c.reception_date ?? "")
   const address = [c.address, [c.zip_code, c.city].filter(Boolean).join(" ")].filter(Boolean).join(", ")
@@ -128,6 +130,7 @@ export function ChantierDetailView({
       {s.signed > 0 && <Progress value={s.progress} label="Part du montant signé déjà facturée" />}
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex min-w-0 flex-col gap-5">
         {/* Documents */}
         <Panel title="Documents" className="min-w-0" bodyClassName="pb-2">
           {documents.length === 0 ? (
@@ -153,6 +156,8 @@ export function ChantierDetailView({
             })
           )}
         </Panel>
+        {notes}
+        </div>
 
         <div className="flex min-w-0 flex-col gap-4">
           {/* Retenue de garantie */}

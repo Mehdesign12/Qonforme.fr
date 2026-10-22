@@ -9,7 +9,7 @@
  */
 import {
   LayoutDashboard, FileText, FileCheck2, Users, Package, ShoppingCart,
-  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox, HardHat, Wallet, BellRing, CalendarDays, CalendarPlus,
+  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox, HardHat, Wallet, BellRing, CalendarDays, CalendarPlus, NotebookPen,
   type LucideIcon,
 } from "lucide-react"
 
@@ -69,6 +69,7 @@ export const CREATE_LINKS: CreateLink[] = [
   { key: "quote", label: "Nouveau devis", hint: "Client, prestations, envoi", href: "/quotes/new", demoHref: "/demo/quotes/new", icon: FileCheck2, shortcut: "D" },
   { key: "invoice", label: "Nouvelle facture", hint: "Directe, sans devis", href: "/invoices/new", demoHref: "/demo/invoices/new", icon: FileText, shortcut: "F" },
   { key: "appointment", label: "Nouveau rendez-vous", hint: "Visite, chantier, livraison", href: "/planning?nouveau=1", demoHref: "/demo/planning?nouveau=1", icon: CalendarPlus, shortcut: "R" },
+  { key: "note", label: "Note rapide", hint: "Tâche ou remarque, par client ou chantier", href: "/planning?note=1", demoHref: "/demo/planning?note=1", icon: NotebookPen, shortcut: "N" },
   { key: "client", label: "Nouveau client", hint: "Par SIREN ou à la main", href: "/clients/new", demoHref: "/demo/clients/new", icon: UserPlus, shortcut: "C" },
   { key: "purchase-order", label: "Nouveau bon de commande", hint: "Facultatif, pour un client qui en demande", href: "/purchase-orders/new", demoHref: "/demo/purchase-orders/new", icon: ShoppingCart, shortcut: "B" },
 ]

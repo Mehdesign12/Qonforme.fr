@@ -8,6 +8,8 @@ import { Loader2, Users } from "lucide-react"
 import { EmptyState } from "@/components/app/kit"
 import { SetCrumb } from "@/components/layout/crumb"
 import { ClientDetailView, type ClientContactFields } from "./ClientDetailView"
+import { NotesPanel } from "@/components/planning/NotesPanel"
+import { appNotesApi } from "@/lib/planning/notes-api"
 import {
   buildClientDocs, localISODate, metricsByClient, metricsFor,
   type ClientRecord, type MetricCreditNote, type MetricInvoice, type MetricQuote,
@@ -133,6 +135,7 @@ export function ClientDetail({ clientId }: Props) {
         }}
         onSave={saveContact}
         onArchive={archive}
+        notes={<NotesPanel api={appNotesApi} scope={{ client_id: clientId }} title="À faire et notes du client" />}
       />
     </>
   )
