@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server"
 import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { ownsClient } from "@/lib/artisan/server"
 import { DOCUMENT_COLUMNS, documentFromRow, parseScanFields, type PageRow } from "@/lib/scan/documents"
-import { SCAN_BUCKET, signedUrls } from "@/lib/scan/server"
+import { signedUrls } from "@/lib/scan/server"
+import { deleteScanDocument } from "@/lib/scan/service"
 
 export const dynamic = "force-dynamic"
 
@@ -71,23 +72,6 @@ export async function DELETE(_request: NextRequest, { params }: Ctx) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
-  const pages = await supabase.from("scanned_document_pages").select("storage_path").eq("document_id", id).eq("user_id", user.id)
-  if (pages.error) {
-    if (isMissingSchemaError(pages.error)) return NextResponse.json({ error: "Les documents scannés ne sont pas encore activés." }, { status: 503 })
-    console.error("[scan] suppression (pages) :", pages.error.message)
-    return NextResponse.json({ error: "Le document n'a pas pu être supprimé. Réessayez." }, { status: 500 })
-  }
-  const { data, error } = await supabase.from("scanned_documents").delete().eq("id", id).eq("user_id", user.id).select("id")
-  if (error) {
-    console.error("[scan] suppression :", error.message)
-    return NextResponse.json({ error: "Le document n'a pas pu être supprimé. Réessayez." }, { status: 500 })
-  }
-  if (!data || data.length === 0) return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
-  // Les lignes des pages sont parties avec le document (cascade) ; les fichiers sont retirés ensuite
-  const paths = (pages.data ?? []).map((p) => (p as { storage_path: string }).storage_path)
-  if (paths.length > 0) {
-    const removed = await supabase.storage.from(SCAN_BUCKET).remove(paths)
-    if (removed.error) console.error("[scan] suppression des fichiers :", removed.error.message)
-  }
-  return NextResponse.json({ ok: true })
+  const result = await deleteScanDocument(supabase, user.id, id)
+  return NextResponse.json(result.body, { status: result.status })
 }

@@ -81,13 +81,15 @@ export function ClassifyForm({
         <span className="q-label">Montant <span className="font-normal text-[var(--q-text-4)]">(facultatif)</span></span>
         <input className="q-input tabular-nums" inputMode="decimal" value={values.amount} disabled={disabled} onChange={(e) => set("amount", e.target.value)} placeholder="1 240,50" aria-label="Montant en euros" />
       </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="q-label">Client</span>
-        <select className="q-input" value={values.client_id} disabled={disabled} onChange={(e) => set("client_id", e.target.value)}>
-          <option value="">Aucun</option>
-          {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-      </label>
+      {clients.length > 0 && (
+        <label className="flex flex-col gap-1.5">
+          <span className="q-label">Client</span>
+          <select className="q-input" value={values.client_id} disabled={disabled} onChange={(e) => set("client_id", e.target.value)}>
+            <option value="">Aucun</option>
+            {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </label>
+      )}
       {chantiers.length > 0 && (
         <label className="flex flex-col gap-1.5">
           <span className="q-label">Chantier</span>

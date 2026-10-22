@@ -14,11 +14,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
-import { ownsClient } from "@/lib/artisan/server"
 import {
-  DOCUMENT_COLUMNS, SCAN_KINDS, checkQuota, documentFromRow, parseScanFields, searchTerm, type ScanDocument,
+  DOCUMENT_COLUMNS, SCAN_KINDS, documentFromRow, parseScanFields, searchTerm, type ScanDocument,
 } from "@/lib/scan/documents"
-import { ScanReadError, loadPlanKey, loadUsage, signedUrls, usageOf } from "@/lib/scan/server"
+import { loadPlanKey, loadUsage, signedUrls, usageOf } from "@/lib/scan/server"
+import { createScanDocument } from "@/lib/scan/service"
 
 export const dynamic = "force-dynamic"
 
@@ -75,36 +75,6 @@ export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
   const parsed = parseScanFields(body)
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
-  if (parsed.value.client_id && !(await ownsClient(supabase, user.id, parsed.value.client_id))) {
-    return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
-  }
-
-  try {
-    const used = await loadUsage(supabase, user.id)
-    if (!used) return NextResponse.json({ error: "Les documents scannés ne sont pas encore activés." }, { status: 503 })
-    const plan = await loadPlanKey(supabase, user.id)
-    const check = checkQuota(plan, used, { documents: 1 })
-    if (!check.ok) return NextResponse.json({ error: check.message, code: check.code }, { status: 409 })
-  } catch (err) {
-    if (err instanceof ScanReadError) {
-      console.error("[scan] quota :", err.message)
-      return NextResponse.json({ error: "Impossible de vérifier votre espace de scan. Réessayez dans un instant." }, { status: 503 })
-    }
-    throw err
-  }
-
-  const { data, error } = await supabase
-    .from("scanned_documents")
-    .insert({ ...parsed.value, user_id: user.id })
-    .select(DOCUMENT_COLUMNS)
-    .single()
-  if (error) {
-    if (isMissingSchemaError(error)) return NextResponse.json({ error: "Les documents scannés ne sont pas encore activés." }, { status: 503 })
-    if (error.code === "23503") return NextResponse.json({ error: "Client ou chantier introuvable." }, { status: 404 })
-    console.error("[scan] création :", error.message)
-    return NextResponse.json({ error: "Le document n'a pas pu être créé. Réessayez." }, { status: 500 })
-  }
-  const { pages: _pages, ...document } = documentFromRow(data as unknown as Record<string, unknown>)
-  void _pages
-  return NextResponse.json({ document }, { status: 201 })
+  const result = await createScanDocument(supabase, user.id, parsed.value)
+  return NextResponse.json(result.body, { status: result.status })
 }

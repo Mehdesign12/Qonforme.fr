@@ -20,6 +20,8 @@ export default function robots(): MetadataRoute.Robots {
           "/relances",
           "/planning",
           "/documents",
+          "/scan/",
+          "/scan-telephone",
           "/chantiers",
           "/api",
           "/signup/company",

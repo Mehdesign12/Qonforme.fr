@@ -135,7 +135,7 @@ export function DocumentsView({
           onSaved={() => { setFlow(false); void load() }}
         />
       )}
-      <ScanQrDialog open={qr} onOpenChange={setQr} path={`${base}?scanner=1`} />
+      <ScanQrDialog open={qr} onOpenChange={setQr} api={api} fallbackPath={`${base}?scanner=1`} onReceived={() => void load()} />
     </div>
   )
 }
