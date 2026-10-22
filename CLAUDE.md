@@ -530,6 +530,15 @@ ses vraies captures, en carrousel ; le mouvement accompagne le défilement, dans
   « Réduire les animations » ; démonstration rejouée à chaque retour à l'écran tant que le visiteur
   n'a pas survolé un métier ; aide au survol décorative (`aria-hidden`), sans `backdrop-filter` ni
   `will-change`. Ne pas en faire un modèle pour d'autres éléments.
+  **Seconde exception, voulue par le fondateur (22/10/2026) :** la bulle de contact
+  (`components/support/SupportChat.tsx`, montée dans `app/layout.tsx`) : en bas à droite sur ordinateur
+  (grande 6 secondes, puis ronde ; relevée au-dessus du bandeau de cookies tant qu'il est là), une
+  **languette collée au bord droit** sur téléphone (jamais de bulle permanente : elle prendrait trop de
+  place). Seulement sur les pages listées dans `lib/support-chat/surface.ts` : jamais sur `/contact`,
+  règlement, signature, scan, admin ni invitation du comptable. Ni `backdrop-filter` ni `will-change`
+  (animation de la largeur du libellé et de l'opacité seulement) ; feuille pleine hauteur sur téléphone
+  (`SheetGrip`), au-dessus de l'en-tête (z 200) ; aucun traceur ; la bulle ne demande rien au serveur
+  tant que le visiteur n'a jamais écrit.
 - **Apparitions au défilement** : attribut `data-reveal` (`""`, `zoom`, `left`, `right`,
   `scale`, `fade`, `line`, `words`), décalage par `lp-d1` à `lp-d3`, cartes d'une grille par
   `data-reveal-item`. Piloté par `components/motion/ScrollReveal.tsx` (monté dans `PublicNav`) :
@@ -596,7 +605,7 @@ mesure ou de publicité) ne se charge avant l'accord du visiteur.**
 - **Label « Solution compatible » (17/10/2026) :** le fondateur déclare l'avoir obtenu ; le logotype s'affiche par le seul composant `components/brand/SolutionCompatible.tsx`, qui applique la charte de la DGFiP (jamais modifié, au moins 192 px de large, sans effet) et se retire d'un coup avec `SOLUTION_COMPATIBLE = false` si l'État le retire. « Conforme », « certifié », « homologué » et « plateforme agréée » restent interdits. Détails et preuve à consigner : `DECISIONS-STRATEGIQUES.md` § 13.
 - **Chaîne des documents :** le devis signé vaut commande ; le bon de commande est facultatif, jamais une étape obligatoire. Signature en ligne et règles d'immutabilité : section 11 de `DECISIONS-STRATEGIQUES.md`.
 - **Paiements (02/10/2026) :** Stripe sert uniquement à l'abonnement Qonforme (carte bancaire seulement depuis le 20/10/2026, `SEPA_DEBIT_ENABLED` dans `lib/stripe/plans.ts` ; TVA reportée, § 14.3). Pas de Stripe Connect : les clients de l'artisan le paient par virement sur son propre IBAN. Pas d'app native : le mobile passe par le site et la PWA. Détails : section 12 de `DECISIONS-STRATEGIQUES.md`.
-- **Aucune promesse de contact humain :** pas d'appel, de visio, de rendez-vous, de « un humain vous répond » ni d'email signé du fondateur. Ce service n'existe pas. Les emails partent au nom de Qonforme.
+- **Aucune promesse de contact humain, sauf Christophe (22/10/2026) :** pas d'appel, de visio, de rendez-vous, de « un humain vous répond en direct » ni d'email signé du fondateur. **Christophe, responsable service client** (`lib/support-chat/persona.ts`, photo `public/support/christophe.webp`), répond **par email seulement** aux messages écrits depuis la bulle, la page `/contact` ou l'application, et ses réponses partent sous « Christophe de Qonforme ». **Aucun délai de réponse n'est jamais promis** (« sous 24 h » reste interdit) et rien n'annonce une présence en ligne. Tous les autres emails partent au nom de Qonforme.
 
 ---
 

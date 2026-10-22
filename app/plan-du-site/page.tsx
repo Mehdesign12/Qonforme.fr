@@ -70,6 +70,7 @@ export default async function PlanDuSitePage() {
         { href: "/", label: "Accueil" },
         { href: "/pricing", label: "Tarifs" },
         { href: "/demo", label: "Démo du tableau de bord" },
+        { href: "/contact", label: "Contact" },
         { href: "/signup", label: "Créer mon compte" },
         { href: "/login", label: "Se connecter" },
       ],
