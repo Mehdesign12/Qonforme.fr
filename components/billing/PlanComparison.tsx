@@ -1,5 +1,5 @@
 import { Check, Clock } from 'lucide-react'
-import { PLANS, SHARED_UPCOMING } from '@/lib/stripe/plans'
+import { PLANS, SCAN_QUOTAS } from '@/lib/stripe/plans'
 
 /**
  * Tableau « Comparer les offres » de la page Tarifs (planche « Tarifs »).
@@ -28,7 +28,13 @@ const ROWS: { label: string; cells: [Cell, Cell, Cell] }[] = [
   { label: 'Factures', cells: [yes('Brouillon'), yes('Illimitées'), yes('Illimitées')] },
   { label: 'Envoi des factures par email, avec le PDF', cells: [no, yes(), yes()] },
   { label: 'Relances des impayés', cells: [no, yes(), yes()] },
-  ...SHARED_UPCOMING.map((label) => ({ label, cells: [soon, soon, soon] as [Cell, Cell, Cell] })),
+  { label: 'Planning de rendez-vous', cells: [yes(), yes(), yes()] },
+  { label: 'Notes et rappels, par client ou par chantier', cells: [yes(), yes(), yes()] },
+  { label: 'Scan des devis, bons de commande et bons de livraison', cells: [yes(), yes(), yes()] },
+  {
+    label: 'Espace de scan',
+    cells: [yes(`${SCAN_QUOTAS.free.documents.toLocaleString('fr-FR')} documents`), yes(`${SCAN_QUOTAS.starter.documents.toLocaleString('fr-FR')} documents`), yes(`${SCAN_QUOTAS.pro.documents.toLocaleString('fr-FR')} documents`)],
+  },
   ...PLANS.starter.upcoming.map((label) => ({ label, cells: [no, soon, soon] as [Cell, Cell, Cell] })),
   ...PLANS.pro.features.map((label) => ({ label, cells: [no, no, yes()] as [Cell, Cell, Cell] })),
   ...PLANS.pro.upcoming.map((label) => ({ label, cells: [no, no, soon] as [Cell, Cell, Cell] })),

@@ -29,7 +29,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { invoiceBadge } from '@/lib/stripe/invoice-status'
-import { PLANS, FREE_FEATURES, SHARED_UPCOMING, TAX_SUFFIX, VAT_COLLECTED, formatEuros, withVat } from '@/lib/stripe/plans'
+import { PLANS, FREE_FEATURES, TAX_SUFFIX, VAT_COLLECTED, formatEuros, withVat } from '@/lib/stripe/plans'
 import { canIssueInvoices, GUARANTEE_DAYS } from '@/lib/stripe/access'
 import type { Subscription } from '@/lib/stripe/subscription'
 import { formatCurrency } from '@/lib/utils/invoice'
@@ -199,17 +199,6 @@ export default function BillingPageClient({
             </Link>
           </div>
           <FeatureList items={FREE_FEATURES} />
-          <div className="mt-4 border-t border-[var(--q-line-soft)] pt-3">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--q-text-4)]">À venir</p>
-            <ul className="grid grid-cols-1 gap-x-5 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
-              {SHARED_UPCOMING.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-[var(--q-text-3)]">
-                  <Clock className="mt-0.5 size-4 shrink-0 text-[var(--q-text-4)]" strokeWidth={2} aria-hidden />
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </div>
         </SettingsCard>
 
         <SettingsCard id="emettre" title="Pour émettre vos factures">
