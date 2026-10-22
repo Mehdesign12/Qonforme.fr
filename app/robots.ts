@@ -18,6 +18,7 @@ export default function robots(): MetadataRoute.Robots {
           "/credit-notes",
           "/tresorerie",
           "/relances",
+          "/planning",
           "/chantiers",
           "/api",
           "/signup/company",
