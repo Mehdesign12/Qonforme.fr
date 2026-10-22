@@ -17,6 +17,12 @@ const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
  * identifiant dans le navigateur.
  */
 let client: Promise<PostHog> | null = null;
+/**
+ * Dernière page vue. Avec `capture_pageview: false`, posthog-js n'envoie `$pageleave`
+ * qu'à la fermeture de l'onglet : sans celui-ci, la durée et le rebond d'une visite
+ * qui change de page sans recharger (navigation interne) seraient faux.
+ */
+let lastUrl: string | null = null;
 
 function loadPostHog(): Promise<PostHog> | null {
   const key = POSTHOG_KEY;
@@ -71,7 +77,18 @@ function PostHogPageView() {
       client?.then((ph) => ph.opt_out_capturing()).catch(() => {});
       return;
     }
-    if (!isTrackingPage(pathname)) return;
+    if (!isTrackingPage(pathname)) {
+      // Page sans traceur (règlement, signature, admin) atteinte depuis le site : on clôt la page
+      // précédente et on arrête l'enregistrement de la session tant qu'on y reste.
+      client
+        ?.then((ph) => {
+          if (lastUrl) ph.capture("$pageleave", { $current_url: lastUrl });
+          lastUrl = null;
+          ph.stopSessionRecording();
+        })
+        .catch(() => {});
+      return;
+    }
     let url = window.origin + pathname;
     if (searchParams.toString()) {
       url += "?" + searchParams.toString();
@@ -79,7 +96,10 @@ function PostHogPageView() {
     loadPostHog()
       ?.then((ph) => {
         if (ph.has_opted_out_capturing()) ph.opt_in_capturing({ captureEventName: false });
+        if (lastUrl && lastUrl !== url) ph.capture("$pageleave", { $current_url: lastUrl });
+        lastUrl = url;
         ph.capture("$pageview", { $current_url: url });
+        if (!ph.sessionRecordingStarted()) ph.startSessionRecording();
       })
       .catch(() => {});
   }, [pathname, searchParams, consent]);

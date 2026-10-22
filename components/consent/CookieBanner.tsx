@@ -114,8 +114,7 @@ export function CookieBanner() {
         <div className="flex min-w-0 flex-1 items-start gap-2.5">
           <Cookie aria-hidden className="mt-px size-[17px] shrink-0 text-q-accent" strokeWidth={1.75} />
           <p id="cookie-desc" className="text-[12.5px] leading-[1.45] text-q-text-2">
-            <strong className="font-semibold text-q-ink-strong">Cookies</strong> de mesure et de publicité (Meta),
-            seulement si vous acceptez.{" "}
+            Nous utilisons des cookies.{" "}
             <Link
               href="/confidentialite#cookies"
               className="font-medium text-q-accent-strong underline decoration-q-wash-line underline-offset-2 hover:decoration-current"
