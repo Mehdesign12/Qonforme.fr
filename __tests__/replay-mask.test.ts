@@ -46,6 +46,13 @@ describe("maskReplayText", () => {
     expect(maskReplayText("Dupont", el("<button role='combobox' data-t>x</button>"), "/invoices/new")).toBe("******")
   })
 
+  it("laisse lisible un bloc marqué data-replay-clear, sauf la donnée marquée data-replay-mask", () => {
+    const root = document.createElement("div")
+    root.innerHTML = "<div data-replay-clear><p id='a'>x</p><p>Votre facture <span data-replay-mask id='b'>F-2026-004</span></p></div>"
+    expect(maskReplayText("Vos devis restent gratuits.", root.querySelector("#a"), "/invoices/abc")).toBe("Vos devis restent gratuits.")
+    expect(maskReplayText("F-2026-004", root.querySelector("#b"), "/invoices/abc")).toBe("**********")
+  })
+
   it("masque le texte sans élément connu", () => {
     expect(maskReplayText("Dupont", undefined, "/dashboard")).toBe("******")
   })

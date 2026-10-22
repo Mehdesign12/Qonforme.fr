@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { BellRing, Check, Construction, Send, ShieldCheck, Signature } from 'lucide-react'
@@ -11,6 +11,7 @@ import { PLANS, VAT_COLLECTED, formatEuros, withVat, type BillingPeriod } from '
 import { GUARANTEE_DAYS, SUBSCRIPTION_REQUIRED } from '@/lib/stripe/access'
 import { ARTISAN_REQUIRED } from '@/lib/artisan/plan'
 import { trackEvent } from '@/lib/meta-pixel'
+import { captureEvent } from '@/components/shared/PostHogProvider'
 import { useArtisanOnSale } from './useArtisanOnSale'
 
 /**
@@ -59,7 +60,23 @@ export function PaywallDialog({
   const next = invoiceId ? `/invoices/${invoiceId}${reason === 'send' ? '?send=1' : ''}` : nextPath ?? null
   const chargeHt = period === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
 
+  // Entonnoir PostHog : mur affiché, formule choisie, ou fermé sans choisir
+  const chosen = useRef(false)
+  useEffect(() => {
+    if (open) {
+      chosen.current = false
+      captureEvent('paywall_shown', { reason, plan: plan.id, on_sale: onSale })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- une seule fois par ouverture
+  }, [open])
+  const handleOpenChange = (value: boolean) => {
+    if (!value && !chosen.current) captureEvent('paywall_dismissed', { reason, plan: plan.id, period })
+    onOpenChange(value)
+  }
+
   const choose = () => {
+    chosen.current = true
+    captureEvent('paywall_plan_chosen', { reason, plan: plan.id, period })
     trackEvent('InitiateCheckout', {
       currency: 'EUR',
       value: chargeHt,
@@ -73,8 +90,8 @@ export function PaywallDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto p-[22px] sm:max-w-[460px]">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent data-replay-clear className="max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto p-[22px] sm:max-w-[460px]">
         <div className="flex flex-col gap-1.5 pr-8">
           {/* Pictogrammes de marque : ce que débloque la formule */}
           <PictoCluster
@@ -89,7 +106,7 @@ export function PaywallDialog({
               ? 'Les relances font partie de la formule.'
               : reason === 'signature'
                 ? 'La signature en ligne fait partie de la formule.'
-                : invoiceNumber ? `Votre facture ${invoiceNumber} est prête.` : 'Votre facture est prête.'}
+                : invoiceNumber ? <>Votre facture <span data-replay-mask>{invoiceNumber}</span> est prête.</> : 'Votre facture est prête.'}
           </DialogTitle>
           <DialogDescription className="text-[15px] leading-relaxed text-[var(--q-text-3)]">
             {artisan

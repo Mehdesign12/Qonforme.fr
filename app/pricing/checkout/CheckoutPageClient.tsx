@@ -12,6 +12,7 @@ import { Check, ArrowLeft, ChevronDown, Clock, Lock, RefreshCw, ShieldCheck } fr
 import { PAYMENT_METHODS_TEXT, PLANS, VAT_COLLECTED, formatEuros, withVat, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { trackEvent } from '@/lib/meta-pixel'
+import { captureEvent } from '@/components/shared/PostHogProvider'
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from '@/lib/brand'
 import { cn } from '@/lib/utils'
 import { PictoCluster } from '@/components/brand/PictoCluster'
@@ -98,6 +99,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next, publis
     const FAST_INTERVAL = 2000
 
     const redirectToDashboard = () => {
+      captureEvent('subscription_confirmed', { plan: planId, period: billingPeriod })
       trackEvent('Purchase', {
         currency: 'EUR',
         value: billingPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice,
