@@ -6,6 +6,8 @@ import { Suspense, useMemo, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import { PlanningView, type AppointmentFormValues, type PlanningApi } from "@/components/planning/PlanningView"
 import { DEMO_CLIENTS, DEMO_SUB_CHANTIER_ID, DEMO_TODAY } from "@/lib/demo/data"
+import { NotesPanel } from "@/components/planning/NotesPanel"
+import { demoNotesApi } from "@/lib/demo/notes"
 import { DEMO_APPOINTMENTS } from "@/lib/demo/planning"
 import { appointmentsOnDay, parseAppointmentInput, weekDays, type Appointment } from "@/lib/planning/appointments"
 
@@ -14,6 +16,7 @@ function DemoPlanningPage() {
   const params = useSearchParams()
   const store = useRef<Appointment[]>([...DEMO_APPOINTMENTS])
   const seq = useRef(100)
+  const notesApi = useMemo(() => demoNotesApi(), [])
 
   const api = useMemo<PlanningApi>(() => ({
     async load(start) {
@@ -51,6 +54,7 @@ function DemoPlanningPage() {
       clients={DEMO_CLIENTS.map((c) => ({ id: c.id, name: c.name, address: c.address, zip_code: c.zip_code, city: c.city }))}
       chantiers={[{ id: DEMO_SUB_CHANTIER_ID, name: "Résidence Le Clos Fleuri" }]}
       openNew={params.get("nouveau") === "1"}
+      footer={<NotesPanel api={notesApi} scope={{}} focusComposer={params.get("note") === "1"} />}
     />
   )
 }

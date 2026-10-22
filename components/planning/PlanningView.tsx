@@ -66,7 +66,7 @@ function toValues(a: Appointment): AppointmentFormValues {
 }
 
 export function PlanningView({
-  mode, today, api, clients, chantiers = [], openNew = false,
+  mode, today, api, clients, chantiers = [], openNew = false, footer,
 }: {
   mode: "app" | "demo"
   today: string | null
@@ -75,6 +75,8 @@ export function PlanningView({
   chantiers?: { id: string; name: string }[]
   /** Ouvre la fenêtre de création à l'arrivée (menu « Nouveau », ?nouveau=1). */
   openNew?: boolean
+  /** Sous le calendrier : tâches et notes (fourni par la page). */
+  footer?: React.ReactNode
 }) {
   const [week, setWeek] = useState<string | null>(today ? weekStart(today) : null)
   const [selected, setSelected] = useState<string | null>(today)
@@ -213,6 +215,8 @@ export function PlanningView({
           </div>
         </>
       )}
+
+      {footer}
 
       {dialog && (
         <AppointmentDialog

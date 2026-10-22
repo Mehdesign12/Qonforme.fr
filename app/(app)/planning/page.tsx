@@ -5,6 +5,8 @@ export const dynamic = "force-dynamic"
 import { Suspense, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { PlanningView, type AppointmentFormValues, type PlanningApi, type PlanningClient } from "@/components/planning/PlanningView"
+import { NotesPanel } from "@/components/planning/NotesPanel"
+import { appNotesApi } from "@/lib/planning/notes-api"
 import { weekRangeIso, type Appointment } from "@/lib/planning/appointments"
 import { todayInParis } from "@/lib/utils/paris-date"
 
@@ -54,7 +56,8 @@ function PlanningPage() {
     async remove(id) { await call(`/api/appointments/${id}`, { method: "DELETE" }) },
   }), [])
 
-  return <PlanningView mode="app" today={today} api={api} clients={clients} chantiers={chantiers} openNew={params.get("nouveau") === "1"} />
+  return <PlanningView mode="app" today={today} api={api} clients={clients} chantiers={chantiers} openNew={params.get("nouveau") === "1"}
+    footer={<NotesPanel api={appNotesApi} scope={{}} focusComposer={params.get("note") === "1"} />} />
 }
 
 export default function Page() {

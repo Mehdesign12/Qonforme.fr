@@ -9,6 +9,8 @@ import { buildClientDocs, metricsByClient, metricsFor } from "@/components/clien
 import {
   DEMO_YEAR, demoClientRecord, demoMetricCreditNotes, demoMetricInvoices, demoMetricQuotes,
 } from "@/components/clients/demo-clients"
+import { NotesPanel } from "@/components/planning/NotesPanel"
+import { demoNotesApi } from "@/lib/demo/notes"
 import { DEMO_CLIENTS, DEMO_TODAY } from "@/lib/demo/data"
 
 const demoCta = (message: string) =>
@@ -18,6 +20,7 @@ const demoCta = (message: string) =>
 export default function DemoClientDetailPage() {
   const { id } = useParams<{ id: string }>()
   const source = DEMO_CLIENTS.find((c) => c.id === id)
+  const notesApi = useMemo(() => demoNotesApi(), [])
 
   const data = useMemo(() => {
     if (!source) return null
@@ -54,6 +57,7 @@ export default function DemoClientDetailPage() {
         }}
         onSave={() => { demoCta("Créez un compte pour modifier vos clients"); return true }}
         onArchive={() => { demoCta("Créez un compte pour archiver vos clients") }}
+        notes={<NotesPanel api={notesApi} scope={{ client_id: data.client.id }} title="À faire et notes du client" />}
         onContact={() => demoCta("Démo : les coordonnées sont fictives. Créez un compte pour contacter vos clients")}
       />
     </>
