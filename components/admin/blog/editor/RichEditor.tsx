@@ -34,7 +34,7 @@
  */
 import { forwardRef, useCallback, useDeferredValue, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { EditorContent, useEditor } from "@tiptap/react"
-import type { Editor } from "@tiptap/core"
+import type { Editor, JSONContent } from "@tiptap/core"
 import { DOMParser as PMDOMParser, type Node as PMNode } from "@tiptap/pm/model"
 import { NodeSelection } from "@tiptap/pm/state"
 import { Code2, Eye, Highlighter, TriangleAlert } from "lucide-react"
@@ -45,6 +45,7 @@ import { markdownToHtml } from "@/lib/markdown"
 import { wordCount } from "@/lib/seo/articles/check"
 import { markdownPlainText } from "@/lib/seo/articles/onpage"
 import { docToMarkdown } from "@/lib/blog-editor/serialize"
+import { applyPassageEdits, contextAround, fitPassageText, locateInMarkdown, textHasExcerpt, type PassageEdit, type PassageKind } from "@/lib/blog-editor/passages"
 import { browserParseHtml, compareRendering } from "@/lib/blog-editor/fidelity"
 import { readImageSize } from "@/lib/blog-images/policy"
 import type { PickedImage } from "@/lib/seo/articles/editor-types"
@@ -61,6 +62,16 @@ export interface EditorSelection {
   to: number
 }
 
+/** Passage du texte retrouvé par un extrait (refus du contrôle, intégration d'un mot-clé). */
+export interface PassageInfo {
+  /** Texte du passage en Markdown en ligne (sans « # » ni tiret de puce). */
+  markdown: string
+  kind: PassageKind
+  /** Texte brut qui précède et qui suit (500 caractères au plus de chaque côté). */
+  before: string
+  after: string
+}
+
 export interface RichEditorHandle {
   /** Focus dans la zone d'écriture ; `selection` : curseur remis à cet endroit (mode visuel). */
   focus(selection?: EditorSelection): void
@@ -69,6 +80,15 @@ export interface RichEditorHandle {
   getMarkdown(): string
   /** Sélection du mode visuel ; null en mode Markdown ou avant la création de l'éditeur. */
   getSelection(): EditorSelection | null
+  /** Le passage qui contient l'extrait ; null s'il n'est plus dans le texte (déjà corrigé). */
+  findPassage(excerpt: string): PassageInfo | null
+  /** Sélectionne le passage et le montre à l'écran ; faux s'il est introuvable. */
+  revealPassage(excerpt: string): boolean
+  /**
+   * Remplace des passages d'un coup (une seule étape d'annulation en mode visuel) ; `missed` : extraits
+   * dont le passage est introuvable, ou dans un tableau ou une citation (non remplaçables).
+   */
+  replacePassages(edits: PassageEdit[]): { applied: number; missed: string[] }
 }
 
 export interface RichEditorProps {
@@ -167,6 +187,44 @@ function caretTop(textarea: HTMLTextAreaElement, offset: number): number {
 
 function sameOutline(a: Heading[] | null, b: Heading[]): boolean {
   return !!a && a.length === b.length && a.every((h, i) => h.level === b[i].level && h.text === b[i].text)
+}
+
+/** Conteneurs dont le texte ne se réécrit pas (citation, tableau). */
+const NOT_REWRITABLE = new Set(["blockquote", "table", "tableRow", "tableCell", "tableHeader"])
+
+interface TextblockHit {
+  pos: number
+  node: PMNode
+  kind: PassageKind
+}
+
+/** Premier bloc de texte de l'éditeur qui contient l'extrait. */
+function findTextblock(doc: PMNode, excerpt: string): TextblockHit | null {
+  let hit: TextblockHit | null = null
+  doc.descendants((node, pos) => {
+    if (hit) return false
+    if (!node.isTextblock) return true
+    if (!node.type.spec.code && textHasExcerpt(node.textContent, excerpt)) {
+      const $pos = doc.resolve(pos)
+      let kind: PassageKind = node.type.name === "heading" ? "heading" : node.type.name === "paragraph" ? "paragraph" : "other"
+      for (let d = $pos.depth; d > 0; d--) {
+        const name = $pos.node(d).type.name
+        if (NOT_REWRITABLE.has(name)) kind = "other"
+        else if (name === "listItem" && kind === "paragraph") kind = "list-item"
+      }
+      hit = { pos, node, kind }
+    }
+    return false
+  })
+  return hit
+}
+
+/** Contenu en ligne d'un Markdown d'un seul paragraphe, lu par le schéma de l'éditeur (même chemin que le blog) ; null s'il n'y en a pas. */
+function inlineContentOf(editor: Editor, markdown: string) {
+  const body = new DOMParser().parseFromString(markdownToHtml(markdown), "text/html").body
+  const parsed = PMDOMParser.fromSchema(editor.schema).parse(body)
+  const first = parsed.firstChild
+  return first && first.isTextblock && first.content.size > 0 ? first.content : null
 }
 
 function prefersReducedMotion(): boolean {
@@ -521,6 +579,78 @@ export const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function
         const { from, to } = editor.state.selection
         return { from, to }
       },
+      findPassage(excerpt: string) {
+        if (modeRef.current === "markdown") {
+          const text = textareaRef.current?.value ?? current.current
+          const unit = locateInMarkdown(text, excerpt)
+          return unit ? { markdown: unit.text, kind: unit.kind, ...contextAround(text, unit) } : null
+        }
+        if (!editor || editor.isDestroyed) return null
+        const hit = findTextblock(editor.state.doc, excerpt)
+        if (!hit) return null
+        const { doc } = editor.state
+        const markdown = docToMarkdown({ type: "doc", content: [{ type: "paragraph", content: (hit.node.content.toJSON() as JSONContent[] | null) ?? [] }] }).trim()
+        const squash = (t: string) => t.replace(/\s+/g, " ").trim()
+        const from = hit.pos
+        const to = hit.pos + hit.node.nodeSize
+        return {
+          markdown,
+          kind: hit.kind,
+          before: squash(doc.textBetween(Math.max(0, from - 700), from, "\n", " ")).slice(-500),
+          after: squash(doc.textBetween(to, Math.min(doc.content.size, to + 700), "\n", " ")).slice(0, 500),
+        }
+      },
+      revealPassage(excerpt: string) {
+        const behavior: ScrollBehavior = prefersReducedMotion() ? "auto" : "smooth"
+        if (modeRef.current === "markdown") {
+          const textarea = textareaRef.current
+          if (!textarea) return false
+          const unit = locateInMarkdown(textarea.value, excerpt)
+          if (!unit) return false
+          textarea.focus({ preventScroll: true })
+          textarea.setSelectionRange(unit.start, unit.end)
+          const top = caretTop(textarea, unit.start)
+          const scroller = textarea.closest<HTMLElement>("[data-admin-scroll]")
+          const toolbarBottom = toolbarRef.current?.getBoundingClientRect().bottom ?? 0
+          const target = textarea.getBoundingClientRect().top + top - Math.max(toolbarBottom, 0) - 120
+          if (scroller) scroller.scrollBy({ top: target, behavior })
+          else window.scrollBy({ top: target, behavior })
+          return true
+        }
+        if (!editor || editor.isDestroyed) return false
+        const hit = findTextblock(editor.state.doc, excerpt)
+        if (!hit) return false
+        editor.chain().setTextSelection({ from: hit.pos + 1, to: hit.pos + hit.node.nodeSize - 1 }).run()
+        editor.view.focus()
+        const dom = editor.view.nodeDOM(hit.pos)
+        if (dom instanceof HTMLElement) dom.scrollIntoView({ block: "center", behavior })
+        return true
+      },
+      replacePassages(edits: PassageEdit[]) {
+        if (modeRef.current === "markdown") {
+          const result = applyPassageEdits(textareaRef.current?.value ?? current.current, edits)
+          if (result.applied > 0) onMarkdownChange(result.markdown)
+          return { applied: result.applied, missed: result.missed }
+        }
+        if (!editor || editor.isDestroyed) return { applied: 0, missed: edits.map((e) => e.excerpt) }
+        const missed: string[] = []
+        const hits: { hit: TextblockHit; fragment: ReturnType<typeof inlineContentOf> }[] = []
+        for (const edit of edits) {
+          const hit = findTextblock(editor.state.doc, edit.excerpt)
+          const text = hit ? fitPassageText(hit.kind, edit.text) : ""
+          const fragment = hit && hit.kind !== "other" && text ? inlineContentOf(editor, text) : null
+          if (!hit || !fragment || hits.some((h) => h.hit.pos === hit.pos)) missed.push(edit.excerpt)
+          else hits.push({ hit, fragment })
+        }
+        if (hits.length === 0) return { applied: 0, missed }
+        // De la fin vers le début : les positions des passages précédents ne bougent pas, et une seule étape d'annulation
+        const tr = editor.state.tr
+        for (const { hit, fragment } of hits.sort((a, b) => b.hit.pos - a.hit.pos)) {
+          if (fragment) tr.replaceWith(hit.pos + 1, hit.pos + hit.node.nodeSize - 1, fragment)
+        }
+        editor.view.dispatch(tr.scrollIntoView())
+        return { applied: hits.length, missed }
+      },
       scrollToHeading(index: number) {
         const behavior: ScrollBehavior = prefersReducedMotion() ? "auto" : "smooth"
         if (modeRef.current === "markdown") {
@@ -548,7 +678,7 @@ export const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function
         if (dom instanceof HTMLElement) dom.scrollIntoView({ block: "start", behavior })
       },
     }),
-    [editor],
+    [editor, onMarkdownChange],
   )
 
   /* ---------------------------------------------------------------- */

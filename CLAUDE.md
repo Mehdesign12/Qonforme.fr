@@ -447,6 +447,7 @@ lisent toujours le Markdown.
 - **Ouvrir un article ne réécrit jamais son texte** : rien n'est envoyé tant que
   l'admin n'a rien modifié, et un article que l'éditeur ne reproduit pas à l'identique
   (`lib/blog-editor/fidelity.ts`) s'ouvre en mode Markdown.
+- **Une réécriture par l'IA ne remplace jamais le texte sans clic** (correction d'un passage refusé par le contrôle, mot-clé à placer dans le texte, assistant de la sélection) : le modèle propose, l'éditeur montre l'avant et l'après (mots changés surlignés), et le remplacement passe par `RichEditorHandle.replacePassages` (un seul pas d'annulation, mode visuel comme mode Markdown). Les passages se retrouvent par leur texte (`lib/blog-editor/passages.ts`), jamais par une position gardée ; aucun concurrent dans une consigne, aucun lien ni chiffre ajouté par le modèle sans avertissement.
 - **Toute syntaxe ajoutée au moteur** (`lib/markdown.ts`) l'est aussi au sérialiseur,
   avec un cas dans `__tests__/blog-editor-roundtrip.test.ts`.
 - **Images du texte** : seulement depuis le compartiment `blog-covers` du projet

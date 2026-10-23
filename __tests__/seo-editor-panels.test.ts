@@ -341,6 +341,36 @@ describe("SeoScore", () => {
     expect(targets).toEqual(["seoDescription"])
   })
 
+  it("bouton « avec l'IA » sous une ligne à corriger seulement : ni sous un point validé, ni sans bouton défini", async () => {
+    const result = analyzeOnPage({
+      title: "Facturer un chantier",
+      seoTitle: "",
+      seoDescription: "",
+      slug: "facturer-un-chantier",
+      excerpt: "",
+      content: "Une introduction sans le mot-clé.\n\n## Les acomptes\n\nUn texte sur les acomptes de chantier.",
+      keyword: "devis plomberie",
+      coverUrl: null,
+      coverAlt: null,
+    })
+    const clicks: string[] = []
+    const actionFor = (check: { id: string }) => (check.id === "kw-intro" || check.id === "kw-title" ? { label: `IA ${check.id}`, onClick: () => clicks.push(check.id) } : null)
+    await render(createElement(SeoScore, { result, onFocusTarget: () => {}, actionFor }))
+    expect(buttonByText("IA kw-intro", container)).toBeTruthy()
+    expect(buttonByText("IA kw-title", container)).toBeTruthy()
+    expect(() => buttonByText("IA kw-heading", container)).toThrow()
+    await click(buttonByText("IA kw-intro", container))
+    expect(clicks).toEqual(["kw-intro"])
+
+    // Un point validé (repli ouvert) n'a pas de bouton même si l'action existe
+    await click(buttonByText(/points? validés?/, container))
+    const okIds = result.checks.filter((c) => c.status === "ok").map((c) => c.id)
+    expect(okIds.length).toBeGreaterThan(0)
+    const asked: string[] = []
+    await render(createElement(SeoScore, { result, onFocusTarget: () => {}, actionFor: (c: { id: string }) => (asked.push(c.id), null) }))
+    expect(asked.every((id) => !okIds.includes(id))).toBe(true)
+  })
+
   it("appréciations", () => {
     expect(scoreLabel(85)).toBe("Bon")
     expect(scoreLabel(60)).toBe("À améliorer")
@@ -636,5 +666,197 @@ describe("useSeoContext", () => {
     await flush()
     expect(state!.error).toBe("Lecture impossible pour le moment.")
     expect(state!.data).toEqual(CTX)
+  })
+})
+
+/* ------------------------------------------------------------------ */
+/* Mot-clé principal saisi à la main                                    */
+/* ------------------------------------------------------------------ */
+
+describe("KeywordPicker : saisie d'un mot-clé libre", () => {
+  it("la phrase tapée est la première option : Entrée valide ce qui a été tapé, pas la première suggestion", async () => {
+    const changes: (string | null)[] = []
+    await render(createElement(PickerHarness, { onChange: (k) => changes.push(k) }))
+    const input = document.getElementById("mot-cle") as HTMLInputElement
+    await act(async () => input.focus())
+    await type(input, "devis")
+    const options = Array.from(container.querySelectorAll('[role="option"]'))
+    expect(options.length).toBeGreaterThan(1)
+    expect(options[0].textContent).toContain("Utiliser « devis »")
+    expect(input.getAttribute("aria-activedescendant")).toBe(options[0].id)
+    await key(input, "Enter")
+    await flush()
+    expect(changes).toEqual(["devis"])
+  })
+
+  it("une phrase déjà suivie passe en tête de la liste", async () => {
+    await render(createElement(PickerHarness, {}))
+    const input = document.getElementById("mot-cle") as HTMLInputElement
+    await act(async () => input.focus())
+    await type(input, "devis maçon")
+    const options = Array.from(container.querySelectorAll('[role="option"]'))
+    expect(options[0].textContent).toContain("devis maçon")
+    expect(options[0].textContent).not.toContain("Utiliser")
+  })
+
+  it("liste fermée avant la validation : le bouton « Utiliser » reste, le message le dit, Entrée valide aussi", async () => {
+    const changes: (string | null)[] = []
+    await render(createElement(PickerHarness, { onChange: (k) => changes.push(k) }))
+    const input = document.getElementById("mot-cle") as HTMLInputElement
+    await act(async () => input.focus())
+    await type(input, "facture plombier")
+    await act(async () => input.blur())
+    expect(input.getAttribute("aria-expanded")).toBe("false")
+    expect(container.querySelector("[id$='-aide']")?.textContent).toContain("Pas encore validé")
+    expect(buttonByText("Utiliser « facture plombier »", container)).toBeTruthy()
+    expect(changes).toEqual([])
+    await key(input, "Enter")
+    await flush()
+    expect(changes).toEqual(["facture plombier"])
+  })
+
+  it("« Utiliser » valide la saisie par un clic", async () => {
+    const changes: (string | null)[] = []
+    await render(createElement(PickerHarness, { onChange: (k) => changes.push(k) }))
+    const input = document.getElementById("mot-cle") as HTMLInputElement
+    await act(async () => input.focus())
+    await type(input, "facture plombier")
+    await act(async () => input.blur())
+    await click(buttonByText("Utiliser « facture plombier »", container))
+    expect(changes).toEqual(["facture plombier"])
+    expect(container.textContent).toContain("Mot-clé libre, pas encore suivi")
+  })
+
+  it("pendant la saisie d'un autre mot-clé, le risque de concurrence de l'ancien n'est plus affiché", async () => {
+    const pages: KeywordPages = { keyword: "exemple devis maçonnerie", topPage: { page: "/modele/devis-maconnerie", clicks: 2, impressions: 140, position: 6.2 }, targetPath: null, posts: [] }
+    await render(createElement(PickerHarness, { initial: "exemple devis maçonnerie", pages }))
+    expect(container.querySelector(".q-banner-warn")).not.toBeNull()
+    await click(container.querySelector('button[aria-label^="Changer de mot-clé"]') as HTMLButtonElement)
+    expect(container.querySelector(".q-banner-warn")).not.toBeNull()
+    const input = document.getElementById("mot-cle") as HTMLInputElement
+    await type(input, "facture plombier")
+    expect(container.querySelector(".q-banner-warn")).toBeNull()
+  })
+})
+
+describe("KeywordCheck : mesure d'un mot-clé libre", () => {
+  const checkResult = (over: Record<string, unknown> = {}) => ({
+    keyword: "facture plombier",
+    tracked: null,
+    google: { state: "ok", verified: true, also: ["facture plombier modele"] },
+    metrics: { state: "ok", volume: 320, difficulty: 14, cpc: 1.4, intent: "transactional", message: null },
+    competitor: false,
+    ...over,
+  })
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } })
+
+  function stub(handlers: { check?: () => Response; adopt?: () => Response }) {
+    const calls: { url: string; body: Record<string, unknown> }[] = []
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        calls.push({ url, body: JSON.parse(String(init?.body ?? "{}")) })
+        if (url === "/api/admin/blog/keyword-check") return handlers.check?.() ?? json(checkResult())
+        if (url === "/api/admin/seo/ideas/adopt") return handlers.adopt?.() ?? json({ keywordId: "k1", keyword: "facture plombier", keywordAdded: true, topicId: null, topicExisting: false }, 201)
+        throw new Error(`appel inattendu : ${url}`)
+      }),
+    )
+    return calls
+  }
+
+  const picker = (onTracked = vi.fn(), articleTitle = "Facturer un chantier de plomberie") =>
+    createElement(KeywordPicker, { value: "facture plombier", onChange: () => {}, keywords: KEYWORDS, keywordPages: null, slug: "x", measure: { articleTitle, onTracked } })
+
+  it("un mot-clé libre dit qu'il n'a aucune mesure et propose de la faire, rien n'est appelé avant le clic", async () => {
+    const calls = stub({})
+    await render(picker())
+    expect(container.textContent).toContain("utilisé tel quel")
+    expect(container.textContent).toContain("ni volume, ni difficulté, ni position")
+    expect(calls).toHaveLength(0)
+    expect(buttonByText("Mesurer avec Google et DataForSEO", container)).toBeTruthy()
+  })
+
+  it("mesure : vu dans Google, volume, difficulté et coût par clic ; « Suivre ce mot-clé » l'ajoute avec ces mesures", async () => {
+    const calls = stub({})
+    const onTracked = vi.fn()
+    await render(picker(onTracked))
+    await click(buttonByText("Mesurer avec Google et DataForSEO", container))
+    expect(calls[0]).toEqual({ url: "/api/admin/blog/keyword-check", body: { keyword: "facture plombier" } })
+    expect(container.textContent).toContain("Vu dans Google")
+    expect(container.textContent).toContain("facture plombier modele")
+    expect(container.textContent).toContain("320")
+    expect(container.textContent).toContain("Facile")
+    expect(container.textContent).toContain("1,40 $")
+
+    await click(buttonByText("Suivre ce mot-clé", container))
+    expect(calls[1].url).toBe("/api/admin/seo/ideas/adopt")
+    expect(calls[1].body).toMatchObject({ keyword: "facture plombier", title: "Facturer un chantier de plomberie", volume: 320, difficulty: 14, cpc: 1.4, intent: "transactional", createTopic: false, targeted: true })
+    expect(onTracked).toHaveBeenCalledTimes(1)
+    expect(container.textContent).toContain("Mot-clé suivi dans l'onglet Mots-clés")
+  })
+
+  it("une mesure impossible dit pourquoi : DataForSEO non configuré, panne avec « Réessayer », phrase inconnue de Google", async () => {
+    stub({
+      check: () => json(checkResult({ google: { state: "ok", verified: false, also: [] }, metrics: { state: "not_configured", volume: null, difficulty: null, cpc: null, intent: null, message: "DataForSEO n'est pas configuré : ajoutez DATAFORSEO_LOGIN et DATAFORSEO_PASSWORD dans Vercel (Paramètres › Connexions) pour mesurer les recherches." } })),
+    })
+    await render(picker())
+    await click(buttonByText("Mesurer avec Google et DataForSEO", container))
+    expect(container.textContent).toContain("DATAFORSEO_LOGIN")
+    expect(container.textContent).toContain("Google ne propose pas cette phrase")
+    expect(container.textContent).toContain("ne prouve pas que personne ne la cherche")
+    // Le suivi reste possible sans mesures
+    expect(buttonByText("Suivre ce mot-clé", container)).toBeTruthy()
+
+    stub({ check: () => json(checkResult({ metrics: { state: "unavailable", volume: null, difficulty: null, cpc: null, intent: null, message: "DataForSEO n'a pas répondu à temps." } })) })
+    await render(createElement("div"))
+    await render(picker())
+    await click(buttonByText("Mesurer avec Google et DataForSEO", container))
+    expect(container.textContent).toContain("DataForSEO n'a pas répondu à temps.")
+    expect(buttonByText("Réessayer", container)).toBeTruthy()
+  })
+
+  it("mot-clé déjà suivi : mesures reprises, pas de second suivi ; concurrent nommé : averti, pas de suivi proposé", async () => {
+    stub({ check: () => json(checkResult({ tracked: { status: "targeted" }, metrics: { state: "tracked", volume: 90, difficulty: 22, cpc: 2, intent: null, message: null } })) })
+    await render(picker())
+    await click(buttonByText("Mesurer avec Google et DataForSEO", container))
+    expect(container.textContent).toContain("Déjà dans l'onglet Mots-clés")
+    expect(container.textContent).toContain("Mesures reprises de l'onglet Mots-clés")
+    expect(() => buttonByText("Suivre ce mot-clé", container)).toThrow()
+
+    stub({ check: () => json(checkResult({ competitor: true, metrics: { state: "skipped", volume: null, difficulty: null, cpc: null, intent: null, message: "Ce mot-clé nomme un concurrent suivi (usage interne) : il n'est pas mesuré." } })) })
+    await render(createElement("div"))
+    await render(picker())
+    await click(buttonByText("Mesurer avec Google et DataForSEO", container))
+    expect(container.textContent).toContain("l'IA et le contrôle de publication le refuseront")
+    expect(() => buttonByText("Suivre ce mot-clé", container)).toThrow()
+  })
+
+  it("erreur du serveur : message avec « Réessayer » ; échec du suivi : message, bouton conservé", async () => {
+    stub({ check: () => json({ error: "Lecture impossible pour le moment." }, 503) })
+    await render(picker())
+    await click(buttonByText("Mesurer avec Google et DataForSEO", container))
+    expect(container.textContent).toContain("Lecture impossible pour le moment.")
+    expect(buttonByText("Réessayer", container)).toBeTruthy()
+
+    stub({ adopt: () => json({ error: "Ce mot-clé est ignoré dans l'onglet Mots-clés." }, 409) })
+    await render(createElement("div"))
+    await render(picker())
+    await click(buttonByText("Mesurer avec Google et DataForSEO", container))
+    await click(buttonByText("Suivre ce mot-clé", container))
+    expect(container.textContent).toContain("Ce mot-clé est ignoré dans l'onglet Mots-clés.")
+    expect(buttonByText("Suivre ce mot-clé", container)).toBeTruthy()
+  })
+
+  it("un mot-clé suivi n'affiche pas la mesure ; un autre mot-clé remet la carte à zéro", async () => {
+    stub({})
+    await render(createElement(KeywordPicker, { value: "devis maçon", onChange: () => {}, keywords: KEYWORDS, keywordPages: null, slug: "x", measure: { articleTitle: "T", onTracked: () => {} } }))
+    expect(container.textContent).not.toContain("utilisé tel quel")
+
+    await render(picker())
+    await click(buttonByText("Mesurer avec Google et DataForSEO", container))
+    expect(container.textContent).toContain("Vu dans Google")
+    await render(createElement(KeywordPicker, { value: "devis toiture", onChange: () => {}, keywords: KEYWORDS, keywordPages: null, slug: "x", measure: { articleTitle: "T", onTracked: () => {} } }))
+    expect(container.textContent).not.toContain("Vu dans Google")
+    expect(buttonByText("Mesurer avec Google et DataForSEO", container)).toBeTruthy()
   })
 })

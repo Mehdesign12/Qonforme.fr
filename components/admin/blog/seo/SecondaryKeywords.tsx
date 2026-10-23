@@ -10,13 +10,20 @@
  *
  * Le surlignage est piloté par l'éditeur : `highlighted` (termes surlignés)
  * et `onHighlightChange` (nouvelle liste).
+ *
+ * Un mot-clé absent du texte porte « Intégrer avec l'IA » (`onIntegrate`) :
+ * l'éditeur ouvre la fenêtre qui propose les passages à retoucher.
+ *
+ * Les mots-clés ajoutés à la main depuis la Proposition IA (`extra`, « Ajouter
+ * aux secondaires ») s'affichent avec les autres, marqués « Ajouté », et se
+ * retirent (`onRemoveExtra`).
  */
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
-import { Check, Copy, Eye, Search, Sparkles } from "lucide-react"
+import { Check, Copy, Eye, Search, Sparkles, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { countKeyword, markdownPlainText } from "@/lib/seo/articles/onpage"
-import { keywordKey, secondaryCandidates } from "@/lib/seo/articles/secondary"
+import { keywordKey, secondaryCandidates, type SecondaryCandidate } from "@/lib/seo/articles/secondary"
 import type { EditorKeyword, PageQuery } from "@/lib/seo/articles/editor-types"
 
 const nf = (n: number) => Math.round(n).toLocaleString("fr-FR")
@@ -32,6 +39,9 @@ export function SecondaryKeywords({
   content,
   highlighted,
   onHighlightChange,
+  onIntegrate,
+  extra = [],
+  onRemoveExtra,
   loading = false,
   className,
 }: {
@@ -45,17 +55,29 @@ export function SecondaryKeywords({
   /** Termes surlignés dans l'éditeur. */
   highlighted: string[]
   onHighlightChange: (terms: string[]) => void
+  /** « Intégrer avec l'IA » sur un mot-clé absent du texte. */
+  onIntegrate?: (keyword: string) => void
+  /** Mots-clés ajoutés à la main (Proposition IA › « Ajouter aux secondaires »). */
+  extra?: { keyword: string; volume: number | null }[]
+  onRemoveExtra?: (keyword: string) => void
   /** Contexte en cours de premier chargement (squelette). */
   loading?: boolean
   className?: string
 }) {
   const [copied, setCopied] = useState<string | null>(null)
-  const candidates = useMemo(() => secondaryCandidates(keyword, keywords, pageQueries), [keyword, keywords, pageQueries])
+  const computed = useMemo(() => secondaryCandidates(keyword, keywords, pageQueries), [keyword, keywords, pageQueries])
+  // Les mots-clés ajoutés à la main suivent ceux de l'analyse (sans doublon)
+  const addedKeys = useMemo(() => new Set(extra.map((e) => keywordKey(e.keyword))), [extra])
+  const candidates = useMemo<(SecondaryCandidate & { added?: boolean })[]>(() => {
+    const seen = new Set(computed.map((c) => keywordKey(c.keyword)))
+    const added = extra.filter((e) => !seen.has(keywordKey(e.keyword))).map((e) => ({ keyword: e.keyword, volume: e.volume, impressions: null, fromPlan: false, fromPage: false, added: true }))
+    return [...computed.map((c) => (addedKeys.has(keywordKey(c.keyword)) ? { ...c, added: true } : c)), ...added]
+  }, [computed, extra, addedKeys])
   const text = useMemo(() => `${title}\n${markdownPlainText(content)}`, [title, content])
   const counts = useMemo(() => new Map(candidates.map((c) => [c.keyword, countKeyword(text, c.keyword)])), [candidates, text])
   const highlightedKeys = useMemo(() => new Set(highlighted.map(keywordKey)), [highlighted])
 
-  if (!keyword?.trim()) {
+  if (!keyword?.trim() && candidates.length === 0) {
     return (
       <p className={cn("flex items-start gap-2 text-[12.5px] leading-snug text-[var(--q-text-4)]", className)}>
         <Search className="mt-px size-3.5 shrink-0" aria-hidden />
@@ -131,7 +153,19 @@ export function SecondaryKeywords({
                   )}
                   {!c.fromPage && c.volume === null && <span>Volume inconnu</span>}
                   {c.fromPlan && <span className="q-tag !h-[17px] !px-1.5 !text-[10px]">Plan</span>}
+                  {c.added && <span className="q-tag !h-[17px] !px-1.5 !text-[10px]">Ajouté</span>}
                 </span>
+                {onIntegrate && count === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => onIntegrate(c.keyword)}
+                    aria-label={`Intégrer « ${c.keyword} » dans le texte avec l'IA`}
+                    className="-ml-1.5 mt-0.5 inline-flex h-7 w-fit items-center gap-1.5 rounded-lg px-1.5 text-[12px] font-semibold text-[var(--q-accent-strong)] transition-colors duration-100 hover:bg-[var(--q-wash)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)] motion-reduce:transition-none max-md:h-11 max-md:px-2.5"
+                  >
+                    <Sparkles className="size-3.5" aria-hidden />
+                    Intégrer avec l&apos;IA
+                  </button>
+                )}
               </span>
               <span
                 className={cn(
@@ -155,6 +189,11 @@ export function SecondaryKeywords({
               <button type="button" onClick={() => copy(c.keyword)} aria-label={`Copier « ${c.keyword} »`} title="Copier" className={iconButton}>
                 {copied === c.keyword ? <Check className="size-4 text-[var(--q-ok)]" aria-hidden /> : <Copy className="size-4" aria-hidden />}
               </button>
+              {c.added && onRemoveExtra && (
+                <button type="button" onClick={() => onRemoveExtra(c.keyword)} aria-label={`Retirer « ${c.keyword} » des secondaires`} title="Retirer des secondaires" className={iconButton}>
+                  <X className="size-4" aria-hidden />
+                </button>
+              )}
             </li>
           )
         })}

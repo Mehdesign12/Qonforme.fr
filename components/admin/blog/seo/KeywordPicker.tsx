@@ -7,10 +7,14 @@
  *
  * - Options : mots-clés de l'onglet Mots-clés et du plan d'octobre
  *   (SeoContext.keywords), les ciblés et ceux du plan d'abord, puis par
- *   volume ; filtre sans accents ni casse ; « Utiliser « … » » pour un
- *   mot-clé libre.
+ *   volume ; filtre sans accents ni casse. La phrase tapée est toujours la
+ *   première option (« Utiliser « … » »), donc celle que valide Entrée ; un
+ *   bouton « Utiliser » reste affiché quand la liste se ferme sans que la
+ *   saisie ait été validée.
  * - Carte : volume, difficulté, position dans Google ; orthographe sans
- *   accents signalée (le site s'écrit toujours avec ses accents).
+ *   accents signalée (le site s'écrit toujours avec ses accents). Un mot-clé
+ *   libre (pas encore suivi) n'a aucune mesure : la carte le dit et propose de
+ *   le mesurer (Google, DataForSEO) puis de le suivre (`measure`, KeywordCheck).
  * - Risque de concurrence entre pages (SeoContext.keywordPages) : page du
  *   site qui ressort déjà sur la recherche, autres articles qui la visent,
  *   page confiée à ce mot-clé dans l'onglet Mots-clés ; en bannière ambre,
@@ -28,6 +32,8 @@ import { findMissingAccents } from "@/lib/seo/articles/onpage"
 import { keywordKey } from "@/lib/seo/articles/secondary"
 import { canonicalKeyword, foldAccents, KEYWORD_MAX_LENGTH, looksLikeUrl, normalizeKeyword } from "@/lib/seo/keywords/normalize"
 import { KEYWORD_STATUS } from "@/lib/seo/types"
+import { DifficultyPill, difficultyOf } from "@/components/admin/blog/seo/difficulty"
+import { KeywordCheck } from "@/components/admin/blog/seo/KeywordCheck"
 import type { EditorKeyword, KeywordPages } from "@/lib/seo/articles/editor-types"
 
 /**
@@ -49,31 +55,9 @@ function pathVariants(path: string): string[] {
 
 const nf = (n: number) => Math.round(n).toLocaleString("fr-FR")
 
-export type DifficultyTone = "ok" | "warn" | "danger"
-
-/** Difficulté DataForSEO (0 à 100) : Facile sous 30, Moyenne sous 60, sinon Difficile. */
-export function difficultyOf(value: number | null): { label: string; tone: DifficultyTone } | null {
-  if (value === null || !Number.isFinite(value)) return null
-  if (value < 30) return { label: "Facile", tone: "ok" }
-  if (value < 60) return { label: "Moyenne", tone: "warn" }
-  return { label: "Difficile", tone: "danger" }
-}
-
-const MINI_PILL: Record<DifficultyTone, string> = {
-  ok: "bg-[var(--q-ok-bg)] text-[var(--q-ok)]",
-  warn: "bg-[var(--q-warn-bg)] text-[var(--q-warn)]",
-  danger: "bg-[var(--q-danger-bg)] text-[var(--q-danger)]",
-}
-
-export function DifficultyPill({ value, className }: { value: number | null; className?: string }) {
-  const d = difficultyOf(value)
-  if (!d) return null
-  return (
-    <span className={cn("inline-flex h-[18px] items-center rounded-full px-1.5 text-[11px] font-semibold leading-none", MINI_PILL[d.tone], className)} title={`Difficulté ${nf(value ?? 0)} sur 100`}>
-      {d.label}
-    </span>
-  )
-}
+// Réexportés : la pastille de difficulté vivait ici avant d'être partagée
+export { DifficultyPill, difficultyOf }
+export type { DifficultyTone } from "@/components/admin/blog/seo/difficulty"
 
 /** « 12,4 » (position moyenne). */
 const fmtPos = (p: number) => p.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
@@ -132,6 +116,8 @@ export interface KeywordPickerProps {
   gscConnected?: boolean
   /** Ouvre la « Proposition IA » (requêtes exactes pour cet article) ; absent : pas de bouton. */
   onPropose?: () => void
+  /** Mesure et suivi d'un mot-clé libre (carte du mot-clé choisi) ; absent : la carte dit seulement qu'il n'est pas suivi. */
+  measure?: { articleTitle: string; onTracked: () => void }
   className?: string
 }
 
@@ -148,6 +134,7 @@ export function KeywordPicker({
   inputId,
   gscConnected = true,
   onPropose,
+  measure,
   className,
 }: KeywordPickerProps) {
   const uid = useId()
@@ -180,15 +167,25 @@ export function KeywordPicker({
 
   const options: Option[] = useMemo(() => {
     const filtered = filterKeywordOptions(sorted, query).slice(0, MAX_OPTIONS)
-    const out: Option[] = filtered.map((item, i) => ({ id: `${uid}-o${i}`, kind: "keyword" as const, item }))
     const typed = normalizeKeyword(query)
-    if (query.trim() && typed.ok && !sorted.some((k) => keywordKey(k.keyword) === keywordKey(typed.keyword))) {
-      const free: Option = { id: `${uid}-libre`, kind: "free", keyword: typed.keyword }
-      if (out.length === 0) out.unshift(free)
-      else out.push(free)
+    const typedKey = typed.ok ? keywordKey(typed.keyword) : null
+    // La phrase tapée, si elle est déjà suivie, passe en tête
+    if (typedKey) filtered.sort((a, b) => Number(keywordKey(b.keyword) === typedKey) - Number(keywordKey(a.keyword) === typedKey))
+    const out: Option[] = filtered.map((item, i) => ({ id: `${uid}-o${i}`, kind: "keyword" as const, item }))
+    // Sinon elle s'ajoute en première option : Entrée valide ce qui a été tapé, pas la première suggestion
+    if (query.trim() && typed.ok && !sorted.some((k) => keywordKey(k.keyword) === typedKey)) {
+      out.unshift({ id: `${uid}-libre`, kind: "free", keyword: typed.keyword })
     }
     return out
   }, [sorted, query, uid])
+
+  // L'option qui correspond à la phrase tapée (libre ou déjà suivie) : ce que valident Entrée et « Utiliser »
+  const typedChoice: Option | null = useMemo(() => {
+    const typed = normalizeKeyword(query)
+    const first = options[0]
+    if (!query.trim() || !typed.ok || !first) return null
+    return first.kind === "free" || keywordKey(first.item.keyword) === keywordKey(typed.keyword) ? first : null
+  }, [options, query])
 
   // Seules une adresse web ou une saisie trop longue sont signalées : « au moins deux caractères »
   // s'afficherait en rouge dès la première lettre tapée
@@ -246,9 +243,14 @@ export function KeywordPicker({
       e.preventDefault()
       setActive(options.length - 1)
     } else if (e.key === "Enter") {
-      if (!open || options.length === 0) return
-      e.preventDefault()
-      choose(options[Math.min(active, options.length - 1)])
+      if (open && options.length > 0) {
+        e.preventDefault()
+        choose(options[Math.min(active, options.length - 1)])
+      } else if (typedChoice) {
+        // Liste fermée : Entrée valide la phrase tapée
+        e.preventDefault()
+        choose(typedChoice)
+      }
     } else if (e.key === "Escape") {
       if (open && query) {
         e.preventDefault()
@@ -320,10 +322,21 @@ export function KeywordPicker({
 
           <p id={hintId} className={cn("text-[12px] leading-snug", typedError ? "text-[var(--q-danger)]" : "text-[var(--q-text-4)]")}>
             {typedError ??
-              (listVisible && !firstLoad && !query.trim() && sorted.length > 0
-                ? `${sorted.length} mots-clés suivis ou du plan : ciblés et plan d'abord, puis par volume.`
-                : "La recherche que cet article doit faire ressortir dans Google.")}
+              (!listVisible && typedChoice
+                ? "Pas encore validé : appuyez sur Entrée ou cliquez sur « Utiliser »."
+                : listVisible && !firstLoad && !query.trim() && sorted.length > 0
+                  ? `${sorted.length} mots-clés suivis ou du plan : ciblés et plan d'abord, puis par volume.`
+                  : listVisible && typedChoice?.kind === "free"
+                    ? "Entrée valide votre saisie ; les flèches choisissent un mot-clé déjà suivi."
+                    : "La recherche que cet article doit faire ressortir dans Google.")}
           </p>
+
+          {!listVisible && typedChoice && (
+            <button type="button" onClick={() => choose(typedChoice)} className="q-btn q-btn-primary q-btn-sm self-start max-md:!h-11">
+              <Check aria-hidden />
+              Utiliser « {typedChoice.kind === "free" ? typedChoice.keyword : typedChoice.item.keyword} »
+            </button>
+          )}
 
           {listVisible && (
             <div
@@ -367,7 +380,7 @@ export function KeywordPicker({
                         </span>
                         <span className="flex min-w-0 flex-1 flex-col">
                           <span className="text-[13px] font-semibold text-[var(--q-ink)] [overflow-wrap:anywhere]">Utiliser « {o.keyword} »</span>
-                          <span className="text-[11.5px] text-[var(--q-text-4)]">Mot-clé libre, pas encore suivi dans l&apos;onglet Mots-clés</span>
+                          <span className="text-[11.5px] text-[var(--q-text-4)]">Votre saisie, telle quelle · pas encore dans l&apos;onglet Mots-clés, vous pourrez la mesurer ensuite</span>
                         </span>
                         {isActive && <CornerDownLeft className="size-3.5 shrink-0 text-[var(--q-text-4)]" aria-hidden />}
                       </div>
@@ -435,6 +448,7 @@ export function KeywordPicker({
             unavailable={keywords === null && !loading && Boolean(error)}
             onRetry={onRetry}
             gscConnected={gscConnected}
+            measure={measure}
             changeRef={changeRef}
             changeId={inputId}
             onChangeClick={() => {
@@ -458,7 +472,8 @@ export function KeywordPicker({
         </button>
       )}
 
-      {value && <Cannibalization value={value} pages={keywordPages} loading={loading} slug={slug} selfId={selfId ?? null} />}
+      {/* Le risque de concurrence est celui du mot-clé choisi : pendant la saisie d'un autre, il serait trompeur */}
+      {value && !(editing && query.trim()) && <Cannibalization value={value} pages={keywordPages} loading={loading} slug={slug} selfId={selfId ?? null} />}
     </div>
   )
 }
@@ -474,6 +489,7 @@ function SelectedKeyword({
   unavailable,
   onRetry,
   gscConnected,
+  measure,
   changeRef,
   changeId,
   onChangeClick,
@@ -486,6 +502,7 @@ function SelectedKeyword({
   unavailable: boolean
   onRetry?: () => void
   gscConnected: boolean
+  measure?: { articleTitle: string; onTracked: () => void }
   changeRef: React.RefObject<HTMLButtonElement>
   changeId?: string
   onChangeClick: () => void
@@ -598,6 +615,8 @@ function SelectedKeyword({
           </span>
         </p>
       )}
+
+      {measure && !item && !loading && !unavailable && <KeywordCheck keyword={value} articleTitle={measure.articleTitle} onTracked={measure.onTracked} />}
     </div>
   )
 }

@@ -525,7 +525,7 @@ const reviewSchema = z.object({
 })
 
 /** Texte comparable : sans syntaxe Markdown, guillemets ni espaces en trop. */
-function comparable(text: string): string {
+export function comparable(text: string): string {
   return text
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/[*_`#>«»"“”]/g, " ")

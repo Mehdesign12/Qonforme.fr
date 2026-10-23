@@ -12,9 +12,13 @@
  * texte, couverture). Un passage qui bloque la publication (valeur périmée,
  * affirmation interdite, concurrent nommé) porte l'étiquette « Bloque la
  * publication » et passe en tête.
+ *
+ * `actionFor(check)` ajoute sous une ligne à corriger un bouton qui le fait
+ * à la place de l'admin avec l'IA (mot-clé du titre, de la description, de
+ * l'adresse, d'un sous-titre, de l'introduction) ; null : pas de bouton.
  */
 import { useId, useState } from "react"
-import { ChevronDown, ChevronRight, CircleCheck, CircleX, ShieldAlert, TriangleAlert } from "lucide-react"
+import { ChevronDown, ChevronRight, CircleCheck, CircleX, Loader2, ShieldAlert, Sparkles, TriangleAlert } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { scoreTone, sortChecks, type OnPageCheck, type OnPageResult, type OnPageTarget } from "@/lib/seo/articles/onpage"
 
@@ -70,7 +74,18 @@ function CheckIcon({ check }: { check: OnPageCheck }) {
 
 const STATUS_WORD: Record<OnPageCheck["status"], string> = { ok: "Validé", warn: "À améliorer", error: "À corriger" }
 
-function CheckRow({ check, onFocusTarget }: { check: OnPageCheck; onFocusTarget: (target: OnPageTarget) => void }) {
+/** Bouton « avec l'IA » sous une ligne de la liste de contrôle. */
+export interface CheckAction {
+  label: string
+  onClick: () => void
+  /** Proposition en cours. */
+  busy?: boolean
+}
+
+export type CheckActionFor = (check: OnPageCheck) => CheckAction | null
+
+function CheckRow({ check, onFocusTarget, actionFor }: { check: OnPageCheck; onFocusTarget: (target: OnPageTarget) => void; actionFor?: CheckActionFor }) {
+  const action = check.status === "ok" ? null : actionFor?.(check) ?? null
   return (
     <li>
       <button
@@ -98,11 +113,25 @@ function CheckRow({ check, onFocusTarget }: { check: OnPageCheck; onFocusTarget:
           aria-hidden
         />
       </button>
+      {action && (
+        <div className="pb-1.5 pl-[34px] pr-2">
+          <button
+            type="button"
+            onClick={action.onClick}
+            disabled={action.busy}
+            aria-busy={action.busy || undefined}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-semibold text-[var(--q-accent-strong)] transition-colors duration-100 hover:bg-[var(--q-wash)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--q-focus)] disabled:opacity-70 motion-reduce:transition-none max-md:h-11 max-md:px-2.5"
+          >
+            {action.busy ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden /> : <Sparkles className="size-3.5" aria-hidden />}
+            {action.busy ? "Recherche…" : action.label}
+          </button>
+        </div>
+      )}
     </li>
   )
 }
 
-function Group({ title, tone, checks, onFocusTarget }: { title: string; tone: "danger" | "warn"; checks: OnPageCheck[]; onFocusTarget: (target: OnPageTarget) => void }) {
+function Group({ title, tone, checks, onFocusTarget, actionFor }: { title: string; tone: "danger" | "warn"; checks: OnPageCheck[]; onFocusTarget: (target: OnPageTarget) => void; actionFor?: CheckActionFor }) {
   const id = useId()
   if (checks.length === 0) return null
   return (
@@ -114,7 +143,7 @@ function Group({ title, tone, checks, onFocusTarget }: { title: string; tone: "d
       </h4>
       <ul className="m-0 flex list-none flex-col p-0">
         {checks.map((c) => (
-          <CheckRow key={c.id} check={c} onFocusTarget={onFocusTarget} />
+          <CheckRow key={c.id} check={c} onFocusTarget={onFocusTarget} actionFor={actionFor} />
         ))}
       </ul>
     </section>
@@ -124,11 +153,14 @@ function Group({ title, tone, checks, onFocusTarget }: { title: string; tone: "d
 export function SeoScore({
   result,
   onFocusTarget,
+  actionFor,
   className,
 }: {
   result: OnPageResult
   /** Clic sur une ligne : le champ concerné reçoit le focus. */
   onFocusTarget: (target: OnPageTarget) => void
+  /** Bouton « avec l'IA » d'une ligne à corriger (null : aucun). */
+  actionFor?: CheckActionFor
   className?: string
 }) {
   const [showOk, setShowOk] = useState(false)
@@ -164,8 +196,8 @@ export function SeoScore({
       </div>
 
       <div className="-mx-2 flex flex-col gap-3">
-        <Group title="À corriger" tone="danger" checks={errors} onFocusTarget={onFocusTarget} />
-        <Group title="À améliorer" tone="warn" checks={warns} onFocusTarget={onFocusTarget} />
+        <Group title="À corriger" tone="danger" checks={errors} onFocusTarget={onFocusTarget} actionFor={actionFor} />
+        <Group title="À améliorer" tone="warn" checks={warns} onFocusTarget={onFocusTarget} actionFor={actionFor} />
 
         {oks.length > 0 && (
           <div className="flex flex-col">
