@@ -11,7 +11,10 @@
  *   situation, un métier ou écrire un angle ; chaque idée se transforme en
  *   sujet d'article (et en mot-clé suivi) ou entre seulement dans le suivi ;
  * - « article » (éditeur) : la recherche part du titre et du texte de
- *   l'article ; « Utiliser pour cet article » pose le mot-clé principal.
+ *   l'article ; chaque idée se choisit comme mot-clé principal (« Mettre en
+ *   mot-clé principal », la fenêtre se ferme) ou s'ajoute aux mots-clés
+ *   secondaires (« Ajouter aux secondaires », la fenêtre reste ouverte pour
+ *   en ajouter d'autres).
  *
  * La fenêtre ne garde rien en mémoire entre deux ouvertures. Une réponse
  * tardive d'une recherche abandonnée est ignorée.
@@ -19,7 +22,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { ArrowUpRight, Check, Info, Loader2, RotateCcw, Sparkles, TriangleAlert } from "lucide-react"
+import { ArrowUpRight, Check, Info, Loader2, Plus, RotateCcw, Sparkles, TriangleAlert } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { StatusPill } from "@/components/app/kit"
 import { cn } from "@/lib/utils"
@@ -30,6 +33,7 @@ import { api } from "@/components/admin/seo/articles/api"
 import { Field, Select } from "@/components/admin/seo/articles/fields"
 import { Tag, TypeTag } from "@/components/admin/seo/articles/pills"
 import { DifficultyPill } from "@/components/admin/blog/seo/KeywordPicker"
+import { keywordKey } from "@/lib/seo/articles/secondary"
 
 /** Le début du texte suffit à comprendre l'article ; le serveur plafonne aussi. */
 const ARTICLE_CONTENT_MAX = 6_000
@@ -51,8 +55,13 @@ export interface IdeasDialogProps {
   article?: IdeasArticle
   /** Mode « topics » : une idée est devenue un sujet (ou a rejoint le suivi seul). */
   onAdopted?: (result: AdoptResult, idea: Idea) => void
-  /** Mode « article » : « Utiliser pour cet article » (le mot-clé est déjà ajouté au suivi). */
+  /** Mode « article » : « Mettre en mot-clé principal » (le mot-clé est déjà ajouté au suivi). */
   onUse?: (idea: Idea) => void
+  /** Mode « article » : « Ajouter aux secondaires » (le mot-clé est déjà ajouté au suivi). */
+  onUseSecondary?: (idea: Idea) => void
+  /** Mode « article » : mot-clé principal actuel et mots-clés secondaires déjà retenus (cartes marquées). */
+  currentKeyword?: string | null
+  currentSecondary?: string[]
 }
 
 type Phase = "idle" | "loading" | "done" | "error"
@@ -64,7 +73,7 @@ interface Adopted {
 
 const TRADE_OPTIONS = (Object.keys(TRADE_LABELS) as TradeId[]).map((id) => ({ id, label: TRADE_LABELS[id] })).sort((a, b) => a.label.localeCompare(b.label, "fr"))
 
-export function IdeasDialog({ open, onClose, mode, article, onAdopted, onUse }: IdeasDialogProps) {
+export function IdeasDialog({ open, onClose, mode, article, onAdopted, onUse, onUseSecondary, currentKeyword, currentSecondary }: IdeasDialogProps) {
   const [phase, setPhase] = useState<Phase>("idle")
   const [response, setResponse] = useState<IdeasResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -73,6 +82,8 @@ export function IdeasDialog({ open, onClose, mode, article, onAdopted, onUse }: 
   const [focus, setFocus] = useState("")
   const [adopted, setAdopted] = useState<Record<string, Adopted>>({})
   const [adopting, setAdopting] = useState<string | null>(null)
+  // Mode « article » : idées ajoutées aux secondaires pendant cette ouverture
+  const [addedSecondary, setAddedSecondary] = useState<Set<string>>(new Set())
   // Formulaire déplié tant qu'aucune recherche n'a été lancée ; replié en une ligne ensuite
   const [editing, setEditing] = useState(true)
   const requestId = useRef(0)
@@ -112,6 +123,7 @@ export function IdeasDialog({ open, onClose, mode, article, onAdopted, onUse }: 
     setError(null)
     setAdopted({})
     setAdopting(null)
+    setAddedSecondary(new Set())
     setEditing(true)
     if (mode === "article") void run()
     // run dépend de l'angle saisi : seule l'ouverture relance
@@ -124,7 +136,7 @@ export function IdeasDialog({ open, onClose, mode, article, onAdopted, onUse }: 
     setFocus(next ? (IDEA_SITUATIONS.find((s) => s.id === next)?.focus ?? "") : "")
   }
 
-  async function adopt(idea: Idea, withTopic: boolean) {
+  async function adopt(idea: Idea, withTopic: boolean, role: "main" | "secondary" = "main") {
     if (adopting) return
     setAdopting(idea.keyword)
     const res = await api<AdoptResult>("/api/admin/seo/ideas/adopt", "POST", {
@@ -137,10 +149,18 @@ export function IdeasDialog({ open, onClose, mode, article, onAdopted, onUse }: 
       cpc: idea.cpc,
       note: idea.why === "—" ? null : idea.why,
       createTopic: withTopic,
-      targeted: mode === "article",
+      // Le mot-clé principal est confié à l'article (« ciblé ») ; un secondaire reste un simple candidat
+      targeted: mode === "article" && role === "main",
     })
     setAdopting(null)
     if (mode === "article") {
+      if (role === "secondary") {
+        if (!res.ok) toast.info(`Mot-clé ajouté aux secondaires, mais pas au suivi : ${res.error ?? "erreur"}`)
+        else toast.success("Ajouté aux mots-clés secondaires")
+        onUseSecondary?.(idea)
+        setAddedSecondary((prev) => new Set(prev).add(idea.keyword))
+        return
+      }
       if (!res.ok) toast.info(`Mot-clé utilisé, mais pas ajouté au suivi : ${res.error ?? "erreur"}`)
       onUse?.(idea)
       onClose()
@@ -298,7 +318,10 @@ export function IdeasDialog({ open, onClose, mode, article, onAdopted, onUse }: 
                         adopted={adopted[idea.keyword] ?? null}
                         busy={adopting === idea.keyword}
                         disabled={adopting !== null}
+                        isMain={Boolean(currentKeyword && keywordKey(currentKeyword) === keywordKey(idea.keyword))}
+                        isSecondary={addedSecondary.has(idea.keyword) || (currentSecondary ?? []).some((k) => keywordKey(k) === keywordKey(idea.keyword))}
                         onAdopt={(withTopic) => void adopt(idea, withTopic)}
+                        onAdoptSecondary={() => void adopt(idea, false, "secondary")}
                       />
                     </li>
                   ))}
@@ -369,14 +392,22 @@ function IdeaCard({
   adopted,
   busy,
   disabled,
+  isMain,
+  isSecondary,
   onAdopt,
+  onAdoptSecondary,
 }: {
   idea: Idea
   mode: "topics" | "article"
   adopted: Adopted | null
   busy: boolean
   disabled: boolean
+  /** Mode « article » : c'est déjà le mot-clé principal. */
+  isMain: boolean
+  /** Mode « article » : déjà parmi les secondaires. */
+  isSecondary: boolean
   onAdopt: (withTopic: boolean) => void
+  onAdoptSecondary: () => void
 }) {
   const blocking = idea.overlaps.some((o) => o.kind === "article" || o.kind === "ranking")
   return (
@@ -452,10 +483,31 @@ function IdeaCard({
 
       <div className="flex flex-wrap items-center gap-2">
         {mode === "article" ? (
-          <button type="button" onClick={() => onAdopt(false)} disabled={disabled} className="q-btn q-btn-primary q-btn-sm max-md:!h-11">
-            {busy ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : <Check aria-hidden />}
-            Utiliser pour cet article
-          </button>
+          <>
+            {isMain ? (
+              <p className="m-0 flex items-center gap-1.5 text-[13px] font-medium text-[var(--q-ok)]" role="status">
+                <Check className="size-4" aria-hidden />
+                Mot-clé principal de l&apos;article
+              </p>
+            ) : (
+              <button type="button" onClick={() => onAdopt(false)} disabled={disabled} className="q-btn q-btn-primary q-btn-sm max-md:!h-11">
+                {busy ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : <Check aria-hidden />}
+                Mettre en mot-clé principal
+              </button>
+            )}
+            {!isMain &&
+              (isSecondary ? (
+                <p className="m-0 flex items-center gap-1.5 text-[13px] font-medium text-[var(--q-ok)]" role="status">
+                  <Check className="size-4" aria-hidden />
+                  Dans les secondaires
+                </p>
+              ) : (
+                <button type="button" onClick={onAdoptSecondary} disabled={disabled} className="q-btn q-btn-secondary q-btn-sm max-md:!h-11">
+                  <Plus aria-hidden />
+                  Ajouter aux secondaires
+                </button>
+              ))}
+          </>
         ) : adopted ? (
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-[var(--q-ok)]" role="status">
             <Check className="size-4" aria-hidden />

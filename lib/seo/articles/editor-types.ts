@@ -131,11 +131,106 @@ export interface AssistRequest {
   after?: string
 }
 
+/**
+ * Correction d'un passage refusé par le contrôle (POST /api/admin/blog/assist, action « resolve ») :
+ * le passage, le problème repéré et ce que le contrôle précise (« À écrire : … »).
+ */
+export interface ResolveRequest {
+  action: "resolve"
+  /** Passage à corriger, en Markdown en ligne (1 à 4 000 caractères). */
+  text: string
+  issue: { label: string; detail?: string | null }
+  /** Extrait signalé par le contrôle : la réponse ne doit plus le contenir. */
+  excerpt?: string
+  keyword?: string | null
+  title?: string
+  before?: string
+  after?: string
+}
+
 export interface AssistResponse {
   /** Passage réécrit, en Markdown (mêmes possibilités que l'éditeur). */
   text: string
   /** Ce que le contrôle signale dans la réécriture (valeur périmée, « PDP »…). */
   warnings: string[]
+}
+
+/* ------------------------------------------------------------------ */
+/* Intégration d'un mot-clé dans le texte                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Où mettre un mot-clé (POST /api/admin/blog/integrate-keyword) : dans
+ * quelques passages du développement (« secondary », mot-clé secondaire),
+ * dans un sous-titre (« heading »), ou dans l'introduction (« intro »).
+ */
+export type IntegrateMode = "secondary" | "heading" | "intro"
+
+export interface IntegrateRequest {
+  mode: IntegrateMode
+  /** Mot-clé à faire figurer dans le texte (celui de la ligne cliquée, ou le mot-clé principal). */
+  keyword: string
+  /** Texte de l'article, en Markdown. */
+  markdown: string
+  title?: string
+  /** Mot-clé principal de l'article (contexte, quand il diffère du mot-clé à intégrer). */
+  mainKeyword?: string | null
+  /** Nombre de passages à modifier au plus (mode « secondary », 1 à 3). */
+  count?: number
+  /** Passages déjà proposés (début du texte) : la nouvelle proposition en choisit d'autres. */
+  avoid?: string[]
+}
+
+export interface IntegrateProposal {
+  /** Identifiant dans la réponse (rang du passage). */
+  id: string
+  kind: "paragraph" | "heading" | "list-item"
+  /** Titre de la section qui porte le passage. */
+  section: string
+  /** Passage d'origine et réécrit, en Markdown en ligne. */
+  before: string
+  after: string
+  /** Ce qu'il faut vérifier avant de l'accepter. */
+  warnings: string[]
+}
+
+export interface IntegrateResponse {
+  proposals: IntegrateProposal[]
+  /** Passages que le modèle a écartés ou que le contrôle a refusés (texte à lire pour comprendre une réponse vide). */
+  note: string | null
+}
+
+/* ------------------------------------------------------------------ */
+/* Mesure d'un mot-clé libre                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Ce que l'on sait vraiment d'un mot-clé saisi à la main (POST
+ * /api/admin/blog/keyword-check) : la phrase existe-t-elle dans Google
+ * (saisie semi-automatique), combien de recherches par mois et quelle
+ * difficulté (DataForSEO, ou les mesures déjà suivies), et pourquoi une donnée
+ * manque quand elle manque.
+ */
+export type KeywordMetricsState = "ok" | "tracked" | "not_configured" | "unavailable" | "unsendable" | "skipped"
+
+export interface KeywordCheckResponse {
+  /** Forme canonique du mot-clé. */
+  keyword: string
+  /** Mot-clé déjà suivi dans l'onglet Mots-clés (ses mesures sont reprises, sans nouvel appel payant). */
+  tracked: { status: string } | null
+  google: { state: "ok" | "unreachable"; verified: boolean; also: string[] }
+  metrics: {
+    state: KeywordMetricsState
+    volume: number | null
+    difficulty: number | null
+    /** Dollars US. */
+    cpc: number | null
+    intent: string | null
+    /** Pourquoi les mesures manquent (état autre que « ok » et « tracked »). */
+    message: string | null
+  }
+  /** Le mot-clé nomme un concurrent suivi (usage interne) : l'IA et le contrôle le refuseront. */
+  competitor: boolean
 }
 
 /* ------------------------------------------------------------------ */

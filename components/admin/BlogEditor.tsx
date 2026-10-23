@@ -57,7 +57,10 @@ import { scoreLabel } from '@/components/admin/blog/seo/SeoScore'
 import type { PublicationValue } from '@/components/admin/blog/seo/PublicationPanel'
 import type { RichEditorHandle } from '@/components/admin/blog/editor/RichEditor'
 import type { EditorMode } from '@/components/admin/blog/editor/Toolbar'
-import type { SuggestField, SuggestRequest } from '@/lib/seo/articles/editor-types'
+import type { AssistResponse, SuggestField, SuggestRequest } from '@/lib/seo/articles/editor-types'
+import { applyPassageEdits, excerptInText, type PassageEdit } from '@/lib/blog-editor/passages'
+import { keywordKey } from '@/lib/seo/articles/secondary'
+import type { IssueActions, IssueFixResult } from '@/components/admin/blog/shell/IssueItem'
 import {
   buildSaveRequest,
   changedFields,
@@ -105,6 +108,8 @@ import { EditorHeader } from '@/components/admin/blog/shell/EditorHeader'
 import { DocumentSheet } from '@/components/admin/blog/shell/DocumentSheet'
 import { AddressCard, GoogleCard, KeywordCard, LinksCard, OutlineCard, PublicationCard, ScoreCard, SecondaryCard } from '@/components/admin/blog/shell/SideCards'
 import { useAutoLinks } from '@/components/admin/blog/seo/useAutoLinks'
+import { KeywordFitDialog, type KeywordFitRequest } from '@/components/admin/blog/seo/KeywordFitDialog'
+import type { CheckActionFor } from '@/components/admin/blog/seo/SeoScore'
 
 interface BlogEditorProps {
   mode: 'create' | 'edit'
@@ -119,8 +124,53 @@ interface BlogEditorProps {
 
 type Heading = { level: number; text: string }
 
+/** Mot-clé secondaire ajouté à la main (Proposition IA › « Ajouter aux secondaires »). */
+type ExtraSecondary = { keyword: string; volume: number | null }
+
+const EXTRA_SECONDARY_MAX = 20
+const extraKey = (articleId: string) => `q-blog-secondary:${articleId}`
+
+/** Mots-clés secondaires gardés sur cet appareil pour l'article (relus sans confiance ; illisible : aucun). */
+function readExtraSecondary(articleId: string | null): ExtraSecondary[] {
+  if (!articleId) return []
+  try {
+    const raw: unknown = JSON.parse(localStorage.getItem(extraKey(articleId)) ?? '[]')
+    if (!Array.isArray(raw)) return []
+    return raw
+      .filter((e): e is ExtraSecondary => !!e && typeof e === 'object' && typeof (e as ExtraSecondary).keyword === 'string' && (e as ExtraSecondary).keyword.trim().length > 0)
+      .map((e) => ({ keyword: e.keyword.trim().slice(0, 120), volume: typeof e.volume === 'number' && Number.isFinite(e.volume) ? e.volume : null }))
+      .slice(0, EXTRA_SECONDARY_MAX)
+  } catch {
+    return []
+  }
+}
+
+function writeExtraSecondary(articleId: string, list: ExtraSecondary[]) {
+  try {
+    if (list.length === 0) localStorage.removeItem(extraKey(articleId))
+    else localStorage.setItem(extraKey(articleId), JSON.stringify(list))
+  } catch {
+    // Stockage indisponible (navigation privée) : la liste reste en mémoire
+  }
+}
+
 /** Ce que l'éditeur de /admin/blog/new laisse à celui de la page de l'article (relais de shell/hooks.ts). */
-type Carried = { id: string; draft: ArticleDraft; tab: EditorTab; highlighted: string[]; lastSaveAt: string; fromCalendar: boolean; editorMode: EditorMode }
+type Carried = { id: string; draft: ArticleDraft; tab: EditorTab; highlighted: string[]; extraSecondary: ExtraSecondary[]; lastSaveAt: string; fromCalendar: boolean; editorMode: EditorMode }
+
+/** Champs du brouillon que le contrôle de publication lit (le texte d'abord), et le champ à montrer pour chacun. */
+type IssueField = 'content' | 'title' | 'seoTitle' | 'seoDescription' | 'excerpt' | 'coverAlt'
+const ISSUE_FIELDS: IssueField[] = ['content', 'title', 'seoTitle', 'seoDescription', 'excerpt', 'coverAlt']
+const ISSUE_TARGETS: Record<Exclude<IssueField, 'content'>, FocusTarget> = { title: 'title', seoTitle: 'seoTitle', seoDescription: 'seoDescription', excerpt: 'excerpt', coverAlt: 'cover' }
+
+/** Champ du brouillon qui porte encore l'extrait refusé (le texte d'abord) ; null : il n'est plus nulle part. */
+function issueFieldIn(draft: ArticleDraft, issue: BlockingIssue): IssueField | null {
+  if (!issue.excerpt) return null
+  for (const field of ISSUE_FIELDS) {
+    if (draft[field].trim() && excerptInText(draft[field], issue.excerpt)) return field
+  }
+  return null
+}
+const issueKey = (issue: BlockingIssue) => `${issue.label}\u0000${issue.excerpt ?? ''}`
 
 const FOCUS_IDS: Record<Exclude<FocusTarget, 'content' | 'publication'>, string> = {
   title: 'blog-title',
@@ -187,7 +237,7 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
       const h = peekCreationHandoff(post.id)
       const carried =
         h && !isDirty(h.saved, stored)
-          ? { id: h.id, draft: h.latest(), tab: h.tab, highlighted: h.highlighted, lastSaveAt: h.lastSaveAt, fromCalendar: h.fromCalendar, editorMode: h.editorMode }
+          ? { id: h.id, draft: h.latest(), tab: h.tab, highlighted: h.highlighted, extraSecondary: h.extraSecondary ?? [], lastSaveAt: h.lastSaveAt, fromCalendar: h.fromCalendar, editorMode: h.editorMode }
           : null
       return { draft: carried?.draft ?? stored, saved: stored, slot: null, carried }
     }
@@ -208,6 +258,8 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
    * serveur ; `notCreated` : création publiée refusée avant tout enregistrement (rien n'est créé).
    */
   const [blocked, setBlocked] = useState<{ issues: BlockingIssue[]; unscheduled: boolean; notCreated?: boolean } | null>(null)
+  /** Passages refusés qui étaient dans le texte quand la bannière est apparue. */
+  const foundIssues = useRef<Set<string>>(new Set())
   const [proposal, setProposal] = useState<ScheduleSlot | null>(init.slot && init.slot.adjusted !== 'none' ? init.slot : null)
   const [scheduleCheck, setScheduleCheck] = useState<{ then: string | null } | null>(null)
   const [leaveHref, setLeaveHref] = useState<string | null>(null)
@@ -217,8 +269,13 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
   const [tab, setTab] = useState<EditorTab>(carried?.tab ?? 'redaction')
   const [headings, setHeadings] = useState<Heading[]>([])
   const [highlighted, setHighlighted] = useState<string[]>(carried?.highlighted ?? [])
+  // Mots-clés secondaires ajoutés depuis la Proposition IA : gardés sur cet appareil, par article (lus après l'affichage :
+  // le rendu serveur et le premier rendu du navigateur doivent être identiques)
+  const [extraSecondary, setExtraSecondary] = useState<ExtraSecondary[]>(carried?.extraSecondary ?? [])
   // « Proposition IA » : requêtes exactes pour cet article
   const [ideasOpen, setIdeasOpen] = useState(false)
+  // « Intégrer avec l'IA » : mot-clé à placer dans le texte (secondaire absent, sous-titre, introduction)
+  const [fit, setFit] = useState<KeywordFitRequest | null>(null)
 
   const editorRef = useRef<RichEditorHandle>(null)
   const tabsAnchorRef = useRef<HTMLDivElement>(null)
@@ -239,6 +296,8 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
   proposalRef.current = proposal
   const highlightedRef = useRef(highlighted)
   highlightedRef.current = highlighted
+  const extraSecondaryRef = useRef(extraSecondary)
+  extraSecondaryRef.current = extraSecondary
   const slugTouchedRef = useRef(slugTouched)
   slugTouchedRef.current = slugTouched
   const tabRef = useRef(tab)
@@ -328,7 +387,7 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
       return {
         keyword: d.keyword ?? '',
         articleType: articleTypeOf(d.keyword, d.title),
-        secondary: highlightedRef.current,
+        secondary: Array.from(new Set([...highlightedRef.current, ...extraSecondaryRef.current.map((e) => e.keyword)])).slice(0, 20),
         title: d.title,
         excerpt: d.excerpt,
         content: d.content,
@@ -571,6 +630,8 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
           const newId = json.id
           idRef.current = newId
           setId(newId)
+          // Les mots-clés secondaires ajoutés avant la création suivent l'article
+          if (extraSecondaryRef.current.length > 0) writeExtraSecondary(newId, extraSecondaryRef.current)
           // Page quittée pendant l'envoi (« Quitter » sans enregistrer) : on n'y ramène pas
           if (!mountedRef.current) return
           // On reste dans l'éditeur : la page devient celle de l'article (nouvel éditeur, relais ci-dessous)
@@ -583,6 +644,7 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
                   latest: () => draftRef.current,
                   tab: tabRef.current,
                   highlighted: highlightedRef.current,
+                  extraSecondary: extraSecondaryRef.current,
                   lastSaveAt: now.toISOString(),
                   fromCalendar: !editing && Boolean(initialSchedule),
                   editorMode: rootRef.current?.querySelector('.q-editor')?.getAttribute('data-mode') === 'markdown' ? 'markdown' : 'visual',
@@ -608,7 +670,9 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
       if (status === 409 && json?.code === 'check_failed' && creating) {
         // Création publiée refusée par le contrôle : rien n'est créé, le texte reste dans l'éditeur (et sur l'appareil)
         local.flush()
-        setBlocked({ issues: issuesOf(json), unscheduled: false, notCreated: true })
+        const issues = issuesOf(json)
+        foundIssues.current = new Set(issues.filter((i) => issueFieldIn(draftRef.current, i)).map(issueKey))
+        setBlocked({ issues, unscheduled: false, notCreated: true })
         setTab('redaction')
         toast.error("Publication refusée : l'article n'est pas encore enregistré. Corrigez les passages signalés, ou enregistrez-le en brouillon.")
         requestAnimationFrame(() => document.getElementById('editeur-alertes')?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }))
@@ -628,7 +692,9 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
         local.clear()
         // Tapé pendant l'envoi : gardé sur l'appareil (pas la seule demande de mise en ligne, refusée)
         if (changedFields(draftRef.current, nextSaved).some((f) => f !== 'publication')) local.flush(nextSaved)
-        setBlocked({ issues: issuesOf(json), unscheduled: wasScheduled })
+        const issues = issuesOf(json)
+        foundIssues.current = new Set(issues.filter((i) => issueFieldIn(draftRef.current, i)).map(issueKey))
+        setBlocked({ issues, unscheduled: wasScheduled })
         setTab('redaction')
         toast.error('Publication refusée : les modifications sont enregistrées, corrigez les passages signalés.')
         requestAnimationFrame(() => document.getElementById('editeur-alertes')?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }))
@@ -731,6 +797,191 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
   )
 
   /* ---------------------------------------------------------------- */
+  /* Passages refusés par le contrôle : aller au passage, corriger     */
+  /* ---------------------------------------------------------------- */
+
+  /** Champ qui porte encore l'extrait refusé (le texte d'abord) ; null : il n'est plus nulle part, donc corrigé. */
+  const issueFieldOf = useCallback((issue: BlockingIssue): IssueField | null => issueFieldIn(draftRef.current, issue), [])
+  // « Corrigé » seulement pour un passage qui était dans le texte à l'affichage de la bannière (un extrait tiré
+  // d'ailleurs, mots-clés de l'article par exemple, ne devient pas « corrigé » faute d'être retrouvé)
+  const isIssueCorrected = useCallback((issue: BlockingIssue) => foundIssues.current.has(issueKey(issue)) && issueFieldOf(issue) === null, [issueFieldOf])
+
+  const issueActions = useMemo<IssueActions>(() => {
+    const gone = "Ce passage n'est plus dans le texte : il a sans doute déjà été modifié."
+    return {
+      reveal: (issue) => {
+        const field = issueFieldOf(issue)
+        if (!field || !issue.excerpt) return false
+        if (field === 'content') {
+          const excerpt = issue.excerpt
+          setTab('redaction')
+          // Deux images : l'onglet Rédaction est affiché avant la mesure (téléphone)
+          requestAnimationFrame(() => requestAnimationFrame(() => editorRef.current?.revealPassage(excerpt)))
+        } else {
+          focusTarget(ISSUE_TARGETS[field])
+        }
+        return true
+      },
+      fix: async (issue): Promise<IssueFixResult> => {
+        const field = issueFieldOf(issue)
+        const excerpt = issue.excerpt
+        if (!field || !excerpt) return { ok: false, error: gone }
+        const d = draftRef.current
+        let text = ''
+        let before: string | undefined
+        let after: string | undefined
+        if (field === 'content') {
+          const info = editorRef.current?.findPassage(excerpt)
+          if (!info) return { ok: false, error: editorRef.current ? gone : "L'éditeur n'est pas encore chargé : réessayez dans un instant." }
+          if (info.kind === 'other') return { ok: false, error: "Ce passage est dans un tableau ou une citation : corrigez-le à la main (« Aller au passage »)." }
+          text = info.markdown
+          before = info.before
+          after = info.after
+        } else {
+          text = d[field]
+        }
+        if (text.length > 4000) return { ok: false, error: 'Ce passage dépasse 4 000 caractères : corrigez-le à la main (« Aller au passage »).' }
+        try {
+          const res = await fetch('/api/admin/blog/assist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'resolve',
+              text,
+              issue: { label: issue.label.slice(0, 200), detail: issue.detail ? issue.detail.slice(0, 1500) : null },
+              excerpt: excerpt.slice(0, 600),
+              keyword: d.keyword ? d.keyword.slice(0, 120) : null,
+              title: d.title.trim().slice(0, 200) || undefined,
+              before,
+              after,
+            }),
+            cache: 'no-store',
+          })
+          const json = (await res.json().catch(() => null)) as (AssistResponse & { error?: string }) | null
+          if (!res.ok || !json || typeof json.text !== 'string') {
+            return {
+              ok: false,
+              error:
+                json?.error ??
+                (res.status === 401 ? 'Session expirée : reconnectez-vous.' : res.status === 503 ? "La correction par l'IA n'est pas disponible pour le moment." : "La correction n'a pas pu être proposée. Réessayez dans un instant."),
+            }
+          }
+          return { ok: true, text: json.text, warnings: Array.isArray(json.warnings) ? json.warnings : [] }
+        } catch {
+          return { ok: false, error: 'Connexion impossible. Vérifiez votre réseau puis réessayez.' }
+        }
+      },
+      apply: (issue, text) => {
+        const field = issueFieldOf(issue)
+        if (!field || !issue.excerpt) return false
+        if (field === 'content') {
+          const result = editorRef.current?.replacePassages([{ excerpt: issue.excerpt, text }])
+          return result?.applied === 1
+        }
+        const line = text.replace(/\s+/g, ' ').trim()
+        if (!line) return false
+        if (field === 'title') onTitleChange(line)
+        else patch({ [field]: field === 'coverAlt' ? line.slice(0, 180) : line } as Partial<ArticleDraft>)
+        return true
+      },
+    }
+  }, [issueFieldOf, focusTarget, onTitleChange, patch])
+
+  /* ---------------------------------------------------------------- */
+  /* Mot-clé à placer dans le texte avec l'IA                          */
+  /* ---------------------------------------------------------------- */
+
+  const getFitArticle = useCallback(() => ({ markdown: draftRef.current.content, title: draftRef.current.title, mainKeyword: draftRef.current.keyword }), [])
+  const applyFit = useCallback(
+    (edits: PassageEdit[]) => {
+      // L'éditeur remplace les passages d'un coup (un seul pas d'annulation) ; absent, le texte est réécrit ici
+      if (editorRef.current) return editorRef.current.replacePassages(edits)
+      const result = applyPassageEdits(draftRef.current.content, edits)
+      if (result.applied > 0) patch({ content: result.markdown })
+      return { applied: result.applied, missed: result.missed }
+    },
+    [patch],
+  )
+  const closeFit = useCallback(() => setFit(null), [])
+
+  const updateExtraSecondary = useCallback((next: ExtraSecondary[]) => {
+    extraSecondaryRef.current = next
+    setExtraSecondary(next)
+    if (idRef.current) writeExtraSecondary(idRef.current, next)
+  }, [])
+  /** Proposition IA › « Ajouter aux secondaires » : le mot-clé rejoint la liste, une seule fois. */
+  const addExtraSecondary = useCallback(
+    (idea: { keyword: string; volume: number | null }) => {
+      const list = extraSecondaryRef.current
+      const key = keywordKey(idea.keyword)
+      if (!key || list.some((e) => keywordKey(e.keyword) === key) || list.length >= EXTRA_SECONDARY_MAX) return
+      updateExtraSecondary([...list, { keyword: idea.keyword, volume: idea.volume }])
+    },
+    [updateExtraSecondary],
+  )
+  const removeExtraSecondary = useCallback(
+    (keyword: string) => {
+      const key = keywordKey(keyword)
+      const list = extraSecondaryRef.current
+      if (list.some((e) => keywordKey(e.keyword) === key)) updateExtraSecondary(list.filter((e) => keywordKey(e.keyword) !== key))
+    },
+    [updateExtraSecondary],
+  )
+  // Article déjà créé, ouvert sans relais : la liste gardée sur l'appareil est reprise (une fois, après l'affichage)
+  useEffect(() => {
+    if (carried || !idRef.current) return
+    const stored = readExtraSecondary(idRef.current)
+    if (stored.length > 0) updateExtraSecondary(stored)
+    // Au montage seulement
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /** Bouton « avec l'IA » sous une ligne à corriger de la liste de contrôle. */
+  const scoreActionFor: CheckActionFor = (check) => {
+    const keyword = draft.keyword?.trim()
+    if (!keyword) return null
+    switch (check.id) {
+      case 'kw-title':
+      case 'kw-title-start':
+        return {
+          label: 'Proposer un titre avec le mot-clé',
+          busy: suggestSeoTitle.status === 'loading',
+          onClick: () => {
+            focusTarget('seoTitle')
+            suggestSeoTitle.run()
+          },
+        }
+      case 'kw-description':
+        return {
+          label: 'Proposer une description avec le mot-clé',
+          busy: suggestSeoDescription.status === 'loading',
+          onClick: () => {
+            focusTarget('seoDescription')
+            suggestSeoDescription.run()
+          },
+        }
+      case 'kw-slug':
+        return {
+          label: 'Proposer une adresse avec le mot-clé',
+          busy: suggestSlug.status === 'loading',
+          onClick: () => {
+            focusTarget('slug')
+            suggestSlug.run()
+          },
+        }
+      case 'kw-intro':
+        return { label: "Mettre le mot-clé dans l'introduction", onClick: () => setFit({ mode: 'intro', keyword }) }
+      case 'kw-heading':
+        return { label: 'Mettre le mot-clé dans un sous-titre', onClick: () => setFit({ mode: 'heading', keyword }) }
+      case 'kw-density':
+        // Trop répété : rien à ajouter
+        return check.detail?.includes('trop souvent') ? null : { label: 'Placer le mot-clé dans le texte', onClick: () => setFit({ mode: 'secondary', keyword }) }
+      default:
+        return null
+    }
+  }
+
+  /* ---------------------------------------------------------------- */
   /* Rendu                                                             */
   /* ---------------------------------------------------------------- */
 
@@ -830,6 +1081,8 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
                         : "Les modifications sont enregistrées, mais l'article n'est pas en ligne. Corrigez ces passages, puis publiez à nouveau."
                   }
                   onDismiss={() => setBlocked(null)}
+                  actions={issueActions}
+                  isCorrected={isIssueCorrected}
                 />
               )}
               {heldReason && !blocked && (
@@ -899,7 +1152,7 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
             saveLabel={saveLabel}
             onSave={() => void save()}
           />
-          <ScoreCard className={tab === 'referencement' ? '' : 'max-xl:hidden'} result={analysis} onFocusTarget={focusTarget} />
+          <ScoreCard className={tab === 'referencement' ? '' : 'max-xl:hidden'} result={analysis} onFocusTarget={focusTarget} actionFor={scoreActionFor} />
           <KeywordCard
             className={tab === 'referencement' ? '' : 'max-xl:hidden'}
             value={draft.keyword}
@@ -908,6 +1161,7 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
             slug={draft.slug}
             selfId={id}
             onPropose={() => setIdeasOpen(true)}
+            articleTitle={draft.title}
           />
           <LinksCard
             className={tab === 'referencement' ? '' : 'max-xl:hidden'}
@@ -953,12 +1207,18 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
             content={deferredDraft.content}
             highlighted={highlighted}
             onHighlightChange={setHighlighted}
+            onIntegrate={(keyword) => setFit({ mode: 'secondary', keyword })}
+            extra={extraSecondary}
+            onRemoveExtra={removeExtraSecondary}
           />
           <OutlineCard className={tab === 'referencement' ? '' : 'max-xl:hidden'} headings={headings} onGo={goToHeading} />
         </aside>
       </div>
 
       {studio.dialog}
+
+      {/* Intégrer un mot-clé dans le texte avec l'IA */}
+      <KeywordFitDialog request={fit} getArticle={getFitArticle} onApply={applyFit} onClose={closeFit} />
 
       {/* Heure proposée à confirmer */}
       <ConfirmDialog
@@ -1083,8 +1343,13 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
         }
         onUse={(idea) => {
           patch({ keyword: idea.keyword })
+          // Un mot-clé devenu principal ne reste pas dans les secondaires
+          removeExtraSecondary(idea.keyword)
           seo.reload()
         }}
+        onUseSecondary={addExtraSecondary}
+        currentKeyword={draft.keyword}
+        currentSecondary={extraSecondary.map((e) => e.keyword)}
       />
     </div>
   )
