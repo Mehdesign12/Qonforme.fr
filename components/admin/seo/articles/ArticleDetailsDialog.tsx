@@ -1295,6 +1295,20 @@ export function ArticleDetailsDialog({ postId, onClose, onChanged }: { postId: s
     changed(action === "publish" ? "Article publié" : "Article repassé en brouillon")
   }
 
+  /** Les passages signalés ont été relus : l'admin publie quand même (le contrôle automatique, lui, retient toujours). */
+  async function forcePublish() {
+    if (!post || busy) return
+    setBusy(true)
+    const res = await api<{ ok?: boolean }>(`/api/admin/seo/articles/posts/${post.id}`, "PATCH", { action: "publish", force: true })
+    setBusy(false)
+    if (!res.ok) {
+      toast.error(res.error ?? "Publication impossible pour le moment.")
+      return
+    }
+    setBlockers(null)
+    changed("Article publié, sans attendre le contrôle")
+  }
+
   const footerButton = "q-btn max-md:q-btn-lg max-sm:w-full"
 
   return (
@@ -1383,10 +1397,16 @@ export function ArticleDetailsDialog({ postId, onClose, onChanged }: { postId: s
                             </li>
                           ))}
                         </ul>
-                        <Link href={`/admin/blog/${post.id}`} className="q-link inline-flex min-h-11 items-center gap-1 self-start md:min-h-0">
-                          Corriger dans l&apos;éditeur
-                          <ArrowUpRight className="size-3.5" aria-hidden />
-                        </Link>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                          <Link href={`/admin/blog/${post.id}`} className="q-link inline-flex min-h-11 items-center gap-1 md:min-h-0">
+                            Corriger dans l&apos;éditeur
+                            <ArrowUpRight className="size-3.5" aria-hidden />
+                          </Link>
+                          <button type="button" onClick={() => void forcePublish()} disabled={busy} className="q-btn q-btn-secondary q-btn-sm max-md:h-11">
+                            {busy && <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden />}
+                            Publier quand même
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
