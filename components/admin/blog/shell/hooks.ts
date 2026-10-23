@@ -369,6 +369,8 @@ export interface CreationHandoff {
   latest: () => ArticleDraft
   tab: EditorTab
   highlighted: string[]
+  /** Mots-clés secondaires ajoutés à la main (Proposition IA). */
+  extraSecondary?: { keyword: string; volume: number | null }[]
   lastSaveAt: string
   fromCalendar: boolean
   /** Mode de la zone d'écriture (visuel ou Markdown). */
