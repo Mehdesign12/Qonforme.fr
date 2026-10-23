@@ -23,11 +23,12 @@ const opt = (n, d) => (args.includes('--' + n) ? args[args.indexOf('--' + n) + 1
 const FPS = +opt('fps', 25)
 const ONLY = opt('only', null)
 const AUDIO = opt('audio', null)
+const V2 = args.includes('--v2')
 fs.mkdirSync(OUT, { recursive: true })
 const CACHE = path.join(OUT, 'cache')
 fs.mkdirSync(path.join(CACHE, 'fonts'), { recursive: true })
 
-const script = JSON.parse(fs.readFileSync(path.join(HERE, 'script.fr.json'), 'utf8'))
+const script = JSON.parse(fs.readFileSync(path.join(HERE, V2 ? 'script.v2.fr.json' : 'script.fr.json'), 'utf8'))
 const cert = await import(pathToFileURL(path.join(ROOT, 'lib/legal/certification-tva.ts')).href)
 
 /* ── durées ── */
@@ -36,8 +37,8 @@ let t = 0
 const scenes = script.scenes.map((s, i) => {
   let dur
   const mp3 = AUDIO && path.join(AUDIO, `scene-${String(i + 1).padStart(2, '0')}.mp3`)
-  if (mp3 && fs.existsSync(mp3)) dur = probe(mp3) + 0.8
-  else dur = Math.max(s.min, s.voix.length / 14 + 1.2)   // ~14 caractères par seconde en français posé
+  if (mp3 && fs.existsSync(mp3)) dur = probe(mp3) + (V2 ? 0.45 : 0.8)
+  else dur = Math.max(s.min || 0, s.voix.length / (V2 ? 17 : 14) + 1.2)   // ~14 caractères par seconde en français posé
   const out = { id: s.id, t0: t, dur: Math.round(dur * 40) / 40, mp3: mp3 && fs.existsSync(mp3) ? mp3 : null }
   t += out.dur
   return out
@@ -94,7 +95,7 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.webp'
 const server = http.createServer((req, res) => {
   const u = decodeURIComponent(req.url.split('?')[0])
   let f
-  if (u === '/') f = path.join(HERE, 'scene.html')
+  if (u === '/') f = path.join(HERE, V2 ? 'scene2.html' : 'scene.html')
   else if (u.startsWith('/repo/')) f = path.join(ROOT, u.slice(6))
   else if (u.startsWith('/public/')) f = path.join(ROOT, 'public', u.slice(8))
   else if (u.startsWith('/fonts/')) f = path.join(CACHE, 'fonts', u.slice(7))
@@ -112,6 +113,8 @@ const data = {
     devis: cut(cert.CERTIFICATION_DEVIS_10, 250),
     facture: cut(cert.CERTIFICATION_FACTURE_10, 250),
   },
+  words: Object.fromEntries(script.scenes.map((s, i) => { const f = AUDIO && path.join(AUDIO, `scene-${String(i + 1).padStart(2, '0')}.words.json`); return [s.id, f && fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')).words : []] })),
+  texts: Object.fromEntries(script.scenes.map((s, i) => { const f = AUDIO && path.join(AUDIO, `scene-${String(i + 1).padStart(2, '0')}.words.json`); return [s.id, f && fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')).text : ''] })),
   src: Object.fromEntries(script.scenes.map((s) => [s.id, s.source || ''])),
   assets: { photoClient: '/public/landing/photos/artisan-client.webp', modele: '/modele.png' },
 }
