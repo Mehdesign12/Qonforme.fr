@@ -6,7 +6,7 @@
  */
 import { downloadPdf, PdfDownloadError } from "@/lib/utils/download-pdf"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import { toastCompanyRequired } from "@/components/shared/company-required"
@@ -27,6 +27,7 @@ import { describeInvoiceSchedule } from "@/lib/reminders/settings"
 import { DeclarationBanner, PaymentLinkPanel } from "@/components/payment-link/PaymentLinkPanel"
 import { usePaymentLink } from "@/components/payment-link/usePaymentLink"
 import { isPayableStatus } from "@/lib/payment-link/rules"
+import { SEND_PARAM, sendAfterPaymentOutcome, wantsSendAfterPayment } from "@/lib/stripe/activation"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -383,15 +384,21 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       .then(({ data }) => { if (data) setChantier(data as { id: string; name: string }) }, () => {})
   }, [chantierId])
 
-  // Retour du paiement (?send=1) : la formule est active, on rouvre l'envoi
-  // de la facture qui attendait, puis on nettoie l'URL.
+  // Retour du paiement (?send=1) : la formule est active, on ouvre l'envoi de la facture
+  // qui attendait, puis on nettoie l'URL. Le paramètre est surveillé, pas lu une fois au
+  // chargement : le bouton « Envoyer ma première facture » de la fenêtre d'activation
+  // arrive sur cette page déjà ouverte, seule l'adresse change. Si l'envoi est impossible
+  // (facture déjà émise, client sans email), on le dit au lieu de ne rien faire.
+  const searchParams = useSearchParams()
+  const sendRequested = wantsSendAfterPayment(searchParams.get(SEND_PARAM))
   useEffect(() => {
-    if (!invoice || typeof window === "undefined") return
-    const params = new URLSearchParams(window.location.search)
-    if (params.get("send") !== "1") return
+    if (!invoice || !sendRequested) return
     router.replace(`/invoices/${invoiceId}`)
-    if (invoice.status === "draft" && invoice.client?.email) setShowSendModal(true)
-  }, [invoice?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+    const outcome = sendAfterPaymentOutcome(invoice)
+    if (outcome === "open") setShowSendModal(true)
+    else if (outcome === "no-email") toast.error("Ajoutez l'adresse email du client pour envoyer cette facture.")
+    else toast.info("Cette facture n'est plus un brouillon : elle a déjà été émise.")
+  }, [invoice?.id, sendRequested]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const changeStatus = async (newStatus: InvoiceStatus, extra: { paid_at?: string } = {}): Promise<boolean> => {
     if (!invoice) return false
