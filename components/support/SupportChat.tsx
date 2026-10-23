@@ -45,6 +45,9 @@ export function SupportChat() {
   const consent = useConsent()
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
+  // Le panneau reste monté le temps de son animation de fermeture (`shown` pilote la transition)
+  const [rendered, setRendered] = useState(false)
+  const [shown, setShown] = useState(false)
   const [view, setView] = useState<View>("home")
   const [thread, setThread] = useState<ThreadState | null>(null)
   const [loading, setLoading] = useState(false)
@@ -100,6 +103,8 @@ export function SupportChat() {
 
   const openPanel = useCallback(async () => {
     setOpen(true)
+    setRendered(true)
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => setShown(true)))
     setError(null)
     const next = await load()
     if (next && next.unread > 0) {
@@ -112,6 +117,8 @@ export function SupportChat() {
 
   const closePanel = useCallback(() => {
     setOpen(false)
+    setShown(false)
+    window.setTimeout(() => setRendered(false), 320)
     window.setTimeout(() => trigger.current?.focus(), 0)
   }, [])
 
@@ -158,7 +165,8 @@ export function SupportChat() {
   }
 
   const bannerShown = consent === null
-  const wide = ((intro && surface === "bubble") || hovered || focused) && !open
+  // Dans l'application : toujours ronde. Sur les pages publiques : grande 6 s, puis au survol ou au clavier seulement
+  const wide = surface === "bubble" && (intro || hovered || focused) && !open
   const label = unread > 0 ? `Ouvrir la discussion, ${unread} nouveau${unread > 1 ? "x" : ""} message${unread > 1 ? "s" : ""}` : "Discuter avec Christophe"
   const badge = unread > 0 && (
     <span className="absolute -right-1 -top-1 flex h-[22px] min-w-[22px] items-center justify-center rounded-full border-2 border-white bg-[#DC2626] px-1 text-[12px] font-bold leading-none text-white" aria-hidden>{unread}</span>
@@ -176,29 +184,36 @@ export function SupportChat() {
         onClick={() => (open ? closePanel() : void openPanel())}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        onFocus={() => setFocused(true)}
+        onFocus={(e) => setFocused(e.currentTarget.matches(":focus-visible"))}
         onBlur={() => setFocused(false)}
         aria-label={open ? "Fermer la discussion" : label}
         aria-expanded={open}
         className={cn(
-          "fixed right-6 z-[60] hidden items-center rounded-full bg-q-accent text-white outline-none transition-[bottom] duration-300 hover:bg-q-accent-strong focus-visible:ring-4 focus-visible:ring-[#BFD3FB] md:flex",
+          "fixed right-6 z-[60] hidden h-[60px] items-center overflow-hidden rounded-full bg-q-accent text-white outline-none md:flex",
+          "transition-[width,bottom,background-color] duration-500 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none hover:bg-q-accent-strong focus-visible:ring-4 focus-visible:ring-[#BFD3FB]",
           BLUE_RELIEF,
           bannerShown ? "bottom-[5.5rem]" : "bottom-6",
-          wide ? "h-[68px] gap-3 py-2 pl-2 pr-6" : "size-[60px] justify-center",
+          wide ? "w-[304px]" : "w-[60px]",
         )}
       >
-        {wide && <Avatar size={52} />}
+        {/* Avatar et texte apparaissent en fondu pendant que la bulle s'élargit */}
         <span
+          aria-hidden
           className={cn(
-            "flex flex-col text-left leading-tight transition-[max-width,opacity] duration-300 motion-reduce:transition-none",
-            wide ? "max-w-[220px] opacity-100" : "max-w-0 overflow-hidden opacity-0",
+            "pointer-events-none absolute left-1 top-1/2 flex -translate-y-1/2 items-center gap-3 whitespace-nowrap transition-[opacity,translate] duration-500 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none",
+            wide ? "opacity-100 [translate:0_0]" : "opacity-0 [translate:-12px_0]",
           )}
         >
-          <span className="q-display whitespace-nowrap text-[17px] font-bold">Une question ?</span>
-          <span className="whitespace-nowrap text-[14px] font-medium">Écrivez à {PERSONA.name}</span>
+          <Avatar size={52} />
+          <span className="flex flex-col text-left leading-tight">
+            <span className="q-display text-[17px] font-bold">Une question ?</span>
+            <span className="text-[14px] font-medium">Écrivez à {PERSONA.name}</span>
+          </span>
         </span>
-        {open ? <ChevronDown className="size-6" aria-hidden /> : <ChatGlyph className={cn("shrink-0", wide ? "size-6" : "size-7")} />}
-        {!open && badge}
+        <span className="relative ml-auto grid size-[60px] shrink-0 place-items-center">
+          {open ? <ChevronDown className="size-6" aria-hidden /> : <ChatGlyph className="size-7" />}
+          {!open && badge}
+        </span>
       </button>
 
       {/* Téléphone : un bouton rond, au-dessus du bandeau de cookies tant qu'il est affiché */}
@@ -218,9 +233,9 @@ export function SupportChat() {
         </button>
       )}
 
-      {open && (
+      {rendered && (
         <>
-          <div className="fixed inset-0 z-[200] bg-black/50 md:hidden" onClick={closePanel} aria-hidden />
+          <div className={cn("fixed inset-0 z-[200] bg-black/50 transition-opacity duration-300 md:hidden", shown ? "opacity-100" : "opacity-0")} onClick={closePanel} aria-hidden />
           <div
             ref={panel}
             role="dialog"
@@ -228,6 +243,9 @@ export function SupportChat() {
             tabIndex={-1}
             className={cn(
               "fixed inset-x-0 bottom-0 top-9 z-[210] flex flex-col overflow-hidden rounded-t-3xl border border-q-line bg-q-bg outline-none",
+              // Glissement du bas sur téléphone, fondu et léger zoom depuis la bulle sur ordinateur (propriétés `translate` et `scale`, sans `will-change`)
+              "transition-[translate,scale,opacity] duration-[380ms] ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none md:origin-bottom-right md:duration-300",
+              shown ? "opacity-100 [translate:0_0] [scale:1]" : "opacity-0 [translate:0_100%] md:[translate:0_14px] md:[scale:.96]",
               "md:inset-x-auto md:bottom-[6.5rem] md:right-6 md:top-auto md:h-[min(640px,calc(100dvh-8rem))] md:w-[380px] md:rounded-[20px] md:[box-shadow:0_24px_60px_-20px_rgba(10,17,34,.35)]",
             )}
           >
