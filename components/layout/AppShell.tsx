@@ -1,6 +1,6 @@
 import { Sidebar, MobileBottomNav } from "@/components/layout/Sidebar"
 import { Header } from "@/components/layout/Header"
-import { SalesRail } from "@/components/layout/SalesRail"
+import { SalesRail, type SalesCounts } from "@/components/layout/SalesRail"
 import { Suspense } from "react"
 import { CrumbProvider } from "@/components/layout/crumb"
 import { NavigationProgress } from "@/components/layout/NavigationProgress"
@@ -16,7 +16,7 @@ import type { ShellIdentity } from "@/components/layout/shell"
  * Pas de will-change ni de transform sur les enveloppes (règle iOS de CLAUDE.md) :
  * la barre supérieure porte elle-même `isolation: isolate`.
  */
-export function AppShellFrame({ identity, children }: { identity: ShellIdentity; children: React.ReactNode }) {
+export function AppShellFrame({ identity, salesCounts, children }: { identity: ShellIdentity; salesCounts?: SalesCounts; children: React.ReactNode }) {
   return (
     <CrumbProvider>
       <Suspense fallback={null}>
@@ -39,7 +39,7 @@ export function AppShellFrame({ identity, children }: { identity: ShellIdentity;
             id="contenu"
             className="mx-auto flex w-full max-w-[1240px] flex-1 flex-col gap-5 px-4 pb-[calc(112px+env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] md:px-6 lg:pb-10 lg:pt-7 print:max-w-none print:p-0"
           >
-            <SalesRail />
+            <SalesRail demoCounts={salesCounts} />
             {children}
           </main>
         </div>

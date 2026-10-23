@@ -27,6 +27,7 @@ import { SetCrumb } from "@/components/layout/crumb"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
+import { DocumentChain, quoteChainSteps } from "@/components/documents/DocumentChain"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { resolveDocumentMentions } from "@/lib/legal/mentions"
 import { REVERSE_CHARGE_MENTION, hasReverseCharge } from "@/lib/artisan/reverse-charge"
@@ -357,6 +358,7 @@ export function QuoteDetailView({
           <Link href={quote.converted_invoice.href} className="text-sm font-semibold hover:underline">Voir la facture</Link>
         </div>
       )}
+      {s !== "withdrawn" && s !== "rejected" && <DocumentChain steps={quoteChainSteps(quote, conversionBlocked)} className="lg:hidden" />}
       {s === "withdrawn" && (
         <div role="status" className="q-banner q-banner-warn items-center print:hidden">
           <Undo2 className="size-5 shrink-0" aria-hidden />
