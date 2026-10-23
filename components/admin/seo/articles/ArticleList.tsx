@@ -119,11 +119,12 @@ export function ArticleList({ items, sources, generate }: { items: ArticleListIt
     })
   }, [items, stateFilter, sourceFilter, query, ascending])
 
-  async function confirm() {
+  async function confirm(force = false) {
     if (!pending) return
     setBusy(true)
     const res = await api<{ ok: boolean; issues?: { label: string; excerpt: string | null; detail: string | null }[] }>(`/api/admin/seo/articles/posts/${pending.item.id}`, "PATCH", {
       action: pending.action,
+      ...(force ? { force: true } : {}),
     })
     setBusy(false)
     if (!res.ok) {
@@ -347,11 +348,17 @@ export function ArticleList({ items, sources, generate }: { items: ArticleListIt
               {blockers ? "Fermer" : "Annuler"}
             </button>
             {blockers ? (
-              <Link href={`/admin/blog/${pending?.item.id}`} className="q-btn q-btn-primary">
-                Ouvrir l&apos;article
-              </Link>
+              <>
+                <button type="button" onClick={() => void confirm(true)} disabled={busy} className="q-btn q-btn-secondary">
+                  {busy && <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden />}
+                  Publier quand même
+                </button>
+                <Link href={`/admin/blog/${pending?.item.id}`} className="q-btn q-btn-primary">
+                  Ouvrir l&apos;article
+                </Link>
+              </>
             ) : (
-              <button type="button" onClick={confirm} disabled={busy} className={cn("q-btn", pending?.action === "publish" ? "q-btn-primary" : "q-btn-danger")}>
+              <button type="button" onClick={() => void confirm()} disabled={busy} className={cn("q-btn", pending?.action === "publish" ? "q-btn-primary" : "q-btn-danger")}>
                 {busy && <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden />}
                 {pending?.action === "publish" ? "Publier" : "Repasser en brouillon"}
               </button>
