@@ -12,12 +12,14 @@ export const metadata = {
 async function getCounts(): Promise<AdminCounts> {
   try {
     const admin = createAdminClient()
-    const [supportRes, errorsRes] = await Promise.all([
+    const [supportRes, chatRes, errorsRes] = await Promise.all([
       admin.from('support_messages').select('id', { count: 'exact', head: true }).eq('status', 'new'),
+      admin.from('support_conversations').select('id', { count: 'exact', head: true }).eq('admin_unread', true),
       admin.from('error_logs').select('id', { count: 'exact', head: true }).is('resolved_at', null),
     ])
     return {
-      unreadSupport: supportRes.error ? null : supportRes.count ?? 0,
+      // Avant la migration du chat, la table manque : on ne compte alors que les signalements.
+      unreadSupport: supportRes.error ? null : (supportRes.count ?? 0) + (chatRes.error ? 0 : chatRes.count ?? 0),
       unresolvedErrors: errorsRes.error ? null : errorsRes.count ?? 0,
     }
   } catch {

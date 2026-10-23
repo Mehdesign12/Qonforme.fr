@@ -1,6 +1,6 @@
 import { LegalLayout } from "@/components/legal/LegalLayout"
 import type { Metadata } from "next"
-import { PAYMENT_METHODS_TEXT, PLANS, VAT_COLLECTED, formatEuros } from "@/lib/stripe/plans"
+import { PAYMENT_METHODS_TEXT, PLANS, VAT_COLLECTED, formatEuros, scanQuotaText } from "@/lib/stripe/plans"
 import { PUBLISHER } from "@/lib/legal/publisher"
 
 export const metadata: Metadata = {
@@ -68,11 +68,12 @@ export default function CGUPage() {
       <ul>
         <li>
           <strong>Version gratuite</strong>, sans limite de durée ni carte bancaire : devis illimités, gestion des clients
-          et du catalogue, préparation de factures en brouillon, consultation et téléchargement des documents.
+          et du catalogue, préparation de factures en brouillon, planning de rendez-vous, notes et rappels, scan de documents
+          (jusqu&apos;à {scanQuotaText("free")}), consultation et téléchargement des documents.
         </li>
         <li>
           <strong>Formule Essentiel</strong> — {formatEuros(PLANS.starter.monthlyPrice)}{VAT_COLLECTED ? " HT" : ""} par mois, ou {formatEuros(PLANS.starter.yearlyPrice)}{VAT_COLLECTED ? " HT" : ""} par an : émission et envoi des factures et
-          des avoirs, relances des factures impayées, export comptable.
+          des avoirs, relances des factures impayées, export comptable, espace de scan porté à {scanQuotaText("starter")}.
         </li>
         <li>
           <strong>Formule Artisan</strong> — {formatEuros(PLANS.pro.monthlyPrice)}{VAT_COLLECTED ? " HT" : ""} par mois, ou {formatEuros(PLANS.pro.yearlyPrice)}{VAT_COLLECTED ? " HT" : ""} par an : proposée lorsque ses fonctionnalités

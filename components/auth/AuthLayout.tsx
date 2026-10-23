@@ -34,6 +34,11 @@ interface AuthLayoutProps {
   asideVariant?: "panel" | "photo"
   /** Sous 1024 px, sous le logo (bande photo de l'inscription). */
   mobileBand?: React.ReactNode
+  /**
+   * Sous 1024 px, le contenu est posé dans une carte blanche sur fond clair, sans
+   * photo (connexion et inscription, 20/10/2026). Sans cette option, rien ne change.
+   */
+  mobileCard?: boolean
   /** À droite du logo (« Se connecter » sur téléphone). */
   topRight?: React.ReactNode
   /** Barre du haut : étapes de l'inscription et lien à droite. */
@@ -80,7 +85,7 @@ function Glow({ className }: { className?: string }) {
 }
 
 export default function AuthLayout({
-  children, aside, asideVariant = "panel", mobileBand, topRight, bar, maxWidth = "md",
+  children, aside, asideVariant = "panel", mobileBand, mobileCard, topRight, bar, maxWidth = "md",
 }: AuthLayoutProps) {
   const photo = Boolean(aside) && asideVariant === "photo"
 
@@ -113,7 +118,7 @@ export default function AuthLayout({
     <div
       className={cn(
         "relative",
-        photo ? "bg-q-surface" : "bg-q-bg",
+        photo ? (mobileCard ? "bg-q-bg lg:bg-q-surface" : "bg-q-surface") : "bg-q-bg",
         aside && "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]",
       )}
       style={SAFE_AREA}
@@ -144,7 +149,11 @@ export default function AuthLayout({
             aside ? "max-w-[400px]" : widthMap[maxWidth],
           )}
         >
-          {children}
+          {mobileCard ? (
+            <div className="mt-1 rounded-[24px] border border-q-line bg-q-surface px-5 pb-6 pt-7 sm:px-8 sm:pb-8 lg:mt-0 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0">
+              {children}
+            </div>
+          ) : children}
         </main>
       </div>
       {aside && !photo && (

@@ -369,7 +369,10 @@ export function PublicNav({ isLandingPage = false, backLink, crumb }: PublicNavP
                 </li>
               ))}
             </ul>
-            <div className="mt-1 border-t border-q-line-soft pt-1.5 md:hidden">
+            <div className="mt-1 border-t border-q-line-soft pt-1.5">
+              <Link href="/contact" onClick={closeMenu} className={cn(MENU_LINK, "font-semibold text-q-accent-strong")}>Nous écrire</Link>
+            </div>
+            <div className="border-t border-q-line-soft pt-1.5 md:hidden">
               <Link href="/login" onClick={closeMenu} className={cn(MENU_LINK, "font-semibold text-q-ink")}>Se connecter</Link>
             </div>
             <div className="hidden p-1.5 pt-2 max-[359px]:block">

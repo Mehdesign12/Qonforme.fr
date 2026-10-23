@@ -7,7 +7,7 @@ import PublicHeaderWrapper from '@/components/layout/PublicHeaderWrapper'
 import { Doodles } from '@/components/brand/Doodles'
 import { pictosFor } from '@/components/brand/pictos'
 import { MetaPixelEvent } from '@/components/shared/MetaPixelEvent'
-import { PAYMENT_METHODS_TEXT, PLANS, TAX_SUFFIX, VAT_COLLECTED, formatEuros } from '@/lib/stripe/plans'
+import { PAYMENT_METHODS_TEXT, PLANS, TAX_SUFFIX, VAT_COLLECTED, formatEuros, scanQuotaText } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { artisanOnSaleFor } from '@/lib/stripe/availability'
 
@@ -41,6 +41,7 @@ const FAQ = ([
     ? { question: `Que comprend la formule ${PLANS.pro.name} ?`, reponse: `Tout ${essentiel.name}, plus le suivi par chantier, les factures d'acompte, les situations de travaux, la retenue de garantie et l'autoliquidation en sous-traitance. ${formatEuros(PLANS.pro.monthlyPrice)}${TAX_SUFFIX} par mois, ou ${formatEuros(PLANS.pro.yearlyPrice)}${TAX_SUFFIX} par an.` }
     : { question: `La formule ${PLANS.pro.name} est-elle disponible ?`, reponse: `Ses fonctions sont prêtes : suivi par chantier, factures d'acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance. Vous pouvez les essayer dans la démo. La formule n'est pas encore en vente.` },
   { question: "Qonforme est-il prêt pour la facturation électronique ?", reponse: "Qonforme produit des factures PDF accompagnées de leurs données structurées Factur-X. L'émission via une plateforme agréée, obligatoire pour les TPE à partir de septembre 2027, est en préparation." },
+  { question: "Planning, notes et scan de documents : sont-ils disponibles ?", reponse: `Oui, pour tous les comptes, la version gratuite comprise : planning de rendez-vous, notes et rappels par client ou par chantier, et scan des devis, bons de commande et bons de livraison avec votre téléphone. L'espace de scan est de ${scanQuotaText('free')} en version gratuite, et de ${scanQuotaText('starter')} avec Essentiel ou Artisan.` },
   { question: "Est-ce que Qonforme fonctionne sur mobile ?", reponse: "Oui. Qonforme fonctionne sur téléphone, tablette et ordinateur, et s'installe sur l'écran d'accueil de votre téléphone." },
 ]).map((f) => ({ question: nbsp(f.question), reponse: nbsp(f.reponse) }))
 

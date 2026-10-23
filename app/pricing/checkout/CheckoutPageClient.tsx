@@ -12,9 +12,11 @@ import { Check, ArrowLeft, ChevronDown, Clock, Lock, RefreshCw, ShieldCheck } fr
 import { PAYMENT_METHODS_TEXT, PLANS, VAT_COLLECTED, formatEuros, withVat, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { trackEvent } from '@/lib/meta-pixel'
+import { captureEvent } from '@/components/shared/PostHogProvider'
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from '@/lib/brand'
 import { cn } from '@/lib/utils'
 import { PictoCluster } from '@/components/brand/PictoCluster'
+import { withActivationParam } from '@/lib/stripe/activation'
 
 /** « 10 € » avec une espace insécable avant le symbole. */
 const eur = (amount: number) => formatEuros(amount).replace(/ €$/, '\u00A0€')
@@ -97,6 +99,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next, publis
     const FAST_INTERVAL = 2000
 
     const redirectToDashboard = () => {
+      captureEvent('subscription_confirmed', { plan: planId, period: billingPeriod })
       trackEvent('Purchase', {
         currency: 'EUR',
         value: billingPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice,
@@ -104,7 +107,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next, publis
         content_ids: [planId],
         num_items: 1,
       })
-      router.replace(destination)
+      router.replace(withActivationParam(destination))
     }
 
     let slowTimer: ReturnType<typeof setInterval> | null = null
@@ -391,7 +394,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next, publis
                   </p>
                   <button
                     type="button"
-                    onClick={() => router.replace(destination)}
+                    onClick={() => router.replace(withActivationParam(destination))}
                     className="q-btn q-btn-primary q-btn-lg mt-6 w-full max-w-[280px] lg:h-10 lg:rounded-[10px] lg:text-sm"
                   >
                     {next ? 'Reprendre ma facture' : 'Accéder à mon espace'}

@@ -91,8 +91,9 @@ export default function ConfidentialitePage() {
         <li><strong>Données du compte</strong> — conservées pendant toute la durée de l&apos;abonnement, puis 3 ans après la suppression du compte</li>
         <li><strong>Documents comptables</strong> (factures, avoirs) — 10 ans conformément au Code de commerce</li>
         <li><strong>Logs de connexion</strong> — 12 mois</li>
-        <li><strong>Votre choix de cookies</strong> — 6 mois sur votre appareil, puis il vous est redemandé</li>
+        <li><strong>Votre choix de cookies</strong> — 13 mois sur votre appareil si vous acceptez, 6 mois si vous refusez, puis il vous est redemandé</li>
         <li><strong>Cookies du pixel Meta</strong> — 90 jours au plus, et seulement si vous avez accepté</li>
+        <li><strong>Enregistrements de parcours (PostHog)</strong> — 30 jours au plus, et seulement si vous avez accepté</li>
         <li><strong>Données de paiement</strong> — conservées par Stripe selon sa propre politique de conservation</li>
       </ul>
 
@@ -107,7 +108,7 @@ export default function ConfidentialitePage() {
         <li><strong>Stripe Inc.</strong> — traitement des paiements (certifié PCI-DSS)</li>
         <li><strong>Google LLC</strong> — connexion et inscription avec Google, à votre initiative seulement : Google transmet à Qonforme votre adresse email, votre prénom et votre nom ; Qonforme ne reçoit pas votre mot de passe Google</li>
         <li><strong>Resend Inc.</strong> — envoi d&apos;e-mails transactionnels (factures, relances, bienvenue)</li>
-        <li><strong>PostHog Inc.</strong> — mesure d&apos;audience (pages vues, provenance des visites), chargée seulement si vous acceptez les cookies</li>
+        <li><strong>PostHog Inc.</strong> — mesure d&apos;audience (pages vues, provenance des visites) et enregistrement des parcours (voir section 8), chargés seulement si vous acceptez les cookies</li>
         <li><strong>Sentry (Functional Software Inc.)</strong> — surveillance des erreurs techniques et stabilité du service</li>
         <li><strong>Google LLC (Gemini API)</strong> — génération de contenu éditorial pour le blog (aucune donnée utilisateur transmise)</li>
       </ul>
@@ -149,7 +150,7 @@ export default function ConfidentialitePage() {
       <ul>
         <li><strong>Cookie de session</strong> — authentification Supabase (durée : session)</li>
         <li><strong>Préférence de thème</strong> — stockage local (localStorage, clé &laquo;&nbsp;theme&nbsp;&raquo;)</li>
-        <li><strong>Votre choix de cookies</strong> — stockage local (localStorage, clé &laquo;&nbsp;qonforme-cookie-consent&nbsp;&raquo;), 6 mois</li>
+        <li><strong>Votre choix de cookies</strong> — stockage local (localStorage, clé &laquo;&nbsp;qonforme-cookie-consent&nbsp;&raquo;), 13 mois si vous acceptez, 6 mois si vous refusez</li>
         <li><strong>Paiement</strong> — Stripe peut déposer des cookies de sécurité et de prévention de la fraude au moment de régler un abonnement</li>
       </ul>
 
@@ -164,8 +165,15 @@ export default function ConfidentialitePage() {
           devise d&apos;un abonnement, votre adresse IP, votre navigateur et l&apos;identifiant du cookie.
         </li>
         <li>
-          <strong>PostHog</strong> — mesure d&apos;audience (pages vues, provenance des visites). Un identifiant est
-          alors enregistré dans votre navigateur.
+          <strong>PostHog</strong> — mesure d&apos;audience (pages vues, provenance des visites, quelques actions clés
+          comme l&apos;affichage du mur de paiement ou le choix d&apos;une formule, sans aucune donnée de vos documents) et enregistrement de
+          vos parcours (clics, défilement, pages visitées, comme une vidéo de la navigation), pour repérer ce qui
+          bloque les utilisateurs et améliorer le service. Un identifiant est alors enregistré dans votre navigateur.
+          L&apos;enregistrement masque tous les champs de saisie ; dans l&apos;application, il masque aussi les
+          textes affichés (noms de clients, montants, numéros de documents) : seuls les libellés d&apos;interface
+          restent lisibles. Il n&apos;est jamais actif sur les pages publiques de règlement ou de signature. Les
+          enregistrements sont conservés 30 jours au plus, sont consultés par l&apos;équipe de Qonforme seulement,
+          et ne servent ni à la publicité ni à du profilage.
         </li>
       </ul>
       <p>
@@ -175,7 +183,7 @@ export default function ConfidentialitePage() {
         d&apos;une facture, signature d&apos;un devis) ni dans l&apos;espace d&apos;administration.
       </p>
       <p>
-        Votre choix est conservé six mois sur votre appareil, puis nous vous le redemandons. Vous pouvez aussi
+        Votre choix est conservé sur votre appareil, 13 mois si vous acceptez et 6 mois si vous refusez, puis nous vous le redemandons. Vous pouvez aussi
         paramétrer votre navigateur pour bloquer ou supprimer les cookies ; certaines parties du service (connexion)
         ne fonctionnent pas sans les cookies de la première catégorie.
       </p>

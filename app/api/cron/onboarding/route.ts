@@ -37,6 +37,7 @@ import { claimSequenceStep, onboardingAvailable, releaseSequenceStep } from "@/l
 import { loadAccountStates } from "@/lib/onboarding/facts"
 import { listUnsubscribeHeaders, unsubscribePageUrl } from "@/lib/onboarding/unsubscribe"
 import { isReminderTarget } from "@/lib/onboarding/types"
+import { runPlanningReminders } from "@/lib/planning/reminders"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -80,6 +81,18 @@ export async function GET(request: NextRequest) {
   const admin = createAdminClient()
   const now = new Date()
 
+  // Rappels du planning : même rythme de 15 minutes, jamais bloqués par les tables du démarrage
+  const planning = await runPlanningReminders(admin, now).catch((err) => ({ error: errorText(err) }))
+  const planningActive = "appointments" in planning && (planning.appointments.sent > 0 || planning.tasks.sent > 0 || planning.appointments.errors.length > 0 || planning.tasks.errors.length > 0)
+  if (planningActive || "error" in planning) {
+    await admin.from("cron_logs").insert({
+      job_name: "planning",
+      status: "error" in planning || ("appointments" in planning && (planning.appointments.errors.length > 0 || planning.tasks.errors.length > 0)) ? "error" : "ok",
+      results: planning,
+      duration_ms: Date.now() - startedAt,
+    })
+  }
+
   const probe = await onboardingAvailable(admin)
   if (probe.error) {
     console.error("[cron/onboarding] tables illisibles :", probe.error.message)
@@ -90,7 +103,7 @@ export async function GET(request: NextRequest) {
   const reminders = await sendDueReminders(admin, now)
   const sequence = isSequenceSendingTime(now) ? await sendSequence(admin, now) : { ...summary(), outsideHours: true }
 
-  const results = { reminders, sequence }
+  const results = { reminders, sequence, planning }
   const hasErrors = reminders.errors.length > 0 || sequence.errors.length > 0
   // Toutes les 15 minutes : on ne journalise que les passages qui ont fait quelque chose
   if (hasErrors || reminders.sent > 0 || sequence.sent > 0) {

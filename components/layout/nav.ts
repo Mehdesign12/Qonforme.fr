@@ -9,7 +9,7 @@
  */
 import {
   LayoutDashboard, FileText, FileCheck2, Users, Package, ShoppingCart,
-  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox, HardHat, Wallet, BellRing,
+  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox, HardHat, Wallet, BellRing, CalendarDays, CalendarPlus, NotebookPen, ScanLine,
   type LucideIcon,
 } from "lucide-react"
 
@@ -34,6 +34,8 @@ export const NAV_MAIN: NavLink[] = [
   { key: "dashboard", label: "Tableau de bord", href: "/dashboard", demoHref: "/demo", icon: LayoutDashboard },
   { key: "invoices", label: "Factures", href: "/invoices", demoHref: "/demo/invoices", icon: FileText, hint: "Toutes vos factures" },
   { key: "quotes", label: "Devis", href: "/quotes", demoHref: "/demo/quotes", icon: FileCheck2, hint: "Gratuits et illimités" },
+  { key: "planning", label: "Planning et notes", href: "/planning", demoHref: "/demo/planning", icon: CalendarDays, hint: "Rendez-vous, tâches et notes" },
+  { key: "documents", label: "Documents", href: "/documents", demoHref: "/demo/documents", icon: ScanLine, hint: "Devis reçus, bons de commande et de livraison" },
   { key: "chantiers", label: "Chantiers", href: "/chantiers", demoHref: "/demo/chantiers", icon: HardHat, hint: "Acomptes, situations, retenues" },
   { key: "purchase-orders", label: "Bons de commande", href: "/purchase-orders", demoHref: "/demo/purchase-orders", icon: ShoppingCart, hint: "Facultatifs" },
   { key: "credit-notes", label: "Avoirs", href: "/credit-notes", demoHref: "/demo/credit-notes", icon: ReceiptText, hint: "Corrections de factures" },
@@ -65,8 +67,11 @@ export interface CreateLink {
 }
 
 export const CREATE_LINKS: CreateLink[] = [
+  { key: "scan", label: "Scanner un document", hint: "Devis, bon de commande, bon de livraison", href: "/documents?scanner=1", demoHref: "/demo/documents?scanner=1", icon: ScanLine, shortcut: "S" },
   { key: "quote", label: "Nouveau devis", hint: "Client, prestations, envoi", href: "/quotes/new", demoHref: "/demo/quotes/new", icon: FileCheck2, shortcut: "D" },
   { key: "invoice", label: "Nouvelle facture", hint: "Directe, sans devis", href: "/invoices/new", demoHref: "/demo/invoices/new", icon: FileText, shortcut: "F" },
+  { key: "appointment", label: "Nouveau rendez-vous", hint: "Visite, chantier, livraison", href: "/planning?nouveau=1", demoHref: "/demo/planning?nouveau=1", icon: CalendarPlus, shortcut: "R" },
+  { key: "note", label: "Note rapide", hint: "Tâche ou remarque, par client ou chantier", href: "/planning?note=1", demoHref: "/demo/planning?note=1", icon: NotebookPen, shortcut: "N" },
   { key: "client", label: "Nouveau client", hint: "Par SIREN ou à la main", href: "/clients/new", demoHref: "/demo/clients/new", icon: UserPlus, shortcut: "C" },
   { key: "purchase-order", label: "Nouveau bon de commande", hint: "Facultatif, pour un client qui en demande", href: "/purchase-orders/new", demoHref: "/demo/purchase-orders/new", icon: ShoppingCart, shortcut: "B" },
 ]
@@ -92,6 +97,8 @@ export function isActivePath(pathname: string, href: string): boolean {
 const SECTION_TITLES: { prefix: string; title: string; href: string }[] = [
   { prefix: "/invoices", title: "Factures", href: "/invoices" },
   { prefix: "/quotes", title: "Devis", href: "/quotes" },
+  { prefix: "/planning", title: "Planning et notes", href: "/planning" },
+  { prefix: "/documents", title: "Documents", href: "/documents" },
   { prefix: "/chantiers", title: "Chantiers", href: "/chantiers" },
   { prefix: "/clients", title: "Clients", href: "/clients" },
   { prefix: "/products", title: "Catalogue", href: "/products" },

@@ -71,8 +71,6 @@ export default function LoginForm() {
 
   return (
     <div className="mt-8 flex flex-col gap-4">
-    <GoogleButton lastUsed={lastMethod === "google"} />
-    <OrDivider />
     <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
 
       <Field id="email" label="Adresse email" error={errors.email}>
@@ -115,6 +113,8 @@ export default function LoginForm() {
       </div>
 
     </form>
+    <OrDivider />
+    <GoogleButton lastUsed={lastMethod === "google"} />
     </div>
   )
 }

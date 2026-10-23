@@ -969,6 +969,13 @@ html[data-standalone="true"] [role="button"] {
     font-size: 16px; outline: none; transition: border-color .15s ease, box-shadow .15s ease;
   }
   @media (min-width: 768px) { .q-input { font-size: 15px; } }
+  /* Date et heure sur iOS : la largeur propre du champ natif dépassait son conteneur (défilement horizontal des fenêtres) */
+  input.q-input[type="date"], input.q-input[type="time"], input.q-input[type="datetime-local"], input.q-input[type="month"] {
+    -webkit-appearance: none; appearance: none; display: block; box-sizing: border-box;
+    min-width: 0; max-width: 100%; text-align: left; line-height: 40px;
+  }
+  input.q-input[type="date"]::-webkit-date-and-time-value, input.q-input[type="time"]::-webkit-date-and-time-value { min-width: 0; text-align: left; margin: 0; }
+  label:has(> input.q-input), label:has(> select.q-input) { min-width: 0; }
   textarea.q-input { height: auto; min-height: 88px; padding: 10px 12px; line-height: 1.5; resize: vertical; }
   .q-input::placeholder { color: var(--q-placeholder); }
   .q-input:focus, .q-input:focus-visible, .q-fw:focus-within { border-color: var(--q-accent); box-shadow: 0 0 0 4px var(--q-focus); }

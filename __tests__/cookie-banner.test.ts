@@ -174,11 +174,13 @@ describe("stockage du choix", () => {
     expect(currentConsent()).toBe("refused")
   })
 
-  it("un choix de plus de six mois est redemandé", async () => {
-    const { CONSENT_KEY, CONSENT_MAX_AGE_MS, readConsent } = await import("@/lib/consent")
-    const old = Date.now() - CONSENT_MAX_AGE_MS - 86_400_000
-    window.localStorage.setItem(CONSENT_KEY, JSON.stringify({ v: 1, choice: "accepted", at: old }))
+  it("un refus de plus de six mois est redemandé, un accord de sept mois est gardé", async () => {
+    const { CONSENT_KEY, CONSENT_REFUSED_MAX_AGE_MS, readConsent } = await import("@/lib/consent")
+    const old = Date.now() - CONSENT_REFUSED_MAX_AGE_MS - 86_400_000
+    window.localStorage.setItem(CONSENT_KEY, JSON.stringify({ v: 1, choice: "refused", at: old }))
     expect(readConsent()).toBeNull()
+    window.localStorage.setItem(CONSENT_KEY, JSON.stringify({ v: 1, choice: "accepted", at: old }))
+    expect(readConsent()).toBe("accepted")
   })
 
   it("stockage bloqué : le choix vaut pour la visite, sans erreur", async () => {
@@ -241,7 +243,7 @@ describe("bandeau de cookies", () => {
     expect(d).not.toBeNull()
     expect(d.getAttribute("aria-modal")).toBe("false")
     expect(d.getAttribute("aria-label")).toBe("Cookies")
-    expect(document.getElementById(d.getAttribute("aria-describedby")!)?.textContent).toContain("seulement si vous acceptez")
+    expect(document.getElementById(d.getAttribute("aria-describedby")!)?.textContent).toContain("Nous utilisons des cookies")
     expect(d.querySelector('a[href="/confidentialite#cookies"]')?.textContent).toBe("En savoir plus")
 
     const refuse = button("Refuser")
@@ -292,11 +294,11 @@ describe("bandeau de cookies", () => {
     expect(pageViews()).toBe(1)
   })
 
-  it("un choix de plus de six mois est redemandé", async () => {
-    const { CONSENT_KEY, CONSENT_MAX_AGE_MS } = await import("@/lib/consent")
+  it("un accord de plus de treize mois est redemandé", async () => {
+    const { CONSENT_KEY, CONSENT_ACCEPTED_MAX_AGE_MS } = await import("@/lib/consent")
     window.localStorage.setItem(
       CONSENT_KEY,
-      JSON.stringify({ v: 1, choice: "accepted", at: Date.now() - CONSENT_MAX_AGE_MS - 86_400_000 }),
+      JSON.stringify({ v: 1, choice: "accepted", at: Date.now() - CONSENT_ACCEPTED_MAX_AGE_MS - 86_400_000 }),
     )
     const CookieBanner = await banner()
     await mount(createElement(CookieBanner))

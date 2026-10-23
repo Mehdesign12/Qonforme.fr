@@ -90,8 +90,20 @@ export async function upsertSubscription(params: {
   canceledAt?: Date | null
   /** Mode Stripe de l'abonnement ; production par défaut. */
   mode?: StripeMode
-}): Promise<void> {
+}): Promise<{ firstActivation: boolean }> {
   const supabase = createAdminClient()
+
+  // Première activation : aucune formule active avant cet appel (sert à n'envoyer
+  // l'email de confirmation qu'une fois). Une lecture en échec compte comme « non ».
+  let firstActivation = false
+  if (params.status === 'active') {
+    const { data: before, error: beforeError } = await supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', params.userId)
+      .maybeSingle()
+    firstActivation = !beforeError && before?.status !== 'active' && before?.status !== 'trialing' && before?.status !== 'past_due'
+  }
 
   const upsertData: Record<string, unknown> = {
     user_id: params.userId,
@@ -128,6 +140,7 @@ export async function upsertSubscription(params: {
     console.error('[upsertSubscription] Erreur:', error)
     throw new Error(`Impossible de sauvegarder l'abonnement: ${error.message}`)
   }
+  return { firstActivation }
 }
 
 /**

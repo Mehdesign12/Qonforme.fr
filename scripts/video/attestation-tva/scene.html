@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Vidéo : attestation de TVA</title>
+<style>
+  @font-face { font-family: "Bricolage"; src: url("/repo/lib/blog-images/cover/fonts/BricolageGrotesque-700.woff") format("woff"); font-weight: 700; }
+  @font-face { font-family: "Instrument"; src: url("/repo/lib/blog-images/cover/fonts/InstrumentSerif-Italic.woff") format("woff"); font-style: italic; }
+  @font-face { font-family: "DM"; src: url("/fonts/dm-400.woff2") format("woff2"); font-weight: 400; }
+  @font-face { font-family: "DM"; src: url("/fonts/dm-500.woff2") format("woff2"); font-weight: 500; }
+  @font-face { font-family: "DM"; src: url("/fonts/dm-600.woff2") format("woff2"); font-weight: 600; }
+
+  :root {
+    --ink: #0F172A; --ink-strong: #0A1122; --accent: #2563EB; --accent-strong: #1D4ED8;
+    --wash: #EEF3FF; --wash-line: #DCE6FD; --line: #E6E9F0; --t2: #334155; --t3: #475569; --t4: #64748B;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #fff; }
+  body { font-family: "DM", sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #fff; }
+
+  /* Fond « Clair sobre » : lignes verticales pointillées, comme le héros du site */
+  .grid { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed #E9EDF4; }
+
+  .scene { position: absolute; inset: 0; }
+  .abs { position: absolute; }
+  .h { font-family: "Bricolage", sans-serif; font-weight: 700; letter-spacing: -0.035em; line-height: 1.03; color: var(--ink-strong); }
+  .serif { font-family: "Instrument", serif; font-style: italic; font-weight: 400; color: var(--accent); letter-spacing: -0.01em; }
+  .w { display: inline-block; white-space: pre; }
+  .sub { font-size: 40px; line-height: 1.35; color: var(--t3); font-weight: 400; }
+  .pill { display: inline-flex; align-items: center; gap: 12px; height: 56px; padding: 0 26px; border-radius: 999px;
+          border: 2px solid var(--line); background: #fff; font-size: 26px; font-weight: 600; color: var(--t2); }
+  .pill.blue { background: var(--wash); border-color: var(--wash-line); color: var(--accent-strong); }
+  .pill.solid { background: var(--accent); border-color: var(--accent-strong); color: #fff; }
+  .paper { position: absolute; background: #fff; border: 2px solid var(--line); border-radius: 22px;
+           box-shadow: 0 30px 60px -28px rgba(10,17,34,.30), 0 2px 6px rgba(10,17,34,.04); }
+  .bar { position: absolute; height: 16px; border-radius: 8px; background: #E9EDF3; }
+  .bar.b { background: var(--wash-line); }
+  .ic { display: inline-block; flex-shrink: 0; }
+  .ic svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+  .src { position: absolute; right: 120px; bottom: 64px; max-width: 1050px; text-align: right; font-size: 24px; color: var(--t4); font-weight: 500; }
+  #logo { position: absolute; left: 120px; bottom: 52px; height: 46px; }
+  #progress { position: absolute; left: 0; top: 0; height: 8px; width: 1920px; background: var(--accent); transform-origin: left; }
+  .row { position: absolute; display: flex; align-items: center; gap: 28px; }
+  .mono { font-family: "DM", sans-serif; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="grid" style="left:120px"></div><div class="grid" style="left:660px"></div>
+  <div class="grid" style="left:1260px"></div><div class="grid" style="left:1800px"></div>
+  <div id="progress"></div>
+  <img id="logo" src="/repo/lib/blog-images/cover/logo-long-bleu.png" alt="">
+</div>
+
+<script>
+const D = window.__DATA                       // { scenes: [{id, t0, dur}], total, mention, icons, assets }
+const stage = document.getElementById('stage')
+const NS = 'http://www.w3.org/2000/svg'
+let T0 = 0
+
+/* ───────── outils ───────── */
+function el(tag, cls, parent, html, style) {
+  const e = document.createElement(tag)
+  if (cls) e.className = cls
+  if (html != null) e.innerHTML = html
+  if (style) Object.assign(e.style, style)
+  if (parent) parent.appendChild(e)
+  return e
+}
+function icon(name, size, color, stroke) {
+  const s = el('span', 'ic', null, '<svg viewBox="0 0 24 24" stroke-width="' + (stroke || 1.6) + '">' + (D.icons[name] || '') + '</svg>')
+  s.style.width = s.style.height = size + 'px'
+  if (color) s.style.color = color
+  return s
+}
+const EASE = 'cubic-bezier(.2,.8,.2,1)'
+function anim(e, kf, at, dur, easing, fill) {
+  const a = e.animate(kf, { delay: (T0 + at) * 1000, duration: Math.max(dur, 0.001) * 1000, fill: fill || 'both', easing: easing || EASE })
+  a.pause()
+  return a
+}
+function rise(e, at, o) {
+  o = o || {}
+  anim(e, [{ opacity: 0, transform: 'translateY(' + (o.y == null ? 28 : o.y) + 'px) scale(' + (o.s || 1) + ')' }, { opacity: 1, transform: 'none' }], at, o.d || 0.7)
+}
+function fade(e, at, d) { anim(e, [{ opacity: 0 }, { opacity: 1 }], at, d || 0.5, 'linear') }
+function out(e, at, d) { anim(e, [{ opacity: 1 }, { opacity: 0 }], at, d || 0.4, 'linear') }
+/* Texte mot à mot (deux voix : balises <i> pour la voix en italique bleue) */
+function words(parent, parts, at, step, opts) {
+  opts = opts || {}
+  let i = 0
+  parts.forEach(function (p) {
+    const line = el('div', null, parent)
+    p.t.split(' ').forEach(function (w, k, arr) {
+      const s = el('span', 'w ' + (p.serif ? 'serif' : ''), line, w + (k < arr.length - 1 ? ' ' : ''))
+      anim(s, [{ opacity: 0, transform: 'translateY(' + (opts.y || 44) + 'px)' }, { opacity: 1, transform: 'none' }], at + i * step, 0.7)
+      i++
+    })
+  })
+  return i
+}
+function scene(id, build) {
+  const s = D.scenes.find(function (x) { return x.id === id })
+  T0 = s.t0
+  const root = el('div', 'scene', stage)
+  root.dataset.id = id
+  root.dataset.t0 = s.t0
+  root.dataset.t1 = s.t0 + s.dur
+  anim(root, [{ opacity: 0 }, { opacity: 1 }], 0, 0.45, 'linear', 'backwards')
+  anim(root, [{ opacity: 1 }, { opacity: 0 }], s.dur - 0.45, 0.45, 'linear', 'forwards')
+  build(root, s.dur)
+}
+function source(root, text, at) {
+  if (!text) return
+  const e = el('div', 'src', root, text)
+  fade(e, at == null ? 1.2 : at, 0.6)
+}
+function sign(parent, x, y, w, at, d) {   // signature manuscrite qui se trace
+  const svg = document.createElementNS(NS, 'svg')
+  svg.setAttribute('viewBox', '0 0 200 60'); svg.style.cssText = 'position:absolute;left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;overflow:visible'
+  const p = document.createElementNS(NS, 'path')
+  p.setAttribute('d', 'M4 40 C 20 8, 34 8, 30 34 C 28 52, 44 14, 54 30 C 62 44, 70 22, 82 28 C 96 36, 100 12, 116 26 C 130 38, 142 20, 168 30 L 196 24')
+  p.setAttribute('pathLength', '1'); p.setAttribute('fill', 'none'); p.setAttribute('stroke', '#0F172A'); p.setAttribute('stroke-width', '3'); p.setAttribute('stroke-linecap', 'round')
+  p.style.strokeDasharray = '1'
+  svg.appendChild(p); parent.appendChild(svg)
+  anim(p, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], at, d, 'ease-in-out')
+}
+function typewriter(parent, text, at, perChar) {
+  text.split('').forEach(function (c, i) {
+    const s = el('span', null, parent, c)
+    anim(s, [{ opacity: 0 }, { opacity: 1 }], at + i * perChar, 0.01, 'linear')
+  })
+}
+function devisPaper(root, x, y, w, h, at, withMention) {
+  const p = el('div', 'paper', root, null, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' })
+  el('div', 'bar b', p, null, { left: '44px', top: '44px', width: '170px', height: '24px', background: '#DCE6FD' })
+  el('div', 'bar', p, null, { right: '44px', top: '48px', width: '130px' })
+  el('div', 'bar', p, null, { left: '44px', top: '110px', width: (w * 0.5) + 'px' })
+  el('div', 'bar', p, null, { left: '44px', top: '144px', width: (w * 0.36) + 'px' })
+  for (let i = 0; i < 3; i++) {
+    el('div', 'bar', p, null, { left: '44px', top: (212 + i * 46) + 'px', width: (w * 0.52) + 'px', height: '12px' })
+    el('div', 'bar', p, null, { right: '44px', top: (212 + i * 46) + 'px', width: '120px', height: '12px' })
+  }
+  rise(p, at, { y: 40, d: 0.9 })
+  return p
+}
+const SRC = {}
+
+/* ───────── scène 1 : accroche ───────── */
+scene('s1', function (r, dur) {
+  const pill = el('div', 'pill blue abs', r, null, { left: '120px', top: '170px' })
+  pill.appendChild(icon('house', 30, 'var(--accent-strong)')); pill.appendChild(document.createTextNode('TVA des travaux'))
+  rise(pill, 0.3)
+  const t = el('div', 'h abs', r, null, { left: '120px', top: '270px', fontSize: '112px', width: '1000px' })
+  words(t, [{ t: "Fini l'attestation" }, { t: 'de TVA' }, { t: 'à faire signer.', serif: true }], 0.7, 0.2)
+  t.querySelectorAll('.serif').forEach(function (s) { s.style.fontSize = '1.14em' })
+  const sub = el('div', 'sub abs', r, "Ce qu'il faut écrire à la place, sur votre devis.", { left: '120px', top: '760px', width: '860px' })
+  rise(sub, 3.6)
+  const ph = el('div', 'abs', r, null, { left: '1060px', top: '120px', width: '740px', height: '840px', borderRadius: '370px 370px 40px 40px', overflow: 'hidden', background: '#EEF3FF' })
+  const img = el('img', null, ph, null, { width: '100%', height: '100%', objectFit: 'cover', objectPosition: '38% 50%' })
+  img.src = D.assets.photoClient
+  anim(ph, [{ clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], 0.4, 1.2)
+  anim(img, [{ transform: 'scale(1.18)' }, { transform: 'scale(1.0)' }], 0.4, dur)
+})
+
+/* ───────── scène 2 : avant ───────── */
+scene('s2', function (r, dur) {
+  const pill = el('div', 'pill abs', r, 'Avant', { left: '120px', top: '150px' })
+  rise(pill, 0.2)
+  const t = el('div', 'h abs', r, null, { left: '120px', top: '250px', fontSize: '104px', width: '900px' })
+  words(t, [{ t: 'Un papier de plus' }, { t: 'à faire remplir.', serif: true }], 0.5, 0.2)
+  t.querySelectorAll('.serif').forEach(function (s) { s.style.fontSize = '1.14em' })
+  // trois étapes, au rythme de la voix
+  const steps = [['file-pen', 'À remplir'], ['pen-line', 'À signer'], ['archive', 'À classer']]
+  steps.forEach(function (s, i) {
+    const row = el('div', 'row', r, null, { left: '120px', top: (600 + i * 96) + 'px' })
+    row.appendChild(icon(s[0], 52, 'var(--accent)', 1.5))
+    el('div', null, row, s[1], { fontSize: '42px', fontWeight: '500', color: 'var(--t2)' })
+    rise(row, 8.2 + i * 1.3, { y: 20 })
+  })
+  // pile de papiers
+  const sheet = function (x, y, rot, at) {
+    const p = el('div', 'paper', r, null, { left: x + 'px', top: y + 'px', width: '560px', height: '720px', transform: 'rotate(' + rot + 'deg)' })
+    anim(p, [{ opacity: 0, transform: 'translateY(60px) rotate(' + rot + 'deg)' }, { opacity: 1, transform: 'rotate(' + rot + 'deg)' }], at, 0.9)
+    return p
+  }
+  sheet(1130, 150, 4, 1.2); sheet(1090, 130, -3, 1.5)
+  const top = sheet(1100, 120, 0, 1.8)
+  el('div', null, top, 'ATTESTATION', { position: 'absolute', left: '44px', top: '46px', fontSize: '28px', fontWeight: '600', letterSpacing: '0.14em', color: 'var(--t3)' })
+  el('div', null, top, 'Taux réduit de TVA · travaux', { position: 'absolute', left: '44px', top: '92px', fontSize: '24px', color: 'var(--t4)' })
+  for (let i = 0; i < 7; i++) el('div', 'bar', top, null, { left: '44px', top: (170 + i * 46) + 'px', width: (i % 3 === 2 ? 300 : 470) + 'px', height: '12px' })
+  const c1 = el('div', 'pill', top, '1300-SD', { position: 'absolute', left: '44px', top: '560px', height: '50px', fontSize: '24px' })
+  const c2 = el('div', 'pill blue', top, '1301-SD', { position: 'absolute', left: '200px', top: '560px', height: '50px', fontSize: '24px' })
+  rise(c1, 5.4, { y: 12, d: 0.5 }); rise(c2, 6.4, { y: 12, d: 0.5 })
+  sign(top, 280, 630, 220, 9.2, 1.4)
+  anim(top.parentNode, [{ opacity: 1 }, { opacity: 1 }], 0, 1)
+  source(r, D.src.s2, 3.5)
+})
+
+/* ───────── scène 3 : maintenant ───────── */
+scene('s3', function (r, dur) {
+  const pill = el('div', 'pill solid abs', r, null, { left: '120px', top: '150px' })
+  pill.appendChild(icon('calendar', 30, '#fff')); pill.appendChild(document.createTextNode('Depuis la loi de finances pour 2025'))
+  rise(pill, 0.2)
+  const t = el('div', 'h abs', r, null, { left: '120px', top: '250px', fontSize: '100px', width: '1000px' })
+  words(t, [{ t: 'Le client certifie' }, { t: 'sur le devis.', serif: true }], 0.5, 0.22)
+  t.querySelectorAll('.serif').forEach(function (s) { s.style.fontSize = '1.14em' })
+  const sub = el('div', 'sub abs', r, 'Ou sur la facture. Plus de papier séparé.', { left: '120px', top: '560px', width: '800px' })
+  rise(sub, 4.6)
+  // exception
+  const ex = el('div', 'pill abs', r, null, { left: '120px', top: '760px' })
+  ex.appendChild(icon('calendar', 30, 'var(--t3)')); ex.appendChild(document.createTextNode('Exception : travaux déjà en cours au 16 février 2025'))
+  rise(ex, 13.4)
+  // devis + facture avec bloc de certification
+  const mk = function (x, y, label, at) {
+    const p = devisPaper(r, x, y, 560, 640, at)
+    const tag = el('div', 'pill blue', p, label, { position: 'absolute', left: '44px', top: '-28px', height: '52px', fontSize: '24px' })
+    const box = el('div', null, p, null, { position: 'absolute', left: '36px', right: '36px', top: '420px', height: '170px', borderRadius: '16px', background: 'var(--wash)', border: '2px solid var(--wash-line)' })
+    box.appendChild(icon('file-check', 56, 'var(--accent-strong)', 1.5)).style.cssText += ';position:absolute;left:28px;top:26px'
+    el('div', 'bar b', box, null, { left: '110px', top: '40px', width: '300px', background: '#C4D4FA' })
+    el('div', 'bar b', box, null, { left: '110px', top: '76px', width: '330px', background: '#C4D4FA' })
+    el('div', 'bar b', box, null, { left: '110px', top: '112px', width: '220px', background: '#C4D4FA' })
+    anim(box, [{ opacity: 0, transform: 'scale(.92)' }, { opacity: 1, transform: 'none' }], at + 4.8, 0.8)
+    return p
+  }
+  mk(1000, 200, 'Devis', 1.5); mk(1330, 280, 'Facture', 2.5)
+  source(r, D.src.s3, 2)
+})
+
+/* ───────── scène 4 : conditions ───────── */
+scene('s4', function (r, dur) {
+  const t = el('div', 'h abs', r, null, { left: '120px', top: '130px', fontSize: '100px', width: '1200px' })
+  words(t, [{ t: 'Les conditions' }, { t: 'à réunir.', serif: true }], 0.3, 0.2)
+  t.querySelectorAll('.serif').forEach(function (s) { s.style.fontSize = '1.14em' })
+  const items = [
+    ['house', "Logement à usage d'habitation", 3.2],
+    ['calendar', 'Achevé depuis plus de deux ans', 6.0],
+    ['building-2', 'Pas de logement neuf, ni plus de 10 % de surface de plancher en plus', 8.8]
+  ]
+  items.forEach(function (it, i) {
+    const row = el('div', 'row', r, null, { left: '120px', top: (440 + i * 150) + 'px', width: '1000px', alignItems: 'flex-start' })
+    row.appendChild(icon(it[0], 64, 'var(--accent)', 1.5))
+    el('div', null, row, it[1], { fontSize: '46px', fontWeight: '500', color: 'var(--ink)', lineHeight: '1.18', maxWidth: '820px' })
+    rise(row, it[2], { y: 24 })
+    const ck = icon('circle-check', 54, 'var(--accent)', 1.6); ck.style.position = 'absolute'; ck.style.left = '1010px'; ck.style.top = '4px'
+    row.appendChild(ck); anim(ck, [{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'none' }], it[2] + 1.1, 0.5, 'cubic-bezier(.3,1.6,.5,1)')
+  })
+  const card = function (rate, line, at, y, strong) {
+    const c = el('div', 'paper', r, null, { left: '1290px', top: y + 'px', width: '510px', height: '290px', borderColor: strong ? 'var(--accent)' : 'var(--line)' })
+    el('div', 'h', c, rate, { position: 'absolute', left: '40px', top: '32px', fontSize: '92px', color: strong ? 'var(--accent)' : 'var(--ink-strong)' })
+    el('div', null, c, line, { position: 'absolute', left: '40px', top: '150px', right: '30px', fontSize: '30px', lineHeight: '1.25', color: 'var(--t3)', fontWeight: '500' })
+    rise(c, at, { y: 40, d: 0.8 })
+  }
+  card('TVA 10 %', 'Les trois conditions ci-contre', 4.2, 300, true)
+  card('TVA 5,5 %', 'Mêmes conditions, avec des travaux de rénovation énergétique', 12.4, 630, false)
+  source(r, D.src.s4, 2)
+})
+
+/* ───────── scène 5 : la mention ───────── */
+scene('s5', function (r, dur) {
+  const t = el('div', 'h abs', r, null, { left: '120px', top: '110px', fontSize: '86px', width: '1700px' })
+  words(t, [{ t: "Ce qu'il faut écrire" }, { t: 'sur votre devis.', serif: true }], 0.3, 0.18, { y: 30 })
+  t.querySelectorAll('.serif').forEach(function (s) { s.style.fontSize = '1.14em' })
+  t.style.display = 'flex'; t.style.gap = '28px'; t.style.flexWrap = 'wrap'
+  // onglets Devis / Facture
+  const tabs = el('div', 'abs', r, null, { left: '120px', top: '320px', display: 'flex', gap: '16px' })
+  const tD = el('div', 'pill solid', tabs, 'Sur le devis (10 %)'); const tF = el('div', 'pill', tabs, 'Sur la facture')
+  rise(tabs, 1.2)
+  const switchAt = dur * 0.58
+  anim(tD, [{ background: '#2563EB', color: '#fff', borderColor: '#1D4ED8' }, { background: '#fff', color: '#334155', borderColor: '#E6E9F0' }], switchAt, 0.3, 'linear')
+  anim(tF, [{ background: '#fff', color: '#334155', borderColor: '#E6E9F0' }, { background: '#2563EB', color: '#fff', borderColor: '#1D4ED8' }], switchAt, 0.3, 'linear')
+  const p = devisPaper(r, 120, 420, 1680, 520, 1.4, true)
+  // en-tête des lignes déjà dessinées : on recouvre la zone basse avec le bloc de mention
+  const box = el('div', null, p, null, { position: 'absolute', left: '36px', right: '36px', top: '60px', height: '400px', borderRadius: '18px', background: 'var(--wash)', border: '2px solid var(--wash-line)', padding: '40px 48px 0 140px' })
+  box.appendChild(icon('file-check', 64, 'var(--accent-strong)', 1.5)).style.cssText += ';position:absolute;left:44px;top:42px'
+  const txtD = el('div', null, box, null, { fontSize: '35px', lineHeight: '1.45', color: 'var(--ink)', fontWeight: '500', position: 'absolute', left: '140px', right: '48px', top: '40px' })
+  const txtF = el('div', null, box, null, { fontSize: '35px', lineHeight: '1.45', color: 'var(--ink)', fontWeight: '500', position: 'absolute', left: '140px', right: '48px', top: '40px' })
+  typewriter(txtD, '« ' + D.mention.devis + ' »', 3.4, 0.035)
+  typewriter(txtF, '« ' + D.mention.facture + ' »', switchAt + 0.6, 0.035)
+  out(txtD, switchAt, 0.3)
+  // les barres grises du papier sont cachées sous le bloc ; on masque les barres hors du bloc
+  p.querySelectorAll('.bar').forEach(function (b) { b.style.display = 'none' })
+  source(r, D.src.s5, 1.5)
+})
+
+/* ───────── scène 6 : sans la mention ───────── */
+scene('s6', function (r, dur) {
+  const t = el('div', 'h abs', r, null, { left: '120px', top: '150px', fontSize: '100px', width: '1500px' })
+  words(t, [{ t: 'Sans certification,' }, { t: 'pas de taux réduit.', serif: true }], 0.3, 0.2)
+  t.querySelectorAll('.serif').forEach(function (s) { s.style.fontSize = '1.14em' })
+  const mk = function (x, label, rate, line, at, accent, strike) {
+    const c = el('div', 'paper', r, null, { left: x + 'px', top: '520px', width: '520px', height: '330px', borderColor: accent ? 'var(--accent)' : 'var(--line)' })
+    el('div', null, c, label, { position: 'absolute', left: '40px', top: '36px', fontSize: '30px', fontWeight: '600', color: 'var(--t3)' })
+    el('div', 'h', c, rate, { position: 'absolute', left: '40px', top: '96px', fontSize: '120px', color: accent ? 'var(--accent)' : 'var(--ink-strong)' })
+    el('div', null, c, line, { position: 'absolute', left: '40px', top: '250px', fontSize: '28px', color: 'var(--t4)', fontWeight: '500' })
+    rise(c, at, { y: 40, d: 0.8 })
+    return c
+  }
+  mk(120, 'Avec la mention', '10 %', 'Taux réduit appliqué', 2.2, true)
+  mk(720, 'Sans la mention', '20 %', 'Taux normal', 5.0, false)
+  const bu = el('div', 'row', r, null, { left: '1320px', top: '560px' })
+  bu.appendChild(icon('building-2', 72, 'var(--accent)', 1.4))
+  const bt = el('div', null, bu, null, { })
+  el('div', null, bt, 'Bureau, commerce', { fontSize: '42px', fontWeight: '600', color: 'var(--ink)' })
+  el('div', 'h', bt, '20 %', { fontSize: '88px', color: 'var(--ink-strong)' })
+  rise(bu, 8.0, { y: 30 })
+  source(r, D.src.s6, 1.5)
+})
+
+/* ───────── scène 7 : le formulaire reste admis ───────── */
+scene('s7', function (r, dur) {
+  const row = el('div', 'row', r, null, { left: '120px', top: '300px', width: '1680px', gap: '56px' })
+  row.appendChild(icon('file-check', 150, 'var(--accent)', 1.3))
+  const col = el('div', null, row)
+  const t = el('div', 'h', col, null, { fontSize: '96px', width: '1400px' })
+  words(t, [{ t: 'Le formulaire 1301-SD' }, { t: 'reste accepté.', serif: true }], 0.4, 0.2, { y: 30 })
+  t.querySelectorAll('.serif').forEach(function (s) { s.style.fontSize = '1.14em' })
+  const s = el('div', 'sub', col, "À condition qu'il soit complet.", { marginTop: '28px' })
+  rise(s, 3.4)
+  fade(row, 0.2, 0.4)
+})
+
+/* ───────── scène 8 : appel à l'action ───────── */
+scene('s8', function (r, dur) {
+  const logo = el('img', null, r, null, { position: 'absolute', left: '120px', top: '150px', height: '88px' })
+  logo.src = '/repo/lib/blog-images/cover/logo-long-bleu.png'
+  rise(logo, 0.3, { y: 20 })
+  const t = el('div', 'h abs', r, null, { left: '120px', top: '300px', fontSize: '100px', width: '900px' })
+  words(t, [{ t: 'Le modèle de devis' }, { t: 'gratuit.', serif: true }], 0.6, 0.2)
+  t.querySelectorAll('.serif').forEach(function (s) { s.style.fontSize = '1.14em' })
+  const sub = el('div', 'sub abs', r, 'La mention de TVA est déjà dedans.', { left: '120px', top: '560px', width: '800px' })
+  rise(sub, 2.6)
+  const chips = el('div', 'abs', r, null, { left: '120px', top: '690px', display: 'flex', gap: '16px' })
+  ;['Word', 'Excel', 'PDF'].forEach(function (f, i) {
+    const c = el('div', 'pill', chips, null); c.appendChild(icon('file-text', 28, 'var(--accent)')); c.appendChild(document.createTextNode(f))
+    rise(c, 4.2 + i * 0.35, { y: 16, d: 0.5 })
+  })
+  const url = el('div', 'pill solid abs', r, 'qonforme.fr/modele', { left: '120px', top: '810px', height: '78px', fontSize: '38px', padding: '0 42px' })
+  rise(url, 6.0)
+  // capture réelle de la page
+  const fr = el('div', 'abs', r, null, { left: '1010px', top: '150px', width: '790px', height: '760px', borderRadius: '24px', overflow: 'hidden', border: '2px solid var(--line)', background: '#fff', boxShadow: '0 40px 80px -36px rgba(10,17,34,.38)' })
+  const bar = el('div', null, fr, null, { height: '52px', background: '#F4F7FC', borderBottom: '2px solid var(--line)', display: 'flex', alignItems: 'center', gap: '10px', padding: '0 20px' })
+  ;[0, 1, 2].forEach(function () { el('span', null, bar, null, { width: '14px', height: '14px', borderRadius: '50%', background: '#D5DBE5' }) })
+  el('span', null, bar, 'qonforme.fr/modele', { marginLeft: '24px', fontSize: '22px', color: 'var(--t4)', fontWeight: '500' })
+  const im = el('img', null, fr, null, { width: '100%', display: 'block' }); im.src = D.assets.modele
+  rise(fr, 1.0, { y: 50, d: 1.0 })
+})
+
+/* ───────── pilotage ───────── */
+const prog = document.getElementById('progress')
+const progAnim = prog.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: D.total * 1000, fill: 'both', easing: 'linear' }); progAnim.pause()
+const logo = document.getElementById('logo')
+const logoAnim = logo.animate([{ opacity: 0 }, { opacity: 1 }], { delay: 600, duration: 500, fill: 'both' }); logoAnim.pause()
+const logoOut = logo.animate([{ opacity: 1 }, { opacity: 0 }], { delay: (D.scenes[D.scenes.length - 1].t0) * 1000, duration: 400, fill: 'forwards' }); logoOut.pause()
+
+window.seek = function (t) {
+  document.querySelectorAll('.scene').forEach(function (s) {
+    s.style.display = (t >= +s.dataset.t0 - 0.05 && t <= +s.dataset.t1 + 0.05) ? 'block' : 'none'
+  })
+  document.getAnimations().forEach(function (a) { a.pause(); a.currentTime = t * 1000 })
+}
+window.ready = Promise.all([document.fonts.ready, ...Array.from(document.images).map(function (i) { return i.decode ? i.decode().catch(function () {}) : null })])
+</script>
+</body>
+</html>

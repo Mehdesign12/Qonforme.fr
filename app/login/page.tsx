@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import LoginForm from "@/components/auth/LoginForm"
 import AuthLayout from "@/components/auth/AuthLayout"
-import { AuthPhotoBand, AuthPhotoPanel } from "@/components/auth/AuthPhotoPanel"
+import { AuthPhotoPanel } from "@/components/auth/AuthPhotoPanel"
 import { LOGIN_PHOTO } from "@/components/auth/photos"
 import { safeNextPath } from "@/lib/stripe/access"
 import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
@@ -25,7 +25,7 @@ export default function LoginPage({ searchParams }: { searchParams?: { next?: st
     <AuthLayout
       aside={<AuthPhotoPanel {...LOGIN_PHOTO} />}
       asideVariant="photo"
-      mobileBand={<AuthPhotoBand {...LOGIN_PHOTO} />}
+      mobileCard
       topRight={<Link href={signupHref} className="q-link text-[14px] lg:hidden">Créer un compte</Link>}
     >
       <AuthTitle>Content de vous <Serif>revoir</Serif>.</AuthTitle>

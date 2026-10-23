@@ -1,0 +1,13 @@
+{
+  "titre": "Fini l'attestation de TVA à faire signer : ce qu'il faut écrire à la place sur votre devis",
+  "verification": "Faits tirés du guide « TVA des travaux » (lib/pseo/guides.ts), vérifiés le 16/10/2026 : loi de finances pour 2025 ; BOFiP, BOI-LETTRE-000280.",
+  "scenes": [
+    { "id": "s1", "voix": "Vous faites encore signer une attestation de TVA à vos clients ? Ce papier n'est plus obligatoire. Voici ce qu'il faut faire à la place." },
+    { "id": "s2", "source": "Formulaires 1300-SD et 1301-SD", "voix": "Avant, il fallait le formulaire 1300-SD, ou sa version simplifiée, la 1301-SD. À remplir, à signer, à classer. Il reste accepté, s'il est complet." },
+    { "id": "s3", "source": "Loi de finances pour 2025, article 41", "voix": "Depuis 2025, c'est le client qui certifie, directement sur votre devis ou sur votre facture. Seule exception : les travaux déjà en cours au 16 février 2025." },
+    { "id": "s4", "source": "CGI, articles 279-0 bis et 278-0 bis A", "voix": "Quelles conditions ? Un logement à usage d'habitation. Achevé depuis plus de deux ans. Et des travaux qui ne le rendent pas neuf. Pour le taux de 5,5 %, ajoutez des travaux de rénovation énergétique." },
+    { "id": "s5", "source": "Modèles de l'administration : BOFiP, BOI-LETTRE-000280", "voix": "Que faut-il écrire ? L'administration publie le modèle. Sur un devis : « Je soussigné, nom et prénom, certifie que les travaux concernent des locaux à usage d'habitation achevés depuis plus de deux ans ». Sur la facture : « Par le règlement de la présente facture, le client certifie »." },
+    { "id": "s6", "source": "Les taux réduits ne concernent que les logements", "voix": "Sans cette certification, pas de taux réduit : c'est 20 %. Et dans un bureau ou un commerce, c'est toujours 20 %." },
+    { "id": "s7", "voix": "Cette mention est déjà dans le modèle de devis gratuit de Qonforme. Word, Excel et PDF. Sur qonforme.fr/modele." }
+  ]
+}

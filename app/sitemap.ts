@@ -24,6 +24,7 @@ export const revalidate = 3600
 const MAJ: Record<string, string> = {
   "/": "2026-10-17",
   "/pricing": "2026-10-02",
+  "/contact": "2026-10-22",
   "/demo": "2026-10-04",
   "/signup": "2026-10-06",
   "/guide": "2026-10-05",
@@ -112,6 +113,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...dateDe("/pricing"),
       changeFrequency: "monthly",
       priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/contact`,
+      ...dateDe("/contact"),
+      changeFrequency: "yearly",
+      priority: 0.5,
     },
     {
       url: `${baseUrl}/demo`,

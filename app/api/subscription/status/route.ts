@@ -12,5 +12,11 @@ export async function GET() {
   if (!sub) {
     return NextResponse.json({ status: null, plan: null, artisanOnSale })
   }
-  return NextResponse.json({ status: sub.status, plan: sub.plan, artisanOnSale })
+  return NextResponse.json({
+    status: sub.status,
+    plan: sub.plan,
+    billingPeriod: sub.billing_period,
+    currentPeriodEnd: sub.current_period_end,
+    artisanOnSale,
+  })
 }
