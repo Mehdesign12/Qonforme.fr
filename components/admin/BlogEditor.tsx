@@ -554,6 +554,47 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
 
   const saveFnRef = useRef<(opts?: { then?: string | null; confirmed?: boolean; quiet?: boolean }) => Promise<void>>()
 
+  /**
+   * Publication de l'article déjà enregistré, depuis les bandeaux : sans `force`, le contrôle s'applique
+   * et ses passages s'affichent (avec « Corriger avec l'IA ») ; avec `force`, l'admin les a relus et publie.
+   */
+  const [forceOpen, setForceOpen] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const publishChecked = useCallback(
+    async (force: boolean) => {
+      const articleId = idRef.current
+      if (!articleId || savingRef.current) return
+      setForceOpen(false)
+      setPublishing(true)
+      // Ce qui est tapé et pas encore enregistré part d'abord : la mise en ligne publie le texte affiché
+      if (isDirty(draftRef.current, savedRef.current)) {
+        await saveFnRef.current?.({ quiet: true })
+        while (savingRef.current) await new Promise((r) => setTimeout(r, 50))
+      }
+      const { status, json } = await sendJson('PATCH', `/api/admin/blog/${articleId}`, force ? { is_published: true, force_publish: true } : { is_published: true })
+      setPublishing(false)
+      if (status === 200) {
+        const now = new Date().toISOString()
+        setMeta((m) => ({ ...m, isPublished: true, publishedAt: m.publishedAt ?? now, scheduledAt: null, heldReason: null }))
+        metaRef.current = { ...metaRef.current, isPublished: true, publishedAt: metaRef.current.publishedAt ?? now, scheduledAt: null, heldReason: null }
+        setBlocked(null)
+        toast.success(force ? 'Article publié, sans attendre le contrôle.' : 'Article publié.')
+        router.refresh()
+        return
+      }
+      if (status === 409 && json?.code === 'check_failed') {
+        const issues = issuesOf(json)
+        foundIssues.current = new Set(issues.filter((i) => issueFieldIn(draftRef.current, i)).map(issueKey))
+        setBlocked({ issues, unscheduled: false })
+        setTab('redaction')
+        requestAnimationFrame(() => document.getElementById('editeur-alertes')?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }))
+        return
+      }
+      toast.error(typeof json?.error === 'string' ? json.error : 'La publication a échoué. Réessayez dans un instant.')
+    },
+    [router, setTab],
+  )
+
   const save = useCallback(
     async (opts?: { then?: string | null; confirmed?: boolean; quiet?: boolean }) => {
       if (deletingRef.current) return
@@ -1078,20 +1119,32 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
                       ? "L'article n'est pas encore enregistré. Corrigez ces passages, puis publiez à nouveau, ou enregistrez-le en brouillon."
                       : blocked.unscheduled
                         ? "Les modifications sont enregistrées, mais l'article n'est pas en ligne et sa programmation est retirée. Corrigez ces passages, puis publiez ou programmez à nouveau."
-                        : "Les modifications sont enregistrées, mais l'article n'est pas en ligne. Corrigez ces passages, puis publiez à nouveau."
+                        : "Les modifications sont enregistrées, mais l'article n'est pas en ligne. Corrigez ces passages, puis publiez à nouveau, ou publiez quand même si vous les avez relus."
                   }
                   onDismiss={() => setBlocked(null)}
+                  onForce={!blocked.notCreated && id ? () => setForceOpen(true) : undefined}
                   actions={issueActions}
                   isCorrected={isIssueCorrected}
                 />
               )}
               {heldReason && !blocked && (
-                <div role="status" className="q-banner q-banner-warn">
+                <div role="status" className="q-banner q-banner-warn flex-wrap items-center">
                   <TriangleAlert className="mt-0.5 size-5 shrink-0" aria-hidden />
-                  <p className="m-0 min-w-0 flex-1 text-[14px] leading-snug text-[var(--q-text-2)]">
-                    <strong className="font-semibold text-[var(--q-warn)]">Retenu par le contrôle à l&apos;heure prévue.</strong> {heldReason} Corrigez le passage, puis
-                    publiez ou programmez à nouveau.
-                  </p>
+                  <div className="flex min-w-0 flex-1 basis-[calc(100%-44px)] flex-col gap-3 md:basis-0">
+                    <p className="m-0 text-[14px] leading-snug text-[var(--q-text-2)]">
+                      <strong className="font-semibold text-[var(--q-warn)]">Pas publié automatiquement.</strong> À l&apos;heure prévue, le contrôle automatique a gardé cet article
+                      en brouillon : {heldReason.replace(/^Retenu par le contrôle\s*:\s*/i, '')} Ce n&apos;est qu&apos;une vérification, vous gardez la main : voyez les passages
+                      signalés (l&apos;IA peut les corriger), ou publiez quand même.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" disabled={publishing || !id} onClick={() => void publishChecked(false)} className="q-btn q-btn-secondary q-btn-sm max-md:h-11">
+                        {publishing ? 'Vérification…' : 'Voir les passages'}
+                      </button>
+                      <button type="button" disabled={publishing || !id} onClick={() => setForceOpen(true)} className="q-btn q-btn-primary q-btn-sm max-md:h-11">
+                        Publier quand même
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
               {proposal && proposalText && (
@@ -1259,6 +1312,24 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
             >
               <Save aria-hidden />
               {proposal ? `Programmer à ${proposal.time}` : 'Programmer'}
+            </button>
+          </>
+        }
+      />
+
+      {/* Publier malgré le contrôle */}
+      <ConfirmDialog
+        open={forceOpen}
+        onOpenChange={setForceOpen}
+        title="Publier quand même ?"
+        description="Le contrôle a signalé des passages (affirmation interdite, valeur périmée ou concurrent nommé). Si vous les avez relus et que l'article est juste, il sera mis en ligne tout de suite."
+        actions={
+          <>
+            <button type="button" className="q-btn q-btn-ghost" onClick={() => setForceOpen(false)}>
+              Annuler
+            </button>
+            <button type="button" className="q-btn q-btn-primary" onClick={() => void publishChecked(true)}>
+              Publier maintenant
             </button>
           </>
         }

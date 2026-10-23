@@ -187,10 +187,13 @@ export function BlockedBanner({
   onDismiss,
   actions,
   isCorrected,
+  onForce,
 }: {
   issues: BlockingIssue[]
   message: string
   onDismiss: () => void
+  /** « Publier quand même » : l'admin a relu les passages et décide de publier. */
+  onForce?: () => void
   /** « Aller au passage » et « Corriger avec l'IA » (sans elles, la liste est en lecture seule). */
   actions?: IssueActions
   /** Le passage n'est plus dans le texte : marqué « Corrigé ». */
@@ -210,6 +213,13 @@ export function BlockedBanner({
               <IssueItem key={`${issue.label}-${i}`} issue={issue} corrected={Boolean(issue.excerpt && isCorrected?.(issue))} actions={actions} />
             ))}
           </ul>
+        )}
+        {onForce && (
+          <div>
+            <button type="button" onClick={onForce} className="q-btn q-btn-secondary q-btn-sm max-md:h-11">
+              Publier quand même
+            </button>
+          </div>
         )}
       </div>
       <button
