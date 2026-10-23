@@ -1,0 +1,51 @@
+{
+  "titre": "Fini l'attestation de TVA à faire signer : ce qu'il faut écrire à la place sur votre devis",
+  "verification": "Faits tirés du guide « TVA des travaux » (lib/pseo/guides.ts), vérifiés le 16/10/2026 : loi de finances pour 2025 ; BOFiP, BOI-LETTRE-000280 (version du 9 septembre 2026).",
+  "scenes": [
+    {
+      "id": "s1",
+      "min": 9,
+      "voix": "Vous faites encore signer une attestation de TVA à vos clients ? Bonne nouvelle : ce papier n'est plus obligatoire. Mais il reste une chose à faire sur votre devis. Voici laquelle."
+    },
+    {
+      "id": "s2",
+      "min": 12,
+      "source": "Formulaires 1300-SD et 1301-SD : attestations de l'administration fiscale",
+      "voix": "Avant, pour appliquer la TVA à 10 % ou à 5,5 % sur des travaux chez un particulier, il fallait une attestation : le formulaire 1300-SD, ou sa version simplifiée, la 1301-SD. Un papier de plus à faire remplir, à faire signer, et à classer."
+    },
+    {
+      "id": "s3",
+      "min": 14,
+      "source": "Source : loi de finances pour 2025, article 41",
+      "voix": "Depuis la loi de finances pour 2025, ce papier séparé n'est plus obligatoire. C'est désormais le client qui certifie, directement sur votre devis ou sur votre facture, que les conditions du taux réduit sont remplies. Une seule exception : les travaux déjà en cours au 16 février 2025."
+    },
+    {
+      "id": "s4",
+      "min": 16,
+      "source": "Source : CGI, articles 279-0 bis (10 %) et 278-0 bis A (5,5 %)",
+      "voix": "Quelles conditions ? Pour le taux de 10 %, le logement doit être à usage d'habitation, et achevé depuis plus de deux ans. Vos travaux ne doivent pas le rendre neuf, ni augmenter sa surface de plancher de plus de 10 %. Pour le taux de 5,5 %, ce sont les mêmes conditions, avec en plus des travaux de rénovation énergétique."
+    },
+    {
+      "id": "s5",
+      "min": 22,
+      "source": "Modèles de l'administration fiscale : BOFiP, BOI-LETTRE-000280",
+      "voix": "Concrètement, que faut-il écrire ? L'administration fiscale publie le modèle, au BOFiP. Sur un devis à 10 %, la phrase commence par : « Je soussigné, nom et prénom, certifie que les travaux réalisés concernent des locaux à usage d'habitation achevés depuis plus de deux ans ». Sur la facture, c'est : « Par le règlement de la présente facture, le client certifie ». Le texte complet est dans notre modèle de devis."
+    },
+    {
+      "id": "s6",
+      "min": 10,
+      "source": "Les taux réduits ne concernent que les locaux à usage d'habitation",
+      "voix": "Un point à retenir : sans cette certification, le taux réduit ne s'applique pas. Et dans un bureau ou un commerce, c'est toujours 20 %."
+    },
+    {
+      "id": "s7",
+      "min": 7,
+      "voix": "Bon à savoir : le formulaire 1301-SD reste accepté à la place, à condition qu'il soit complet."
+    },
+    {
+      "id": "s8",
+      "min": 12,
+      "voix": "Cette mention est déjà dans le modèle de devis gratuit de Qonforme, en Word, Excel et PDF. Vous le trouvez sur qonforme.fr/modele."
+    }
+  ]
+}
