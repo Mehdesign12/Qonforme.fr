@@ -189,7 +189,7 @@ export function buildSystemPrompt({ brand, strategy, prefs }: PromptContext, rol
   }
   lines.push(
     "",
-    "FORMAT DU BLOG (Markdown simple) : pas de titre de niveau 1 (« # ») — le titre est affiché par la page ; sections « ## » et sous-sections « ### » ; listes « - » ou « 1. » ; gras « **…** » ; liens « [texte](adresse) ». Pas de tableau, pas de HTML, pas d'image, pas de case à cocher, pas de bloc de code.",
+    "FORMAT DU BLOG (Markdown simple) : pas de titre de niveau 1 (« # ») — le titre est affiché par la page ; sections « ## » et sous-sections « ### » ; listes « - » ou « 1. » ; gras « **…** » ; liens « [texte](adresse) ». Une ligne vide AVANT et APRÈS chaque titre et chaque liste (jamais « **Label :** » suivi d'une puce sur la ligne d'après), une puce par ligne, jamais une puce vide. Pas de tableau, pas de HTML, pas d'image, pas de case à cocher, pas de bloc de code.",
   )
   return lines.join("\n")
 }

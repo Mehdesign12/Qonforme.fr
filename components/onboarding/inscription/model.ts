@@ -6,7 +6,7 @@
  */
 import {
   INSCRIPTION_LIMITS, SIREN_INVALID, inscriptionSteps,
-  type CompanyInput, type InscriptionStep,
+  type CompanyInput, type InscriptionPatch, type InscriptionStep, type SignupDraftPatch,
 } from "@/lib/onboarding/inscription"
 import { isValidSiren, sirenToVAT } from "@/lib/utils/invoice"
 import type { SireneCandidate } from "@/lib/utils/sirene"
@@ -165,3 +165,18 @@ export function sirenFromQuery(query: string): string {
   const digits = query.replace(/\s/g, "")
   return /^\d{9}$/.test(digits) ? digits : ""
 }
+
+/**
+ * Ce que l'étape affichée enregistre quand la fenêtre se ferme sans qu'on ait
+ * validé : l'étape elle-même si elle est complète (`save`), sinon ses saisies
+ * en brouillon. `draft` est la part du brouillon à changer ; `ifSaveFails`
+ * celle à garder si l'enregistrement échoue (les saisies ne sont jamais perdues).
+ */
+export interface StepSnapshot {
+  save?: InscriptionPatch
+  draft: SignupDraftPatch
+  ifSaveFails?: SignupDraftPatch
+}
+
+/** Référence que l'étape affichée renseigne et que la fenêtre lit à la fermeture. */
+export type SnapshotRef = { current: (() => StepSnapshot) | null }

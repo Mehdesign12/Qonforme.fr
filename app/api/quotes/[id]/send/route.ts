@@ -7,6 +7,7 @@ import { generateQuotePdf } from "@/lib/pdf/quote"
 import { markShareLinkSent, shareLinkForEmail } from "@/lib/signature/share"
 import { selectCompanyWithProfile } from "@/lib/legal/db"
 import { requireIssuerIdentity } from "@/lib/legal/issuer"
+import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -82,12 +83,28 @@ export async function POST(_req: NextRequest, { params }: Params) {
       attachments: [{ filename: `${quote.quote_number}.pdf`, content: pdfBuffer }],
     })
 
-    // 5. Mettre à jour le statut
-    await supabase
+    // 5. Mettre à jour le statut, puis la date d'envoi. Deux écritures : la colonne
+    //    `sent_at` manque à la table `quotes` tant que la migration 20261019_quotes_sent_at
+    //    n'est pas appliquée, et son absence faisait échouer en bloc la mise à jour du
+    //    statut (le devis envoyé restait « Brouillon » après rechargement).
+    const { error: statusError } = await supabase
       .from("quotes")
-      .update({ status: statusAfterSend("quote", quote.status), sent_at: new Date().toISOString() })
+      .update({ status: statusAfterSend("quote", quote.status) })
       .eq("id", id)
       .eq("user_id", user.id)
+    if (statusError) {
+      console.error("[quote-send] statut non mis à jour :", statusError)
+      return NextResponse.json(
+        { error: "Le devis est parti par email, mais son statut n'a pas pu être mis à jour. Rechargez la page avant de le renvoyer." },
+        { status: 502 },
+      )
+    }
+    const { error: sentAtError } = await supabase
+      .from("quotes")
+      .update({ sent_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("user_id", user.id)
+    if (sentAtError && !isMissingSchemaError(sentAtError)) console.error("[quote-send] date d'envoi non écrite :", sentAtError)
 
     await markShareLinkSent(share, clientEmail)
 

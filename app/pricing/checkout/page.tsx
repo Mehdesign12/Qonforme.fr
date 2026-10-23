@@ -1,7 +1,10 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { PLANS, isPlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { PLANS, isPlanAvailable, isPlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { safeNextPath } from '@/lib/stripe/access'
+import { publishableKeyFor } from '@/lib/stripe/mode'
+import { getUserStripeMode } from '@/lib/stripe/test-users'
+import { createClient } from '@/lib/supabase/server'
 import CheckoutPageClient from './CheckoutPageClient'
 
 export const dynamic = 'force-dynamic'
@@ -33,8 +36,13 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
 
   const billingPeriod: BillingPeriod | null = period === 'monthly' || period === 'yearly' ? period : null
 
+  // Mode Stripe du compte : bac à sable pour un compte d'essai, sinon production
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const mode = (user ? await getUserStripeMode(user.id) : null) ?? 'live'
+
   // Formule inconnue, pas encore disponible ou période invalide → retour au choix
-  if (!isPlanId(plan) || !PLANS[plan].available || !billingPeriod) {
+  if (!isPlanId(plan) || !isPlanAvailable(PLANS[plan], mode) || !billingPeriod) {
     redirect(next ? `/signup/plan?next=${encodeURIComponent(next)}` : '/signup/plan')
   }
 
@@ -43,6 +51,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
       planId={plan}
       billingPeriod={billingPeriod}
       next={next}
+      publishableKey={publishableKeyFor(mode)}
     />
   )
 }

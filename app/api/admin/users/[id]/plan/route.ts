@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { stripe } from '@/lib/stripe/client'
+import { getStripe, modeOfSubscription } from '@/lib/stripe/mode'
 import { PLANS, type PlanId } from '@/lib/stripe/plans'
 import { isAdminAuthenticated } from '@/lib/admin-require'
 
@@ -39,7 +39,10 @@ export async function PATCH(
   }
 
   const billingPeriod = (sub.billing_period ?? 'monthly') as 'monthly' | 'yearly'
-  const newPriceId = PLANS[newPlan as PlanId].stripePriceIds[billingPeriod]
+  // Un abonnement d'essai se change dans le bac à sable Stripe, avec les prix d'essai
+  const mode = modeOfSubscription(sub)
+  const newPrices = mode === 'test' ? PLANS[newPlan as PlanId].stripePriceIdsTest : PLANS[newPlan as PlanId].stripePriceIds
+  const newPriceId = newPrices[billingPeriod]
   if (!newPriceId && (sub.stripe_subscription_id || sub.stripe_customer_id)) {
     return NextResponse.json(
       { error: `Prix Stripe non configuré pour la formule ${PLANS[newPlan as PlanId].name} (${billingPeriod})` },
@@ -54,7 +57,7 @@ export async function PATCH(
 
   if (!resolvedSubId && sub.stripe_customer_id) {
     try {
-      const list = await stripe.subscriptions.list({
+      const list = await getStripe(mode).subscriptions.list({
         customer: sub.stripe_customer_id,
         status: 'active',
         limit: 1,
@@ -78,14 +81,14 @@ export async function PATCH(
       console.warn(`[admin/plan] Price ID manquant pour ${newPlan}/${billingPeriod} — mise à jour DB seulement`)
     } else {
       try {
-        const stripeSub = await stripe.subscriptions.retrieve(resolvedSubId)
+        const stripeSub = await getStripe(mode).subscriptions.retrieve(resolvedSubId)
         const itemId = stripeSub.items.data[0]?.id
 
         if (!itemId) {
           return NextResponse.json({ error: 'Stripe : item de subscription introuvable' }, { status: 500 })
         }
 
-        await stripe.subscriptions.update(resolvedSubId, {
+        await getStripe(mode).subscriptions.update(resolvedSubId, {
           items: [{ id: itemId, price: newPriceId }],
           proration_behavior: 'none',
         })

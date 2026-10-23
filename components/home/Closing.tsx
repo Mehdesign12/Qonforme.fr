@@ -5,7 +5,7 @@ import { D_SECTION, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
 import { SOLUTION_COMPATIBLE, SolutionCompatible } from "@/components/brand/SolutionCompatible"
 import { CtaButtons, SectionTitle } from "@/components/landing/ui"
 import { GUARANTEE_DAYS } from "@/lib/stripe/access"
-import { PLANS } from "@/lib/stripe/plans"
+import { PLANS, TAX_SUFFIX } from "@/lib/stripe/plans"
 import { cn } from "@/lib/utils"
 
 /**
@@ -26,8 +26,8 @@ const NB = "\u00a0"
 const DELAYS = ["", "lp-d1", "lp-d2"] as const
 const essentiel = PLANS.starter
 
-/** Prix en euros hors taxes, insécable : « 12 € HT ». */
-const ht = (n: number) => `${n}${NB}€${NB}HT`
+/** Prix en euros, insécable : « 24 € » (« 24 € HT » quand la TVA est ajoutée par-dessus). */
+const ht = (n: number) => `${n}${NB}€${TAX_SUFFIX ? `${NB}HT` : ""}`
 
 /** Typographie française : espace insécable avant « ? : ; ! » et dans les guillemets. */
 const fr = (s: string) =>

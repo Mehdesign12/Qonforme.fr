@@ -37,14 +37,17 @@ export async function selectCompanyWithProfile(
     const { data, error } = await q.maybeSingle()
     return { data: (data as CompanyRow | null) ?? null, error }
   }
-  const withTemplates = await run(`${columns},legal_profile,document_templates`)
-  if (!withTemplates.error || !isMissingSchemaError(withTemplates.error)) return { ...withTemplates, profileAvailable: true }
-  const first = await run(`${columns},legal_profile`)
-  if (first.error && isMissingSchemaError(first.error)) {
-    const second = await run(columns)
-    return { ...second, profileAvailable: false }
-  }
-  return { ...first, profileAvailable: true }
+  const full = await run(`${columns},legal_profile,document_templates`)
+  if (!full.error || !isMissingSchemaError(full.error)) return { ...full, profileAvailable: true }
+  // Les deux colonnes viennent de deux migrations distinctes : l'absence de l'une ne doit pas
+  // faire perdre l'autre (en production le 19/10/2026, `document_templates` existait sans
+  // `legal_profile` et le modèle choisi était ignoré par tous les PDF).
+  const templatesOnly = await run(`${columns},document_templates`)
+  if (!templatesOnly.error || !isMissingSchemaError(templatesOnly.error)) return { ...templatesOnly, profileAvailable: false }
+  const profileOnly = await run(`${columns},legal_profile`)
+  if (!profileOnly.error || !isMissingSchemaError(profileOnly.error)) return { ...profileOnly, profileAvailable: true }
+  const neither = await run(columns)
+  return { ...neither, profileAvailable: false }
 }
 
 /**

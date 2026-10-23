@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import { cn } from "@/lib/utils"
 import { formatRate, lineHasError, lineSummary, vatBreakdown, type DocLine } from "./model"
 import type { DocumentFormApi } from "./useDocumentForm"
+import { SheetGrip } from "@/components/ui/sheet-grip"
 
 const COLS = "grid-cols-[minmax(0,1fr)_60px_92px_76px_92px_34px]"
 
@@ -195,7 +196,7 @@ export function LinesEditor({
             initialFocus={(type) => (type === "keyboard" || !editLine.description.trim() ? true : sheetHeadRef.current)}
             className="max-h-[88dvh] gap-3 overflow-auto px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-2 md:hidden"
           >
-            <span className="q-sheet-grip !mt-0" aria-hidden />
+            <SheetGrip className="!mt-0" />
             <div ref={sheetHeadRef} tabIndex={-1} className="flex flex-col gap-1 pr-10 outline-none">
               <SheetTitle className="q-display text-[22px] text-[var(--q-ink)]">Modifier la ligne</SheetTitle>
               <SheetDescription className="text-sm text-[var(--q-text-4)]">Prix unitaire hors taxes, TVA par ligne.</SheetDescription>

@@ -1,5 +1,7 @@
 import { LegalLayout } from "@/components/legal/LegalLayout"
 import type { Metadata } from "next"
+import { PAYMENT_METHODS_TEXT, PLANS, VAT_COLLECTED, formatEuros, scanQuotaText } from "@/lib/stripe/plans"
+import { PUBLISHER } from "@/lib/legal/publisher"
 
 export const metadata: Metadata = {
   title: "Conditions Générales d'Utilisation",
@@ -14,12 +16,13 @@ export default function CGUPage() {
       titleAccent="d'utilisation"
       path="/cgu"
       subtitle="Merci de lire attentivement ces conditions avant d'utiliser Qonforme."
-      lastUpdated="2 octobre 2026"
+      lastUpdated="20 octobre 2026"
     >
       <h2>Article 1 — Objet</h2>
       <p>
         Les présentes Conditions Générales d&apos;Utilisation (ci-après « CGU ») régissent l&apos;accès et l&apos;utilisation
-        du service Qonforme (ci-après « le Service »), éditée par la société Qonforme SAS.
+        du service Qonforme (ci-après « le Service »), édité par la société {PUBLISHER.name}, {PUBLISHER.form}.
+        « Qonforme » désigne la marque sous laquelle {PUBLISHER.name} exploite le Service et le vend à l&apos;Utilisateur.
         En créant un compte, l&apos;Utilisateur accepte sans réserve les présentes CGU.
       </p>
 
@@ -65,21 +68,26 @@ export default function CGUPage() {
       <ul>
         <li>
           <strong>Version gratuite</strong>, sans limite de durée ni carte bancaire : devis illimités, gestion des clients
-          et du catalogue, préparation de factures en brouillon, consultation et téléchargement des documents.
+          et du catalogue, préparation de factures en brouillon, planning de rendez-vous, notes et rappels, scan de documents
+          (jusqu&apos;à {scanQuotaText("free")}), consultation et téléchargement des documents.
         </li>
         <li>
-          <strong>Formule Essentiel</strong> — 12 € HT par mois, ou 120 € HT par an : émission et envoi des factures et
-          des avoirs, relances des factures impayées, export comptable.
+          <strong>Formule Essentiel</strong> — {formatEuros(PLANS.starter.monthlyPrice)}{VAT_COLLECTED ? " HT" : ""} par mois, ou {formatEuros(PLANS.starter.yearlyPrice)}{VAT_COLLECTED ? " HT" : ""} par an : émission et envoi des factures et
+          des avoirs, relances des factures impayées, export comptable, espace de scan porté à {scanQuotaText("starter")}.
         </li>
         <li>
-          <strong>Formule Artisan</strong> — 24 € HT par mois, ou 240 € HT par an : proposée lorsque ses fonctionnalités
+          <strong>Formule Artisan</strong> — {formatEuros(PLANS.pro.monthlyPrice)}{VAT_COLLECTED ? " HT" : ""} par mois, ou {formatEuros(PLANS.pro.yearlyPrice)}{VAT_COLLECTED ? " HT" : ""} par an : proposée lorsque ses fonctionnalités
           propres (situations de travaux, retenue de garantie, autoliquidation) seront disponibles.
         </li>
       </ul>
-      <p>Les prix s&apos;entendent hors taxes ; la TVA au taux en vigueur (20 %) s&apos;y ajoute.</p>
+      <p>
+        {VAT_COLLECTED
+          ? "Les prix s'entendent hors taxes ; la TVA au taux en vigueur (20 %) s'y ajoute."
+          : "Les prix s'entendent en euros. Le montant affiché est le montant prélevé."}
+      </p>
       <h3>4.2 Paiement</h3>
       <p>
-        Le paiement est traité par Stripe, par carte bancaire ou par prélèvement SEPA. L&apos;Utilisateur est débité à la
+        Le paiement est traité par Stripe, par {PAYMENT_METHODS_TEXT}. L&apos;Utilisateur est débité à la
         souscription, puis automatiquement à chaque échéance (mensuelle ou annuelle). Les factures d&apos;abonnement sont
         disponibles depuis <strong>Paramètres → Abonnement</strong>.
       </p>
@@ -122,7 +130,7 @@ export default function CGUPage() {
       <h2>Article 6 — Propriété intellectuelle</h2>
       <p>
         L&apos;ensemble des éléments constitutifs du Service (code source, interfaces, graphismes, marques, logos) est la
-        propriété exclusive de Qonforme SAS ou de ses concédants. Toute reproduction, représentation ou utilisation à des
+        propriété exclusive de {PUBLISHER.name} ou de ses concédants. Toute reproduction, représentation ou utilisation à des
         fins autres que l&apos;usage personnel du Service est interdite sans autorisation écrite préalable.
       </p>
       <p>

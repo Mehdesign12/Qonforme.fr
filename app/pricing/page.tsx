@@ -7,42 +7,48 @@ import PublicHeaderWrapper from '@/components/layout/PublicHeaderWrapper'
 import { Doodles } from '@/components/brand/Doodles'
 import { pictosFor } from '@/components/brand/pictos'
 import { MetaPixelEvent } from '@/components/shared/MetaPixelEvent'
-import { PLANS, formatEuros } from '@/lib/stripe/plans'
+import { PAYMENT_METHODS_TEXT, PLANS, TAX_SUFFIX, VAT_COLLECTED, formatEuros, scanQuotaText } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
+import { artisanOnSaleFor } from '@/lib/stripe/availability'
+
+const essentiel = PLANS.starter
+
+/** « 20 € » ou « 20 € HT » selon que la TVA est ajoutée au paiement (lib/stripe/plans.ts). */
+const fromPrice = `${formatEuros(essentiel.yearlyMonthlyEquivalent)}${TAX_SUFFIX}`
 
 export const metadata: Metadata = {
-  title: 'Tarifs — Devis gratuits, factures dès 10 € HT/mois',
-  description: 'Devis gratuits et illimités, sans carte bancaire. Formule Essentiel à 12 € HT par mois, 10 € à l’année, pour envoyer vos factures. Sans engagement.',
+  title: `Tarifs — Devis gratuits, factures dès ${fromPrice}/mois`,
+  description: `Devis gratuits et illimités, sans carte bancaire. Formule Essentiel à ${formatEuros(essentiel.monthlyPrice)}${TAX_SUFFIX} par mois, ${formatEuros(essentiel.yearlyMonthlyEquivalent)} à l’année, pour envoyer vos factures. Sans engagement.`,
   alternates: { canonical: '/pricing' },
   openGraph: {
     title: 'Tarifs Qonforme — devis gratuits',
-    description: 'Devis gratuits et illimités. Formule Essentiel dès 10 € HT par mois pour envoyer vos factures. Sans engagement.',
-    images: [{ url: '/api/og?title=Tarifs%20Qonforme&subtitle=Devis%20gratuits%20%E2%80%94%20factures%20d%C3%A8s%2010%20%E2%82%AC%20HT%2Fmois', width: 1200, height: 630 }],
+    description: `Devis gratuits et illimités. Formule Essentiel dès ${fromPrice} par mois pour envoyer vos factures. Sans engagement.`,
+    images: [{ url: `/api/og?${new URLSearchParams({ title: 'Tarifs Qonforme', subtitle: `Devis gratuits — factures dès ${fromPrice}/mois` }).toString()}`, width: 1200, height: 630 }],
   },
 }
 export const dynamic = 'force-dynamic'
-
-const essentiel = PLANS.starter
 
 /** Typographie française : espace insécable avant « ? : ; ! », « € » et « % ». */
 const nbsp = (text: string) => text.replace(/ ([?:;!€%])/g, '\u00A0$1')
 
 const FAQ = ([
-  { question: "Faut-il une carte bancaire pour commencer ?", reponse: "Non. Les devis sont gratuits et illimités. La carte bancaire ou le prélèvement SEPA ne sont demandés qu'au moment d'envoyer votre première facture." },
-  { question: `Que comprend la formule ${essentiel.name} ?`, reponse: `${essentiel.features.map((f, i) => (i === 0 ? f : f.charAt(0).toLowerCase() + f.slice(1))).join(', ')}. ${formatEuros(essentiel.monthlyPrice)} HT par mois, ou ${formatEuros(essentiel.yearlyPrice)} HT par an.` },
+  { question: "Faut-il une carte bancaire pour commencer ?", reponse: "Non. Les devis sont gratuits et illimités. Le moyen de paiement n'est demandé qu'au moment d'envoyer votre première facture." },
+  { question: `Que comprend la formule ${essentiel.name} ?`, reponse: `${essentiel.features.map((f, i) => (i === 0 ? f : f.charAt(0).toLowerCase() + f.slice(1))).join(', ')}. ${formatEuros(essentiel.monthlyPrice)}${TAX_SUFFIX} par mois, ou ${formatEuros(essentiel.yearlyPrice)}${TAX_SUFFIX} par an.` },
   { question: "Et si Qonforme ne me convient pas ?", reponse: `Vous êtes remboursé intégralement dans les ${GUARANTEE_DAYS} jours qui suivent votre premier paiement, sans avoir à vous justifier, directement depuis votre espace. Vos documents restent consultables et téléchargeables.` },
   { question: "Puis-je résilier à tout moment ?", reponse: "Oui, sans engagement. La résiliation se fait depuis Paramètres › Abonnement et prend effet à la fin de la période déjà payée. Vos factures restent consultables après résiliation." },
-  { question: "Comment payer ?", reponse: "Par carte bancaire ou par prélèvement SEPA. Les prix sont hors taxes : la TVA à 20 % s'y ajoute." },
+  { question: "Comment payer ?", reponse: VAT_COLLECTED ? `Par ${PAYMENT_METHODS_TEXT}. Les prix sont hors taxes : la TVA à 20 % s'y ajoute.` : `Par ${PAYMENT_METHODS_TEXT}. Le prix affiché est le montant prélevé.` },
   PLANS.pro.available
-    ? { question: `Que comprend la formule ${PLANS.pro.name} ?`, reponse: `Tout ${essentiel.name}, plus le suivi par chantier, les factures d'acompte, les situations de travaux, la retenue de garantie et l'autoliquidation en sous-traitance. ${formatEuros(PLANS.pro.monthlyPrice)} HT par mois, ou ${formatEuros(PLANS.pro.yearlyPrice)} HT par an.` }
+    ? { question: `Que comprend la formule ${PLANS.pro.name} ?`, reponse: `Tout ${essentiel.name}, plus le suivi par chantier, les factures d'acompte, les situations de travaux, la retenue de garantie et l'autoliquidation en sous-traitance. ${formatEuros(PLANS.pro.monthlyPrice)}${TAX_SUFFIX} par mois, ou ${formatEuros(PLANS.pro.yearlyPrice)}${TAX_SUFFIX} par an.` }
     : { question: `La formule ${PLANS.pro.name} est-elle disponible ?`, reponse: `Ses fonctions sont prêtes : suivi par chantier, factures d'acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance. Vous pouvez les essayer dans la démo. La formule n'est pas encore en vente.` },
   { question: "Qonforme est-il prêt pour la facturation électronique ?", reponse: "Qonforme produit des factures PDF accompagnées de leurs données structurées Factur-X. L'émission via une plateforme agréée, obligatoire pour les TPE à partir de septembre 2027, est en préparation." },
+  { question: "Planning, notes et scan de documents : sont-ils disponibles ?", reponse: `Oui, pour tous les comptes, la version gratuite comprise : planning de rendez-vous, notes et rappels par client ou par chantier, et scan des devis, bons de commande et bons de livraison avec votre téléphone. L'espace de scan est de ${scanQuotaText('free')} en version gratuite, et de ${scanQuotaText('starter')} avec Essentiel ou Artisan.` },
   { question: "Est-ce que Qonforme fonctionne sur mobile ?", reponse: "Oui. Qonforme fonctionne sur téléphone, tablette et ordinateur, et s'installe sur l'écran d'accueil de votre téléphone." },
 ]).map((f) => ({ question: nbsp(f.question), reponse: nbsp(f.reponse) }))
 
 export default async function PricingPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const artisanOnSale = await artisanOnSaleFor(user?.id)
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -83,7 +89,7 @@ export default async function PricingPage() {
 
           {/* Formules */}
           <section aria-label="Formules" className="mx-auto max-w-[1200px] px-4 pt-8 sm:px-6 sm:pt-10">
-            <PricingSelector isAuthenticated={!!user} />
+            <PricingSelector isAuthenticated={!!user} artisanOnSale={artisanOnSale} />
           </section>
 
           {/* Comparaison */}
@@ -93,7 +99,10 @@ export default async function PricingPage() {
             </h2>
             <PlanComparison />
             <p className="mt-3.5 text-[13px] leading-relaxed text-q-text-4">
-              Prix hors taxes&nbsp;: la TVA à 20&nbsp;% s&apos;y ajoute, le montant TTC est indiqué sous chaque prix. Vos factures restent consultables après résiliation.
+              {VAT_COLLECTED
+                ? <>Prix hors taxes&nbsp;: la TVA à 20&nbsp;% s&apos;y ajoute, le montant TTC est indiqué sous chaque prix. </>
+                : <>Le prix affiché est le montant prélevé. </>}
+              Vos factures restent consultables après résiliation.
             </p>
           </section>
 

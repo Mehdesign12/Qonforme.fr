@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client"
 import { safeNextPath } from "@/lib/stripe/access"
 import { trackEvent } from "@/lib/meta-pixel"
 import { AUTH_INPUT, AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
+import GoogleButton, { OrDivider } from "@/components/auth/GoogleButton"
+import { rememberAuthMethod } from "@/lib/auth/last-used"
 import { SIGNUP_EMAIL_PATTERN, SIGNUP_PASSWORD_MIN } from "@/lib/auth/signup-input"
 
 /**
@@ -22,6 +24,21 @@ function validate(fields: { email: string; password: string }) {
   if (!fields.password || fields.password.length < SIGNUP_PASSWORD_MIN)
     errs.password = `${SIGNUP_PASSWORD_MIN} caractères minimum`
   return errs
+}
+
+/** Mentions sous le formulaire : tout en bas de la page d'inscription. */
+export function SignupLegal() {
+  return (
+    <p className="m-0 mt-5 text-[13px] leading-[1.55] text-q-text-4">
+      En créant un compte, vous acceptez les{" "}
+      <a href="/cgu" className="q-link !font-medium">conditions d’utilisation</a>{" "}
+      et la{" "}
+      <a href="/confidentialite" className="q-link !font-medium">politique de confidentialité</a>.
+      {/* Information à la collecte (CPCE art. L34-5, CNIL) : voir lib/onboarding/unsubscribe.ts */}
+      {" "}Qonforme peut vous envoyer quelques conseils de démarrage par email pendant vos 30&nbsp;premiers jours&nbsp;; un
+      lien dans chacun permet de les arrêter.
+    </p>
+  )
 }
 
 export default function SignupForm() {
@@ -80,6 +97,7 @@ export default function SignupForm() {
         return
       }
 
+      rememberAuthMethod("email")
       trackEvent("Lead", { currency: "EUR", value: 0 })
       // Retour à la page qui a demandé l'inscription (invitation d'un comptable :
       // pas d'entreprise à créer) ; sinon le tableau de bord, où la fenêtre
@@ -98,7 +116,8 @@ export default function SignupForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4 sm:mt-8 sm:gap-[18px]" noValidate>
+    <div className="mt-6 flex flex-col gap-4 sm:mt-8 sm:gap-[18px]">
+    <form onSubmit={onSubmit} className="flex flex-col gap-4 sm:gap-[18px]" noValidate>
 
       {/* Email */}
       <Field id="email" label="Adresse email" error={errors.email}>
@@ -135,16 +154,9 @@ export default function SignupForm() {
         Créer mon compte
       </AuthSubmit>
 
-      {/* CGU */}
-      <p className="m-0 text-[13px] leading-[1.55] text-q-text-4">
-        En créant un compte, vous acceptez les{" "}
-        <a href="/cgu" className="q-link !font-medium">conditions d’utilisation</a>{" "}
-        et la{" "}
-        <a href="/confidentialite" className="q-link !font-medium">politique de confidentialité</a>.
-        {/* Information à la collecte (CPCE art. L34-5, CNIL) : voir lib/onboarding/unsubscribe.ts */}
-        {" "}Qonforme peut vous envoyer quelques conseils de démarrage par email pendant vos 30&nbsp;premiers jours&nbsp;; un
-        lien dans chacun permet de les arrêter.
-      </p>
     </form>
+    <OrDivider />
+    <GoogleButton label="S’inscrire avec Google" />
+    </div>
   )
 }

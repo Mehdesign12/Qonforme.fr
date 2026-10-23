@@ -20,6 +20,7 @@ import {
   VAT_CONTEXTS, normalizeProductName, proposedVatRate, tradeItems,
   type VatContext,
 } from "@/lib/catalogue/trades"
+import { SheetGrip } from "@/components/ui/sheet-grip"
 
 export interface TradeImportRequest {
   trade: TradeId
@@ -121,7 +122,7 @@ export function TradeImportDialog({
           "max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-b-none max-md:rounded-t-[24px] max-md:border-x-0 max-md:border-b-0",
         )}
       >
-        <span className="q-sheet-grip md:hidden" aria-hidden />
+        <SheetGrip className="md:hidden" />
         <div className="flex items-start justify-between gap-3 px-4 pt-3 md:px-[22px] md:pt-5">
           <div className="flex flex-col gap-1">
             <DialogTitle className="q-display text-[22px] font-semibold leading-tight tracking-[-0.02em]">

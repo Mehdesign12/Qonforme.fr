@@ -797,8 +797,9 @@ describe("maillage interne des articles générés", () => {
 
 describe("photos du texte des articles générés", () => {
   const SECTIONS = ["Quand relancer", "Que dire au client", "Les pénalités de retard", "Quel courrier envoyer"]
+  // Quatre sections d'un premier paragraphe puis de quatre paragraphes de 110 mots : environ 2 000 mots, donc quatre photos
   const section = (title: string, i: number) =>
-    `## ${title}\n\nPremier paragraphe de la section ${title.toLowerCase()}, avec assez de mots pour porter une photo qui l'illustre bien. ${words(25)}\n\n${words(380).replace(/chantier/g, `part${i}x`)}`
+    `## ${title}\n\nPremier paragraphe de la section ${title.toLowerCase()}, avec assez de mots pour porter une photo qui l'illustre bien. ${words(25)}\n\n${[0, 1, 2, 3].map((j) => words(110).replace(/chantier/g, `part${i}${j}x`)).join("\n\n")}`
   const IMAGED = `Introduction sur les relances.\n\n${SECTIONS.map(section).join("\n\n")}\n\n## Questions fréquentes\n\n### Combien de relances envoyer ?\nDeux ou trois.\n\n### Faut-il un courrier ?\nPas toujours.\n\n### Quelles pénalités ?\nCelles du Code de commerce.\n\n## Pour aller plus loin\n\nEssayez Qonforme pour vos devis.`
   const withPhotos = (inlineImages: number | undefined = 4) =>
     setup(topicRow(), { seo_settings: [{ key: "articles", value: inlineImages === undefined ? {} : { inlineImages }, updated_at: "2026-10-01T00:00:00Z" }] })
@@ -806,7 +807,7 @@ describe("photos du texte des articles générés", () => {
     db.tables.seo_article_jobs[0].state as { passes: number; images: { heading: string; url?: string; error?: string }[]; notices?: string[]; imageSlots: unknown[] }
   const imageLines = (content: string) => Array.from(content.matchAll(/^!\[([^\]]*)\]\(([^)]+)\)$/gm))
 
-  it("une photo par section choisie, une par passe : lue, générée, enregistrée, insérée après le premier paragraphe", async () => {
+  it("quatre photos réparties, une par passe : lues, générées, enregistrées, insérées après un paragraphe", async () => {
     writeContent = IMAGED
     const { db, client, topicId } = withPhotos()
     const job = await startJob(client, topicId)
@@ -823,26 +824,42 @@ describe("photos du texte des articles générés", () => {
     expect(mocks.store).toHaveBeenCalledTimes(4)
     const store = mocks.store.mock.calls[0][0] as { generated: boolean; hint: string; meta: { creator: string; source: string; description: string } }
     expect(store.generated).toBe(true)
-    expect(store.hint).toContain("Quand relancer")
+    expect(SECTIONS.some((title) => store.hint.includes(title))).toBe(true)
     expect(store.meta).toMatchObject({ creator: "Qonforme", source: "ai", description: "Un artisan relance un client au téléphone depuis sa camionnette" })
 
     const content = db.tables.blog_posts[0].content as string
     const images = imageLines(content)
     expect(images).toHaveLength(4)
     expect(images[0][1]).toBe("Un artisan relance un client au téléphone depuis sa camionnette")
-    // Chaque photo vient juste après le premier paragraphe de sa section, jamais sous le titre, jamais dans la FAQ
-    for (const title of SECTIONS) {
-      expect(content).toMatch(new RegExp(`## ${title}\\n\\nPremier paragraphe[^\\n]+\\n\\n!\\[[^\\]]+\\]\\(https://stockage\\.test/[^)]+\\)\\n\\n`))
-    }
+    // Jamais sous un titre, jamais dans l'introduction ni dans la FAQ ; toujours après un paragraphe de texte
+    expect(content).not.toMatch(/^#{2,3} [^\n]+\n\n!\[/m)
+    expect(content.slice(0, content.indexOf("## Quand relancer"))).not.toContain("![")
     expect(content.slice(content.indexOf("## Questions fréquentes"))).not.toContain("![")
+    // Réparties : au moins 250 mots de texte entre deux photos, et pas deux photos dans le même paragraphe
+    const gaps = content
+      .split(/\n\n!\[[^\n]+\)\n\n/)
+      .slice(1, -1)
+      .map((part) => part.split(/\s+/).length)
+    expect(gaps).toHaveLength(3)
+    for (const gap of gaps) expect(gap).toBeGreaterThanOrEqual(250)
 
     const state = stateOf(db)
-    expect(state.images.map((i) => i.heading)).toEqual(SECTIONS)
-    expect(state.images.every((i) => i.url && !i.error)).toBe(true)
+    expect(state.images).toHaveLength(4)
+    expect(state.images.every((i) => i.url && !i.error && SECTIONS.includes(i.heading))).toBe(true)
     // La couverture n'est pas dans le texte et la photo n'a pas pris sa place
     expect(db.tables.blog_posts[0].cover_url).toContain("covers/")
     expect(db.tables.blog_posts[0].ai_model).toContain("photos ")
     expect(state.passes).toBe(10)
+  })
+
+  it("selon la longueur : trois photos pour un article de 1 500 mots", async () => {
+    writeContent = `Introduction sur les relances.\n\n${SECTIONS.slice(0, 3).map(section).join("\n\n")}\n\n## Questions fréquentes\n\n### Combien ?\nDeux ou trois.\n\n## Pour aller plus loin\n\nEssayez Qonforme pour vos devis.`
+    fixContent = writeContent
+    const { db, client, topicId } = withPhotos()
+    const job = await startJob(client, topicId)
+    const outcomes = await runAll(client, job.id)
+    expect(outcomes.filter((o) => o.ran === "images")).toHaveLength(3)
+    expect(imageLines(db.tables.blog_posts[0].content as string)).toHaveLength(3)
   })
 
   it("le plafond des Préférences borne le nombre de photos", async () => {
@@ -883,8 +900,8 @@ describe("photos du texte des articles générés", () => {
     expect(outcomes.filter((o) => o.ran === "images")).toHaveLength(4)
     expect(imageLines(db.tables.blog_posts[0].content as string)).toHaveLength(3)
     const state = stateOf(db)
-    expect(state.images[1]).toMatchObject({ heading: SECTIONS[1], error: "Gemini indisponible (503)." })
-    expect(state.notices?.join(" ")).toContain(`Photo de « ${SECTIONS[1]} » non créée`)
+    expect(state.images[1]).toMatchObject({ error: "Gemini indisponible (503)." })
+    expect(state.notices?.join(" ")).toContain(`Photo de « ${state.images[1].heading} » non créée`)
   })
 
   it("quota épuisé : les photos restantes sont abandonnées d'un coup, l'article sort quand même", async () => {
@@ -931,15 +948,15 @@ describe("photos du texte des articles générés", () => {
     expect(imageLines(db.tables.blog_posts[0].content as string)).toHaveLength(1)
   })
 
-  it("aucune section ne se prête à une photo : une note, pas d'échec", async () => {
+  it("peu de places : moins de photos que demandé ; aucune section ne se prête à une photo : une note, pas d'échec", async () => {
     writeContent = CLEAN
     const { db, client, topicId } = withPhotos()
     const job = await startJob(client, topicId)
     const outcomes = await runAll(client, job.id)
     expect(outcomes.at(-1)?.status).toBe("done")
-    expect(mocks.image).toHaveBeenCalledTimes(1)
-    // CLEAN n'a qu'une section de développement : une photo, pas quatre
-    expect(imageLines(db.tables.blog_posts[0].content as string)).toHaveLength(1)
+    // CLEAN n'a qu'un paragraphe de développement, collé à la FAQ : aucune place qui ne soit pas tout en bas
+    expect(mocks.image).not.toHaveBeenCalled()
+    expect(stateOf(db).notices?.join(" ")).toContain("aucune section ne s'y prête")
     writeContent = "Introduction sans aucun titre de section.\n\n" + words(1700)
     fixContent = writeContent
     const flat = withPhotos()

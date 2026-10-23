@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { PlanId, BillingPeriod } from './plans'
 import { canIssueInvoices, SUBSCRIPTION_REQUIRED, type SubscriptionStatus } from './access'
+import { isMissingSchema } from './test-users'
+import type { StripeMode } from './mode'
 
 export interface Subscription {
   id: string
@@ -16,6 +18,8 @@ export interface Subscription {
   status: SubscriptionStatus
   current_period_end: string | null
   canceled_at: string | null
+  /** false : abonnement du bac à sable Stripe (compte d'essai). Absent ou true : production. */
+  livemode?: boolean | null
   created_at: string
   updated_at: string
 }
@@ -84,8 +88,22 @@ export async function upsertSubscription(params: {
   status: Subscription['status']
   currentPeriodEnd: Date | null
   canceledAt?: Date | null
-}): Promise<void> {
+  /** Mode Stripe de l'abonnement ; production par défaut. */
+  mode?: StripeMode
+}): Promise<{ firstActivation: boolean }> {
   const supabase = createAdminClient()
+
+  // Première activation : aucune formule active avant cet appel (sert à n'envoyer
+  // l'email de confirmation qu'une fois). Une lecture en échec compte comme « non ».
+  let firstActivation = false
+  if (params.status === 'active') {
+    const { data: before, error: beforeError } = await supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', params.userId)
+      .maybeSingle()
+    firstActivation = !beforeError && before?.status !== 'active' && before?.status !== 'trialing' && before?.status !== 'past_due'
+  }
 
   const upsertData: Record<string, unknown> = {
     user_id: params.userId,
@@ -104,14 +122,25 @@ export async function upsertSubscription(params: {
     upsertData.canceled_at = params.canceledAt.toISOString()
   }
 
-  const { error } = await supabase
+  let { error } = await supabase
     .from('subscriptions')
-    .upsert(upsertData, { onConflict: 'user_id' })
+    .upsert({ ...upsertData, livemode: (params.mode ?? 'live') === 'live' }, { onConflict: 'user_id' })
+
+  // Colonne `livemode` pas encore créée (migration 20261019 non appliquée) : un
+  // abonnement de production s'enregistre comme avant. Un abonnement d'essai
+  // sans cette colonne ne serait pas reconnu comme tel : on refuse.
+  if (error && isMissingSchema(error)) {
+    if (params.mode === 'test') {
+      throw new Error("Migration 20261019_stripe_test_mode.sql à appliquer avant d'utiliser le mode essai")
+    }
+    ;({ error } = await supabase.from('subscriptions').upsert(upsertData, { onConflict: 'user_id' }))
+  }
 
   if (error) {
     console.error('[upsertSubscription] Erreur:', error)
     throw new Error(`Impossible de sauvegarder l'abonnement: ${error.message}`)
   }
+  return { firstActivation }
 }
 
 /**

@@ -14,6 +14,7 @@ import { createPortal } from "react-dom"
 import { Package, Search, Loader2, ChevronDown, X } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { cn } from "@/lib/utils"
+import { SheetGrip } from "@/components/ui/sheet-grip"
 
 export interface ProductSuggestion {
   id:            string
@@ -329,7 +330,7 @@ export function ProductCombobox({
         className="q-sheet fixed inset-x-0 bottom-0 z-[9999] overflow-hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <div className="q-sheet-grip" aria-hidden />
+        <SheetGrip onDismiss={handleClose} />
         <div className="flex items-start justify-between gap-3 px-4 pt-3">
           <div className="flex flex-col gap-0.5">
             <h2 className="q-display text-[22px] text-[var(--q-ink)]">Depuis le catalogue</h2>

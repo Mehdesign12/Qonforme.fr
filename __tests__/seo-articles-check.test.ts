@@ -6,6 +6,7 @@ import {
   isAllowedLink,
   manualPublishBlockers,
   normalizeContent,
+  separateBlocks,
   REDACTED,
   redactCompetitors,
   storedReviewIssues,
@@ -24,6 +25,21 @@ const words = (n: number) => Array.from({ length: n }, (_, i) => `mot${i}`).join
 const issue = (blocking: boolean): CheckIssue => ({ kind: "audit", label: blocking ? "Anciens seuils de franchise de TVA" : "Ancien nom des plateformes agréées (PDP)", blocking, fixable: true })
 
 describe("contrôle d'un article", () => {
+  it("liste collée sous une ligne en gras, puces « * » et titres collés : une ligne vide ajoutée, le texte inchangé", () => {
+    const glued = "Intro.\n**Tableau**\n- Dépose de l'ancien tableau\n- Fourniture d'un tableau\nSuite du texte.\n## Titre\nTexte du titre.\n* une puce\n+ autre puce\n1. étape\n2. étape"
+    const { content, autoFixes } = normalizeContent(glued, "Un titre d'article")
+    expect(content).toBe(
+      "Intro.\n**Tableau**\n\n- Dépose de l'ancien tableau\n- Fourniture d'un tableau\n\nSuite du texte.\n\n## Titre\n\nTexte du titre.\n\n- une puce\n- autre puce\n\n1. étape\n2. étape",
+    )
+    expect(autoFixes).toContain("Listes et titres séparés du texte par une ligne vide")
+  })
+
+  it("Markdown déjà propre, blocs de code et suites de puces indentées : rien n'est touché", () => {
+    const clean = "## Titre\n\nUn texte.\n\n- un\n  suite de la puce\n- deux\n\n```\n- pas une liste\n## pas un titre\n```\n\nFin."
+    expect(separateBlocks(clean)).toEqual({ text: clean, changed: false })
+    expect(normalizeContent(clean, "Autre titre").autoFixes).not.toContain("Listes et titres séparés du texte par une ligne vide")
+  })
+
   it("une photo du texte (syntaxe image) n'est pas un lien vers un site non officiel ; un vrai lien l'est toujours", () => {
     const photo = "![Un plombier au travail](https://proj.supabase.co/storage/v1/object/public/blog-covers/editor/ia/2026/10/plombier-abc.webp#w=1600&h=900)"
     const base = { title: "Un titre", metaDescription: null, slug: null, keywords: [], competitors: [], existing: [], lengthMin: 0, lengthMax: 0, faq: null }

@@ -4,7 +4,7 @@
  * douteux, périmé ou illisible vaut « pas de choix », donc « pas de traceur ».
  */
 import { describe, expect, it } from "vitest"
-import { CONSENT_MAX_AGE_MS, isTrackingPage, parseConsent, serializeConsent } from "@/lib/consent"
+import { CONSENT_ACCEPTED_MAX_AGE_MS, CONSENT_REFUSED_MAX_AGE_MS, isTrackingPage, parseConsent, serializeConsent } from "@/lib/consent"
 
 const NOW = Date.UTC(2026, 9, 18, 12, 0, 0)
 
@@ -37,18 +37,26 @@ describe("parseConsent", () => {
     }
   })
 
-  it("redemande après six mois, pas avant", () => {
+  it("un refus est redemandé après six mois, pas avant", () => {
+    const raw = serializeConsent("refused", NOW)
+    expect(parseConsent(raw, NOW + CONSENT_REFUSED_MAX_AGE_MS)).toBe("refused")
+    expect(parseConsent(raw, NOW + CONSENT_REFUSED_MAX_AGE_MS + 1)).toBeNull()
+  })
+
+  it("un accord n'est pas redemandé avant treize mois : le bandeau ne revient pas", () => {
     const raw = serializeConsent("accepted", NOW)
-    expect(parseConsent(raw, NOW + CONSENT_MAX_AGE_MS)).toBe("accepted")
-    expect(parseConsent(raw, NOW + CONSENT_MAX_AGE_MS + 1)).toBeNull()
+    expect(parseConsent(raw, NOW + CONSENT_REFUSED_MAX_AGE_MS + 86_400_000)).toBe("accepted")
+    expect(parseConsent(raw, NOW + CONSENT_ACCEPTED_MAX_AGE_MS)).toBe("accepted")
+    expect(parseConsent(raw, NOW + CONSENT_ACCEPTED_MAX_AGE_MS + 1)).toBeNull()
   })
 
   it("redemande quand la date enregistrée est dans le futur (horloge déréglée)", () => {
     expect(parseConsent(serializeConsent("accepted", NOW + 3_600_000), NOW)).toBeNull()
   })
 
-  it("la durée de validité est de six mois", () => {
-    expect(CONSENT_MAX_AGE_MS).toBe(182 * 24 * 3600 * 1000)
+  it("les durées de validité : six mois pour un refus, treize mois pour un accord", () => {
+    expect(CONSENT_REFUSED_MAX_AGE_MS).toBe(182 * 24 * 3600 * 1000)
+    expect(CONSENT_ACCEPTED_MAX_AGE_MS).toBe(395 * 24 * 3600 * 1000)
   })
 })
 

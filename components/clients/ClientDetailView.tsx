@@ -53,6 +53,7 @@ export function ClientDetailView({
   onSave,
   onArchive,
   onContact,
+  notes,
 }: {
   client: ClientRecord
   docs: ClientDoc[]
@@ -71,6 +72,8 @@ export function ClientDetailView({
   onArchive?: () => Promise<void> | void
   /** Remplace les liens « Appeler » et « Écrire » (démo : aucun appel réel). */
   onContact?: (kind: "call" | "write") => void
+  /** Panneau « À faire et notes » du client (fourni par la page : routes réelles ou démo). */
+  notes?: React.ReactNode
 }) {
   const router = useRouter()
   const [tab, setTab] = useState<DocTab>("all")
@@ -415,6 +418,8 @@ export function ClientDetailView({
           </section>
         )}
       </div>
+
+      {notes}
 
       <EditContactDialog
         open={editOpen}

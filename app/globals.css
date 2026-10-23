@@ -969,6 +969,13 @@ html[data-standalone="true"] [role="button"] {
     font-size: 16px; outline: none; transition: border-color .15s ease, box-shadow .15s ease;
   }
   @media (min-width: 768px) { .q-input { font-size: 15px; } }
+  /* Date et heure sur iOS : la largeur propre du champ natif dépassait son conteneur (défilement horizontal des fenêtres) */
+  input.q-input[type="date"], input.q-input[type="time"], input.q-input[type="datetime-local"], input.q-input[type="month"] {
+    -webkit-appearance: none; appearance: none; display: block; box-sizing: border-box;
+    min-width: 0; max-width: 100%; text-align: left; line-height: 40px;
+  }
+  input.q-input[type="date"]::-webkit-date-and-time-value, input.q-input[type="time"]::-webkit-date-and-time-value { min-width: 0; text-align: left; margin: 0; }
+  label:has(> input.q-input), label:has(> select.q-input) { min-width: 0; }
   textarea.q-input { height: auto; min-height: 88px; padding: 10px 12px; line-height: 1.5; resize: vertical; }
   .q-input::placeholder { color: var(--q-placeholder); }
   .q-input:focus, .q-input:focus-visible, .q-fw:focus-within { border-color: var(--q-accent); box-shadow: 0 0 0 4px var(--q-focus); }
@@ -1087,7 +1094,10 @@ html[data-standalone="true"] [role="button"] {
 
   /* Feuille du bas (mobile) */
   .q-sheet { background: var(--q-surface); border-radius: 24px 24px 0 0; box-shadow: 0 -10px 40px -12px rgba(10,17,34,.3); }
-  .q-sheet-grip { width: 40px; height: 5px; border-radius: 999px; background: var(--q-field); margin: 8px auto 0; }
+  /* La barre sert à tirer la feuille vers le bas (components/ui/sheet-grip.tsx) :
+     zone de toucher agrandie, et le doigt n'y fait pas défiler la page */
+  .q-sheet-grip { position: relative; width: 40px; height: 5px; border-radius: 999px; background: var(--q-field); margin: 8px auto 0; touch-action: none; }
+  .q-sheet-grip::before { content: ""; position: absolute; inset: -14px -48px; }
 
   /* Aperçu d'un document (feuille A4 sur fond grisé) */
   .q-paper-bed { background: var(--q-sunken); border: 1px solid var(--q-line); border-radius: 16px; padding: 24px; }

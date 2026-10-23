@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { safeNextPath } from "@/lib/stripe/access"
 import { AUTH_INPUT, AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
+import GoogleButton, { LastUsedBadge, OrDivider } from "@/components/auth/GoogleButton"
+import { readLastAuthMethod, rememberAuthMethod, type AuthMethod } from "@/lib/auth/last-used"
 
 export default function LoginForm() {
   const supabase = createClient()
@@ -13,6 +15,17 @@ export default function LoginForm() {
   const [password, setPassword] = useState("")
   const [errors, setErrors]     = useState<{ email?: string; password?: string }>({})
   const [loading, setLoading]   = useState(false)
+
+  // Méthode utilisée la dernière fois sur cet appareil (relue après l'hydratation)
+  const [lastMethod, setLastMethod] = useState<AuthMethod | null>(null)
+  useEffect(() => { setLastMethod(readLastAuthMethod()) }, [])
+
+  // Retour de Google sans session (refus, fenêtre fermée, échange en échec)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("error") === "oauth") {
+      toast.error("La connexion avec Google n'a pas abouti. Réessayez ou utilisez votre email.")
+    }
+  }, [])
 
   /* Validation */
   const validate = () => {
@@ -45,6 +58,7 @@ export default function LoginForm() {
         }
         return
       }
+      rememberAuthMethod("email")
       toast.success("Connexion réussie !")
       // Retour à la page qui a demandé la connexion (invitation d'un comptable…), chemin interne seulement
       window.location.href = safeNextPath(new URLSearchParams(window.location.search).get("next")) ?? '/dashboard'
@@ -56,7 +70,8 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-4" noValidate>
+    <div className="mt-8 flex flex-col gap-4">
+    <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
 
       <Field id="email" label="Adresse email" error={errors.email}>
         <input
@@ -90,10 +105,16 @@ export default function LoginForm() {
         />
       </Field>
 
-      <AuthSubmit loading={loading} loadingLabel="Connexion…" className="mt-1.5">
-        Se connecter
-      </AuthSubmit>
+      <div className="relative mt-1.5">
+        {lastMethod === "email" && <LastUsedBadge />}
+        <AuthSubmit loading={loading} loadingLabel="Connexion…">
+          Se connecter
+        </AuthSubmit>
+      </div>
 
     </form>
+    <OrDivider />
+    <GoogleButton lastUsed={lastMethod === "google"} />
+    </div>
   )
 }

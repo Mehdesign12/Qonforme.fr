@@ -11,17 +11,26 @@
  * - jamais de photo décorative sans rapport, ni d'image dans la FAQ ou la
  *   conclusion, que les lecteurs parcourent pour la réponse.
  *
- * Règles retenues :
- * - une photo par tranche de 400 mots (au moins une dès 600 mots), au plus le
- *   plafond des Préférences (4 par défaut, 6 au maximum) ;
- * - uniquement dans les sections « H2 » de développement : ni l'introduction
- *   (la couverture est juste au-dessus), ni la FAQ, ni la conclusion, ni les
- *   sources, ni une section qui a déjà une image ;
- * - répartie sur l'article (une section sur deux ou trois), la toute première
- *   section restant libre quand il y a assez de place ;
- * - juste APRÈS le premier paragraphe de la section : le lecteur lit d'abord
- *   le titre et son idée, puis l'image qui l'illustre ; jamais entre le titre
- *   et son texte, jamais au milieu d'une liste ou d'un tableau.
+ * Règles retenues (révisées le 20/10/2026 : l'ancienne règle « un paragraphe
+ * d'introduction sous chaque titre H2 » écartait presque tous les articles,
+ * dont les sections « H2 » commencent par des « H3 », et ne laissait qu'une
+ * photo) :
+ * - 3 photos dès 1 125 mots, 4 dès 1 575 mots (une par tranche de 450 mots, au
+ *   moins 2), au plus le plafond des Préférences (4 par défaut, 6 au maximum) ;
+ *   aucune sous 600 mots ;
+ * - uniquement dans le développement : ni l'introduction (la couverture est
+ *   juste au-dessus), ni la FAQ, ni la conclusion, ni les sources ;
+ * - réparties à intervalles réguliers sur ce développement (à 1/5, 2/5, 3/5 et
+ *   4/5 du texte pour quatre photos), jamais deux à moins de 250 mots l'une de
+ *   l'autre ni de 150 mots d'une image déjà là ;
+ * - jamais collées aux extrémités du développement : au moins 150 mots de texte
+ *   avant la première photo (la couverture est juste au-dessus) et 120 mots
+ *   après la dernière, avant la FAQ ou la conclusion ;
+ * - toujours APRÈS un paragraphe de texte, de préférence le premier d'une
+ *   sous-partie (titre « H2 » ou « H3 ») : le lecteur lit d'abord le titre et
+ *   son idée, puis l'image qui l'illustre ; jamais entre un titre et son texte,
+ *   jamais après une phrase qui annonce une liste (« … : »), jamais au milieu
+ *   d'une liste ou d'un tableau.
  *
  * Module pur : planification (serveur) et tests. Le texte est du Markdown du
  * blog ; les blocs de code sont ignorés.
@@ -30,20 +39,29 @@ import type { PassageContext } from "@/lib/blog-images/passage"
 import { PASSAGE_CONTEXT_MAX } from "@/lib/blog-images/passage"
 import { foldPlain } from "@/lib/seo/links/text"
 
-/** Une photo par tranche de ce nombre de mots. */
-export const WORDS_PER_IMAGE = 400
+/** Une photo par tranche de ce nombre de mots (au moins deux dès 600 mots) : 3 dès 1 125 mots, 4 dès 1 575. */
+export const WORDS_PER_IMAGE = 450
 /** Plafond des Préférences. */
 export const MAX_INLINE_IMAGES = 6
 /** Longueur minimale d'un paragraphe pour porter une photo (mots). */
 const MIN_PARAGRAPH_WORDS = 18
 /** Longueur minimale d'un article pour recevoir une photo (mots). */
 const MIN_ARTICLE_WORDS = 600
+/** Écart minimal entre deux photos, et avec une image déjà dans le texte (mots). */
+const MIN_GAP_WORDS = 250
+const MIN_GAP_EXISTING_WORDS = 150
+/** Surcoût (mots) d'un paragraphe qui n'est pas le premier d'une sous-partie. */
+const NOT_FIRST_PENALTY = 90
+/** Texte qui doit rester après une photo, dans le développement (mots) : jamais de photo tout en bas, collée à la FAQ. */
+const MIN_TAIL_WORDS = 120
+/** Texte qui précède la première photo, dans le développement (mots) : la couverture est déjà juste au-dessus. */
+const MIN_HEAD_WORDS = 150
 
 /** Nombre de photos du texte pour un article de `words` mots, sous le plafond `cap` (0 : aucune). */
 export function inlineImageCount(words: number, cap: number): number {
   const limit = Math.max(0, Math.min(MAX_INLINE_IMAGES, Math.floor(cap)))
   if (limit === 0 || words < MIN_ARTICLE_WORDS) return 0
-  return Math.max(1, Math.min(limit, Math.round(words / WORDS_PER_IMAGE)))
+  return Math.min(limit, Math.max(2, Math.round(words / WORDS_PER_IMAGE)))
 }
 
 /* ------------------------------------------------------------------ */
@@ -140,99 +158,132 @@ export function plainBlockText(text: string): string {
 const words = (text: string) => (text.trim() ? text.trim().split(/\s+/).length : 0)
 
 /* ------------------------------------------------------------------ */
-/* Sections                                                            */
+/* Plan                                                                */
 /* ------------------------------------------------------------------ */
-
-interface Section {
-  /** Rang du titre parmi les « ## » de l'article. */
-  h2Index: number
-  heading: string
-  blocks: Block[]
-}
-
-function sectionsOf(markdown: string): Section[] {
-  const sections: Section[] = []
-  let current: Section | null = null
-  let h2 = 0
-  for (const block of parseBlocks(markdown)) {
-    if (block.kind === "heading" && block.level === 2) {
-      current = { h2Index: h2++, heading: plainBlockText(block.text), blocks: [] }
-      sections.push(current)
-    } else if (block.kind === "heading" && block.level === 1) {
-      current = null
-    } else if (current) {
-      current.blocks.push(block)
-    }
-  }
-  return sections
-}
 
 /** Sections qui ne reçoivent jamais de photo : FAQ, conclusion, sources, à lire aussi. */
 const NO_IMAGE_HEADING =
   /\b(faq|foire aux questions|questions? (frequentes?|courantes?)|conclusion|pour conclure|en resume|en bref|a retenir|l.?essentiel|pour aller plus loin|a lire aussi|sources?|ressources?|liens utiles)\b/
 
-/** Premier paragraphe de la section qui peut porter la photo (assez long, avant tout autre contenu non textuel hors liste d'introduction). */
-function hostParagraph(section: Section): Block | null {
-  for (const block of section.blocks) {
-    if (block.kind === "image") return null
-    if (block.kind === "paragraph" && words(plainBlockText(block.text)) >= MIN_PARAGRAPH_WORDS) return block
-    // Un sous-titre avant tout paragraphe : la section commence par une sous-section, pas de photo ici
-    if (block.kind === "heading") return null
-  }
-  return null
-}
-
-function hasImage(section: Section): boolean {
-  return section.blocks.some((b) => b.kind === "image")
-}
-
-function eligible(section: Section): Block | null {
-  if (NO_IMAGE_HEADING.test(foldPlain(section.heading))) return null
-  if (hasImage(section)) return null
-  return hostParagraph(section)
-}
-
-/* ------------------------------------------------------------------ */
-/* Plan                                                                */
-/* ------------------------------------------------------------------ */
-
 export interface ImageSlot {
-  /** Rang du titre « ## » de la section : repère stable tant que les titres ne changent pas. */
-  h2Index: number
+  /** Rang du titre (« ## » ou « ### ») qui précède le paragraphe, parmi les titres de l'article. */
+  headingIndex: number
+  /** Rang du paragraphe parmi ceux qui suivent ce titre, avant le titre suivant. */
+  paragraphIndex: number
   heading: string
-  /** Passage que la photo illustre : le premier paragraphe de la section. */
+  /** Passage que la photo illustre : le paragraphe qui la précède. */
   passage: PassageContext
 }
 
-/** Sections choisies pour `count` photos, réparties sur l'article. */
-export function planImageSlots(markdown: string, count: number): ImageSlot[] {
-  if (count <= 0) return []
-  const sections = sectionsOf(markdown)
-  let candidates = sections.map((section) => ({ section, host: eligible(section) })).filter((c): c is { section: Section; host: Block } => c.host !== null)
-  // La couverture est juste au-dessus de la première section : elle reste libre quand il y a assez de place
-  if (candidates.length > count) candidates = candidates.slice(1)
-  const n = candidates.length
-  const k = Math.min(count, n)
-  if (k === 0) return []
-  const picked: typeof candidates = []
-  for (let i = 0; i < k; i++) picked.push(candidates[Math.floor(((i + 0.5) * n) / k)])
+interface Candidate {
+  headingIndex: number
+  paragraphIndex: number
+  heading: string
+  /** Premier paragraphe sous son titre. */
+  first: boolean
+  /** Mots du texte avant la fin du paragraphe (position de la photo). */
+  end: number
+  block: Block
+  blockIndex: number
+}
 
-  return picked.map(({ section, host }) => {
-    const index = section.blocks.indexOf(host)
-    const after = section.blocks
-      .slice(index + 1)
+/** Lecture des blocs : candidats (paragraphes du développement) et position des images déjà là. */
+function scan(blocks: Block[]): { candidates: Candidate[]; existing: number[]; total: number } {
+  const candidates: Candidate[] = []
+  const existing: number[] = []
+  let cum = 0
+  let headingIndex = -1
+  let heading = ""
+  let paragraphIndex = 0
+  let excluded = false
+  let h2Seen = false
+  let sinceHeading = 0
+  blocks.forEach((block, blockIndex) => {
+    if (block.kind === "heading") {
+      if (block.level === 1) return
+      headingIndex++
+      heading = plainBlockText(block.text)
+      paragraphIndex = 0
+      sinceHeading = 0
+      if (block.level === 2) {
+        h2Seen = true
+        excluded = NO_IMAGE_HEADING.test(foldPlain(heading))
+      } else if (NO_IMAGE_HEADING.test(foldPlain(heading))) {
+        excluded = true
+      }
+      return
+    }
+    if (block.kind === "image") {
+      existing.push(cum)
+      sinceHeading++
+      return
+    }
+    if (block.kind === "code") return
+    const text = plainBlockText(block.text)
+    const count = words(text)
+    cum += count
+    if (block.kind === "paragraph") {
+      const index = paragraphIndex++
+      // Le développement seulement : après le premier titre « ## », hors FAQ, conclusion et sources
+      if (h2Seen && !excluded && headingIndex >= 0 && count >= MIN_PARAGRAPH_WORDS && !/[:：]\s*$/.test(text)) {
+        candidates.push({ headingIndex, paragraphIndex: index, heading, first: sinceHeading === 0, end: cum, block, blockIndex })
+      }
+    }
+    sinceHeading++
+  })
+  return { candidates, existing, total: cum }
+}
+
+/**
+ * Places de `count` photos : à intervalles réguliers sur le développement,
+ * chacune après un paragraphe (de préférence le premier d'une sous-partie),
+ * à 250 mots au moins de la précédente. Moins de photos que demandé si le
+ * texte n'offre pas assez de places espacées.
+ */
+export function planImageSlots(markdown: string, count: number): ImageSlot[] {
+  const blocks = parseBlocks(markdown)
+  const { candidates, existing } = scan(blocks)
+  const wanted = Math.max(0, count - existing.length)
+  if (wanted === 0 || candidates.length === 0) return []
+
+  const start = candidates[0].end - words(plainBlockText(candidates[0].block.text))
+  const finish = candidates[candidates.length - 1].end
+  const span = finish - start
+  const chosen: Candidate[] = []
+  const free = (c: Candidate) =>
+    c.end - start >= MIN_HEAD_WORDS &&
+    finish - c.end >= MIN_TAIL_WORDS &&
+    chosen.every((o) => Math.abs(o.end - c.end) >= MIN_GAP_WORDS) &&
+    existing.every((e) => Math.abs(e - c.end) >= MIN_GAP_EXISTING_WORDS)
+  for (let i = 0; i < wanted; i++) {
+    const target = start + ((i + 1) * span) / (wanted + 1)
+    const best = candidates
+      .filter((c) => !chosen.includes(c) && free(c))
+      .map((c) => ({ c, cost: Math.abs(c.end - target) + (c.first ? 0 : NOT_FIRST_PENALTY) }))
+      .sort((a, b) => a.cost - b.cost)[0]
+    if (best) chosen.push(best.c)
+  }
+  chosen.sort((a, b) => a.end - b.end)
+
+  return chosen.map((c) => {
+    const after = blocks
+      .slice(c.blockIndex + 1)
       .filter((b) => b.kind !== "image" && b.kind !== "code")
       .map((b) => plainBlockText(b.text))
       .join(" ")
-    const sectionIndex = sections.indexOf(section)
-    const previous = sectionIndex > 0 ? sections[sectionIndex - 1] : null
-    const before = previous ? plainBlockText(previous.blocks.filter((b) => b.kind === "paragraph").slice(-1)[0]?.text ?? "") : ""
+    const before = blocks
+      .slice(0, c.blockIndex)
+      .filter((b) => b.kind === "paragraph")
+      .slice(-1)
+      .map((b) => plainBlockText(b.text))
+      .join(" ")
     return {
-      h2Index: section.h2Index,
-      heading: section.heading,
+      headingIndex: c.headingIndex,
+      paragraphIndex: c.paragraphIndex,
+      heading: c.heading,
       passage: {
-        text: plainBlockText(host.text),
-        heading: section.heading,
+        text: plainBlockText(c.block.text),
+        heading: c.heading,
         before: before.slice(-PASSAGE_CONTEXT_MAX),
         after: after.slice(0, PASSAGE_CONTEXT_MAX),
         selected: false,
@@ -252,16 +303,36 @@ export function imageMarkdown(alt: string, url: string): string {
 }
 
 /**
- * Insère l'image juste après le premier paragraphe de la section du titre
- * `slot.h2Index` (le titre doit toujours porter le même texte) ; null si la
- * section a disparu, a déjà une image ou n'a plus de paragraphe qui convienne.
+ * Insère l'image juste après le paragraphe du créneau (titre de rang
+ * `headingIndex`, paragraphe de rang `paragraphIndex`) ; le titre doit toujours
+ * porter le même texte. null si le titre ou le paragraphe a disparu, ou si une
+ * image suit déjà ce paragraphe. Insérer une image ne change ni les titres ni
+ * les paragraphes : les créneaux restent valables après chaque insertion.
  */
-export function insertImageAfterParagraph(markdown: string, slot: Pick<ImageSlot, "h2Index" | "heading">, image: string): string | null {
-  const section = sectionsOf(markdown).find((s) => s.h2Index === slot.h2Index)
-  if (!section || section.heading !== slot.heading) return null
-  if (hasImage(section)) return null
-  const host = hostParagraph(section)
+export function insertImageAfterParagraph(markdown: string, slot: Pick<ImageSlot, "headingIndex" | "paragraphIndex" | "heading">, image: string): string | null {
+  const blocks = parseBlocks(markdown)
+  let headingIndex = -1
+  let paragraphIndex = 0
+  let host: Block | null = null
+  let hostIndex = -1
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i]
+    if (block.kind === "heading") {
+      if (block.level === 1) continue
+      headingIndex++
+      paragraphIndex = 0
+      if (headingIndex === slot.headingIndex && plainBlockText(block.text) !== slot.heading) return null
+      continue
+    }
+    if (headingIndex !== slot.headingIndex || block.kind !== "paragraph") continue
+    if (paragraphIndex++ === slot.paragraphIndex) {
+      host = block
+      hostIndex = i
+      break
+    }
+  }
   if (!host) return null
+  if (blocks[hostIndex + 1]?.kind === "image") return null
   return `${markdown.slice(0, host.end)}\n\n${image}${markdown.slice(host.end)}`
 }
 

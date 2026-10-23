@@ -8,7 +8,7 @@ import { D_SECTION, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
 import { CtaButtons, SectionTitle } from "@/components/landing/ui"
 import { TRADE_CATALOGUES } from "@/lib/catalogue/trades"
 import { GUARANTEE_DAYS } from "@/lib/stripe/access"
-import { PLANS } from "@/lib/stripe/plans"
+import { PLANS, TAX_SUFFIX } from "@/lib/stripe/plans"
 import { cn } from "@/lib/utils"
 
 /**
@@ -80,7 +80,7 @@ const TRADE_COUNT = Object.keys(TRADE_CATALOGUES).filter((k) => k !== "autre").l
 
 const OFFER_FACTS = [
   { icon: FileText, value: 0, unit: "€", label: "pour vos devis, sans limite" },
-  { icon: ReceiptText, value: essentiel.monthlyPrice, unit: `€${NB}HT`, label: `par mois pour facturer (${essentiel.name})` },
+  { icon: ReceiptText, value: essentiel.monthlyPrice, unit: TAX_SUFFIX ? `€${NB}HT` : "€", label: `par mois pour facturer (${essentiel.name})` },
   { icon: RotateCcw, value: GUARANTEE_DAYS, unit: "jours", label: "satisfait ou remboursé" },
   { icon: PencilRuler, value: TRADE_COUNT, unit: "métiers", label: "avec leurs prestations prêtes à importer" },
 ]

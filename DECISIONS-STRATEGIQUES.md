@@ -476,7 +476,7 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 ### Décisions
 
 1. **Pas de Stripe Connect.** Qonforme n'encaisse pas pour le compte des artisans. Leurs clients les paient par virement sur leur propre IBAN. Le lien de paiement mène à une page de règlement : IBAN, BIC, montant, référence à copier, bouton « J'ai effectué le virement » qui prévient l'artisan. Pas de carte ni de prélèvement côté client, pas de frais de transaction.
-2. **Pas d'app native.** L'app iOS (Capacitor) est retirée du code. Le mobile passe par le site responsive, installable sur l'écran d'accueil (PWA). Raison : un abonnement vendu à un artisan seul relève de l'achat intégré d'Apple (règle 3.1.3(c)) ; l'autre voie (3.1.3(f)) interdit tout prix, bouton ou lien d'achat dans l'app, donc le mur de paiement à la première facture.
+2. **Pas d'app native.** *(Rouvert le 19/10/2026 : voir § 15.)* L'app iOS (Capacitor) est retirée du code. Le mobile passe par le site responsive, installable sur l'écran d'accueil (PWA). Raison : un abonnement vendu à un artisan seul relève de l'achat intégré d'Apple (règle 3.1.3(c)) ; l'autre voie (3.1.3(f)) interdit tout prix, bouton ou lien d'achat dans l'app, donc le mur de paiement à la première facture.
 3. **Grille appliquée à tous.** Aucun abonné payant à reprendre : pas d'ancien tarif à maintenir.
    - Essentiel : 12 € HT par mois, ou 120 € HT par an (10 € par mois).
    - Artisan : 24 € HT par mois, ou 240 € HT par an (20 € par mois). **Affiché « bientôt » et non vendu** tant que situations, retenue de garantie et autoliquidation n'existent pas : on ne vend pas ce qui n'existe pas (§ 2).
@@ -487,7 +487,7 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 - **Comptes gratuits :** pas de client Stripe ni d'abonnement tant que l'artisan n'émet pas de facture.
 - **Mur de paiement côté serveur, à l'émission :** envoi d'une facture, passage hors brouillon, relance. Le brouillon reste gratuit ; son PDF porte le filigrane « BROUILLON » et n'embarque pas de Factur-X, pour qu'il ne circule pas comme une vraie facture.
 - **Après paiement,** retour sur la facture qui attendait, prête à partir.
-- **Moyens de paiement :** carte et prélèvement SEPA. Le prélèvement est confirmé en quelques jours ; l'accès est ouvert dès la fin du paiement et retiré si le prélèvement est rejeté.
+- **Moyens de paiement :** carte bancaire seulement depuis le 20/10/2026 (§ 14.7) ; le prélèvement SEPA, prévu à l'origine, est abandonné. Si un jour il est rouvert, il est confirmé en quelques jours ; l'accès est ouvert dès la fin du paiement et retiré si le prélèvement est rejeté.
 - **TVA :** prix hors taxes, TVA 20 % ajoutée par un taux Stripe. Sans ce taux configuré, le paiement est refusé plutôt que vendu sans TVA. **À confirmer :** que Qonforme SAS facture bien la TVA (n'est pas en franchise).
 - **Factures d'abonnement :** nom, adresse et SIREN de l'entreprise de l'artisan. Elles restent émises par Stripe pour l'instant. Avant septembre 2027, Qonforme devra émettre ses propres factures électroniques via la plateforme agréée.
 - **Garantie 30 jours en libre-service :** depuis Paramètres › Abonnement, sans contact humain. Remboursement par avoir Stripe, arrêt immédiat, une fois par compte.
@@ -501,7 +501,7 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 1. Créer les deux prix Essentiel (12 € HT par mois et 120 € HT par an), récurrents, en tarification hors taxes.
 2. Créer le taux de TVA 20 % France, exclusif.
 3. Renseigner `STRIPE_PRICE_ESSENTIEL_MONTHLY`, `STRIPE_PRICE_ESSENTIEL_YEARLY` et `STRIPE_TAX_RATE_ID` dans Vercel.
-4. Activer le prélèvement SEPA dans le tableau de bord Stripe.
+4. ~~Activer le prélèvement SEPA dans le tableau de bord Stripe.~~ Abandonné le 20/10/2026 (§ 14.7).
 5. Ajouter au webhook les événements `checkout.session.async_payment_succeeded` et `checkout.session.async_payment_failed`.
 6. Configurer le portail client : nouveaux prix, résiliation en fin de période.
 7. Appliquer la migration `20261002_subscriptions_server_write_only.sql`. Elle ferme la faille : un utilisateur pouvait s'écrire lui-même un abonnement actif.
@@ -555,3 +555,80 @@ Ils disent le contraire du logotype tant qu'ils ne sont pas relus avec ce que co
 - application : `components/reception/PlatformNotice.tsx`, `components/settings/{EInvoicingView,SettingsOverview}.tsx`, `components/layout/Sidebar.tsx`, `components/dashboard/ReformCard.tsx` ;
 - pages publiques : FAQ de `app/pricing/page.tsx`, `app/outils/{generateur-facture-gratuite,verificateur-conformite-facture}/page.tsx`, `lib/pseo/guides.ts` (guide auto-entrepreneur), `lib/pseo/metiers.ts` (plombier, peintre) ;
 - générateurs d'articles : `lib/ai/gemini.ts` et `lib/seo/articles/prompt.ts` (consigne « ne jamais écrire que Qonforme transmet les factures électroniques »), `lib/ai/reference-facts.ts` (faits de référence à relire) ; la vérification des articles (`lib/blog-audit.ts`) refuse « ni certifié ni homologué » : cela reste vrai pour « certifié », à ne pas assouplir.
+
+---
+
+## 14. Nouvelle grille, société américaine et TVA reportée (décidé le 19/10/2026)
+
+Remplace la grille du § 12 (12 € et 24 € HT). Décisions du fondateur, dans l'ordre où elles ont été prises.
+
+### Prix
+
+| | Mensuel | Annuel |
+|---|---|---|
+| Essentiel | 24 € | 240 € (20 € par mois) |
+| Artisan | 34 € | 340 € (28,33 € par mois) |
+
+Le prix affiché est le prix payé par le client. Une première version du canevas affichait 25 € et 34 € TTC (session « Révision modifications et incohérences », 14-16/10) : elle est abandonnée au profit de 24 € et 34 €, sans TVA ajoutée tant que § 14.3 n'est pas levé. Définis à un seul endroit : `lib/stripe/plans.ts`.
+
+### 14.1 Qui vend
+
+Les abonnements sont vendus par **Diez Agency LLC** (société du Wyoming, États-Unis) ; « Qonforme » est une marque, il n'existe pas de « Qonforme SAS ». Le compte Stripe est au nom de la LLC. **Corrigé le 19/10/2026** : les mentions légales, les CGU, la politique de confidentialité, le pied de page, la page 404 et les données structurées nomment Diez Agency LLC (éditeur, responsable du traitement, propriétaire des contenus), sous la marque Qonforme, à partir d'une seule fiche, `lib/legal/publisher.ts`. **Reste à fournir par le fondateur** : l'adresse du siège de la LLC et le nom du directeur de la publication (loi n° 2004-575, art. 6, III) : à renseigner dans cette fiche, ils apparaissent alors dans les mentions légales (rien ne s'affiche tant qu'ils sont vides). La politique de confidentialité dit désormais que le responsable du traitement est lui-même établi aux États-Unis ; les garanties du transfert vers la LLC et le représentant dans l'Union (RGPD art. 27) restent à valider avec l'expert-comptable ou un juriste.
+
+### 14.2 Mode essai Stripe : des comptes d'essai, pas d'interrupteur général
+
+Un bac à sable Stripe (« Qonforme essai ») a ses propres clés, produits, prix et webhook. Variante retenue : **des comptes d'essai** cochés dans Admin › Paiements paient dans le bac à sable ; tous les autres restent en production en permanence. Un interrupteur général aurait coupé la vente à de vrais clients par un seul clic.
+
+- Variables : celles de la production, et les mêmes noms suffixés par `_TEST` (clé secrète, clé publique, clé du webhook, 4 prix). Jamais enregistrées en base ni affichées ; l'écran admin ne montre que leur présence.
+- Tables : `stripe_test_users` (comptes d'essai, serveur seulement) et `subscriptions.livemode` (faux pour un abonnement d'essai), migration `20261019_stripe_test_mode.sql`. Sans elle, tout le monde est en production comme avant.
+- Sûreté : en cas de doute sur le mode d'un compte, le paiement est refusé (503), jamais deviné ; un abonnement d'essai n'ouvre pas « déjà abonné » à un compte revenu en production ; retirer un compte d'essai efface son abonnement d'essai ; « Supprimer les abonnements d'essai » nettoie avant l'ouverture.
+- Un seul webhook (`/api/webhooks/stripe`, **sans `www`**) reçoit les deux modes : la clé de signature qui correspond donne le mode, et un message dont le mode contredit sa signature est refusé.
+
+### 14.3 TVA reportée, sous la responsabilité du fondateur
+
+La LLC n'est pas inscrite à la TVA et Stripe Tax n'est pas activé. Décision du fondateur, **vente ouverte quand même, sans TVA ajoutée**, son expert-comptable devant trouver une solution plus tard ; il assume la responsabilité de ce choix. Risque exposé avant la décision : une prestation de logiciel fournie à un client en France par une société hors Union européenne est taxable en France (autoliquidation par le client assujetti avec numéro de TVA ; TVA française due par le fournisseur pour les autres clients, via le guichet unique pour les sociétés hors Union ou une immatriculation en France) ; la TVA non collectée ne peut plus être refacturée au client et peut rester à la charge de la LLC, avec d'éventuelles pénalités.
+
+Mise en œuvre : `VAT_COLLECTED = false` dans `lib/stripe/plans.ts`. Tant qu'il vaut false : aucun taux de TVA ajouté, aucune mention HT ou TTC (page Tarifs, paiement, abonnement, emails, CGU, données structurées), l'abonnement est facturé au prix affiché. Une fois la LLC inscrite : activer Stripe Tax, passer le réglage à `true` (prix hors taxes, TVA calculée par Stripe, numéro de TVA des entreprises demandé au paiement, 0 % si valide), relire l'article 4 des CGU et ce paragraphe. **L'ancien taux fixe `STRIPE_TAX_RATE_ID` n'est plus utilisé.**
+
+### 14.4 À faire avant d'ouvrir la vente en production
+
+1. Créer en mode production les 2 produits et les 4 prix de la grille ci-dessus, puis renseigner `STRIPE_PRICE_ESSENTIEL_{MONTHLY,YEARLY}` et `STRIPE_PRICE_ARTISAN_{MONTHLY,YEARLY}` dans Vercel (Artisan se met en vente dès que ses deux prix existent ; valeur lue au build : redéployer).
+2. Corriger le webhook de production : adresse `https://qonforme.fr/api/webhooks/stripe` (celle en `www` reçoit une redirection que Stripe ne suit pas), les 7 événements du code (`.env.example`), puis recopier sa clé dans `STRIPE_WEBHOOK_SECRET`.
+3. Régler le portail client en production (changement de formule entre les deux produits, résiliation à la fin de la période).
+4. Appliquer `20261019_stripe_test_mode.sql`, puis « Supprimer les abonnements d'essai » dans Admin › Paiements.
+5. Mentions légales, CGU et confidentialité : le nom de l'éditeur est corrigé (§ 14.1) ; **reste l'adresse du siège de la LLC et le nom du directeur de la publication** à renseigner dans `lib/legal/publisher.ts`.
+6. Représentant dans l'Union européenne pour le RGPD, et vérification que le label « Solution compatible » (§ 13) a été obtenu au nom de la LLC.
+7. **Réglages Stripe à refaire en production** (le bac à sable et la production ont chacun les leurs ; rappel demandé par le fondateur le 19/10/2026) :
+   - **Nom public du compte** (Settings › Business › Public details) : il s'affiche dans le texte légal du formulaire de paiement (« vous autorisez … à vous débiter »), dans le portail client et sur les factures d'abonnement ; dans le bac à sable il vaut « Qonforme essai ». À régler, avec l'adresse et le numéro d'identification de la LLC pour les factures (Settings › Billing › Invoice template).
+   - **Link désactivé** (Settings › Payment methods › Link) : sinon Stripe coche « Enregistrer mes informations avec Link » et exige un numéro de téléphone, ce qui peut bloquer un client. Vérifié dans le bac à sable : plus de bouton ni de case Link.
+   - **Portail client** : motif de résiliation (la liste est en français, mais son libellé « Reason » reste en anglais ; à désactiver ou à garder).
+
+### 14.5 Tests du 19/10/2026 sur le site en ligne (bac à sable, compte d'essai)
+
+Compte créé par la session (`claude-test-stripe-20261019@example.com`, à supprimer de l'admin) et ajouté aux comptes d'essai. Vérifiés avec un navigateur : page Tarifs (24 €, 34 €, aucun HT/TTC), paiement en production fermé pour un compte ordinaire (500 « momentanément indisponible »), paiement de 24 € par carte d'essai (activation, facture, moyen de paiement), webhook en 200 (`checkout.session.completed`, `invoice.paid`), passage Essentiel → Artisan par le portail (10,00 € au prorata, puis 34 €/mois), résiliation programmée, garantie de 30 jours (34 € remboursés, retour en version gratuite), formulaire sans Link. Non testés : prélèvement SEPA (réussi et refusé), année complète, TVA (Stripe Tax non activé), mode production.
+
+### 14.6 Tests sur téléphone du 19/10/2026 (iPhone 14, 390 × 844, site en ligne, bac à sable)
+
+Compte `claude-test-mobile-20261019@example.com` (à supprimer de l'admin), ajouté aux comptes d'essai ; captures à chaque étape. Parcours refait comme sur ordinateur : inscription en deux champs, fenêtre « Bienvenue » (entreprise saisie à la main), création d'un client particulier, facture de 1 200 € HT, « Envoyer » → fenêtre « Votre facture est prête » (formule mensuelle choisie) → paiement Essentiel 24 € par carte d'essai (aucune case Link, mode essai signalé par Stripe) → retour sur la facture avec la fenêtre d'envoi ouverte → facture émise → page Abonnement (« Essentiel · Active · prochain paiement le 19 novembre 2026 ») → « Passer à Artisan » par le portail (10,00 € au prorata, puis 34 €/mois) → résiliation programmée (motif, récapitulatif, « Votre service prendra fin le 19 novembre 2026 ») → garantie de 30 jours (34 € remboursés, retour en version gratuite, historique « Remboursée » sur les deux factures) → nouvel abonnement Essentiel après le remboursement (accepté). Aucun défilement horizontal, aucun blocage.
+
+Défauts trouvés et corrigés : l'invite « Installer Qonforme » cachait le bouton d'enregistrement d'un formulaire (désactivée sur tout le site) ; le sous-titre « SIREN » restait sur la fiche d'un particulier ; le bouton « Confirmer le remboursement » apparaissait sous la barre de navigation flottante (l'encadré se centre maintenant à l'écran à son ouverture).
+
+À savoir : l'email d'envoi de la facture a échoué pendant le test (« La facture est émise, mais l'email n'est pas parti ») parce que le service d'envoi (Resend) refuse les adresses en `example.com` : `Invalid to field. Please use our testing email address instead of domains like example.com`. Ce n'est pas un défaut en production (la facture reste émise et l'action « Renvoyer par email » existe), mais un test d'envoi doit viser une vraie adresse. Non testés : prélèvement SEPA (réussi et refusé), renouvellement, page Admin › Paiements sur téléphone, mode production.
+
+### 14.7 Ouverture de la vente en production (20/10/2026) : carte bancaire seulement
+
+**Constat dans Vercel** (lecture des noms de variables, jamais des valeurs) : la production avait ses trois clés (secrète, publique, webhook) mais **aucun des 4 prix** (`STRIPE_PRICE_ESSENTIEL_*`, `STRIPE_PRICE_ARTISAN_*`) : le paiement d'un compte ordinaire répondait « momentanément indisponible ». Le webhook de production pointait sur l'adresse en `www` (redirection 308 que Stripe ne suit pas ; aucun événement livré) et n'écoutait que 5 événements sur 7 : corrigé par le fondateur (adresse sans `www`, plus `checkout.session.async_payment_succeeded` et `checkout.session.async_payment_failed`). Les 4 prix de production existent dans Stripe (Qonforme Essentiel 24 €/mois et 240 €/an, Qonforme Artisan 34 €/mois et 340 €/an).
+
+**Décision du fondateur : pas de prélèvement SEPA.** Pour l'activer, Stripe demande des vérifications d'identité supplémentaires sur le compte de la LLC ; le fondateur préfère ne pas les faire. L'abonnement se paie donc **par carte bancaire seulement**, dans les deux modes (même écran en essai et en production). Mise en œuvre : `SEPA_DEBIT_ENABLED = false` dans `lib/stripe/plans.ts`, qui fixe `SUBSCRIPTION_PAYMENT_METHODS` (liste du Checkout) et `PAYMENT_METHODS_TEXT` (page Tarifs, FAQ, paiement, CGU article 4.2). Ne jamais écrire « SEPA » en dur dans un texte d'abonnement. Pour rouvrir le prélèvement un jour : activer « SEPA Direct Debit » dans Stripe (production et bac à sable), passer le réglage à `true`, tester un prélèvement. Les écouteurs des événements `async_payment_*` et l'affichage d'un prélèvement dans Paramètres › Abonnement restent en place (sans effet tant qu'aucun prélèvement n'existe). Les virements SEPA des clients de l'artisan (page de règlement, QR code) n'ont aucun rapport : ils n'ont pas changé.
+
+**Reste avant d'ouvrir** : désactiver Link, nom public « Qonforme » et libellé de relevé `QONFORME`, image de marque, portail client de production (§ 14.4), puis ajouter les 4 prix dans Vercel et redéployer (valeur d'Artisan lue au build), paiement réel de 24 € et remboursement par la garantie. Le projet Vercel est au plan Hobby, réservé à un usage non commercial : passer au plan Pro avant d'encaisser des abonnements.
+
+## 15. Application mobile native rouverte, sans achat dans l'app (orientation du 19/10/2026)
+
+Remplace le point 2 du § 12 (« Pas d'app native »). Décision du fondateur, prise en réponse à la question « App Mobile » : **rouvrir l'app native, sur iOS et Android, sans aucun achat dans l'app**. Le plan, ses risques et les décisions qui restent ouvertes (D1 à D7) sont dans `PLAN-APP-MOBILE-2026-10.md`. **Aucun code natif n'est écrit tant que ce plan n'est pas validé.**
+
+- **Voie retenue** : application gratuite, compagnon d'un outil payant en ligne (règle 3.1.3(f) d'Apple). Aucun prix, bouton, lien ni appel à l'action vers un achat, dans l'app comme vers l'extérieur ; l'abonnement se prend sur le site, par Stripe (§ 12 et § 14 inchangés).
+- **Conséquence produit** : un compte sans formule fait dans l'app tout ce qui est gratuit sur le site (devis, clients, catalogue, brouillons, consultation) ; à l'émission, l'app affiche un message sans prix ni lien au lieu de `PaywallDialog`. Le serveur continue de refuser (402).
+- **Prérequis hors code** : comptes développeur Apple et Google au nom de Diez Agency LLC, adresse du siège de la LLC (§ 14.1), coordonnées de professionnel pour la fiche UE.
+- **Manque constaté dans le code** : aucune suppression de compte par l'utilisateur (exigée par Apple, et par le RGPD) ; à construire avant la soumission, avec une règle pour les documents émis (D3).
+- **Non retenu** : achat intégré ; lien vers le site pour acheter (possible dans l'UE depuis le 1er octobre 2026, avec commission ; piste ultérieure à étudier si la conversion en souffre).

@@ -9,21 +9,32 @@ import {
 } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { Check, ArrowLeft, ChevronDown, Clock, Lock, RefreshCw, ShieldCheck } from 'lucide-react'
-import { PLANS, formatEuros, withVat, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
+import { PAYMENT_METHODS_TEXT, PLANS, VAT_COLLECTED, formatEuros, withVat, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { trackEvent } from '@/lib/meta-pixel'
+import { captureEvent } from '@/components/shared/PostHogProvider'
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from '@/lib/brand'
 import { cn } from '@/lib/utils'
 import { PictoCluster } from '@/components/brand/PictoCluster'
+import { withActivationParam } from '@/lib/stripe/activation'
 
 /** « 10 € » avec une espace insécable avant le symbole. */
 const eur = (amount: number) => formatEuros(amount).replace(/ €$/, '\u00A0€')
 
-/* ─── Stripe singleton ───────────────────────────────────────────────────── */
-const stripeKey     = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''
-// Stripe.js bloqué (réseau, bloqueur de publicités) : null au lieu d'une
-// promesse rejetée, pour afficher un message plutôt qu'un panneau vide.
-const stripePromise = stripeKey ? loadStripe(stripeKey).catch(() => null) : null
+/* ─── Stripe.js ──────────────────────────────────────────────────────────── */
+// Une promesse par clé publique (production ou bac à sable). Stripe.js bloqué
+// (réseau, bloqueur de publicités) : null au lieu d'une promesse rejetée, pour
+// afficher un message plutôt qu'un panneau vide.
+const stripePromises = new Map<string, ReturnType<typeof loadStripe>>()
+function stripePromiseFor(key: string) {
+  if (!key) return null
+  let promise = stripePromises.get(key)
+  if (!promise) {
+    promise = loadStripe(key).catch(() => null)
+    stripePromises.set(key, promise)
+  }
+  return promise
+}
 
 /* ─── Props ──────────────────────────────────────────────────────────────── */
 interface CheckoutPageClientProps {
@@ -31,12 +42,16 @@ interface CheckoutPageClientProps {
   billingPeriod: BillingPeriod
   /** Chemin interne où revenir une fois la formule active (ex. la facture à envoyer). */
   next:          string | null
+  /** Clé publique Stripe du mode du compte (production, ou bac à sable pour un compte d'essai). */
+  publishableKey: string
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
    COMPONENT
 ══════════════════════════════════════════════════════════════════════════ */
-export default function CheckoutPageClient({ planId, billingPeriod, next }: CheckoutPageClientProps) {
+export default function CheckoutPageClient({ planId, billingPeriod, next, publishableKey }: CheckoutPageClientProps) {
+  const stripeKey     = publishableKey
+  const stripePromise = stripePromiseFor(stripeKey)
   const router = useRouter()
   const plan   = PLANS[planId]
   
@@ -46,9 +61,13 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
   const destination = next ?? '/dashboard'
   const plansHref   = next ? `/signup/plan?next=${encodeURIComponent(next)}` : '/signup/plan'
   const chargeHt    = billingPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
-  const chargeLine  = billingPeriod === 'monthly'
-    ? `Soit ${eur(withVat(chargeHt))} TTC par mois`
-    : `Facturé ${eur(chargeHt)} HT par an · ${eur(withVat(chargeHt))} TTC`
+  const chargeLine  = VAT_COLLECTED
+    ? billingPeriod === 'monthly'
+      ? `Soit ${eur(withVat(chargeHt))} TTC par mois`
+      : `Facturé ${eur(chargeHt)} HT par an · ${eur(withVat(chargeHt))} TTC`
+    : billingPeriod === 'monthly'
+      ? 'Sans engagement'
+      : `Facturé ${eur(chargeHt)} par an`
 
   /* ── State ────────────────────────────────────────────────────────────── */
   const [fetchError,      setFetchError]      = useState<string | null>(null)
@@ -62,7 +81,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
     let active = true
     stripePromise?.then((loaded) => { if (active && !loaded) setStripeUnavailable(true) })
     return () => { active = false }
-  }, [])
+  }, [stripePromise])
 
   /* ── Handlers ─────────────────────────────────────────────────────────── */
   const handleComplete = useCallback(() => { setIsComplete(true) }, [])
@@ -80,6 +99,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
     const FAST_INTERVAL = 2000
 
     const redirectToDashboard = () => {
+      captureEvent('subscription_confirmed', { plan: planId, period: billingPeriod })
       trackEvent('Purchase', {
         currency: 'EUR',
         value: billingPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice,
@@ -87,7 +107,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
         content_ids: [planId],
         num_items: 1,
       })
-      router.replace(destination)
+      router.replace(withActivationParam(destination))
     }
 
     let slowTimer: ReturnType<typeof setInterval> | null = null
@@ -216,7 +236,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
             <span className="font-display text-[22px] font-semibold leading-none tracking-[-0.03em] tabular-nums text-q-ink-strong">
               {eur(price)}
             </span>
-            <span className="text-[13px] text-q-text-3">HT / mois</span>
+            <span className="text-[13px] text-q-text-3">{VAT_COLLECTED ? 'HT / mois' : '/ mois'}</span>
             {billingPeriod === 'yearly' && (
               <span className="q-pill q-pill-ok">2 mois offerts</span>
             )}
@@ -265,7 +285,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
             <span className="font-display text-[52px] font-semibold leading-none tracking-[-0.04em] tabular-nums text-q-ink-strong">
               {eur(price)}
             </span>
-            <span className="text-sm text-q-text-3">HT / mois</span>
+            <span className="text-sm text-q-text-3">{VAT_COLLECTED ? 'HT / mois' : '/ mois'}</span>
             {billingPeriod === 'yearly' && (
               <span className="q-pill q-pill-ok ml-1 self-center">2 mois offerts</span>
             )}
@@ -374,7 +394,7 @@ export default function CheckoutPageClient({ planId, billingPeriod, next }: Chec
                   </p>
                   <button
                     type="button"
-                    onClick={() => router.replace(destination)}
+                    onClick={() => router.replace(withActivationParam(destination))}
                     className="q-btn q-btn-primary q-btn-lg mt-6 w-full max-w-[280px] lg:h-10 lg:rounded-[10px] lg:text-sm"
                   >
                     {next ? 'Reprendre ma facture' : 'Accéder à mon espace'}
@@ -460,7 +480,7 @@ function Assurance({ className }: { className?: string }) {
       </li>
       <li className="flex items-center gap-2">
         <Lock className="h-4 w-4 shrink-0 text-q-text-4" aria-hidden />
-        Carte bancaire ou prélèvement SEPA, paiement traité par Stripe
+        Paiement par {PAYMENT_METHODS_TEXT}, traité par Stripe
       </li>
     </ul>
   )

@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import SignupForm from "@/components/auth/SignupForm"
+import SignupForm, { SignupLegal } from "@/components/auth/SignupForm"
 import AuthLayout from "@/components/auth/AuthLayout"
-import { AuthPhotoBand, AuthPhotoPanel } from "@/components/auth/AuthPhotoPanel"
+import { AuthPhotoPanel } from "@/components/auth/AuthPhotoPanel"
 import { SIGNUP_PHOTO } from "@/components/auth/photos"
 import { safeNextPath } from "@/lib/stripe/access"
 import { AuthLead, AuthTitle, Serif } from "@/components/auth/AuthHeading"
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic"
 /**
  * Inscription en deux champs (maquettes « Main » et « Mobile-Inscription »,
  * validées le 06/10/2026) : adresse email et mot de passe ; photo d'artisan à
- * droite (≥ 1024 px) ou en bande sous le logo (téléphone). Le reste de
+ * droite (≥ 1024 px) ; sous 1024 px, carte blanche sans photo (20/10/2026). Le reste de
  * l'inscription se fait dans la fenêtre « Bienvenue » du tableau de bord.
  */
 export default function SignupPage({ searchParams }: { searchParams?: { next?: string } }) {
@@ -38,6 +38,7 @@ export default function SignupPage({ searchParams }: { searchParams?: { next?: s
           Déjà un compte ?{" "}
           <Link href={loginHref} className="q-link">Se connecter</Link>
         </p>
+        <SignupLegal />
       </AuthLayout>
     )
   }
@@ -46,13 +47,11 @@ export default function SignupPage({ searchParams }: { searchParams?: { next?: s
     <AuthLayout
       aside={<AuthPhotoPanel {...SIGNUP_PHOTO} />}
       asideVariant="photo"
-      mobileBand={<AuthPhotoBand {...SIGNUP_PHOTO} />}
+      mobileCard
       topRight={<Link href={loginHref} className="q-link text-[14px] lg:hidden">Se connecter</Link>}
     >
-      <AuthTitle>Votre premier <Serif>devis</Serif>, sans attendre.</AuthTitle>
-      <AuthLead>
-        Devis gratuits et illimités. Vous ne choisissez une formule qu’à l’envoi de votre première facture.
-      </AuthLead>
+      <AuthTitle>On commence <Serif>quand vous voulez</Serif>.</AuthTitle>
+      <AuthLead>Créez votre compte en quelques secondes.</AuthLead>
 
       <SignupForm />
 
@@ -61,6 +60,9 @@ export default function SignupPage({ searchParams }: { searchParams?: { next?: s
         Déjà un compte ?{" "}
         <Link href={loginHref} className="q-link">Se connecter</Link>
       </p>
+
+      {/* Tout en bas, sur tous les écrans */}
+      <SignupLegal />
     </AuthLayout>
   )
 }

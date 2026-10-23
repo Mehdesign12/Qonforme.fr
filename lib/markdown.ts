@@ -54,6 +54,15 @@ export interface MarkdownOptions {
 /** Mention ajoutée sous une image générée par IA (option aiImageMention). */
 export const AI_IMAGE_MENTION = "Illustration générée par IA"
 
+/**
+ * Ligne vide autour de chaque bloc (titre, liste, citation, séparateur, code) :
+ * le texte collé juste au-dessus ou au-dessous reste un paragraphe à part. Sans
+ * elle, « **Tableau** » suivi directement de « - une puce » donnait un <ul>
+ * dans un <p>, avec des <br /> entre les <li> : trous dans la liste de l'éditeur
+ * et espaces en trop sur la page publique.
+ */
+const BLOCK_BREAK = '\n\n'
+
 export function markdownToHtml(md: string, options: MarkdownOptions = {}): string {
   let html = md
 
@@ -63,27 +72,27 @@ export function markdownToHtml(md: string, options: MarkdownOptions = {}): strin
 
   // Fenced code blocks (```...```)
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, _lang, code) => {
-    return `<pre><code>${escapeHtml(code.trimEnd())}</code></pre>`
+    return `${BLOCK_BREAK}<pre><code>${escapeHtml(code.trimEnd())}</code></pre>${BLOCK_BREAK}`
   })
 
   // Tableaux et images seules sur leur ligne (avant les titres, les liens et les paragraphes)
   html = blockMedia(html, options.supabaseUrl === undefined ? process.env.NEXT_PUBLIC_SUPABASE_URL : options.supabaseUrl, shelve, options.aiImageMention === true)
 
   // Headings — with generated IDs for table of contents
-  html = html.replace(/^#### (.+)$/gm, (_m, text) => `<h4>${text}</h4>`)
-  html = html.replace(/^### (.+)$/gm, (_m, text) => `<h3 id="${slugify(text)}">${text}</h3>`)
-  html = html.replace(/^## (.+)$/gm, (_m, text) => `<h2 id="${slugify(text)}">${text}</h2>`)
-  html = html.replace(/^# (.+)$/gm, (_m, text) => `<h1>${text}</h1>`)
+  html = html.replace(/^#### (.+)$/gm, (_m, text) => `${BLOCK_BREAK}<h4>${text}</h4>${BLOCK_BREAK}`)
+  html = html.replace(/^### (.+)$/gm, (_m, text) => `${BLOCK_BREAK}<h3 id="${slugify(text)}">${text}</h3>${BLOCK_BREAK}`)
+  html = html.replace(/^## (.+)$/gm, (_m, text) => `${BLOCK_BREAK}<h2 id="${slugify(text)}">${text}</h2>${BLOCK_BREAK}`)
+  html = html.replace(/^# (.+)$/gm, (_m, text) => `${BLOCK_BREAK}<h1>${text}</h1>${BLOCK_BREAK}`)
 
   // Horizontal rule
-  html = html.replace(/^---$/gm, '<hr />')
+  html = html.replace(/^---$/gm, `${BLOCK_BREAK}<hr />${BLOCK_BREAK}`)
 
   // Blockquotes (> text)
   html = html.replace(/((?:^> .+\n?)+)/gm, (block) => {
     const inner = block.trim().split('\n').map(line =>
       line.replace(/^> ?/, '')
     ).join('<br />')
-    return `<blockquote><p>${inner}</p></blockquote>\n`
+    return `${BLOCK_BREAK}<blockquote><p>${inner}</p></blockquote>${BLOCK_BREAK}`
   })
 
   // Bold & italic
@@ -106,7 +115,7 @@ export function markdownToHtml(md: string, options: MarkdownOptions = {}): strin
     const items = block.trim().split('\n').map(line =>
       `<li>${line.replace(/^- /, '')}</li>`
     ).join('\n')
-    return `<ul>\n${items}\n</ul>\n`
+    return `${BLOCK_BREAK}<ul>\n${items}\n</ul>${BLOCK_BREAK}`
   })
 
   // Ordered lists
@@ -114,7 +123,7 @@ export function markdownToHtml(md: string, options: MarkdownOptions = {}): strin
     const items = block.trim().split('\n').map(line =>
       `<li>${line.replace(/^\d+\. /, '')}</li>`
     ).join('\n')
-    return `<ol>\n${items}\n</ol>\n`
+    return `${BLOCK_BREAK}<ol>\n${items}\n</ol>${BLOCK_BREAK}`
   })
 
   // Images remises en place, chacune dans son propre bloc
@@ -129,6 +138,7 @@ export function markdownToHtml(md: string, options: MarkdownOptions = {}): strin
       if (/^<(h[1-4]|ul|ol|pre|hr|blockquote|table|figure|div)/.test(trimmed)) return trimmed
       return `<p>${trimmed.replace(/\n/g, '<br />')}</p>`
     })
+    .filter(block => block !== '')
     .join('\n\n')
 
   return html

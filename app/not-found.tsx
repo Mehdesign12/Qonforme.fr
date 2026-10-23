@@ -4,6 +4,7 @@ import { ArrowLeft, FileX, Monitor } from "lucide-react"
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from "@/lib/brand"
 import { Doodles } from "@/components/brand/Doodles"
 import { pictosFor } from "@/components/brand/pictos"
+import { PUBLISHER } from "@/lib/legal/publisher"
 
 /**
  * Page 404, dans la langue du canevas : titre en deux voix, document « 404 »
@@ -72,7 +73,7 @@ export default function NotFound() {
       </main>
 
       <footer className="relative pb-6 text-center text-xs text-q-text-4">
-        © {new Date().getFullYear()} Qonforme SAS · Devis et factures des artisans du bâtiment.
+        © {new Date().getFullYear()} Qonforme, édité par {PUBLISHER.name} · Devis et factures des artisans du bâtiment.
       </footer>
     </div>
   )

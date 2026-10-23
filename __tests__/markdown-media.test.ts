@@ -242,3 +242,45 @@ describe("rien de cassé", () => {
     expect(html).toContain('href="https://x.fr"')
   })
 })
+
+describe("blocs collés au texte (sans ligne vide)", () => {
+  it("une liste juste sous une ligne en gras : un paragraphe puis une vraie liste, jamais un <ul> dans un <p>", () => {
+    const html = markdownToHtml("**Tableau**\n- Dépose de l'ancien tableau\n- Fourniture d'un tableau 3 rangées\n\n**Cuisine**\n- Circuit spécialisé")
+    expect(html).toBe(
+      [
+        "<p><strong>Tableau</strong></p>",
+        "<ul>\n<li>Dépose de l'ancien tableau</li>\n<li>Fourniture d'un tableau 3 rangées</li>\n</ul>",
+        "<p><strong>Cuisine</strong></p>",
+        "<ul>\n<li>Circuit spécialisé</li>\n</ul>",
+      ].join("\n\n"),
+    )
+    expect(html).not.toMatch(/<p>(?:(?!<\/p>)[^])*<ul>/)
+    expect(html).not.toContain("<br />")
+  })
+
+  it("liste numérotée juste sous un texte, texte juste sous une liste", () => {
+    const html = markdownToHtml("Les étapes :\n1. Relever\n2. Chiffrer\nPuis on envoie.")
+    expect(html).toBe("<p>Les étapes :</p>\n\n<ol>\n<li>Relever</li>\n<li>Chiffrer</li>\n</ol>\n\n<p>Puis on envoie.</p>")
+  })
+
+  it("titre, citation et séparateur collés au texte sont des blocs à part", () => {
+    expect(markdownToHtml("Un texte.\n## Un titre\nLe texte du titre.")).toBe('<p>Un texte.</p>\n\n<h2 id="un-titre">Un titre</h2>\n\n<p>Le texte du titre.</p>')
+    expect(markdownToHtml("Avant\n> Une citation\nAprès")).toBe("<p>Avant</p>\n\n<blockquote><p>Une citation</p></blockquote>\n\n<p>Après</p>")
+    expect(markdownToHtml("Avant\n---\nAprès")).toBe("<p>Avant</p>\n\n<hr />\n\n<p>Après</p>")
+  })
+
+  it("le Markdown déjà bien écrit donne exactement le même rendu qu'avant", () => {
+    const md = "## Titre\n\nUn paragraphe avec **gras**.\n\n- un\n- deux\n\n1. a\n2. b\n\n> Citation\n\n---\n\nFin."
+    expect(markdownToHtml(md)).toBe(
+      [
+        '<h2 id="titre">Titre</h2>',
+        "<p>Un paragraphe avec <strong>gras</strong>.</p>",
+        "<ul>\n<li>un</li>\n<li>deux</li>\n</ul>",
+        "<ol>\n<li>a</li>\n<li>b</li>\n</ol>",
+        "<blockquote><p>Citation</p></blockquote>",
+        "<hr />",
+        "<p>Fin.</p>",
+      ].join("\n\n"),
+    )
+  })
+})

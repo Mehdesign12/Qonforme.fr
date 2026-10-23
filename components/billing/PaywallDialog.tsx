@@ -1,16 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { BellRing, Check, Construction, Send, ShieldCheck, Signature } from 'lucide-react'
 import { PictoCluster } from '@/components/brand/PictoCluster'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import { PLANS, formatEuros, withVat, type BillingPeriod } from '@/lib/stripe/plans'
+import { PLANS, VAT_COLLECTED, formatEuros, withVat, type BillingPeriod } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS, SUBSCRIPTION_REQUIRED } from '@/lib/stripe/access'
 import { ARTISAN_REQUIRED } from '@/lib/artisan/plan'
 import { trackEvent } from '@/lib/meta-pixel'
+import { captureEvent } from '@/components/shared/PostHogProvider'
+import { useArtisanOnSale } from './useArtisanOnSale'
 
 /**
  * Mur de paiement « Votre facture est prête » — s'ouvre quand une route
@@ -52,12 +54,29 @@ export function PaywallDialog({
   const [period, setPeriod] = useState<BillingPeriod>('yearly')
   const artisan = reason === 'artisan'
   const plan = artisan ? PLANS.pro : PLANS.starter
-  const onSale = plan.available
+  const artisanOnSale = useArtisanOnSale()
+  const onSale = artisan ? artisanOnSale : plan.available
 
   const next = invoiceId ? `/invoices/${invoiceId}${reason === 'send' ? '?send=1' : ''}` : nextPath ?? null
   const chargeHt = period === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
 
+  // Entonnoir PostHog : mur affiché, formule choisie, ou fermé sans choisir
+  const chosen = useRef(false)
+  useEffect(() => {
+    if (open) {
+      chosen.current = false
+      captureEvent('paywall_shown', { reason, plan: plan.id, on_sale: onSale })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- une seule fois par ouverture
+  }, [open])
+  const handleOpenChange = (value: boolean) => {
+    if (!value && !chosen.current) captureEvent('paywall_dismissed', { reason, plan: plan.id, period })
+    onOpenChange(value)
+  }
+
   const choose = () => {
+    chosen.current = true
+    captureEvent('paywall_plan_chosen', { reason, plan: plan.id, period })
     trackEvent('InitiateCheckout', {
       currency: 'EUR',
       value: chargeHt,
@@ -71,8 +90,8 @@ export function PaywallDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto p-[22px] sm:max-w-[460px]">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent data-replay-clear className="max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto p-[22px] sm:max-w-[460px]">
         <div className="flex flex-col gap-1.5 pr-8">
           {/* Pictogrammes de marque : ce que débloque la formule */}
           <PictoCluster
@@ -87,7 +106,7 @@ export function PaywallDialog({
               ? 'Les relances font partie de la formule.'
               : reason === 'signature'
                 ? 'La signature en ligne fait partie de la formule.'
-                : invoiceNumber ? `Votre facture ${invoiceNumber} est prête.` : 'Votre facture est prête.'}
+                : invoiceNumber ? <>Votre facture <span data-replay-mask>{invoiceNumber}</span> est prête.</> : 'Votre facture est prête.'}
           </DialogTitle>
           <DialogDescription className="text-[15px] leading-relaxed text-[var(--q-text-3)]">
             {artisan
@@ -126,7 +145,7 @@ export function PaywallDialog({
                   {p === 'yearly' ? 'Annuel' : 'Mensuel'}
                 </span>
                 <span className="text-lg font-semibold tabular-nums text-[var(--q-ink)]">
-                  {formatEuros(perMonth)} <span className="text-xs font-normal text-[var(--q-text-4)]">HT / mois</span>
+                  {formatEuros(perMonth)} <span className="text-xs font-normal text-[var(--q-text-4)]">{VAT_COLLECTED ? 'HT / mois' : '/ mois'}</span>
                 </span>
                 <span className={cn('text-xs font-semibold', p === 'yearly' ? 'text-[var(--q-ok)]' : 'text-[var(--q-text-4)]')}>
                   {p === 'yearly' ? '2 mois offerts' : 'Sans engagement'}
@@ -168,7 +187,7 @@ export function PaywallDialog({
             {reason === 'send' ? `Choisir ${plan.name} et envoyer ma facture` : `Choisir ${plan.name}`}
           </button>
           <p className="text-center text-[13px] tabular-nums text-[var(--q-text-4)]">
-            {formatEuros(chargeHt)} HT {period === 'monthly' ? 'par mois' : 'par an'}, soit {formatEuros(withVat(chargeHt))} TTC
+            {formatEuros(chargeHt)}{VAT_COLLECTED ? ' HT' : ''} {period === 'monthly' ? 'par mois' : 'par an'}{VAT_COLLECTED && <>, soit {formatEuros(withVat(chargeHt))} TTC</>}
           </p>
           <p className="flex items-center justify-center gap-1.5 text-center text-[13px] text-[var(--q-text-4)]">
             <ShieldCheck className="size-4 text-[var(--q-ok)]" aria-hidden />

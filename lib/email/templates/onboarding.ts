@@ -18,7 +18,7 @@
  * HTML en styles en ligne (Gmail, Outlook, Apple Mail). Tout texte venu du
  * compte (prénom, entreprise) est échappé.
  */
-import { FREE_FEATURES, PLANS, formatEuros } from "@/lib/stripe/plans"
+import { FREE_FEATURES, PLANS, TAX_SUFFIX, formatEuros } from "@/lib/stripe/plans"
 import { GUARANTEE_DAYS } from "@/lib/stripe/access"
 import { REMINDER_TARGETS } from "@/lib/onboarding/reminder"
 import type { ReminderTarget } from "@/lib/onboarding/types"
@@ -245,7 +245,7 @@ export function buildSequenceEmail(step: SequenceEmailStep, ctx: SequenceEmailCo
         steps([
           { title: "Votre client donne son accord", text: "Ouvrez le devis et marquez-le comme accepté." },
           { title: "Le chantier est fini", text: "Depuis la fiche du devis, «&nbsp;Convertir en facture&nbsp;»&nbsp;: client, lignes et montants sont repris dans une facture en brouillon." },
-          { title: "Vous vérifiez, puis vous envoyez", text: `La facture se prépare gratuitement. La formule ${e(essentiel.name)} (${formatEuros(essentiel.monthlyPrice)}&nbsp;HT par mois) se choisit seulement au moment de l'envoyer.` },
+          { title: "Vous vérifiez, puis vous envoyez", text: `La facture se prépare gratuitement. La formule ${e(essentiel.name)} (${formatEuros(essentiel.monthlyPrice)}${TAX_SUFFIX.replace(' ', '&nbsp;')} par mois) se choisit seulement au moment de l'envoyer.` },
         ]),
         button("Voir mes devis", `${base}/quotes`),
         p(`Ou ${textLink("passer au tableau de bord", dashboard)}.`, "margin:16px 0 0;font-size:14px;"),
@@ -269,7 +269,7 @@ export function buildSequenceEmail(step: SequenceEmailStep, ctx: SequenceEmailCo
         `<p style="margin:0 0 8px;font-size:14px;font-weight:700;color:${INK};">Ce qui reste gratuit</p>`,
         bullets(FREE_FEATURES.map(e)),
         aside([
-          `<strong style="color:${INK};">${formatEuros(essentiel.monthlyPrice)}&nbsp;HT par mois</strong>, ou ${formatEuros(essentiel.yearlyPrice)}&nbsp;HT par an.<br />`,
+          `<strong style="color:${INK};">${formatEuros(essentiel.monthlyPrice)}${TAX_SUFFIX.replace(' ', '&nbsp;')} par mois</strong>, ou ${formatEuros(essentiel.yearlyPrice)}${TAX_SUFFIX.replace(' ', '&nbsp;')} par an.<br />`,
           "Sans engagement&nbsp;: la formule se résilie à tout moment depuis Paramètres › Abonnement.<br />",
           `Satisfait ou remboursé ${GUARANTEE_DAYS}&nbsp;jours, depuis Paramètres › Abonnement, sans avoir à nous écrire.`,
         ].join("")),
@@ -280,7 +280,7 @@ export function buildSequenceEmail(step: SequenceEmailStep, ctx: SequenceEmailCo
         subject,
         html: onboardingLayout({
           title: subject,
-          preheader: `${formatEuros(essentiel.monthlyPrice)} HT par mois, sans engagement, satisfait ou remboursé ${GUARANTEE_DAYS} jours.`,
+          preheader: `${formatEuros(essentiel.monthlyPrice)}${TAX_SUFFIX} par mois, sans engagement, satisfait ou remboursé ${GUARANTEE_DAYS} jours.`,
           body,
           footer,
         }),
