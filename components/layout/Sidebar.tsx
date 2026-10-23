@@ -18,7 +18,7 @@ import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import {
   Ellipsis, ChevronRight, ShieldCheck, Bug, MessageSquare,
-  LogOut, House, CreditCard, Building2, FileCog, FlaskConical, ArrowRight, Search,
+  LogOut, House, FileText, CalendarDays, CreditCard, Building2, FileCog, FlaskConical, ArrowRight, Search,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from "@/lib/brand"
@@ -26,7 +26,8 @@ import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/
 import { BugReportModal, ContactModal } from "@/components/layout/SupportModals"
 import { Initials } from "@/components/app/kit"
 import {
-  NAV_MAIN, NAV_PILOTAGE, NAV_SETTINGS, CREATE_LINKS, OPEN_SEARCH_EVENT, hrefFor, isActivePath,
+  NAV_MAIN, NAV_HOME, NAV_SALES, NAV_CREDIT_NOTES, NAV_SITE, NAV_BOOK, NAV_PILOTAGE, NAV_SETTINGS, SALES_KEYS,
+  CREATE_LINKS, OPEN_SEARCH_EVENT, hrefFor, isActivePath,
   type NavLink, type ShellMode,
 } from "@/components/layout/nav"
 import { type ShellIdentity, fullNameOf, formatSiren } from "@/components/layout/shell"
@@ -61,7 +62,15 @@ function Logo({ height = 19 }: { height?: number }) {
 /* Entrée de navigation                                                */
 /* ------------------------------------------------------------------ */
 
-function NavItem({ link, mode, pathname, onNavigate }: { link: NavLink; mode: ShellMode; pathname: string; onNavigate?: () => void }) {
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return <span className="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--q-text-4)]">{children}</span>
+}
+
+function NavItem({ link, mode, pathname, onNavigate, sub, chain, optional }: {
+  link: NavLink; mode: ShellMode; pathname: string; onNavigate?: () => void
+  /** Entrée de la chaîne des ventes : l'icône masque le trait qui la traverse. */
+  sub?: boolean; chain?: boolean; optional?: boolean
+}) {
   const href = hrefFor(link, mode)
   const active = isActivePath(pathname, href)
   const Icon = link.icon
@@ -71,14 +80,22 @@ function NavItem({ link, mode, pathname, onNavigate }: { link: NavLink; mode: Sh
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex h-9 items-center gap-2.5 rounded-[9px] px-2.5 text-sm transition-colors",
+        "group flex h-9 items-center gap-2.5 rounded-[9px] px-2.5 text-sm transition-colors",
+        sub && "ml-6",
         active
           ? "bg-[var(--q-wash)] font-semibold text-[var(--q-accent-strong)] shadow-[inset_0_0_0_1px_var(--q-wash-line)]"
           : "font-medium text-[var(--q-text-2)] hover:bg-[var(--q-hover)] hover:text-[var(--q-ink)]",
       )}
     >
-      <Icon className="size-[17px] shrink-0" strokeWidth={1.75} aria-hidden />
+      {chain ? (
+        <span className={cn("relative z-10 -my-0.5 grid shrink-0 place-items-center rounded-md py-0.5", active ? "bg-[var(--q-wash)]" : "bg-[var(--q-surface)] group-hover:bg-[var(--q-hover)]")}>
+          <Icon className="size-[17px]" strokeWidth={1.75} aria-hidden />
+        </span>
+      ) : (
+        <Icon className="size-[17px] shrink-0" strokeWidth={1.75} aria-hidden />
+      )}
       <span className="flex-1 truncate">{link.label}</span>
+      {optional && <span className="text-[11px] font-medium text-[var(--q-text-4)]">facultatif</span>}
     </Link>
   )
 }
@@ -147,8 +164,6 @@ function StatusCard({ identity }: { identity: ShellIdentity }) {
 
 export function Sidebar({ identity }: { identity: ShellIdentity }) {
   const pathname = usePathname()
-  const logout = useLogout()
-  const [bugOpen, setBugOpen] = useState(false)
   const mode = identity.mode
   const home = mode === "demo" ? "/demo" : "/dashboard"
 
@@ -171,35 +186,48 @@ export function Sidebar({ identity }: { identity: ShellIdentity }) {
 
       <CompanyCard identity={identity} />
 
-      <nav aria-label="Principale" className="flex flex-col gap-0.5">
-        {NAV_MAIN.map((link) => (
-          <NavItem key={link.key} link={link} mode={mode} pathname={pathname} />
-        ))}
-      </nav>
+      <nav aria-label="Principale" className="flex flex-col gap-[18px]">
+        <NavItem link={NAV_HOME} mode={mode} pathname={pathname} />
 
-      <div className="flex flex-col gap-0.5">
-        <span className="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--q-text-4)]">Pilotage</span>
-        {NAV_PILOTAGE.map((link) => (
-          <NavItem key={link.key} link={link} mode={mode} pathname={pathname} />
-        ))}
-      </div>
+        <div className="flex flex-col gap-0.5">
+          <GroupLabel>Ventes</GroupLabel>
+          {/* Chaîne : devis → bon de commande (facultatif) → facture ; l'avoir corrige une facture */}
+          <div className="relative flex flex-col gap-0.5">
+            <span aria-hidden className="absolute bottom-4 left-[19px] top-4 w-px bg-[var(--q-line)]" />
+            {NAV_SALES.map((link) => (
+              <NavItem key={link.key} link={link} mode={mode} pathname={pathname} chain optional={link.key === "purchase-orders"} />
+            ))}
+          </div>
+          <NavItem link={NAV_CREDIT_NOTES} mode={mode} pathname={pathname} sub />
+        </div>
+
+        <div className="flex flex-col gap-0.5">
+          <GroupLabel>Chantier</GroupLabel>
+          {NAV_SITE.map((link) => (
+            <NavItem key={link.key} link={link} mode={mode} pathname={pathname} />
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-0.5">
+          <GroupLabel>Carnet</GroupLabel>
+          {NAV_BOOK.map((link) => (
+            <NavItem key={link.key} link={link} mode={mode} pathname={pathname} />
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-0.5">
+          <GroupLabel>Pilotage</GroupLabel>
+          {NAV_PILOTAGE.map((link) => (
+            <NavItem key={link.key} link={link} mode={mode} pathname={pathname} />
+          ))}
+        </div>
+      </nav>
 
       <div className="mt-auto flex flex-col gap-2.5">
         <StatusCard identity={identity} />
         <div className="flex flex-col gap-0.5">
           <NavItem link={NAV_SETTINGS} mode={mode} pathname={pathname} />
-          {mode === "app" ? (
-            <>
-              <button type="button" onClick={() => setBugOpen(true)} className="flex h-9 items-center gap-2.5 rounded-[9px] px-2.5 text-sm font-medium text-[var(--q-text-2)] transition-colors hover:bg-[var(--q-hover)] hover:text-[var(--q-ink)]">
-                <Bug className="size-[17px]" strokeWidth={1.75} aria-hidden />
-                Signaler un problème
-              </button>
-              <button type="button" onClick={logout} className="flex h-9 items-center gap-2.5 rounded-[9px] px-2.5 text-sm font-medium text-[var(--q-text-2)] transition-colors hover:bg-[var(--q-danger-bg)] hover:text-[var(--q-danger)]">
-                <LogOut className="size-[17px]" strokeWidth={1.75} aria-hidden />
-                Se déconnecter
-              </button>
-            </>
-          ) : (
+          {mode === "demo" && (
             <>
               <Link href="/" className="flex h-9 items-center gap-2.5 rounded-[9px] px-2.5 text-sm font-medium text-[var(--q-text-2)] transition-colors hover:bg-[var(--q-hover)] hover:text-[var(--q-ink)]">
                 <House className="size-[17px]" strokeWidth={1.75} aria-hidden />
@@ -213,8 +241,6 @@ export function Sidebar({ identity }: { identity: ShellIdentity }) {
           )}
         </div>
       </div>
-
-      {mode === "app" && <BugReportModal open={bugOpen} onOpenChange={setBugOpen} />}
     </aside>
   )
 }
@@ -291,7 +317,6 @@ function PlusSheet({ open, onOpenChange, identity, onBug, onContact }: {
   const mode = identity.mode
   const logout = useLogout()
   const close = () => onOpenChange(false)
-  const gestion = NAV_MAIN.filter((l) => l.key !== "dashboard" && l.key !== "invoices")
   const name = identity.companyName || "Votre entreprise"
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -320,9 +345,16 @@ function PlusSheet({ open, onOpenChange, identity, onBug, onContact }: {
           Rechercher une facture, un client…
         </button>
 
-        <p className="px-1 pb-2 pt-5 text-[15px] font-semibold text-[var(--q-ink)]">Gestion</p>
+        <p className="px-1 pb-2 pt-5 text-[15px] font-semibold text-[var(--q-ink)]">Chantier</p>
         <div className="q-card q-list">
-          {gestion.map((l) => (
+          {NAV_SITE.map((l) => (
+            <SheetRow key={l.key} href={hrefFor(l, mode)} onClick={close} icon={l.icon} label={l.label} hint={l.hint} />
+          ))}
+        </div>
+
+        <p className="px-1 pb-2 pt-5 text-[15px] font-semibold text-[var(--q-ink)]">Carnet</p>
+        <div className="q-card q-list">
+          {NAV_BOOK.map((l) => (
             <SheetRow key={l.key} href={hrefFor(l, mode)} onClick={close} icon={l.icon} label={l.label} hint={l.hint} />
           ))}
         </div>
@@ -382,14 +414,12 @@ export function MobileBottomNav({ identity }: { identity: ShellIdentity }) {
   // Par clé, pas par position : la liste s'allonge (Chantiers…)
   const byKey = (key: string) => NAV_MAIN.find((l) => l.key === key) ?? NAV_MAIN[0]
   const dashboard = byKey("dashboard")
-  const invoices = byKey("invoices")
   const quotes = byKey("quotes")
-  const tabs = [
-    { link: dashboard, label: "Accueil" },
-    { link: invoices, label: "Factures" },
-  ]
-  const tabsRight = [{ link: quotes, label: "Devis" }]
-  const inMain = [dashboard, invoices, quotes].some((l) => isActivePath(pathname, hrefFor(l, mode)))
+  const planning = byKey("planning")
+  // « Ventes » couvre la chaîne entière : devis, bons de commande, factures, avoirs
+  const salesActive = SALES_KEYS.some((k) => isActivePath(pathname, hrefFor(byKey(k), mode)))
+  const planningActive = isActivePath(pathname, hrefFor(planning, mode))
+  const inMain = isActivePath(pathname, hrefFor(dashboard, mode)) || salesActive || planningActive
 
   // Ferme les feuilles à chaque changement de page (retour arrière du navigateur compris)
   useEffect(() => {
@@ -397,10 +427,10 @@ export function MobileBottomNav({ identity }: { identity: ShellIdentity }) {
     setPlusOpen(false)
   }, [pathname])
 
-  const Tab = ({ link, label }: { link: NavLink; label: string }) => {
+  const Tab = ({ link, label, icon, active: forced }: { link: NavLink; label: string; icon?: NavLink["icon"]; active?: boolean }) => {
     const href = hrefFor(link, mode)
-    const active = isActivePath(pathname, href)
-    const Icon = link.icon
+    const active = forced ?? isActivePath(pathname, href)
+    const Icon = icon ?? link.icon
     return (
       <Link
         href={href}
@@ -423,9 +453,10 @@ export function MobileBottomNav({ identity }: { identity: ShellIdentity }) {
         className="q-float fixed inset-x-3 z-40 flex h-[68px] items-stretch rounded-3xl px-1 lg:hidden print:hidden"
         style={{ bottom: "max(16px, env(safe-area-inset-bottom))" }}
       >
-        {tabs.map((t) => <Tab key={t.link.key} {...t} />)}
+        <Tab link={dashboard} label="Accueil" />
+        <Tab link={quotes} label="Ventes" icon={FileText} active={salesActive} />
         <MorphButton action={action} onCreate={() => setCreateOpen(true)} />
-        {tabsRight.map((t) => <Tab key={t.link.key} {...t} />)}
+        <Tab link={planning} label="Planning" icon={CalendarDays} />
         <button
           type="button"
           onClick={() => setPlusOpen(true)}

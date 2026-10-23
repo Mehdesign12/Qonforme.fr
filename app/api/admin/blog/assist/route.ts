@@ -1,10 +1,13 @@
 /**
  * POST /api/admin/blog/assist — assistant de rédaction de l'éditeur
  * d'articles (menu de sélection › « Assistant ») : reformuler, raccourcir,
- * développer, simplifier, corriger l'orthographe, intégrer le mot-clé.
+ * développer, simplifier, corriger l'orthographe, intégrer le mot-clé ; et,
+ * avec l'action « resolve », corriger un passage refusé par le contrôle de
+ * publication (bannière « Publication refusée par le contrôle »).
  *
  * Corps : AssistRequest (passage en Markdown, mot-clé, titre, 500 caractères
- * de contexte avant et après). Réponse : AssistResponse { text, warnings }.
+ * de contexte avant et après) ou ResolveRequest (en plus : le problème repéré
+ * et ce que le contrôle précise). Réponse : AssistResponse { text, warnings }.
  *
  * - Modèle : celui de la rédaction dans les Préférences, avec repli sur celui
  *   du plan si sa clé manque (resolvePassModel), consigne système commune
@@ -25,7 +28,17 @@ import { buildSystemPrompt } from "@/lib/seo/articles/prompt"
 import { generateText, hasKey, ModelError, resolvePassModel } from "@/lib/seo/articles/models"
 import { assertNoCompetitorInPrompt, CompetitorLeakError, findCompetitorMentions } from "@/lib/seo/competitors"
 import { redactCompetitors } from "@/lib/seo/articles/check"
-import { ASSIST_SYSTEM_SUFFIX, assistSchema, assistWarnings, buildAssistPrompt, cleanAssistOutput, decodeForModel } from "@/lib/blog-editor/assist"
+import {
+  ASSIST_SYSTEM_SUFFIX,
+  assistSchema,
+  assistWarnings,
+  buildAssistPrompt,
+  buildResolvePrompt,
+  cleanAssistOutput,
+  decodeForModel,
+  resolveSchema,
+  resolveWarnings,
+} from "@/lib/blog-editor/assist"
 import type { AssistResponse } from "@/lib/seo/articles/editor-types"
 
 export const runtime = "nodejs"
@@ -34,7 +47,9 @@ export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   if (!(await isAdminAuthenticated())) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-  const parsed = assistSchema.safeParse(await request.json().catch(() => null))
+  const raw: unknown = await request.json().catch(() => null)
+  const resolving = Boolean(raw && typeof raw === "object" && (raw as { action?: unknown }).action === "resolve")
+  const parsed = resolving ? resolveSchema.safeParse(raw) : assistSchema.safeParse(raw)
   if (!parsed.success) return NextResponse.json(zodError(parsed.error), { status: 400 })
   const input = parsed.data
   if (input.action === "keyword" && !input.keyword) {
@@ -58,14 +73,21 @@ export async function POST(request: NextRequest) {
 
   const system =
     buildSystemPrompt({ brand: settings.brand.value, strategy: settings.strategy.value, prefs }) + ASSIST_SYSTEM_SUFFIX
-  const prompt = buildAssistPrompt({
-    action: input.action,
-    text: input.text,
+  const context = {
     keyword: input.keyword ? redactCompetitors(input.keyword, competitors) : null,
     title: input.title ? redactCompetitors(input.title, competitors) : undefined,
     before: input.before ? redactCompetitors(decodeForModel(input.before), competitors) : undefined,
     after: input.after ? redactCompetitors(decodeForModel(input.after), competitors) : undefined,
-  })
+  }
+  // Le problème signalé et sa précision viennent du contrôle (jamais d'un concurrent : ils sont caviardés aussi)
+  const prompt =
+    input.action === "resolve"
+      ? buildResolvePrompt({
+          text: input.text,
+          issue: { label: redactCompetitors(input.issue.label, competitors), detail: input.issue.detail ? redactCompetitors(input.issue.detail, competitors) : null },
+          ...context,
+        })
+      : buildAssistPrompt({ action: input.action, text: input.text, ...context })
 
   try {
     assertNoCompetitorInPrompt(`${system}\n${prompt}`, competitors)
@@ -84,7 +106,10 @@ export async function POST(request: NextRequest) {
     }
     const body: AssistResponse = {
       text: cleaned.text,
-      warnings: assistWarnings({ original: input.text, result: cleaned.text, competitors, removedLinks: cleaned.removedLinks }),
+      warnings:
+        input.action === "resolve"
+          ? resolveWarnings({ original: input.text, result: cleaned.text, competitors, removedLinks: cleaned.removedLinks, detail: input.issue.detail, excerpt: input.excerpt })
+          : assistWarnings({ original: input.text, result: cleaned.text, competitors, removedLinks: cleaned.removedLinks }),
     }
     return NextResponse.json(body)
   } catch (error) {

@@ -28,10 +28,12 @@ import { POST as createPost } from "@/app/api/admin/blog/route"
 import { PATCH as patchPost } from "@/app/api/admin/blog/[id]/route"
 import { GET as seoContext } from "@/app/api/admin/blog/seo-context/route"
 import { POST as suggest } from "@/app/api/admin/blog/suggest/route"
+import { POST as assist } from "@/app/api/admin/blog/assist/route"
+import { POST as integrate } from "@/app/api/admin/blog/integrate-keyword/route"
 import { POST as importPlan } from "@/app/api/admin/seo/keywords/plan/route"
 import { ModelError } from "@/lib/seo/articles/models"
 import { PLAN_KEYWORDS, PLAN_NOTE } from "@/lib/seo/keywords/plan"
-import type { PlanImportResult, SeoContext, SuggestResponse } from "@/lib/seo/articles/editor-types"
+import type { AssistResponse, IntegrateResponse, PlanImportResult, SeoContext, SuggestResponse } from "@/lib/seo/articles/editor-types"
 
 /* ------------------------------------------------------------------ */
 /* Base simulée : colonnes absentes, fonctions SQL, pagination           */
@@ -563,5 +565,191 @@ describe("POST /api/admin/blog/suggest", () => {
     const res = await suggest(req("/api/admin/blog/suggest", "POST", { ...body, field: "slug" }))
     expect(res.status).toBe(200)
     expect(((await res.json()) as SuggestResponse).suggestions.map((s) => s.text)).toEqual(["exemple-devis-maconnerie-maison"])
+  })
+})
+
+/* ------------------------------------------------------------------ */
+/* POST /api/admin/blog/assist (action « resolve »)                     */
+/* ------------------------------------------------------------------ */
+
+describe("POST /api/admin/blog/assist : correction d'un passage refusé par le contrôle", () => {
+  const passage = "Pour rédiger vos [conditions de paiement](/outils/generateur-conditions-paiement) sans rien oublier, un générateur gratuit est disponible."
+  const body = {
+    action: "resolve",
+    text: passage,
+    issue: { label: "Affirmation interdite (contrôle factuel)", detail: "Un générateur de conditions de paiement ne fait pas partie des outils gratuits listés. À écrire : renvoyer vers le générateur de devis." },
+    excerpt: passage,
+    keyword: "conditions de paiement",
+    title: "Relancer une facture impayée",
+    before: "Fixez vos règles à l'avance.",
+    after: "Écrivez l'échéance sur la facture.",
+  }
+  const answer = (text: string) => async ({ model }: { model: string }) => ({ text, model, usage: { inputTokens: 1, outputTokens: 1 } })
+
+  it("rend le passage corrigé ; la consigne contient le passage, le problème et la précision du contrôle", async () => {
+    state.text = answer("Pour rédiger vos [conditions de paiement](/outils/generateur-conditions-paiement) sans rien oublier, utilisez notre générateur de devis.")
+    const res = await assist(req("/api/admin/blog/assist", "POST", body))
+    expect(res.status).toBe(200)
+    const json = (await res.json()) as AssistResponse
+    expect(json.text).toContain("utilisez notre générateur de devis.")
+    expect(json.text).toContain("(/outils/generateur-conditions-paiement)")
+    expect(json.warnings).toEqual([])
+    const prompt = state.prompts[0]
+    expect(prompt).toContain('PASSAGE À CORRIGER :\n"""Pour rédiger vos [conditions de paiement]')
+    expect(prompt).toContain("PROBLÈME REPÉRÉ PAR LE CONTRÔLE : Affirmation interdite (contrôle factuel)")
+    expect(prompt).toContain("PRÉCISION DU CONTRÔLE : Un générateur de conditions de paiement ne fait pas partie")
+    expect(prompt).toContain("MOT-CLÉ PRINCIPAL : conditions de paiement")
+    expect(prompt).toContain("CONTEXTE AVANT LE PASSAGE")
+  })
+
+  it("avertit quand le passage refusé est resté tel quel, ou quand un chiffre apparaît", async () => {
+    state.text = answer(passage)
+    const same = (await (await assist(req("/api/admin/blog/assist", "POST", body))).json()) as AssistResponse
+    expect(same.warnings[0]).toContain("Le passage refusé figure encore dans le texte proposé")
+
+    state.text = answer("Pour rédiger vos conditions de paiement, utilisez notre générateur : 12 modèles sont disponibles.")
+    const added = (await (await assist(req("/api/admin/blog/assist", "POST", body))).json()) as AssistResponse
+    expect(added.warnings.join(" ")).toContain("« 12 » n'était pas dans le passage")
+  })
+
+  it("un chiffre donné par le contrôle n'est pas signalé comme nouveau", async () => {
+    state.text = answer("La franchise de TVA s'applique jusqu'à 37 500 € de chiffre d'affaires.")
+    const res = await assist(
+      req("/api/admin/blog/assist", "POST", {
+        ...body,
+        text: "La franchise de TVA s'applique jusqu'à 36 800 € de chiffre d'affaires.",
+        excerpt: "jusqu'à 36 800 € de chiffre d'affaires",
+        issue: { label: "Anciens seuils de franchise de TVA", detail: "Seuil de 37 500 € depuis le 1er janvier 2025." },
+      }),
+    )
+    expect(((await res.json()) as AssistResponse).warnings.join(" ")).not.toContain("37 500")
+  })
+
+  it("requête invalide ou concurrent cité : 400 et 422, aucune consigne envoyée", async () => {
+    expect((await assist(req("/api/admin/blog/assist", "POST", { ...body, issue: undefined }))).status).toBe(400)
+    expect((await assist(req("/api/admin/blog/assist", "POST", { ...body, text: " " }))).status).toBe(400)
+    const brand = brandOfDomain(competitor)
+    expect((await assist(req("/api/admin/blog/assist", "POST", { ...body, text: `Comparé à ${brand}, un générateur gratuit est disponible.` }))).status).toBe(422)
+    expect(state.prompts).toHaveLength(0)
+  })
+
+  it("le concurrent cité par le contrôle est caviardé de la consigne ; non connecté : 401", async () => {
+    state.text = answer("Un texte corrigé sans promesse.")
+    const brand = brandOfDomain(competitor)
+    const res = await assist(req("/api/admin/blog/assist", "POST", { ...body, issue: { ...body.issue, detail: `Voir aussi ${brand}.` } }))
+    expect(res.status).toBe(200)
+    expect(state.prompts[0].toLowerCase()).not.toContain(brand.toLowerCase())
+    state.admin = false
+    expect((await assist(req("/api/admin/blog/assist", "POST", body))).status).toBe(401)
+  })
+
+  it("les actions du menu de sélection fonctionnent toujours", async () => {
+    state.text = answer("Un devis plus clair.")
+    const res = await assist(req("/api/admin/blog/assist", "POST", { action: "rephrase", text: "Un devis pas clair." }))
+    expect(res.status).toBe(200)
+    expect(state.prompts[0]).toContain("PASSAGE À RÉÉCRIRE")
+    expect(state.prompts[0]).not.toContain("PASSAGE À CORRIGER")
+  })
+})
+
+/* ------------------------------------------------------------------ */
+/* POST /api/admin/blog/integrate-keyword                               */
+/* ------------------------------------------------------------------ */
+
+describe("POST /api/admin/blog/integrate-keyword : mot-clé placé dans le texte avec l'IA", () => {
+  const filler = Array.from({ length: 30 }, (_, i) => `mot${i}`).join(" ")
+  const markdown = ["Une introduction sur la facturation.", "## Les acomptes", `L'acompte se calcule sur le devis accepté. ${filler}.`, "## Questions fréquentes", `Faut-il un acompte ? ${filler}.`].join("\n\n")
+  const body = { mode: "secondary", keyword: "acompte plomberie", markdown, title: "Facturer un chantier", mainKeyword: "facture plomberie" }
+  const answer = (text: string) => async ({ model }: { model: string }) => ({ text, model, usage: { inputTokens: 1, outputTokens: 1 } })
+  const edit = (index: number, text: string) => JSON.stringify({ edits: [{ index, text }] })
+
+  it("rend le passage retouché, avant et après ; la consigne numérote les passages du développement seulement", async () => {
+    state.text = answer(edit(1, `L'acompte de plomberie se calcule sur le devis accepté. ${filler}.`))
+    const res = await integrate(req("/api/admin/blog/integrate-keyword", "POST", body))
+    expect(res.status).toBe(200)
+    const json = (await res.json()) as IntegrateResponse
+    expect(json.note).toBeNull()
+    expect(json.proposals).toHaveLength(1)
+    expect(json.proposals[0]).toMatchObject({ id: "1", kind: "paragraph", section: "Les acomptes" })
+    expect(json.proposals[0].before).toContain("L'acompte se calcule")
+    expect(json.proposals[0].after).toContain("L'acompte de plomberie se calcule")
+    const prompt = state.prompts[0]
+    expect(prompt).toContain("MOT-CLÉ À FAIRE FIGURER : acompte plomberie")
+    expect(prompt).toContain("MOT-CLÉ PRINCIPAL DE L'ARTICLE : facture plomberie")
+    expect(prompt).toContain("[1] (paragraphe, section « Les acomptes »)")
+    expect(prompt).not.toContain("Faut-il un acompte")
+    expect(prompt).not.toContain("[2]")
+  })
+
+  it("la réécriture sans le mot-clé est écartée et la raison est donnée ; un mauvais numéro est ignoré", async () => {
+    state.text = answer(edit(1, `Le versement se calcule sur le devis accepté. ${filler}.`))
+    const json = (await (await integrate(req("/api/admin/blog/integrate-keyword", "POST", body))).json()) as IntegrateResponse
+    expect(json.proposals).toEqual([])
+    expect(json.note).toContain("le mot-clé n'y figurait pas tel quel")
+
+    state.text = answer(edit(9, "x"))
+    const none = (await (await integrate(req("/api/admin/blog/integrate-keyword", "POST", body))).json()) as IntegrateResponse
+    expect(none.proposals).toEqual([])
+    expect(none.note).toContain("aucun passage")
+  })
+
+  it("aucun passage ne peut le recevoir : réponse vide expliquée, le modèle n'est pas appelé", async () => {
+    const res = await integrate(req("/api/admin/blog/integrate-keyword", "POST", { ...body, markdown: "Un texte court." }))
+    expect(res.status).toBe(200)
+    expect(((await res.json()) as IntegrateResponse).note).toContain("Aucun passage du développement")
+    expect(state.prompts).toHaveLength(0)
+  })
+
+  it("sous-titre et introduction : un seul passage, avec la consigne du mode", async () => {
+    state.text = answer(edit(1, "Acompte et facture plomberie"))
+    const heading = (await (await integrate(req("/api/admin/blog/integrate-keyword", "POST", { ...body, mode: "heading", keyword: "facture plomberie" }))).json()) as IntegrateResponse
+    expect(heading.proposals[0]).toMatchObject({ kind: "heading", before: "Les acomptes", after: "Acompte et facture plomberie" })
+    expect(state.prompts[0]).toContain("UN seul de ces sous-titres")
+
+    state.text = answer(edit(1, "Facturer un chantier de plomberie demande de la méthode."))
+    const intro = (await (await integrate(req("/api/admin/blog/integrate-keyword", "POST", { ...body, mode: "intro", keyword: "chantier de plomberie" }))).json()) as IntegrateResponse
+    expect(intro.proposals[0]).toMatchObject({ kind: "paragraph", section: "Introduction" })
+    expect(state.prompts[1]).toContain("paragraphe d'introduction")
+  })
+
+  it("requête invalide : 400 ; concurrent dans le mot-clé : 422 ; non connecté : 401 ; aucune consigne envoyée", async () => {
+    expect((await integrate(req("/api/admin/blog/integrate-keyword", "POST", { ...body, mode: "autre" }))).status).toBe(400)
+    expect((await integrate(req("/api/admin/blog/integrate-keyword", "POST", { ...body, keyword: "" }))).status).toBe(400)
+    expect((await integrate(req("/api/admin/blog/integrate-keyword", "POST", { ...body, markdown: "  " }))).status).toBe(400)
+    const brand = brandOfDomain(competitor)
+    expect((await integrate(req("/api/admin/blog/integrate-keyword", "POST", { ...body, keyword: `${brand} devis` }))).status).toBe(422)
+    state.admin = false
+    expect((await integrate(req("/api/admin/blog/integrate-keyword", "POST", body))).status).toBe(401)
+    expect(state.prompts).toHaveLength(0)
+  })
+
+  it("le concurrent du titre ou du mot-clé principal ne part jamais dans la consigne", async () => {
+    state.text = answer(edit(1, `L'acompte de plomberie se calcule. ${filler}.`))
+    const brand = brandOfDomain(competitor)
+    const res = await integrate(req("/api/admin/blog/integrate-keyword", "POST", { ...body, title: `Facturer comme ${brand}`, mainKeyword: `${brand} facture` }))
+    expect(res.status).toBe(200)
+    expect(state.prompts[0].toLowerCase()).not.toContain(brand.toLowerCase())
+  })
+
+  it("clé du modèle absente : 503 ; quota : 502 avec le code ; échec : 502", async () => {
+    state.text = async () => {
+      throw new ModelError("not_configured", "Clé ANTHROPIC_API_KEY absente.")
+    }
+    const missing = await integrate(req("/api/admin/blog/integrate-keyword", "POST", body))
+    expect(missing.status).toBe(503)
+    expect(((await missing.json()) as { code: string }).code).toBe("not_configured")
+
+    state.text = async () => {
+      throw new ModelError("quota", "Quota épuisé.")
+    }
+    const quota = await integrate(req("/api/admin/blog/integrate-keyword", "POST", body))
+    expect(quota.status).toBe(502)
+    expect(((await quota.json()) as { code: string }).code).toBe("quota")
+
+    vi.spyOn(console, "error").mockImplementation(() => {})
+    state.text = async () => {
+      throw new Error("boom")
+    }
+    expect((await integrate(req("/api/admin/blog/integrate-keyword", "POST", body))).status).toBe(502)
   })
 })

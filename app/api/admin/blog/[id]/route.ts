@@ -52,7 +52,7 @@ async function writePost(admin: SeoDb, id: string, updates: Record<string, unkno
  * pour un article déjà publié, ou avant la migration de l'onglet SEO :
  * comportement habituel.
  */
-async function publishWithSeoGuard(admin: SeoDb, id: string, updates: Record<string, unknown>): Promise<NextResponse | null> {
+async function publishWithSeoGuard(admin: SeoDb, id: string, updates: Record<string, unknown>, force = false): Promise<NextResponse | null> {
   const { data, error } = await admin.from('blog_posts').select('is_published, review_status, audit_result').eq('id', id).maybeSingle()
   if (error) {
     if (isMissingSchemaError(error)) return null
@@ -69,7 +69,7 @@ async function publishWithSeoGuard(admin: SeoDb, id: string, updates: Record<str
   }
   const post = await readPublishablePost(admin, id)
   if (!post) return NextResponse.json({ error: 'Article introuvable' }, { status: 404 })
-  const result = await publishNow(admin, post, await loadCheckContext(admin))
+  const result = await publishNow(admin, post, await loadCheckContext(admin), new Date(), { force })
   if (!result.ok) {
     return NextResponse.json(
       {
@@ -170,7 +170,7 @@ export async function PATCH(
       if (body.is_published) {
         updates.scheduled_at = null
         // Article passé en ligne (onglet SEO ou écrit à la main) : même garde serveur que « Publier maintenant »
-        const guarded = await publishWithSeoGuard(admin, id, updates)
+        const guarded = await publishWithSeoGuard(admin, id, updates, body.force_publish === true)
         if (guarded) return guarded
       }
       updates.is_published = !!body.is_published

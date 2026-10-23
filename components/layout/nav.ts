@@ -44,9 +44,24 @@ export const NAV_MAIN: NavLink[] = [
   { key: "products", label: "Catalogue", href: "/products", demoHref: "/demo/products", icon: Package, hint: "Vos prestations et fournitures" },
 ]
 
+const byKey = (keys: string[]): NavLink[] =>
+  keys.map((k) => NAV_MAIN.find((l) => l.key === k)).filter((l): l is NavLink => Boolean(l))
+
+/** Barre latérale regroupée (maquette « version A », 23/10/2026). */
+export const NAV_HOME: NavLink = NAV_MAIN[0]
+/** Chaîne des ventes : devis → bon de commande (facultatif) → facture ; l'avoir corrige une facture. */
+export const NAV_SALES: NavLink[] = byKey(["quotes", "purchase-orders", "invoices"])
+export const NAV_CREDIT_NOTES: NavLink = NAV_MAIN.find((l) => l.key === "credit-notes") as NavLink
+export const NAV_SITE: NavLink[] = byKey(["planning", "chantiers", "documents"])
+export const NAV_BOOK: NavLink[] = byKey(["clients", "products"])
+
+/** Clés des quatre écrans de la chaîne, dans l'ordre du rail mobile. */
+export const SALES_KEYS = ["quotes", "purchase-orders", "invoices", "credit-notes"] as const
+
 export const NAV_PILOTAGE: NavLink[] = [
   { key: "tresorerie", label: "Trésorerie", href: "/tresorerie", demoHref: "/demo/tresorerie", icon: Wallet, hint: "Ce qui doit rentrer et sortir" },
   { key: "relances", label: "Relances", href: "/relances", demoHref: "/demo/relances", icon: BellRing, hint: "Ce qui part tout seul, et ce qui est parti" },
+  { key: "received-invoices", label: "Factures reçues", href: "/received-invoices", demoHref: "/demo/received-invoices", icon: Inbox, hint: "Factures de vos fournisseurs" },
   { key: "exports", label: "Exports comptables", href: "/settings/exports", demoHref: "/demo/settings/exports", icon: Download, hint: "Fichier des écritures comptables" },
 ]
 

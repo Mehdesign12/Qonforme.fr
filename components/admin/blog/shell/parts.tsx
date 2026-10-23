@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { parisDayTime, shortDay } from "@/lib/seo/articles/schedule"
 import { todayInParis } from "@/lib/utils/paris-date"
 import type { BlockingIssue } from "@/components/admin/blog/shell/model"
+import { IssueItem, type IssueActions } from "@/components/admin/blog/shell/IssueItem"
 
 /* ------------------------------------------------------------------ */
 /* Anneau du champ visé                                                */
@@ -180,7 +181,24 @@ export function DraftOfferBanner({ savedAt, changes, onRestore, onDismiss }: { s
 }
 
 /** Passages qui bloquent la publication (409 « check_failed »). */
-export function BlockedBanner({ issues, message, onDismiss }: { issues: BlockingIssue[]; message: string; onDismiss: () => void }) {
+export function BlockedBanner({
+  issues,
+  message,
+  onDismiss,
+  actions,
+  isCorrected,
+  onForce,
+}: {
+  issues: BlockingIssue[]
+  message: string
+  onDismiss: () => void
+  /** « Publier quand même » : l'admin a relu les passages et décide de publier. */
+  onForce?: () => void
+  /** « Aller au passage » et « Corriger avec l'IA » (sans elles, la liste est en lecture seule). */
+  actions?: IssueActions
+  /** Le passage n'est plus dans le texte : marqué « Corrigé ». */
+  isCorrected?: (issue: BlockingIssue) => boolean
+}) {
   return (
     <div role="alert" className="q-banner q-banner-danger relative !pr-12">
       <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden />
@@ -192,17 +210,16 @@ export function BlockedBanner({ issues, message, onDismiss }: { issues: Blocking
         {issues.length > 0 && (
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {issues.map((issue, i) => (
-              <li key={`${issue.label}-${i}`} className="rounded-xl border border-[var(--q-danger-line)] bg-[var(--q-surface)] px-3 py-2.5">
-                <p className="m-0 text-[13px] font-semibold text-[var(--q-ink)]">{issue.label}</p>
-                {issue.excerpt && (
-                  <p className="m-0 mt-1 border-l-2 border-[var(--q-danger-line)] pl-2.5 text-[13px] italic leading-snug text-[var(--q-text-2)] [overflow-wrap:anywhere]">
-                    « {issue.excerpt} »
-                  </p>
-                )}
-                {issue.detail && <p className="m-0 mt-1 text-[12.5px] leading-snug text-[var(--q-text-3)]">{issue.detail}</p>}
-              </li>
+              <IssueItem key={`${issue.label}-${i}`} issue={issue} corrected={Boolean(issue.excerpt && isCorrected?.(issue))} actions={actions} />
             ))}
           </ul>
+        )}
+        {onForce && (
+          <div>
+            <button type="button" onClick={onForce} className="q-btn q-btn-secondary q-btn-sm max-md:h-11">
+              Publier quand même
+            </button>
+          </div>
         )}
       </div>
       <button

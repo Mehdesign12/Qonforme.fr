@@ -18,6 +18,7 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { FileCheck2, Loader2, Plus, ShoppingCart } from "lucide-react"
+import { DocRow } from "@/components/app/DocRow"
 import { DocStatusPill, EmptyState, Kpi, KpiGrid, PageHeader, SearchField } from "@/components/app/kit"
 import { InfoNote } from "@/components/purchase-orders/detail-bits"
 import { cn } from "@/lib/utils"
@@ -357,16 +358,14 @@ export function PurchaseOrderListView({
         ) : (
           <div className="q-card q-list overflow-hidden rounded-[18px]">
             {visible.map((p) => (
-              <Link key={p.id} href={p.href} className="q-list-row px-3.5 py-2.5">
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate text-[15px] font-semibold">{p.client_name ?? "Sans client"}</span>
-                  <span className="truncate font-mono text-xs text-[var(--q-text-4)]">{p.po_number} · {p.subject}</span>
-                </span>
-                <span className="flex shrink-0 flex-col items-end gap-1">
-                  <span className="text-[15px] font-semibold tabular-nums">{formatCurrency(Number(p.total_ttc))}</span>
-                  <DocStatusPill kind="purchase_order" status={p.status} className="h-[22px] px-2 text-[11px]" />
-                </span>
-              </Link>
+              <DocRow
+                key={p.id}
+                href={p.href}
+                name={p.client_name ?? "Sans client"}
+                reference={`${p.po_number} · ${p.subject}`}
+                amount={formatCurrency(Number(p.total_ttc))}
+                pill={<DocStatusPill kind="purchase_order" status={p.status} className="h-[22px] px-2 text-[11px]" />}
+              />
             ))}
           </div>
         )}

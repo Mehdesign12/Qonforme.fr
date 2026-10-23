@@ -83,7 +83,7 @@ export function CommandPalette({ open, onOpenChange, identity }: {
     const create = CREATE_LINKS
       .filter((c) => mode === "app" || c.demoHref)
       .map((c): Option => ({ kind: "action", id: `new-${c.key}`, group: "Créer", label: c.label, hint: c.hint, href: hrefFor(c, mode), icon: c.icon }))
-    const go = [...NAV_MAIN, ...NAV_PILOTAGE, NAV_SETTINGS]
+    const go = [...NAV_MAIN, ...NAV_PILOTAGE, NAV_SETTINGS].filter((l, i, all) => all.findIndex((o) => o.key === l.key) === i)
       .filter((l) => mode === "app" || l.demoHref)
       .map((l): Option => ({ kind: "action", id: `nav-${l.key}`, group: "Aller à", label: l.label, hint: l.hint, href: hrefFor(l, mode), icon: l.icon }))
     return [...create, ...go]

@@ -19,7 +19,7 @@ import { CharMeter } from "@/components/admin/blog/seo/CharMeter"
 import { KeywordPicker } from "@/components/admin/blog/seo/KeywordPicker"
 import { PublicationPanel, type PublicationValue } from "@/components/admin/blog/seo/PublicationPanel"
 import { SecondaryKeywords } from "@/components/admin/blog/seo/SecondaryKeywords"
-import { SeoScore } from "@/components/admin/blog/seo/SeoScore"
+import { SeoScore, type CheckActionFor } from "@/components/admin/blog/seo/SeoScore"
 import { SerpPreview } from "@/components/admin/blog/seo/SerpPreview"
 import { SuggestButton, SuggestionList, type SuggestController } from "@/components/admin/blog/seo/SuggestButton"
 import { AutoTextarea, FLASH_RING, SideCard } from "@/components/admin/blog/shell/parts"
@@ -95,10 +95,21 @@ export function PublicationCard({
 /* Score                                                               */
 /* ------------------------------------------------------------------ */
 
-export function ScoreCard({ result, onFocusTarget, className }: { result: OnPageResult; onFocusTarget: (target: OnPageTarget) => void; className?: string }) {
+export function ScoreCard({
+  result,
+  onFocusTarget,
+  actionFor,
+  className,
+}: {
+  result: OnPageResult
+  onFocusTarget: (target: OnPageTarget) => void
+  /** Bouton « avec l'IA » d'une ligne à corriger. */
+  actionFor?: CheckActionFor
+  className?: string
+}) {
   return (
     <SideCard id="carte-score" icon={<Gauge />} title="Score SEO" className={className}>
-      <SeoScore result={result} onFocusTarget={onFocusTarget} />
+      <SeoScore result={result} onFocusTarget={onFocusTarget} actionFor={actionFor} />
     </SideCard>
   )
 }
@@ -114,6 +125,7 @@ export function KeywordCard({
   slug,
   selfId,
   onPropose,
+  articleTitle,
   className,
 }: {
   value: string | null
@@ -123,6 +135,8 @@ export function KeywordCard({
   selfId: string | null
   /** Ouvre la « Proposition IA » : requêtes exactes pour cet article. */
   onPropose?: () => void
+  /** Titre de l'article (nom du sujet quand un mot-clé libre est suivi). */
+  articleTitle?: string
   className?: string
 }) {
   return (
@@ -141,6 +155,7 @@ export function KeywordCard({
           selfId={selfId}
           gscConnected={seo.data?.gsc.connected ?? true}
           onPropose={onPropose}
+          measure={articleTitle !== undefined ? { articleTitle, onTracked: seo.reload } : undefined}
         />
       </div>
     </SideCard>
@@ -457,6 +472,9 @@ export function SecondaryCard({
   content,
   highlighted,
   onHighlightChange,
+  onIntegrate,
+  extra,
+  onRemoveExtra,
   className,
 }: {
   keyword: string | null
@@ -465,6 +483,11 @@ export function SecondaryCard({
   content: string
   highlighted: string[]
   onHighlightChange: (terms: string[]) => void
+  /** « Intégrer avec l'IA » sur un mot-clé absent du texte. */
+  onIntegrate?: (keyword: string) => void
+  /** Mots-clés ajoutés à la main (Proposition IA). */
+  extra?: { keyword: string; volume: number | null }[]
+  onRemoveExtra?: (keyword: string) => void
   className?: string
 }) {
   return (
@@ -477,6 +500,9 @@ export function SecondaryCard({
         content={content}
         highlighted={highlighted}
         onHighlightChange={onHighlightChange}
+        onIntegrate={onIntegrate}
+        extra={extra}
+        onRemoveExtra={onRemoveExtra}
         loading={seo.loading && seo.data === null}
       />
     </SideCard>

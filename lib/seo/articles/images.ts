@@ -68,9 +68,9 @@ export function inlineImageCount(words: number, cap: number): number {
 /* Lecture du Markdown                                                 */
 /* ------------------------------------------------------------------ */
 
-type BlockKind = "heading" | "paragraph" | "list" | "table" | "quote" | "image" | "code" | "html"
+export type BlockKind = "heading" | "paragraph" | "list" | "table" | "quote" | "image" | "code" | "html"
 
-interface Block {
+export interface Block {
   kind: BlockKind
   /** Niveau d'un titre. */
   level: number
@@ -92,7 +92,7 @@ function kindOf(first: string): BlockKind {
 }
 
 /** Blocs du Markdown (séparés par des lignes vides ; un bloc de code reste entier). */
-function parseBlocks(markdown: string): Block[] {
+export function parseBlocks(markdown: string): Block[] {
   const blocks: Block[] = []
   const lines = markdown.split("\n")
   let offset = 0
@@ -162,7 +162,7 @@ const words = (text: string) => (text.trim() ? text.trim().split(/\s+/).length :
 /* ------------------------------------------------------------------ */
 
 /** Sections qui ne reçoivent jamais de photo : FAQ, conclusion, sources, à lire aussi. */
-const NO_IMAGE_HEADING =
+export const NO_IMAGE_HEADING =
   /\b(faq|foire aux questions|questions? (frequentes?|courantes?)|conclusion|pour conclure|en resume|en bref|a retenir|l.?essentiel|pour aller plus loin|a lire aussi|sources?|ressources?|liens utiles)\b/
 
 export interface ImageSlot {

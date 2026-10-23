@@ -15,7 +15,8 @@
 import { z } from "zod"
 import { auditArticle } from "@/lib/blog-audit"
 import { findCompetitorMentions } from "@/lib/seo/competitors"
-import type { AssistAction, AssistRequest } from "@/lib/seo/articles/editor-types"
+import { excerptInText } from "@/lib/blog-editor/passages"
+import type { AssistAction, AssistRequest, ResolveRequest } from "@/lib/seo/articles/editor-types"
 
 /* ------------------------------------------------------------------ */
 /* Actions                                                             */
@@ -65,6 +66,21 @@ export const assistSchema = z.object({
   after: z.string().max(2000, "Contexte trop long").optional(),
 })
 
+/** Schéma de la requête de correction d'un passage refusé (ResolveRequest). */
+export const resolveSchema = z.object({
+  action: z.literal("resolve"),
+  text: z.string().trim().min(1, "Passage introuvable").max(4000, "Passage de 4 000 caractères au plus."),
+  issue: z.object({
+    label: z.string().trim().min(1, "Problème inconnu").max(200, "Libellé de 200 caractères au plus"),
+    detail: z.string().trim().max(1500, "Précision de 1 500 caractères au plus").nullable().optional(),
+  }),
+  excerpt: z.string().max(600, "Extrait trop long").optional(),
+  keyword: z.string().trim().max(120, "Mot-clé de 120 caractères au plus").nullable().optional(),
+  title: z.string().trim().max(200, "Titre de 200 caractères au plus").optional(),
+  before: z.string().max(2000, "Contexte trop long").optional(),
+  after: z.string().max(2000, "Contexte trop long").optional(),
+})
+
 /* ------------------------------------------------------------------ */
 /* Consigne                                                            */
 /* ------------------------------------------------------------------ */
@@ -104,6 +120,35 @@ export function buildAssistPrompt(req: Pick<AssistRequest, "action" | "text" | "
   lines.push("", "PASSAGE À RÉÉCRIRE :", `"""${decodeForModel(req.text).trim()}"""`)
   if (after) lines.push("", "CONTEXTE APRÈS LE PASSAGE (à ne pas réécrire) :", `"""${after}"""`)
   lines.push("", `CONSIGNE : ${INSTRUCTIONS[req.action](keyword)}`, "", "RÈGLES :", ...RULES)
+  return lines.join("\n")
+}
+
+const RESOLVE_RULES = [
+  "Corrigez exactement le problème signalé, et rien d'autre : le reste du passage (faits, ton, structure, liens utiles) ne change pas.",
+  "Une affirmation interdite ou invérifiable se retire, ou se remplace par une formulation vraie qui ne promet rien d'autre. N'inventez rien pour combler le vide.",
+  "Une valeur périmée se remplace par la valeur juste que le contrôle indique ; sans valeur indiquée, retirez le chiffre plutôt que d'en deviner un.",
+  "Le passage corrigé reste cohérent avec le texte qui le précède et le suit : il se lit sans trou ni répétition.",
+  "N'ajoutez aucun chiffre, aucune date, aucun taux, aucun montant, aucune référence légale qui ne figure ni dans le passage ni dans la précision du contrôle.",
+  "Vouvoyez le lecteur. Français correct, avec tous les accents.",
+  "Markdown en ligne seulement : gras « **…** », italique « *…* », liens « [texte](adresse) ». Gardez les liens du passage qui restent justes (même adresse), retirez celui qui servait la promesse supprimée, n'en ajoutez aucun.",
+  "Aucune image, aucun tableau, aucun HTML, aucun bloc de code, pas de titre.",
+  "Répondez par le seul passage corrigé : sans guillemets autour, sans introduction, sans commentaire.",
+].map((r) => `- ${r}`)
+
+/** Consigne de correction d'un passage refusé par le contrôle (sans la consigne système, buildSystemPrompt). */
+export function buildResolvePrompt(req: Pick<ResolveRequest, "text" | "issue" | "keyword" | "title" | "before" | "after">): string {
+  const keyword = req.keyword?.trim() || null
+  const lines: string[] = []
+  if (req.title?.trim()) lines.push(`TITRE DE L'ARTICLE : ${req.title.trim()}`)
+  if (keyword) lines.push(`MOT-CLÉ PRINCIPAL : ${keyword}`)
+  const before = contextOf(req.before, "before")
+  const after = contextOf(req.after, "after")
+  if (before) lines.push("", "CONTEXTE AVANT LE PASSAGE (à ne pas réécrire) :", `"""${before}"""`)
+  lines.push("", "PASSAGE À CORRIGER :", `"""${decodeForModel(req.text).trim()}"""`)
+  if (after) lines.push("", "CONTEXTE APRÈS LE PASSAGE (à ne pas réécrire) :", `"""${after}"""`)
+  lines.push("", `PROBLÈME REPÉRÉ PAR LE CONTRÔLE : ${req.issue.label.trim()}`)
+  if (req.issue.detail?.trim()) lines.push(`PRÉCISION DU CONTRÔLE : ${req.issue.detail.trim()}`)
+  lines.push("", "CONSIGNE : corrigez ce passage pour que le problème repéré disparaisse. Suivez ce que le contrôle indique d'écrire quand il l'indique.", "", "RÈGLES :", ...RESOLVE_RULES)
   return lines.join("\n")
 }
 
@@ -254,5 +299,18 @@ export function assistWarnings(input: { original: string; result: string; compet
   }
   for (const raw of added.slice(0, 4)) warnings.push(`Vérifiez : « ${raw} » n'était pas dans le passage.`)
   if (added.length > 4) warnings.push(`Vérifiez aussi ${added.length - 4} autre${added.length - 4 > 1 ? "s" : ""} nombre${added.length - 4 > 1 ? "s" : ""} absent${added.length - 4 > 1 ? "s" : ""} du passage.`)
+  return warnings
+}
+
+/**
+ * Points à vérifier après une correction demandée par le contrôle : les mêmes
+ * que pour une réécriture (nombres de la précision du contrôle admis), et le
+ * passage refusé qui serait resté tel quel.
+ */
+export function resolveWarnings(input: { original: string; result: string; competitors: string[]; removedLinks?: number; detail?: string | null; excerpt?: string }): string[] {
+  const warnings = assistWarnings({ original: `${input.original}\n${input.detail ?? ""}`, result: input.result, competitors: input.competitors, removedLinks: input.removedLinks })
+  if (input.excerpt && excerptInText(input.result, input.excerpt)) {
+    warnings.unshift("Le passage refusé figure encore dans le texte proposé : corrigez-le à la main, ou relancez la correction.")
+  }
   return warnings
 }
