@@ -16,6 +16,7 @@ export async function updateSession(request: NextRequest) {
     '/mentions-legales',
     '/confidentialite',
     '/facturation',
+    '/logiciel-gestion-batiment',
     '/guide',
     '/modele',
     '/glossaire',
