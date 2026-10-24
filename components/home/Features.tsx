@@ -21,10 +21,11 @@ const screen = (key: keyof typeof SCREENS): ScreenProps => ({ ...SCREENS[key], s
 /* ─────────────────────────────────────────────────────────
    1 — Devis
 ───────────────────────────────────────────────────────── */
-export function DevisBlock() {
+export function DevisBlock({ reverse = false }: { reverse?: boolean } = {}) {
   return (
     <FeatureBlock
       id="devis"
+      reverse={reverse}
       title="Créez vos devis"
       accent="en quelques minutes."
       items={[
@@ -35,7 +36,7 @@ export function DevisBlock() {
       ]}
       cta={{ href: SIGNUP_HREF, label: "Démarrer maintenant" }}
       link={{ href: "/demo/quotes/d-2026-035", label: "Voir un devis dans la démo" }}
-      visual={<ScreenPair desktop={screen("devis")} phone={screen("mobileDevis")} phoneSide="left" />}
+      visual={<ScreenPair desktop={screen("devis")} phone={screen("mobileDevis")} phoneSide={reverse ? "right" : "left"} />}
     />
   )
 }
@@ -43,11 +44,11 @@ export function DevisBlock() {
 /* ─────────────────────────────────────────────────────────
    2 — Facturation (capture à gauche)
 ───────────────────────────────────────────────────────── */
-export function FacturationBlock() {
+export function FacturationBlock({ reverse = true }: { reverse?: boolean } = {}) {
   return (
     <FeatureBlock
       id="facturation"
-      reverse
+      reverse={reverse}
       title="Facturez"
       accent="sans rien ressaisir."
       items={[
@@ -58,7 +59,7 @@ export function FacturationBlock() {
       ]}
       cta={{ href: SIGNUP_HREF, label: "Essayer gratuitement" }}
       link={{ href: "/guide/mentions-obligatoires-facture", label: "Les mentions obligatoires d'une facture" }}
-      visual={<ScreenPair desktop={screen("facture")} phone={screen("mobileFacture")} phoneSide="right" />}
+      visual={<ScreenPair desktop={screen("facture")} phone={screen("mobileFacture")} phoneSide={reverse ? "right" : "left"} />}
     />
   )
 }
@@ -67,10 +68,11 @@ export function FacturationBlock() {
    3 — Relances. L'envoi et les relances demandent la formule
    Essentiel : la note le dit sous les coches.
 ───────────────────────────────────────────────────────── */
-export function RelancesBlock() {
+export function RelancesBlock({ reverse = false }: { reverse?: boolean } = {}) {
   return (
     <FeatureBlock
       id="relances"
+      reverse={reverse}
       title="Faites-vous payer"
       accent="à l'heure."
       items={[
@@ -82,7 +84,7 @@ export function RelancesBlock() {
       note={`Envoi et relances avec la formule ${PLANS.starter.name}.`}
       cta={{ href: SIGNUP_HREF, label: "Démarrer maintenant" }}
       link={{ href: "/modele/lettre-relance-impaye", label: "Modèle de relance de facture impayée" }}
-      visual={<ScreenPair desktop={screen("relances")} phone={screen("mobileRelances")} phoneSide="left" />}
+      visual={<ScreenPair desktop={screen("relances")} phone={screen("mobileRelances")} phoneSide={reverse ? "right" : "left"} />}
     />
   )
 }
@@ -90,11 +92,11 @@ export function RelancesBlock() {
 /* ─────────────────────────────────────────────────────────
    4 — Tableau de bord (capture à gauche)
 ───────────────────────────────────────────────────────── */
-export function PilotageBlock() {
+export function PilotageBlock({ reverse = true }: { reverse?: boolean } = {}) {
   return (
     <FeatureBlock
       id="pilotage"
-      reverse
+      reverse={reverse}
       title="Pilotez votre activité"
       accent="d'un coup d'œil."
       items={[
@@ -105,7 +107,7 @@ export function PilotageBlock() {
       ]}
       cta={{ href: SIGNUP_HREF, label: "Essayer gratuitement" }}
       link={{ href: "/demo", label: "Ouvrir la démo" }}
-      visual={<ScreenPair desktop={screen("tableauDeBord")} phone={screen("mobileTableauDeBord")} phoneSide="right" />}
+      visual={<ScreenPair desktop={screen("tableauDeBord")} phone={screen("mobileTableauDeBord")} phoneSide={reverse ? "right" : "left"} />}
     />
   )
 }
@@ -113,10 +115,11 @@ export function PilotageBlock() {
 /* ─────────────────────────────────────────────────────────
    5 — Catalogue de prestations
 ───────────────────────────────────────────────────────── */
-export function CatalogueBlock() {
+export function CatalogueBlock({ reverse = false }: { reverse?: boolean } = {}) {
   return (
     <FeatureBlock
       id="catalogue"
+      reverse={reverse}
       title="Vos prestations,"
       accent="prêtes à chiffrer."
       items={[
@@ -127,7 +130,30 @@ export function CatalogueBlock() {
       ]}
       cta={{ href: SIGNUP_HREF, label: "Démarrer maintenant" }}
       link={{ href: "/modele", label: "Modèle de devis gratuit" }}
-      visual={<ScreenPair desktop={screen("catalogue")} phone={screen("mobileCatalogue")} phoneSide="left" />}
+      visual={<ScreenPair desktop={screen("catalogue")} phone={screen("mobileCatalogue")} phoneSide={reverse ? "right" : "left"} />}
+    />
+  )
+}
+
+/* ─────────────────────────────────────────────────────────
+   6 — Planning et notes (ouverts à tous les comptes, gratuits compris)
+───────────────────────────────────────────────────────── */
+export function PlanningBlock({ reverse = false }: { reverse?: boolean } = {}) {
+  return (
+    <FeatureBlock
+      id="planning"
+      reverse={reverse}
+      title="Votre agenda de chantier,"
+      accent="dans la poche."
+      items={[
+        "Rendez-vous de visite, de chantier ou de livraison, rattachés à un client",
+        "Un rappel par e-mail avant chaque rendez-vous",
+        `Des notes et des tâches avec échéance${NB}: par client ou par chantier`,
+        "Ouvert à tous les comptes, gratuits compris",
+      ]}
+      cta={{ href: SIGNUP_HREF, label: "Démarrer maintenant" }}
+      link={{ href: "/demo/planning", label: "Voir l'agenda dans la démo" }}
+      visual={<ScreenPair desktop={screen("planning")} phone={screen("mobilePlanning")} phoneSide={reverse ? "right" : "left"} />}
     />
   )
 }

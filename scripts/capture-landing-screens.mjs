@@ -51,6 +51,7 @@ const DESKTOP = [
   ["factures", "/demo/invoices"],
   ["catalogue", "/demo/products"],
   ["relances", "/demo/relances"],
+  ["planning", "/demo/planning"],
 ]
 const MOBILE = [
   ["mobile-tableau-de-bord", "/demo"],
@@ -59,6 +60,7 @@ const MOBILE = [
   ["mobile-factures", "/demo/invoices"],
   ["mobile-relances", "/demo/relances"],
   ["mobile-catalogue", "/demo/products"],
+  ["mobile-planning", "/demo/planning"],
 ]
 const ANALYTICS = /(posthog|facebook|sentry|google-analytics|googletagmanager|doubleclick)\./
 
@@ -66,6 +68,12 @@ async function shoot(ctx, name, path, safeArea) {
   if (only && !only.has(name)) return
   const page = await ctx.newPage()
   await page.route((url) => ANALYTICS.test(url.hostname), (route) => route.abort())
+  // Bandeau de cookies : un choix « refusé » déjà enregistré (lib/consent.ts), donc ni bandeau ni traceur dans la capture
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem("qonforme-cookie-consent", JSON.stringify({ v: 1, choice: "refused", at: Date.now() }))
+    } catch {}
+  })
   if (safeArea) {
     const cdp = await ctx.newCDPSession(page)
     await cdp.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 59, bottom: 34, left: 0, right: 0 } })
@@ -87,6 +95,11 @@ async function shoot(ctx, name, path, safeArea) {
     const hide = (el) => el.style.setProperty("display", "none", "important")
     for (const el of document.querySelectorAll(".q-tag")) if (el.textContent.trim() === "Démo") hide(el)
     for (const el of document.querySelectorAll('[class*="q-warn-bg"]')) if (el.textContent.includes("Mode démo")) hide(el)
+    // Bouton rond de la discussion avec Christophe (components/support/SupportChat.tsx)
+    for (const b of document.querySelectorAll("button[aria-label]")) {
+      const l = b.getAttribute("aria-label") || ""
+      if (l.startsWith("Discuter avec") || l.startsWith("Ouvrir la discussion") || l.startsWith("Fermer la discussion")) hide(b)
+    }
     for (const a of document.querySelectorAll("a")) {
       const t = a.textContent.trim()
       if (t === "Retour à l'accueil" || t.startsWith("Créer mon compte")) hide(a)
