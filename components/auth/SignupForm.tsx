@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { safeNextPath } from "@/lib/stripe/access"
 import { trackEvent } from "@/lib/meta-pixel"
+import { identifyUser } from "@/lib/analytics"
 import { AUTH_INPUT, AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
 
 function validate(fields: {
@@ -80,7 +81,7 @@ export default function SignupForm() {
       }
 
       // ── Étape 2 : connexion immédiate pour établir la session + cookies
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email:    fields.email.trim(),
         password: fields.password,
       })
@@ -94,6 +95,7 @@ export default function SignupForm() {
       const next = safeNextPath(new URLSearchParams(window.location.search).get("next"))
       toast.success(next ? "Compte créé." : "Compte créé. Il reste votre entreprise.")
       trackEvent("Lead", { currency: "EUR", value: 0 })
+      identifyUser(signInData.user?.id)
       router.push(next ?? "/signup/company")
     } catch {
       toast.error("Une erreur inattendue s'est produite. Réessayez.", { duration: 8000 })

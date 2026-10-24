@@ -50,6 +50,11 @@ const fmtTaux = (t: number) => `${formatNombreFr(t, 2)} %`
 /** Pictogrammes, sélecteurs de variante et liants : absents de la police, retirés. */
 const PICTOS = new RegExp("[\\p{Extended_Pictographic}\\u200d\\ufe0e\\ufe0f]", "gu")
 
+/** Mention de marque au pied de chaque page. Elle ne dit pas « gratuit » : le document est celui de l'artisan. */
+export function piedDocument(type: DocumentOutil["type"]): string {
+  return `${type === "facture" ? "Facture générée" : "Devis généré"} sur qonforme.fr`
+}
+
 export async function genererPdfDocument(d: DocumentOutil): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
   doc.registerFontkit(fontkit)
@@ -246,7 +251,7 @@ export async function genererPdfDocument(d: DocumentOutil): Promise<Uint8Array> 
   bloc("Notes", d.notes)
 
   /* ── Pied de chaque page ── */
-  const pied = `${d.type === "facture" ? "Facture générée" : "Devis généré"} gratuitement sur qonforme.fr`
+  const pied = piedDocument(d.type)
   pages.forEach((p, i) => {
     const pw = regular.widthOfTextAtSize(pied, 8)
     p.drawText(pied, { x: (W - pw) / 2, y: 28, size: 8, font: regular, color: rgb(0.62, 0.66, 0.71) })
@@ -258,7 +263,7 @@ export async function genererPdfDocument(d: DocumentOutil): Promise<Uint8Array> 
 
   doc.setTitle(propre(`${d.type === "facture" ? "Facture" : "Devis"}${d.numero ? ` ${d.numero}` : ""}`))
   doc.setAuthor(propre(d.emetteur.nom))
-  doc.setCreator("Qonforme — outil gratuit")
+  doc.setCreator("Qonforme")
   doc.setLanguage("fr-FR")
   return doc.save()
 }

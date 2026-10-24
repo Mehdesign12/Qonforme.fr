@@ -1,10 +1,12 @@
 "use client"
 
-import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { AlertCircle, ArrowLeft, ArrowRight, Check, Download, Info, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react"
 import { trackEvent } from "@/lib/meta-pixel"
+import { captureEvent } from "@/lib/analytics"
+import { messageApresPdf } from "@/lib/outils/apres-pdf"
 import { cn } from "@/lib/utils"
-import { Callout, Field, PanelTitle } from "@/components/outils/kit"
+import { Callout, Field, PanelTitle, ToolCta } from "@/components/outils/kit"
 import { SwitchRow } from "@/components/outils/controls"
 import { formatNombreFr } from "@/lib/outils/decimal"
 import {
@@ -468,6 +470,8 @@ export function DocumentGenerator({ type }: { type: TypeDocument }) {
   const [notes, setNotes] = useState("")
   const [loading, setLoading] = useState(false)
   const [erreurServeur, setErreurServeur] = useState("")
+  const [pdfTelecharge, setPdfTelecharge] = useState(false)
+  const apresPdf = useRef<HTMLDivElement>(null)
 
   const allerA = (i: number) => {
     setStep(i)
@@ -483,6 +487,13 @@ export function DocumentGenerator({ type }: { type: TypeDocument }) {
       }),
     [lignes, remises],
   )
+  // Sur mobile le bouton est en bas de l'écran : on amène le message dans la zone visible
+  useEffect(() => {
+    if (!pdfTelecharge) return
+    const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    apresPdf.current?.scrollIntoView({ block: "nearest", behavior: reduit ? "auto" : "smooth" })
+  }, [pdfTelecharge])
+
   const { valides, totaux } = useMemo(() => {
     const v = analyse.flatMap((a) => (a.ligne ? [a.ligne] : []))
     return { valides: v, totaux: calculerTotaux(v) }
@@ -569,6 +580,8 @@ export function DocumentGenerator({ type }: { type: TypeDocument }) {
       a.download = nomFichier(type, numero)
       a.click()
       trackEvent("Schedule", { content_name: facture ? "Generateur facture PDF" : "Generateur devis PDF", content_category: "tools" })
+      captureEvent("tool_pdf_generated", { tool: type, lines: valides.length })
+      setPdfTelecharge(true)
       setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch {
       setErreurServeur("Connexion impossible. Vérifiez votre réseau et réessayez.")
@@ -757,6 +770,14 @@ export function DocumentGenerator({ type }: { type: TypeDocument }) {
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Download className="h-5 w-5" aria-hidden />}
                 Télécharger le PDF
               </button>
+
+              {/* Zone annoncée aux lecteurs d'écran : le message apparaît après le téléchargement */}
+              <div ref={apresPdf} role="status" aria-live="polite" className="scroll-mb-24">
+                {pdfTelecharge && (() => {
+                  const m = messageApresPdf(type)
+                  return <ToolCta className="mt-5" title={m.titre} text={m.texte} cta={m.cta} href={m.href} />
+                })()}
+              </div>
             </div>
           )}
         </div>
