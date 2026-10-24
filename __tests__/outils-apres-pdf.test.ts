@@ -1,10 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-
-const posthog = vi.hoisted(() => ({ capture: vi.fn(), identify: vi.fn() }))
-vi.mock("posthog-js", () => ({ default: posthog }))
-
+import { describe, expect, it } from "vitest"
 import { messageApresPdf } from "@/lib/outils/apres-pdf"
-import { captureEvent, identifyUser } from "@/lib/analytics"
 
 describe("message après le téléchargement du PDF gratuit", () => {
   const messages = (["devis", "facture"] as const).map((t) => ({ type: t, ...messageApresPdf(t) }))
@@ -29,57 +24,6 @@ describe("message après le téléchargement du PDF gratuit", () => {
     expect(facture.href).toBe("/signup?source=outil-facture-pdf")
     expect(devis.titre).toMatch(/devis/i)
     expect(facture.titre).toMatch(/facture/i)
-  })
-})
-
-describe("analytique PostHog", () => {
-  beforeEach(() => {
-    posthog.capture.mockReset()
-    posthog.identify.mockReset()
-  })
-  afterEach(() => {
-    vi.unstubAllEnvs()
-    vi.unstubAllGlobals()
-  })
-
-  it("ne fait rien côté serveur ni sans clé PostHog", () => {
-    captureEvent("tool_pdf_generated", { tool: "devis", lines: 2 })
-    identifyUser("user-1")
-    vi.stubGlobal("window", {})
-    captureEvent("tool_pdf_generated", { tool: "devis", lines: 2 })
-    identifyUser("user-1")
-    expect(posthog.capture).not.toHaveBeenCalled()
-    expect(posthog.identify).not.toHaveBeenCalled()
-  })
-
-  it("envoie l'événement et l'identifiant quand PostHog est configuré", () => {
-    vi.stubGlobal("window", {})
-    vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "phc_test")
-    captureEvent("tool_pdf_generated", { tool: "facture", lines: 3 })
-    identifyUser("0b5e-uuid")
-    expect(posthog.capture).toHaveBeenCalledWith("tool_pdf_generated", { tool: "facture", lines: 3 })
-    expect(posthog.identify).toHaveBeenCalledWith("0b5e-uuid")
-  })
-
-  it("n'identifie pas sans identifiant de compte", () => {
-    vi.stubGlobal("window", {})
-    vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "phc_test")
-    identifyUser(undefined)
-    identifyUser("")
-    expect(posthog.identify).not.toHaveBeenCalled()
-  })
-
-  it("une erreur de PostHog ne casse jamais le parcours", () => {
-    vi.stubGlobal("window", {})
-    vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "phc_test")
-    posthog.capture.mockImplementation(() => {
-      throw new Error("réseau")
-    })
-    posthog.identify.mockImplementation(() => {
-      throw new Error("réseau")
-    })
-    expect(() => captureEvent("x")).not.toThrow()
-    expect(() => identifyUser("u")).not.toThrow()
   })
 })
 

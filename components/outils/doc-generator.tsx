@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { AlertCircle, ArrowLeft, ArrowRight, CircleCheck, Download, Info, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react"
 import { trackEvent } from "@/lib/meta-pixel"
-import { captureEvent } from "@/lib/analytics"
+import { captureEvent } from "@/components/shared/PostHogProvider"
 import { messageApresPdf } from "@/lib/outils/apres-pdf"
 import { cn } from "@/lib/utils"
 import { Callout, Field, PanelTitle, ToolCta } from "@/components/outils/kit"
