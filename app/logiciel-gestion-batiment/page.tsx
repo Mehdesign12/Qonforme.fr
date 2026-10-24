@@ -1,11 +1,13 @@
 import type { Metadata } from "next"
+import Image from "next/image"
 import Link from "next/link"
-import {
-  ArrowRight, BellRing, CalendarDays, Check, FileSpreadsheet, FileText, Hammer, HardHat, Receipt, ScanLine, Users,
-} from "lucide-react"
+import { ArrowRight, FileSpreadsheet, Hammer, HardHat, ScanLine } from "lucide-react"
 import { METIERS } from "@/lib/pseo/metiers"
-import { FREE_FEATURES, PAYMENT_METHODS_TEXT, PLANS, TAX_SUFFIX, formatEuros, scanQuotaText } from "@/lib/stripe/plans"
+import { PHOTOS } from "@/lib/landing/photos"
+import { PLANS, TAX_SUFFIX, formatEuros, scanQuotaText } from "@/lib/stripe/plans"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, FaqList, InlineCta, SectionHeading, WRAP } from "@/components/content/ui"
+import { TRADE_PHOTOS } from "@/components/content/metier"
+import { CatalogueBlock, DevisBlock, FacturationBlock, PilotageBlock, PlanningBlock, RelancesBlock } from "@/components/home/Features"
 import { dateFr, fr, lcFirst } from "@/components/content/text"
 
 /*
@@ -26,6 +28,12 @@ import { dateFr, fr, lcFirst } from "@/components/content/text"
  * GEO (visibilité dans les réponses des assistants IA) : définition en une phrase dès
  * le chapeau, bloc « L'essentiel » en liste de faits, questions posées comme on les tape,
  * critères de choix explicites, limites écrites noir sur blanc, date de vérification.
+ *
+ * Mise en page (retour du fondateur, 24/10/2026) : pas de section « Qu'est-ce que… » ni de
+ * grille de tarifs (la page Tarifs et « L'essentiel » suffisent) ; à la place, les mêmes
+ * blocs de maquettes que l'accueil (catalogue de prix, devis, facture, relances, agenda,
+ * tableau de bord), chacun avec son bouton, des photos de métiers sans dégradé ni élément
+ * posé dessus, et le détail des fonctions qui n'ont pas de bloc.
  */
 
 const VERIFIE_LE = "2026-10-24"
@@ -51,48 +59,13 @@ export const metadata: Metadata = {
   },
 }
 
-/** Ce que gère Qonforme aujourd'hui (une carte par fonction livrée). */
-const FONCTIONS = [
-  {
-    icone: FileText,
-    titre: "Devis détaillés",
-    texte: "Lignes de main-d'œuvre, de matériaux et de déplacement, TVA à 20 %, 10 % ou 5,5 % par ligne, mentions du bâtiment (statut, assurance décennale) ajoutées à partir de votre profil. Gratuits et illimités.",
-    href: "/guide/comment-faire-un-devis",
-    lien: "Comment faire un devis",
-  },
-  {
-    icone: Receipt,
-    titre: "Du devis à la facture",
-    texte: `Avec ${essentiel.name}, un devis accepté devient une facture en un clic, sans ressaisie. Une facture émise ne se modifie pas : vous la corrigez par un avoir, numéroté à la suite.`,
-    href: "/guide/premiere-facture",
-    lien: "Comment faire une facture",
-  },
-  {
-    icone: Users,
-    titre: "Clients et catalogue de votre métier",
-    texte: "Fiches clients, particuliers ou entreprises, et catalogue de prestations : importez les prestations courantes de votre métier avec la TVA adaptée au chantier, puis complétez vos prix.",
-    href: "/facturation",
-    lien: "Voir les métiers",
-  },
-  {
-    icone: BellRing,
-    titre: "Relances et suivi des paiements",
-    texte: `Avec ${essentiel.name}, des rappels avant l'échéance et des relances après, réglables, et un tableau de bord : chiffre du mois, encours, retards.`,
-    href: "/guide/facture-impayee",
-    lien: "Relancer une facture impayée",
-  },
-  {
-    icone: CalendarDays,
-    titre: "Planning et notes",
-    texte: "Rendez-vous de visite, de chantier ou de livraison, notes et rappels par client ou par chantier, avec rappel par e-mail. Ouverts à tous les comptes, gratuits compris.",
-    href: "/demo",
-    lien: "Voir dans la démo",
-  },
+/** Fonctions livrées qui n'ont pas de bloc de maquette. */
+const AUSSI = [
   {
     icone: ScanLine,
     titre: "Scan de documents",
     texte: `Photographiez vos devis signés, bons de commande et bons de livraison avec le téléphone : ils sont classés dans Documents (${scanQuotaText("free")} sans formule).`,
-    href: "/demo",
+    href: "/demo/documents",
     lien: "Voir dans la démo",
   },
   {
@@ -111,6 +84,13 @@ const FONCTIONS = [
     href: "/glossaire/fec",
     lien: "Qu'est-ce que le FEC ?",
   },
+]
+
+/** Photos du bandeau « Sur le terrain » : légendes sobres, rien de promis. */
+const TERRAIN = [
+  { photo: PHOTOS.chezLeClient, titre: "Chez le client", texte: "Le devis se prépare à l'avance, puis se présente sur place, en PDF ou sur le téléphone." },
+  { photo: PHOTOS.atelierTelephone, titre: "À l'atelier", texte: "Le catalogue, l'agenda et les notes s'ouvrent dans le navigateur du téléphone, sans rien installer." },
+  { photo: PHOTOS.finDeJournee, titre: "En fin de journée", texte: `Avec ${essentiel.name}, la facture part d'un clic et les relances suivent vos réglages.` },
 ]
 
 const ETAPES = [
@@ -187,7 +167,10 @@ export default function LogicielGestionBatimentPage() {
     },
   ]
 
-  const metiers = METIERS.map((m) => ({ href: `/facturation/${m.slug}`, label: `Logiciel pour ${lcFirst(m.nom)}` }))
+  // Les métiers qui ont une photo en tuile, les autres en liens simples dessous
+  const metiersPhoto = METIERS.filter((m) => TRADE_PHOTOS[m.slug])
+  const metiersListe = METIERS.filter((m) => !TRADE_PHOTOS[m.slug]).map((m) => ({ href: `/facturation/${m.slug}`, label: `Logiciel pour ${lcFirst(m.nom)}` }))
+  const photoHero = PHOTOS.cheffeDeChantier
 
   return (
     <>
@@ -199,6 +182,13 @@ export default function LogicielGestionBatimentPage() {
           title={TITRE}
           accent="pour artisans."
           sub="Qonforme est un logiciel de gestion pour artisans du bâtiment : vos devis, vos factures, vos relances et votre planning au même endroit. Les devis sont gratuits et illimités ; vous choisissez une formule quand vous envoyez votre première facture."
+          media={
+            photoHero ? (
+              <div className="relative aspect-[16/10] overflow-hidden rounded-[24px] border border-q-line bg-q-sunken lg:aspect-[4/5]">
+                <Image src={photoHero.src} alt={photoHero.alt} fill priority sizes="(max-width: 1024px) 100vw, 400px" className="object-cover object-[50%_18%]" />
+              </div>
+            ) : undefined
+          }
         >
           <CtaButtons className="mt-8" />
           <p className="mt-5 text-[14px] text-q-text-4">
@@ -227,28 +217,48 @@ export default function LogicielGestionBatimentPage() {
           </div>
         </section>
 
-        <section aria-labelledby="definition" className="px-4 pt-16 sm:px-6 sm:pt-20">
-          <div className="mx-auto w-full max-w-[860px]">
-            <SectionHeading id="definition" title="Qu'est-ce qu'un logiciel" accent="de gestion du bâtiment ?" className="mb-6" />
-            <div className="flex flex-col gap-4 text-[16px] leading-[1.7] text-q-text-3">
-              <p>
-                Un logiciel de gestion pour le bâtiment rassemble, au même endroit, ce qu&apos;un artisan fait chaque semaine hors du chantier : chiffrer un devis, le faire accepter, facturer, suivre ce qui est payé, relancer ce qui ne l&apos;est pas, puis transmettre les pièces au comptable.
-              </p>
-              <p>
-                Il se distingue d&apos;un simple logiciel de devis par le suivi : un devis accepté devient une facture sans ressaisie, les paiements attendus apparaissent dans un tableau de bord, et les retards déclenchent des relances.
-              </p>
-              <p>
-                D&apos;autres logiciels couvrent aussi la paie, les achats ou la planification d&apos;équipes. Qonforme se concentre sur le cycle devis, facture, paiement.
-              </p>
-            </div>
+        <section aria-labelledby="fonctions" className="px-4 pb-10 pt-16 sm:px-6 sm:pb-12 sm:pt-20">
+          <div className={WRAP}>
+            <SectionHeading id="fonctions" title="Ce que Qonforme gère" accent="aujourd'hui." sub="Les vrais écrans de l'application, avec des données d'exemple. Seulement ce qui existe : rien d'annoncé qui ne soit pas livré." />
           </div>
         </section>
 
-        <section aria-labelledby="fonctions" className="px-4 pt-16 sm:px-6 sm:pt-20">
+        {/* Mêmes blocs et mêmes captures que l'accueil, du chiffrage au suivi, en alternance */}
+        <CatalogueBlock reverse={false} />
+        <DevisBlock reverse />
+        <FacturationBlock reverse={false} />
+        <RelancesBlock reverse />
+        <PlanningBlock reverse={false} />
+        <PilotageBlock reverse />
+
+        <section aria-labelledby="terrain" className="px-4 pt-16 sm:px-6 sm:pt-20">
           <div className={WRAP}>
-            <SectionHeading id="fonctions" title="Ce que Qonforme gère" accent="aujourd'hui." sub="Seulement ce qui existe dans l'application : rien d'annoncé qui ne soit pas livré." className="mb-8" />
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {FONCTIONS.map((f) => (
+            <SectionHeading id="terrain" title="Pensé pour" accent="le terrain." sub="Un logiciel qu'on ouvre entre deux chantiers, sur le téléphone comme à l'ordinateur." className="mb-8" />
+            <ul className="grid gap-6 md:grid-cols-3">
+              {TERRAIN.map((t) =>
+                t.photo ? (
+                  <li key={t.titre} data-reveal="" data-reveal-item="">
+                    <figure>
+                      <div className="relative aspect-[16/10] overflow-hidden rounded-[20px] border border-q-line bg-q-sunken">
+                        <Image src={t.photo.src} alt={t.photo.alt} fill loading="lazy" sizes="(max-width: 768px) 100vw, 384px" className="object-cover" />
+                      </div>
+                      <figcaption className="mt-4">
+                        <h3 className="font-display text-[19px] font-semibold leading-[1.25] tracking-[-0.02em] text-q-ink-strong">{t.titre}</h3>
+                        <p className="mt-1.5 text-[15px] leading-[1.6] text-q-text-3">{fr(t.texte)}</p>
+                      </figcaption>
+                    </figure>
+                  </li>
+                ) : null,
+              )}
+            </ul>
+          </div>
+        </section>
+
+        <section aria-labelledby="aussi" className="px-4 pt-16 sm:px-6 sm:pt-20">
+          <div className={WRAP}>
+            <SectionHeading id="aussi" title="Et aussi," accent="pour le reste." className="mb-8" />
+            <ul className="grid gap-4 md:grid-cols-3">
+              {AUSSI.map((f) => (
                 <li key={f.titre} data-reveal="" data-reveal-item="" className="flex flex-col rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[shadow:var(--q-shadow-card)]">
                   <span className="q-glyph mb-5 grid h-10 w-10 shrink-0 place-items-center text-q-accent-strong">
                     <f.icone className="h-5 w-5" strokeWidth={1.75} aria-hidden />
@@ -287,49 +297,50 @@ export default function LogicielGestionBatimentPage() {
 
         <section aria-labelledby="metiers" className="px-4 pt-16 sm:px-6 sm:pt-20">
           <div className={WRAP}>
-            <SectionHeading id="metiers" title="Pour quel" accent="métier ?" sub="Chaque métier a son catalogue de prestations et ses règles de TVA : choisissez le vôtre." className="mb-6" />
-            <ChipLinks links={metiers} />
-          </div>
-        </section>
-
-        <section aria-labelledby="tarifs" className="px-4 pt-16 sm:px-6 sm:pt-20">
-          <div className={WRAP}>
-            <SectionHeading id="tarifs" title="Combien" accent="ça coûte ?" sub={`Les devis ne coûtent rien. Vous choisissez une formule quand vous envoyez votre première facture. Paiement par ${PAYMENT_METHODS_TEXT}.`} className="mb-8" />
-            <div className="grid gap-4 lg:grid-cols-3">
-              {[
-                { nom: "Devis", prix: "0 €", periode: "sans carte bancaire", liste: FREE_FEATURES, note: undefined },
-                { nom: essentiel.name, prix: prix(essentiel.monthlyPrice), periode: `par mois, ou ${prix(essentiel.yearlyPrice)} par an`, liste: essentiel.features, note: undefined },
-                {
-                  nom: artisan.name,
-                  prix: artisanEnVente ? prix(artisan.monthlyPrice) : "Bientôt",
-                  periode: artisanEnVente ? `par mois, ou ${prix(artisan.yearlyPrice)} par an` : "pas encore en vente",
-                  liste: artisan.features,
-                  note: `Tout ${essentiel.name}, plus :`,
-                },
-              ].map((p) => (
-                <article key={p.nom} data-reveal="" data-reveal-item="" className="flex flex-col rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[shadow:var(--q-shadow-card)]">
-                  <h3 className="font-display text-[20px] font-semibold tracking-[-0.02em] text-q-ink-strong">{p.nom}</h3>
-                  <p className="mt-3 font-display text-[34px] font-semibold leading-none tracking-[-0.03em] text-q-ink-strong tabular-nums">{fr(p.prix)}</p>
-                  <p className="mt-1 text-[14px] text-q-text-4">{fr(p.periode)}</p>
-                  {p.note && <p className="mt-5 text-[14px] font-semibold text-q-ink-strong">{p.note}</p>}
-                  <ul className={`${p.note ? "mt-2" : "mt-5"} flex flex-col gap-2.5 text-[14.5px] leading-[1.5] text-q-text-3`}>
-                    {p.liste.map((f) => (
-                      <li key={f} className="flex gap-2.5">
-                        <Check className="mt-[3px] h-4 w-4 shrink-0 text-q-accent-strong" strokeWidth={2} aria-hidden />
-                        <span>{fr(f)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </article>
-              ))}
-            </div>
-            <p className="mt-6 text-[14px] text-q-text-4">
-              Tous les détails sont sur la page{" "}
-              <Link href="/pricing" className="font-semibold text-q-accent-strong hover:underline">
-                Tarifs
-              </Link>
-              .
-            </p>
+            <SectionHeading id="metiers" title="Pour quel" accent="métier ?" sub="Chaque métier a son catalogue de prestations et ses règles de TVA : choisissez le vôtre." className="mb-8" />
+            <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
+              {metiersPhoto.map((m) => {
+                const photo = TRADE_PHOTOS[m.slug]
+                return (
+                  <li key={m.slug}>
+                    <Link
+                      href={`/facturation/${m.slug}`}
+                      className="group relative block aspect-[4/5] overflow-hidden rounded-[20px] border border-q-line bg-q-wash focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent"
+                    >
+                      {photo && (
+                        <Image
+                          src={photo.src}
+                          alt=""
+                          fill
+                          loading="lazy"
+                          sizes="(max-width: 768px) 50vw, 232px"
+                          className="object-cover transition-transform duration-700 group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                        />
+                      )}
+                      <span className="absolute bottom-3 left-3 right-3 flex">
+                        <span className="inline-flex h-8 max-w-full items-center gap-1.5 truncate rounded-full bg-white px-3 text-[13px] font-semibold text-[#0F172A] shadow-[0_1px_2px_rgba(10,17,34,.15)]">
+                          {m.nom}
+                          <ArrowRight className="h-3.5 w-3.5 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                )
+              })}
+              <li>
+                <Link
+                  href="/facturation"
+                  className="group flex aspect-[4/5] flex-col items-start justify-end rounded-[20px] border border-q-line bg-q-wash p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent"
+                >
+                  <span className="font-display text-[18px] font-semibold leading-[1.2] tracking-[-0.02em] text-q-ink-strong">Tous les métiers</span>
+                  <span className="mt-2 inline-flex items-center gap-1.5 text-[14px] font-semibold text-q-accent-strong">
+                    Voir la liste
+                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+                  </span>
+                </Link>
+              </li>
+            </ul>
+            {metiersListe.length > 0 && <ChipLinks links={metiersListe} className="mt-6" />}
           </div>
         </section>
 
@@ -355,6 +366,7 @@ export default function LogicielGestionBatimentPage() {
             <h2 className="q-eyebrow mb-4 mt-12">Pour aller plus loin</h2>
             <ChipLinks
               links={[
+                { href: "/pricing", label: "Tarifs et formules" },
                 { href: "/guide/devis-obligatoire", label: "Devis obligatoire : les règles" },
                 { href: "/guide/tva-travaux", label: "TVA des travaux : 20 %, 10 % ou 5,5 %" },
                 { href: "/guide/facture-electronique-2026", label: "Facturation électronique 2026-2027" },

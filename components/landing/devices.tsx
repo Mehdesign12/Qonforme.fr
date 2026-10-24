@@ -166,10 +166,12 @@ export const SCREENS = {
   factures: { src: `${ECRANS}/factures.webp`, width: 1920, height: 1200, alt: "Liste des factures dans Qonforme avec leur statut" },
   catalogue: { src: `${ECRANS}/catalogue.webp`, width: 1920, height: 1200, alt: "Catalogue de prestations dans Qonforme : unité, prix net HT et taux de TVA de chaque ligne" },
   relances: { src: `${ECRANS}/relances.webp`, width: 1920, height: 1200, alt: "Page Relances de Qonforme : relances à venir, déjà envoyées, et documents à traiter soi-même" },
+  planning: { src: `${ECRANS}/planning.webp`, width: 1920, height: 1200, alt: "Planning et notes de Qonforme : la semaine avec les rendez-vous de visite, de chantier et de livraison" },
   mobileDevis: { src: `${ECRANS}/mobile-devis.webp`, width: 786, height: 1704, alt: "Un devis consulté sur téléphone dans Qonforme" },
   mobileTableauDeBord: { src: `${ECRANS}/mobile-tableau-de-bord.webp`, width: 786, height: 1704, alt: "Le tableau de bord Qonforme sur téléphone" },
   mobileFactures: { src: `${ECRANS}/mobile-factures.webp`, width: 786, height: 1704, alt: "La liste des factures Qonforme sur téléphone" },
   mobileFacture: { src: `${ECRANS}/mobile-facture.webp`, width: 786, height: 1704, alt: "Une facture envoyée, consultée sur téléphone dans Qonforme" },
   mobileRelances: { src: `${ECRANS}/mobile-relances.webp`, width: 786, height: 1704, alt: "Les relances à venir, consultées sur téléphone dans Qonforme" },
+  mobilePlanning: { src: `${ECRANS}/mobile-planning.webp`, width: 786, height: 1704, alt: "L'agenda du jour consulté sur téléphone dans Qonforme : visite et chantier, avec l'itinéraire" },
   mobileCatalogue: { src: `${ECRANS}/mobile-catalogue.webp`, width: 786, height: 1704, alt: "Le catalogue de prestations, consulté sur téléphone dans Qonforme" },
 } as const

@@ -101,7 +101,16 @@ export default function SignupForm() {
       rememberAuthMethod("email")
       trackEvent("Lead", { currency: "EUR", value: 0 })
       identifyUser(signInData.user?.id)
-      router.push(next ?? "/signup/company")
+      // Retour à la page qui a demandé l'inscription (invitation d'un comptable :
+      // pas d'entreprise à créer) ; sinon le tableau de bord, où la fenêtre
+      // « Bienvenue » s'ouvre avec la mention « Compte créé »
+      const next = safeNextPath(new URLSearchParams(window.location.search).get("next"))
+      if (next) {
+        toast.success("Compte créé.")
+        router.push(next)
+      } else {
+        router.push("/dashboard?bienvenue=1")
+      }
     } catch {
       toast.error("Une erreur inattendue s'est produite. Réessayez.", { duration: 8000 })
       setLoading(false)
