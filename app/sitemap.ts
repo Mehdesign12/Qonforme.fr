@@ -36,6 +36,7 @@ const MAJ: Record<string, string> = {
   "/modele/devis-electricien": "2026-10-16",
   "/modele/lettre-relance-impaye": "2026-10-16",
   "/facturation": "2026-10-15",
+  "/logiciel-gestion-batiment": "2026-10-24",
   // 16/10/2026 : title, H1 et introduction des 11 pages métier (MOTS-CLES-COMPACTS-2026-10.md § 0)
   ...Object.fromEntries(METIERS.map((m) => [`/facturation/${m.slug}`, "2026-10-16"])),
   "/devenir-a-son-compte/electricien": "2026-10-15",
@@ -136,6 +137,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/facturation`,
       ...dateDe("/facturation"),
       changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/logiciel-gestion-batiment`,
+      ...dateDe("/logiciel-gestion-batiment"),
+      changeFrequency: "monthly",
       priority: 0.8,
     },
     {
