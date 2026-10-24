@@ -549,6 +549,16 @@ describe("problèmes du relecteur gardés jusqu'à la publication", () => {
     expect(mocks.revalidated).toHaveLength(0)
   })
 
+  it("« Publier quand même » : l'admin a relu les passages, l'article part malgré le contrôle", async () => {
+    const post = reviewedPost({ audit_result: reviewAudit("forbidden_claim"), scheduled_at: null, review_status: "to_review", held_reason: "Retenu par le contrôle : Affirmation interdite" })
+    const db = fakeArticlesDb({ blog_posts: [post], seo_topics: [], seo_settings: [] })
+    const client = db.client as SeoDb
+    const res = await publishNow(client, (await readPublishablePost(client, post.id as string))!, await loadCheckContext(client), new Date(), { force: true })
+    expect(res).toEqual({ ok: true })
+    expect(db.tables.blog_posts[0]).toMatchObject({ is_published: true, review_status: "approved", held_reason: null })
+    expect(mocks.revalidated.length).toBeGreaterThan(0)
+  })
+
   it("« Publier maintenant » sur un article déjà publié : aucune écriture", async () => {
     const post = reviewedPost({ is_published: true, published_at: "2026-10-01T08:00:00.000Z", review_status: "approved" })
     const db = fakeArticlesDb({ blog_posts: [post], seo_topics: [], seo_settings: [] })

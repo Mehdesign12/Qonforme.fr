@@ -58,7 +58,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       return NextResponse.json({ ok: true })
     }
 
-    const result = await publishNow(db, post, await loadCheckContext(db))
+    const result = await publishNow(db, post, await loadCheckContext(db), new Date(), { force: parsed.data.force === true })
     if (!result.ok) {
       return NextResponse.json(
         {

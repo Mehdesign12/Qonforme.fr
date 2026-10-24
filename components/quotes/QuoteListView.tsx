@@ -16,7 +16,8 @@
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ChevronRight, FileCheck2, Loader2, Plus, ShoppingCart } from "lucide-react"
+import { FileCheck2, Loader2, Plus, ShoppingCart } from "lucide-react"
+import { DocRow } from "@/components/app/DocRow"
 import { DocStatusPill, EmptyState, Kpi, KpiGrid, PageHeader, SearchField } from "@/components/app/kit"
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
@@ -367,34 +368,23 @@ export function QuoteListView({
           <p className="q-card px-5 py-7 text-center text-sm leading-normal text-[var(--q-text-4)]">Aucun devis ne correspond à cette recherche.</p>
         ) : (
           <div className="q-card q-list overflow-hidden rounded-[18px]">
-            {visible.map((q) => (
-              <Link key={q.id} href={q.href} className="q-list-row px-3.5 py-2.5">
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate text-[15px] font-semibold">{q.client_name ?? "Sans client"}</span>
-                  <span className="truncate font-mono text-xs text-[var(--q-text-4)]">{q.quote_number} · {q.subject}</span>
-                </span>
-                <span className="flex shrink-0 flex-col items-end gap-1">
-                  <span className="text-[15px] font-semibold tabular-nums">{formatCurrency(Number(q.total_ttc))}</span>
-                  <DocStatusPill kind="quote" status={q.status} className="h-[22px] px-2 text-[11px]" />
-                </span>
-              </Link>
-            ))}
+            {visible.map((q) => {
+              const next = quoteNextStep(q, today)
+              return (
+                <DocRow
+                  key={q.id}
+                  href={q.href}
+                  name={q.client_name ?? "Sans client"}
+                  reference={`${q.quote_number} · ${shortDate(q.issue_date)}`}
+                  amount={formatCurrency(Number(q.total_ttc))}
+                  pill={<DocStatusPill kind="quote" status={q.status} className="h-[22px] px-2 text-[11px]" />}
+                  next={q.status === "accepted" && !q.converted ? "Convertir en facture" : next.tone === "warn" ? next.text : null}
+                />
+              )
+            })}
           </div>
         )}
       </section>
-
-      <Link href={purchaseOrdersHref} className="q-card q-list-row overflow-hidden rounded-[18px] px-3.5 md:hidden">
-        <span className="grid size-9 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
-          <ShoppingCart className="size-[18px]" strokeWidth={1.75} aria-hidden />
-        </span>
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-[15px] font-semibold">Bons de commande</span>
-          <span className="truncate text-[13px] tabular-nums text-[var(--q-text-4)]">
-            {purchaseOrdersCount == null ? "Facultatifs, à la demande du client" : purchaseOrdersCount === 0 ? "Aucun pour l'instant" : plural(purchaseOrdersCount, "bon de commande", "bons de commande")}
-          </span>
-        </span>
-        <ChevronRight className="size-4 shrink-0 text-[var(--q-text-4)]" aria-hidden />
-      </Link>
     </div>
   )
 }

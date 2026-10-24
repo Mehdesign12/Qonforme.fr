@@ -35,3 +35,31 @@ export function parseActivationParam(value: string | null | undefined): Activati
   if (value === 'envoi') return 'envoi'
   return null
 }
+
+/**
+ * « Envoyer ma première facture » : la fenêtre d'activation ajoute `?send=1` à la
+ * fiche de la facture, où l'artisan se trouve déjà. La fiche surveille ce paramètre
+ * (il n'est pas lu qu'au chargement) et ouvre l'envoi.
+ */
+export const SEND_PARAM = 'send'
+
+export function wantsSendAfterPayment(value: string | null | undefined): boolean {
+  return value === '1'
+}
+
+/**
+ * Ce que fait la fiche quand l'envoi est demandé après le paiement :
+ *   open      → ouvrir la fenêtre d'envoi ;
+ *   not-draft → la facture est déjà émise, rien à envoyer pour la première fois ;
+ *   no-email  → le client n'a pas d'adresse : le dire, jamais un silence.
+ */
+export type SendAfterPaymentOutcome = 'open' | 'not-draft' | 'no-email'
+
+export function sendAfterPaymentOutcome(invoice: {
+  status: string
+  client?: { email?: string | null } | null
+}): SendAfterPaymentOutcome {
+  if (invoice.status !== 'draft') return 'not-draft'
+  if (!invoice.client?.email?.trim()) return 'no-email'
+  return 'open'
+}

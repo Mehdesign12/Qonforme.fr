@@ -19,7 +19,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Archive, ArchiveRestore, Bookmark, ChevronRight, Download, FileSpreadsheet, FileText, Loader2, Plus, RotateCcw, RefreshCw, X } from "lucide-react"
+import { Archive, ArchiveRestore, Bookmark, ChevronRight, Download, FileSpreadsheet, FileText, Loader2, Plus, RefreshCw, X } from "lucide-react"
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { DRAFT_INVOICE_LABEL, invoiceNumberLabel } from "@/lib/utils/document-numbering"
+import { DocRow } from "@/components/app/DocRow"
 import { DocStatusPill, EmptyState, Kpi, KpiGrid, PageHeader, SearchField } from "@/components/app/kit"
 import {
   type InvoiceListItem, OPEN_STATUSES, daysLate, isLate, isOpen, normalize, plural, shortDate, yearOf,
@@ -528,41 +529,20 @@ export function InvoiceList({
           {/* Mobile : lignes */}
           <section aria-label="Liste des factures" className="q-card q-list overflow-hidden rounded-[18px] md:hidden">
             {rows.map((inv) => (
-              <Link key={inv.id} href={hrefFor(inv.id)} className={cn("q-list-row", inv.is_archived && tab !== "archived" && "opacity-60")}>
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate text-[15px] font-semibold">{inv.client_name ?? "—"}</span>
-                  <span className={cn("truncate text-xs text-[var(--q-text-4)]", inv.invoice_number && "font-mono")}>
-                    {invoiceNumberLabel(inv.invoice_number)}{inv.subject ? ` · ${inv.subject}` : ""}
-                  </span>
-                </span>
-                <span className="flex shrink-0 flex-col items-end gap-1">
-                  <span className="text-[15px] font-semibold tabular-nums">{formatCurrency(inv.total_ttc)}</span>
-                  <ListPill inv={inv} today={today} />
-                </span>
-              </Link>
+              <DocRow
+                key={inv.id}
+                href={hrefFor(inv.id)}
+                name={inv.client_name ?? "—"}
+                reference={`${invoiceNumberLabel(inv.invoice_number)}${inv.subject ? ` · ${inv.subject}` : ""}`}
+                mono={Boolean(inv.invoice_number)}
+                amount={formatCurrency(inv.total_ttc)}
+                pill={<ListPill inv={inv} today={today} />}
+                next={inv.status === "draft" ? "Terminer et envoyer" : daysLate(inv.status, inv.due_date, today) > 0 ? "Relancer" : null}
+                className={cn(inv.is_archived && tab !== "archived" && "opacity-60")}
+              />
             ))}
           </section>
         </>
-      )}
-
-      {/* Mobile : accès aux avoirs (onglet sur ordinateur) */}
-      {!loading && (
-        <section className="q-card q-list overflow-hidden rounded-[18px] md:hidden">
-          <Link href={creditNotesHref} className="q-list-row">
-            <span className="grid size-9 shrink-0 place-items-center text-[var(--q-accent-strong)] q-glyph">
-              <RotateCcw className="size-4" aria-hidden />
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-[15px] font-semibold">Avoirs</span>
-              {creditNotesCount != null && (
-                <span className="text-[13px] tabular-nums text-[var(--q-text-4)]">
-                  {creditNotesCount === 0 ? "Aucun avoir émis" : plural(creditNotesCount, "avoir émis", "avoirs émis")}
-                </span>
-              )}
-            </span>
-            <ChevronRight className="size-4 text-[var(--q-text-4)]" aria-hidden />
-          </Link>
-        </section>
       )}
     </div>
   )
