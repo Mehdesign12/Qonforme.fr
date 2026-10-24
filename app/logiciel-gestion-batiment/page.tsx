@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import {
-  BellRing, CalendarDays, Check, FileSpreadsheet, FileText, Hammer, HardHat, Receipt, ScanLine, Users,
+  ArrowRight, BellRing, CalendarDays, Check, FileSpreadsheet, FileText, Hammer, HardHat, Receipt, ScanLine, Users,
 } from "lucide-react"
 import { METIERS } from "@/lib/pseo/metiers"
 import { FREE_FEATURES, PAYMENT_METHODS_TEXT, PLANS, TAX_SUFFIX, formatEuros, scanQuotaText } from "@/lib/stripe/plans"
-import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, FaqList, InlineCta, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
+import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, FaqList, InlineCta, SectionHeading, WRAP } from "@/components/content/ui"
 import { dateFr, fr, lcFirst } from "@/components/content/text"
 
 /*
@@ -58,36 +58,42 @@ const FONCTIONS = [
     titre: "Devis détaillés",
     texte: "Lignes de main-d'œuvre, de matériaux et de déplacement, TVA à 20 %, 10 % ou 5,5 % par ligne, mentions du bâtiment (statut, assurance décennale) ajoutées à partir de votre profil. Gratuits et illimités.",
     href: "/guide/comment-faire-un-devis",
+    lien: "Comment faire un devis",
   },
   {
     icone: Receipt,
     titre: "Du devis à la facture",
     texte: `Avec ${essentiel.name}, un devis accepté devient une facture en un clic, sans ressaisie. Une facture émise ne se modifie pas : vous la corrigez par un avoir, numéroté à la suite.`,
     href: "/guide/premiere-facture",
+    lien: "Comment faire une facture",
   },
   {
     icone: Users,
     titre: "Clients et catalogue de votre métier",
     texte: "Fiches clients, particuliers ou entreprises, et catalogue de prestations : importez les prestations courantes de votre métier avec la TVA adaptée au chantier, puis complétez vos prix.",
     href: "/facturation",
+    lien: "Voir les métiers",
   },
   {
     icone: BellRing,
     titre: "Relances et suivi des paiements",
     texte: `Avec ${essentiel.name}, des rappels avant l'échéance et des relances après, réglables, et un tableau de bord : chiffre du mois, encours, retards.`,
     href: "/guide/facture-impayee",
+    lien: "Relancer une facture impayée",
   },
   {
     icone: CalendarDays,
     titre: "Planning et notes",
     texte: "Rendez-vous de visite, de chantier ou de livraison, notes et rappels par client ou par chantier, avec rappel par e-mail. Ouverts à tous les comptes, gratuits compris.",
     href: "/demo",
+    lien: "Voir dans la démo",
   },
   {
     icone: ScanLine,
     titre: "Scan de documents",
     texte: `Photographiez vos devis signés, bons de commande et bons de livraison avec le téléphone : ils sont classés dans Documents (${scanQuotaText("free")} sans formule).`,
     href: "/demo",
+    lien: "Voir dans la démo",
   },
   {
     icone: Hammer,
@@ -96,12 +102,14 @@ const FONCTIONS = [
       ? `Avec la formule ${artisan.name} : factures d'acompte, situations de travaux, retenue de garantie, autoliquidation en sous-traitance et suivi par chantier.`
       : `La formule ${artisan.name}, bientôt disponible, ajoute les factures d'acompte, les situations de travaux, la retenue de garantie, l'autoliquidation en sous-traitance et le suivi par chantier.`,
     href: "/guide/facture-acompte",
+    lien: "La facture d'acompte",
   },
   {
     icone: FileSpreadsheet,
     titre: "Export comptable",
     texte: `Avec ${essentiel.name}, l'export FEC (fichier des écritures comptables) de vos factures et de vos avoirs, pour votre expert-comptable.`,
     href: "/glossaire/fec",
+    lien: "Qu'est-ce que le FEC ?",
   },
 ]
 
@@ -241,15 +249,17 @@ export default function LogicielGestionBatimentPage() {
             <SectionHeading id="fonctions" title="Ce que Qonforme gère" accent="aujourd'hui." sub="Seulement ce qui existe dans l'application : rien d'annoncé qui ne soit pas livré." className="mb-8" />
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {FONCTIONS.map((f) => (
-                <li key={f.titre} className="flex">
-                  <LinkCard
-                    as="h3"
-                    href={f.href}
-                    title={f.titre}
-                    text={f.texte}
-                    icon={<f.icone className="h-5 w-5" strokeWidth={1.75} aria-hidden />}
-                    className="w-full"
-                  />
+                <li key={f.titre} data-reveal="" data-reveal-item="" className="flex flex-col rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[shadow:var(--q-shadow-card)]">
+                  <span className="q-glyph mb-5 grid h-10 w-10 shrink-0 place-items-center text-q-accent-strong">
+                    <f.icone className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+                  </span>
+                  <h3 className="font-display text-[19px] font-semibold leading-[1.25] tracking-[-0.02em] text-q-ink-strong">{fr(f.titre)}</h3>
+                  {/* Texte entier : une carte-lien tronque à trois lignes, ce qui couperait la phrase en plein milieu */}
+                  <p className="mt-2 flex-1 text-[14.5px] leading-[1.6] text-q-text-3">{fr(f.texte)}</p>
+                  <Link href={f.href} className="mt-5 inline-flex items-center gap-1.5 text-[14px] font-semibold text-q-accent-strong hover:underline">
+                    {f.lien}
+                    <ArrowRight className="h-4 w-4" aria-hidden />
+                  </Link>
                 </li>
               ))}
             </ul>
