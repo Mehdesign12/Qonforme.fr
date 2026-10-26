@@ -63,6 +63,38 @@ export function captureEvent(name: string, properties?: Record<string, string | 
     .catch(() => {});
 }
 
+/**
+ * Relie le visiteur anonyme au compte qu'il vient de créer (PostHog est en
+ * `identified_only`) : on retrouve alors, dans la fiche du compte, la page ou l'outil
+ * d'où il venait (par exemple le générateur de devis). Même règles que `captureEvent` :
+ * rien sans l'accord du visiteur, rien sur une page sans traceur. On n'envoie que
+ * l'identifiant du compte, jamais l'email ni le nom.
+ */
+export function identifyUser(userId: string | null | undefined): void {
+  if (!userId || typeof window === "undefined" || !POSTHOG_KEY) return;
+  if (currentConsent() !== "accepted" || !isTrackingPage(window.location.pathname)) return;
+  loadPostHog()
+    ?.then((ph) => {
+      if (ph.get_distinct_id() !== userId) ph.identify(userId);
+    })
+    .catch(() => {});
+}
+
+/**
+ * Compte tout juste créé, par email ou par Google : les deux arrivent sur le tableau de
+ * bord avec `?bienvenue=1` (components/auth/SignupForm.tsx, app/api/auth/callback/route.ts).
+ * La session est déjà dans les cookies : on la lit sans appel réseau.
+ */
+async function identifyCurrentUser(): Promise<void> {
+  try {
+    const { createClient } = await import("@/lib/supabase/client");
+    const { data } = await createClient().auth.getSession();
+    identifyUser(data.session?.user.id);
+  } catch {
+    // L'identification est un plus : sans elle, le parcours continue
+  }
+}
+
 function PostHogPageView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -102,6 +134,7 @@ function PostHogPageView() {
         if (!ph.sessionRecordingStarted()) ph.startSessionRecording();
       })
       .catch(() => {});
+    if (searchParams.get("bienvenue") === "1") void identifyCurrentUser();
   }, [pathname, searchParams, consent]);
 
   return null;

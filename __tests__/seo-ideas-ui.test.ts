@@ -354,11 +354,11 @@ describe("IdeasDialog · article", () => {
     expect(() => buttonByText("Créer le sujet")).toThrow()
   })
 
-  it("« Utiliser pour cet article » cible le mot-clé, prévient l'éditeur et se ferme", async () => {
+  it("« Mettre en mot-clé principal » cible le mot-clé, prévient l'éditeur et se ferme", async () => {
     const onUse = vi.fn()
     const calls = stubFetch({ ideas: () => json(response([idea({ keyword: "comment faire un devis de peinture", articleType: "howto" })])), adopt: () => json(adoptResult({ topicId: null }), 201) })
     const { onClose } = await render({ mode: "article", article, onUse })
-    await click(buttonByText("Utiliser pour cet article"))
+    await click(buttonByText("Mettre en mot-clé principal"))
     expect(calls.find((c) => c.url.endsWith("/adopt"))!.body).toMatchObject({ createTopic: false, targeted: true, keyword: "comment faire un devis de peinture" })
     expect(onUse).toHaveBeenCalledTimes(1)
     expect(onUse.mock.calls[0][0].keyword).toBe("comment faire un devis de peinture")
@@ -369,10 +369,37 @@ describe("IdeasDialog · article", () => {
     const onUse = vi.fn()
     stubFetch({ ideas: () => json(response([idea()])), adopt: () => json({ error: "Ce mot-clé est ignoré dans l'onglet Mots-clés." }, 409) })
     const { onClose } = await render({ mode: "article", article, onUse })
-    await click(buttonByText("Utiliser pour cet article"))
+    await click(buttonByText("Mettre en mot-clé principal"))
     expect(onUse).toHaveBeenCalledTimes(1)
     expect(onClose).toHaveBeenCalledTimes(1)
     expect(toasts.calls.join(" ")).toMatch(/Mot-clé utilisé, mais pas ajouté au suivi : Ce mot-clé est ignoré/)
+  })
+
+  it("« Ajouter aux secondaires » : suivi comme simple candidat (pas « ciblé »), prévient l'éditeur, la fenêtre reste ouverte et marque l'idée", async () => {
+    const onUse = vi.fn()
+    const onUseSecondary = vi.fn()
+    const calls = stubFetch({ ideas: () => json(response([idea({ keyword: "devis peinture exterieure", articleType: "howto" })])), adopt: () => json(adoptResult({ topicId: null }), 201) })
+    const { onClose } = await render({ mode: "article", article, onUse, onUseSecondary })
+    await click(buttonByText("Ajouter aux secondaires"))
+    expect(calls.find((c) => c.url.endsWith("/adopt"))!.body).toMatchObject({ createTopic: false, targeted: false, keyword: "devis peinture exterieure" })
+    expect(onUseSecondary).toHaveBeenCalledTimes(1)
+    expect(onUseSecondary.mock.calls[0][0].keyword).toBe("devis peinture exterieure")
+    expect(onUse).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+    expect(document.body.textContent).toContain("Dans les secondaires")
+    expect(() => buttonByText("Ajouter aux secondaires")).toThrow()
+    // Le mot-clé principal reste proposable pour cette idée
+    expect(buttonByText("Mettre en mot-clé principal")).toBeTruthy()
+  })
+
+  it("une idée déjà secondaire ou déjà principale est marquée, sans bouton inutile", async () => {
+    stubFetch({ ideas: () => json(response([idea({ keyword: "devis peinture exterieure" }), idea({ keyword: "devis peinture" })])) })
+    await render({ mode: "article", article, currentKeyword: "Devis peinture", currentSecondary: ["devis peinture extérieure"] })
+    const text = document.body.textContent ?? ""
+    expect(text).toContain("Mot-clé principal de l'article")
+    expect(text).toContain("Dans les secondaires")
+    expect(Array.from(document.querySelectorAll("button")).filter((b) => b.textContent?.includes("Mettre en mot-clé principal"))).toHaveLength(1)
+    expect(Array.from(document.querySelectorAll("button")).filter((b) => b.textContent?.includes("Ajouter aux secondaires"))).toHaveLength(0)
   })
 
   it("« Autres idées » relance la recherche", async () => {

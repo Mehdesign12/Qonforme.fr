@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { safeNextPath } from "@/lib/stripe/access"
 import { trackEvent } from "@/lib/meta-pixel"
+import { identifyUser } from "@/components/shared/PostHogProvider"
 import { AUTH_INPUT, AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
 import GoogleButton, { OrDivider } from "@/components/auth/GoogleButton"
 import { rememberAuthMethod } from "@/lib/auth/last-used"
@@ -87,7 +88,7 @@ export default function SignupForm() {
       }
 
       // ── Étape 2 : connexion immédiate pour établir la session + cookies
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email:    fields.email.trim(),
         password: fields.password,
       })
@@ -99,6 +100,7 @@ export default function SignupForm() {
 
       rememberAuthMethod("email")
       trackEvent("Lead", { currency: "EUR", value: 0 })
+      identifyUser(signInData.user?.id)
       // Retour à la page qui a demandé l'inscription (invitation d'un comptable :
       // pas d'entreprise à créer) ; sinon le tableau de bord, où la fenêtre
       // « Bienvenue » s'ouvre avec la mention « Compte créé »

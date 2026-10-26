@@ -74,7 +74,7 @@ export const topicBulkSchema = z.object({
   action: z.enum(["schedule", "draft"], { message: "Action inconnue" }),
 })
 
-export const postPatchSchema = z.object({ action: z.enum(["publish", "unpublish"], { message: "Action inconnue" }) })
+export const postPatchSchema = z.object({ action: z.enum(["publish", "unpublish"], { message: "Action inconnue" }), force: z.boolean().optional() })
 
 /** Premier message d'erreur d'une validation zod, et les messages par champ. */
 export function zodError(error: z.ZodError): { error: string; fieldErrors: Record<string, string> } {

@@ -434,3 +434,73 @@ describe("éditeur d'articles : cas limites", () => {
     }
   })
 })
+
+describe("éditeur d'articles : retrouver et remplacer un passage (refus du contrôle, mots-clés)", () => {
+  const TEXT = [
+    "Intro avec **gras**.",
+    "## Règles de paiement",
+    "Pour rédiger vos [conditions de paiement](/outils/generateur-conditions-paiement) sans rien oublier, un générateur gratuit est disponible.",
+    "> Une citation qui ne se réécrit pas du tout.",
+    "- le taux des pénalités de retard ;\n- l'indemnité forfaitaire de recouvrement.",
+  ].join("\n\n")
+  const EXCERPT = "Pour rédiger vos [conditions de paiement](/outils/generateur-conditions-paiement) sans rien oublier, un générateur gratuit est disponible."
+
+  it("findPassage : Markdown du passage et son contexte, sans le toucher ; introuvable une fois corrigé", async () => {
+    const { ref, onChange } = await mount({ value: TEXT })
+    const info = ref.current!.findPassage(EXCERPT)
+    expect(info?.kind).toBe("paragraph")
+    expect(info?.markdown).toBe("Pour rédiger vos [conditions de paiement](/outils/generateur-conditions-paiement) sans rien oublier, un générateur gratuit est disponible.")
+    expect(info?.before).toContain("Règles de paiement")
+    expect(info?.after).toContain("citation")
+    expect(ref.current!.findPassage("le taux des pénalités de retard")?.kind).toBe("list-item")
+    expect(ref.current!.findPassage("Une citation qui ne se réécrit pas du tout.")?.kind).toBe("other")
+    expect(ref.current!.findPassage("Un passage que cet article ne contient pas du tout, nulle part")).toBeNull()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it("revealPassage : sélectionne le passage (mode visuel)", async () => {
+    const { ref, editor } = await mount({ value: TEXT })
+    expect(ref.current!.revealPassage(EXCERPT)).toBe(true)
+    const { from, to } = editor.state.selection
+    expect(editor.state.doc.textBetween(from, to)).toBe("Pour rédiger vos conditions de paiement sans rien oublier, un générateur gratuit est disponible.")
+    expect(ref.current!.revealPassage("Un passage absent de l'article, vraiment absent")).toBe(false)
+  })
+
+  it("replacePassages : réécrit les passages en une seule étape (annulation d'un coup), liens gardés", async () => {
+    const { ref, onChange, editor } = await mount({ value: TEXT })
+    let result = { applied: 0, missed: [] as string[] }
+    await act(async () => {
+      result = ref.current!.replacePassages([
+        { excerpt: EXCERPT, text: "Pour rédiger vos [conditions de paiement](/outils/generateur-conditions-paiement) sans rien oublier, utilisez notre **générateur de devis**." },
+        { excerpt: "le taux des pénalités de retard", text: "le taux des pénalités de retard prévues" },
+        { excerpt: "Une citation qui ne se réécrit pas du tout.", text: "Autre chose" },
+        { excerpt: "Règles de paiement", text: "## Règles de paiement à fixer" },
+      ])
+    })
+    expect(result.applied).toBe(3)
+    expect(result.missed).toEqual(["Une citation qui ne se réécrit pas du tout."])
+    const md = ref.current!.getMarkdown()
+    expect(md).toContain("utilisez notre **générateur de devis**.")
+    expect(md).toContain("[conditions de paiement](/outils/generateur-conditions-paiement)")
+    expect(md).toContain("- le taux des pénalités de retard prévues\n")
+    expect(md).toContain("## Règles de paiement à fixer")
+    expect(md).toContain("> Une citation qui ne se réécrit pas du tout.")
+    expect(onChange).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      editor.commands.undo()
+    })
+    expect(ref.current!.getMarkdown()).toBe(TEXT)
+  })
+
+  it("mode Markdown : même chose sur le texte brut", async () => {
+    const { ref, onChange } = await mount({ value: TEXT, initialMode: "markdown" })
+    expect(ref.current!.findPassage(EXCERPT)?.markdown).toContain("[conditions de paiement]")
+    let result = { applied: 0, missed: [] as string[] }
+    await act(async () => {
+      result = ref.current!.replacePassages([{ excerpt: EXCERPT, text: "Un texte réécrit pour ce paragraphe, sans la promesse." }])
+    })
+    expect(result.applied).toBe(1)
+    expect(onChange).toHaveBeenLastCalledWith(TEXT.replace(/Pour rédiger[^\n]+/, "Un texte réécrit pour ce paragraphe, sans la promesse."))
+    expect((host!.querySelector("textarea") as HTMLTextAreaElement).value).toContain("Un texte réécrit pour ce paragraphe")
+  })
+})

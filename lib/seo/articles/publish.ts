@@ -115,14 +115,25 @@ export const EDITOR_SCHEDULE_MODE: PublishMode = "direct"
 
 export type ManualPublishResult = { ok: true } | { ok: false; blockers: CheckIssue[] }
 
-/** « Publier maintenant » : refusé si une valeur périmée ou une affirmation interdite reste dans le texte. */
-export async function publishNow(db: SeoDb, post: PublishablePost, ctx: CheckContext, now = new Date()): Promise<ManualPublishResult> {
+/**
+ * « Publier maintenant » : refusé si une valeur périmée ou une affirmation interdite reste dans le texte,
+ * sauf `force` : l'admin a relu les passages signalés et publie quand même (choix explicite dans l'éditeur,
+ * jamais la publication automatique, qui reste retenue par le contrôle). Les passages restent dans le
+ * résultat du contrôle de l'article.
+ */
+export async function publishNow(
+  db: SeoDb,
+  post: PublishablePost,
+  ctx: CheckContext,
+  now = new Date(),
+  options: { force?: boolean } = {},
+): Promise<ManualPublishResult> {
   // Déjà publié : rien à écrire (un audit_result d'article publié est lisible par tous)
   if (post.is_published) return { ok: true }
   const issues = checkPost(post, ctx)
   const blockers = manualPublishBlockers(issues)
   const nowIso = now.toISOString()
-  if (blockers.length > 0) {
+  if (blockers.length > 0 && !options.force) {
     must(
       await db.from("blog_posts").update({ audit_result: auditOf(post, issues, now), updated_at: nowIso }).eq("id", post.id),
       "le contrôle de l'article",

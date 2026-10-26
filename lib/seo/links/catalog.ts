@@ -35,6 +35,7 @@ export const MAIN_PAGES: LinkTarget[] = [
   { title: "Outils gratuits", path: "/outils", kind: "page" },
   { title: "Guides de facturation", path: "/guide", kind: "page" },
   { title: "Logiciel de devis par métier", path: "/facturation", kind: "page" },
+  { title: "Logiciel de gestion bâtiment et devis", path: "/logiciel-gestion-batiment", kind: "page" },
   { title: "S'installer à son compte dans le bâtiment", path: "/devenir-a-son-compte", kind: "page" },
   { title: "Glossaire", path: "/glossaire", kind: "page" },
   { title: "Blog", path: "/blog", kind: "page" },
@@ -72,6 +73,7 @@ const CURATED: Record<string, string[]> = {
   "/outils/calculateur-beton": ["calculer le béton", "quantité de béton", "volume de béton"],
   "/outils/calculateur-pente": ["calcul de pente", "pourcentage de pente"],
   "/facturation": ["logiciel de devis par métier"],
+  "/logiciel-gestion-batiment": ["logiciel de gestion bâtiment", "logiciel de gestion pour le bâtiment", "logiciel de gestion btp", "logiciel de gestion pour artisan"],
   "/devenir-a-son-compte": ["devenir artisan à son compte", "s'installer à son compte"],
 }
 

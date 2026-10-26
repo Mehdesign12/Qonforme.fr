@@ -15,6 +15,7 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { FileText, Loader2, Plus, ReceiptText } from "lucide-react"
+import { DocRow } from "@/components/app/DocRow"
 import { EmptyState, Kpi, KpiGrid, PageHeader, SearchField } from "@/components/app/kit"
 import { InfoNote, negCurrency } from "@/components/purchase-orders/detail-bits"
 import { addDays, normalizeSearch, plural, shortDate } from "@/components/quotes/QuoteListHelpers"
@@ -274,18 +275,14 @@ export function CreditNoteListView({
         ) : (
           <div className="q-card q-list overflow-hidden rounded-[18px]">
             {visible.map((c) => (
-              <Link key={c.id} href={c.href} className="q-list-row px-3.5 py-2.5">
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate text-[15px] font-semibold">{c.client_name ?? "Sans client"}</span>
-                  <span className="truncate font-mono text-xs text-[var(--q-text-4)]">
-                    {c.credit_note_number}{c.invoice_number ? ` · sur ${c.invoice_number}` : ""}
-                  </span>
-                </span>
-                <span className="flex shrink-0 flex-col items-end gap-1">
-                  <span className="text-[15px] font-semibold tabular-nums">{negCurrency(c.total_ttc)}</span>
-                  <span className="text-xs text-[var(--q-text-4)]">{shortDate(c.issue_date)}</span>
-                </span>
-              </Link>
+              <DocRow
+                key={c.id}
+                href={c.href}
+                name={c.client_name ?? "Sans client"}
+                reference={`${c.credit_note_number}${c.invoice_number ? ` · sur ${c.invoice_number}` : ""}`}
+                amount={negCurrency(c.total_ttc)}
+                pill={<span className="text-xs text-[var(--q-text-4)]">{shortDate(c.issue_date)}</span>}
+              />
             ))}
           </div>
         )}

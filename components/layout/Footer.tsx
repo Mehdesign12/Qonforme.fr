@@ -11,6 +11,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     title: "Produit",
     links: [
       { label: "Fonctionnalités", href: "/#devis" },
+      { label: "Logiciel de gestion bâtiment", href: "/logiciel-gestion-batiment" },
       { label: "Tarifs", href: "/pricing" },
       { label: "Démo interactive", href: "/demo" },
     ],

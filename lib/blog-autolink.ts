@@ -38,6 +38,7 @@ export const KEYWORD_LINKS: { pattern: RegExp; href: string }[] = [
   { pattern: /mise\s+en\s+demeure/i, href: "/glossaire/mise-en-demeure" },
   // Pages index
   { pattern: /facturation\s+par\s+m[eé]tier/i, href: "/facturation" },
+  { pattern: /logiciels?\s+de\s+gestion\s+(?:pour\s+(?:le\s+|les\s+)?|du\s+|des\s+)?(?:b[âa]timent|btp|artisans?)/i, href: "/logiciel-gestion-batiment" },
 ]
 
 export function autoLinkPseo(html: string): string {

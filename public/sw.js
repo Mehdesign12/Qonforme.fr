@@ -54,6 +54,7 @@ const CACHEABLE_PAGE_PREFIXES = [
   '/mentions-legales',
   '/confidentialite',
   '/facturation',
+  '/logiciel-gestion-batiment',
   '/guide',
   '/modele',
   '/glossaire',

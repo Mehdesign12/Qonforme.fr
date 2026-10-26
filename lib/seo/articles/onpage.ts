@@ -141,7 +141,7 @@ function stem(word: string): string {
   return word
 }
 
-function stemmedTokens(text: string): string[] {
+export function stemmedTokens(text: string): string[] {
   const norm = normalizeForMatch(text)
   return norm ? norm.split(" ").map(stem) : []
 }
@@ -154,7 +154,7 @@ function significant(tokens: string[]): string[] {
  * Mots du mot-clé à retrouver : ses mots significatifs (« exemple devis
  * maçonnerie »), ou tous ses mots s'il n'a que des mots vides.
  */
-function needleOf(keyword: string): string[] {
+export function needleOf(keyword: string): string[] {
   const all = stemmedTokens(keyword)
   const sig = significant(all)
   return sig.length > 0 ? sig : all
