@@ -5,7 +5,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{width:1280px;height:720px;overflow:hidden;background:#fff;font-family:"DM",sans-serif;position:relative}
 .v{display:none;position:absolute;inset:0}
-body.a #a,body.b #b,body.c #c{display:block}
+body.a #a,body.b #b,body.c #c,body.d #d,body.e #e{display:block}
 .h{font-family:"Bricolage",sans-serif;font-weight:700;letter-spacing:-.04em;line-height:.98;color:#0A1122;position:absolute}
 .s{font-family:"Instrument",serif;font-style:italic;font-weight:400;color:#2563EB;letter-spacing:-.01em;font-size:1.12em}
 .pill{position:absolute;display:inline-flex;align-items:center;height:60px;padding:0 28px;border-radius:999px;font-size:30px;font-weight:600;white-space:nowrap}
@@ -18,6 +18,40 @@ body.a #a,body.b #b,body.c #c{display:block}
 <!-- A · avant / maintenant -->
 <div class="v" id="a">
   <div class="h" style="left:60px;top:46px;font-size:104px;width:1200px">Fini l'attestation <span class="s">de TVA.</span></div>
+  <div class="paper" style="left:60px;top:250px;width:470px;height:380px;transform:rotate(-2deg);opacity:.95">
+    <div class="pill grey" style="left:26px;top:-30px;height:54px;font-size:28px">AVANT</div>
+    <div style="position:absolute;left:30px;top:48px;font-size:24px;font-weight:600;letter-spacing:.14em;color:#475569">ATTESTATION</div>
+    <div class="bar" style="top:100px;width:400px"></div><div class="bar" style="top:132px;width:340px"></div><div class="bar" style="top:164px;width:400px"></div><div class="bar" style="top:196px;width:250px"></div>
+    <svg viewBox="0 0 200 60" style="position:absolute;left:150px;top:260px;width:260px"><path d="M4 40C20 8 34 8 30 34C28 52 44 14 54 30C62 44 70 22 82 28C96 36 100 12 116 26C130 38 142 20 168 30L196 24" fill="none" stroke="#0F172A" stroke-width="3.4" stroke-linecap="round"/></svg>
+    <div style="position:absolute;left:30px;top:310px;font-size:24px;font-weight:600;color:#64748B">À faire signer. À classer.</div>
+  </div>
+  <svg viewBox="0 0 100 40" style="position:absolute;left:545px;top:395px;width:150px"><path d="M6 20H82M64 4L88 20L64 36" fill="none" stroke="#2563EB" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="paper" style="left:720px;top:250px;width:500px;height:380px;border-color:#2563EB;border-width:4px;transform:rotate(1.5deg)">
+    <div class="pill blue" style="left:26px;top:-30px;height:54px;font-size:28px">MAINTENANT</div>
+    <div style="position:absolute;left:30px;top:48px;font-size:24px;font-weight:600;letter-spacing:.14em;color:#475569">DEVIS</div>
+    <div class="bar" style="top:100px;width:430px"></div><div class="bar" style="top:132px;width:360px"></div>
+    <div style="position:absolute;left:24px;right:24px;top:180px;height:160px;border-radius:16px;background:#EEF3FF;border:2px solid #DCE6FD;padding:22px 26px;font-size:30px;line-height:1.3;font-weight:600;color:#0F172A">« Le client <span style="color:#2563EB">certifie</span> que les travaux… »</div>
+  </div>
+  <div class="pill wash" style="left:60px;top:660px;display:none"></div>
+</div>
+<!-- A2 · 3 étapes → 1 phrase -->
+<div class="v" id="d">
+  <div class="h" style="left:60px;top:46px;font-size:124px;width:1200px">Une phrase <span class="s">suffit.</span></div>
+  <div class="paper" style="left:60px;top:250px;width:470px;height:380px;transform:rotate(-2deg)">
+    <div class="pill grey" style="left:26px;top:-30px;height:54px;font-size:28px">AVANT · 3 étapes</div>
+    <div style="position:absolute;left:34px;top:70px;right:30px;font-size:44px;font-weight:600;color:#475569;line-height:1.5">
+      <div><span style="color:#94A3B8">1.</span> Remplir</div><div><span style="color:#94A3B8">2.</span> Faire signer</div><div><span style="color:#94A3B8">3.</span> Classer</div></div>
+      </div>
+  <svg viewBox="0 0 100 40" style="position:absolute;left:545px;top:395px;width:150px"><path d="M6 20H82M64 4L88 20L64 36" fill="none" stroke="#2563EB" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="paper" style="left:720px;top:250px;width:500px;height:380px;border-color:#2563EB;border-width:4px;transform:rotate(1.5deg)">
+    <div class="pill blue" style="left:26px;top:-30px;height:54px;font-size:28px">MAINTENANT · 1 phrase</div>
+    <div style="position:absolute;left:30px;top:48px;font-size:24px;font-weight:600;letter-spacing:.14em;color:#475569">SUR LE DEVIS</div>
+    <div style="position:absolute;left:24px;right:24px;top:100px;height:240px;border-radius:16px;background:#EEF3FF;border:2px solid #DCE6FD;padding:26px 28px;font-size:35px;line-height:1.3;font-weight:600;color:#0F172A">« Le client <span style="color:#2563EB">certifie</span> que le logement a plus de deux ans. »</div>
+  </div>
+</div>
+<!-- A · avant / maintenant -->
+<div class="v" id="e">
+  <div class="h" style="left:60px;top:46px;font-size:96px;width:1200px">Un papier de moins <span class="s">à signer.</span></div>
   <div class="paper" style="left:60px;top:250px;width:470px;height:380px;transform:rotate(-2deg);opacity:.95">
     <div class="pill grey" style="left:26px;top:-30px;height:54px;font-size:28px">AVANT</div>
     <div style="position:absolute;left:30px;top:48px;font-size:24px;font-weight:600;letter-spacing:.14em;color:#475569">ATTESTATION</div>
