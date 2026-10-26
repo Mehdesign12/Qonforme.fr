@@ -151,7 +151,7 @@ function caption(root, id, dur) {
     anim(box, [{ opacity: 1 }, { opacity: 0 }], Math.max(t1, t0 + .2), 0.12, 'linear', 'forwards')
     ch.forEach(function (w, wi) {
       const s = el('span', 'cw', inner, w.w); if (wi < ch.length - 1) inner.appendChild(document.createTextNode(' '))
-      anim(s, [{ color: '#A8B2C3', transform: 'scale(1)' }, { color: '#2563EB', transform: 'scale(1.14) translateY(-4px)', offset: .35 }, { color: '#0F172A', transform: 'scale(1)' }], w.t, Math.max(w.d + 0.18, 0.3), EASE)
+      anim(s, [{ color: '#A8B2C3', transform: 'scale(1)' }, { color: '#2563EB', transform: 'translateY(-6px)', offset: .35 }, { color: '#0F172A', transform: 'scale(1)' }], w.t, Math.max(w.d + 0.18, 0.3), EASE)
     })
   })
 }

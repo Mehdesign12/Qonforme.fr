@@ -23,7 +23,9 @@ const opt = (n, d) => (args.includes('--' + n) ? args[args.indexOf('--' + n) + 1
 const FPS = +opt('fps', 25)
 const ONLY = opt('only', null)
 const AUDIO = opt('audio', null)
-const V2 = args.includes('--v2')
+const V2 = args.includes('--v2') || args.includes('--vertical')
+const VERT = args.includes('--vertical')
+const VW = VERT ? 1080 : 1920, VH = VERT ? 1920 : 1080
 fs.mkdirSync(OUT, { recursive: true })
 const CACHE = path.join(OUT, 'cache')
 fs.mkdirSync(path.join(CACHE, 'fonts'), { recursive: true })
@@ -95,7 +97,7 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.webp'
 const server = http.createServer((req, res) => {
   const u = decodeURIComponent(req.url.split('?')[0])
   let f
-  if (u === '/') f = path.join(HERE, V2 ? 'scene2.html' : 'scene.html')
+  if (u === '/') f = path.join(HERE, VERT ? 'scene2v.html' : V2 ? 'scene2.html' : 'scene.html')
   else if (u.startsWith('/repo/')) f = path.join(ROOT, u.slice(6))
   else if (u.startsWith('/public/')) f = path.join(ROOT, 'public', u.slice(8))
   else if (u.startsWith('/fonts/')) f = path.join(CACHE, 'fonts', u.slice(7))
@@ -128,7 +130,7 @@ const browser = await launch()
 const n = Math.ceil(total * FPS)
 
 async function open() {
-  const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 })
+  const ctx = await browser.newContext({ viewport: { width: VW, height: VH }, deviceScaleFactor: 1 })
   const page = await ctx.newPage()
   await page.addInitScript((d) => { window.__DATA = d }, data)
   page.on('pageerror', (e) => console.error('PAGE ERROR', e.message))
