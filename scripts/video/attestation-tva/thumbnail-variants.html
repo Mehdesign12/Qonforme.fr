@@ -1,0 +1,57 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><style>
+@font-face{font-family:"Bricolage";src:url("/repo/lib/blog-images/cover/fonts/BricolageGrotesque-700.woff") format("woff");font-weight:700}
+@font-face{font-family:"Instrument";src:url("/repo/lib/blog-images/cover/fonts/InstrumentSerif-Italic.woff") format("woff");font-style:italic}
+@font-face{font-family:"DM";src:url("/fonts/dm-600.woff2") format("woff2");font-weight:600}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1280px;height:720px;overflow:hidden;background:#fff;font-family:"DM",sans-serif;position:relative}
+.v{display:none;position:absolute;inset:0}
+body.a #a,body.b #b,body.c #c{display:block}
+.h{font-family:"Bricolage",sans-serif;font-weight:700;letter-spacing:-.04em;line-height:.98;color:#0A1122;position:absolute}
+.s{font-family:"Instrument",serif;font-style:italic;font-weight:400;color:#2563EB;letter-spacing:-.01em;font-size:1.12em}
+.pill{position:absolute;display:inline-flex;align-items:center;height:60px;padding:0 28px;border-radius:999px;font-size:30px;font-weight:600;white-space:nowrap}
+.blue{background:#2563EB;color:#fff}.wash{background:#EEF3FF;color:#1D4ED8;border:2px solid #DCE6FD}.grey{background:#F1F4F8;color:#475569;border:2px solid #E6E9F0}
+.paper{position:absolute;background:#fff;border:3px solid #E6E9F0;border-radius:22px;box-shadow:0 30px 60px -28px rgba(10,17,34,.45)}
+.bar{position:absolute;left:28px;height:12px;border-radius:6px;background:#E9EDF3}
+.logo{position:absolute;left:60px;bottom:36px;height:40px}
+</style></head>
+<body>
+<!-- A · avant / maintenant -->
+<div class="v" id="a">
+  <div class="h" style="left:60px;top:46px;font-size:104px;width:1200px">Fini l'attestation <span class="s">de TVA.</span></div>
+  <div class="paper" style="left:60px;top:250px;width:470px;height:380px;transform:rotate(-2deg);opacity:.95">
+    <div class="pill grey" style="left:26px;top:-30px;height:54px;font-size:28px">AVANT</div>
+    <div style="position:absolute;left:30px;top:48px;font-size:24px;font-weight:600;letter-spacing:.14em;color:#475569">ATTESTATION</div>
+    <div class="bar" style="top:100px;width:400px"></div><div class="bar" style="top:132px;width:340px"></div><div class="bar" style="top:164px;width:400px"></div><div class="bar" style="top:196px;width:250px"></div>
+    <svg viewBox="0 0 200 60" style="position:absolute;left:150px;top:260px;width:260px"><path d="M4 40C20 8 34 8 30 34C28 52 44 14 54 30C62 44 70 22 82 28C96 36 100 12 116 26C130 38 142 20 168 30L196 24" fill="none" stroke="#0F172A" stroke-width="3.4" stroke-linecap="round"/></svg>
+    <div style="position:absolute;left:30px;top:310px;font-size:24px;font-weight:600;color:#64748B">À faire signer. À classer.</div>
+  </div>
+  <svg viewBox="0 0 100 40" style="position:absolute;left:545px;top:395px;width:150px"><path d="M6 20H82M64 4L88 20L64 36" fill="none" stroke="#2563EB" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="paper" style="left:720px;top:250px;width:500px;height:380px;border-color:#2563EB;border-width:4px;transform:rotate(1.5deg)">
+    <div class="pill blue" style="left:26px;top:-30px;height:54px;font-size:28px">MAINTENANT</div>
+    <div style="position:absolute;left:30px;top:48px;font-size:24px;font-weight:600;letter-spacing:.14em;color:#475569">DEVIS</div>
+    <div class="bar" style="top:100px;width:430px"></div><div class="bar" style="top:132px;width:360px"></div>
+    <div style="position:absolute;left:24px;right:24px;top:180px;height:160px;border-radius:16px;background:#EEF3FF;border:2px solid #DCE6FD;padding:22px 26px;font-size:30px;line-height:1.3;font-weight:600;color:#0F172A">« Le client <span style="color:#2563EB">certifie</span> que les travaux… »</div>
+  </div>
+  <div class="pill wash" style="left:60px;top:660px;display:none"></div>
+</div>
+<!-- B · mot barré -->
+<div class="v" id="b">
+  <div class="pill wash" style="left:60px;top:56px">TVA 10 % · travaux</div>
+  <div class="h" style="left:52px;top:150px;font-size:178px;letter-spacing:-.05em;width:1200px">ATTESTATION</div>
+  <div style="position:absolute;left:44px;top:250px;width:1190px;height:22px;border-radius:11px;background:#2563EB;transform:rotate(-2deg)"></div>
+  <div class="h" style="left:56px;top:330px;font-size:160px;width:1200px"><span class="s">plus obligatoire.</span></div>
+  <div class="pill blue" style="left:60px;top:560px">Voici quoi écrire à la place →</div>
+</div>
+<!-- C · photo + question -->
+<div class="v" id="c">
+  <div style="position:absolute;left:720px;top:0;width:560px;height:720px;overflow:hidden"><img src="/public/landing/photos/artisan-client.webp" style="width:100%;height:100%;object-fit:cover;object-position:38% 50%"></div>
+  <div class="h" style="left:60px;top:80px;font-size:104px;width:650px;z-index:2">Vous faites encore <span class="s">signer ce papier ?</span></div>
+  <div class="paper" style="left:330px;top:470px;width:330px;height:240px;transform:rotate(-6deg);z-index:3">
+    <div style="position:absolute;left:24px;top:22px;font-size:20px;font-weight:600;letter-spacing:.14em;color:#475569">ATTESTATION TVA</div>
+    <div class="bar" style="top:64px;width:260px"></div><div class="bar" style="top:92px;width:210px"></div><div class="bar" style="top:120px;width:260px"></div>
+    <svg viewBox="0 0 100 100" style="position:absolute;left:55px;top:40px;width:220px;height:220px"><path d="M14 14L86 86M86 14L14 86" stroke="#2563EB" stroke-width="10" stroke-linecap="round" fill="none"/></svg>
+  </div>
+  <div class="pill blue" style="left:60px;top:640px;height:56px;font-size:28px;display:none"></div>
+</div>
+<img class="logo" src="/repo/lib/blog-images/cover/logo-long-bleu.png" style="display:none">
+</body></html>
