@@ -23,7 +23,7 @@ import { assertNoCompetitorInPrompt, findCompetitorMentions } from "@/lib/seo/co
 import { generateText, hasKey, modelLabel, resolvePassModel, type GenerateTextInput, type GenerateTextResult } from "@/lib/seo/articles/models"
 import { canonicalKeyword, foldAccents } from "@/lib/seo/keywords/normalize"
 import { gscBounds, gscQueries, keywordPeriod, listAllKeywords } from "@/lib/seo/keywords/data"
-import { dataForSeoCredentials, DataForSeoError, fetchKeywordMetrics, isSendableKeyword, type KeywordMetrics } from "@/lib/seo/keywords/dataforseo"
+import { DataForSeoError, fetchKeywordMetrics, isSendableKeyword, keywordDataSource, type KeywordMetrics } from "@/lib/seo/keywords/dataforseo"
 import { verifyKeywords, type SuggestFn } from "@/lib/seo/ideas/autocomplete"
 import {
   buildIdeasPrompt,
@@ -173,7 +173,7 @@ export async function generateIdeas(db: SeoDb, req: IdeaRequest, deps: IdeasDeps
 
   // Existence de la phrase (Google) et mesures (DataForSEO), en parallèle
   const keywords = shaped.map((i) => i.keyword)
-  const metricsFn = deps.metrics === undefined ? (dataForSeoCredentials() ? defaultMetrics : null) : deps.metrics
+  const metricsFn = deps.metrics === undefined ? (keywordDataSource() ? defaultMetrics : null) : deps.metrics
   const sendable = keywords.filter(isSendableKeyword)
   let metricsState: MetricsState = metricsFn === null ? "not_configured" : "ok"
   const [verified, measures] = await Promise.all([
@@ -181,14 +181,14 @@ export async function generateIdeas(db: SeoDb, req: IdeaRequest, deps: IdeasDeps
     metricsFn && sendable.length > 0
       ? metricsFn(sendable, { deadline: Date.now() + METRICS_BUDGET_MS }).catch((error: unknown) => {
           metricsState = "unavailable"
-          notes.push(error instanceof DataForSeoError ? error.message : "DataForSEO n'a pas répondu : les volumes manquent.")
+          notes.push(error instanceof DataForSeoError ? error.message : "Les mesures n'ont pas répondu : les volumes manquent.")
           return new Map<string, KeywordMetrics>()
         })
       : Promise.resolve(new Map<string, KeywordMetrics>()),
   ])
   if (verified.state === "unavailable") notes.push("La saisie semi-automatique de Google n'a pas répondu : les phrases sont montrées sans vérification.")
   else if (verified.state === "partial") notes.push("Google n'a pas répondu pour toutes les phrases : certaines ne sont pas vérifiées.")
-  if (metricsState === "not_configured") notes.push("DataForSEO n'est pas configuré (Paramètres › Connexions) : les volumes ne sont pas mesurés.")
+  if (metricsState === "not_configured") notes.push("Aucune source de mesures (OpenSEO ou DataForSEO) n'est configurée (Paramètres › Connexions) : les volumes ne sont pas mesurés.")
 
   const ideas: Idea[] = shaped.map((s) => {
     const v = verified.results.get(s.keyword)

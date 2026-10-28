@@ -29,6 +29,7 @@ vi.mock("@/lib/seo/keywords/dataforseo", async (importOriginal) => {
   return {
     ...actual,
     dataForSeoCredentials: () => (state.credentials ? { login: "x", password: "y" } : null),
+    keywordDataSource: () => (state.credentials ? "dataforseo" : null),
     fetchKeywordMetrics: async (keywords: string[]) => {
       state.metricsCalls.push(keywords)
       if (!state.metrics) throw new Error("aucune mesure simulée")

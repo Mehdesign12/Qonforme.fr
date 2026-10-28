@@ -509,3 +509,63 @@ describe("coque de l'éditeur : Proposition IA, mot-clé principal ou secondaire
     expect(calls.at(-1)).toMatchObject({ url: "/api/admin/blog/suggest", body: { field: "seoTitle", secondary: ["devis plomberie"] } })
   })
 })
+
+describe("coque de l'éditeur : boutons Enregistrer et Publier", () => {
+  const base = { id: ID, slug: "relance-facture", title: "Relance de facture", content: "Un texte.", updated_at: "2026-10-15T08:00:00.000Z" }
+  const buttons = () => Array.from(document.querySelectorAll<HTMLButtonElement>("button"))
+  const byLabel = (label: string) => buttons().filter((b) => b.textContent?.trim().startsWith(label))
+  const saveButton = () => document.querySelector<HTMLButtonElement>("button[aria-keyshortcuts='Control+S Meta+S']") ?? byLabel("Enregistré")[0]!
+
+  it("article en ligne et inchangé : « Enregistré » et « Publié » en neutre, grisés ; la première frappe les rend bleus", async () => {
+    await mount({ mode: "edit", post: { ...base, is_published: true, published_at: "2026-10-14T08:00:00.000Z" }, publishTime: "08:00", renderedAt: "2026-10-16T08:00:00.000Z" })
+    for (let i = 0; i < 100 && !document.getElementById("blog-title"); i++) await wait(20)
+
+    const header = byLabel("Enregistré").find((b) => b.className.includes("q-btn"))!
+    expect(header.disabled).toBe(true)
+    expect(header.className).toContain("q-btn-secondary")
+    expect(header.className).not.toContain("q-btn-primary")
+    const published = byLabel("Publié").find((b) => b.className.includes("q-btn"))!
+    expect(published.disabled).toBe(true)
+    expect(published.className).toContain("q-btn-secondary")
+    expect(document.body.textContent).toContain("Aucune modification depuis le dernier enregistrement.")
+
+    await act(async () => setField("blog-title", "Relance de facture impayée"))
+    const save = saveButton()
+    expect(save.textContent).toContain("Enregistrer")
+    expect(save.disabled).toBe(false)
+    expect(save.className).toContain("q-btn-primary")
+    const update = byLabel("Mettre à jour l'article")[0]!
+    expect(update.disabled).toBe(false)
+    expect(update.className).toContain("q-btn-primary")
+
+    // Retour au texte enregistré : les boutons se grisent de nouveau
+    await act(async () => setField("blog-title", "Relance de facture"))
+    expect(byLabel("Publié").some((b) => b.disabled)).toBe(true)
+  })
+
+  it("brouillon enregistré et inchangé : « Enregistré » grisé ; article pas encore créé : « Enregistrer » reste actif", async () => {
+    await mount({ mode: "edit", post: { ...base, is_published: false }, publishTime: "08:00", renderedAt: "2026-10-16T08:00:00.000Z" })
+    for (let i = 0; i < 100 && !document.getElementById("blog-title"); i++) await wait(20)
+    expect(byLabel("Enregistré").filter((b) => b.className.includes("q-btn")).every((b) => b.disabled)).toBe(true)
+    expect(byLabel("Enregistré").length).toBeGreaterThanOrEqual(2)
+    await act(async () => root?.unmount())
+    host?.remove()
+    root = null
+
+    await mount({ mode: "create", publishTime: "08:00", renderedAt: "2026-10-16T08:00:00.000Z" })
+    const header = byLabel("Enregistrer")[0]!
+    expect(header.disabled).toBe(false)
+    expect(header.className).toContain("q-btn-primary")
+  })
+
+  it("article retenu par le contrôle : choisir « Publié » donne un bouton « Publier maintenant », actif et bleu", async () => {
+    await mount({ mode: "edit", post: { ...base, is_published: false, review_status: "to_review", held_reason: "Retenu par le contrôle : valeur périmée." }, publishTime: "08:00", renderedAt: "2026-10-16T08:00:00.000Z" })
+    for (let i = 0; i < 100 && !document.getElementById("blog-title"); i++) await wait(20)
+    const choice = Array.from(document.querySelectorAll<HTMLButtonElement>("[role='radio'], button")).find((b) => b.textContent?.trim() === "Publié")
+    expect(choice).toBeTruthy()
+    await act(async () => choice!.click())
+    const publish = byLabel("Publier maintenant").find((b) => b.className.includes("q-btn"))!
+    expect(publish.disabled).toBe(false)
+    expect(publish.className).toContain("q-btn-primary")
+  })
+})

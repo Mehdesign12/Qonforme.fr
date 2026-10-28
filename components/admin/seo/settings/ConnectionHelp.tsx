@@ -7,7 +7,7 @@
  */
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 
-type HelpKey = "search_console" | "pagespeed" | "gemini" | "openai" | "perplexity" | "anthropic" | "dataforseo" | "resend"
+type HelpKey = "search_console" | "pagespeed" | "gemini" | "openai" | "perplexity" | "anthropic" | "dataforseo" | "openseo" | "resend"
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
@@ -78,6 +78,19 @@ function steps(key: string, property: string): React.ReactNode[] {
         <>
           Collez-les dans les variables <Code>DATAFORSEO_LOGIN</Code> et <Code>DATAFORSEO_PASSWORD</Code>.
         </>,
+      ]
+    case "openseo":
+      return [
+        <>
+          Dans OpenSEO (app.openseo.so), ouvrez Settings › API keys et créez une clé : elle commence par <Code>oseo_</Code> et
+          n&apos;est montrée qu&apos;une fois. Elle est personnelle (elle agit comme vous dans OpenSEO) et ne peut pas être limitée à la
+          lecture : ne la collez que dans les variables de l&apos;hébergeur.
+        </>,
+        <>
+          Collez-la dans la variable <Code>OPENSEO_API_KEY</Code>. Facultatif : <Code>OPENSEO_PROJECT_ID</Code> (sinon le projet de
+          qonforme.fr est retrouvé tout seul).
+        </>,
+        <>Les mesures (volume, difficulté, CPC, intention) sont alors lues dans OpenSEO, avant DataForSEO ; chaque mesure consomme des crédits OpenSEO.</>,
       ]
     case "resend":
       return [

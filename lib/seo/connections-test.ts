@@ -12,6 +12,7 @@
  *   (clé présente, non vérifiée), jamais « connected » ;
  * - Anthropic : liste des modèles par le SDK officiel (client.models.list) ;
  * - DataForSEO : données du compte (GET /v3/appendix/user_data, gratuite) ;
+ * - OpenSEO : outil « whoami » du serveur MCP (gratuit : compte et crédits restants) ;
  * - Resend : liste des domaines (GET /domains) ; une clé limitée à l'envoi
  *   est acceptée telle quelle.
  *
@@ -26,6 +27,7 @@ import { CONNECTIONS, isConfigured, presenceState, type ConnectionKey } from "@/
 import { GoogleApiError, gscProperty, pingSearchConsole, runPageSpeed } from "@/lib/seo/google"
 import { must, type SeoDb } from "@/lib/seo/db"
 import { siteUrl } from "@/lib/seo/site"
+import { OpenSeoError, openSeoAccount } from "@/lib/seo/keywords/openseo"
 import { redact } from "@/lib/seo/redact"
 import type { ConnectionState } from "@/lib/seo/types"
 
@@ -291,6 +293,24 @@ async function testDataForSeo(): Promise<Outcome> {
   }
 }
 
+async function testOpenSeo(): Promise<Outcome> {
+  const name = "OpenSEO"
+  try {
+    const { credits, email } = await openSeoAccount(TEST_TIMEOUT_MS)
+    const who = email ? ` pour ${email}` : ""
+    return {
+      state: "connected",
+      message:
+        credits !== null
+          ? `OpenSEO répond : clé acceptée${who}, ${credits.toLocaleString("fr-FR")} crédits restants.`
+          : `OpenSEO répond : clé acceptée${who}.`,
+    }
+  } catch (error) {
+    if (error instanceof OpenSeoError) return { state: "error", message: error.message }
+    return probeFailure(name, new ProbeError("network"), TEST_TIMEOUT_MS)
+  }
+}
+
 const RESEND_DOMAIN_STATUS: Record<string, string> = { verified: "vérifié" }
 
 async function testResend(): Promise<Outcome> {
@@ -327,6 +347,7 @@ const TESTS: Record<ConnectionKey, () => Promise<Outcome>> = {
   perplexity: testPerplexity,
   anthropic: testAnthropic,
   dataforseo: testDataForSeo,
+  openseo: testOpenSeo,
   resend: testResend,
 }
 

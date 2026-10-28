@@ -28,6 +28,7 @@ import {
   publicationOfPost,
   relativeDay,
   restoreDraft,
+  publicationButtonState,
   saveActionLabel,
   serializeLocalDraft,
   statusOfMeta,
@@ -354,6 +355,24 @@ describe("après l'enregistrement", () => {
     expect(saveActionLabel("schedule", off, true)).toBe("Programmer la publication")
     expect(saveActionLabel("schedule", off, false)).toBe("Enregistrer")
     expect(saveActionLabel("draft", META, true)).toBe("Retirer du blog")
+  })
+
+  it("grise le bouton d'un article enregistré et inchangé, sauf s'il reste à le mettre en ligne", () => {
+    const off: SavedMeta = { ...META, isPublished: false }
+    const base = { creating: false, dirty: false, publicationChanged: false }
+    // En ligne, rien de modifié : plus de « republier »
+    expect(publicationButtonState({ ...base, mode: "publish", meta: META })).toEqual({ label: "Publié", idle: true })
+    expect(publicationButtonState({ ...base, mode: "draft", meta: off })).toEqual({ label: "Enregistré", idle: true })
+    expect(publicationButtonState({ ...base, mode: "schedule", meta: off })).toEqual({ label: "Programmé", idle: true })
+    // « Publié » choisi mais pas en ligne (retenu par le contrôle) : mettre en ligne reste une action
+    expect(publicationButtonState({ ...base, mode: "publish", meta: off })).toEqual({ label: "Publier maintenant", idle: false })
+    // Dès la première modification, le bouton redevient actif
+    expect(publicationButtonState({ ...base, dirty: true, mode: "publish", meta: META })).toEqual({ label: "Mettre à jour l'article", idle: false })
+    expect(publicationButtonState({ ...base, dirty: true, mode: "draft", meta: off })).toEqual({ label: "Enregistrer", idle: false })
+    expect(publicationButtonState({ ...base, dirty: true, publicationChanged: true, mode: "draft", meta: META })).toEqual({ label: "Retirer du blog", idle: false })
+    expect(publicationButtonState({ ...base, dirty: true, publicationChanged: true, mode: "publish", meta: off })).toEqual({ label: "Publier maintenant", idle: false })
+    // Article pas encore créé : toujours actif
+    expect(publicationButtonState({ ...base, creating: true, mode: "draft", meta: off })).toEqual({ label: "Enregistrer", idle: false })
   })
 
   it("lit les passages bloquants d'une réponse 409", () => {

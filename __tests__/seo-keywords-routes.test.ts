@@ -467,7 +467,7 @@ describe("POST /api/admin/seo/keywords/analyze", () => {
     vi.stubEnv("DATAFORSEO_PASSWORD", "")
     const res = await analyze()
     expect(res.status).toBe(409)
-    expect((await res.json()).error).toBe("DataForSEO n'est pas configuré : Paramètres › Connexions")
+    expect((await res.json()).error).toBe("Aucune source de mesures n'est configurée (OpenSEO ou DataForSEO) : Paramètres › Connexions")
   })
 
   it("409 moins de 30 jours après la dernière analyse réussie", async () => {

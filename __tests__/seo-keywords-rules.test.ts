@@ -287,12 +287,12 @@ describe("provenance des mesures (panneau de détail)", () => {
     expect(measured).toBe(`Dernière analyse DataForSEO le 3${NBSP}octobre${NBSP}2026 ; CPC en dollars US (Google Ads).`)
   })
 
-  it("dit quand DataForSEO n'est pas configuré, et quand Google Ads refuse la requête", () => {
-    expect(metricsNote(row({ source: "manual" }), false)).toBe("Pas encore mesuré : DataForSEO n'est pas configuré (Paramètres › Connexions).")
+  it("dit quand aucune source de mesures n'est configurée, et quand Google Ads refuse la requête", () => {
+    expect(metricsNote(row({ source: "manual" }), false)).toBe("Pas encore mesuré : aucune source de mesures (OpenSEO ou DataForSEO) n'est configurée (Paramètres › Connexions).")
     expect(metricsNote(row({ source: "manual" }), true)).toMatch(/^Pas encore mesuré : l'analyse des mots-clés/)
     expect(metricsNote(row({ source: "import", volume: 3600 }), true)).toBe("Valeurs reprises de PushRank, en attente d'une analyse.")
     expect(metricsNote(row({ source: "import", volume: 3600 }), false)).toBe(
-      "Valeurs reprises de PushRank ; DataForSEO n'est pas configuré (Paramètres › Connexions).",
+      "Valeurs reprises de PushRank ; aucune source de mesures (OpenSEO ou DataForSEO) n'est configurée (Paramètres › Connexions).",
     )
     expect(metricsNote(row({ keyword: "prix, devis", source: "manual", metrics_checked_at: "2026-10-03T13:00:00Z" }), true)).toMatch(
       /^Google Ads ne mesure pas cette requête.*restent inconnus\.$/,

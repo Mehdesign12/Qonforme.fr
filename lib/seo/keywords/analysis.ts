@@ -83,7 +83,7 @@ export function cooldownMessage(nextDay: string): string {
   return `Prochaine recherche de mots-clés à partir du ${fmtLongDay(nextDay)}${nbsp}: réanalyser avant ne trouvera pas de nouveaux mots-clés.`
 }
 
-export const NOT_CONFIGURED_MESSAGE = "DataForSEO n'est pas configuré : Paramètres › Connexions"
-/** Ligne visible sous l'en-tête quand DataForSEO n'est pas configuré (suivie du lien vers Connexions). */
-export const NOT_CONFIGURED_LINE = "Les volumes, la difficulté et le CPC demandent DataForSEO, qui n'est pas configuré."
+export const NOT_CONFIGURED_MESSAGE = "Aucune source de mesures n'est configurée (OpenSEO ou DataForSEO) : Paramètres › Connexions"
+/** Ligne visible sous l'en-tête quand aucune source de mesures n'est configurée (suivie du lien vers Connexions). */
+export const NOT_CONFIGURED_LINE = "Les volumes, la difficulté et le CPC demandent OpenSEO ou DataForSEO, qui ne sont pas configurés."
 export const AVAILABLE_MESSAGE = "Les volumes de recherche peuvent être relevés."

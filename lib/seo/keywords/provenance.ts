@@ -15,10 +15,10 @@ import { parisDayOf } from "@/lib/utils/paris-date"
 
 type MetricsSource = Pick<KeywordRow, "keyword" | "source" | "volume" | "difficulty" | "cpc" | "cpc_currency" | "metrics_checked_at">
 
-const NOT_CONFIGURED = "DataForSEO n'est pas configuré (Paramètres › Connexions)"
+const NOT_CONFIGURED = "aucune source de mesures (OpenSEO ou DataForSEO) n'est configurée (Paramètres › Connexions)"
 
 /**
- * @param analysisAvailable DataForSEO configuré : « Lancer l'analyse » peut relever les mesures.
+ * @param analysisAvailable source de mesures configurée (OpenSEO ou DataForSEO) : « Lancer l'analyse » peut relever les mesures.
  */
 export function metricsNote(k: MetricsSource, analysisAvailable: boolean): string {
   const hasValues = k.volume !== null || k.difficulty !== null || k.cpc !== null

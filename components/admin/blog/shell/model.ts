@@ -544,6 +544,41 @@ export function saveActionLabel(mode: PublicationMode, meta: SavedMeta, publicat
   return "Enregistrer"
 }
 
+/** Bouton de la carte Publication : ce qu'il propose, ou « rien à faire ». */
+export interface PublicationButtonState {
+  label: string
+  /** Rien à enregistrer ni à republier : bouton neutre et inactif, jusqu'à la prochaine modification. */
+  idle: boolean
+}
+
+/**
+ * Un article déjà enregistré dont rien n'a changé n'a rien à enregistrer ni à
+ * republier : le bouton se grise (neutre, inactif) et ne redevient actif qu'à
+ * la première modification. Une seule exception : « Publié » choisi mais
+ * l'article n'est pas en ligne (retenu par le contrôle, par exemple) : mettre
+ * en ligne reste une action.
+ */
+export function publicationButtonState(input: {
+  mode: PublicationMode
+  meta: SavedMeta
+  /** Article pas encore créé. */
+  creating: boolean
+  /** Au moins un champ diffère de l'enregistrement. */
+  dirty: boolean
+  /** Le choix Brouillon / Publié / Programmé diffère de l'enregistrement. */
+  publicationChanged: boolean
+}): PublicationButtonState {
+  const { mode, meta, creating, dirty, publicationChanged } = input
+  if (creating) return { label: saveActionLabel(mode, meta, true), idle: false }
+  if (!dirty) {
+    if (mode === "publish") return meta.isPublished ? { label: "Publié", idle: true } : { label: "Publier maintenant", idle: false }
+    if (mode === "schedule") return { label: "Programmé", idle: true }
+    return { label: "Enregistré", idle: true }
+  }
+  if (mode === "publish" && meta.isPublished && !publicationChanged) return { label: "Mettre à jour l'article", idle: false }
+  return { label: saveActionLabel(mode, meta, publicationChanged), idle: false }
+}
+
 /* ------------------------------------------------------------------ */
 /* Brouillon local                                                     */
 /* ------------------------------------------------------------------ */
