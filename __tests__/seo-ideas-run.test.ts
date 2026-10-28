@@ -181,7 +181,7 @@ describe("Proposition IA · moteur", () => {
 
     const none = await run(null)
     expect(none.metrics).toBe("not_configured")
-    expect(none.notes.join(" ")).toMatch(/DataForSEO n'est pas configuré/)
+    expect(none.notes.join(" ")).toMatch(/Aucune source de mesures/)
 
     const down = await run(async () => {
       throw new DataForSeoError("DataForSEO est injoignable pour le moment.")
@@ -194,7 +194,7 @@ describe("Proposition IA · moteur", () => {
     const odd = await run(async () => {
       throw new Error("boom")
     })
-    expect(odd.notes.join(" ")).toMatch(/DataForSEO n'a pas répondu/)
+    expect(odd.notes.join(" ")).toMatch(/Les mesures n'ont pas répondu/)
   })
 
   it("Google injoignable : phrases non vérifiées et remarque", async () => {

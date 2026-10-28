@@ -46,6 +46,7 @@ export function PublicationCard({
   defaultTime,
   saving,
   saveLabel,
+  idle = false,
   onSave,
   note,
   className,
@@ -58,13 +59,15 @@ export function PublicationCard({
   defaultTime: string
   saving: boolean
   saveLabel: string
+  /** Rien à enregistrer ni à republier : bouton neutre et inactif. */
+  idle?: boolean
   onSave: () => void
   /** Au-dessus du choix : heure proposée à confirmer. */
   note?: React.ReactNode
   className?: string
 }) {
   const icon =
-    saving ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : saveLabel === "Publier maintenant" ? <Send aria-hidden /> : saveLabel.startsWith("Programmer") ? <CalendarClock aria-hidden /> : saveLabel === "Retirer du blog" ? <Undo2 aria-hidden /> : <Save aria-hidden />
+    saving ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : idle ? <Check aria-hidden /> : saveLabel === "Publier maintenant" ? <Send aria-hidden /> : saveLabel.startsWith("Programmer") ? <CalendarClock aria-hidden /> : saveLabel === "Retirer du blog" ? <Undo2 aria-hidden /> : <Save aria-hidden />
   return (
     <SideCard id="carte-publication" icon={<Send />} title="Publication" className={className}>
       {note}
@@ -80,10 +83,18 @@ export function PublicationCard({
           slug={slug}
           defaultTime={defaultTime}
           footer={
-            <button type="button" onClick={onSave} disabled={saving} className="q-btn q-btn-primary mt-1 w-full max-md:h-12">
-              {icon}
-              {saving ? "Enregistrement…" : saveLabel}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onSave}
+                disabled={saving || idle}
+                className={cn("q-btn mt-1 w-full max-md:h-12", idle ? "q-btn-secondary" : "q-btn-primary")}
+              >
+                {icon}
+                {saving ? "Enregistrement…" : saveLabel}
+              </button>
+              {idle && <p className="m-0 text-center text-[12.5px] leading-snug text-[var(--q-text-4)]">Aucune modification depuis le dernier enregistrement.</p>}
+            </>
           }
         />
       </div>

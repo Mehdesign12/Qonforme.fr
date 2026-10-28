@@ -264,7 +264,7 @@ describe("résultats enregistrés", () => {
 
   it("« Tout tester » : huit écritures simultanées, aucun résultat perdu", async () => {
     const seo = db.client as unknown as SeoDb
-    const keys = ["search_console", "pagespeed", "gemini", "openai", "perplexity", "anthropic", "dataforseo", "resend"] as const
+    const keys = ["search_console", "pagespeed", "gemini", "openai", "perplexity", "anthropic", "dataforseo", "openseo", "resend"] as const
     await Promise.all(keys.map((k, i) => storeConnectionTest(seo, k, result(i % 2 ? "error" : "connected", k))))
     const tests = await readConnectionTests(seo)
     expect(Object.keys(tests).sort()).toEqual(keys.slice().sort())
@@ -337,6 +337,6 @@ describe("routes", () => {
     expect(list.status).toBe(200)
     const body = await list.json()
     expect(body).toMatchObject({ testsAvailable: false, testsFailure: "read_failed", tests: {} })
-    expect(body.connections).toHaveLength(8)
+    expect(body.connections).toHaveLength(9)
   })
 })

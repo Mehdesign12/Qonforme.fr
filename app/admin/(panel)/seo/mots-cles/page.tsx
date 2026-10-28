@@ -20,7 +20,7 @@ import { SeoHeader, SeoTabs } from "@/components/admin/seo/SeoHeader"
 import { FailureState, InfoLine, SeoBanner } from "@/components/admin/seo/SeoStates"
 import { load, seoDb } from "@/lib/seo/db"
 import { readJob } from "@/lib/seo/cron"
-import { isConfigured } from "@/lib/seo/connections"
+import { isConfigured, isKeywordDataConfigured } from "@/lib/seo/connections"
 import { fmtCount } from "@/lib/seo/format"
 import { AVAILABLE_MESSAGE, METRICS_JOB, NOT_CONFIGURED_LINE, analysisState, cooldownMessage } from "@/lib/seo/keywords/analysis"
 import { gscBounds, keywordPeriod, listAllKeywords, topPageFor, type TopPage } from "@/lib/seo/keywords/data"
@@ -67,7 +67,7 @@ export default async function SeoKeywordsPage({ searchParams }: { searchParams: 
   const filters = parseKeywordFilters(await searchParams)
   const now = new Date()
   const db = seoDb()
-  const dataForSeo = isConfigured("dataforseo")
+  const dataForSeo = isKeywordDataConfigured()
   const searchConsole = isConfigured("search_console")
 
   const loaded = await load(async () => {

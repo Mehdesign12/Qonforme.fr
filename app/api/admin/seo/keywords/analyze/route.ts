@@ -21,7 +21,7 @@ import { NextResponse } from "next/server"
 import { isAdminAuthenticated } from "@/lib/admin-require"
 import { errorPayload, seoDb } from "@/lib/seo/db"
 import { readJob, runTask } from "@/lib/seo/cron"
-import { isConfigured } from "@/lib/seo/connections"
+import { isKeywordDataConfigured } from "@/lib/seo/connections"
 import { METRICS_JOB, NOT_CONFIGURED_MESSAGE, analysisState, cooldownMessage } from "@/lib/seo/keywords/analysis"
 import { keywordsMetricsTask, keywordsToAnalyze, markRefused, splitPending } from "@/lib/seo/keywords/metrics"
 
@@ -35,7 +35,7 @@ const BUDGET_MS = 48_000
 export async function POST() {
   const started = Date.now()
   if (!(await isAdminAuthenticated())) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-  if (!isConfigured("dataforseo")) {
+  if (!isKeywordDataConfigured()) {
     return NextResponse.json({ error: NOT_CONFIGURED_MESSAGE, code: "not_configured" }, { status: 409 })
   }
 

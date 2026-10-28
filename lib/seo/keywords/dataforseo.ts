@@ -23,6 +23,8 @@
  *
  * Authentification Basic (DATAFORSEO_LOGIN / DATAFORSEO_PASSWORD), lues dans
  * process.env et jamais rendues, journalisées ni recopiées dans un message.
+ * Avec OPENSEO_API_KEY (compte OpenSEO, mêmes données), `fetchKeywordMetrics`
+ * passe par OpenSEO à la place (lib/seo/keywords/openseo.ts).
  * L'analyse des réponses est faite par des fonctions pures, testées
  * (__tests__/seo-keywords-dataforseo.test.ts).
  */
@@ -185,6 +187,24 @@ export function dataForSeoCredentials(): { login: string; password: string } | n
   return login && password ? { login, password } : null
 }
 
+/** Clé OpenSEO (compte hébergé qui revend les données de DataForSEO, lib/seo/keywords/openseo.ts) ; null si absente. */
+export function openSeoApiKey(): string | null {
+  const key = process.env.OPENSEO_API_KEY?.trim()
+  return key ? key : null
+}
+
+export type KeywordDataSource = "openseo" | "dataforseo"
+
+/**
+ * D'où viennent les volumes, la difficulté, le CPC et l'intention : le compte
+ * OpenSEO quand sa clé est là (prioritaire), sinon les identifiants DataForSEO ;
+ * null si aucun des deux n'est configuré.
+ */
+export function keywordDataSource(): KeywordDataSource | null {
+  if (openSeoApiKey()) return "openseo"
+  return dataForSeoCredentials() ? "dataforseo" : null
+}
+
 async function post(path: string, task: Record<string, unknown>, timeoutMs: number): Promise<unknown> {
   const creds = dataForSeoCredentials()
   if (!creds) throw new DataForSeoError("DataForSEO n'est pas configuré : Paramètres › Connexions.")
@@ -230,6 +250,11 @@ export const DFS_WRITE_RESERVE_MS = 12_000
 export async function fetchKeywordMetrics(keywords: string[], opts: { deadline: number }): Promise<Map<string, KeywordMetrics>> {
   if (keywords.length === 0) return new Map()
   if (keywords.length > DFS_MAX_KEYWORDS) throw new DataForSeoError(`${DFS_MAX_KEYWORDS} mots-clés au plus par appel.`)
+  // Compte OpenSEO : import différé (openseo.ts importe ce fichier)
+  if (keywordDataSource() === "openseo") {
+    const { fetchOpenSeoKeywordMetrics } = await import("@/lib/seo/keywords/openseo")
+    return fetchOpenSeoKeywordMetrics(keywords, opts)
+  }
   const timeout = () => Math.min(DFS_CALL_TIMEOUT_MS, opts.deadline - Date.now() - DFS_WRITE_RESERVE_MS)
 
   const [volumeJson, difficultyJson, intents] = await Promise.all([

@@ -11,10 +11,11 @@
  * dessous, puis le statut.
  */
 import Link from "next/link"
-import { ArrowUpRight, Bot, ChevronLeft, Ellipsis, Loader2, RefreshCw, Save, Trash2 } from "lucide-react"
+import { ArrowUpRight, Bot, Check, ChevronLeft, Ellipsis, Loader2, RefreshCw, Save, Trash2 } from "lucide-react"
 import { StatusPill } from "@/components/app/kit"
 import { ArticleStatusPill } from "@/components/admin/seo/articles/pills"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { cn } from "@/lib/utils"
 import { SaveIndicator, type SaveState } from "@/components/admin/blog/shell/parts"
 import { useModKey } from "@/components/admin/blog/shell/hooks"
 import type { ArticleDisplayStatus } from "@/lib/seo/types"
@@ -27,6 +28,7 @@ export function EditorHeader({
   aiGenerated,
   saveState,
   saving,
+  idle = false,
   onSave,
   viewHref,
   onRegenerate,
@@ -41,6 +43,8 @@ export function EditorHeader({
   aiGenerated: boolean
   saveState: SaveState
   saving: boolean
+  /** Article enregistré, rien n'a changé : « Enregistré » en neutre, inactif (bleu seulement quand il y a quelque chose à enregistrer). */
+  idle?: boolean
   onSave: () => void
   /** Adresse publique (article en ligne) ; null sinon. */
   viewHref: string | null
@@ -94,10 +98,16 @@ export function EditorHeader({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-        <button type="button" onClick={onSave} disabled={saving} aria-keyshortcuts="Control+S Meta+S" className="q-btn q-btn-primary max-md:h-11">
-          {saving ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : <Save aria-hidden />}
-          {saving ? "Enregistrement…" : "Enregistrer"}
-          {mod && !saving && (
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving || idle}
+          aria-keyshortcuts={idle ? undefined : "Control+S Meta+S"}
+          className={cn("q-btn max-md:h-11", idle ? "q-btn-secondary" : "q-btn-primary")}
+        >
+          {saving ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : idle ? <Check aria-hidden /> : <Save aria-hidden />}
+          {saving ? "Enregistrement…" : idle ? "Enregistré" : "Enregistrer"}
+          {mod && !saving && !idle && (
             <kbd className="ml-0.5 hidden rounded-[5px] border border-white/30 px-1.5 py-[3px] font-mono text-[11px] font-medium leading-none text-white/85 md:inline" aria-hidden>
               {mod === "⌘" ? "⌘S" : "Ctrl S"}
             </kbd>

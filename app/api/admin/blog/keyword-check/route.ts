@@ -8,7 +8,7 @@
  *
  * - Existence de la phrase : saisie semi-automatique de Google (sans clé, sans
  *   coût). Google injoignable : « unreachable », jamais une erreur.
- * - Volume, difficulté, CPC, intention : DataForSEO (une demande, quelques
+ * - Volume, difficulté, CPC, intention : le compte OpenSEO, ou DataForSEO à défaut (une demande, quelques
  *   centimes), sauf si le mot-clé est déjà suivi avec ses mesures (reprises
  *   telles quelles, rien n'est repayé). Identifiants absents, service
  *   injoignable ou mot-clé refusé par Google Ads : l'état et la raison sont
@@ -24,7 +24,7 @@ import { zodError } from "@/lib/seo/articles/input"
 import { getSettings } from "@/lib/seo/settings"
 import { findCompetitorMentions } from "@/lib/seo/competitors"
 import { normalizeKeyword } from "@/lib/seo/keywords/normalize"
-import { dataForSeoCredentials, DataForSeoError, DFS_WRITE_RESERVE_MS, fetchKeywordMetrics, isSendableKeyword } from "@/lib/seo/keywords/dataforseo"
+import { DataForSeoError, DFS_WRITE_RESERVE_MS, fetchKeywordMetrics, isSendableKeyword, keywordDataSource } from "@/lib/seo/keywords/dataforseo"
 import { verifyKeywords } from "@/lib/seo/ideas/autocomplete"
 import type { KeywordCheckResponse } from "@/lib/seo/articles/editor-types"
 
@@ -74,11 +74,11 @@ export async function POST(request: NextRequest) {
     const known = tracked && tracked.volume !== null
     const [verified, measure] = await Promise.all([
       verifyKeywords([keyword], { deadline: Date.now() + AUTOCOMPLETE_BUDGET_MS }),
-      known || !wantMetrics || competitor || !isSendableKeyword(keyword) || !dataForSeoCredentials()
+      known || !wantMetrics || competitor || !isSendableKeyword(keyword) || !keywordDataSource()
         ? Promise.resolve(null)
         : fetchKeywordMetrics([keyword], { deadline: Date.now() + METRICS_BUDGET_MS }).then(
             (map) => ({ ok: true as const, value: map.get(keyword) ?? null }),
-            (error: unknown) => ({ ok: false as const, message: error instanceof DataForSeoError ? error.message : "DataForSEO n'a pas répondu." }),
+            (error: unknown) => ({ ok: false as const, message: error instanceof DataForSeoError ? error.message : "La mesure n'a pas répondu." }),
           ),
     ])
 
@@ -98,12 +98,12 @@ export async function POST(request: NextRequest) {
     } else if (!wantMetrics) {
       body.metrics.message = null
     } else if (!isSendableKeyword(keyword)) {
-      body.metrics = { ...body.metrics, state: "unsendable", message: "Google Ads (donc DataForSEO) n'accepte pas ce mot-clé : 80 caractères et 10 mots au plus, sans symbole comme ? ! , ( ) \" ;." }
-    } else if (!dataForSeoCredentials()) {
+      body.metrics = { ...body.metrics, state: "unsendable", message: "Google Ads (d'où viennent les volumes) n'accepte pas ce mot-clé : 80 caractères et 10 mots au plus, sans symbole comme ? ! , ( ) \" ;." }
+    } else if (!keywordDataSource()) {
       body.metrics = {
         ...body.metrics,
         state: "not_configured",
-        message: "DataForSEO n'est pas configuré : ajoutez DATAFORSEO_LOGIN et DATAFORSEO_PASSWORD dans Vercel (Paramètres › Connexions) pour mesurer les recherches.",
+        message: "Aucune source de mesures n'est configurée : ajoutez OPENSEO_API_KEY (ou DATAFORSEO_LOGIN et DATAFORSEO_PASSWORD) dans Vercel (Paramètres › Connexions) pour mesurer les recherches.",
       }
     } else if (measure && !measure.ok) {
       body.metrics = { ...body.metrics, state: "unavailable", message: measure.message }
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       const m = measure.value
       body.metrics = { state: "ok", volume: m?.volume ?? null, difficulty: m?.difficulty ?? null, cpc: m?.cpc ?? null, intent: m?.intent ?? null, message: null }
       if (!m || (m.volume === null && m.difficulty === null)) {
-        body.metrics.message = "DataForSEO n'a aucune donnée pour cette phrase : elle est trop rare ou trop précise pour être mesurée. Cela ne veut pas dire que personne ne la tape."
+        body.metrics.message = "Il n'y a aucune donnée pour cette phrase : elle est trop rare ou trop précise pour être mesurée. Cela ne veut pas dire que personne ne la tape."
       }
     }
     return NextResponse.json(body, { headers: { "Cache-Control": "private, no-store" } })

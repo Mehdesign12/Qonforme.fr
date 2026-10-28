@@ -76,7 +76,7 @@ import {
   publicationMovedSince,
   relativeDay,
   restoreDraft,
-  saveActionLabel,
+  publicationButtonState,
   statusOfMeta,
   successMessage,
   tabOfTarget,
@@ -578,6 +578,11 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
         setMeta((m) => ({ ...m, isPublished: true, publishedAt: m.publishedAt ?? now, scheduledAt: null, heldReason: null }))
         metaRef.current = { ...metaRef.current, isPublished: true, publishedAt: metaRef.current.publishedAt ?? now, scheduledAt: null, heldReason: null }
         setBlocked(null)
+        // La carte Publication affiche « Publié » (et non « Brouillon » avec un article en ligne), et le bouton se grise
+        const published: PublicationValue = { ...savedRef.current.publication, mode: 'publish' }
+        savedRef.current = { ...savedRef.current, publication: published }
+        setSaved((v) => ({ ...v, publication: published }))
+        setDraft((d) => ({ ...d, publication: published }))
         toast.success(force ? 'Article publié, sans attendre le contrôle.' : 'Article publié.')
         router.refresh()
         return
@@ -1045,7 +1050,9 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
   const liveHref = meta.isPublished && saved.slug ? `/blog/${saved.slug}` : null
   const tone = scoreTone(analysis.score)
   const serpDate = meta.isPublished ? meta.publishedAt : draft.publication.mode === 'schedule' ? draft.publication.day : null
-  const saveLabel = saveActionLabel(draft.publication.mode, meta, !id || publicationChanged)
+  const publicationButton = publicationButtonState({ mode: draft.publication.mode, meta, creating: !id, dirty, publicationChanged })
+  // Article enregistré et inchangé : « Enregistré » en neutre, inactif ; il redevient bleu à la première modification
+  const nothingToSave = Boolean(id) && !dirty
   const fromTitle = slugify(draft.title)
 
   const proposalText = proposal
@@ -1077,6 +1084,7 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
         aiGenerated={Boolean(post?.ai_generated)}
         saveState={saveState}
         saving={saving}
+        idle={nothingToSave}
         onSave={() => void save()}
         viewHref={liveHref}
         onRegenerate={id && post?.ai_generated ? () => void regenerate() : undefined}
@@ -1202,8 +1210,10 @@ export function BlogEditor({ mode, post, initialSchedule = null, publishTime = n
             slug={saved.slug}
             defaultTime={prefTime}
             saving={saving}
-            saveLabel={saveLabel}
-            onSave={() => void save()}
+            saveLabel={publicationButton.label}
+            idle={publicationButton.idle}
+            // « Publié » choisi, rien de modifié, mais pas en ligne (retenu par le contrôle) : mettre en ligne, pas « rien à enregistrer »
+            onSave={() => (id && !dirty && draft.publication.mode === 'publish' && !meta.isPublished ? void publishChecked(false) : void save())}
           />
           <ScoreCard className={tab === 'referencement' ? '' : 'max-xl:hidden'} result={analysis} onFocusTarget={focusTarget} actionFor={scoreActionFor} />
           <KeywordCard

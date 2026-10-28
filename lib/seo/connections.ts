@@ -17,6 +17,7 @@ export type ConnectionKey =
   | "perplexity"
   | "anthropic"
   | "dataforseo"
+  | "openseo"
   | "resend"
 
 export interface ConnectionDef {
@@ -56,8 +57,21 @@ export const CONNECTIONS: ConnectionDef[] = [
     env: ["DATAFORSEO_LOGIN", "DATAFORSEO_PASSWORD"],
     optional: true,
   },
+  {
+    key: "openseo",
+    name: "OpenSEO",
+    purpose: "Volumes, difficulté, CPC et intention des mots-clés (compte OpenSEO, données DataForSEO), partout dans l'éditeur et l'onglet Mots-clés",
+    env: ["OPENSEO_API_KEY"],
+    optional: true,
+    note: "Prioritaire sur DataForSEO quand les deux sont là. La clé est personnelle et ne peut pas être limitée à la lecture : ne la collez que dans les variables de l'hébergeur.",
+  },
   { key: "resend", name: "Resend", purpose: "Envoi du résumé hebdomadaire par email", env: ["RESEND_API_KEY"] },
 ]
+
+/** Une source de mesures des mots-clés est configurée : le compte OpenSEO ou DataForSEO. */
+export function isKeywordDataConfigured(): boolean {
+  return isConfigured("openseo") || isConfigured("dataforseo")
+}
 
 function present(name: string): boolean {
   return Boolean(process.env[name]?.trim())
