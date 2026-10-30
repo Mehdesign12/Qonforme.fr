@@ -38,7 +38,7 @@ export const SEARCHER_SITUATIONS = [
 
 /** Ce que Qonforme ne fait pas encore : aucun sujet ne doit le promettre. */
 const NOT_AVAILABLE = [
-  "la transmission des factures par une plateforme agréée (raccordement en préparation : on peut expliquer la réforme, pas promettre l'envoi)",
+  "l'envoi des factures des artisans à leurs clients par une plateforme agréée (prévu pour 2027 ; la réception des factures fournisseurs par Super PDP, avec Essentiel, existe déjà)",
   "une application à télécharger dans les stores (le site s'installe sur l'écran d'accueil)",
   "tout contact humain : appel, rendez-vous, visio, réponse personnalisée",
   "le nom d'un autre logiciel, éditeur ou marque (aucun comparatif nommé)",

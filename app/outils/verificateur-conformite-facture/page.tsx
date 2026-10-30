@@ -157,7 +157,7 @@ export default function VerificateurConformitePage() {
         <ToolCta
           className="hidden sm:flex"
           title="Préparez la réforme avec Qonforme"
-          text="Vos factures PDF partent avec leurs données Factur-X, les mentions se remplissent depuis vos réglages et vos documents restent consultables. La transmission par plateforme agréée est en préparation."
+          text="Vos factures PDF partent avec leurs données Factur-X, les mentions se remplissent depuis vos réglages et vos documents restent consultables. Avec Essentiel, vos factures fournisseurs arrivent par la plateforme agréée Super PDP ; l'envoi de vos factures par la plateforme est prévu pour 2027."
           cta="Créer mon compte"
         />
       </ToolArea>

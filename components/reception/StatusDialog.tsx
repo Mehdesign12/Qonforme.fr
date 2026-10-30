@@ -47,6 +47,7 @@ export function StatusDialog({
   status,
   invoiceLabel,
   loading,
+  transmits,
   onConfirm,
   onClose,
 }: {
@@ -54,6 +55,8 @@ export function StatusDialog({
   status: DialogStatus | null
   invoiceLabel: string
   loading?: boolean
+  /** La décision part au fournisseur par la plateforme agréée (facture arrivée par elle, compte raccordé). */
+  transmits?: boolean
   onConfirm: (reasonCode: string | null, reason: string | null) => void
   onClose: () => void
 }) {
@@ -131,8 +134,9 @@ export function StatusDialog({
               <div className="q-banner text-[13px] leading-normal">
                 <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
                 <p>
-                  Ce statut est enregistré dans Qonforme. Qonforme n&apos;est pas encore raccordé à une plateforme
-                  agréée : prévenez vous-même votre fournisseur.
+                  {transmits
+                    ? "Ce statut est enregistré dans Qonforme et transmis au fournisseur par la plateforme agréée."
+                    : "Ce statut est enregistré dans Qonforme, sans transmission par la plateforme agréée : prévenez vous-même votre fournisseur."}
                 </p>
               </div>
             </div>

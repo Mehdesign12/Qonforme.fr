@@ -280,6 +280,7 @@ export function ReceivedInvoiceDetailView({ invoice: inv, today, backHref, pdfUr
         status={dialog}
         invoiceLabel={label}
         loading={h.statusLoading}
+        transmits={transmits && inv.source === "platform"}
         onClose={() => setDialog(null)}
         onConfirm={async (code, reason) => {
           if (!dialog) return

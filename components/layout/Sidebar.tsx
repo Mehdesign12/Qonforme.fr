@@ -146,13 +146,13 @@ function StatusCard({ identity }: { identity: ShellIdentity }) {
     )
   }
   return (
-    <Link href="/settings/ppf" className="block rounded-xl border border-[var(--q-line)] bg-[var(--q-surface-2)] p-3 text-[var(--q-ink)]">
+    <Link href="/facturation-electronique" className="block rounded-xl border border-[var(--q-line)] bg-[var(--q-surface-2)] p-3 text-[var(--q-ink)]">
       <span className="flex items-center gap-2 text-[13px] font-semibold">
         <ShieldCheck className="size-4 text-[var(--q-ok)]" aria-hidden />
         Réforme 2026-2027
       </span>
       <span className="mt-1 block text-xs leading-relaxed text-[var(--q-text-3)]">
-        Mentions obligatoires sur vos modèles. Transmission par plateforme agréée : en préparation.
+        Mentions obligatoires sur vos modèles. Réception par la plateforme agréée Super PDP, incluse dans votre formule.
       </span>
     </Link>
   )

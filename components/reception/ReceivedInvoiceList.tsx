@@ -6,7 +6,7 @@
  *
  * Partagée par la page réelle (/received-invoices, API) et sa démo
  * (/demo/received-invoices, lib/demo/reception.ts) : même rendu des deux côtés.
- * Qonforme n'est pas raccordé à une plateforme agréée : la page le dit et
+ * Le bandeau suit le raccordement du compte à Super PDP (lib/pa) : la page le dit et
  * propose l'import manuel.
  */
 import { useEffect, useMemo, useState } from "react"
