@@ -11,7 +11,7 @@
 import Link from "next/link"
 import { Bell, ChevronRight, CreditCard, Download, Layers, ShieldCheck, Building2, UserCheck, type LucideIcon } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/invoice"
-import { initialsOf, PageHeader, StatusPill } from "@/components/app/kit"
+import { initialsOf, PageHeader } from "@/components/app/kit"
 import type { ShellMode } from "@/components/layout/nav"
 import { settingsHref } from "@/components/settings/sections"
 import { LogoutRow } from "@/components/settings/LogoutRow"
@@ -114,10 +114,8 @@ export function SettingsOverview({
         <Row
           href={href("/settings/ppf")}
           icon={ShieldCheck}
-          tone="warn"
-          title="Plateforme agréée"
-          sub="Transmission en préparation · guide de dépôt"
-          aside={<StatusPill tone="warn" className="hidden sm:inline-flex">En préparation</StatusPill>}
+          title="Facturation électronique"
+          sub="Réception par Super PDP · notifications"
         />
       </Group>
 

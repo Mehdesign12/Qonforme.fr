@@ -129,8 +129,8 @@ export function StatusLocalNote({ source, transmits }: { source: "import" | "pla
   return (
     <p className="q-field-hint mt-3 border-t border-[var(--q-line-soft)] pt-3 leading-relaxed">
       {source === "import"
-        ? "Statuts enregistrés dans Qonforme et transmis à personne : Qonforme n’est pas encore raccordé à une plateforme agréée. Prévenez vous-même votre fournisseur de votre décision. Une fois le raccordement fait, les statuts des factures reçues par la plateforme lui seront transmis."
-        : "Statuts enregistrés dans Qonforme. Ils seront transmis à votre plateforme agréée une fois Qonforme raccordé."}
+        ? "Statuts enregistrés dans Qonforme et transmis à personne : votre compte n’est pas raccordé à la plateforme agréée. Prévenez vous-même votre fournisseur de votre décision."
+        : "Statuts enregistrés dans Qonforme, sans transmission : le raccordement à la plateforme agréée n’est pas actif sur votre compte."}
     </p>
   )
 }

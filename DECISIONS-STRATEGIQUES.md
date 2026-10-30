@@ -531,7 +531,7 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 
 Le fondateur déclare le 17/10/2026 que Qonforme a obtenu le label de la DGFiP. Le logotype s'affiche donc sur l'accueil (§ « Où il s'affiche »). **Le dépôt ne contient pas la preuve** (date du raccordement, nom de la plateforme agréée, fonctions couvertes) : la noter ici dès qu'elle est sous la main, car la charte permet à l'État de contrôler l'usage et d'en exiger le retrait.
 
-> Preuve à consigner : plateforme agréée raccordée : ______ · date : ______ · fonctions couvertes (réception / émission / e-reporting) : ______
+> Preuve consignée le 30/10/2026 : plateforme agréée raccordée : **Super PDP** (SUPER G, Paris, immatriculée en décembre 2025) · application de production créée le 30/10/2026 (contrat 132136, au nom de Diez Agency LLC) · parcours essayé de bout en bout en bac à sable le même jour (raccordement, relève d'une facture, décision transmise au fournisseur) · fonctions couvertes : **réception** ; émission et e-reporting pas encore (§ 16).
 
 ### Ce que dit la charte (DGFiP, 30/07/2025)
 
@@ -548,7 +548,11 @@ Un seul composant, `components/brand/SolutionCompatible.tsx` (interrupteur `SOLU
 
 Accueil : réponse de la FAQ (la 3ᵉ ligne de « Où en est Qonforme » a disparu avec l'ancien accueil). Guide « Plateforme agréée » : « Et avec Qonforme ? ».
 
-### À revoir : textes qui disent encore « en préparation » (décision en attente)
+### Textes « en préparation » : relus le 30/10/2026 (§ 16)
+
+Remplacés par la réception par Super PDP (avec Essentiel) et l'émission « prévue pour 2027 » : FAQ de `/pricing`, deux outils gratuits, guide auto-entrepreneur, pages plombier et peintre, barre latérale, Paramètres, fenêtre des statuts et note de la fiche d'une facture reçue, consignes des générateurs d'articles et des idées de sujets. `components/settings/EInvoicingView.tsx` garde l'ancien texte : il ne s'affiche plus qu'aux comptes à qui le raccordement n'est pas proposé, pour qui il reste vrai.
+
+Liste d'origine, pour mémoire :
 
 Ils disent le contraire du logotype tant qu'ils ne sont pas relus avec ce que couvre le raccordement réel (réception seule, ou aussi émission) :
 
@@ -652,9 +656,13 @@ Le fondateur annonce le 30/10/2026 le partenariat avec **Super PDP** (SUPER G, P
 
 Réception seulement : raccordement (OAuth avec PKCE, jetons chiffrés, rotation des jetons de rafraîchissement sous verrou), état du raccordement (vérification, contrôle manuel, transfert d'adresse, refus, annuaire, autorisation expirée), relève toutes les 15 minutes par curseur, transmission des décisions de l'artisan (statuts 204 à 211), statuts de la plateforme repris (209, 212, 213), emails (réception active, résumé quotidien, une facture à la fois, autorisation expirée). Comme Stripe : un compte d'essai se raccorde au bac à sable, tous les autres à la production. **L'émission par la plateforme (planches 14, 15, M13) vient ensuite**, une fois la réception essayée.
 
-### Avant d'ouvrir en production
+### Avant d'ouvrir en production (fait le 30/10/2026)
 
 1. Essai complet en bac à sable avec un compte d'essai (Burger Queen = Qonforme, Tricatel = l'artisan).
 2. Migration `20261030_pa_connections.sql` appliquée.
 3. Application de **production** créée chez Super PDP (c'est à ce moment que l'abonnement est souscrit), au nom de Diez Agency LLC, puis `SUPERPDP_CLIENT_ID` et `SUPERPDP_CLIENT_SECRET` dans Vercel.
 4. Super PDP ajouté aux sous-traitants de la politique de confidentialité (§ 5), relecture des textes « en préparation » du § 13 et preuve du label consignée au § 13 (plateforme : Super PDP).
+
+### Ouverture (30/10/2026)
+
+Essai en bac à sable réussi (raccordement, adresse `0225:315143296_117753`, relève d'une facture envoyée depuis Tricatel, décision « Approuvée » reçue par le fournisseur en fr:205). Migrations `20261003_received_invoices.sql` et `20261030_pa_connections.sql` appliquées, application de production créée, variables dans Vercel, site redéployé : tous les comptes avec une formule voient le raccordement. Textes publics, politique de confidentialité (SUPER G ajouté aux sous-traitants) et consignes des générateurs mis à jour.

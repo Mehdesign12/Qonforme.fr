@@ -19,7 +19,7 @@ export default function ConfidentialitePage() {
       titleAccent="confidentialité"
       path="/confidentialite"
       subtitle="Comment Qonforme collecte, utilise et protège vos données personnelles."
-      lastUpdated="19 octobre 2026"
+      lastUpdated="30 octobre 2026"
     >
       <h2>1. Responsable du traitement</h2>
       <p>
@@ -108,6 +108,7 @@ export default function ConfidentialitePage() {
         <li><strong>Stripe Inc.</strong> — traitement des paiements (certifié PCI-DSS)</li>
         <li><strong>Google LLC</strong> — connexion et inscription avec Google, à votre initiative seulement : Google transmet à Qonforme votre adresse email, votre prénom et votre nom ; Qonforme ne reçoit pas votre mot de passe Google</li>
         <li><strong>Resend Inc.</strong> — envoi d&apos;e-mails transactionnels (factures, relances, bienvenue)</li>
+        <li><strong>SUPER G (Super PDP)</strong> — plateforme agréée par l&apos;administration fiscale, établie à Paris : réception de vos factures fournisseurs, seulement si vous raccordez votre compte (page « Facturation électronique »). Qonforme lui transmet votre adresse email et le SIREN de votre entreprise pour préparer le raccordement, reçoit vos factures reçues et leurs statuts, et lui transmet vos décisions (prise en charge, approbation, refus). La vérification de votre identité et de votre entreprise est faite par Super PDP, sur son site et selon ses propres conditions : Qonforme ne reçoit pas votre pièce d&apos;identité</li>
         <li><strong>PostHog Inc.</strong> — mesure d&apos;audience (pages vues, provenance des visites) et enregistrement des parcours (voir section 8), chargés seulement si vous acceptez les cookies</li>
         <li><strong>Sentry (Functional Software Inc.)</strong> — surveillance des erreurs techniques et stabilité du service</li>
         <li><strong>Google LLC (Gemini API)</strong> — génération de contenu éditorial pour le blog (aucune donnée utilisateur transmise)</li>
