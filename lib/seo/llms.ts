@@ -30,9 +30,8 @@ export function buildLlmsTxt(): string {
     a.available
       ? `- Formule ${a.name} : ${prix(a.monthlyPrice)} par mois ou ${prix(a.yearlyPrice)} par an. Tout ${e.name}, plus : ${a.features.map(lcFirst).join(", ")}.`
       : `- Formule ${a.name} : bientôt disponible, pas encore en vente.`,
-    // Écrit à la main : lib/stripe/plans.ts liste encore la réception en « à venir » (DECISIONS § 16, 30/10/2026)
     `- Facturation électronique : Qonforme est « solution compatible », raccordé à la plateforme agréée Super PDP ; avec ${e.name}, les factures fournisseurs arrivent par cette plateforme. L'émission par la plateforme est prévue pour 2027.`,
-    "- Pas encore disponible : signature en ligne des devis et bons de commande.",
+    ...(e.upcoming.length ? [`- Pas encore disponible : ${e.upcoming.map(lcFirst).join(", ")}.`] : []),
     "- Factures et avoirs émis au format Factur-X ; une facture émise ne se modifie pas, une erreur se corrige par un avoir.",
     "- Qonforme n'encaisse pas les paiements : les clients de l'artisan le paient par virement sur son propre compte.",
     "- S'utilise dans le navigateur, sur ordinateur et téléphone, sans installation.",
