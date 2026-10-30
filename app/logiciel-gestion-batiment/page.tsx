@@ -367,6 +367,10 @@ export default function LogicielGestionBatimentPage() {
             <ChipLinks
               links={[
                 { href: "/pricing", label: "Tarifs et formules" },
+                { href: "/logiciel-devis-gratuit", label: "Logiciel de devis gratuit" },
+                { href: "/logiciel-relance-factures-impayees", label: "Relance des factures impayées" },
+                { href: "/logiciel-export-fec", label: "Export FEC" },
+                { href: "/logiciel-situations-travaux", label: "Situations de travaux et acomptes" },
                 { href: "/guide/devis-obligatoire", label: "Devis obligatoire : les règles" },
                 { href: "/guide/tva-travaux", label: "TVA des travaux : 20 %, 10 % ou 5,5 %" },
                 { href: "/guide/facture-electronique-2026", label: "Facturation électronique 2026-2027" },
