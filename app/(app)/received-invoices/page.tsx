@@ -6,14 +6,17 @@ import { useCallback, useEffect, useState } from "react"
 import { ReceivedInvoiceList } from "@/components/reception/ReceivedInvoiceList"
 import { todayISO } from "@/components/invoices/invoice-view"
 import type { ReceivedListItem } from "@/lib/reception/view"
+import type { ReceptionInfo } from "@/components/reception/PlatformNotice"
+import { fetchEInvoicingView, receptionInfo } from "@/components/e-invoicing/reception-info"
 
-/** Factures reçues des fournisseurs (import manuel ; plateforme agréée en préparation). */
+/** Factures reçues des fournisseurs (plateforme agréée Super PDP et import manuel). */
 export default function ReceivedInvoicesPage() {
   const [invoices, setInvoices] = useState<ReceivedListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [unavailable, setUnavailable] = useState(false)
   const [today, setToday] = useState<string | null>(null)
+  const [reception, setReception] = useState<ReceptionInfo | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -34,6 +37,7 @@ export default function ReceivedInvoicesPage() {
   useEffect(() => {
     setToday(todayISO())
     void load()
+    void fetchEInvoicingView().then((v) => setReception(receptionInfo(v, "/facturation-electronique")))
   }, [load])
 
   return (
@@ -47,6 +51,7 @@ export default function ReceivedInvoicesPage() {
       hrefFor={(id) => `/received-invoices/${id}`}
       importHref="/received-invoices/import"
       settingsHref="/settings/ppf"
+      reception={reception}
     />
   )
 }

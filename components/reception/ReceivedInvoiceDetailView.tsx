@@ -50,6 +50,8 @@ export interface ReceivedDetailViewProps {
   /** Lien vers une autre facture reçue (doublon signalé à l'import). */
   hrefFor: (id: string) => string
   handlers: ReceivedDetailHandlers
+  /** Les décisions sont transmises à la plateforme agréée (compte raccordé, avec une formule). */
+  transmits?: boolean
 }
 
 interface Action {
@@ -64,7 +66,7 @@ interface Action {
 
 const DIALOG_STATUSES: DialogStatus[] = ["refused", "disputed", "partially_approved", "suspended"]
 
-export function ReceivedInvoiceDetailView({ invoice: inv, today, backHref, pdfUrl, hrefFor, handlers: h }: ReceivedDetailViewProps) {
+export function ReceivedInvoiceDetailView({ invoice: inv, today, backHref, pdfUrl, hrefFor, handlers: h, transmits }: ReceivedDetailViewProps) {
   const [dialog, setDialog] = useState<DialogStatus | null>(null)
   const [view, setView] = useState<"data" | "pdf">("data")
 
@@ -223,7 +225,7 @@ export function ReceivedInvoiceDetailView({ invoice: inv, today, backHref, pdfUr
         <div className="order-1 flex min-w-0 flex-col gap-4 xl:order-2">
           <Panel title="Cycle de vie" bodyClassName="px-5 pb-5 pt-2" className="order-2 xl:order-1">
             <Timeline events={inv.events} invoice={inv} year={year} />
-            <StatusLocalNote source={inv.source} />
+            <StatusLocalNote source={inv.source} transmits={transmits} />
           </Panel>
 
           {!credit && (inv.data?.payment.iban || isUnpaid(inv.status)) && (

@@ -1,14 +1,21 @@
+"use client"
+
 /**
  * « Réforme 2026-2027 » (réel et démo) : remplace la carte « Conformité 2027 »
  * du canevas et l'ancien bandeau « Factur-X certifié », qui affirmaient des
  * choses fausses (plateforme connectée, annuaire, certification).
  *
  * Ne coche que ce qui se vérifie dans les données : SIREN et adresse de
- * l'entreprise, SIREN des clients. La transmission par plateforme agréée est
- * dite « en préparation » (DECISIONS § 10) ; le guide explique la voie manuelle.
+ * l'entreprise, SIREN des clients. La réception suit le raccordement du compte à
+ * Super PDP (lib/pa) ; l'émission par la plateforme reste prévue pour 2027.
  */
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Check, CircleAlert, Clock, Info } from "lucide-react"
+import { SUPERPDP_LABEL } from "@/lib/pa/superpdp/config"
+import { PA_STATUS_LABEL } from "@/lib/pa/status"
+import type { EInvoicingView } from "@/lib/pa/view"
+import { fetchEInvoicingView } from "@/components/e-invoicing/reception-info"
 import { StatusPill } from "@/components/app/kit"
 import { cn } from "@/lib/utils"
 import { hrefFor, plural, type DashMode, type DashboardView } from "@/components/dashboard/model"
@@ -52,14 +59,68 @@ function Item({
   )
 }
 
+/** Ligne « réception » : raccordement à Super PDP (planche 12), sinon l'import manuel. */
+function ReceptionItem({ view, mode }: { view: EInvoicingView | null; mode: DashMode }) {
+  const hub = hrefFor(mode, "/facturation-electronique")
+  const c = view?.connection
+  if (c && view?.hasPlan && c.status === "active") {
+    return (
+      <Item
+        tone="ok"
+        title={`Réception par ${SUPERPDP_LABEL}`}
+        sub={`Active${c.address ? `, adresse ${c.address}` : ""} · ${view.received.thisMonth}\u00a0${plural(view.received.thisMonth, "facture reçue", "factures reçues")} ce mois-ci`}
+        fix={{ href: hrefFor(mode, "/received-invoices"), label: "Voir les factures reçues" }}
+      />
+    )
+  }
+  if (c) {
+    return (
+      <Item
+        tone={view?.hasPlan ? "info" : "warn"}
+        title={`Réception par ${SUPERPDP_LABEL}`}
+        sub={view?.hasPlan ? PA_STATUS_LABEL[c.status] : "Suspendue sans formule Essentiel"}
+        fix={{ href: hub, label: "Voir le raccordement" }}
+      />
+    )
+  }
+  if (view?.available) {
+    return (
+      <Item
+        tone="info"
+        title="Réception par plateforme agréée"
+        sub={`Obligatoire depuis le 1er septembre 2026 : raccordez Qonforme à ${SUPERPDP_LABEL}`}
+        fix={{ href: hub, label: view.hasPlan ? "Activer" : "Voir comment" }}
+      />
+    )
+  }
+  return (
+    <Item
+      tone="info"
+      title="Factures de vos fournisseurs"
+      sub="Importez-les (Factur-X, XML ou PDF) pour les contrôler et suivre leur paiement"
+      fix={{ href: hrefFor(mode, "/received-invoices"), label: "Factures reçues" }}
+    />
+  )
+}
+
 export function ReformCard({ reform, mode }: { reform: DashboardView["reform"]; mode: DashMode }) {
   const companyHref = hrefFor(mode, "/settings/company")
   const missing = reform.clientsWithoutSiren
+  const [eInvoicing, setEInvoicing] = useState<EInvoicingView | null>(null)
+  useEffect(() => {
+    let alive = true
+    // Démo : vue d'exemple chargée à part, pour ne pas embarquer les données de démo dans l'application
+    const load = mode === "demo"
+      ? import("@/lib/demo/e-invoicing").then((m) => m.DEMO_E_INVOICING)
+      : fetchEInvoicingView()
+    void load.then((v) => { if (alive) setEInvoicing(v) })
+    return () => { alive = false }
+  }, [mode])
   return (
     <section aria-labelledby="dash-reform" className={cn("q-card flex flex-col gap-3 p-[18px]")}>
       <div className="flex items-center justify-between gap-3">
         <h2 id="dash-reform" className="q-h2">Réforme 2026-2027</h2>
-        <Link href={hrefFor(mode, "/settings/ppf")} className="q-link text-[13px]">Lire le guide</Link>
+        <Link href={hrefFor(mode, "/facturation-electronique")} className="q-link text-[13px]">Facturation électronique</Link>
       </div>
       <ul className="flex flex-col gap-3">
         <Item
@@ -86,17 +147,12 @@ export function ReformCard({ reform, mode }: { reform: DashboardView["reform"]; 
             <Item tone="ok" title="SIREN de vos clients" sub="Renseigné pour tous vos clients" />
           )
         )}
-        <Item
-          tone="info"
-          title="Factures de vos fournisseurs"
-          sub="Importez-les (Factur-X, XML ou PDF) pour les contrôler et suivre leur paiement"
-          fix={{ href: hrefFor(mode, "/received-invoices"), label: "Factures reçues" }}
-        />
+        <ReceptionItem view={eInvoicing} mode={mode} />
         <Item
           tone="pending"
-          title="Transmission par plateforme agréée"
-          pill="En préparation"
-          sub="Réception obligatoire depuis le 1er septembre 2026, émission au 1er septembre 2027 pour les TPE."
+          title="Émission par plateforme agréée"
+          pill="Prévue pour 2027"
+          sub="Obligatoire au 1er septembre 2027 pour les PME, TPE et micro-entreprises. D'ici là, vos factures partent par email."
         />
       </ul>
     </section>

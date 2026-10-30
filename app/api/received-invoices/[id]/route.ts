@@ -5,16 +5,16 @@
  * PATCH  : statut posé par l'artisan (approuver, refuser avec motif, litige,
  *          paiement transmis…). Liste blanche de lib/reception/lifecycle.ts,
  *          appliquée ici : l'interface ne fait que proposer. Le statut est
- *          transmis à la plateforme agréée seulement si une plateforme est
- *          raccordée ET que la facture est arrivée par elle ; sinon il reste
- *          dans Qonforme (transmitted_at null).
+ *          transmis à Super PDP seulement si le compte y est raccordé (avec une
+ *          formule) ET que la facture est arrivée par la plateforme ; sinon il
+ *          reste dans Qonforme (transmitted_at null).
  * DELETE : retrait d'une facture importée par erreur, tant qu'aucune décision
  *          n'a été prise (statut « Reçue »). Une facture arrivée par la
  *          plateforme ne se supprime pas.
  */
 import { NextResponse } from "next/server"
 import { createAdminClient, createClient } from "@/lib/supabase/server"
-import { getPlatformAdapter } from "@/lib/pa"
+import { transmitStatus } from "@/lib/pa/transmit"
 import {
   canTransition, effectiveReasonCode, isReceivedStatus, STATUS_DEFS, validateStatusChange,
 } from "@/lib/reception/lifecycle"
@@ -117,18 +117,14 @@ export async function PATCH(request: Request, { params }: Params) {
     .single()
   if (ev.error) console.error("[received-invoices] historique:", ev.error.message)
 
-  // Transmission à la plateforme agréée : seulement si elle est raccordée et connaît la facture
-  const adapter = getPlatformAdapter()
+  // Transmission à la plateforme agréée : seulement si le compte y est raccordé et qu'elle connaît la facture
   const platformId = typeof current.platform_id === "string" ? current.platform_id : null
-  if (adapter.connected && platformId && ev.data) {
-    try {
-      const sent = await adapter.sendStatus({ platformId, status: to, code: STATUS_DEFS[to].code, reasonCode: code, reason, at: now })
-      if (sent.transmitted) {
-        // L'historique est en ajout seul pour l'utilisateur (RLS) : la date de transmission est écrite par le serveur
-        await createAdminClient().from(EVENTS_TABLE).update({ transmitted_at: new Date().toISOString() }).eq("id", ev.data.id).eq("user_id", user.id)
-      }
-    } catch (e) {
-      console.error("[received-invoices] transmission du statut:", e instanceof Error ? e.message : e)
+  if (platformId && ev.data) {
+    const admin = createAdminClient()
+    const sent = await transmitStatus(admin, { userId: user.id, platformId, code: STATUS_DEFS[to].code, reasonCode: code, reason })
+    if (sent.transmitted) {
+      // L'historique est en ajout seul pour l'utilisateur (RLS) : la date de transmission est écrite par le serveur
+      await admin.from(EVENTS_TABLE).update({ transmitted_at: new Date().toISOString() }).eq("id", ev.data.id).eq("user_id", user.id)
     }
   }
 

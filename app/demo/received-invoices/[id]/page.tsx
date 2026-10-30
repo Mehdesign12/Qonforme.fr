@@ -65,6 +65,7 @@ export default function DemoReceivedInvoicePage() {
       backHref="/demo/received-invoices"
       pdfUrl={null}
       hrefFor={(id) => `/demo/received-invoices/${id}`}
+      transmits
       handlers={{
         changeStatus,
         download: () => signupToast("télécharger les fichiers de vos fournisseurs"),

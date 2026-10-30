@@ -9,7 +9,7 @@
  */
 import {
   LayoutDashboard, FileText, FileCheck2, Users, Package, ShoppingCart,
-  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox, HardHat, Wallet, BellRing, CalendarDays, CalendarPlus, NotebookPen, ScanLine,
+  ReceiptText, Download, SlidersHorizontal, UserPlus, Inbox, HardHat, Wallet, BellRing, CalendarDays, CalendarPlus, NotebookPen, ScanLine, ShieldCheck,
   type LucideIcon,
 } from "lucide-react"
 
@@ -61,6 +61,7 @@ export const SALES_KEYS = ["quotes", "purchase-orders", "invoices", "credit-note
 export const NAV_PILOTAGE: NavLink[] = [
   { key: "tresorerie", label: "Trésorerie", href: "/tresorerie", demoHref: "/demo/tresorerie", icon: Wallet, hint: "Ce qui doit rentrer et sortir" },
   { key: "relances", label: "Relances", href: "/relances", demoHref: "/demo/relances", icon: BellRing, hint: "Ce qui part tout seul, et ce qui est parti" },
+  { key: "e-invoicing", label: "Facturation électronique", href: "/facturation-electronique", demoHref: "/demo/facturation-electronique", icon: ShieldCheck, hint: "Réception par la plateforme agréée" },
   { key: "received-invoices", label: "Factures reçues", href: "/received-invoices", demoHref: "/demo/received-invoices", icon: Inbox, hint: "Factures de vos fournisseurs" },
   { key: "exports", label: "Exports comptables", href: "/settings/exports", demoHref: "/demo/settings/exports", icon: Download, hint: "Fichier des écritures comptables" },
 ]
@@ -120,6 +121,7 @@ const SECTION_TITLES: { prefix: string; title: string; href: string }[] = [
   { prefix: "/purchase-orders", title: "Bons de commande", href: "/purchase-orders" },
   { prefix: "/credit-notes", title: "Avoirs", href: "/credit-notes" },
   { prefix: "/received-invoices", title: "Factures reçues", href: "/received-invoices" },
+  { prefix: "/facturation-electronique", title: "Facturation électronique", href: "/facturation-electronique" },
   { prefix: "/tresorerie", title: "Trésorerie", href: "/tresorerie" },
   { prefix: "/relances", title: "Relances", href: "/relances" },
   { prefix: "/settings/exports", title: "Exports comptables", href: "/settings/exports" },

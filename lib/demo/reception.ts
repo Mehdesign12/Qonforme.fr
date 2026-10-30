@@ -107,7 +107,8 @@ function detail(s: DemoSpec): ReceivedDetail {
     currency: "EUR",
     status: s.status,
     format: s.format,
-    source: "import",
+    // Démo raccordée à Super PDP (page « Facturation électronique ») : les factures structurées arrivent par la plateforme
+    source: d ? "platform" : "import",
     created_at: s.received_at,
     total_ht: d ? d.totals.tax_basis ?? 0 : m!.ht,
     total_vat: d ? d.totals.tax_total ?? 0 : m!.tva,
