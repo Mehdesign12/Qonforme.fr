@@ -150,10 +150,11 @@ export const PLANS: Record<PlanId, Plan> = {
       'Tableau de bord : chiffre du mois, encours, retards',
       // Ouverte en production le 30/10/2026 (DECISIONS § 16)
       'Réception des factures fournisseurs par la plateforme agréée Super PDP',
+      // Migrations 20261003 et 20261010 appliquées en production (confirmé par le fondateur le 30/10/2026)
+      'Signature en ligne des devis et bons de commande',
     ],
     upcoming: [
       'Émission via plateforme agréée',
-      'Signature en ligne des devis et bons de commande',
     ],
     stripePriceIds: {
       monthly: process.env.STRIPE_PRICE_ESSENTIEL_MONTHLY ?? '',

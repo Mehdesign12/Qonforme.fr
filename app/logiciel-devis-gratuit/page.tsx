@@ -18,7 +18,7 @@ import { lcFirst } from "@/components/content/text"
  *
  * Honnêteté : « gratuit » ne vise que ce que FREE_FEATURES liste (devis illimités, envoi par
  * e-mail compris, aucune limite dans app/api/quotes) ; les factures s'envoient avec Essentiel.
- * Pas de signature en ligne annoncée (« à venir » dans lib/stripe/plans.ts).
+ * La signature en ligne fait partie d'Essentiel (lib/stripe/plans.ts) : pas dans le compte gratuit.
  */
 
 const PATH = "/logiciel-devis-gratuit"
@@ -124,7 +124,7 @@ export default function Page() {
         accent: "ne fait pas.",
         paragraphes: [
           `Il n'envoie pas de factures : elles se préparent en brouillon, et leur envoi, les relances et l'export comptable demandent ${essentiel.name}.`,
-          "La signature en ligne des devis n'est pas encore disponible : le client signe le PDF, et vous marquez le devis accepté.",
+          `La signature en ligne des devis demande ${essentiel.name} : avec le compte gratuit, le client signe le PDF et vous marquez le devis accepté.`,
         ],
       }}
       faq={FAQ}
