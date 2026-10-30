@@ -44,7 +44,9 @@ export default function PricingSelector({
   /** Chemin interne où revenir après le paiement (ex. la facture à envoyer). */
   next?: string | null
 }) {
-  const [period, setPeriod] = useState<BillingPeriod>('yearly')
+  // Mensuel par défaut : le prix en grand est celui de l'accueil, des CGU et de la FAQ (24 € / 34 €).
+  // L'équivalent mensuel de l'annuel (20 € / 28,33 €) n'apparaît qu'à la demande du visiteur.
+  const [period, setPeriod] = useState<BillingPeriod>('monthly')
   const essentiel = PLANS.starter
   const artisan = { ...PLANS.pro, available: artisanOnSale ?? PLANS.pro.available }
 
