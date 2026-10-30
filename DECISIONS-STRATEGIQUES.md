@@ -632,3 +632,29 @@ Remplace le point 2 du § 12 (« Pas d'app native »). Décision du fondateur, p
 - **Prérequis hors code** : comptes développeur Apple et Google au nom de Diez Agency LLC, adresse du siège de la LLC (§ 14.1), coordonnées de professionnel pour la fiche UE.
 - **Manque constaté dans le code** : aucune suppression de compte par l'utilisateur (exigée par Apple, et par le RGPD) ; à construire avant la soumission, avec une règle pour les documents émis (D3).
 - **Non retenu** : achat intégré ; lien vers le site pour acheter (possible dans l'UE depuis le 1er octobre 2026, avec commission ; piste ultérieure à étudier si la conversion en souffre).
+
+---
+
+## 16. Plateforme agréée : Super PDP, en marque grise (30/10/2026)
+
+### La décision
+
+Le fondateur annonce le 30/10/2026 le partenariat avec **Super PDP** (SUPER G, Paris), plateforme agréée immatriculée en décembre 2025. La **marque blanche** est réservée aux entreprises elles-mêmes immatriculées plateformes agréées (réponse de Super PDP) : Qonforme passe par la **marque grise**, l'offre API de Super PDP pour les éditeurs. Le nom de Super PDP est visible par l'artisan (parcours d'inscription chez eux), donc nommé dans l'application. Ce n'est pas un concurrent : la règle « ne jamais nommer un concurrent » ne s'applique pas.
+
+### Le modèle
+
+- **Une seule application OAuth, celle de Qonforme**, à laquelle chaque artisan rattache son compte Super PDP par le flux OAuth 2.1 « authorization code ». Chaque artisan fait le parcours lui-même (email, entreprise, vérification d'identité KYC/KYB), jamais Qonforme à sa place.
+- **Prix publics de Super PDP, payés par Qonforme** (page Tarifs, lue le 30/10/2026) : 0,01 € HT par facture émise ou reçue (jusqu'à 10 000 par mois), 2 € HT par vérification KYC/KYB, minimum 10 € HT par an. Rien n'est facturé à l'artisan par Super PDP.
+- **Inclus dans Essentiel, sans frais en plus** : raccordement, relève et transmission des décisions réservés aux comptes avec une formule (le coût de la vérification reste ainsi couvert). Un compte gratuit garde l'import manuel ; un compte qui arrête son abonnement garde ses factures, la relève et les décisions sont suspendues.
+- **Conditions générales de Super PDP** (relues) : Qonforme est l'« abonnement direct », chaque artisan un « abonnement indirect » qui y est rattaché ; résilier l'abonnement direct coupe tous les artisans ; prix modifiables le 1er de chaque mois ; responsabilité plafonnée aux sommes payées sur 12 mois ; tribunal de commerce de Paris.
+
+### Ce qui est codé (lib/pa, page « Facturation électronique »)
+
+Réception seulement : raccordement (OAuth avec PKCE, jetons chiffrés, rotation des jetons de rafraîchissement sous verrou), état du raccordement (vérification, contrôle manuel, transfert d'adresse, refus, annuaire, autorisation expirée), relève toutes les 15 minutes par curseur, transmission des décisions de l'artisan (statuts 204 à 211), statuts de la plateforme repris (209, 212, 213), emails (réception active, résumé quotidien, une facture à la fois, autorisation expirée). Comme Stripe : un compte d'essai se raccorde au bac à sable, tous les autres à la production. **L'émission par la plateforme (planches 14, 15, M13) vient ensuite**, une fois la réception essayée.
+
+### Avant d'ouvrir en production
+
+1. Essai complet en bac à sable avec un compte d'essai (Burger Queen = Qonforme, Tricatel = l'artisan).
+2. Migration `20261030_pa_connections.sql` appliquée.
+3. Application de **production** créée chez Super PDP (c'est à ce moment que l'abonnement est souscrit), au nom de Diez Agency LLC, puis `SUPERPDP_CLIENT_ID` et `SUPERPDP_CLIENT_SECRET` dans Vercel.
+4. Super PDP ajouté aux sous-traitants de la politique de confidentialité (§ 5), relecture des textes « en préparation » du § 13 et preuve du label consignée au § 13 (plateforme : Super PDP).

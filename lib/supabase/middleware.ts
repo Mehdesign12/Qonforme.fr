@@ -171,6 +171,7 @@ export async function updateSession(request: NextRequest) {
     // chaque dossier est vérifié par lib/accountant/server.ts)
     '/comptable',
     '/received-invoices',
+    '/facturation-electronique',
     // Chantiers (formule Artisan)
     '/chantiers',
     '/tresorerie',

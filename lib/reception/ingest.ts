@@ -25,22 +25,34 @@ export type IngestResult =
   | { ok: true; id: string; linked?: boolean }
   | { ok: false; reason: "unknown_recipient" | "ambiguous_recipient" | "unreadable" | "unavailable" | "error"; message?: string }
 
-export async function ingestInboundInvoice(admin: SupabaseClient, inbound: PaInboundInvoice): Promise<IngestResult> {
+/**
+ * `opts.userId` : destinataire déjà connu (relève par le raccordement d'un compte,
+ * dont le jeton est cloisonné à son entreprise) ; sinon retrouvé par le SIREN.
+ */
+export async function ingestInboundInvoice(
+  admin: SupabaseClient,
+  inbound: PaInboundInvoice,
+  opts: { userId?: string } = {},
+): Promise<IngestResult> {
   const siren = inbound.recipientSiren.replace(/\s+/g, "")
-  if (!/^\d{9}$/.test(siren)) return { ok: false, reason: "unknown_recipient" }
-
-  const { data: companies, error } = await admin.from("companies").select("user_id").eq("siren", siren).limit(2)
-  if (error) return { ok: false, reason: "error", message: error.message }
-  if (!companies?.length) return { ok: false, reason: "unknown_recipient" }
-  if (companies.length > 1) return { ok: false, reason: "ambiguous_recipient" }
-  const userId = String(companies[0].user_id)
+  let userId: string
+  if (opts.userId) {
+    userId = opts.userId
+  } else {
+    if (!/^\d{9}$/.test(siren)) return { ok: false, reason: "unknown_recipient" }
+    const { data: companies, error } = await admin.from("companies").select("user_id").eq("siren", siren).limit(2)
+    if (error) return { ok: false, reason: "error", message: error.message }
+    if (!companies?.length) return { ok: false, reason: "unknown_recipient" }
+    if (companies.length > 1) return { ok: false, reason: "ambiguous_recipient" }
+    userId = String(companies[0].user_id)
+  }
 
   // Déjà reçue (webhook rejoué) : rien à faire
   const known = await admin.from(RECEIVED_TABLE).select("id").eq("user_id", userId).eq("platform_id", inbound.platformId).limit(1).maybeSingle()
   if (known.data) return { ok: true, id: String((known.data as { id: unknown }).id) }
 
   const prepared = await prepareUpload(inbound.file.bytes, {
-    companySiren: siren,
+    companySiren: /^\d{9}$/.test(siren) ? siren : null,
     findDuplicate: async () => null, // rapprochement ci-dessous
   })
   if (!prepared.ok || prepared.kind !== "structured" || !prepared.record) {
@@ -95,8 +107,11 @@ export async function ingestInboundInvoice(admin: SupabaseClient, inbound: PaInb
 export async function applyPlatformStatus(
   admin: SupabaseClient,
   ev: { platformId: string; status: ReceivedStatus; reasonCode: string | null; reason: string | null; at: string },
+  opts: { userId?: string } = {},
 ): Promise<{ ok: boolean }> {
-  const { data, error } = await admin.from(RECEIVED_TABLE).select("id, user_id").eq("platform_id", ev.platformId).limit(2)
+  let query = admin.from(RECEIVED_TABLE).select("id, user_id").eq("platform_id", ev.platformId)
+  if (opts.userId) query = query.eq("user_id", opts.userId)
+  const { data, error } = await query.limit(2)
   if (error || !data || data.length !== 1) return { ok: false }
   const row = data[0] as { id: string; user_id: string }
   const upd = await admin

@@ -4,6 +4,8 @@
  * Démarrage des comptes neufs (DECISIONS-STRATEGIQUES.md § 8 et § 10) :
  *   1. rappels « Je le ferai plus tard » arrivés à leur heure ;
  *   2. séquence d'emails déclenchés par les actions (lib/onboarding/sequence.ts).
+ * Lance aussi les rappels du planning et la relève des factures reçues sur la
+ * plateforme agréée (lib/pa/run.ts).
  *
  * Même infrastructure que /api/cron/send-reminders : appelée par cron-job.org
  * (ou tout autre planificateur externe) avec l'en-tête
@@ -38,6 +40,7 @@ import { loadAccountStates } from "@/lib/onboarding/facts"
 import { listUnsubscribeHeaders, unsubscribePageUrl } from "@/lib/onboarding/unsubscribe"
 import { isReminderTarget } from "@/lib/onboarding/types"
 import { runPlanningReminders } from "@/lib/planning/reminders"
+import { runAllConnections } from "@/lib/pa/run"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -89,6 +92,17 @@ export async function GET(request: NextRequest) {
       job_name: "planning",
       status: "error" in planning || ("appointments" in planning && (planning.appointments.errors.length > 0 || planning.tasks.errors.length > 0)) ? "error" : "ok",
       results: planning,
+      duration_ms: Date.now() - startedAt,
+    })
+  }
+
+  // Facturation électronique : relève des factures reçues sur Super PDP (lib/pa/run.ts), même rythme
+  const eInvoicing = await runAllConnections(admin, { budgetMs: 25_000 }).catch((err) => ({ error: errorText(err) }))
+  if ("error" in eInvoicing || eInvoicing.errors > 0 || eInvoicing.synced > 0) {
+    await admin.from("cron_logs").insert({
+      job_name: "e-invoicing",
+      status: "error" in eInvoicing || eInvoicing.errors > 0 ? "error" : "ok",
+      results: eInvoicing,
       duration_ms: Date.now() - startedAt,
     })
   }

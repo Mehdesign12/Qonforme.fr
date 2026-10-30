@@ -15,6 +15,7 @@ import { todayISO } from "@/components/invoices/invoice-view"
 import { STATUS_DEFS, type ReceivedStatus } from "@/lib/reception/lifecycle"
 import type { ReceivedDetail } from "@/lib/reception/view"
 import { ReceivedInvoiceDetailView } from "@/components/reception/ReceivedInvoiceDetailView"
+import { fetchEInvoicingView, transmitsDecisions } from "@/components/e-invoicing/reception-info"
 
 export function ReceivedInvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const router = useRouter()
@@ -23,6 +24,7 @@ export function ReceivedInvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [statusLoading, setStatusLoading] = useState(false)
   const [removeLoading, setRemoveLoading] = useState(false)
   const [today, setToday] = useState<string | null>(null)
+  const [transmits, setTransmits] = useState(false)
 
   const base = `/api/received-invoices/${encodeURIComponent(invoiceId)}`
 
@@ -43,6 +45,7 @@ export function ReceivedInvoiceDetail({ invoiceId }: { invoiceId: string }) {
   useEffect(() => {
     setToday(todayISO())
     void load()
+    void fetchEInvoicingView().then((v) => setTransmits(transmitsDecisions(v)))
   }, [load])
 
   const changeStatus = async (to: ReceivedStatus, reasonCode?: string | null, reason?: string | null) => {
@@ -127,6 +130,7 @@ export function ReceivedInvoiceDetail({ invoiceId }: { invoiceId: string }) {
       backHref="/received-invoices"
       pdfUrl={invoice.has_pdf ? `${base}/file?inline=1` : null}
       hrefFor={(id) => `/received-invoices/${id}`}
+      transmits={transmits}
       handlers={{
         changeStatus,
         statusLoading,

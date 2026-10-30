@@ -19,7 +19,7 @@ import { daysBetween, normalize, plural, shortDate, yearOf } from "@/components/
 import { IN_DISPUTE, TO_PAY, TO_PROCESS } from "@/lib/reception/lifecycle"
 import { isCreditNoteType } from "@/lib/reception/types"
 import type { ReceivedListItem } from "@/lib/reception/view"
-import { PlatformNotice, ReceptionUnavailable } from "@/components/reception/PlatformNotice"
+import { PlatformNotice, ReceptionUnavailable, type ReceptionInfo } from "@/components/reception/PlatformNotice"
 import {
   LatePill, RECEIVED_TABS, ReceivedStatusPill, isUnpaid, money, signedMoney, type ReceivedTab,
 } from "@/components/reception/reception-ui"
@@ -36,6 +36,8 @@ export interface ReceivedInvoiceListProps {
   hrefFor: (id: string) => string
   importHref: string
   settingsHref: string
+  /** Raccordement du compte à la plateforme agréée (bandeau). */
+  reception?: ReceptionInfo | null
 }
 
 const FILTER_PARAM: Record<string, ReceivedTab> = {
@@ -49,7 +51,7 @@ function lateDays(inv: ReceivedListItem, today: string): number {
 }
 
 export function ReceivedInvoiceList({
-  invoices, loading, error, onRetry, unavailable, today, hrefFor, importHref, settingsHref,
+  invoices, loading, error, onRetry, unavailable, today, hrefFor, importHref, settingsHref, reception,
 }: ReceivedInvoiceListProps) {
   const router = useRouter()
   const [tab, setTab] = useState<ReceivedTab>("all")
@@ -104,7 +106,7 @@ export function ReceivedInvoiceList({
         actions={!unavailable && <div className="hidden md:flex">{importButton}</div>}
       />
 
-      {!unavailable && <PlatformNotice settingsHref={settingsHref} />}
+      {!unavailable && <PlatformNotice settingsHref={settingsHref} reception={reception} />}
 
       {unavailable ? (
         <ReceptionUnavailable settingsHref={settingsHref} />
