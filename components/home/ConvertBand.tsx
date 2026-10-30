@@ -12,9 +12,8 @@ import { cn } from "@/lib/utils"
 
 /**
  * Bandeau « Du devis accepté à la facture envoyée » de l'accueil. Il tient la
- * place d'un bandeau de signature électronique : la signature en ligne n'est
- * pas encore vendue
- * (« à venir » dans lib/stripe/plans.ts), le passage du devis à la facture l'est.
+ * place d'un bandeau de signature électronique (la signature en ligne est vendue
+ * avec Essentiel depuis le 30/10/2026 ; ce bandeau montre le passage du devis à la facture).
  *
  * La carte joue le vrai parcours quand elle entre à l'écran : le pointeur clique
  * « Convertir en facture » sur le devis accepté, une facture en brouillon apparaît
