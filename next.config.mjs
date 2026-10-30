@@ -34,6 +34,9 @@ const nextConfig = {
       { source: '/comparatif/:slug*', destination: '/pricing', permanent: true },
       // Ancienne adresse de la variante B de l'accueil (17/10/2026), devenue l'accueil.
       { source: '/design', destination: '/', permanent: true },
+      // Adresse française usuelle de la page des prix (la page vit sur /pricing).
+      { source: '/tarifs', destination: '/pricing', permanent: true },
+      { source: '/tarif', destination: '/pricing', permanent: true },
     ]
   },
 
