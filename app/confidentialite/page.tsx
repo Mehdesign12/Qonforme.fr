@@ -145,8 +145,8 @@ export default function ConfidentialitePage() {
       <p>
         Qonforme distingue trois catégories. Les deux premières (traceurs strictement nécessaires, puis mesure d&apos;usage
         et enregistrement des parcours) ne demandent pas votre accord. Pour la troisième, la publicité, vous choisissez
-        avec le bandeau affiché à votre première visite : <strong>accepter la publicité</strong> ou
-        <strong> n&apos;en vouloir aucune</strong>, avec le même effort. Ne pas répondre équivaut à refuser. Vous pouvez modifier votre choix à tout moment :{" "}
+        avec le bandeau affiché à votre première visite : <strong>Accepter</strong>, ou « En savoir + » puis
+        <strong> « Non merci »</strong> pour refuser la publicité. Ne pas répondre équivaut à refuser. Vous pouvez modifier votre choix à tout moment :{" "}
         <CookieSettingsLink className="font-medium text-q-accent-strong underline underline-offset-2 hover:no-underline" />.
       </p>
 
