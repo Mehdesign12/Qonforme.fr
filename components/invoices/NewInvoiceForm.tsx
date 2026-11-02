@@ -10,6 +10,7 @@ import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { PersonalizeTip } from "@/components/documents/PersonalizeTip"
 import { useDocumentForm, usePreselectedClient } from "@/components/documents/useDocumentForm"
 import { isoDateIn, newLine, toPayloadLines, type DocClient, type DocCompany } from "@/components/documents/model"
+import { trackJourney } from "@/lib/journey"
 
 export default function NewInvoiceForm() {
   const router = useRouter()
@@ -52,7 +53,7 @@ export default function NewInvoiceForm() {
   }, [])
 
   const previewPDF = async () => {
-    if (!doc.validate()) { toast.error("Corrigez les erreurs avant de continuer"); return }
+    if (!doc.validate()) { trackJourney("document_form_invalid", { document: "invoice" }); toast.error("Corrigez les erreurs avant de continuer"); return }
     setPreviewing(true)
     try {
       // Aperçu pur : ne crée aucune facture (pas d'écriture en base, pas de
@@ -103,6 +104,7 @@ export default function NewInvoiceForm() {
         toast.error(json.error || "Erreur lors de la sauvegarde")
         return
       }
+      trackJourney("invoice_created", { action })
 
       // Si action "send" → envoyer réellement l'email via /api/invoices/{id}/send
       if (action === "send" && json.invoice?.id) {
@@ -120,6 +122,7 @@ export default function NewInvoiceForm() {
           router.refresh()
           return
         }
+        trackJourney("invoice_sent")
         toast.success(`Facture envoyée à ${sendJson.sentTo}`)
       } else {
         toast.success("Brouillon sauvegardé !")

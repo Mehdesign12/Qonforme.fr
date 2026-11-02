@@ -9,6 +9,7 @@ import { PaywallDialog, isArtisanPaywall } from "@/components/billing/PaywallDia
 import { useArtisanPlan } from "@/components/artisan/useArtisanPlan"
 import { useDocumentForm, usePreselectedClient } from "@/components/documents/useDocumentForm"
 import { isoDateIn, newLine, toPayloadLines, type DocClient, type DocCompany } from "@/components/documents/model"
+import { trackJourney } from "@/lib/journey"
 
 export default function NewQuoteForm() {
   const router = useRouter()
@@ -43,7 +44,7 @@ export default function NewQuoteForm() {
   }, [])
 
   const submit = async (action: "draft" | "send") => {
-    if (!doc.validate()) { toast.error("Corrigez les erreurs avant de continuer"); return }
+    if (!doc.validate()) { trackJourney("document_form_invalid", { document: "quote" }); toast.error("Corrigez les erreurs avant de continuer"); return }
     if (action === "send") setLoading(true); else setSaving(true)
 
     try {
@@ -64,6 +65,7 @@ export default function NewQuoteForm() {
       const json = await res.json()
       if (isArtisanPaywall(res.status, json)) { setArtisanPaywall(true); return }
       if (!res.ok) { toast.error(json.error || "Erreur lors de la sauvegarde"); return }
+      trackJourney("quote_created", { action })
 
       // Si action "send" → envoyer réellement l'email via /api/quotes/{id}/send
       if (action === "send" && json.quote?.id) {
@@ -75,6 +77,7 @@ export default function NewQuoteForm() {
           router.refresh()
           return
         }
+        trackJourney("quote_sent")
         toast.success(`Devis envoyé à ${sendJson.sentTo}`)
       } else {
         toast.success("Brouillon sauvegardé !")

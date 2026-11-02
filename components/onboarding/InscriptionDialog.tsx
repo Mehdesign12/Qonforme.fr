@@ -28,6 +28,7 @@ import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { trackEvent } from "@/lib/meta-pixel"
+import { trackJourney } from "@/lib/journey"
 import { tradeLabel, type TradeId, type VatRegime } from "@/lib/legal/profile"
 import {
   mergeSignupDraft,
@@ -115,6 +116,11 @@ function InscriptionWindow({
 
   useEffect(() => setMounted(true), [])
 
+  // Parcours (PostHog) : chaque étape affichée, pour voir où les inscrits s'arrêtent. Rien en démo.
+  useEffect(() => {
+    if (mode === "app") trackJourney("onboarding_step_viewed", { step: view })
+  }, [mode, view])
+
   // Défilement de la page bloqué tant que la fenêtre est ouverte ; focus rendu en partant
   useEffect(() => {
     const html = document.documentElement
@@ -165,6 +171,7 @@ function InscriptionWindow({
   const close = useCallback(() => {
     if (closingRef.current) return
     closingRef.current = true
+    if (mode === "app") trackJourney("onboarding_closed", { step: viewRef.current, finished: viewRef.current === "done" })
     const snapshot = snapshotRef.current?.() ?? null
     onClose()
     if (mode === "demo") {
@@ -280,11 +287,13 @@ function InscriptionWindow({
       }
       failedStepRef.current = step
       draftRef.current = mergeSignupDraft(draftRef.current, keep)
+      if (mode === "app") trackJourney("onboarding_step_failed", { step })
       onFail(result.error)
     })
   }
 
   const submitCompany = async (input: CompanyInput, candidate: SireneCandidate | null): Promise<string | null> => {
+    if (mode === "app") trackJourney("onboarding_step_completed", { step: "company", manual: candidate === null })
     // Même entreprise que celle enregistrée : rien à réécrire
     if (sameCompany(company, input)) {
       draftRef.current = mergeSignupDraft(draftRef.current, { company: null })
@@ -333,6 +342,7 @@ function InscriptionWindow({
   }
 
   const submitTrade = async (input: TradeInput): Promise<string | null> => {
+    if (mode === "app") trackJourney("onboarding_step_completed", { step: "trade" })
     const previous = { trade, vatRegime }
     setTrade(input.trade)
     setVatRegime(input.vat_regime)
@@ -351,6 +361,7 @@ function InscriptionWindow({
   }
 
   const submitName = async (value: string): Promise<string | null> => {
+    if (mode === "app") trackJourney("onboarding_step_completed", { step: "name" })
     const previous = firstName
     setFirstName(value)
     draftRef.current = mergeSignupDraft(draftRef.current, { first_name: null })

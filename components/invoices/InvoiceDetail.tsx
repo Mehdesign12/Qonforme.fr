@@ -28,6 +28,7 @@ import { DeclarationBanner, PaymentLinkPanel } from "@/components/payment-link/P
 import { usePaymentLink } from "@/components/payment-link/usePaymentLink"
 import { isPayableStatus } from "@/lib/payment-link/rules"
 import { SEND_PARAM, sendAfterPaymentOutcome, wantsSendAfterPayment } from "@/lib/stripe/activation"
+import { trackJourney } from "@/lib/journey"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -504,6 +505,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       setInvoice(prev => json.invoice
         ? mergeInvoice(prev, json.invoice)
         : { ...invoice, status: "sent" as InvoiceStatus, sent_at: new Date().toISOString() })
+      trackJourney("invoice_sent")
       toast.success(`Facture envoyée à ${json.sentTo}`)
       setShowSendModal(false)
     } catch { toast.error("Erreur réseau") }
