@@ -142,7 +142,7 @@ export default function ConfidentialitePage() {
       <h2 id="cookies">8. Cookies et traceurs</h2>
       <p>
         Qonforme distingue deux catégories. La première ne demande pas votre accord. Pour la seconde, vous choisissez
-        avec le bandeau affiché à votre première visite : <strong>accepter</strong> ou <strong>refuser</strong>, avec le
+        avec le bandeau affiché à votre première visite : <strong>accepter</strong> tous les cookies ou <strong>n&apos;accepter que les cookies essentiels</strong>, avec le
         même effort. Ne pas répondre équivaut à refuser. Vous pouvez modifier votre choix à tout moment :{" "}
         <CookieSettingsLink className="font-medium text-q-accent-strong underline underline-offset-2 hover:no-underline" />.
       </p>

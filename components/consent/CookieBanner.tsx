@@ -15,7 +15,7 @@ const APPEARANCE_DELAY_MS = 600
 const EXIT_MS = 300
 
 const BUTTON =
-  "h-9 flex-1 rounded-full px-5 text-[13px] font-semibold transition-colors sm:flex-none " +
+  "min-h-9 flex-1 rounded-full px-5 py-1.5 text-center text-[13px] font-semibold leading-tight transition-colors sm:flex-none " +
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-q-accent"
 
 /**
@@ -105,7 +105,7 @@ export function CookieBanner() {
         aria-describedby="cookie-desc"
         tabIndex={-1}
         className={cn(
-          "q-float pointer-events-auto flex w-full max-w-[540px] flex-col gap-2.5 rounded-2xl px-3.5 py-3 outline-none",
+          "q-float pointer-events-auto flex w-full max-w-[600px] flex-col gap-2.5 rounded-2xl px-3.5 py-3 outline-none",
           "sm:flex-row sm:items-center sm:gap-4 sm:py-2.5 sm:pl-4 sm:pr-3",
           "transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none",
           shown ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
@@ -130,7 +130,7 @@ export function CookieBanner() {
             onClick={() => choose("refused")}
             className={cn(BUTTON, "border border-q-line bg-q-surface text-q-ink hover:bg-q-hover")}
           >
-            Refuser
+            Accepter que les cookies essentiels
           </button>
           <button
             type="button"
