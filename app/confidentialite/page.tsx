@@ -167,7 +167,9 @@ export default function ConfidentialitePage() {
         </li>
         <li>
           <strong>PostHog</strong> — mesure d&apos;audience (pages vues, provenance des visites, quelques actions clés
-          comme l&apos;affichage du mur de paiement ou le choix d&apos;une formule, sans aucune donnée de vos documents) et enregistrement de
+          comme les étapes de l&apos;inscription, la création ou l&apos;envoi d&apos;un devis ou d&apos;une facture,
+          l&apos;affichage du mur de paiement ou le choix d&apos;une formule, sans aucune donnée de vos documents
+          ni de votre entreprise) et enregistrement de
           vos parcours (clics, défilement, pages visitées, comme une vidéo de la navigation), pour repérer ce qui
           bloque les utilisateurs et améliorer le service. Un identifiant est alors enregistré dans votre navigateur.
           L&apos;enregistrement masque tous les champs de saisie ; dans l&apos;application, il masque aussi les

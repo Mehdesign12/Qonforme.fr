@@ -23,6 +23,7 @@ import { QuoteBillingPanel } from "@/components/artisan/QuoteBillingPanel"
 import { useQuoteBilling } from "@/components/artisan/useQuoteBilling"
 import { conversionBlockedBy } from "@/lib/artisan/quote-billing"
 import { snapshotOf } from "@/lib/legal/mentions"
+import { trackJourney } from "@/lib/journey"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -187,6 +188,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
         // Un brouillon envoyé a désormais ses mentions figées (relues au prochain chargement)
         legal_snapshot: quote.legal_snapshot ?? (quote.status === "draft" ? snapshotOf(company) : undefined),
       })
+      trackJourney("quote_sent")
       toast.success(`Devis envoyé à ${json.sentTo}`)
       void sig.reload()
       return true

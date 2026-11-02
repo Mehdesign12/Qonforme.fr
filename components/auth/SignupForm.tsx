@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { safeNextPath } from "@/lib/stripe/access"
 import { trackEvent } from "@/lib/meta-pixel"
+import { trackJourney } from "@/lib/journey"
 import { identifyUser } from "@/components/shared/PostHogProvider"
 import { AUTH_INPUT, AuthSubmit, Field, PasswordInput } from "@/components/auth/fields"
 import GoogleButton, { OrDivider } from "@/components/auth/GoogleButton"
@@ -79,8 +80,10 @@ export default function SignupForm() {
 
       if (!res.ok) {
         if (res.status === 409 || json.error === "already_exists") {
+          trackJourney("signup_failed", { reason: "already_exists" })
           toast.error("Cet email est déjà utilisé. Connectez-vous.", { duration: 6000 })
         } else {
+          trackJourney("signup_failed", { reason: "other" })
           toast.error(json.error ?? "Erreur lors de la création du compte.", { duration: 8000 })
         }
         setLoading(false)
@@ -101,6 +104,7 @@ export default function SignupForm() {
       rememberAuthMethod("email")
       trackEvent("Lead", { currency: "EUR", value: 0 })
       identifyUser(signInData.user?.id)
+      trackJourney("signup_completed", { method: "email" })
       // Retour à la page qui a demandé l'inscription (invitation d'un comptable :
       // pas d'entreprise à créer) ; sinon le tableau de bord, où la fenêtre
       // « Bienvenue » s'ouvre avec la mention « Compte créé »

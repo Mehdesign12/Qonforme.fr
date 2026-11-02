@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils"
 import { AUTH_INPUT, Field } from "@/components/auth/fields"
 import { validateCompanyInput, type CompanyInput, type SignupDraft } from "@/lib/onboarding/inscription"
 import type { SireneCandidate } from "@/lib/utils/sirene"
+import { searchKind, trackJourney } from "@/lib/journey"
 import { demoSearch } from "@/components/onboarding/inscription/demo"
 import {
   COMPANY_MAX_LENGTH, SEARCH_DEBOUNCE_MS, SEARCH_MIN, SEARCH_UNAVAILABLE,
@@ -126,6 +127,15 @@ function SearchCompany({
     return () => { snapshotRef.current = null }
   })
 
+  // Échecs de recherche envoyés au parcours (PostHog) : deux par type et par ouverture au plus,
+  // pour ne pas compter chaque frappe d'une personne qui tâtonne
+  const failuresSent = useRef({ not_found: 0, unavailable: 0 })
+  const reportSearchFailure = (result: "not_found" | "unavailable", query: string) => {
+    if (failuresSent.current[result] >= 2) return
+    failuresSent.current[result] += 1
+    trackJourney("onboarding_company_search_failed", { result, kind: searchKind(query) })
+  }
+
   // Recherche différée ; la précédente est annulée à chaque frappe
   useEffect(() => {
     if (trimmed.length < SEARCH_MIN) {
@@ -159,17 +169,20 @@ function SearchCompany({
               : res.status === 503 ? SEARCH_UNAVAILABLE : "La recherche n'a pas abouti. Réessayez.",
           )
           setStatus("error")
+          reportSearchFailure("unavailable", trimmed)
           return
         }
         const list: SireneCandidate[] = Array.isArray(json.results) ? json.results : []
         setResults(list)
         setActive(-1)
         setStatus(list.length ? "ok" : "empty")
+        if (!list.length) reportSearchFailure("not_found", trimmed)
       } catch {
         if (controller.signal.aborted) return
         setResults([])
         setSearchError(SEARCH_UNAVAILABLE)
         setStatus("error")
+        reportSearchFailure("unavailable", trimmed)
       }
     }, SEARCH_DEBOUNCE_MS)
     return () => {

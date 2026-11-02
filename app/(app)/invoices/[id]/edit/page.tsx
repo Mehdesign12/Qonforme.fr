@@ -13,6 +13,7 @@ import { SetCrumb } from "@/components/layout/crumb"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { useDocumentForm } from "@/components/documents/useDocumentForm"
 import { lineFromSaved, newLine, savedIsReverseCharge, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
+import { trackJourney } from "@/lib/journey"
 
 export default function EditInvoicePage() {
   const router = useRouter()
@@ -107,6 +108,7 @@ export default function EditInvoicePage() {
           router.refresh()
           return
         }
+        trackJourney("invoice_sent")
         toast.success(`Facture envoyée à ${sendJson.sentTo}`)
       } else {
         toast.success("Brouillon sauvegardé !")

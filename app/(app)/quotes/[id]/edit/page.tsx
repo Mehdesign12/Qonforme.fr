@@ -13,6 +13,7 @@ import { PaywallDialog, isArtisanPaywall } from "@/components/billing/PaywallDia
 import { useArtisanPlan } from "@/components/artisan/useArtisanPlan"
 import { useDocumentForm } from "@/components/documents/useDocumentForm"
 import { lineFromSaved, newLine, savedIsReverseCharge, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
+import { trackJourney } from "@/lib/journey"
 
 export default function EditQuotePage() {
   const router = useRouter()
@@ -105,6 +106,7 @@ export default function EditQuotePage() {
           router.refresh()
           return
         }
+        trackJourney("quote_sent")
         toast.success(`Devis envoyé à ${sendJson.sentTo}`)
       } else {
         toast.success("Brouillon sauvegardé !")
