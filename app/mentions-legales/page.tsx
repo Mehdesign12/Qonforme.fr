@@ -96,8 +96,9 @@ export default function MentionsLegalesPage() {
       <h2>5. Cookies</h2>
       <p>
         Qonforme utilise des cookies strictement nécessaires au fonctionnement du service (session d&apos;authentification,
-        préférences de thème). Les cookies publicitaires et de mesure d&apos;audience (pixel Meta, PostHog) ne sont
-        déposés qu&apos;avec votre accord, que vous pouvez refuser ou retirer à tout moment. Le détail figure dans la{" "}
+        préférences de thème). La mesure d&apos;usage et l&apos;enregistrement des parcours (PostHog) font partie du service,
+        avec un droit d&apos;opposition. Les cookies publicitaires (pixel Meta) ne sont déposés qu&apos;avec votre accord,
+        que vous pouvez refuser ou retirer à tout moment. Le détail figure dans la{" "}
         <a href="/confidentialite#cookies">politique de confidentialité</a>.
       </p>
 

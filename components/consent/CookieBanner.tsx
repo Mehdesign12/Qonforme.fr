@@ -114,7 +114,8 @@ export function CookieBanner() {
         <div className="flex min-w-0 flex-1 items-start gap-2.5">
           <Cookie aria-hidden className="mt-px size-[17px] shrink-0 text-q-accent" strokeWidth={1.75} />
           <p id="cookie-desc" className="text-[12.5px] leading-[1.45] text-q-text-2">
-            Nous utilisons des cookies.{" "}
+            Pour améliorer Qonforme, nous mesurons l&apos;usage du site et enregistrons les parcours (saisies et montants
+            masqués) : cela fait partie du service. La publicité (Meta) ne s&apos;active qu&apos;avec votre accord.{" "}
             <Link
               href="/confidentialite#cookies"
               className="font-medium text-q-accent-strong underline decoration-q-wash-line underline-offset-2 hover:decoration-current"
@@ -130,14 +131,14 @@ export function CookieBanner() {
             onClick={() => choose("refused")}
             className={cn(BUTTON, "border border-q-line bg-q-surface text-q-ink hover:bg-q-hover")}
           >
-            Accepter que les cookies essentiels
+            Sans publicité
           </button>
           <button
             type="button"
             onClick={() => choose("accepted")}
             className={cn(BUTTON, "border border-q-accent-strong bg-q-accent text-white hover:bg-q-accent-strong")}
           >
-            Accepter
+            Accepter la publicité
           </button>
         </div>
       </div>

@@ -3,7 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, Suspense } from "react";
 import type { PostHog } from "posthog-js";
-import { currentConsent, isTrackingPage } from "@/lib/consent";
+import { currentConsent, isTrackingPage, posthogAllowed } from "@/lib/consent";
 import { useConsent } from "@/components/consent/use-consent";
 import { SESSION_RECORDING_CONFIG } from "@/lib/replay";
 
@@ -12,9 +12,10 @@ const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 /**
  * posthog-js (~56 Ko) n'est plus dans le JavaScript initial de chaque page
  * (LCP mobile, PushRank) : il se charge après l'affichage, et pas du tout
- * quand la clé n'est pas configurée au build. Il ne se charge non plus qu'après
- * l'accord du visiteur (bandeau de cookies, lib/consent.ts) : posthog-js garde un
- * identifiant dans le navigateur.
+ * quand la clé n'est pas configurée au build. Depuis le 02/11/2026 il fait partie du
+ * service et se charge sans l'accord du bandeau (`POSTHOG_REQUIRES_CONSENT`,
+ * lib/consent.ts), ce que le bandeau, les CGU et la politique de confidentialité disent ;
+ * seules les pages sans traceur l'évitent. posthog-js garde un identifiant dans le navigateur.
  */
 let client: Promise<PostHog> | null = null;
 /**
@@ -51,13 +52,13 @@ function loadPostHog(): Promise<PostHog> | null {
 }
 
 /**
- * Événement d'entonnoir (mur de paiement, choix d'une formule…), après accord du
- * visiteur seulement. Aucune donnée personnelle dans les propriétés : ni nom, ni
+ * Événement d'entonnoir (mur de paiement, choix d'une formule…), partout sauf sur les pages
+ * sans traceur (et après accord si `POSTHOG_REQUIRES_CONSENT`). Aucune donnée personnelle dans les propriétés : ni nom, ni
  * montant d'un document, ni numéro de facture, ni adresse email.
  */
 export function captureEvent(name: string, properties?: Record<string, string | number | boolean>): void {
   if (typeof window === "undefined" || !POSTHOG_KEY) return;
-  if (currentConsent() !== "accepted" || !isTrackingPage(window.location.pathname)) return;
+  if (!posthogAllowed(currentConsent()) || !isTrackingPage(window.location.pathname)) return;
   loadPostHog()
     ?.then((ph) => ph.capture(name, properties))
     .catch(() => {});
@@ -67,12 +68,12 @@ export function captureEvent(name: string, properties?: Record<string, string | 
  * Relie le visiteur anonyme au compte qu'il vient de créer (PostHog est en
  * `identified_only`) : on retrouve alors, dans la fiche du compte, la page ou l'outil
  * d'où il venait (par exemple le générateur de devis). Même règles que `captureEvent` :
- * rien sans l'accord du visiteur, rien sur une page sans traceur. On n'envoie que
+ * rien sur une page sans traceur (et rien sans accord si `POSTHOG_REQUIRES_CONSENT`). On n'envoie que
  * l'identifiant du compte, jamais l'email ni le nom.
  */
 export function identifyUser(userId: string | null | undefined): void {
   if (!userId || typeof window === "undefined" || !POSTHOG_KEY) return;
-  if (currentConsent() !== "accepted" || !isTrackingPage(window.location.pathname)) return;
+  if (!posthogAllowed(currentConsent()) || !isTrackingPage(window.location.pathname)) return;
   loadPostHog()
     ?.then((ph) => {
       if (ph.get_distinct_id() !== userId) ph.identify(userId);
@@ -104,8 +105,8 @@ function PostHogPageView() {
 
   useEffect(() => {
     if (!pathname) return;
-    if (currentConsent() !== "accepted") {
-      // Refus ou retrait de l'accord : plus rien ne part (si posthog-js était chargé)
+    if (!posthogAllowed(currentConsent())) {
+      // Seulement si PostHog demande l'accord (POSTHOG_REQUIRES_CONSENT) : refus ou retrait, plus rien ne part
       client?.then((ph) => ph.opt_out_capturing()).catch(() => {});
       return;
     }

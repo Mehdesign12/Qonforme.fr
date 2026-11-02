@@ -243,11 +243,11 @@ describe("bandeau de cookies", () => {
     expect(d).not.toBeNull()
     expect(d.getAttribute("aria-modal")).toBe("false")
     expect(d.getAttribute("aria-label")).toBe("Cookies")
-    expect(document.getElementById(d.getAttribute("aria-describedby")!)?.textContent).toContain("Nous utilisons des cookies")
+    expect(document.getElementById(d.getAttribute("aria-describedby")!)?.textContent).toContain("nous mesurons l'usage du site")
     expect(d.querySelector('a[href="/confidentialite#cookies"]')?.textContent).toBe("En savoir plus")
 
-    const refuse = button("Accepter que les cookies essentiels")
-    const accept = button("Accepter")
+    const refuse = button("Sans publicité")
+    const accept = button("Accepter la publicité")
     expect(refuse).toBeTruthy()
     expect(accept).toBeTruthy()
     // Ne garder que les cookies essentiels est aussi simple qu'accepter : même taille, même place, même police
@@ -263,19 +263,19 @@ describe("bandeau de cookies", () => {
     await mount(createElement(React.Fragment, null, createElement(TrackingLoader), createElement(CookieBanner)))
     await advance(700)
     expect(w.fbq).toBeUndefined() // avant le clic, aucun traceur
-    await act(async () => button("Accepter").click())
+    await act(async () => button("Accepter la publicité").click())
     expect(JSON.parse(window.localStorage.getItem("qonforme-cookie-consent")!)).toMatchObject({ v: 1, choice: "accepted" })
     expect(pageViews()).toBe(1)
     await advance(400)
     expect(dialog()).toBeNull()
   })
 
-  it("« Accepter que les cookies essentiels » enregistre le refus, ne charge rien et ferme le bandeau", async () => {
+  it("« Sans publicité » enregistre le refus, ne charge rien et ferme le bandeau", async () => {
     const CookieBanner = await banner()
     const { TrackingLoader } = await import("@/components/consent/TrackingLoader")
     await mount(createElement(React.Fragment, null, createElement(TrackingLoader), createElement(CookieBanner)))
     await advance(700)
-    await act(async () => button("Accepter que les cookies essentiels").click())
+    await act(async () => button("Sans publicité").click())
     expect(JSON.parse(window.localStorage.getItem("qonforme-cookie-consent")!)).toMatchObject({ choice: "refused" })
     expect(w.fbq).toBeUndefined()
     expect(appended).toHaveLength(0)
@@ -334,7 +334,7 @@ describe("bandeau de cookies", () => {
     expect(JSON.parse(window.localStorage.getItem("qonforme-cookie-consent")!).choice).toBe("accepted")
   })
 
-  it("rouvert, « Accepter que les cookies essentiels » retire l'accord : le pixel est coupé", async () => {
+  it("rouvert, « Sans publicité » retire l'accord : le pixel est coupé", async () => {
     const { writeConsent, openCookieSettings } = await import("@/lib/consent")
     writeConsent("accepted")
     const CookieBanner = await banner()
@@ -345,7 +345,7 @@ describe("bandeau de cookies", () => {
 
     await act(async () => openCookieSettings())
     await advance(50)
-    await act(async () => button("Accepter que les cookies essentiels").click())
+    await act(async () => button("Sans publicité").click())
     expect(calls()).toContainEqual(["consent", "revoke"])
     expect(JSON.parse(window.localStorage.getItem("qonforme-cookie-consent")!).choice).toBe("refused")
   })

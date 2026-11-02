@@ -149,6 +149,20 @@ export default function CGUPage() {
         d&apos;effacement, de portabilité et d&apos;opposition, exerceable à <strong>privacy@qonforme.fr</strong>.
         Pour toute réclamation, l&apos;Utilisateur peut saisir la CNIL (www.cnil.fr).
       </p>
+      <p>
+        <strong>Mesure de l&apos;usage et enregistrement des parcours.</strong> Pour faire fonctionner, sécuriser et
+        améliorer le Service, Qonforme utilise l&apos;outil PostHog (PostHog Inc., États-Unis) afin de mesurer l&apos;usage
+        du site et de l&apos;application (pages vues, étapes de l&apos;inscription, création et envoi de documents) et
+        d&apos;enregistrer les parcours de navigation sous la forme d&apos;une vidéo reconstituée. Les champs de saisie sont
+        masqués, de même que les textes affichés dans l&apos;application (noms de clients, montants, numéros de
+        documents) : seuls les clics, le défilement et la structure des écrans sont visibles. Cet outil fait partie du
+        Service et son utilisation est une condition d&apos;accès : l&apos;Utilisateur l&apos;accepte en utilisant le Service.
+        Il n&apos;est jamais actif sur les pages de règlement et de signature destinées aux clients de l&apos;Utilisateur.
+        Les enregistrements sont conservés 30 jours au plus, consultés par l&apos;équipe de Qonforme seulement, et ne
+        servent ni à la publicité ni à la vente de données. L&apos;Utilisateur peut s&apos;opposer à ce traitement pour des
+        raisons tenant à sa situation particulière en écrivant à <strong>privacy@qonforme.fr</strong>. Les cookies
+        publicitaires restent soumis à son accord (voir la politique de confidentialité).
+      </p>
 
       <h2>Article 8 — Disponibilité et maintenance</h2>
       <p>

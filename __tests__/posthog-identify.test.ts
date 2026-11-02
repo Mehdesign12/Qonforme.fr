@@ -3,8 +3,8 @@ import { CONSENT_KEY, serializeConsent } from "@/lib/consent"
 
 /**
  * Relier le visiteur de l'outil gratuit au compte qu'il crée : `identifyUser` (components/shared/PostHogProvider.tsx).
- * Elle respecte le bandeau de cookies et les pages sans traceur, comme `captureEvent`, et ne charge
- * posthog-js (chargement différé) qu'au moment où elle sert.
+ * PostHog fait partie du service depuis le 02/11/2026 (`POSTHOG_REQUIRES_CONSENT = false`) : le choix du
+ * bandeau n'y change rien, seules les pages sans traceur l'évitent. posthog-js se charge au moment où il sert.
  */
 const ph = vi.hoisted(() => ({
   init: vi.fn(),
@@ -30,7 +30,7 @@ async function charger() {
   return import("@/components/shared/PostHogProvider")
 }
 
-describe("identifyUser (PostHog, après accord du visiteur)", () => {
+describe("identifyUser (PostHog, partie du service)", () => {
   beforeEach(() => {
     ph.init.mockReset()
     ph.identify.mockReset()
@@ -42,22 +42,15 @@ describe("identifyUser (PostHog, après accord du visiteur)", () => {
     vi.unstubAllGlobals()
   })
 
-  it("accord donné : charge PostHog et relie le visiteur au compte", async () => {
-    navigateur({ consent: "accepted" })
-    const { identifyUser } = await charger()
-    identifyUser("0b5e-uuid")
-    await vi.waitFor(() => expect(ph.identify).toHaveBeenCalledWith("0b5e-uuid"))
-    expect(ph.init).toHaveBeenCalledTimes(1)
-  })
-
-  it("sans accord ou avec refus : rien n'est chargé ni envoyé", async () => {
-    for (const consent of [null, "refused"] as const) {
+  it("quel que soit le choix du bandeau : charge PostHog et relie le visiteur au compte", async () => {
+    for (const consent of [null, "refused", "accepted"] as const) {
+      ph.init.mockReset()
+      ph.identify.mockReset()
       navigateur({ consent })
       const { identifyUser } = await charger()
       identifyUser("0b5e-uuid")
-      await new Promise((r) => setTimeout(r, 20))
-      expect(ph.init).not.toHaveBeenCalled()
-      expect(ph.identify).not.toHaveBeenCalled()
+      await vi.waitFor(() => expect(ph.identify).toHaveBeenCalledWith("0b5e-uuid"))
+      expect(ph.init).toHaveBeenCalledTimes(1)
     }
   })
 
