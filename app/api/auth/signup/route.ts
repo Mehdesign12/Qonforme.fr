@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/resend"
+import { notifyNewSignup } from "@/lib/email/admin-notify"
 import { buildWelcomeEmail } from "@/lib/email/templates/welcome"
 import { claimSequenceStep, enrollInOnboarding } from "@/lib/onboarding/store"
 import { listUnsubscribeHeaders, unsubscribePageUrl } from "@/lib/onboarding/unsubscribe"
@@ -108,6 +109,9 @@ export async function POST(request: NextRequest) {
         if (enrolled && userId) await claimSequenceStep(admin, { user_id: userId, step: "welcome", sent_to: to })
       })
       .catch((err) => console.error("[signup] welcome email error:", err))
+
+    // Prévient le fondateur (fire & forget : ne lève jamais, ne retarde pas la réponse)
+    void notifyNewSignup({ email: to, method: "email", userId: userId ?? null })
 
     return NextResponse.json({ success: true, userId: data.user?.id })
   } catch (err) {

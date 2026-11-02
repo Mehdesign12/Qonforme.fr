@@ -19,6 +19,7 @@ import Stripe from 'stripe'
 import { getStripe, modeFromStripeId } from '@/lib/stripe/mode'
 import { upsertSubscription } from '@/lib/stripe/subscription'
 import { sendActivationEmail } from '@/lib/stripe/activation-email'
+import { notifyNewSubscription } from '@/lib/email/admin-notify'
 import { getPlanByPriceId, isPlanId, type PlanId, type BillingPeriod } from '@/lib/stripe/plans'
 import { mapStripeStatus, safeNextPath } from '@/lib/stripe/access'
 import { withActivationParam } from '@/lib/stripe/activation'
@@ -94,6 +95,7 @@ export default async function PricingReturnPage({ searchParams }: ReturnPageProp
               })
               if (firstActivation) {
                 await sendActivationEmail({ userId, plan: resolvedPlan, period: resolvedPeriod, nextPaymentAt: getPeriodEnd(stripeSub) })
+                await notifyNewSubscription({ userId, plan: resolvedPlan, period: resolvedPeriod, mode })
               }
               console.log(`[/pricing/return] Formule ${resolvedPlan} (${resolvedPeriod}) activée pour user ${userId}`)
             } else {
