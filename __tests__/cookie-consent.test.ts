@@ -4,7 +4,7 @@
  * douteux, périmé ou illisible vaut « pas de choix », donc « pas de traceur ».
  */
 import { describe, expect, it } from "vitest"
-import { CONSENT_ACCEPTED_MAX_AGE_MS, CONSENT_REFUSED_MAX_AGE_MS, isTrackingPage, parseConsent, serializeConsent } from "@/lib/consent"
+import { POSTHOG_REQUIRES_CONSENT, posthogAllowed, CONSENT_ACCEPTED_MAX_AGE_MS, CONSENT_REFUSED_MAX_AGE_MS, isTrackingPage, parseConsent, serializeConsent } from "@/lib/consent"
 
 const NOW = Date.UTC(2026, 9, 18, 12, 0, 0)
 
@@ -71,5 +71,15 @@ describe("isTrackingPage", () => {
     for (const path of ["/regler/abc123", "/demo/regler/d-2026-001", "/s/jeton", "/signer", "/signer/42", "/admin", "/admin/seo", "/invitation-comptable"]) {
       expect(isTrackingPage(path), path).toBe(false)
     }
+  })
+})
+
+describe("PostHog : partie du service, pas un cookie « essentiel »", () => {
+  it("décision du 02/11/2026 : PostHog ne demande plus l'accord du bandeau", () => {
+    expect(POSTHOG_REQUIRES_CONSENT).toBe(false)
+    for (const choice of [null, "refused", "accepted"] as const) expect(posthogAllowed(choice)).toBe(true)
+  })
+  it("les pages sans traceur restent sans traceur, quel que soit le réglage", () => {
+    for (const path of ["/regler/abc", "/signer/42", "/admin/seo", "/invitation-comptable/x"]) expect(isTrackingPage(path)).toBe(false)
   })
 })

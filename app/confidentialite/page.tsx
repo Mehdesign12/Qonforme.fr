@@ -61,8 +61,9 @@ export default function ConfidentialitePage() {
         <li>Préférences d&apos;interface (thème sombre/clair)</li>
         <li>Votre choix de cookies (accepté ou refusé), conservé sur votre appareil</li>
         <li>
-          Seulement si vous acceptez les cookies : identifiant de navigateur et évènements de navigation transmis à
-          nos outils de mesure d&apos;audience et de publicité (section 8)
+          Identifiant de navigateur et évènements de navigation transmis à PostHog (mesure d&apos;usage et
+          enregistrement des parcours, section 8.2) ; et, seulement si vous acceptez la publicité, au pixel Meta
+          (section 8.3)
         </li>
       </ul>
 
@@ -81,9 +82,10 @@ export default function ConfidentialitePage() {
       <p>
         Le traitement des données repose sur l&apos;exécution du contrat (article 6.1.b du RGPD) pour la fourniture du
         service, sur l&apos;obligation légale (article 6.1.c) pour l&apos;archivage comptable, et sur l&apos;intérêt légitime
-        (article 6.1.f) pour la sécurité et l&apos;amélioration du service. Les cookies et traceurs qui ne sont pas
-        strictement nécessaires (publicité, mesure d&apos;audience) reposent sur votre consentement (article 6.1.a du
-        RGPD et article 82 de la loi Informatique et Libertés), que vous pouvez retirer à tout moment.
+        (article 6.1.f) pour la sécurité et l&apos;amélioration du service, y compris la mesure d&apos;usage et
+        l&apos;enregistrement des parcours par PostHog (section 8.2), à laquelle vous pouvez vous opposer (article 21).
+        Les cookies publicitaires reposent sur votre consentement (article 6.1.a du RGPD et article 82 de la loi
+        Informatique et Libertés), que vous pouvez retirer à tout moment.
       </p>
 
       <h2>5. Durée de conservation</h2>
@@ -93,7 +95,7 @@ export default function ConfidentialitePage() {
         <li><strong>Logs de connexion</strong> — 12 mois</li>
         <li><strong>Votre choix de cookies</strong> — 13 mois sur votre appareil si vous acceptez, 6 mois si vous refusez, puis il vous est redemandé</li>
         <li><strong>Cookies du pixel Meta</strong> — 90 jours au plus, et seulement si vous avez accepté</li>
-        <li><strong>Enregistrements de parcours (PostHog)</strong> — 30 jours au plus, et seulement si vous avez accepté</li>
+        <li><strong>Enregistrements de parcours (PostHog)</strong> — 30 jours au plus</li>
         <li><strong>Données de paiement</strong> — conservées par Stripe selon sa propre politique de conservation</li>
       </ul>
 
@@ -109,7 +111,7 @@ export default function ConfidentialitePage() {
         <li><strong>Google LLC</strong> — connexion et inscription avec Google, à votre initiative seulement : Google transmet à Qonforme votre adresse email, votre prénom et votre nom ; Qonforme ne reçoit pas votre mot de passe Google</li>
         <li><strong>Resend Inc.</strong> — envoi d&apos;e-mails transactionnels (factures, relances, bienvenue)</li>
         <li><strong>SUPER G (Super PDP)</strong> — plateforme agréée par l&apos;administration fiscale, établie à Paris : réception de vos factures fournisseurs, seulement si vous raccordez votre compte (page « Facturation électronique »). Qonforme lui transmet votre adresse email et le SIREN de votre entreprise pour préparer le raccordement, reçoit vos factures reçues et leurs statuts, et lui transmet vos décisions (prise en charge, approbation, refus). La vérification de votre identité et de votre entreprise est faite par Super PDP, sur son site et selon ses propres conditions : Qonforme ne reçoit pas votre pièce d&apos;identité</li>
-        <li><strong>PostHog Inc.</strong> — mesure d&apos;audience (pages vues, provenance des visites) et enregistrement des parcours (voir section 8), chargés seulement si vous acceptez les cookies</li>
+        <li><strong>PostHog Inc.</strong> — mesure d&apos;audience (pages vues, provenance des visites) et enregistrement des parcours (voir section 8.2), qui font partie du service</li>
         <li><strong>Sentry (Functional Software Inc.)</strong> — surveillance des erreurs techniques et stabilité du service</li>
         <li><strong>Google LLC (Gemini API)</strong> — génération de contenu éditorial pour le blog (aucune donnée utilisateur transmise)</li>
       </ul>
@@ -141,9 +143,10 @@ export default function ConfidentialitePage() {
 
       <h2 id="cookies">8. Cookies et traceurs</h2>
       <p>
-        Qonforme distingue deux catégories. La première ne demande pas votre accord. Pour la seconde, vous choisissez
-        avec le bandeau affiché à votre première visite : <strong>accepter</strong> tous les cookies ou <strong>n&apos;accepter que les cookies essentiels</strong>, avec le
-        même effort. Ne pas répondre équivaut à refuser. Vous pouvez modifier votre choix à tout moment :{" "}
+        Qonforme distingue trois catégories. Les deux premières (traceurs strictement nécessaires, puis mesure d&apos;usage
+        et enregistrement des parcours) ne demandent pas votre accord. Pour la troisième, la publicité, vous choisissez
+        avec le bandeau affiché à votre première visite : <strong>accepter la publicité</strong> ou
+        <strong> n&apos;en vouloir aucune</strong>, avec le même effort. Ne pas répondre équivaut à refuser. Vous pouvez modifier votre choix à tout moment :{" "}
         <CookieSettingsLink className="font-medium text-q-accent-strong underline underline-offset-2 hover:no-underline" />.
       </p>
 
@@ -155,7 +158,30 @@ export default function ConfidentialitePage() {
         <li><strong>Paiement</strong> — Stripe peut déposer des cookies de sécurité et de prévention de la fraude au moment de régler un abonnement</li>
       </ul>
 
-      <h3>8.2 Soumis à votre accord</h3>
+      <h3>8.2 Mesure d&apos;usage et enregistrement des parcours (sans consentement, avec droit d&apos;opposition)</h3>
+      <ul>
+        <li>
+          <strong>PostHog</strong> (PostHog Inc., États-Unis) — mesure de l&apos;usage du site et de l&apos;application
+          (pages vues, provenance des visites, quelques actions clés comme les étapes de l&apos;inscription, la
+          création ou l&apos;envoi d&apos;un devis ou d&apos;une facture, l&apos;affichage du mur de paiement ou le choix
+          d&apos;une formule, sans aucune donnée de vos documents ni de votre entreprise) et enregistrement de vos
+          parcours (clics, défilement, pages visitées, comme une vidéo de la navigation), pour faire fonctionner,
+          sécuriser et améliorer le service et repérer ce qui bloque les utilisateurs. Un identifiant est enregistré
+          dans votre navigateur. L&apos;enregistrement masque tous les champs de saisie ; dans l&apos;application, il
+          masque aussi les textes affichés (noms de clients, montants, numéros de documents) : seuls les libellés
+          d&apos;interface restent lisibles. Il n&apos;est jamais actif sur les pages de règlement ou de signature
+          destinées aux clients de nos utilisateurs, ni dans l&apos;espace d&apos;administration. Les enregistrements
+          sont conservés 30 jours au plus, sont consultés par l&apos;équipe de Qonforme seulement, et ne servent ni à la
+          publicité ni à la vente de données.
+        </li>
+      </ul>
+      <p>
+        Ce traitement repose sur notre intérêt légitime (article 6.1.f du RGPD) et fait partie des conditions
+        d&apos;utilisation du service (article 7 des CGU). Vous pouvez vous y opposer pour des raisons tenant à votre
+        situation particulière (article 21 du RGPD) en écrivant à <strong>privacy@qonforme.fr</strong>.
+      </p>
+
+      <h3>8.3 Soumis à votre accord : la publicité</h3>
       <ul>
         <li>
           <strong>Pixel Meta</strong> (Meta Platforms Ireland Limited) — cookies <code>_fbp</code> et <code>_fbc</code>,
@@ -165,25 +191,12 @@ export default function ConfidentialitePage() {
           début de paiement, abonnement, génération d&apos;un document avec l&apos;outil gratuit), le montant et la
           devise d&apos;un abonnement, votre adresse IP, votre navigateur et l&apos;identifiant du cookie.
         </li>
-        <li>
-          <strong>PostHog</strong> — mesure d&apos;audience (pages vues, provenance des visites, quelques actions clés
-          comme les étapes de l&apos;inscription, la création ou l&apos;envoi d&apos;un devis ou d&apos;une facture,
-          l&apos;affichage du mur de paiement ou le choix d&apos;une formule, sans aucune donnée de vos documents
-          ni de votre entreprise) et enregistrement de
-          vos parcours (clics, défilement, pages visitées, comme une vidéo de la navigation), pour repérer ce qui
-          bloque les utilisateurs et améliorer le service. Un identifiant est alors enregistré dans votre navigateur.
-          L&apos;enregistrement masque tous les champs de saisie ; dans l&apos;application, il masque aussi les
-          textes affichés (noms de clients, montants, numéros de documents) : seuls les libellés d&apos;interface
-          restent lisibles. Il n&apos;est jamais actif sur les pages publiques de règlement ou de signature. Les
-          enregistrements sont conservés 30 jours au plus, sont consultés par l&apos;équipe de Qonforme seulement,
-          et ne servent ni à la publicité ni à du profilage.
-        </li>
       </ul>
       <p>
-        <strong>Sans votre accord, ces outils ne sont pas chargés</strong> : aucun cookie ni identifiant n&apos;est déposé
-        et aucune donnée ne leur est transmise. Si vous refusez ou retirez votre accord, les cookies Meta existants sont
-        supprimés. Ces outils ne sont jamais chargés sur les pages destinées aux clients de nos utilisateurs (règlement
-        d&apos;une facture, signature d&apos;un devis) ni dans l&apos;espace d&apos;administration.
+        <strong>Sans votre accord, le pixel Meta n&apos;est pas chargé</strong> : aucun cookie publicitaire n&apos;est
+        déposé et aucune donnée ne lui est transmise. Si vous refusez ou retirez votre accord, les cookies Meta
+        existants sont supprimés. Il n&apos;est jamais chargé sur les pages destinées aux clients de nos utilisateurs
+        (règlement d&apos;une facture, signature d&apos;un devis) ni dans l&apos;espace d&apos;administration.
       </p>
       <p>
         Votre choix est conservé sur votre appareil, 13 mois si vous acceptez et 6 mois si vous refusez, puis nous vous le redemandons. Vous pouvez aussi
@@ -191,7 +204,7 @@ export default function ConfidentialitePage() {
         ne fonctionnent pas sans les cookies de la première catégorie.
       </p>
 
-      <h3>8.3 Sans cookie</h3>
+      <h3>8.4 Sans cookie</h3>
       <p>
         <strong>Vercel Web Analytics</strong> mesure la fréquentation sans cookie et sans identifiant persistant.{" "}
         <strong>Sentry</strong> sert uniquement à détecter et corriger les erreurs techniques ; dans l&apos;application
