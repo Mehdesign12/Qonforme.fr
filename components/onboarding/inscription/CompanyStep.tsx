@@ -15,7 +15,7 @@ import { useEffect, useId, useRef, useState } from "react"
 import { Check, CircleCheck, Loader2, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AUTH_INPUT, Field } from "@/components/auth/fields"
-import { validateCompanyInput, type CompanyInput, type SignupDraft } from "@/lib/onboarding/inscription"
+import { sirenKeyWarning, validateCompanyInput, type CompanyInput, type SignupDraft } from "@/lib/onboarding/inscription"
 import type { SireneCandidate } from "@/lib/utils/sirene"
 import { searchKind, trackJourney } from "@/lib/journey"
 import { demoSearch } from "@/components/onboarding/inscription/demo"
@@ -551,7 +551,9 @@ function ManualCompany({
             id={`${uid}-siren`}
             label={<>SIREN <span className="font-normal text-[var(--q-text-4)]">(facultatif pour l&rsquo;instant)</span></>}
             error={errorOf("siren")}
-            hint={<>Obligatoire sur vos devis et vos factures&nbsp;: il vous sera demandé avant le premier envoi.</>}
+            hint={sirenKeyWarning(form.siren)
+              ? <span className="text-[var(--q-warn)]">{sirenKeyWarning(form.siren)}</span>
+              : <>Obligatoire sur vos devis et vos factures&nbsp;: il vous sera demandé avant le premier envoi.</>}
           >
             <input
               {...inputProps("siren")}

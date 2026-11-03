@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation"
 import { Loader2, Search, CheckCircle2, Wand2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { isValidSiren, sirenToVAT } from "@/lib/utils/invoice"
+import { sirenKeyWarning } from "@/lib/onboarding/inscription"
 import { bicError, formatIbanGroups, ibanError, normalizeBic, normalizeIban } from "@/lib/payment-link/iban"
 import { PageHeader } from "@/components/app/kit"
 import type { ShellMode } from "@/components/layout/nav"
@@ -219,7 +220,7 @@ export function CompanySettingsForm({
     // SIREN facultatif ici (entreprise saisie sans SIREN depuis la fenêtre d'inscription) :
     // l'envoi d'un document le réclame (lib/legal/issuer.ts, 409 COMPANY_REQUIRED)
     if (siren && !/^\d{9}$/.test(siren))    e.siren    = "9 chiffres exactement"
-    else if (siren && !isValidSiren(siren)) e.siren    = "SIREN invalide : vérifiez les 9 chiffres (clé de contrôle)"
+    // Clé de contrôle fausse : avertissement sous le champ (sirenKeyWarning), jamais un blocage
     if (!f.address.trim())              e.address  = "Requis"
     if (!f.zip_code.trim())             e.zip_code = "Requis"
     if (!f.city.trim())                 e.city     = "Requis"
@@ -397,7 +398,9 @@ export function CompanySettingsForm({
               </Field>
               <Field
                 label="SIREN" htmlFor="siren" error={errors.siren} ok={sirenOk ? "Numéro valide" : undefined}
-                hint={fields.siren.trim() ? undefined : "Obligatoire avant le premier envoi d’un devis ou d’une facture."}
+                hint={sirenKeyWarning(fields.siren)
+                  ? <span className="text-[var(--q-warn)]">{sirenKeyWarning(fields.siren)}</span>
+                  : fields.siren.trim() ? undefined : "Obligatoire avant le premier envoi d’un devis ou d’une facture."}
               >
                 <input id="siren" className="q-input font-mono" placeholder="123456789" inputMode="numeric" maxLength={9}
                   value={fields.siren} onChange={set("siren")} aria-invalid={!!errors.siren} />
