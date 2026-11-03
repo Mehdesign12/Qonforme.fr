@@ -6,32 +6,16 @@
  */
 import { NextResponse } from "next/server"
 import { createAdminClient, createClient } from "@/lib/supabase/server"
-import { applyOutboundEvents, loadActiveOutbound, loadOutboundHistory, type OutboundRow } from "@/lib/pa/outbound"
+import { applyOutboundEvents, loadActiveOutbound, loadOutboundHistory } from "@/lib/pa/outbound"
 import { obtainToken } from "@/lib/pa/deposit"
 import { createSuperPdpApi } from "@/lib/pa/superpdp/api"
 import { loadConnection } from "@/lib/pa/store"
 import { notifyOutboundChanges } from "@/lib/pa/notify"
+import { toPlatformInfo as view } from "@/lib/pa/outbound-view"
 
 export const dynamic = "force-dynamic"
 
 interface Params { params: Promise<{ id: string }> }
-
-/** Ce que la fiche affiche : jamais les jetons ni les identifiants internes du compte. */
-function view(row: OutboundRow) {
-  return {
-    attempt: row.attempt,
-    phase: row.phase,
-    mode: row.mode,
-    recipientAddress: row.recipient_address,
-    lastStatus: row.last_status_code,
-    lastStatusAt: row.last_status_at,
-    events: row.events ?? [],
-    error: row.error,
-    depositedAt: row.deposited_at,
-    createdAt: row.created_at,
-    paymentReportedAt: row.payment_reported_at,
-  }
-}
 
 export async function GET(_req: Request, { params }: Params) {
   const supabase = await createClient()

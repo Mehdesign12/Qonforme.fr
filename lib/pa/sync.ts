@@ -10,6 +10,7 @@
  * l'exige. Ne lève pas pour une facture illisible : elle est comptée et passée,
  * pour ne pas bloquer toutes les suivantes.
  */
+import { reportPendingPayments } from "@/lib/pa/payment"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { statusFromCode, type ReceivedStatus } from "@/lib/reception/lifecycle"
 import { applyPlatformStatus, ingestInboundInvoice } from "@/lib/reception/ingest"
@@ -42,6 +43,8 @@ export interface SyncResult {
   statuses: number
   /** Envois par la plateforme dont le statut ou la phase vient de changer (alertes). */
   outboundChanged: OutboundRow[]
+  /** Encaissements (fr:212) déclarés en rattrapage. */
+  paymentsReported?: number
   /** Une page entière a été lue jusqu'au bout (rien d'autre en attente). */
   complete: boolean
 }
@@ -118,6 +121,13 @@ export async function syncConnection(
     }
     if (!hasAfter || data.length === 0) break
     if (page === maxPages - 1) result.complete = false
+  }
+
+  // 3. Encaissements pas encore déclarés (facture marquée payée pendant une panne)
+  try {
+    result.paymentsReported = await reportPendingPayments(admin, row.user_id, api)
+  } catch (err) {
+    console.error("[pa-sync] Encaissements :", err instanceof Error ? err.message : err)
   }
 
   await updateConnection(admin, row.user_id, {
