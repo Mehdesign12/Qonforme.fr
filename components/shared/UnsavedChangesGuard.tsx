@@ -10,9 +10,10 @@
  *   enregistré » : Enregistrer, Quitter sans enregistrer, Rester ;
  * - fermer ou recharger l'onglet déclenche l'avertissement du navigateur
  *   (texte imposé par le navigateur).
+ * - le bouton « Retour » du navigateur (et le balayage depuis le bord sur
+ *   iPhone) ouvre la même fenêtre, sans changer de page (lib/ui/history-guard.ts).
  * Les navigations faites par le code (après un enregistrement réussi) ne sont
- * jamais retenues. Le bouton « Retour » du navigateur n'est couvert que par
- * l'avertissement de fermeture quand il quitte le site.
+ * jamais retenues.
  *
  * Fenêtre centrée au-dessus de 768 px, feuille du bas en dessous ; ni flou
  * sur mobile ni `will-change` (CLAUDE.md).
@@ -24,6 +25,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { SheetGrip } from "@/components/ui/sheet-grip"
 import { NAVIGATION_HELD_EVENT, leavingTarget } from "@/lib/ui/unsaved-guard"
+import { holdBack, leaveBack, rearmBack } from "@/lib/ui/history-guard"
 
 export interface UnsavedChangesOptions {
   /** Vrai quand le formulaire a des modifications non enregistrées. */
@@ -34,12 +36,16 @@ export interface UnsavedChangesOptions {
   saveLabel?: string
   /**
    * Enregistre puis emmène vers `next` (l'adresse que la personne voulait
-   * ouvrir). Absent : la fenêtre ne propose que « Quitter » et « Rester ».
+   * ouvrir ; absente après un appui sur « Retour » : le formulaire va alors là
+   * où il va d'habitude après un enregistrement). Absent : la fenêtre ne propose que « Quitter » et « Rester ».
    * En cas d'erreur (formulaire incomplet), le formulaire reste affiché avec
    * ses erreurs.
    */
-  onSave?: (next: string) => void | Promise<unknown>
+  onSave?: (next?: string) => void | Promise<unknown>
 }
+
+/** Cible particulière : la personne a appuyé sur « Retour ». */
+const BACK = "\u0000back"
 
 const DESCRIPTION = "Si vous quittez cette page maintenant, ce que vous avez saisi sera perdu."
 
@@ -93,6 +99,12 @@ export function useUnsavedChanges({ dirty, title = "Vos modifications ne sont pa
     return () => document.removeEventListener("click", onClick, true)
   }, [dirty])
 
+  // Bouton « Retour » du navigateur : la page reste, la fenêtre s'ouvre
+  useEffect(() => {
+    if (!dirty) return
+    return holdBack({ open: () => setTarget(BACK) })
+  }, [dirty])
+
   // Fermeture ou rechargement de l'onglet : avertissement du navigateur
   useEffect(() => {
     if (!dirty) return
@@ -112,7 +124,13 @@ export function useUnsavedChanges({ dirty, title = "Vos modifications ne sont pa
     bypass.current = true
     const next = target
     setTarget(null)
-    router.push(next)
+    if (next === BACK) leaveBack()
+    else router.push(next)
+  }
+
+  const stay = () => {
+    if (target === BACK) rearmBack()
+    setTarget(null)
   }
 
   const save = async () => {
@@ -120,7 +138,7 @@ export function useUnsavedChanges({ dirty, title = "Vos modifications ne sont pa
     const next = target
     setSaving(true)
     try {
-      await onSave(next)
+      await onSave(next === BACK ? undefined : next)
     } finally {
       setSaving(false)
       setTarget(null)
@@ -129,11 +147,11 @@ export function useUnsavedChanges({ dirty, title = "Vos modifications ne sont pa
 
   const desktop = useDesktop()
   const open = target !== null
-  const close = (o: boolean) => { if (!o && !saving) setTarget(null) }
+  const close = (o: boolean) => { if (!o && !saving) stay() }
 
   const buttons = (
     <div className="mt-2 flex min-w-0 flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end [&>.q-btn]:max-md:h-12">
-      <button type="button" onClick={() => setTarget(null)} disabled={saving} className="q-btn q-btn-ghost">
+      <button type="button" onClick={stay} disabled={saving} className="q-btn q-btn-ghost">
         Rester sur la page
       </button>
       <button type="button" onClick={leave} disabled={saving} className="q-btn q-btn-secondary !text-[var(--q-danger)]">

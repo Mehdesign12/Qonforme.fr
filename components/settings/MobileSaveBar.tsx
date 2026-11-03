@@ -31,7 +31,7 @@ export function MobileSaveBar({
   const { guard } = useUnsavedChanges({
     dirty: show && !saving,
     onSave: (next) => {
-      pendingNext.current = next
+      pendingNext.current = next ?? null
       if (form) (document.getElementById(form) as HTMLFormElement | null)?.requestSubmit()
       else onClick?.()
     },
