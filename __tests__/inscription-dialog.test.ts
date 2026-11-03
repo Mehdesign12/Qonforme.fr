@@ -71,7 +71,8 @@ describe("fenêtre « Bienvenue » : entreprise choisie", () => {
     expect(fieldOf({ address: "" })).toBe("address")
     expect(fieldOf({ zip_code: "4910" })).toBe("zip_code")
     expect(fieldOf({ city: "" })).toBe("city")
-    expect(fieldOf({ siren: "948211375" })).toBe("siren")
+    expect(fieldOf({ siren: "12345" })).toBe("siren")
+    expect(fieldOf({ siren: "948211375" })).toBe("ok") // clé fausse : avertissement seulement
     expect(companyErrorField("Requête invalide.")).toBeNull()
   })
 

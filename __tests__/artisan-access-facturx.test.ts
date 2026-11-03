@@ -170,13 +170,13 @@ describe("Factur-X — situation avec reprise d'acompte et retenue de garantie",
     invoice_kind: "situation", billing_context: ctx,
   }, company))
 
-  it("type 380 en cadre S4, l'acompte repris cité en BG-3 (type 386 et date)", () => {
+  it("type 380 en cadre S4, l'acompte repris cité en BG-3 (numéro et date)", () => {
     expect(docTypeCode(xml)).toBe("380")
     expect(framework(xml)).toBe("S4")
     const refs = all(xml, "ram:InvoiceReferencedDocument")
     expect(refs).toHaveLength(1)
     expect(one(refs[0], "ram:IssuerAssignedID")).toBe("F-2026-0150")
-    expect(one(refs[0], "ram:TypeCode")).toBe("386")
+    expect(refs[0]).not.toContain("<ram:TypeCode>") // EXTENDED seulement : refusé en EN 16931
     expect(one(refs[0], "qdt:DateTimeString")).toBe("20260925")
   })
   it("reprise de l'acompte en lignes négatives : le total est déjà net de l'acompte", () => {

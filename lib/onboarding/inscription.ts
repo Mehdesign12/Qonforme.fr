@@ -111,7 +111,19 @@ export const INSCRIPTION_LIMITS = {
 } as const
 
 export const INVALID_REQUEST = "Requête invalide."
-export const SIREN_INVALID = "Ce numéro ne correspond à aucun SIREN : vérifiez les 9 chiffres."
+export const SIREN_INVALID = "Le SIREN compte 9 chiffres : vérifiez-le."
+
+/**
+ * SIREN de 9 chiffres dont la clé de contrôle est fausse : un avertissement,
+ * jamais un blocage (décision du fondateur, 03/11/2026). L'envoi d'un document
+ * exige seulement 9 chiffres (lib/legal/issuer.ts).
+ */
+export const SIREN_KEY_WARNING = "Ce SIREN ne semble pas valide (clé de contrôle) : vérifiez-le. Vous pouvez quand même l'enregistrer."
+
+export function sirenKeyWarning(siren: string | null | undefined): string | null {
+  const d = (siren ?? "").replace(/\s/g, "")
+  return /^\d{9}$/.test(d) && !isValidSiren(d) ? SIREN_KEY_WARNING : null
+}
 
 /** Texte d'une ligne : sans caractère de contrôle, espaces normalisés. */
 function line(value: unknown): string {
@@ -153,7 +165,8 @@ export function validateCompanyInput(x: unknown): Parsed<CompanyInput> {
   }
 
   const sirenRaw = digits(v.siren)
-  if (sirenRaw && !isValidSiren(sirenRaw)) return { ok: false, error: SIREN_INVALID }
+  // Clé de contrôle fausse : avertissement à l'écran (sirenKeyWarning), pas un refus
+  if (sirenRaw && !/^\d{9}$/.test(sirenRaw)) return { ok: false, error: SIREN_INVALID }
   const siren = sirenRaw || null
 
   // Le SIRET vient du répertoire, jamais d'une saisie : gardé s'il prolonge le SIREN, ignoré sinon

@@ -103,6 +103,26 @@ describe("Factur-X — facture au taux normal", () => {
     expect(buyer).toContain('<ram:URIID schemeID="0225">443061841</ram:URIID>')
   })
 
+  it("client avec une adresse de l'annuaire, sans SIREN saisi : facture entre professionnels (AAB, PMD, PMT)", () => {
+    const { xml: x } = buildFacturX(invoiceToFacturX(
+      invoice([line("Pose", 1, 100, 20)], { client: { name: "Tricatel", electronic_address: "0225:315143296_117728" } }),
+      company,
+    ))
+    expect(noteCodes(x)).toEqual(expect.arrayContaining(["AAB", "PMD", "PMT"]))
+  })
+
+  it("adresse électronique de l'annuaire quand elle est connue (BT-34, BT-49), préfixe 0225 retiré", () => {
+    const { xml: x } = buildFacturX(invoiceToFacturX(
+      invoice([line("Pose", 1, 100, 20)], { client: { ...proClient, electronic_address: "0225:443061841_compta" } }),
+      { ...company, electronic_address: "552100554_chantiers" },
+    ))
+    expect(one(x, "ram:SellerTradeParty")).toContain('<ram:URIID schemeID="0225">552100554_chantiers</ram:URIID>')
+    expect(one(x, "ram:BuyerTradeParty")).toContain('<ram:URIID schemeID="0225">443061841_compta</ram:URIID>')
+    // Une valeur douteuse n'entre pas dans le XML : repli sur le SIREN
+    const { xml: y } = buildFacturX(invoiceToFacturX(invoice([line("Pose", 1, 100, 20)], { client: { ...proClient, electronic_address: "<x>" } }), company))
+    expect(one(y, "ram:BuyerTradeParty")).toContain('<ram:URIID schemeID="0225">443061841</ram:URIID>')
+  })
+
   it("une ventilation S 20 % et des totaux cohérents au centime", () => {
     // 935,00 + 345,00 + 40,00 = 1 320,00 HT ; TVA 264,00
     expect(breakdowns(xml)).toEqual([{ tax: "264.00", base: "1320.00", category: "S", rate: "20", code: undefined, reason: undefined }])

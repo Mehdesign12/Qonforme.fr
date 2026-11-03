@@ -61,6 +61,11 @@ export interface FxParty {
   siret?: string | null
   vat_number?: string | null
   email?: string | null
+  /**
+   * Adresse de facturation électronique (BT-34 / BT-49) lue dans l'annuaire, avec
+   * ou sans le préfixe « 0225: » (ex. « 0225:552100554_chantiers »). Absente : le SIREN.
+   */
+  electronic_address?: string | null
 }
 
 export interface FxSeller extends FxParty {
@@ -279,6 +284,12 @@ function sirenOf(p: FxParty): string | undefined {
   return /^\d{14}$/.test(siret) ? siret.slice(0, 9) : undefined
 }
 
+/** Identifiant d'adresse électronique en schéma 0225 : celui de l'annuaire, sinon le SIREN. */
+function addressIdOf(p: FxParty, siren: string | undefined): string | undefined {
+  const id = (p.electronic_address ?? "").trim().replace(/^0225:/, "")
+  return /^[A-Za-z0-9_.\-]{1,100}$/.test(id) ? id : siren
+}
+
 /** SIRET (14 chiffres) cohérent avec le SIREN (BR-FR-09). */
 function siretOf(p: FxParty, siren: string | undefined): string | undefined {
   const siret = digits(p.siret)
@@ -310,6 +321,10 @@ export function unitCode(unit: string | null | undefined): string {
 
 /** Client professionnel identifié : SIREN valide ou n° de TVA. */
 export function hasBusinessBuyer(doc: Pick<FxDocument, "buyer">): boolean {
+  // Une adresse de l'annuaire de la facturation électronique n'existe que pour une
+  // entreprise : facture entre professionnels, mentions AAB/PMD/PMT comprises
+  // (BR-FR-05, refus constaté chez Super PDP le 03/11/2026 sans elles)
+  if ((doc.buyer.electronic_address ?? "").trim()) return true
   return isBusinessBuyer({ siren: sirenOf(doc.buyer), vat_number: compact(doc.buyer.vat_number) || undefined })
 }
 
@@ -448,8 +463,9 @@ export function buildFacturX(doc: FxDocument): FacturXResult {
           <ram:ID schemeID="FC">${sellerSiren}</ram:ID>
         </ram:SpecifiedTaxRegistration>` : "",
   ].join("")
-  const sellerUri = sellerSiren
-    ? `<ram:URIID schemeID="0225">${sellerSiren}</ram:URIID>`
+  const sellerAddressId = addressIdOf(seller, sellerSiren)
+  const sellerUri = sellerAddressId
+    ? `<ram:URIID schemeID="0225">${esc(sellerAddressId)}</ram:URIID>`
     : seller.email?.trim() ? `<ram:URIID schemeID="EM">${esc(seller.email.trim())}</ram:URIID>` : ""
   const sellerXml = `
       <ram:SellerTradeParty>${sellerSiret ? `
@@ -465,8 +481,9 @@ ${addressXml(seller, "        ")}${sellerUri ? `
       </ram:SellerTradeParty>`
 
   // ── Acheteur (BG-7) ───────────────────────────────────────────────────────
-  const buyerUri = buyerSiren
-    ? `<ram:URIID schemeID="0225">${buyerSiren}</ram:URIID>`
+  const buyerAddressId = addressIdOf(buyer, buyerSiren)
+  const buyerUri = buyerAddressId
+    ? `<ram:URIID schemeID="0225">${esc(buyerAddressId)}</ram:URIID>`
     : buyer.email?.trim() ? `<ram:URIID schemeID="EM">${esc(buyer.email.trim())}</ram:URIID>` : ""
   const buyerXml = `
       <ram:BuyerTradeParty>
@@ -540,10 +557,11 @@ ${addressXml(buyer, "        ")}${buyerUri ? `
     ...(doc.preceding_invoice?.number ? [doc.preceding_invoice] : []),
     ...(doc.preceding_invoices ?? []).filter((p) => p.number),
   ]
+  // Pas de TypeCode (BT-3 de la facture citée) : réservé au profil EXTENDED, refusé en
+  // EN 16931 par le schématron Factur-X du FNFE (contrôle de Super PDP, 03/11/2026).
   const precedingXml = preceding.map((p) => `
       <ram:InvoiceReferencedDocument>
-        <ram:IssuerAssignedID>${esc(p.number)}</ram:IssuerAssignedID>${p.type_code ? `
-        <ram:TypeCode>${p.type_code}</ram:TypeCode>` : ""}${p.issue_date ? `
+        <ram:IssuerAssignedID>${esc(p.number)}</ram:IssuerAssignedID>${p.issue_date ? `
         <ram:FormattedIssueDateTime>
           <qdt:DateTimeString format="102">${ciiDate(p.issue_date)}</qdt:DateTimeString>
         </ram:FormattedIssueDateTime>` : ""}

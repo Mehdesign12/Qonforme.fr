@@ -254,7 +254,7 @@ export function InvoiceSettingsForm({ mode = "app", demo: demoData }: { mode?: S
 
             {/* ---- Apparence ---- */}
             <SettingsCard id="apparence" title="Apparence">
-              <LogoInline logo={logo} disabled={!hasCompany} />
+              <LogoInline logo={logo} />
 
               <div className="flex flex-col gap-2 border-t border-[var(--q-line-soft)] pt-3.5">
                 <span className="q-label" id="accent-label">Couleur d&apos;accent</span>
