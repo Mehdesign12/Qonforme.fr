@@ -86,7 +86,7 @@ export function NewClientDialog({
     </Dialog>
   ) : (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" showCloseButton={false} className="h-[94dvh] gap-3 overflow-y-auto px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-2">
+      <SheetContent side="bottom" showCloseButton={false} className="max-h-[94dvh] gap-3 overflow-y-auto px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-2">
         <SheetGrip />
         <div className="flex flex-col gap-1 pt-2">
           <SheetTitle className="q-display text-[22px] font-semibold leading-tight">Nouveau client</SheetTitle>
