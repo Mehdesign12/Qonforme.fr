@@ -118,6 +118,11 @@ describe("choix reçu par la route d'envoi", () => {
     expect(parseDeliveryChoice({})).toEqual({ channel: "email" })
     expect(parseDeliveryChoice({ channel: "email" })).toEqual({ channel: "email" })
   })
+  it("email tapé pour un client qui n'en avait pas : normalisé, ou refusé s'il est faux", () => {
+    expect(parseDeliveryChoice({ channel: "email", email: " Compta@SCI.fr " })).toEqual({ channel: "email", email: "compta@sci.fr" })
+    expect(parseDeliveryChoice({ channel: "email", email: "pas-un-email" })).toHaveProperty("error")
+    expect(parseDeliveryChoice({ channel: "email", email: "" })).toEqual({ channel: "email" })
+  })
   it("plateforme : adresse obligatoire et valide ; canal inconnu refusé", () => {
     expect(parseDeliveryChoice({ channel: "platform", address: "853322915" })).toEqual({ channel: "platform", address: "0225:853322915" })
     expect(parseDeliveryChoice({ channel: "platform" })).toHaveProperty("error")

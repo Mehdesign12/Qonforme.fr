@@ -67,7 +67,18 @@ export async function POST(req: NextRequest, { params }: Params) {
     // Par la plateforme agréée : aucun email au client, l'adresse vient de l'annuaire
     if (choice.channel === "platform") return sendByPlatform({ supabase, userId: user.id, id, invoice, address: choice.address })
 
-    const clientEmail = invoice.client?.email
+    // Client sans email : l'adresse tapée dans la fenêtre d'envoi est enregistrée sur sa fiche
+    let clientEmail = invoice.client?.email
+    if (!clientEmail && choice.channel === "email" && choice.email && invoice.client?.id) {
+      const { error: clientErr } = await supabase
+        .from("clients")
+        .update({ email: choice.email })
+        .eq("id", invoice.client.id)
+        .eq("user_id", user.id)
+      if (clientErr) return NextResponse.json({ error: "L'adresse email du client n'a pas pu être enregistrée. Réessayez." }, { status: 500 })
+      clientEmail = choice.email
+      invoice = { ...invoice, client: { ...invoice.client, email: choice.email } }
+    }
     console.log(`[invoice-send] Client: ${invoice.client?.name}, email: ${clientEmail}`)
     if (!clientEmail) {
       return NextResponse.json({ error: "Le client n'a pas d'adresse email" }, { status: 422 })

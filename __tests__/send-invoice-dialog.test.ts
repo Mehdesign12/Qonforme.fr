@@ -95,8 +95,17 @@ describe("fenêtre d'envoi", () => {
     expect(onSend).toHaveBeenCalledWith({ channel: "platform", address: "0225:552081317_B" })
   })
 
-  it("client sans email : l'option email est grisée", async () => {
-    await mount({ ...offered(), email: { offered: false, to: null } }, { invoice: { ...invoice, client: { name: "SCI", email: null } } })
-    expect(radios()[1].disabled).toBe(true)
+  it("client sans email : l'adresse se tape dans la fenêtre, puis part avec l'envoi (jamais de blocage)", async () => {
+    const onSend = await mount(null, { invoice: { ...invoice, client: { name: "SCI", email: null } } })
+    const send = button(/^Envoyer$/)!
+    expect(send.disabled).toBe(true)
+    const input = document.querySelector('input[type="email"]') as HTMLInputElement
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, " Compta@SCI.fr ")
+      input.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    expect(send.disabled).toBe(false)
+    act(() => send.click())
+    expect(onSend).toHaveBeenCalledWith({ channel: "email", email: "compta@sci.fr" })
   })
 })

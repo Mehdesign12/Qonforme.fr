@@ -163,11 +163,24 @@ export function deliveryOptions(input: DeliveryInput): DeliveryOptions {
 }
 
 /** Choix reçu par la route d'envoi : canal et adresse, contrôlés contre les options. */
-export type DeliveryChoice = { channel: "email" } | { channel: "platform"; address: string }
+export type DeliveryChoice = { channel: "email"; email?: string } | { channel: "platform"; address: string }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
+/** Adresse email tapée dans la fenêtre d'envoi (client qui n'en avait pas) : valide, ou null. */
+export function normalizeEmail(input: unknown): string | null {
+  const s = typeof input === "string" ? input.trim().toLowerCase() : ""
+  return s.length <= 254 && EMAIL_RE.test(s) ? s : null
+}
 
 export function parseDeliveryChoice(body: unknown): DeliveryChoice | { error: string } {
   const b = (body && typeof body === "object" ? body : {}) as { channel?: unknown; address?: unknown }
-  if (b.channel === undefined || b.channel === "email") return { channel: "email" }
+  if (b.channel === undefined || b.channel === "email") {
+    const raw = (body as { email?: unknown } | null)?.email
+    if (raw === undefined || raw === null || raw === "") return { channel: "email" }
+    const email = normalizeEmail(raw)
+    return email ? { channel: "email", email } : { error: "Adresse email du client invalide." }
+  }
   if (b.channel !== "platform") return { error: "Canal d'envoi inconnu." }
   const address = normalizeAddress(typeof b.address === "string" ? b.address : null)
   if (!address) return { error: "Choisissez l'adresse de facturation électronique de votre client." }
