@@ -150,7 +150,7 @@ export const PLANS: Record<PlanId, Plan> = {
       'Tableau de bord : chiffre du mois, encours, retards',
     ],
     upcoming: [
-      'Émission via plateforme agréée',
+      'Envoi de vos factures à vos clients par la plateforme agréée, prévu pour 2027',
       'Réception des factures fournisseurs',
       'Signature en ligne des devis et bons de commande',
     ],
