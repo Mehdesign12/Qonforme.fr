@@ -103,6 +103,14 @@ describe("Factur-X — facture au taux normal", () => {
     expect(buyer).toContain('<ram:URIID schemeID="0225">443061841</ram:URIID>')
   })
 
+  it("client avec une adresse de l'annuaire, sans SIREN saisi : facture entre professionnels (AAB, PMD, PMT)", () => {
+    const { xml: x } = buildFacturX(invoiceToFacturX(
+      invoice([line("Pose", 1, 100, 20)], { client: { name: "Tricatel", electronic_address: "0225:315143296_117728" } }),
+      company,
+    ))
+    expect(noteCodes(x)).toEqual(expect.arrayContaining(["AAB", "PMD", "PMT"]))
+  })
+
   it("adresse électronique de l'annuaire quand elle est connue (BT-34, BT-49), préfixe 0225 retiré", () => {
     const { xml: x } = buildFacturX(invoiceToFacturX(
       invoice([line("Pose", 1, 100, 20)], { client: { ...proClient, electronic_address: "0225:443061841_compta" } }),

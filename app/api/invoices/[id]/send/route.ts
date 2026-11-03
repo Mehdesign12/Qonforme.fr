@@ -327,7 +327,17 @@ async function sendByPlatform(p: { supabase: SupabaseClient; userId: string; id:
     return failedAfterIssue("Le fichier de la facture n'a pas pu être produit.", 500)
   }
 
-  // 6. Dépôt chez Super PDP
+  // 6. Contrôle par Super PDP avant le dépôt : un rejet après dépôt resterait invisible
+  //    jusqu'à la relève des statuts ; ici l'artisan voit tout de suite ce qui manque.
+  //    Contrôle indisponible : on dépose quand même (Super PDP contrôle de toute façon).
+  const check = await sp.validateInvoice(pdf).catch(() => null)
+  if (check && !check.valid) {
+    console.error("[invoice-send] Contrôle Super PDP refusé:", check.failures.slice(0, 3).join(" | "))
+    const detail = check.failures[0] ? ` (${check.failures[0].slice(0, 220)})` : ""
+    return failedAfterIssue(`Le contrôle de la plateforme a refusé la facture${detail}.`)
+  }
+
+  // 7. Dépôt chez Super PDP
   let platformInvoiceId: number
   let events: ReturnType<typeof toOutboundEvent>[] = []
   try {
@@ -345,7 +355,7 @@ async function sendByPlatform(p: { supabase: SupabaseClient; userId: string; id:
   }
   await markDeposited(admin, row, { platformInvoiceId, events, documentNumber: number })
 
-  // 7. Statut « Envoyée » et date d'envoi (jamais par-dessus un statut payé ou crédité)
+  // 8. Statut « Envoyée » et date d'envoi (jamais par-dessus un statut payé ou crédité)
   const sentAt = new Date().toISOString()
   const status = statusAfterSend("invoice", invoice.status)
   await supabase.from("invoices").update({ status, sent_at: sentAt }).eq("id", id).eq("user_id", userId)
