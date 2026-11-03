@@ -48,6 +48,7 @@ export type PlatformUnavailable =
   | "not_in_directory"   // client absent de l'annuaire
   | "directory_down"     // annuaire injoignable
   | "already_sent"       // déjà déposée chez la plateforme (ou envoi en cours)
+  | "siren_mismatch"     // SIREN de l'entreprise ≠ entreprise raccordée chez la plateforme
 
 export interface DeliveryOptions {
   platform:
@@ -69,6 +70,7 @@ export const PLATFORM_UNAVAILABLE_TEXT: Record<PlatformUnavailable, string> = {
   abroad: "Client établi hors de France : la facture part par email.",
   not_in_directory: "Votre client n'est pas encore inscrit dans l'annuaire de la facturation électronique : la facture part par email.",
   directory_down: "L'annuaire de la facturation électronique ne répond pas pour le moment : la facture part par email.",
+  siren_mismatch: "Le SIREN de votre entreprise n'est pas celui de l'entreprise raccordée chez Super PDP : vérifiez-le dans Paramètres › Entreprise.",
   already_sent: "Cette facture a déjà été transmise par la plateforme agréée : vous pouvez en renvoyer une copie par email.",
 }
 
@@ -115,7 +117,10 @@ const sirenOf = (s: string | null | undefined): string | null => {
 export interface DeliveryInput {
   mode: PaMode | null
   outboundInstalled: boolean
-  connection: { status: string; address: string | null } | null
+  /** Raccordement ; `siren` : numéro de l'entreprise raccordée chez la plateforme. */
+  connection: { status: string; address: string | null; siren?: string | null } | null
+  /** SIREN de l'entreprise dans Qonforme (vendeur de la facture). */
+  issuerSiren?: string | null
   hasPlan: boolean
   client: { email?: string | null; siren?: string | null; country?: string | null } | null
   /** Entrées de l'annuaire pour le SIREN du client ; null si l'annuaire n'a pas répondu, undefined s'il n'a pas été consulté. */
@@ -135,6 +140,13 @@ function platformBlocker(input: Omit<DeliveryInput, "directory">): PlatformUnava
   if (!input.connection || input.connection.status !== "active") return "not_connected"
   if (!input.hasPlan) return "no_plan"
   if (input.alreadySent) return "already_sent"
+  // Super PDP refuse une facture dont le vendeur n'est pas l'entreprise raccordée (relevé en
+  // bac à sable le 03/11/2026) : dit avant l'émission, jamais après. En bac à sable, le
+  // vendeur prend le numéro fictif de l'entreprise raccordée (sellerForPlatform).
+  if (input.mode === "live") {
+    const a = sirenOf(input.issuerSiren), b = sirenOf(input.connection?.siren)
+    if (a && b && a !== b) return "siren_mismatch"
+  }
   if (input.mode === "test") return null
   const country = (input.client?.country ?? "FR").trim().toUpperCase() || "FR"
   if (country !== "FR") return "abroad"
