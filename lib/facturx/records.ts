@@ -18,6 +18,8 @@ import { formatEurosFr, formatPercentFr, toCents } from "@/lib/artisan/money"
 
 export interface CompanyRecord {
   name?: string | null
+  /** Adresse de facturation électronique de l'annuaire (raccordement à la plateforme). */
+  electronic_address?: string | null
   siren?: string | null
   siret?: string | null
   vat_number?: string | null
@@ -34,6 +36,8 @@ export interface CompanyRecord {
 
 export interface ClientRecord {
   name?: string | null
+  /** Adresse de facturation électronique trouvée dans l'annuaire à l'envoi. */
+  electronic_address?: string | null
   email?: string | null
   address?: string | null
   zip_code?: string | null
@@ -73,6 +77,7 @@ export function sellerFromCompany(company: CompanyRecord | null | undefined): Fx
     legal_notice: company?.legal_notice,
     email:        company?.email,
     vat_regime:   company?.vat_regime ?? null,
+    electronic_address: company?.electronic_address ?? null,
   }
 }
 
@@ -86,6 +91,7 @@ export function buyerFromClient(client: ClientRecord | null | undefined): FxPart
     siren:      client?.siren,
     vat_number: client?.vat_number,
     email:      client?.email,
+    electronic_address: client?.electronic_address ?? null,
   }
 }
 
