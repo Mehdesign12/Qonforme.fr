@@ -246,9 +246,6 @@ async function sendByPlatform(p: { supabase: SupabaseClient; userId: string; id:
   }
   const conn = await loadConnection(admin, userId)
   const senderAddress = conn.ok ? conn.row?.electronic_address ?? null : null
-  // Bac à sable : Super PDP exige que le vendeur soit l'entreprise raccordée, au numéro
-  // fictif (« 000000001 ») ; en production, la concordance est contrôlée plus haut
-  const platformSiren = mode === "test" && conn.ok ? conn.row?.siren ?? null : null
 
   // 2. Réservation : un seul envoi à la fois pour cette facture
   const reserved = await reserveOutbound(admin, {
@@ -272,6 +269,21 @@ async function sendByPlatform(p: { supabase: SupabaseClient; userId: string; id:
   }
 
   const { data: company } = await supabase.from("companies").select(COMPANY_SELECT).eq("user_id", userId).single()
+  const sp = createSuperPdpApi(token.token)
+
+  // Super PDP refuse une facture dont le vendeur n'est pas l'entreprise raccordée (relevé
+  // le 03/11/2026). Son numéro est lu chez Super PDP, juste avant l'émission : en
+  // production, un SIREN différent est refusé ici, sans attribuer de numéro ; en bac à
+  // sable, la facture prend le numéro fictif de l'entreprise raccordée (« 000000001 »).
+  const platformCompany = await sp.company().catch(() => null)
+  const platformNumber = platformCompany?.number && /^\d{9}$/.test(platformCompany.number) ? platformCompany.number : null
+  const issuerSiren = String((company as { siren?: string | null } | null)?.siren ?? "").replace(/\D/g, "")
+  if (mode === "live" && platformNumber && issuerSiren !== platformNumber) {
+    const error = PLATFORM_UNAVAILABLE_TEXT.siren_mismatch
+    await markFailed(admin, row.id, error)
+    return NextResponse.json({ error }, { status: 409 })
+  }
+  const platformSiren = mode === "test" ? platformNumber : null
 
   // 4. Émission du brouillon (numéro, statut, date du jour), avant le PDF qui porte le numéro
   let wasIssuedNow = false
@@ -319,7 +331,7 @@ async function sendByPlatform(p: { supabase: SupabaseClient; userId: string; id:
   let platformInvoiceId: number
   let events: ReturnType<typeof toOutboundEvent>[] = []
   try {
-    const deposited = await createSuperPdpApi(token.token).depositInvoice(pdf, { externalId: depositExternalId(id, row.attempt) })
+    const deposited = await sp.depositInvoice(pdf, { externalId: depositExternalId(id, row.attempt) })
     platformInvoiceId = deposited.id
     events = (deposited.events ?? []).map(toOutboundEvent)
   } catch (err) {

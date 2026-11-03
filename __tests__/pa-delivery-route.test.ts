@@ -23,6 +23,7 @@ const m = vi.hoisted(() => ({
   updates: [] as Record<string, unknown>[],
   failed: [] as string[],
   deposited: [] as Record<string, unknown>[],
+  platformNumber: "000000001",
 }))
 
 const userDb = {
@@ -54,7 +55,10 @@ vi.mock("@/lib/pa/outbound", async (orig) => ({
 vi.mock("@/lib/pa/deposit", async (orig) => ({ ...(await orig<typeof import("@/lib/pa/deposit")>()), obtainToken: async () => { m.steps.push("jeton"); return m.token } }))
 vi.mock("@/lib/pa/superpdp/api", async (orig) => ({
   ...(await orig<typeof import("@/lib/pa/superpdp/api")>()),
-  createSuperPdpApi: () => ({ depositInvoice: async () => { m.steps.push("dépôt"); return m.deposit!() } }),
+  createSuperPdpApi: () => ({
+    company: async () => ({ id: 1, number: m.platformNumber }),
+    depositInvoice: async () => { m.steps.push("dépôt"); return m.deposit!() },
+  }),
 }))
 vi.mock("@/lib/utils/document-numbering", async (orig) => ({
   ...(await orig<typeof import("@/lib/utils/document-numbering")>()),
@@ -70,7 +74,7 @@ const ADDRESS = "0225:443061841"
 const send = () => POST(req({ channel: "platform", address: ADDRESS }), params)
 
 beforeEach(() => {
-  Object.assign(m, { steps: [], updates: [], failed: [], deposited: [], pdfInput: null })
+  Object.assign(m, { steps: [], updates: [], failed: [], deposited: [], pdfInput: null, platformNumber: "000000001" })
   m.invoice = { id: "inv-1", status: "draft", invoice_number: null, client: { name: "SCI Les Tilleuls", email: null, siren: "443061841" } }
   m.options = { ok: true, mode: "test", options: { platform: { offered: true, addresses: [{ identifier: ADDRESS, main: true }], defaultAddress: ADDRESS, sender: "0225:552100554", manualEntry: false }, email: { offered: false, to: null }, recommended: "platform", connected: true } }
   m.reserve = { ok: true, row: { id: "o1", attempt: 1, events: [] } }
@@ -89,6 +93,16 @@ describe("envoi par la plateforme", () => {
     // Bac à sable : vendeur = entreprise raccordée, au numéro fictif de Super PDP
     expect(m.pdfInput!.company).toMatchObject({ siren: "000000001", siret: null, vat_number: "FR15000000001" })
     expect(m.deposited[0]).toMatchObject({ platformInvoiceId: 1700500, documentNumber: "F-2026-007" })
+  })
+
+  it("production : SIREN de l'entreprise ≠ entreprise raccordée chez Super PDP : 409 avant toute émission", async () => {
+    m.options = { ...(m.options as object), mode: "live" }
+    m.platformNumber = "853322915"
+    const res = await send()
+    expect(res.status).toBe(409)
+    expect((await res.json()).error).toContain("Paramètres › Entreprise")
+    expect(m.steps).toEqual(["contrôle", "réservation", "jeton"])
+    expect(m.failed).toHaveLength(1)
   })
 
   it("adresse hors de l'annuaire : 409, rien de réservé ni d'émis", async () => {
