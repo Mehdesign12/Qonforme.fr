@@ -4,11 +4,16 @@ import { Users } from 'lucide-react'
 import { EmptyState, Initials, PageHeader, StatusPill } from '@/components/app/kit'
 import { FilterBar, FilterSearch, FilterSelect, LoadError, SubscriptionPill, fmtDate, plural } from '@/components/admin/ui'
 import AdminQuickPlanToggle from './AdminQuickPlanToggle'
+import { ProgressCell } from '@/components/admin/ProgressCell'
+import { computeProgress, type Progress, type ProgressStatus } from '@/lib/admin/onboarding-progress'
+import { fetchProgressCounts } from '@/lib/admin/progress-data'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin — Utilisateurs' }
 
-interface SearchParams { q?: string; plan?: string; status?: string }
+interface SearchParams { q?: string; plan?: string; status?: string; parcours?: string }
+
+const PROGRESS_FILTERS: ProgressStatus[] = ['needs_help', 'in_progress', 'complete']
 
 const LIMIT = 200
 const INACTIVE_MS = 30 * 24 * 60 * 60 * 1000
@@ -18,38 +23,38 @@ function likePattern(term: string): string {
   return `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
 }
 
-async function getUsers(search: string, planFilter: string, statusFilter: string) {
+async function getUsers(search: string, planFilter: string, statusFilter: string, progressFilter: string) {
   const admin = createAdminClient()
 
   // Emails et dernières connexions via l'API Auth Admin (un seul appel)
   const { data: authUsersData, error: authError } = await admin.auth.admin.listUsers({ perPage: 1000 })
   const authUsers = authUsersData?.users ?? []
   const authMap = new Map(
-    authUsers.map(u => [u.id, { email: u.email ?? '', lastSignIn: u.last_sign_in_at ?? null }])
+    authUsers.map(u => [u.id, { email: u.email ?? '', lastSignIn: u.last_sign_in_at ?? null, createdAt: u.created_at ?? null }])
   )
 
   // Entreprises (contiennent user_id + nom)
   let companiesQuery = admin
     .from('companies')
-    .select('user_id, name, city, created_at')
+    .select('user_id, name, city, created_at, siren')
     .order('created_at', { ascending: false })
 
   const byEmail = search.includes('@')
   if (search && byEmail) {
     // Recherche par email : l'email vit dans Auth, pas dans `companies`. Filtrer
     // d'abord les entreprises par nom (comme avant) ne trouvait jamais personne.
-    if (authError) return { rows: [], error: 'auth' as const, authError: true, truncated: false }
+    if (authError) return { rows: [], error: 'auth' as const, authError: true, truncated: false, progressError: false }
     const needle = search.toLowerCase()
     const ids = authUsers.filter(u => (u.email ?? '').toLowerCase().includes(needle)).map(u => u.id)
-    if (ids.length === 0) return { rows: [], error: null, authError: false, truncated: false }
+    if (ids.length === 0) return { rows: [], error: null, authError: false, truncated: false, progressError: false }
     companiesQuery = companiesQuery.in('user_id', ids.slice(0, LIMIT))
   } else if (search) {
     companiesQuery = companiesQuery.ilike('name', likePattern(search))
   }
 
   const { data: companies, error: companiesError } = await companiesQuery.limit(LIMIT)
-  if (companiesError) return { rows: [], error: 'companies' as const, authError: !!authError, truncated: false }
-  if (!companies?.length) return { rows: [], error: null, authError: !!authError, truncated: false }
+  if (companiesError) return { rows: [], error: 'companies' as const, authError: !!authError, truncated: false, progressError: false }
+  if (!companies?.length) return { rows: [], error: null, authError: !!authError, truncated: false, progressError: false }
 
   // Abonnements de ces comptes
   const userIds = companies.map(c => c.user_id)
@@ -57,9 +62,13 @@ async function getUsers(search: string, planFilter: string, statusFilter: string
     .from('subscriptions')
     .select('user_id, plan, status, billing_period, current_period_end')
     .in('user_id', userIds)
-  if (subsError) return { rows: [], error: 'subscriptions' as const, authError: !!authError, truncated: false }
+  if (subsError) return { rows: [], error: 'subscriptions' as const, authError: !!authError, truncated: false, progressError: false }
 
   const subMap = new Map((subs ?? []).map(s => [s.user_id, s]))
+
+  // Parcours (SIREN, devis, factures) : lu en base, sans cookie. Une lecture en échec n'est jamais lue « zéro ».
+  const sirenByUser = new Map(companies.map(c => [c.user_id, (c as { siren?: string | null }).siren ?? null]))
+  const counts = await fetchProgressCounts(admin, userIds, sirenByUser)
 
   let rows = companies.map(c => {
     const sub  = subMap.get(c.user_id)
@@ -75,14 +84,19 @@ async function getUsers(search: string, planFilter: string, statusFilter: string
       subStatus: sub?.status ?? 'none',
       billing_period: sub?.billing_period ?? null,
       period_end: sub?.current_period_end ?? null,
+      progress: (counts && counts.get(c.user_id)
+        ? computeProgress(counts.get(c.user_id)!, auth?.createdAt ?? c.created_at)
+        : null) as Progress | null,
     }
   })
 
   // Filtres post-requête
   if (planFilter)   rows = rows.filter(r => r.plan === planFilter)
   if (statusFilter) rows = rows.filter(r => r.subStatus === statusFilter)
+  // Sans lecture du parcours, le filtre ne peut rien dire : il est ignoré et l'écran le signale
+  if (progressFilter && counts) rows = rows.filter(r => r.progress?.status === progressFilter)
 
-  return { rows, error: null, authError: !!authError, truncated: companies.length === LIMIT }
+  return { rows, error: null, authError: !!authError, truncated: companies.length === LIMIT, progressError: !counts }
 }
 
 function isInactive(lastSignIn: string | null): boolean {
@@ -98,9 +112,10 @@ export default async function AdminUsersPage({
   const q      = (params.q ?? '').trim()
   const plan   = params.plan ?? ''
   const status = params.status ?? ''
-  const filtered = !!(q || plan || status)
+  const parcours = PROGRESS_FILTERS.includes(params.parcours as ProgressStatus) ? (params.parcours as string) : ''
+  const filtered = !!(q || plan || status || parcours)
 
-  const { rows: users, error, authError, truncated } = await getUsers(q, plan, status)
+  const { rows: users, error, authError, truncated, progressError } = await getUsers(q, plan, status, parcours)
 
   return (
     <div className="flex flex-col gap-5">
@@ -135,7 +150,24 @@ export default async function AdminUsersPage({
             { value: 'none', label: 'Sans abonnement' },
           ]}
         />
+        <FilterSelect
+          name="parcours"
+          label="Parcours d'inscription"
+          defaultValue={parcours}
+          options={[
+            { value: '', label: 'Tous les parcours' },
+            { value: 'needs_help', label: 'Bloqués avant le premier devis' },
+            { value: 'in_progress', label: 'En cours' },
+            { value: 'complete', label: 'Première facture envoyée' },
+          ]}
+        />
       </FilterBar>
+
+      {progressError && !error && (
+        <p role="status" className="q-banner q-banner-warn">
+          Parcours indisponibles : la lecture des devis et des factures n&apos;a pas abouti (le filtre de parcours est ignoré).
+        </p>
+      )}
 
       {authError && !error && (
         <p role="status" className="q-banner q-banner-warn">
@@ -158,12 +190,13 @@ export default async function AdminUsersPage({
           {/* Tableau (ordinateur) */}
           <section aria-label="Liste des utilisateurs" className="q-card hidden overflow-hidden md:block">
             <div className="overflow-x-auto">
-              <table className="q-table min-w-[820px] [&_th]:border-t-0">
+              <table className="q-table min-w-[980px] [&_th]:border-t-0">
                 <thead>
                   <tr className="bg-[var(--q-surface-2)]">
                     <th scope="col">Compte</th>
                     <th scope="col">Formule</th>
                     <th scope="col">Abonnement</th>
+                    <th scope="col">Parcours</th>
                     <th scope="col">Inscription</th>
                     <th scope="col">Dernière connexion</th>
                   </tr>
@@ -189,6 +222,7 @@ export default async function AdminUsersPage({
                         )}
                       </td>
                       <td className="!py-2.5"><SubscriptionPill status={u.subStatus} /></td>
+                      <td className="!py-2.5"><ProgressCell progress={u.progress} /></td>
                       <td className="!py-2.5 whitespace-nowrap text-[13px] text-[var(--q-text-3)]">{fmtDate(u.created_at)}</td>
                       <td className="!py-2.5 whitespace-nowrap text-[13px] text-[var(--q-text-3)]">
                         <span className="flex flex-col items-start gap-1">
@@ -215,6 +249,15 @@ export default async function AdminUsersPage({
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-[15px] font-semibold">{u.name}</span>
                   <span className="truncate text-[13px] text-[var(--q-text-4)]">{u.email || u.city || 'Inscrit le ' + fmtDate(u.created_at)}</span>
+                  {u.progress && (
+                    <span className={u.progress.status === 'needs_help' ? 'truncate text-xs font-semibold text-[var(--q-warn)]' : 'truncate text-xs text-[var(--q-text-3)]'}>
+                      {u.progress.status === 'complete'
+                        ? 'Facture envoyée'
+                        : u.progress.status === 'needs_help'
+                          ? `Bloqué : ${u.progress.stuckAt}`
+                          : `Parcours ${u.progress.completed}/${u.progress.total}`}
+                    </span>
+                  )}
                 </span>
                 <SubscriptionPill status={u.subStatus} className="shrink-0" />
               </Link>

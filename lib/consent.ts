@@ -101,3 +101,20 @@ export function openCookieSettings(): void {
   if (typeof window === "undefined") return
   window.dispatchEvent(new Event(SETTINGS_EVENT))
 }
+
+/**
+ * PostHog (mesure d'usage, étapes du parcours, enregistrement des sessions) : décision du
+ * fondateur du 02/11/2026, qui en fait une condition d'utilisation du service (CGU art. 7,
+ * politique de confidentialité § 8.2) : il se charge **sans** l'accord du bandeau, et le
+ * bandeau le dit. Seuls la publicité (pixel Meta) et tout autre traceur publicitaire restent
+ * soumis à l'accord. Les pages exclues (`NO_TRACKING_PATHS`) restent sans traceur.
+ *
+ * Remettre `true` pour revenir au modèle « rien sans accord » : PostHog ne part plus qu'après
+ * « Accepter ». À ne pas écrire « essentiel » nulle part : ce n'est pas un cookie strictement nécessaire.
+ */
+export const POSTHOG_REQUIRES_CONSENT = false
+
+/** PostHog peut-il tourner pour ce choix de cookies ? (Les pages sans traceur sont filtrées à part.) */
+export function posthogAllowed(consent: ConsentChoice | null): boolean {
+  return !POSTHOG_REQUIRES_CONSENT || consent === "accepted"
+}

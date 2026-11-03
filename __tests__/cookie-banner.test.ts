@@ -221,6 +221,14 @@ const advance = (ms: number) =>
   })
 const dialog = () => document.querySelector<HTMLElement>('[role="dialog"]')
 const button = (label: string) => Array.from(document.querySelectorAll("button")).find((b) => b.textContent === label) as HTMLButtonElement
+const detailsOpen = () => !!button("Non merci")
+
+/** Refuser la publicité passe par la fenêtre « En savoir + » : ouvrir, puis « Non merci ». */
+async function refuseViaDetails() {
+  await act(async () => button("En savoir +").click())
+  await advance(50)
+  await act(async () => button("Non merci").click())
+}
 
 async function banner() {
   vi.useFakeTimers()
@@ -234,7 +242,7 @@ describe("bandeau de cookies", () => {
     expect(renderToString(createElement(CookieBanner))).toBe("")
   })
 
-  it("apparaît peu après l'affichage, avec deux boutons de même poids et le lien vers la politique", async () => {
+  it("apparaît peu après l'affichage, avec deux boutons de même poids : « En savoir + » et « Accepter »", async () => {
     const CookieBanner = await banner()
     await mount(createElement(CookieBanner))
     expect(dialog()).toBeNull() // pas tout de suite : la page s'affiche d'abord
@@ -243,18 +251,69 @@ describe("bandeau de cookies", () => {
     expect(d).not.toBeNull()
     expect(d.getAttribute("aria-modal")).toBe("false")
     expect(d.getAttribute("aria-label")).toBe("Cookies")
-    expect(document.getElementById(d.getAttribute("aria-describedby")!)?.textContent).toContain("Nous utilisons des cookies")
-    expect(d.querySelector('a[href="/confidentialite#cookies"]')?.textContent).toBe("En savoir plus")
+    const text = document.getElementById(d.getAttribute("aria-describedby")!)?.textContent
+    expect(text).toContain("Qonforme utilise des cookies de mesure pour s'améliorer")
+    expect(text).toContain("Les cookies publicitaires sont facultatifs")
 
-    const refuse = button("Refuser")
+    const more = button("En savoir +")
     const accept = button("Accepter")
-    expect(refuse).toBeTruthy()
+    expect(more).toBeTruthy()
     expect(accept).toBeTruthy()
-    // Refuser est aussi simple qu'accepter : même taille, même place, même police
-    for (const cls of ["h-9", "flex-1", "rounded-full", "px-5", "text-[13px]", "font-semibold"]) {
-      expect(refuse.className, cls).toContain(cls)
+    // Même taille, même place, même police
+    for (const cls of ["min-h-9", "flex-1", "rounded-full", "px-5", "text-[13px]", "font-semibold"]) {
+      expect(more.className, cls).toContain(cls)
       expect(accept.className, cls).toContain(cls)
     }
+    // Pas de refus au premier niveau : il est dans la fenêtre « En savoir + »
+    expect(button("Non merci")).toBeUndefined()
+  })
+
+  it("« En savoir + » ouvre la fenêtre : mesure toujours active, publicité facultative, « Non merci » et « Accepter »", async () => {
+    const CookieBanner = await banner()
+    await mount(createElement(CookieBanner))
+    await advance(700)
+    await act(async () => button("En savoir +").click())
+    await advance(50)
+    const text = (document.body.textContent ?? "").replace(/\u00a0/g, " ") // espaces insécables des guillemets
+    expect(text).toContain("Vos cookies, en clair.")
+    expect(text).toContain("Mesure du site · toujours active")
+    expect(text).toContain("Publicité · facultative")
+    expect(text).toContain("Nécessaires")
+    // Dit que « Non merci » ne refuse que la publicité
+    expect(text).toContain("« Non merci » refuse seulement la publicité. La mesure du site reste active.")
+    expect(document.querySelector('a[href="/confidentialite#cookies"]')?.textContent).toBe("Politique de confidentialité")
+    expect(button("Non merci")).toBeTruthy()
+    expect(button("Fermer") ?? document.querySelector('[aria-label="Fermer"]')).toBeTruthy()
+    // Rien n'est choisi tant qu'on n'a pas cliqué sur un des deux boutons
+    expect(window.localStorage.getItem("qonforme-cookie-consent")).toBeNull()
+  })
+
+  it("fermer la fenêtre ne choisit rien : le bandeau reste", async () => {
+    const CookieBanner = await banner()
+    await mount(createElement(CookieBanner))
+    await advance(700)
+    await act(async () => button("En savoir +").click())
+    await advance(50)
+    expect(detailsOpen()).toBe(true)
+    await act(async () => document.querySelector<HTMLElement>('[aria-label="Fermer"]')!.click())
+    await advance(400)
+    expect(detailsOpen()).toBe(false)
+    expect(window.localStorage.getItem("qonforme-cookie-consent")).toBeNull()
+    expect(button("Accepter")).toBeTruthy()
+  })
+
+  it("« Accepter » de la fenêtre enregistre l'accord et ferme tout", async () => {
+    const CookieBanner = await banner()
+    await mount(createElement(CookieBanner))
+    await advance(700)
+    await act(async () => button("En savoir +").click())
+    await advance(50)
+    const accepts = Array.from(document.querySelectorAll("button")).filter((b) => b.textContent === "Accepter")
+    expect(accepts.length).toBe(2) // celui du bandeau et celui de la fenêtre
+    await act(async () => accepts[1].click())
+    expect(JSON.parse(window.localStorage.getItem("qonforme-cookie-consent")!)).toMatchObject({ choice: "accepted" })
+    await advance(600)
+    expect(detailsOpen()).toBe(false)
   })
 
   it("Accepter enregistre le choix, déclenche le pixel et ferme le bandeau", async () => {
@@ -270,12 +329,12 @@ describe("bandeau de cookies", () => {
     expect(dialog()).toBeNull()
   })
 
-  it("Refuser enregistre le refus, ne charge rien et ferme le bandeau", async () => {
+  it("« Non merci » (fenêtre « En savoir + ») enregistre le refus, ne charge rien et ferme le bandeau", async () => {
     const CookieBanner = await banner()
     const { TrackingLoader } = await import("@/components/consent/TrackingLoader")
     await mount(createElement(React.Fragment, null, createElement(TrackingLoader), createElement(CookieBanner)))
     await advance(700)
-    await act(async () => button("Refuser").click())
+    await refuseViaDetails()
     expect(JSON.parse(window.localStorage.getItem("qonforme-cookie-consent")!)).toMatchObject({ choice: "refused" })
     expect(w.fbq).toBeUndefined()
     expect(appended).toHaveLength(0)
@@ -334,7 +393,7 @@ describe("bandeau de cookies", () => {
     expect(JSON.parse(window.localStorage.getItem("qonforme-cookie-consent")!).choice).toBe("accepted")
   })
 
-  it("rouvert, Refuser retire l'accord : le pixel est coupé", async () => {
+  it("rouvert, « Non merci » retire l'accord : le pixel est coupé", async () => {
     const { writeConsent, openCookieSettings } = await import("@/lib/consent")
     writeConsent("accepted")
     const CookieBanner = await banner()
@@ -345,7 +404,7 @@ describe("bandeau de cookies", () => {
 
     await act(async () => openCookieSettings())
     await advance(50)
-    await act(async () => button("Refuser").click())
+    await refuseViaDetails()
     expect(calls()).toContainEqual(["consent", "revoke"])
     expect(JSON.parse(window.localStorage.getItem("qonforme-cookie-consent")!).choice).toBe("refused")
   })

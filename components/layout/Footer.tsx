@@ -12,6 +12,10 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     links: [
       { label: "Fonctionnalités", href: "/#devis" },
       { label: "Logiciel de gestion bâtiment", href: "/logiciel-gestion-batiment" },
+      { label: "Logiciel de devis gratuit", href: "/logiciel-devis-gratuit" },
+      { label: "Relance des impayés", href: "/logiciel-relance-factures-impayees" },
+      { label: "Export FEC", href: "/logiciel-export-fec" },
+      { label: "Situations de travaux", href: "/logiciel-situations-travaux" },
       { label: "Tarifs", href: "/pricing" },
       { label: "Démo interactive", href: "/demo" },
     ],

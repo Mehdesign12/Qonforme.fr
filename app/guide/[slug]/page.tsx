@@ -6,6 +6,7 @@ import { GUIDES, getGuideBySlug } from "@/lib/pseo/guides"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, FaqList, InlineCta, SectionHeading, WRAP } from "@/components/content/ui"
 import { dateFr, fr } from "@/components/content/text"
 import { ExempleDevisCard } from "@/components/content/ExempleDevis"
+import { AVEC_QONFORME } from "@/lib/pseo/guides-qonforme"
 import { fitDescription, fitTitle } from "@/lib/seo/meta"
 
 export function generateStaticParams() {
@@ -181,6 +182,20 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               </div>
 
               {guide.exemple && <ExempleDevisCard exemple={guide.exemple} id="exemple" />}
+
+              {/* Ce que fait le logiciel sur ce sujet : un passage repris par un assistant IA garde le nom avec la règle */}
+              {AVEC_QONFORME[guide.slug] && (
+                <aside aria-labelledby="avec-qonforme" className="mt-12 max-w-[68ch] rounded-[20px] border border-q-wash-line bg-q-wash p-6 sm:p-7">
+                  <h2 id="avec-qonforme" className="font-display text-[20px] font-semibold tracking-[-0.02em] text-q-ink-strong">
+                    Avec Qonforme
+                  </h2>
+                  <p className="mt-3 text-[16px] leading-[1.7] text-q-text-2">{fr(AVEC_QONFORME[guide.slug].texte)}</p>
+                  <Link href={AVEC_QONFORME[guide.slug].href} className="mt-4 inline-flex items-center gap-1.5 text-[15px] font-semibold text-q-accent-strong hover:underline">
+                    {AVEC_QONFORME[guide.slug].lien}
+                    <ArrowRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                </aside>
+              )}
 
               <InlineCta className="mt-14" title="Mettez ce guide en pratique :" />
 

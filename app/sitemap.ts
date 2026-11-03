@@ -37,6 +37,10 @@ const MAJ: Record<string, string> = {
   "/modele/lettre-relance-impaye": "2026-10-16",
   "/facturation": "2026-10-15",
   "/logiciel-gestion-batiment": "2026-10-24",
+  "/logiciel-devis-gratuit": "2026-10-30",
+  "/logiciel-relance-factures-impayees": "2026-10-30",
+  "/logiciel-export-fec": "2026-10-30",
+  "/logiciel-situations-travaux": "2026-10-30",
   // 16/10/2026 : title, H1 et introduction des 11 pages métier (MOTS-CLES-COMPACTS-2026-10.md § 0)
   ...Object.fromEntries(METIERS.map((m) => [`/facturation/${m.slug}`, "2026-10-16"])),
   "/devenir-a-son-compte/electricien": "2026-10-15",
@@ -142,6 +146,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {
       url: `${baseUrl}/logiciel-gestion-batiment`,
       ...dateDe("/logiciel-gestion-batiment"),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/logiciel-devis-gratuit`,
+      ...dateDe("/logiciel-devis-gratuit"),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/logiciel-relance-factures-impayees`,
+      ...dateDe("/logiciel-relance-factures-impayees"),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/logiciel-export-fec`,
+      ...dateDe("/logiciel-export-fec"),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/logiciel-situations-travaux`,
+      ...dateDe("/logiciel-situations-travaux"),
       changeFrequency: "monthly",
       priority: 0.8,
     },

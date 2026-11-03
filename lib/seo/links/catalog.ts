@@ -36,6 +36,10 @@ export const MAIN_PAGES: LinkTarget[] = [
   { title: "Guides de facturation", path: "/guide", kind: "page" },
   { title: "Logiciel de devis par métier", path: "/facturation", kind: "page" },
   { title: "Logiciel de gestion bâtiment et devis", path: "/logiciel-gestion-batiment", kind: "page" },
+  { title: "Logiciel de devis gratuit pour artisan", path: "/logiciel-devis-gratuit", kind: "page" },
+  { title: "Logiciel de relance des factures impayées", path: "/logiciel-relance-factures-impayees", kind: "page" },
+  { title: "Logiciel de facturation avec export FEC", path: "/logiciel-export-fec", kind: "page" },
+  { title: "Logiciel de situations de travaux et d'acomptes", path: "/logiciel-situations-travaux", kind: "page" },
   { title: "S'installer à son compte dans le bâtiment", path: "/devenir-a-son-compte", kind: "page" },
   { title: "Glossaire", path: "/glossaire", kind: "page" },
   { title: "Blog", path: "/blog", kind: "page" },
@@ -75,6 +79,10 @@ const CURATED: Record<string, string[]> = {
   "/facturation": ["logiciel de devis par métier"],
   "/logiciel-gestion-batiment": ["logiciel de gestion bâtiment", "logiciel de gestion pour le bâtiment", "logiciel de gestion btp", "logiciel de gestion pour artisan"],
   "/devenir-a-son-compte": ["devenir artisan à son compte", "s'installer à son compte"],
+  "/logiciel-devis-gratuit": ["logiciel de devis gratuit", "logiciel devis gratuit"],
+  "/logiciel-relance-factures-impayees": ["relance automatique des factures", "relances automatiques", "suivre les factures impayées"],
+  "/logiciel-export-fec": ["export FEC", "export comptable FEC"],
+  "/logiciel-situations-travaux": ["situations de travaux", "situation de travaux"],
 }
 
 const WEIGHT: Record<LinkKind, number> = { guide: 5, modele: 4, outil: 4, article: 4, metier: 3, installation: 3, glossaire: 2, page: 1 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { safeNextPath } from "@/lib/stripe/access"
 import { isFreshOAuthSignup, oauthSignupMetadata } from "@/lib/auth/oauth"
 import { sendEmail } from "@/lib/email/resend"
+import { notifyNewSignup } from "@/lib/email/admin-notify"
 import { buildWelcomeEmail } from "@/lib/email/templates/welcome"
 import { claimSequenceStep, enrollInOnboarding } from "@/lib/onboarding/store"
 import { listUnsubscribeHeaders, unsubscribePageUrl } from "@/lib/onboarding/unsubscribe"
@@ -79,6 +80,8 @@ async function onGoogleSignup(
     if (error) console.error("[auth/callback] métadonnées du compte Google :", error.message)
 
     const to = user.email
+    // Prévient le fondateur : un compte Google tout juste créé (ne lève jamais)
+    void notifyNewSignup({ email: to, method: "google", userId: user.id })
     if (!to) return true
     const enrolled = await enrollInOnboarding(admin, user.id)
     const { subject, html } = buildWelcomeEmail({

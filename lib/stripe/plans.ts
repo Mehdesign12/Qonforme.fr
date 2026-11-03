@@ -148,11 +148,13 @@ export const PLANS: Record<PlanId, Plan> = {
       'Devis transformé en facture en un clic',
       'Export comptable FEC',
       'Tableau de bord : chiffre du mois, encours, retards',
+      // Ouverte en production le 30/10/2026 (DECISIONS § 16)
+      'Réception des factures fournisseurs par la plateforme agréée Super PDP',
+      // Migrations 20261003 et 20261010 appliquées en production (confirmé par le fondateur le 30/10/2026)
+      'Signature en ligne des devis et bons de commande',
     ],
     upcoming: [
       'Envoi de vos factures à vos clients par la plateforme agréée, prévu pour 2027',
-      'Réception des factures fournisseurs',
-      'Signature en ligne des devis et bons de commande',
     ],
     stripePriceIds: {
       monthly: process.env.STRIPE_PRICE_ESSENTIEL_MONTHLY ?? '',
