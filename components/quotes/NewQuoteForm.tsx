@@ -44,7 +44,7 @@ export default function NewQuoteForm() {
       .catch(() => {})
   }, [])
 
-  const submit = async (action: "draft" | "send") => {
+  const submit = async (action: "draft" | "send", next?: string) => {
     if (!doc.validate()) { trackJourney("document_form_invalid", { document: "quote" }); toast.error("Corrigez les erreurs avant de continuer"); return }
     if (action === "send") setLoading(true); else setSaving(true)
 
@@ -88,7 +88,7 @@ export default function NewQuoteForm() {
       } else {
         toast.success("Brouillon sauvegardé !")
       }
-      router.push(`/quotes/${json.quote.id}`)
+      router.push(next ?? `/quotes/${json.quote.id}`)
       router.refresh()
     } catch {
       toast.error("Erreur réseau")
@@ -111,11 +111,12 @@ export default function NewQuoteForm() {
       clients={clients}
       clientsLoading={clientsLoading}
       newClientHref="/clients/new"
+        onClientCreated={(created) => setClients((prev) => (prev.some((x) => x.id === created.id) ? prev : [created, ...prev]))}
       clientHref={(id) => `/clients/${id}/edit`}
       company={company}
       catalog={{ manageHref: "/products" }}
       actions={{
-        onSaveDraft: () => submit("draft"),
+        onSaveDraft: (next) => submit("draft", next),
         onSend:      () => submit("send"),
         saving,
         sending: loading,

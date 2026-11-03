@@ -20,6 +20,7 @@ export function ClientPicker({
   value,
   onChange,
   newClientHref,
+  onNewClient,
   invalid,
   describedBy,
 }: {
@@ -27,6 +28,8 @@ export function ClientPicker({
   value: string
   onChange: (id: string) => void
   newClientHref: string
+  /** Ouvre la fenêtre « Nouveau client » au lieu d'aller sur la page client. */
+  onNewClient?: () => void
   invalid?: boolean
   describedBy?: string
 }) {
@@ -106,13 +109,24 @@ export function ClientPicker({
           <p className="px-2.5 py-4 text-sm text-[var(--q-text-4)]">Aucun client ne correspond.</p>
         )}
       </div>
-      <Link
-        href={newClientHref}
-        className="mt-1 flex min-h-[44px] items-center gap-2.5 rounded-[10px] border-t border-[var(--q-line-soft)] px-2.5 text-sm font-semibold text-[var(--q-accent-strong)] hover:bg-[var(--q-hover)]"
-      >
-        <Plus className="size-4" strokeWidth={2.25} aria-hidden />
-        Nouveau client
-      </Link>
+      {onNewClient ? (
+        <button
+          type="button"
+          onClick={() => { setOpen(false); onNewClient() }}
+          className="mt-1 flex min-h-[44px] w-full items-center gap-2.5 rounded-[10px] border-t border-[var(--q-line-soft)] px-2.5 text-left text-sm font-semibold text-[var(--q-accent-strong)] hover:bg-[var(--q-hover)]"
+        >
+          <Plus className="size-4" strokeWidth={2.25} aria-hidden />
+          Nouveau client
+        </button>
+      ) : (
+        <Link
+          href={newClientHref}
+          className="mt-1 flex min-h-[44px] items-center gap-2.5 rounded-[10px] border-t border-[var(--q-line-soft)] px-2.5 text-sm font-semibold text-[var(--q-accent-strong)] hover:bg-[var(--q-hover)]"
+        >
+          <Plus className="size-4" strokeWidth={2.25} aria-hidden />
+          Nouveau client
+        </Link>
+      )}
     </>
   )
 

@@ -12,7 +12,7 @@ import { ClientFormPage, type ClientPayload } from "./ClientForm"
 export function NewClientForm({ redirectTo = null }: { redirectTo?: string | null }) {
   const router = useRouter()
 
-  const create = async (payload: ClientPayload) => {
+  const create = async (payload: ClientPayload, next?: string) => {
     try {
       const res = await fetch("/api/clients", {
         method: "POST",
@@ -26,7 +26,9 @@ export function NewClientForm({ redirectTo = null }: { redirectTo?: string | nul
       }
       toast.success("Client créé")
       const id: string | undefined = json.client?.id
-      if (redirectTo && id) {
+      if (next) {
+        router.push(next)
+      } else if (redirectTo && id) {
         router.push(`${redirectTo}${redirectTo.includes("?") ? "&" : "?"}client=${encodeURIComponent(id)}`)
       } else {
         router.push("/clients")

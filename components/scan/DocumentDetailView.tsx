@@ -5,6 +5,7 @@
  * suppression. Partagée par /documents/[id] et /demo/documents/[id].
  */
 import { useCallback, useEffect, useState } from "react"
+import { UnsavedChangesPrompt } from "@/components/shared/UnsavedChangesGuard"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Download, FileText, Loader2, ScanLine, Trash2 } from "lucide-react"
@@ -73,13 +74,15 @@ export function DocumentDetailView({
   const dirty = JSON.stringify(form) !== initial
   const pdf = api.pdfHref(doc.id)
 
-  const save = async () => {
+  /** Enregistre le classement ; `next` : page à ouvrir ensuite (fenêtre « non enregistré »). */
+  const save = async (next?: string) => {
     setSaving(true)
     try {
       const updated = await api.update(doc.id, fieldsFromForm(form, "classified"))
       setDoc({ ...doc, ...updated, pages: doc.pages, thumb_url: doc.thumb_url })
       setInitial(JSON.stringify(form))
       toast.success("Document enregistré.")
+      if (next) router.push(next)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "L'enregistrement a échoué. Réessayez.")
     } finally {
@@ -101,6 +104,12 @@ export function DocumentDetailView({
 
   return (
     <div className="flex flex-col gap-5">
+      <UnsavedChangesPrompt
+        dirty={dirty && !saving && !deleting}
+        title="Le classement n'est pas enregistré"
+        saveLabel="Enregistrer"
+        onSave={(next) => save(next)}
+      />
       <SetCrumb label={documentName(doc)} />
       <PageHeader
         title={documentName(doc)}

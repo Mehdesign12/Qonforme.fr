@@ -8,7 +8,7 @@
  * vérifications à droite sur ordinateur, barre d'enregistrement collée en bas
  * sur mobile. La page fournit `onSubmit` (API réelle, ou invitation en démo).
  */
-import { useState } from "react"
+import { useRef, useState } from "react"
 import Link from "next/link"
 import { Check, CircleCheck, Info, Loader2, Search, TriangleAlert } from "lucide-react"
 import { PageHeader } from "@/components/app/kit"
@@ -18,6 +18,7 @@ import { isValidSiren } from "@/lib/utils/invoice"
 import { cn } from "@/lib/utils"
 import { formatSirenDisplay } from "./client-data"
 import { lookupCompany, type CompanyLookup } from "./lookup"
+import { useUnsavedChanges } from "@/components/shared/UnsavedChangesGuard"
 
 export interface ClientFormValues {
   name: string
@@ -72,6 +73,7 @@ export function ClientFormPage({
   submitLabel,
   mobileSubmitLabel,
   onSubmit,
+  embedded,
 }: {
   mode: "create" | "edit"
   initial?: Partial<ClientFormValues>
@@ -84,8 +86,18 @@ export function ClientFormPage({
   cancelHref: string
   submitLabel: string
   mobileSubmitLabel?: string
-  /** Enregistre (ou invite à créer un compte en démo) ; gère la suite (toast, navigation). */
-  onSubmit: (payload: ClientPayload) => Promise<void> | void
+  /**
+   * Enregistre (ou invite à créer un compte en démo) ; gère la suite (toast,
+   * navigation). `next` : adresse demandée depuis la fenêtre « … n'est pas
+   * enregistré » (y aller après l'enregistrement plutôt qu'à la page habituelle).
+   */
+  onSubmit: (payload: ClientPayload, next?: string) => Promise<void> | void
+  /**
+   * Formulaire posé dans une fenêtre (création d'un client depuis un devis, une
+   * facture ou un bon de commande) : ni en-tête de page, ni colonne des
+   * vérifications, ni barre collée en bas ; boutons à la suite du formulaire.
+   */
+  embedded?: { onCancel: () => void }
 }) {
   const start = { ...EMPTY, ...initial }
   const [kind, setKind] = useState<Kind>("pro")
@@ -95,7 +107,19 @@ export function ClientFormPage({
   const [lookupQuery, setLookupQuery] = useState("")
   const [lookup, setLookup] = useState<LookupState>({ status: "idle" })
   const isPro = kind === "pro"
-  const formId = mode === "create" ? "client-create" : "client-edit"
+  const formId = embedded ? "client-dialog" : mode === "create" ? "client-create" : "client-edit"
+
+  // Fiche modifiée et pas encore enregistrée : fenêtre avant de quitter la page
+  // (pas dans une fenêtre : elle a sa propre fermeture)
+  const nextAfterSave = useRef<string | undefined>(undefined)
+  const formRef = useRef<HTMLFormElement>(null)
+  const dirty = !embedded && !submitting && (JSON.stringify(fields) !== JSON.stringify(start) || Boolean(lookupQuery.trim()))
+  const { guard } = useUnsavedChanges({
+    dirty,
+    title: mode === "create" ? "Ce client n'est pas enregistré" : "Vos modifications ne sont pas enregistrées",
+    saveLabel: mode === "create" ? "Enregistrer le client" : "Enregistrer",
+    onSave: (next) => { nextAfterSave.current = next; formRef.current?.requestSubmit() },
+  })
 
   const clearError = (key: keyof ClientFormValues) =>
     setErrors((prev) => {
@@ -172,6 +196,8 @@ export function ClientFormPage({
       return
     }
     const clean = (v: string) => v.trim() || null
+    const next = nextAfterSave.current
+    nextAfterSave.current = undefined
     setSubmitting(true)
     try {
       await onSubmit({
@@ -184,7 +210,7 @@ export function ClientFormPage({
         zip_code: clean(fields.zip_code),
         city: clean(fields.city),
         country,
-      })
+      }, next)
     } finally {
       setSubmitting(false)
     }
@@ -256,8 +282,9 @@ export function ClientFormPage({
   const sectionTitle = (text: string) => <h2 className="q-h2 hidden md:block">{text}</h2>
 
   return (
-    <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-[18px]">
-      <PageHeader
+    <form ref={formRef} id={formId} onSubmit={submit} noValidate className="flex flex-col gap-[18px]">
+      {guard}
+      {!embedded && <PageHeader
         title={title}
         // Le SIREN ne concerne que les professionnels : pas de sous-titre sur l'onglet Particulier
         subtitle={isPro ? subtitle : undefined}
@@ -273,14 +300,14 @@ export function ClientFormPage({
             </button>
           </div>
         }
-      />
+      />}
 
       {/* Type de client, en tête sur mobile */}
       <div role="group" aria-label="Type de client" className="flex gap-1 rounded-[14px] bg-[var(--q-sunken)] p-1 md:hidden">
         {kindButtons("mobile")}
       </div>
 
-      <div className="grid items-start gap-4 lg:gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className={cn("grid items-start gap-4 lg:gap-5", !embedded && "xl:grid-cols-[minmax(0,1fr)_380px]")}>
         <div className="flex min-w-0 flex-col gap-4">
           {/* Recherche Sirene */}
           <section
@@ -393,7 +420,7 @@ export function ClientFormPage({
         </div>
 
         {/* Vérifications (ordinateur) */}
-        <aside className="hidden min-w-0 flex-col gap-4 lg:flex">
+        <aside className={cn("hidden min-w-0 flex-col gap-4", !embedded && "lg:flex")}>
           <section aria-label="Vérifications" className="q-card flex flex-col gap-3 p-[18px]">
             <div className="flex items-center justify-between gap-2">
               <h2 className="q-h2">Vérifications</h2>
@@ -420,6 +447,15 @@ export function ClientFormPage({
         </aside>
       </div>
 
+      {embedded ? (
+        <div className="flex flex-col-reverse gap-2 border-t border-[var(--q-line-soft)] pt-4 sm:flex-row sm:justify-end [&>.q-btn]:max-md:h-12">
+          <button type="button" onClick={embedded.onCancel} disabled={submitting} className="q-btn q-btn-ghost">Annuler</button>
+          <button type="submit" className="q-btn q-btn-primary" disabled={submitting}>
+            {submitting ? <Loader2 className="animate-spin" aria-hidden /> : <Check strokeWidth={2.5} aria-hidden />}
+            {submitLabel}
+          </button>
+        </div>
+      ) : (<>
       {/* Barre d'enregistrement mobile, au-dessus de la barre de navigation */}
       <div aria-hidden className="h-[84px] md:hidden" />
       <div className="fixed inset-x-3 bottom-[calc(96px+env(safe-area-inset-bottom))] z-30 rounded-3xl border border-[var(--q-line)] bg-[var(--q-surface)] p-3 shadow-[shadow:var(--q-shadow-float)] md:hidden">
@@ -428,6 +464,7 @@ export function ClientFormPage({
           {mobileSubmitLabel ?? submitLabel}
         </button>
       </div>
+      </>)}
     </form>
   )
 }

@@ -9,6 +9,7 @@
  * (analyse dans le navigateur avec les mêmes lecteurs, rien n'est enregistré).
  */
 import { useCallback, useEffect, useId, useRef, useState } from "react"
+import { useUnsavedChanges } from "@/components/shared/UnsavedChangesGuard"
 import Link from "next/link"
 import { FileUp, Info, Loader2, RotateCcw, Save, Sparkles, XCircle } from "lucide-react"
 import { PictoCluster } from "@/components/brand/PictoCluster"
@@ -98,6 +99,9 @@ export function ImportView({ backHref, analyze, save, onSaved, duplicateHref, sa
     }
   }, [analyze])
 
+  // Fichier choisi, pas encore enregistré : fenêtre avant de quitter la page
+  const { guard } = useUnsavedChanges({ dirty: Boolean(file) && busy !== "save", title: "Cette facture n'est pas enregistrée" })
+
   const reset = () => {
     setFile(null); setResult(null); setSaveError(null); setManual(EMPTY_MANUAL)
     if (inputRef.current) inputRef.current.value = ""
@@ -142,6 +146,7 @@ export function ImportView({ backHref, analyze, save, onSaved, duplicateHref, sa
 
   return (
     <div className="flex flex-col gap-5">
+      {guard}
       <PageHeader
         title="Importer une facture"
         subtitle="Factur-X, XML (CII ou UBL 2.1) ou PDF · 4 Mo au maximum"

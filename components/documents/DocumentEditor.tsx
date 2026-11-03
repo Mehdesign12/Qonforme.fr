@@ -12,7 +12,7 @@
  * Purement présentationnel : chaque formulaire fournit l'état (useDocumentForm)
  * et ses actions (API réelles, ou toasts en démo).
  */
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Eye, Loader2, Plus, Send } from "lucide-react"
 import { PageHeader } from "@/components/app/kit"
@@ -25,11 +25,25 @@ import { LinesEditor } from "./LinesEditor"
 import { LivePreview } from "./LivePreview"
 import { ReadyBanner, ReadyChecklist } from "./ReadyChecklist"
 import { ReverseChargeCard } from "./ReverseChargeCard"
-import { DOC_TEXT, buildChecks, daysBetween, type DocClient, type DocCompany, type DocKind } from "./model"
+import { DOC_TEXT, buildChecks, daysBetween, hasEnteredContent, type DocClient, type DocCompany, type DocKind } from "./model"
 import type { DocumentFormApi } from "./useDocumentForm"
+import { NewClientDialog } from "./NewClientDialog"
+import { useUnsavedChanges } from "@/components/shared/UnsavedChangesGuard"
+
+/** Titre de la fenêtre « non enregistré », selon le document. */
+const UNSAVED_TITLE: Record<DocKind, string> = {
+  quote: "Ce devis n'est pas enregistré",
+  invoice: "Cette facture n'est pas enregistrée",
+  purchase_order: "Ce bon de commande n'est pas enregistré",
+}
 
 export interface EditorActions {
-  onSaveDraft: () => void
+  /**
+   * Enregistre le brouillon. `next` : adresse demandée depuis la fenêtre
+   * « … n'est pas enregistré » ; y aller après l'enregistrement plutôt qu'à la
+   * fiche du document.
+   */
+  onSaveDraft: (next?: string) => void | Promise<unknown>
   onSend: () => void
   /** Facture seulement : aperçu PDF filigrané, sans écriture (POST /api/invoices/preview-pdf). */
   onPreviewPdf?: () => void
@@ -59,7 +73,13 @@ export function DocumentEditor({
   banners,
   actions,
   reverseCharge,
+  onClientCreated,
 }: {
+  /**
+   * Création d'un client sans quitter le document (fenêtre par-dessus) ; le
+   * client créé est sélectionné. Absent (démo) : lien vers la page client.
+   */
+  onClientCreated?: (client: DocClient) => void
   /** Facture, devis : case « sous-traitance, autoliquidation » (formule Artisan). Absente : pas de case. */
   reverseCharge?: { locked: boolean; onLocked: () => void }
   kind: DocKind
@@ -87,6 +107,19 @@ export function DocumentEditor({
   const saveLabel = actions.saveLabel ?? "Enregistrer le brouillon"
   const sendLabel = actions.sendLabel ?? text.sendLabel
   const busy = actions.saving || actions.sending
+
+  // Modifications non enregistrées : fenêtre avant de quitter la page, avertissement à la fermeture de l'onglet
+  const { guard } = useUnsavedChanges({
+    dirty: doc.dirty && hasEnteredContent(form) && !busy,
+    title: actions.cancelHref ? "Vos modifications ne sont pas enregistrées" : UNSAVED_TITLE[kind],
+    saveLabel,
+    onSave: (next) => actions.onSaveDraft(next),
+  })
+  const [newClientOpen, setNewClientOpen] = useState(false)
+  const createdClient = (c: DocClient) => {
+    onClientCreated?.(c)
+    doc.setValue("client_id", c.id)
+  }
 
   // Mobile : le bouton central de la barre de navigation devient « Envoyer »
   const label = client ? `Envoyer à ${client.name}` : "Envoyer"
@@ -123,7 +156,7 @@ export function DocumentEditor({
             {actions.cancelHref && (
               <Link href={actions.cancelHref} className="q-btn q-btn-ghost">Annuler</Link>
             )}
-            <button type="button" onClick={actions.onSaveDraft} disabled={busy} className="q-btn q-btn-secondary">
+            <button type="button" onClick={() => actions.onSaveDraft()} disabled={busy} className="q-btn q-btn-secondary">
               {actions.saving && <Loader2 className="animate-spin" aria-hidden />}
               {saveLabel}
             </button>
@@ -142,7 +175,7 @@ export function DocumentEditor({
         <div className="flex min-w-0 flex-col gap-4">
           {/* Mobile : total et enregistrement en tête (la barre du bas ne garde que « Envoyer ») */}
           <div className="flex items-end justify-between gap-3 lg:hidden">
-            <button type="button" onClick={actions.onSaveDraft} disabled={busy} className="q-btn q-btn-secondary q-btn-sm">
+            <button type="button" onClick={() => actions.onSaveDraft()} disabled={busy} className="q-btn q-btn-secondary q-btn-sm">
               {actions.saving && <Loader2 className="animate-spin" aria-hidden />}
               {saveLabel}
             </button>
@@ -159,6 +192,7 @@ export function DocumentEditor({
             clientsLoading={clientsLoading}
             client={client}
             newClientHref={newClientHref}
+            onNewClient={onClientCreated ? () => setNewClientOpen(true) : undefined}
             clientHref={clientHref}
           />
 
@@ -191,13 +225,17 @@ export function DocumentEditor({
               {actions.sending ? <Loader2 className="animate-spin" aria-hidden /> : <Send aria-hidden strokeWidth={2} />}
               <span className="truncate">{client ? `${sendLabel} à ${client.name}` : sendLabel}</span>
             </button>
-            <button type="button" onClick={actions.onSaveDraft} disabled={busy} className="q-btn q-btn-ghost self-center !text-[var(--q-accent-strong)]">
+            <button type="button" onClick={() => actions.onSaveDraft()} disabled={busy} className="q-btn q-btn-ghost self-center !text-[var(--q-accent-strong)]">
               {saveLabel}
             </button>
           </div>
         </aside>
       </div>
 
+      {guard}
+      {onClientCreated && (
+        <NewClientDialog open={newClientOpen} onOpenChange={setNewClientOpen} onCreated={createdClient} />
+      )}
     </div>
   )
 }
@@ -213,6 +251,7 @@ function ClientCard({
   clientsLoading,
   client,
   newClientHref,
+  onNewClient,
   clientHref,
 }: {
   kind: DocKind
@@ -221,6 +260,8 @@ function ClientCard({
   clientsLoading: boolean
   client: DocClient | null
   newClientHref: string
+  /** Ouvre la fenêtre « Nouveau client » (sinon : lien vers la page client). */
+  onNewClient?: () => void
   clientHref?: (id: string) => string
 }) {
   const { form, errors } = doc
@@ -229,12 +270,17 @@ function ClientCard({
     <section className="flex flex-col gap-2.5 md:q-card md:gap-3.5 md:p-5" aria-labelledby="doc-client-title">
       <div className="flex items-center justify-between gap-3">
         <h2 id="doc-client-title" className="q-h2">{kind === "quote" ? "Pour qui ?" : "Client"}</h2>
-        {clients.length > 0 && (
+        {clients.length > 0 && (onNewClient ? (
+          <button type="button" onClick={onNewClient} className="q-link inline-flex items-center gap-1.5 text-[13px]">
+            <Plus className="size-3.5" strokeWidth={2.25} aria-hidden />
+            Nouveau client
+          </button>
+        ) : (
           <Link href={newClientHref} className="q-link inline-flex items-center gap-1.5 text-[13px]">
             <Plus className="size-3.5" strokeWidth={2.25} aria-hidden />
             Nouveau client
           </Link>
-        )}
+        ))}
       </div>
 
       {clientsLoading ? (
@@ -246,10 +292,17 @@ function ClientCard({
       ) : clients.length === 0 ? (
         <div className="q-banner q-banner-warn items-center">
           <span className="flex-1">Aucun client pour l&apos;instant. Créez-en un pour l&apos;ajouter au document.</span>
-          <Link href={newClientHref} className="q-btn q-btn-secondary q-btn-sm shrink-0">
-            <Plus aria-hidden strokeWidth={2.25} />
-            Créer un client
-          </Link>
+          {onNewClient ? (
+            <button type="button" onClick={onNewClient} className="q-btn q-btn-secondary q-btn-sm shrink-0">
+              <Plus aria-hidden strokeWidth={2.25} />
+              Créer un client
+            </button>
+          ) : (
+            <Link href={newClientHref} className="q-btn q-btn-secondary q-btn-sm shrink-0">
+              <Plus aria-hidden strokeWidth={2.25} />
+              Créer un client
+            </Link>
+          )}
         </div>
       ) : (
         <ClientPicker
@@ -257,6 +310,7 @@ function ClientCard({
           value={form.client_id}
           onChange={(id) => doc.setValue("client_id", id)}
           newClientHref={newClientHref}
+          onNewClient={onNewClient}
           invalid={Boolean(errors.client_id)}
           describedBy={errors.client_id ? "doc-client-error" : undefined}
         />
