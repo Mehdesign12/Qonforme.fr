@@ -16,6 +16,7 @@ import { TRADE_LABELS, type TradeId } from "@/lib/blog-images/trades"
 import type { BrandSettings, StrategySettings } from "@/lib/seo/settings"
 import type { ArticleType } from "@/lib/seo/types"
 import { IDEA_DEFAULT_COUNT, IDEA_MAX_COUNT, type IdeaRequest } from "@/lib/seo/ideas/types"
+import { PLATFORM_SENDING_LIVE } from "@/lib/pa/sending"
 
 /** Phrases proposées par le modèle : le double de ce qui est montré, pour que le contrôle en laisse assez. */
 export function requestedCandidates(count: number): number {
@@ -38,7 +39,8 @@ export const SEARCHER_SITUATIONS = [
 
 /** Ce que Qonforme ne fait pas encore : aucun sujet ne doit le promettre. */
 const NOT_AVAILABLE = [
-  "l'envoi des factures des artisans à leurs clients par une plateforme agréée (prévu pour 2027 ; la réception des factures fournisseurs par Super PDP, avec Essentiel, existe déjà)",
+  // Émission par la plateforme : retirée de la liste dès l'ouverture en production (lib/pa/sending.ts)
+  ...(PLATFORM_SENDING_LIVE ? [] : ["l'envoi des factures des artisans à leurs clients par une plateforme agréée (prévu pour 2027 ; la réception des factures fournisseurs par Super PDP, avec Essentiel, existe déjà)"]),
   "une application à télécharger dans les stores (le site s'installe sur l'écran d'accueil)",
   "tout contact humain : appel, rendez-vous, visio, réponse personnalisée",
   "le nom d'un autre logiciel, éditeur ou marque (aucun comparatif nommé)",

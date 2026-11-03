@@ -9,7 +9,7 @@
  * Ne dit que ce qui est vrai : « Inclus dans Essentiel, sans frais en plus »
  * (Super PDP ne facture que l'éditeur), aucun délai promis sauf les 5 jours du
  * transfert d'adresse (documentation Super PDP, « Annuaire »), l'émission par la
- * plateforme reste prévue pour 2027. Les écrans de Super PDP ne sont pas décrits
+ * plateforme suit lib/pa/sending.ts (bac à sable, puis production). Les écrans de Super PDP ne sont pas décrits
  * en détail : ils sont les siens et peuvent changer.
  */
 import { useState } from "react"
@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils"
 import { SUPERPDP_LABEL, SUPERPDP_SITE } from "@/lib/pa/superpdp/config"
 import { PA_STATUS_TONE } from "@/lib/pa/status"
 import type { EInvoicingView } from "@/lib/pa/view"
+import { platformSendingOpenFor } from "@/lib/pa/sending"
 import {
   CopyButton, Facts, fmtDay, fmtDayTime, ProgressRow, ReformTimeline, Responsibilities, Stepper, TwoVoice, type CheckTone,
 } from "@/components/e-invoicing/parts"
@@ -218,7 +219,7 @@ function BeforeView({ view, hrefs, onBack }: { view: EInvoicingView; hrefs: HubH
             <h2 className="q-h2">Ce que Qonforme ne fera pas</h2>
             <ul className="mt-3 flex flex-col gap-2 text-sm leading-relaxed text-[var(--q-text-2)]">
               <li>Payer une facture à votre place.</li>
-              <li>Envoyer vos factures par la plateforme : l&apos;émission est prévue pour 2027.</li>
+              {!platformSendingOpenFor(view.mode) && <li>Envoyer vos factures par la plateforme : l&apos;émission est prévue pour 2027.</li>}
               <li>Modifier ou supprimer une facture reçue.</li>
             </ul>
           </section>
@@ -511,8 +512,9 @@ ${company}`
           <section className="q-card flex flex-col gap-2.5 p-5">
             <h2 className="q-h2">Et pour vos ventes ?</h2>
             <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
-              L&apos;envoi de vos factures par la plateforme est prévu pour 2027. D&apos;ici là, vos factures partent par
-              email, comme aujourd&apos;hui.
+              {platformSendingOpenFor(view.mode)
+                ? <>À l&apos;envoi d&apos;une facture, Qonforme vous propose la plateforme agréée quand votre client professionnel est inscrit à l&apos;annuaire ; ses avoirs suivent le même chemin et l&apos;encaissement est déclaré quand vous la marquez payée. Les autres clients reçoivent leur facture par email.</>
+                : <>L&apos;envoi de vos factures par la plateforme est prévu pour 2027. D&apos;ici là, vos factures partent par email, comme aujourd&apos;hui.</>}
             </p>
           </section>
           <p className="text-[13px] text-[var(--q-text-4)]">{INCLUDED}. <Link href={hrefs.settings} className="q-link">Notifications et réglages</Link></p>

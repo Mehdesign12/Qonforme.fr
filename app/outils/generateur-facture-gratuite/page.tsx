@@ -2,6 +2,7 @@ import { FileText } from "lucide-react"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { JsonLd, Prose, ToolArea, ToolCta, ToolFaq, ToolGuide, ToolLinks, ToolShell, faqJsonLd, toolJsonLd } from "@/components/outils/kit"
 import { DocumentGenerator } from "@/components/outils/doc-generator"
+import { SENDING_CLAUSE } from "@/lib/pa/sending"
 
 const FAQ = [
   { q: "Cette facture est-elle une facture électronique ?", a: "Non, c'est un PDF simple. Il convient tant que la facturation électronique ne vous est pas imposée : toute entreprise doit pouvoir en recevoir depuis le 1er septembre 2026, et les TPE et PME devront en émettre à partir du 1er septembre 2027, par une plateforme agréée." },
@@ -26,7 +27,7 @@ export default function GenerateurFacturePage() {
 
         <ToolCta
           title="Ce PDF n'est pas une facture électronique"
-          text="Avec Qonforme, vos factures PDF partent avec leurs données Factur-X, se créent en un clic depuis un devis accepté et sont numérotées à la suite. Avec Essentiel, vos factures fournisseurs arrivent par la plateforme agréée Super PDP ; l'envoi de vos factures par la plateforme est prévu pour 2027."
+          text={`Avec Qonforme, vos factures PDF partent avec leurs données Factur-X, se créent en un clic depuis un devis accepté et sont numérotées à la suite. Avec Essentiel, vos factures fournisseurs arrivent par la plateforme agréée Super PDP ; ${SENDING_CLAUSE}.`}
           cta="Créer mon compte"
         />
       </ToolArea>

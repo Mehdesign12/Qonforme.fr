@@ -430,6 +430,11 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       if (!res.ok) { toast.error(json.error); return false }
       setInvoice(prev => mergeInvoice(prev, json.invoice))
       toast.success(`Statut mis à jour : ${STATUS_LABELS[newStatus] ?? newStatus}`)
+      // Facture transmise par la plateforme : l'encaissement lui est déclaré (fr:212)
+      const pp = json.platformPayment as { state?: string; error?: string } | undefined
+      if (pp?.state === "reported") toast.success("Encaissement déclaré à la plateforme agréée.")
+      else if (pp?.state === "failed" && pp.error) toast.info(pp.error)
+      if (pp) void loadPlatform()
       return true
     } catch { toast.error("Erreur réseau"); return false }
     finally { setStatusLoading(false) }
@@ -685,6 +690,11 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             <p className="q-field-hint leading-relaxed">
               Le jour où l&apos;argent est arrivé sur votre compte. Il compte dans l&apos;« encaissé » du tableau de bord.
             </p>
+            {platform?.phase === "sent" && !platform.paymentReportedAt && (
+              <p className="q-field-hint leading-relaxed">
+                Cette facture est passée par la plateforme agréée : l&apos;encaissement lui sera déclaré.
+              </p>
+            )}
           </div>
           <DialogFoot>
             <Button variant="ghost" onClick={() => setPaidDialog(false)} disabled={statusLoading}>Annuler</Button>

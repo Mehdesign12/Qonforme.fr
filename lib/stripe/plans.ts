@@ -1,3 +1,4 @@
+import { PLATFORM_SENDING_LIVE, SENDING_FEATURE, SENDING_UPCOMING } from "@/lib/pa/sending"
 /**
  * Formules tarifaires Qonforme — grille du 19/10/2026 (DECISIONS-STRATEGIQUES.md
  * § 14) : Essentiel 24 €/mois ou 240 €/an, Artisan 34 €/mois ou 340 €/an.
@@ -152,10 +153,10 @@ export const PLANS: Record<PlanId, Plan> = {
       'Réception des factures fournisseurs par la plateforme agréée Super PDP',
       // Migrations 20261003 et 20261010 appliquées en production (confirmé par le fondateur le 30/10/2026)
       'Signature en ligne des devis et bons de commande',
+      // Émission par la plateforme : « à venir » tant que la production n'est pas ouverte (lib/pa/sending.ts)
+      ...(PLATFORM_SENDING_LIVE ? [SENDING_FEATURE] : []),
     ],
-    upcoming: [
-      'Envoi de vos factures à vos clients par la plateforme agréée, prévu pour 2027',
-    ],
+    upcoming: PLATFORM_SENDING_LIVE ? [] : [SENDING_UPCOMING],
     stripePriceIds: {
       monthly: process.env.STRIPE_PRICE_ESSENTIEL_MONTHLY ?? '',
       yearly: process.env.STRIPE_PRICE_ESSENTIEL_YEARLY ?? '',

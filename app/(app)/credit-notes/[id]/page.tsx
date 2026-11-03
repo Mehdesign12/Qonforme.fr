@@ -3,13 +3,13 @@
 export const dynamic = "force-dynamic"
 
 import { downloadPdf, PdfDownloadError } from "@/lib/utils/download-pdf"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { EmptyState } from "@/components/app/kit"
 import { createClient } from "@/lib/supabase/client"
-import { CreditNoteDetailView, type CreditNoteDetailData } from "@/components/credit-notes/CreditNoteDetailView"
+import { CreditNoteDetailView, type CreditNoteDetailData, type CreditNotePlatform, type CreditNoteSendChoice } from "@/components/credit-notes/CreditNoteDetailView"
 import type { PaperParty } from "@/components/purchase-orders/detail-bits"
 
 interface ApiCreditNote {
@@ -72,6 +72,16 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
   const [loading, setLoading] = useState(true)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [sendLoading, setSendLoading] = useState(false)
+  const [platform, setPlatform] = useState<CreditNotePlatform | null>(null)
+
+  // Envoi par la plateforme agréée (l'avoir suit le chemin de sa facture) ; panne : email seul
+  const loadPlatform = useCallback(() => {
+    fetch(`/api/credit-notes/${params.id}/delivery`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => { if (json?.platform) setPlatform({ ...json.platform, outbound: json.outbound ?? null }) })
+      .catch(() => {})
+  }, [params.id])
+  useEffect(() => { loadPlatform() }, [loadPlatform])
 
   useEffect(() => {
     const supabase = createClient()
@@ -95,15 +105,27 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
     finally { setPdfLoading(false) }
   }
 
-  const sendByEmail = async (): Promise<boolean> => {
+  const sendByEmail = async (choice: CreditNoteSendChoice): Promise<boolean> => {
     if (!note) return false
     setSendLoading(true)
     try {
-      const res  = await fetch(`/api/credit-notes/${params.id}/send`, { method: "POST" })
+      const res  = await fetch(`/api/credit-notes/${params.id}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(choice),
+      })
       const json = await res.json()
-      if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return false }
-      toast.success(`Avoir envoyé à ${json.sentTo}`)
-      setNote(prev => prev ? { ...prev, sent_at: new Date().toISOString() } : prev)
+      if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); if (choice.channel === "platform") loadPlatform(); return false }
+      toast.success(json.channel === "platform"
+        ? `Avoir transmis par la plateforme agréée (${json.sentTo})`
+        : `Avoir envoyé à ${json.sentTo}`)
+      setNote(prev => prev ? {
+        ...prev,
+        sent_at: new Date().toISOString(),
+        // Adresse tapée dans la fenêtre : désormais sur la fiche du client
+        client: prev.client && !prev.client.email && choice.channel === "email" ? { ...prev.client, email: json.sentTo } : prev.client,
+      } : prev)
+      if (json.channel === "platform") loadPlatform()
       return true
     } catch { toast.error("Erreur réseau"); return false }
     finally { setSendLoading(false) }
@@ -131,6 +153,7 @@ export default function CreditNoteDetailPage({ params }: { params: { id: string 
       company={company}
       listHref="/credit-notes"
       companySettingsHref="/settings/company"
+      platform={platform}
       actions={{ onDownloadPdf: downloadPDF, onSend: sendByEmail, busy: { pdf: pdfLoading, send: sendLoading } }}
     />
   )
