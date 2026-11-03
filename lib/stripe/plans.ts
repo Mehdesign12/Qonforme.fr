@@ -154,7 +154,7 @@ export const PLANS: Record<PlanId, Plan> = {
       'Signature en ligne des devis et bons de commande',
     ],
     upcoming: [
-      'Émission via plateforme agréée',
+      'Envoi de vos factures à vos clients par la plateforme agréée, prévu pour 2027',
     ],
     stripePriceIds: {
       monthly: process.env.STRIPE_PRICE_ESSENTIEL_MONTHLY ?? '',
