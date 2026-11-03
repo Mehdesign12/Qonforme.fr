@@ -409,3 +409,18 @@ describe("bandeau de cookies", () => {
     expect(JSON.parse(window.localStorage.getItem("qonforme-cookie-consent")!).choice).toBe("refused")
   })
 })
+
+describe("bandeau et autres fenêtres", () => {
+  it("s'efface quand une fenêtre ou une feuille du site est ouverte, pas pour sa propre fenêtre", async () => {
+    const { otherModalOpen } = await import("@/components/consent/CookieBanner")
+    const root = document.createElement("div")
+    root.innerHTML = '<div role="dialog" aria-label="Cookies"></div>'
+    expect(otherModalOpen(root)).toBe(false)
+    root.innerHTML = '<div role="dialog" data-open="" data-cookie-details=""></div>'
+    expect(otherModalOpen(root)).toBe(false)
+    root.innerHTML = '<div role="dialog" data-open=""></div>'
+    expect(otherModalOpen(root)).toBe(true)
+    root.innerHTML = '<div role="dialog" data-closed=""></div>'
+    expect(otherModalOpen(root)).toBe(false)
+  })
+})

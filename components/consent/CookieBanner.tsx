@@ -42,6 +42,7 @@ export function CookieBanner() {
   const [shown, setShown] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const card = useRef<HTMLDivElement>(null)
+  const coveredByModal = useOtherModalOpen(rendered)
 
   useEffect(() => {
     const id = window.setTimeout(() => setReady(true), APPEARANCE_DELAY_MS)
@@ -103,6 +104,8 @@ export function CookieBanner() {
             hasBottomNav && "max-md:bottom-[calc(env(safe-area-inset-bottom,0px)_+_5rem)]",
             // La fenêtre « En savoir + » passe devant : le bandeau s'efface derrière elle (il reste monté pour rendre le focus)
             detailsOpen && "opacity-0",
+            // Une autre fenêtre ou feuille est ouverte : le bandeau (au-dessus de la barre du bas) lui cacherait ses boutons
+            coveredByModal && "invisible opacity-0",
           )}
         >
           <div
@@ -148,4 +151,27 @@ export function CookieBanner() {
       <CookieDetails open={detailsOpen} onOpenChange={setDetailsOpen} onChoose={choose} />
     </>
   )
+}
+
+/**
+ * Une fenêtre ou une feuille du site (Base UI, `role="dialog"` ouvert) est-elle
+ * affichée ? Le bandeau reste au-dessus de la barre du bas mobile, donc
+ * au-dessus des feuilles aussi : il s'efface le temps qu'elles sont ouvertes,
+ * puis revient, choix toujours à faire.
+ */
+export function otherModalOpen(root: ParentNode): boolean {
+  return root.querySelector('[role="dialog"][data-open]:not([data-cookie-details]), [role="alertdialog"][data-open]') !== null
+}
+
+function useOtherModalOpen(active: boolean): boolean {
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    if (!active) { setOpen(false); return }
+    const update = () => setOpen(otherModalOpen(document.body))
+    update()
+    const observer = new MutationObserver(update)
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-open"] })
+    return () => observer.disconnect()
+  }, [active])
+  return open
 }
