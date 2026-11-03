@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { statusAfterSend } from "@/lib/utils/document-status"
 import { sendEmail } from "@/lib/email/resend"
+import { resolveRecipient } from "@/lib/email/recipient"
 import { buildPurchaseOrderEmail } from "@/lib/email/templates/purchase-order"
 import { generatePurchaseOrderPdf } from "@/lib/pdf/purchase-order"
 import { markShareLinkSent, shareLinkForEmail } from "@/lib/signature/share"
@@ -12,7 +13,7 @@ type Params = { params: Promise<{ id: string }> }
 
 export const maxDuration = 30
 
-export async function POST(_req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, { params }: Params) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -33,8 +34,11 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const noIdentity = await requireIssuerIdentity(supabase, user.id)
     if (noIdentity) return noIdentity
 
-    const clientEmail = po.client?.email
-    if (!clientEmail) return NextResponse.json({ error: "Le client n'a pas d'adresse email" }, { status: 422 })
+    // Client sans adresse : celle tapée dans la fenêtre d'envoi est enregistrée sur sa fiche
+    const recipient = await resolveRecipient(req, supabase, user.id, po.client)
+    if ("response" in recipient) return recipient.response
+    const clientEmail = recipient.email
+    if (po.client) po.client = { ...po.client, email: clientEmail }
 
     // 2. Données entreprise
     // Profil légal compris (mentions automatiques d'un brouillon), s'il existe déjà en base

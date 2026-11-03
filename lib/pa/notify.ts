@@ -7,7 +7,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { sendEmail } from "@/lib/email/resend"
 import { fmtEur } from "@/lib/email/templates/base"
-import { buildReceivedDigestEmail, buildReceptionActiveEmail, buildSyncFailureEmail } from "@/lib/email/templates/e-invoicing"
+import { buildOutboundAlertEmail, buildReceivedDigestEmail, buildReceptionActiveEmail, buildSyncFailureEmail, type OutboundAlertKind } from "@/lib/email/templates/e-invoicing"
+import { latestOfficial, type OutboundRow } from "@/lib/pa/outbound"
 import { RECEIVED_TABLE } from "@/lib/reception/server"
 import { updateConnection, type ConnectionRow } from "@/lib/pa/store"
 import type { PaStatus } from "@/lib/pa/status"
@@ -116,4 +117,34 @@ export async function runDigest(admin: SupabaseClient, row: ConnectionRow, now =
     row.pending_digest_count = 0
   }
   return ok
+}
+
+const APP = (process.env.NEXT_PUBLIC_APP_URL ?? "https://qonforme.fr").replace(/\/+$/, "")
+
+/** Alerte à donner pour un envoi qui vient de changer, ou null (statuts ordinaires : rien). */
+export function outboundAlertOf(row: Pick<OutboundRow, "phase" | "events" | "last_status_code">): { kind: OutboundAlertKind; reason: string | null } | null {
+  if (row.phase === "rejected") {
+    const ev = [...(row.events ?? [])].reverse().find((e) => ["fr:213", "fr:501", "api:invalid", "api:rejected"].includes(e.code))
+    return { kind: "rejected", reason: ev?.reason ?? ev?.text ?? null }
+  }
+  const last = latestOfficial(row.events ?? [])
+  if (last?.code === "fr:210") return { kind: "refused", reason: last.reason ?? null }
+  if (last?.code === "fr:207") return { kind: "disputed", reason: last.reason ?? null }
+  return null
+}
+
+/**
+ * Prévient l'artisan quand une facture envoyée par la plateforme est refusée, mise
+ * en litige ou rejetée (relève des statuts). Réglage « Alerter si la relève échoue »
+ * : désactivé, rien ne part. Un échec d'envoi n'arrête jamais la relève.
+ */
+export async function notifyOutboundChanges(admin: SupabaseClient, row: ConnectionRow, changed: readonly OutboundRow[]): Promise<void> {
+  if (!row.notify_failure || changed.length === 0) return
+  const to = await recipient(admin, row)
+  if (!to) return
+  for (const ob of changed) {
+    const alert = outboundAlertOf(ob)
+    if (!alert || ob.document_type !== "invoice") continue
+    await send(to.email, buildOutboundAlertEmail({ kind: alert.kind, number: ob.document_number, reason: alert.reason, invoiceUrl: `${APP}/invoices/${ob.document_id}` }))
+  }
 }

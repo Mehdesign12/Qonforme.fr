@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic"
 
 import { downloadPdf, PdfDownloadError } from "@/lib/utils/download-pdf"
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import { toastCompanyRequired } from "@/components/shared/company-required"
@@ -81,6 +81,8 @@ const STATUS_LABELS: Record<QuoteStatus, string> = {
 
 export default function QuoteDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  // Arrivée depuis l'éditeur, client sans email : la fenêtre d'envoi s'ouvre et demande l'adresse
+  const sendRequested = useSearchParams().get("send") === "1"
   const [today] = useState(todayISO)
   const [quote, setQuote]     = useState<Quote | null>(null)
   const [company, setCompany] = useState<QuoteDetailCompany | null>(null)
@@ -173,11 +175,15 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
   }
 
   // Envoi (brouillon) ou renvoi (devis déjà envoyé) : la route ne change pas un statut accepté ou refusé
-  const sendByEmail = async (): Promise<boolean> => {
+  const sendByEmail = async (email?: string): Promise<boolean> => {
     if (!quote) return false
     setFlag("send", true)
     try {
-      const res  = await fetch(`/api/quotes/${params.id}/send`, { method: "POST" })
+      const res  = await fetch(`/api/quotes/${params.id}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(email ? { email } : {}),
+      })
       const json = await res.json()
       if (toastCompanyRequired(res.status, json)) return false
       if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return false }
@@ -185,6 +191,8 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
         ...quote,
         status: quote.status === "draft" ? "sent" : quote.status,
         sent_at: new Date().toISOString(),
+        // Adresse tapée dans la fenêtre : désormais sur la fiche du client
+        client: quote.client && !quote.client.email && json.sentTo ? { ...quote.client, email: json.sentTo } : quote.client,
         // Un brouillon envoyé a désormais ses mentions figées (relues au prochain chargement)
         legal_snapshot: quote.legal_snapshot ?? (quote.status === "draft" ? snapshotOf(company) : undefined),
       })
@@ -333,6 +341,8 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
     <PaywallDialog open={sig.paywall} onOpenChange={sig.setPaywall} reason="signature" nextPath={`/quotes/${params.id}`} />
     <PaywallDialog open={artisan.paywall} onOpenChange={artisan.setPaywall} reason="artisan" nextPath={`/quotes/${params.id}`} />
     <QuoteDetailView
+      openSend={sendRequested}
+      onSendOpened={() => router.replace(`/quotes/${params.id}`)}
       quote={data}
       company={company}
       today={today}

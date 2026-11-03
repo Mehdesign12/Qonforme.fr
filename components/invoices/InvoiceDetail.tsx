@@ -5,7 +5,7 @@
  * mur de paiement). L'affichage est InvoiceDetailView, partagé avec la démo.
  */
 import { downloadPdf, PdfDownloadError } from "@/lib/utils/download-pdf"
-import { useState, useEffect } from "react"
+import { useCallback, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -31,6 +31,7 @@ import { SEND_PARAM, sendAfterPaymentOutcome, wantsSendAfterPayment } from "@/li
 import { trackJourney } from "@/lib/journey"
 import { SendInvoiceDialog } from "@/components/invoices/SendInvoiceDialog"
 import type { DeliveryChoice } from "@/lib/pa/delivery"
+import type { PlatformInfo } from "@/lib/pa/outbound-view"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -357,6 +358,16 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [autoReminders, setAutoReminders]       = useState<string | null | undefined>(undefined)
   // Lien de paiement par virement : relu quand la facture change de statut (envoi, paiement)
   const payLink = usePaymentLink(invoiceId, invoice?.status)
+  // Envoi par la plateforme agréée : tentative active et parcours (planche D15) ;
+  // relu au chargement et après chaque envoi. Panne : rien d'affiché, la fiche reste utilisable.
+  const [platform, setPlatform] = useState<PlatformInfo | null>(null)
+  const loadPlatform = useCallback(() => {
+    fetch(`/api/invoices/${invoiceId}/platform`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => setPlatform((json?.outbound as PlatformInfo | null) ?? null))
+      .catch(() => {})
+  }, [invoiceId])
+  useEffect(() => { loadPlatform() }, [loadPlatform])
 
   useEffect(() => {
     setToday(todayISO())
@@ -505,6 +516,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       if (!res.ok) {
         // Facture émise (numérotée) mais email non parti : elle reste émise, à renvoyer
         if (json.issued && json.invoice) { setInvoice(prev => mergeInvoice(prev, json.invoice)); setShowSendModal(false) }
+        if (choice.channel === "platform") loadPlatform()
         toast.error(json.error ?? "Erreur lors de l'envoi")
         return
       }
@@ -512,6 +524,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         ? mergeInvoice(prev, json.invoice)
         : { ...invoice, status: "sent" as InvoiceStatus, sent_at: new Date().toISOString() })
       trackJourney("invoice_sent")
+      if (choice.channel === "platform") loadPlatform()
       toast.success(json.channel === "platform"
         ? `Facture transmise par la plateforme agréée (${json.sentTo})`
         : `Facture envoyée à ${json.sentTo}`)
@@ -602,6 +615,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       )}
 
       <InvoiceDetailView
+        platform={platform}
         invoice={{ ...invoice, chantier: chantier ? { ...chantier, href: `/chantiers/${chantier.id}` } : null }}
         invoiceHref={(ref) => `/invoices/${ref.id}`}
         quoteHref={(id) => `/quotes/${id}`}

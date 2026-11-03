@@ -76,6 +76,8 @@ export interface SuperPdpApi {
   createEvent(input: { invoiceId: number; statusCode: string; reasonCode?: string | null; note?: string | null }): Promise<SpEvent>
   /** Dépose une facture à envoyer (PDF Factur-X) ; la plateforme la transmet ensuite. */
   depositInvoice(pdf: Uint8Array, opts: { externalId: string }): Promise<SpDepositedInvoice>
+  /** Statuts d'une seule facture (fiche de la facture, sans attendre la relève). */
+  listInvoiceEvents(invoiceId: number): Promise<SpEvent[]>
   /** Contrôle une facture sans la transmettre (schématrons Factur-X et règles françaises). */
   validateInvoice(pdf: Uint8Array): Promise<{ valid: boolean; failures: string[] }>
 }
@@ -146,6 +148,10 @@ export function createSuperPdpApi(accessToken: string, f: Fetch = fetch): SuperP
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoice_id: invoiceId, status_code: statusCode, ...(Object.keys(detail).length ? { details: [detail] } : {}) }),
       })
+    },
+    async listInvoiceEvents(invoiceId) {
+      const r = await json<{ data?: SpEvent[] }>(`/v1.beta/invoice_events?invoice_id=${encodeURIComponent(String(invoiceId))}&limit=200`)
+      return Array.isArray(r.data) ? r.data : []
     },
     async validateInvoice(pdf) {
       const fd = new FormData()

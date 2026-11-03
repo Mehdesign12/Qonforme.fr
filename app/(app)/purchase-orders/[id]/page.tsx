@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic"
 
 import { downloadPdf, PdfDownloadError } from "@/lib/utils/download-pdf"
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import { toastCompanyRequired } from "@/components/shared/company-required"
@@ -85,6 +85,8 @@ function toDetail(p: ApiPurchaseOrder): PurchaseOrderDetailData {
 
 export default function PurchaseOrderDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  // Arrivée depuis l'éditeur, client sans email : la fenêtre d'envoi s'ouvre et demande l'adresse
+  const sendRequested = useSearchParams().get("send") === "1"
 
   const [today]                           = useState(todayISO)
   const [po, setPo]                       = useState<PurchaseOrderDetailData | null>(null)
@@ -169,11 +171,15 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
   }
 
   /* ── Envoi email ── */
-  const sendByEmail = async (): Promise<boolean> => {
+  const sendByEmail = async (email?: string): Promise<boolean> => {
     if (!po) return false
     setSendLoading(true)
     try {
-      const res  = await fetch(`/api/purchase-orders/${params.id}/send`, { method: "POST" })
+      const res  = await fetch(`/api/purchase-orders/${params.id}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(email ? { email } : {}),
+      })
       const json = await res.json()
       if (toastCompanyRequired(res.status, json)) return false
       if (!res.ok) { toast.error(json.error ?? "Erreur lors de l'envoi"); return false }
@@ -183,6 +189,8 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
         ...prev,
         status: prev.status === "draft" ? "sent" : prev.status,
         sent_at: new Date().toISOString(),
+        // Adresse tapée dans la fenêtre : désormais sur la fiche du client
+        client: prev.client && !prev.client.email && json.sentTo ? { ...prev.client, email: json.sentTo } : prev.client,
         legal_snapshot: prev.legal_snapshot ?? (prev.status === "draft" ? snapshotOf(company) : undefined),
       } : prev)
       toast.success(`Bon de commande envoyé à ${json.sentTo}`)
@@ -230,6 +238,8 @@ export default function PurchaseOrderDetailPage({ params }: { params: { id: stri
     <>
     <PaywallDialog open={sig.paywall} onOpenChange={sig.setPaywall} reason="signature" nextPath={`/purchase-orders/${params.id}`} />
     <PurchaseOrderDetailView
+      openSend={sendRequested}
+      onSendOpened={() => router.replace(`/purchase-orders/${params.id}`)}
       po={po}
       company={company}
       today={today}

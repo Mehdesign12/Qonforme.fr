@@ -271,7 +271,7 @@ function ClientCard({
           </p>
         ) : (
           <p className="-mt-1.5 text-xs text-[var(--q-warn)]">
-            Pas d&apos;adresse e-mail : l&apos;envoi sera refusé.{" "}
+            Pas d&apos;adresse e-mail : vous la saisirez au moment de l&apos;envoi.{" "}
             {clientHref && <Link href={clientHref(client.id)} className="font-semibold underline underline-offset-2">Compléter la fiche</Link>}
           </p>
         )
