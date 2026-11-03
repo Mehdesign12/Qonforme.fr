@@ -678,3 +678,4 @@ Le fondateur valide le plan (canevas, planches D14, D15, M13) : lot 0 essai en b
 - **Contrôles synchrones** : client absent de l'annuaire → 400 « pre-check: receiver address … does not exist » ; même facture renvoyée → 400 « La facture est déjà existante », **même avec un autre `external_id`** (Super PDP reconnaît la facture). Les statuts ne sont pas rendus dans l'ordre : trier par date.
 - **Encaissement** : `fr:212` sans détail accepté, montant = total TTC par taux.
 - **Question ouverte, à poser à Super PDP** : après un rejet (fr:213), peut-on renvoyer la facture corrigée sous le même numéro, vu leur contrôle des doublons ?
+- **Lot 1 fait (03/11/2026)** : migration `20261103_pa_outbound.sql` (à appliquer) et `lib/pa/outbound.ts`. Une ligne par tentative d'envoi ; réservation avant l'appel à la plateforme, renvoi permis après un échec au dépôt ou un rejet (fr:213), jamais après un refus du client (fr:210 : avoir).
