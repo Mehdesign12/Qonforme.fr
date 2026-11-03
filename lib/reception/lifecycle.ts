@@ -118,14 +118,15 @@ export const CLOSED: readonly ReceivedStatus[] = ["payment_sent", "cashed", "ref
 /* ------------------------------------------------------------------ */
 
 /**
- * Motifs de refus et de litige utiles à un artisan qui reçoit une facture
- * fournisseur, repris du « Tableau des motifs de refus » (DGFiP, annexe 7
- * « Règles de gestion » v1.9, 30/04/2026). Les motifs propres au secteur public,
- * à la sous-traitance de marchés ou au routage entre plateformes ne sont pas
- * proposés à la main.
+ * Motifs de statut (MDT-113) d'une facture reçue. Chaque décision a SA liste :
+ * relevée en bac à sable chez Super PDP le 03/11/2026 (règles BR-FR-CDV-15 et
+ * BR-FR-CDV-CL-09 : motif obligatoire pour 206, 207, 208 et 210 ; un motif hors
+ * liste est refusé). Les motifs propres au secteur public ou au routage entre
+ * plateformes ne sont pas proposés à la main.
  */
 export const REASONS: { code: string; label: string }[] = [
   { code: "DOUBLON", label: "Facture en doublon (déjà reçue)" },
+  { code: "DOUBLE_FACT", label: "Prestation déjà facturée" },
   { code: "TRANSAC_INC", label: "Ne correspond à aucune livraison ni prestation" },
   { code: "LIVR_INCOMP", label: "Livraison incomplète ou non effectuée" },
   { code: "QTE_ERR", label: "Quantité facturée incorrecte" },
@@ -133,32 +134,59 @@ export const REASONS: { code: string; label: string }[] = [
   { code: "REM_ERR", label: "Remise absente ou erronée" },
   { code: "ART_ERR", label: "Article facturé incorrect" },
   { code: "QUALITE_ERR", label: "Article livré défectueux" },
-  { code: "MONTANT_ERR", label: "Montant de la facture erroné" },
+  { code: "MONTANTTOTAL_ERR", label: "Montant total erroné" },
   { code: "CALCUL_ERR", label: "Erreur de calcul" },
   { code: "TX_TVA_ERR", label: "Taux de TVA erroné" },
-  { code: "FACT_NON_CONFORME", label: "Facture non conforme à la commande" },
-  { code: "CMD_EJ_ERR", label: "N° de commande incorrect ou manquant" },
+  { code: "CMD_ERR", label: "N° de commande incorrect ou manquant" },
   { code: "REF_CT_ABSENT", label: "Référence contractuelle manquante" },
+  { code: "REF_ERR", label: "Référence erronée" },
+  { code: "CONTRAT_TERM", label: "Contrat terminé" },
   { code: "NON_CONFORME", label: "Mention légale manquante" },
   { code: "MODPAI_ERR", label: "Modalités de paiement incorrectes" },
   { code: "COORD_BANC_ERR", label: "Coordonnées bancaires erronées" },
   { code: "DEST_ERR", label: "Pas adressée à votre entreprise" },
+  { code: "ADR_ERR", label: "Adresse de facturation erronée" },
+  { code: "EMMET_INC", label: "Fournisseur inconnu" },
   { code: "SIRET_ERR", label: "SIRET erroné ou absent" },
   { code: "JUSTIF_ABS", label: "Justificatif absent ou insuffisant" },
   { code: "AUTRE", label: "Autre motif" },
 ]
 
-export const REASON_LABELS: Record<string, string> = Object.fromEntries(REASONS.map((r) => [r.code, r.label]))
+/** Motifs acceptés par la plateforme pour chaque décision du destinataire. */
+export const REASONS_BY_STATUS: Partial<Record<ReceivedStatus, readonly string[]>> = {
+  refused: ["DOUBLON", "DOUBLE_FACT", "TRANSAC_INC", "MONTANTTOTAL_ERR", "CALCUL_ERR", "TX_TVA_ERR", "CMD_ERR", "REF_CT_ABSENT", "CONTRAT_TERM", "NON_CONFORME", "DEST_ERR", "ADR_ERR", "EMMET_INC"],
+  disputed: ["DOUBLE_FACT", "TRANSAC_INC", "LIVR_INCOMP", "QTE_ERR", "PU_ERR", "REM_ERR", "ART_ERR", "QUALITE_ERR", "MONTANTTOTAL_ERR", "CALCUL_ERR", "TX_TVA_ERR", "CMD_ERR", "REF_CT_ABSENT", "REF_ERR", "CONTRAT_TERM", "NON_CONFORME", "MODPAI_ERR", "COORD_BANC_ERR", "DEST_ERR", "ADR_ERR", "EMMET_INC", "SIRET_ERR", "AUTRE"],
+  partially_approved: ["LIVR_INCOMP", "QTE_ERR", "PU_ERR", "REM_ERR", "ART_ERR", "QUALITE_ERR", "CMD_ERR", "REF_CT_ABSENT", "REF_ERR", "MODPAI_ERR", "SIRET_ERR", "AUTRE"],
+  suspended: ["JUSTIF_ABS", "CMD_ERR", "REF_CT_ABSENT", "REF_ERR", "COORD_BANC_ERR", "SIRET_ERR"],
+}
+
+/** Libellés, y compris des anciens codes déjà enregistrés (affichage seulement). */
+export const REASON_LABELS: Record<string, string> = {
+  MONTANT_ERR: "Montant de la facture erroné",
+  FACT_NON_CONFORME: "Facture non conforme à la commande",
+  CMD_EJ_ERR: "N° de commande incorrect ou manquant",
+  ...Object.fromEntries(REASONS.map((r) => [r.code, r.label])),
+}
 
 export const isReasonCode = (v: unknown): v is string =>
-  typeof v === "string" && Object.prototype.hasOwnProperty.call(REASON_LABELS, v)
+  typeof v === "string" && REASONS.some((r) => r.code === v)
+
+/** Motifs proposés pour une décision (dans l'ordre de la liste). */
+export function reasonsFor(to: ReceivedStatus): { code: string; label: string }[] {
+  const allowed = REASONS_BY_STATUS[to]
+  return allowed ? REASONS.filter((r) => allowed.includes(r.code)) : []
+}
+
+/** Défaut quand aucun motif n'est choisi (la suspension vaut demande de justificatifs). */
+const DEFAULT_REASON: Partial<Record<ReceivedStatus, string>> = { suspended: "JUSTIF_ABS", partially_approved: "AUTRE", disputed: "AUTRE" }
 
 /**
- * Ce que chaque action demande :
- * - refus : un motif de la liste (G7.08), et une précision si « Autre motif » ;
- * - litige : un motif ou une précision ;
- * - approbation partielle : une précision (ce qui est accepté) ;
- * - suspension : motif « Justificatif absent » par défaut, précision facultative.
+ * Ce que chaque action demande (motif obligatoire chez la plateforme pour 206, 207,
+ * 208 et 210) :
+ * - refus : un motif de sa liste (« Autre motif » n'y est pas) ;
+ * - litige : un motif, ou « Autre motif » avec une précision ;
+ * - approbation partielle : une précision (ce qui est accepté), motif « Autre » par défaut ;
+ * - suspension : « Justificatif absent » par défaut, précision facultative.
  */
 export function validateStatusChange(
   to: ReceivedStatus,
@@ -168,14 +196,15 @@ export function validateStatusChange(
   const text = (reason ?? "").trim()
   if (text.length > 1000) return "La précision est trop longue (1 000 caractères au maximum)."
   if (reasonCode && !isReasonCode(reasonCode)) return "Motif inconnu."
+  const allowed = REASONS_BY_STATUS[to]
+  if (reasonCode && allowed && !allowed.includes(reasonCode)) return "Ce motif n'est pas accepté pour cette décision."
+  const code = reasonCode || DEFAULT_REASON[to] || null
   switch (to) {
     case "refused":
       if (!reasonCode) return "Choisissez le motif du refus."
-      if (reasonCode === "AUTRE" && text.length < 3) return "Précisez le motif du refus."
       return null
     case "disputed":
-      if (!reasonCode && text.length < 3) return "Indiquez le motif du litige."
-      if (reasonCode === "AUTRE" && text.length < 3) return "Précisez le motif du litige."
+      if (code === "AUTRE" && text.length < 3) return reasonCode ? "Précisez le motif du litige." : "Choisissez un motif ou décrivez le litige."
       return null
     case "partially_approved":
       if (text.length < 3) return "Précisez ce que vous acceptez."
@@ -185,9 +214,8 @@ export function validateStatusChange(
   }
 }
 
-/** Motif retenu pour l'enregistrement (la suspension vaut demande de justificatifs). */
+/** Motif retenu pour l'enregistrement et la transmission (jamais vide pour 206, 207, 208, 210). */
 export function effectiveReasonCode(to: ReceivedStatus, reasonCode: string | null | undefined): string | null {
-  if (to === "suspended") return reasonCode || "JUSTIF_ABS"
-  if (to === "refused" || to === "disputed") return reasonCode || null
-  return null
+  if (!REASONS_BY_STATUS[to]) return null
+  return reasonCode || DEFAULT_REASON[to] || null
 }

@@ -9,7 +9,7 @@
 import { useEffect, useId, useState } from "react"
 import { Info, X } from "lucide-react"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
-import { REASONS, STATUS_DEFS, validateStatusChange, type ReceivedStatus } from "@/lib/reception/lifecycle"
+import { reasonsFor, STATUS_DEFS, validateStatusChange, type ReceivedStatus } from "@/lib/reception/lifecycle"
 
 export type DialogStatus = Extract<ReceivedStatus, "refused" | "disputed" | "partially_approved" | "suspended">
 
@@ -32,13 +32,15 @@ const COPY: Record<DialogStatus, { title: string; confirm: string; reasonLabel?:
   partially_approved: {
     title: "Approuver en partie",
     confirm: "Approuver en partie",
+    reasonLabel: "Ce qui est contesté",
     textLabel: "Ce que vous acceptez",
     textHint: "Par exemple : « lignes 1 et 2, soit 525 € HT ; transport contesté ».",
   },
   suspended: {
     title: "Demander des justificatifs",
     confirm: "Suspendre la facture",
-    textLabel: "Pièces attendues",
+    reasonLabel: "Ce qui manque",
+    textLabel: "Pièces attendues (facultatif)",
     textHint: "Par exemple : « bon de livraison signé ». La facture reste suspendue jusqu’à leur réception.",
   },
 }
@@ -110,8 +112,8 @@ export function StatusDialog({
                     value={reasonCode}
                     onChange={(e) => { setReasonCode(e.target.value); setError(null) }}
                   >
-                    <option value="">{status === "refused" ? "Choisissez un motif" : "Aucun motif précis"}</option>
-                    {REASONS.map((r) => <option key={r.code} value={r.code}>{r.label}</option>)}
+                    <option value="">{status === "refused" ? "Choisissez un motif" : status === "suspended" ? "Justificatif absent ou insuffisant" : "Autre motif (précisé ci-dessous)"}</option>
+                    {reasonsFor(status).map((r) => <option key={r.code} value={r.code}>{r.label}</option>)}
                   </select>
                 </div>
               )}
