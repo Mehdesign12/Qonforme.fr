@@ -100,10 +100,20 @@ describe("canaux proposés", () => {
       } finally { restore() }
     })
 
-    it("bac à sable : saisie manuelle, sans SIREN ni annuaire", () => {
+    it("bac à sable : mêmes règles qu'en production (un particulier sans SIREN part par email)", () => {
       const restore = openModes("test")
       try {
-        const o = deliveryOptions(live({ mode: "test", client: { email: null, siren: null }, directory: undefined }))
+        const o = deliveryOptions(live({ mode: "test", client: { email: "a@b.fr", siren: null }, directory: undefined }))
+        expect(o.platform).toMatchObject({ offered: false, reason: "particulier" })
+        const abroad = deliveryOptions(live({ mode: "test", client: { email: null, siren: "315143296", country: "BE" }, directory: undefined }))
+        expect(abroad.platform).toMatchObject({ offered: false, reason: "abroad" })
+      } finally { restore() }
+    })
+
+    it("bac à sable : saisie manuelle de l'adresse, sans annuaire", () => {
+      const restore = openModes("test")
+      try {
+        const o = deliveryOptions(live({ mode: "test", client: { email: null, siren: "315143296" }, directory: undefined }))
         expect(o.platform).toMatchObject({ offered: true, addresses: [], manualEntry: true, defaultAddress: null })
         expect(o.email.offered).toBe(false)
         expect(choiceAllowed(o, { channel: "platform", address: "0225:315143296_117728" })).toBe(true)

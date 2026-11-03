@@ -297,7 +297,7 @@ export function InvoiceDetailView({
           <div className="flex flex-wrap items-center gap-2.5">
             {invoice.invoice_number && <span className="font-mono text-sm text-[var(--q-text-3)]">{invoice.invoice_number}</span>}
             {kindLabel && <span className="q-tag">{kindLabel}</span>}
-            <StatusPills invoice={invoice} lateDays={lateDays} />
+            <StatusPills invoice={invoice} lateDays={lateDays} notDelivered={pState === "failed" || pState === "rejected"} />
           </div>
           <h1 className="q-h1 md:!text-[30px]">
             {clientName}
@@ -331,7 +331,7 @@ export function InvoiceDetailView({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {kindLabel && <span className="q-tag">{kindLabel}</span>}
-          <StatusPills invoice={invoice} lateDays={lateDays} />
+          <StatusPills invoice={invoice} lateDays={lateDays} notDelivered={pState === "failed" || pState === "rejected"} />
           <span className={cn("text-[13px]", late ? "font-semibold text-[var(--q-warn)]" : "text-[var(--q-text-3)]")}>
             Échéance {shortDate(invoice.due_date, year)}
           </span>
@@ -649,10 +649,14 @@ function MoreMenu({ actions, run, triggerClassName }: { actions: Action[]; run: 
 }
 
 /** Statut du document, retard et archivage : toujours un libellé, jamais la couleur seule. */
-function StatusPills({ invoice, lateDays }: { invoice: InvoiceView; lateDays: number }) {
+function StatusPills({ invoice, lateDays, notDelivered = false }: { invoice: InvoiceView; lateDays: number; notDelivered?: boolean }) {
   return (
     <>
-      {invoice.status === "overdue" && lateDays > 0 ? (
+      {/* Envoi par la plateforme non abouti ou rejeté : la facture est émise (numérotée) mais
+          n'est pas chez le client ; « Envoyée » serait faux. */}
+      {notDelivered && invoice.status === "sent" ? (
+        <StatusPill tone="warn" icon={<AlertTriangle strokeWidth={2.25} aria-hidden />}>Non transmise</StatusPill>
+      ) : invoice.status === "overdue" && lateDays > 0 ? (
         <DocStatusPill kind="invoice" status="overdue" label={`Retard ${lateDays} j`} />
       ) : (
         <DocStatusPill kind="invoice" status={invoice.status} />

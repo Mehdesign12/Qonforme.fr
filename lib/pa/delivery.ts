@@ -144,7 +144,11 @@ function platformBlocker(input: Omit<DeliveryInput, "directory">): PlatformUnava
     const a = sirenOf(input.issuerSiren), b = sirenOf(input.connection?.siren)
     if (a && b && a !== b) return "siren_mismatch"
   }
-  if (input.mode === "test") return null
+  // Mêmes règles en bac à sable qu'en production (client professionnel en France, avec
+  // un SIREN) : seule la lecture de l'annuaire change (saisie manuelle de l'adresse). Avant
+  // le 03/11/2026, le bac à sable sautait ces règles : une facture partait sans le SIREN
+  // du client, et Super PDP refusait ensuite toute décision de celui-ci (« missing
+  // LegalRegistrationIdentifier of buyer »).
   const country = (input.client?.country ?? "FR").trim().toUpperCase() || "FR"
   if (country !== "FR") return "abroad"
   if (!sirenOf(input.client?.siren)) return "particulier"
