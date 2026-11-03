@@ -398,8 +398,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     if (!invoice || !sendRequested) return
     router.replace(`/invoices/${invoiceId}`)
     const outcome = sendAfterPaymentOutcome(invoice)
-    if (outcome === "open") setShowSendModal(true)
-    else if (outcome === "no-email") toast.error("Ajoutez l'adresse email du client pour envoyer cette facture.")
+    // Sans email chez le client, la fenêtre d'envoi le demande : jamais de blocage
+    if (outcome === "open" || outcome === "no-email") setShowSendModal(true)
     else toast.info("Cette facture n'est plus un brouillon : elle a déjà été émise.")
   }, [invoice?.id, sendRequested]) // eslint-disable-line react-hooks/exhaustive-deps
 

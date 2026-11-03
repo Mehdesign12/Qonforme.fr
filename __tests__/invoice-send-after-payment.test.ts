@@ -119,12 +119,12 @@ describe("envoi de la facture après le paiement", () => {
     expect(sendDialogOpen()).toBe(true)
   })
 
-  it("dit que le client n'a pas d'adresse email au lieu de ne rien faire", async () => {
+  it("client sans adresse email : la fenêtre d'envoi s'ouvre quand même (elle la demande)", async () => {
     invoice = makeInvoice({ client: { id: "c1", name: "Client test", email: null } })
     await render()
     await askSend()
-    expect(sendDialogOpen()).toBe(false)
-    expect(toastError).toHaveBeenCalledWith(expect.stringContaining("adresse email du client"))
+    expect(sendDialogOpen()).toBe(true)
+    expect(toastError).not.toHaveBeenCalled()
   })
 
   it("dit que la facture est déjà émise au lieu de ne rien faire", async () => {

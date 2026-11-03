@@ -198,13 +198,14 @@ export function InvoiceDetailView({
         title: !journal && invoice.reminder_1_sent_at ? "Envoyer la 2e relance" : "Envoyer une relance par email",
       }
     : null
-  // Envoi par email : brouillon dont le client a une adresse
-  const send: Action | null = draft && clientEmail
-    ? { key: "send", label: "Envoyer par email", icon: Send, onClick: h.openSend, busy: h.sendLoading, busyLabel: "Envoi…" }
+  // Envoi : toujours proposé sur un brouillon (aucun blocage) ; la fenêtre choisit le canal
+  // (plateforme agréée ou email) et demande l'email du client s'il manque
+  const send: Action | null = draft
+    ? { key: "send", label: "Envoyer", icon: Send, onClick: h.openSend, busy: h.sendLoading, busyLabel: "Envoi…" }
     : null
   // Facture émise : renvoyer une copie (email perdu, ou envoi interrompu après l'émission)
-  const resend: Action | null = !draft && clientEmail && (open || status === "paid")
-    ? { key: "resend", label: "Renvoyer par email", icon: Send, onClick: h.openSend, busy: h.sendLoading, busyLabel: "Envoi…" }
+  const resend: Action | null = !draft && (open || status === "paid")
+    ? { key: "resend", label: "Renvoyer", icon: Send, onClick: h.openSend, busy: h.sendLoading, busyLabel: "Envoi…" }
     : null
   // « Marquer comme envoyée » n'est jamais proposé sur un brouillon : il part par email
   const transitions: (Action & { main: boolean })[] = (NEXT_ACTIONS[status] ?? [])
@@ -361,11 +362,9 @@ export function InvoiceDetailView({
       {draft && (
         <Banner icon={Pencil} title="Ce brouillon n’est pas encore une facture">
           {artisanDoc && ctx?.quote && <>Calculé depuis le devis {ctx.quote.number} : pour le changer, supprimez ce brouillon et recréez-le depuis le devis. </>}
-          {clientEmail
-            ? invoice.invoice_number
-              ? "Modifiez-le librement, puis envoyez-le à votre client par email pour l’émettre."
-              : "Modifiez-le librement, puis envoyez-le à votre client par email pour l’émettre : il recevra alors son numéro de facture, à la date du jour."
-            : <>Le client n&apos;a pas d&apos;adresse email : ajoutez-la {clientHref ? <Link href={clientHref} className="q-link">dans sa fiche</Link> : "dans sa fiche"} pour envoyer la facture.</>}
+          {invoice.invoice_number
+            ? "Modifiez-le librement, puis envoyez-le à votre client pour l’émettre."
+            : "Modifiez-le librement, puis envoyez-le à votre client pour l’émettre : il recevra alors son numéro de facture, à la date du jour."}
         </Banner>
       )}
 

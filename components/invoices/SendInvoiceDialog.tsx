@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils"
 import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
 import { SUPERPDP_LABEL } from "@/lib/pa/superpdp/config"
 import {
-  normalizeAddress, PLATFORM_UNAVAILABLE_TEXT, type DeliveryChoice, type DeliveryOptions, type PlatformUnavailable,
+  normalizeAddress, normalizeEmail, PLATFORM_UNAVAILABLE_TEXT, type DeliveryChoice, type DeliveryOptions, type PlatformUnavailable,
 } from "@/lib/pa/delivery"
 
 /** Raisons qu'on ne dit pas à l'artisan raccordé (rien à faire de son côté). */
@@ -49,6 +49,8 @@ export function SendInvoiceDialog({ open, onOpenChange, invoice, companyName, lo
   const [checking, setChecking] = useState(false)
   const [channel, setChannel] = useState<"platform" | "email">("email")
   const [address, setAddress] = useState("")
+  // Client sans email : l'adresse se tape ici, elle est enregistrée sur sa fiche à l'envoi
+  const [typedEmail, setTypedEmail] = useState("")
   const addressId = useId()
 
   useEffect(() => {
@@ -58,6 +60,7 @@ export function SendInvoiceDialog({ open, onOpenChange, invoice, companyName, lo
     setOptions(null)
     setChannel("email")
     setAddress("")
+    setTypedEmail("")
     loadOptions(invoice.id)
       .then((o) => {
         if (!live) return
@@ -72,7 +75,9 @@ export function SendInvoiceDialog({ open, onOpenChange, invoice, companyName, lo
   }, [open, invoice.id, loadOptions])
 
   const draft = invoice.status === "draft"
-  const email = invoice.client?.email?.trim() || null
+  const savedEmail = invoice.client?.email?.trim() || null
+  const newEmail = savedEmail ? null : normalizeEmail(typedEmail)
+  const email = savedEmail ?? newEmail
   const platform = options?.platform.offered ? options.platform : null
   const viaPlatform = !!platform && channel === "platform"
   const chosenAddress = viaPlatform ? normalizeAddress(address) : null
@@ -106,9 +111,8 @@ export function SendInvoiceDialog({ open, onOpenChange, invoice, companyName, lo
               <ChannelOption
                 on={channel === "email"}
                 onSelect={() => setChannel("email")}
-                disabled={!email}
                 title="Par email"
-                text={email ? `Un email avec le PDF Factur-X, comme aujourd'hui, à ${email}.` : "Aucune adresse email : ajoutez-en une dans la fiche client."}
+                text={savedEmail ? `Un email avec le PDF Factur-X, comme aujourd'hui, à ${savedEmail}.` : "Un email avec le PDF Factur-X : indiquez l'adresse de votre client."}
               />
             </div>
           )}
@@ -154,10 +158,22 @@ export function SendInvoiceDialog({ open, onOpenChange, invoice, companyName, lo
 
           {!viaPlatform && (
             <div className="q-inset px-4 py-3.5 text-sm leading-relaxed text-[var(--q-text-2)]">
-              {email ? (
-                <span className="mb-1.5 block text-xs text-[var(--q-text-4)]">À : {email}</span>
+              {savedEmail ? (
+                <span className="mb-1.5 block text-xs text-[var(--q-text-4)]">À : {savedEmail}</span>
               ) : (
-                <span className="mb-1.5 block text-xs text-[var(--q-danger)]">Aucune adresse email : ajoutez-en une dans la fiche client</span>
+                <label className="mb-2.5 flex flex-col gap-1.5" htmlFor={`${addressId}-email`}>
+                  <span className="text-xs text-[var(--q-text-4)]">Adresse email de {clientName} (enregistrée sur sa fiche)</span>
+                  <input
+                    id={`${addressId}-email`}
+                    type="email"
+                    className="q-input"
+                    value={typedEmail}
+                    onChange={(e) => setTypedEmail(e.target.value)}
+                    placeholder="client@exemple.fr"
+                    autoComplete="off"
+                    data-replay-mask
+                  />
+                </label>
               )}
               Objet : <span className="font-medium text-[var(--q-ink)]">Facture {invoice.invoice_number ?? "(numéro attribué à l’envoi)"} — {companyName ?? "votre entreprise"}</span>
             </div>
@@ -192,7 +208,9 @@ export function SendInvoiceDialog({ open, onOpenChange, invoice, companyName, lo
         >
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={loading}>Annuler</Button>
           <Button
-            onClick={() => onSend(viaPlatform && chosenAddress ? { channel: "platform", address: chosenAddress } : { channel: "email" })}
+            onClick={() => onSend(viaPlatform && chosenAddress
+              ? { channel: "platform", address: chosenAddress }
+              : newEmail ? { channel: "email", email: newEmail } : { channel: "email" })}
             disabled={!canSend}
           >
             <Send />
