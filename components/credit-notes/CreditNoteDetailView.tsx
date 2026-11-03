@@ -12,7 +12,9 @@
  * « remboursé », pas de reste dû calculé. Le PDF d'avoir embarque son XML
  * Factur-X (lib/pdf/credit-note.ts). Le suivi ne montre que ce qui est enregistré.
  */
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { normalizeEmail } from "@/lib/pa/delivery"
+import { PLATFORM_STATE_LABEL, platformState, type PlatformInfo } from "@/lib/pa/outbound-view"
 import Link from "next/link"
 import { ChevronLeft, Download, FileText, Loader2, MoreHorizontal, Printer, Send, Undo2, Users } from "lucide-react"
 import { Initials, Kpi, KpiGrid, StatusPill } from "@/components/app/kit"
@@ -47,10 +49,22 @@ export interface CreditNoteDetailData {
   legal_snapshot?: unknown
 }
 
+/** Envoi de l'avoir par la plateforme agréée (lot 5) : l'avoir suit le chemin de sa facture. */
+export interface CreditNotePlatform {
+  offered: boolean
+  address: string | null
+  /** Raison quand la plateforme n'est pas proposée (absente : facture partie par email). */
+  text?: string | null
+  reason?: string | null
+  outbound: PlatformInfo | null
+}
+
+export type CreditNoteSendChoice = { channel: "email"; email?: string } | { channel: "platform" }
+
 export interface CreditNoteDetailActions {
   onDownloadPdf: () => void
-  /** Envoi par email ; renvoie vrai si l'envoi a réussi (la fenêtre se ferme). */
-  onSend: () => Promise<boolean>
+  /** Envoi par email ou par la plateforme ; renvoie vrai si l'envoi a réussi (la fenêtre se ferme). */
+  onSend: (choice: CreditNoteSendChoice) => Promise<boolean>
   busy: { pdf: boolean; send: boolean }
 }
 
@@ -60,7 +74,10 @@ export function CreditNoteDetailView({
   listHref,
   companySettingsHref,
   actions,
+  platform = null,
 }: {
+  /** Envoi par la plateforme agréée, quand la facture d'origine y est passée. */
+  platform?: CreditNotePlatform | null
   note: CreditNoteDetailData
   company: PaperParty | null
   listHref: string
@@ -76,16 +93,32 @@ export function CreditNoteDetailView({
   const share = inv?.total_ttc ? Math.round((Number(note.total_ttc) / Number(inv.total_ttc)) * 100) : null
   const isTotal = inv?.total_ttc != null && Number(note.total_ttc) >= Number(inv.total_ttc) - 0.01
 
+  const [channel, setChannel] = useState<"platform" | "email">("email")
+  const [typedEmail, setTypedEmail] = useState("")
+  useEffect(() => { setChannel(platform?.offered ? "platform" : "email") }, [platform?.offered])
+  const viaPlatform = channel === "platform" && !!platform?.offered
   const send = async () => {
-    if (await actions.onSend()) close()
+    const choice: CreditNoteSendChoice = viaPlatform
+      ? { channel: "platform" }
+      : { channel: "email", ...(note.client?.email ? {} : { email: typedEmail.trim() }) }
+    if (await actions.onSend(choice)) close()
   }
+  const out = platform?.outbound ?? null
+  const outState = out ? platformState(out) : null
+  const sendLabel = note.sent_at || out?.phase === "sent" ? "Renvoyer" : "Envoyer"
 
   const events: TimelineEvent[] = [
     ...(inv ? [{ title: `Facture ${inv.invoice_number}`, sub: inv.issue_date ? `Émise le ${longDate(inv.issue_date, false)}` : "Facture d'origine", state: "done" as const }] : []),
     { title: "Avoir émis", sub: `${shortDate(note.issue_date)} · ${note.reason}`, state: "done" },
-    note.sent_at
-      ? { title: "Envoyé par email", sub: `${shortDate(note.sent_at.slice(0, 10))}${clientName ? ` · ${clientName}` : ""}`, state: "done" }
-      : { title: "Envoi au client", sub: "Par email, avec le PDF en pièce jointe", state: "todo" },
+    out && out.phase === "sent"
+      ? { title: "Transmis par la plateforme agréée", sub: `${out.depositedAt ? shortDate(out.depositedAt.slice(0, 10)) : ""} · ${PLATFORM_STATE_LABEL[outState!]}${out.recipientAddress ? ` · ${out.recipientAddress}` : ""}`, state: "done" }
+      : out && (out.phase === "failed" || out.phase === "rejected")
+        ? { title: out.phase === "rejected" ? "Rejeté par la plateforme" : "Envoi par la plateforme non abouti", sub: out.error ?? "Renvoyez-le depuis cette fiche.", state: "refused" }
+        : note.sent_at
+          ? { title: "Envoyé par email", sub: `${shortDate(note.sent_at.slice(0, 10))}${clientName ? ` · ${clientName}` : ""}`, state: "done" }
+          : platform?.offered
+            ? { title: "Envoi au client", sub: "Par la plateforme agréée, comme la facture d'origine", state: "todo" }
+            : { title: "Envoi au client", sub: "Par email, avec le PDF en pièce jointe", state: "todo" },
   ]
 
   const subLine = (
@@ -138,7 +171,7 @@ export function CreditNoteDetailView({
         <div className="flex flex-wrap items-center gap-2">
           <Act label="Imprimer" icon={Printer} onClick={() => window.print()} />
           <Act label={actions.busy.pdf ? "Génération…" : "PDF"} icon={Download} onClick={actions.onDownloadPdf} loading={actions.busy.pdf} />
-          <Act label="Envoyer par email" icon={Send} variant="primary" onClick={() => setModal("send")} loading={actions.busy.send} />
+          <Act label={sendLabel} icon={Send} variant="primary" onClick={() => setModal("send")} loading={actions.busy.send} />
         </div>
       </div>
 
@@ -281,7 +314,7 @@ export function CreditNoteDetailView({
 
       {/* Barre d'actions collée en bas (mobile) */}
       <MobileActionBar>
-        <BarBtn primary label="Envoyer par email" icon={Send} onClick={() => setModal("send")} loading={actions.busy.send} />
+        <BarBtn primary label={sendLabel} icon={Send} onClick={() => setModal("send")} loading={actions.busy.send} />
         <div className="grid grid-cols-2 gap-2.5">
           <BarBtn label="PDF" icon={Download} onClick={actions.onDownloadPdf} loading={actions.busy.pdf} />
           {inv?.href
@@ -295,23 +328,61 @@ export function CreditNoteDetailView({
         open={modal === "send"}
         onOpenChange={(o) => !o && close()}
         compact={compact}
-        title="Envoyer l'avoir"
+        title={sendLabel === "Renvoyer" ? "Renvoyer l'avoir" : "Envoyer l'avoir"}
         description={`${note.credit_note_number} · ${negCurrency(note.total_ttc)} TTC`}
         actions={[{
-          label: actions.busy.send ? "Envoi…" : "Envoyer",
+          label: actions.busy.send ? "Envoi…" : viaPlatform ? "Envoyer par la plateforme" : sendLabel,
           icon: actions.busy.send ? <Loader2 className="animate-spin" aria-hidden /> : <Send aria-hidden />,
           variant: "primary",
           onClick: send,
-          disabled: actions.busy.send || !note.client?.email,
+          disabled: actions.busy.send || (!viaPlatform && !note.client?.email && !normalizeEmail(typedEmail)),
         }]}
       >
-        <RecipientBox name={clientName} email={note.client?.email} clientHref={note.client?.editHref ?? note.client?.href} />
-        <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
-          L&apos;avoir <span className="font-mono">{note.credit_note_number}</span> part avec son PDF en pièce jointe.
-        </p>
-        <p className="q-inset px-3.5 py-2.5 text-[13px] text-[var(--q-text-3)]">
-          Objet : <span className="font-medium text-[var(--q-ink)]">Avoir {note.credit_note_number} — {company?.name ?? "votre entreprise"}</span>
-        </p>
+        {platform?.offered && (
+          <div role="radiogroup" aria-label="Canal d'envoi" className="grid gap-2 sm:grid-cols-2">
+            {([
+              ["platform", "Par la plateforme agréée", "Comme la facture d'origine"],
+              ["email", "Par email", "Copie avec le PDF"],
+            ] as const).map(([value, label, hint]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={channel === value}
+                onClick={() => setChannel(value)}
+                className={`q-inset flex flex-col items-start gap-0.5 rounded-xl p-3 text-left ${channel === value ? "ring-2 ring-[var(--q-accent)]" : ""}`}
+              >
+                <span className="text-sm font-semibold text-[var(--q-ink)]">{label}</span>
+                <span className="text-[13px] text-[var(--q-text-3)]">{hint}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {viaPlatform ? (
+          <>
+            <div className="q-inset flex flex-col gap-0.5 p-3.5">
+              <span className="text-xs text-[var(--q-text-4)]">Adresse de facturation électronique</span>
+              <span className="text-sm font-semibold">{clientName ?? "Client"}</span>
+              <span className="truncate font-mono text-[13px] text-[var(--q-text-3)]" data-replay-mask>{platform?.address}</span>
+            </div>
+            <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
+              La facture d&apos;origine est passée par la plateforme agréée : l&apos;avoir <span className="font-mono">{note.credit_note_number}</span> y est déposé à la même adresse, et votre client le reçoit dans le même circuit.
+            </p>
+          </>
+        ) : (
+          <>
+            <RecipientBox name={clientName} email={note.client?.email} clientHref={note.client?.editHref ?? note.client?.href} typed={typedEmail} onTyped={setTypedEmail} />
+            <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
+              L&apos;avoir <span className="font-mono">{note.credit_note_number}</span> part avec son PDF en pièce jointe.
+            </p>
+            {platform && !platform.offered && platform.text && platform.reason !== "invoice_by_email" && (
+              <p className="text-[13px] leading-normal text-[var(--q-text-4)]">{platform.text}</p>
+            )}
+            <p className="q-inset px-3.5 py-2.5 text-[13px] text-[var(--q-text-3)]">
+              Objet : <span className="font-medium text-[var(--q-ink)]">Avoir {note.credit_note_number} — {company?.name ?? "votre entreprise"}</span>
+            </p>
+          </>
+        )}
       </DocModal>
 
       <DocModal open={modal === "more"} onOpenChange={(o) => !o && close()} compact={compact} title="Actions" description={note.credit_note_number} actions={[]}>

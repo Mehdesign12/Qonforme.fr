@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient, createClient } from "@/lib/supabase/server"
+import { reportInvoicePayment, type PaymentReport } from "@/lib/pa/payment"
 import { canTransition, isContentLocked, transitionError } from "@/lib/utils/document-status"
 import { requireIssuingAccess } from "@/lib/stripe/subscription"
 import { requireIssuerIdentity } from "@/lib/legal/issuer"
@@ -69,6 +70,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   // Date de paiement (« encaissé » du tableau de bord) : posée au passage à
   // « payée », effacée au retour (lib/utils/payment-date.ts)
   let paidAt: string | null | undefined
+  let previousStatus: string | null = null
 
   if (touchesContent || body.status !== undefined) {
     const { data: current } = await supabase
@@ -79,6 +81,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       .single()
 
     if (!current) return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
+    previousStatus = current.status
     issuing = current.status === "draft" && body.status !== undefined && body.status !== "draft"
 
     if (touchesContent && isContentLocked(current.status)) {
@@ -203,7 +206,18 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     data = issued.data
   }
 
-  return NextResponse.json({ invoice: data })
+  // Facture transmise par la plateforme agréée : l'encaissement lui est déclaré (fr:212).
+  // Jamais bloquant : sans réponse de la plateforme, la relève le rattrape.
+  let platformPayment: PaymentReport | null = null
+  if (body.status === "paid" && previousStatus !== "paid") {
+    try {
+      platformPayment = await reportInvoicePayment(createAdminClient(), user.id, id)
+    } catch (err) {
+      console.error("[invoice-paid] Déclaration de l'encaissement :", err)
+    }
+  }
+
+  return NextResponse.json({ invoice: data, ...(platformPayment && platformPayment.state !== "not_platform" ? { platformPayment } : {}) })
 }
 
 // DELETE /api/invoices/[id] — seulement les brouillons

@@ -4,7 +4,7 @@
  * plateforme a renvoyé (« sans rien inventer ») ; l'étape suivante attendue est
  * dite « en attente », jamais datée.
  */
-import { OUTBOUND_STATUS_LABEL, type OutboundEvent, type OutboundPhase } from "@/lib/pa/outbound"
+import { OUTBOUND_STATUS_LABEL, type OutboundEvent, type OutboundPhase, type OutboundRow } from "@/lib/pa/outbound"
 
 /** Ce que renvoie `GET /api/invoices/[id]/platform` pour la tentative active. */
 export interface PlatformInfo {
@@ -19,6 +19,23 @@ export interface PlatformInfo {
   depositedAt: string | null
   createdAt: string
   paymentReportedAt: string | null
+}
+
+/** Ce que la fiche affiche : jamais les jetons ni les identifiants internes du compte. */
+export function toPlatformInfo(row: OutboundRow): PlatformInfo {
+  return {
+    attempt: row.attempt,
+    phase: row.phase,
+    mode: row.mode,
+    recipientAddress: row.recipient_address,
+    lastStatus: row.last_status_code,
+    lastStatusAt: row.last_status_at,
+    events: row.events ?? [],
+    error: row.error,
+    depositedAt: row.deposited_at,
+    createdAt: row.created_at,
+    paymentReportedAt: row.payment_reported_at,
+  }
 }
 
 export type PlatformState =
