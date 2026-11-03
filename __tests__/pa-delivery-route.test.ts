@@ -24,6 +24,7 @@ const m = vi.hoisted(() => ({
   failed: [] as string[],
   deposited: [] as Record<string, unknown>[],
   platformNumber: "000000001",
+  validation: { valid: true, failures: [] as string[] },
 }))
 
 const userDb = {
@@ -57,6 +58,7 @@ vi.mock("@/lib/pa/superpdp/api", async (orig) => ({
   ...(await orig<typeof import("@/lib/pa/superpdp/api")>()),
   createSuperPdpApi: () => ({
     company: async () => ({ id: 1, number: m.platformNumber }),
+    validateInvoice: async () => { m.steps.push("contrôle plateforme"); return m.validation },
     depositInvoice: async () => { m.steps.push("dépôt"); return m.deposit!() },
   }),
 }))
@@ -74,7 +76,7 @@ const ADDRESS = "0225:443061841"
 const send = () => POST(req({ channel: "platform", address: ADDRESS }), params)
 
 beforeEach(() => {
-  Object.assign(m, { steps: [], updates: [], failed: [], deposited: [], pdfInput: null, platformNumber: "000000001" })
+  Object.assign(m, { steps: [], updates: [], failed: [], deposited: [], pdfInput: null, platformNumber: "000000001", validation: { valid: true, failures: [] } })
   m.invoice = { id: "inv-1", status: "draft", invoice_number: null, client: { name: "SCI Les Tilleuls", email: null, siren: "443061841" } }
   m.options = { ok: true, mode: "test", options: { platform: { offered: true, addresses: [{ identifier: ADDRESS, main: true }], defaultAddress: ADDRESS, sender: "0225:552100554", manualEntry: false }, email: { offered: false, to: null }, recommended: "platform", connected: true } }
   m.reserve = { ok: true, row: { id: "o1", attempt: 1, events: [] } }
@@ -87,7 +89,7 @@ describe("envoi par la plateforme", () => {
     const res = await send()
     expect(res.status).toBe(200)
     expect(await res.json()).toMatchObject({ success: true, channel: "platform", sentTo: ADDRESS, invoice: { invoice_number: "F-2026-007", status: "sent" } })
-    expect(m.steps).toEqual(["contrôle", "réservation", "jeton", "émission", "pdf", "dépôt", "statut"])
+    expect(m.steps).toEqual(["contrôle", "réservation", "jeton", "émission", "pdf", "contrôle plateforme", "dépôt", "statut"])
     expect((m.pdfInput!.invoice.client as Record<string, unknown>).electronic_address).toBe(ADDRESS)
     expect(m.pdfInput!.company.electronic_address).toBe("0225:552100554")
     // Bac à sable : vendeur = entreprise raccordée, au numéro fictif de Super PDP
@@ -143,6 +145,15 @@ describe("envoi par la plateforme", () => {
     expect(json.error).toContain("n'existe pas dans l'annuaire")
     expect(m.updates).toEqual([])
     expect(m.failed[0]).toContain("n'existe pas dans l'annuaire")
+  })
+
+  it("contrôle de Super PDP refusé : rien n'est déposé, la raison est dite", async () => {
+    m.validation = { valid: false, failures: ["BR-FR-05/BT-22 : La mention relative aux pénalités de retard (code PMD) est absente."] }
+    const res = await send()
+    expect(res.status).toBe(502)
+    expect((await res.json()).error).toContain("BR-FR-05")
+    expect(m.steps).not.toContain("dépôt")
+    expect(m.failed[0]).toContain("contrôle de la plateforme")
   })
 
   it("doublon chez Super PDP (essai précédent interrompu) : la facture déjà déposée est reprise", async () => {

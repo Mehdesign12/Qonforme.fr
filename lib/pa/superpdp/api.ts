@@ -76,6 +76,8 @@ export interface SuperPdpApi {
   createEvent(input: { invoiceId: number; statusCode: string; reasonCode?: string | null; note?: string | null }): Promise<SpEvent>
   /** Dépose une facture à envoyer (PDF Factur-X) ; la plateforme la transmet ensuite. */
   depositInvoice(pdf: Uint8Array, opts: { externalId: string }): Promise<SpDepositedInvoice>
+  /** Contrôle une facture sans la transmettre (schématrons Factur-X et règles françaises). */
+  validateInvoice(pdf: Uint8Array): Promise<{ valid: boolean; failures: string[] }>
 }
 
 export interface SpDepositedInvoice {
@@ -144,6 +146,14 @@ export function createSuperPdpApi(accessToken: string, f: Fetch = fetch): SuperP
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoice_id: invoiceId, status_code: statusCode, ...(Object.keys(detail).length ? { details: [detail] } : {}) }),
       })
+    },
+    async validateInvoice(pdf) {
+      const fd = new FormData()
+      fd.append("file_name", new Blob([pdf as unknown as BlobPart], { type: "application/pdf" }), "facture.pdf")
+      const r = await json<{ data?: { is_valid?: boolean; subreports?: { failures?: { message?: string }[] }[] }[] }>("/v1.beta/validation_reports", { method: "POST", body: fd })
+      const report = r.data?.[0]
+      const failures = (report?.subreports ?? []).flatMap((s) => (s.failures ?? []).map((f) => (f.message ?? "").replace(/\s+/g, " ").trim())).filter(Boolean)
+      return { valid: report?.is_valid === true, failures }
     },
     depositInvoice(pdf, { externalId }) {
       return json<SpDepositedInvoice>(`/v1.beta/invoices?external_id=${encodeURIComponent(externalId)}`, {

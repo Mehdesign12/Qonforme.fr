@@ -321,6 +321,10 @@ export function unitCode(unit: string | null | undefined): string {
 
 /** Client professionnel identifié : SIREN valide ou n° de TVA. */
 export function hasBusinessBuyer(doc: Pick<FxDocument, "buyer">): boolean {
+  // Une adresse de l'annuaire de la facturation électronique n'existe que pour une
+  // entreprise : facture entre professionnels, mentions AAB/PMD/PMT comprises
+  // (BR-FR-05, refus constaté chez Super PDP le 03/11/2026 sans elles)
+  if ((doc.buyer.electronic_address ?? "").trim()) return true
   return isBusinessBuyer({ siren: sirenOf(doc.buyer), vat_number: compact(doc.buyer.vat_number) || undefined })
 }
 
