@@ -1,5 +1,6 @@
 'use client'
 
+import { needsClientEmail, sendWindowHref } from "@/lib/email/client-email"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -118,6 +119,10 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
       if (action === "send") {
         const sendRes  = await fetch(`/api/purchase-orders/${po_id}/send`, { method: "POST" })
         const sendJson = await sendRes.json()
+        if (needsClientEmail(sendRes.status, sendJson)) {
+          router.push(sendWindowHref(`/purchase-orders/${po_id}`))
+          return
+        }
         if (!sendRes.ok) {
           if (!toastCompanyRequired(sendRes.status, sendJson)) toast.warning(`Bon de commande sauvegardé mais envoi échoué : ${sendJson.error}`)
         } else {

@@ -37,6 +37,8 @@ import {
   quoteTitle, shortDate, vatBreakdown, vatRatesLabel, type QuoteStatus,
 } from "@/components/quotes/QuoteListHelpers"
 import { SheetGrip } from "@/components/ui/sheet-grip"
+import { RecipientBox } from "@/components/purchase-orders/detail-bits"
+import { normalizeEmail } from "@/lib/pa/delivery"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -106,8 +108,8 @@ export interface QuoteDetailActions {
   editHref?: string
   onEdit?: () => void
   onDelete: () => unknown
-  /** Envoi (ou renvoi) par email ; true si le devis est parti. */
-  onSend: () => Promise<boolean>
+  /** Envoi (ou renvoi) par email ; true si le devis est parti. `email` : adresse tapée dans la fenêtre quand le client n'en a pas. */
+  onSend: (email?: string) => Promise<boolean>
   /** Brouillon remis sans email (« sent »), accord ou refus du client ; true si le statut a changé. */
   onSetStatus: (status: "sent" | "accepted" | "rejected") => Promise<boolean>
   onConvert: () => unknown
@@ -140,7 +142,12 @@ export function QuoteDetailView({
   sendNote,
   billing,
   conversionBlocked,
+  openSend = false,
+  onSendOpened,
 }: {
+  /** Arrivée depuis l'éditeur (client sans email, `?send=1`) : la fenêtre d'envoi s'ouvre et demande l'adresse. */
+  openSend?: boolean
+  onSendOpened?: () => void
   /** Panneau « Signature en ligne », quand la fonction est disponible. */
   signature?: React.ReactNode
   /** Panneau « Facturation du chantier » (formule Artisan : acomptes, situations, solde). */
@@ -162,6 +169,12 @@ export function QuoteDetailView({
   const compact = useIsCompact()
   const [modal, setModal] = useState<ModalKey | null>(null)
   const [justSent, setJustSent] = useState<string | null>(null)
+  const [typedEmail, setTypedEmail] = useState("")
+  useEffect(() => {
+    if (!openSend) return
+    setModal("send")
+    onSendOpened?.()
+  }, [openSend]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const s = quote.status
   const left = daysLeft(quote, today)
@@ -176,7 +189,7 @@ export function QuoteDetailView({
 
   /* ── Actions communes (en-tête, barre mobile, feuille « Plus ») ── */
   const send = async () => {
-    const ok = await actions.onSend()
+    const ok = await actions.onSend(quote.client?.email ? undefined : typedEmail.trim())
     if (ok || demo) setModal(null)
     if (ok && !demo) setJustSent(clientName ?? "votre client")
   }
@@ -265,12 +278,12 @@ export function QuoteDetailView({
     headerActions = [
       pdfBtn(), dupBtn(), printBtn, editBtn,
       <Act key="del" label="Supprimer" icon={Trash2} variant="danger" onClick={openModal("delete")} loading={busy.delete} />,
-      <Act key="send" label="Envoyer par email" icon={Send} variant="primary" onClick={openModal("send")} loading={busy.send} />,
+      <Act key="send" label="Envoyer" icon={Send} variant="primary" onClick={openModal("send")} loading={busy.send} />,
     ]
   } else if (s === "sent" && !expired) {
     headerActions = [
       pdfBtn(), dupBtn(), printBtn,
-      <Act key="resend" label="Renvoyer par email" icon={RefreshCw} onClick={openModal("send")} loading={busy.send} />,
+      <Act key="resend" label="Renvoyer" icon={RefreshCw} onClick={openModal("send")} loading={busy.send} />,
       <Act key="rej" label="Refusé ?" onClick={openModal("reject")} />,
       <Act key="acc" label="Marquer accepté" icon={Check} variant="primary" onClick={openModal("accept")} loading={busy.status} />,
     ]
@@ -569,7 +582,7 @@ export function QuoteDetailView({
       >
         {s === "draft" && (
           <>
-            <BarBtn primary label="Envoyer par email" icon={Send} onClick={openModal("send")} loading={busy.send} />
+            <BarBtn primary label="Envoyer" icon={Send} onClick={openModal("send")} loading={busy.send} />
             <div className="grid grid-cols-2 gap-2.5">
               <BarBtn label="Modifier" icon={Pencil} href={actions.editHref} onClick={actions.onEdit} />
               <BarBtn label="PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
@@ -580,7 +593,7 @@ export function QuoteDetailView({
           <>
             {expired
               ? <BarBtn primary label="Renouveler le devis" icon={Copy} onClick={actions.onDuplicate} loading={busy.duplicate} />
-              : <BarBtn primary label="Renvoyer par email" icon={RefreshCw} onClick={openModal("send")} loading={busy.send} />}
+              : <BarBtn primary label="Renvoyer" icon={RefreshCw} onClick={openModal("send")} loading={busy.send} />}
             {/* 3/2 : « Marquer accepté » tient sur une ligne dès 375 px, « PDF » n'en a pas besoin */}
             <div className="grid grid-cols-[3fr_2fr] gap-2.5">
               <BarBtn label="Marquer accepté" icon={Check} onClick={openModal("accept")} loading={busy.status} />
@@ -617,7 +630,7 @@ export function QuoteDetailView({
             icon: busy.send ? <Loader2 className="animate-spin" aria-hidden /> : <Send aria-hidden />,
             variant: "primary",
             onClick: send,
-            disabled: busy.send || !quote.client?.email,
+            disabled: busy.send || (!quote.client?.email && !normalizeEmail(typedEmail)),
           },
           // Devis remis en main propre (client sans email, par exemple) : seul moyen de le
           // faire sortir du brouillon pour l'accepter puis le convertir en facture
@@ -629,18 +642,7 @@ export function QuoteDetailView({
           }] : []),
         ]}
       >
-        <div className="q-inset flex flex-col gap-0.5 p-3.5">
-          <span className="text-xs text-[var(--q-text-4)]">Destinataire</span>
-          <span className="text-sm font-semibold">{clientName ?? "Aucun client"}</span>
-          {quote.client?.email
-            ? <span className="truncate font-mono text-[13px] text-[var(--q-text-3)]">{quote.client.email}</span>
-            : (
-              <span className="text-[13px] text-[var(--q-danger)]">
-                Aucune adresse email : ajoutez-en une dans la{" "}
-                {quote.client?.href ? <Link href={quote.client.href} className="underline">fiche client</Link> : "fiche client"}.
-              </span>
-            )}
-        </div>
+        <RecipientBox name={clientName} email={quote.client?.email} clientHref={quote.client?.href} typed={typedEmail} onTyped={setTypedEmail} />
         <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
           {s === "draft"
             ? <>Le devis <strong className="font-semibold text-[var(--q-ink)]">{quote.quote_number}</strong> part par email avec son PDF en pièce jointe. Il passe au statut <strong className="font-semibold text-[var(--q-ink)]">Envoyé</strong> et ne se modifie plus.</>
@@ -731,7 +733,7 @@ export function QuoteDetailView({
               <MoreRow icon={Pencil} label="Modifier" hint="Lignes, client, dates" href={actions.editHref} onClick={actions.onEdit ? fromMore(actions.onEdit) : () => setModal(null)} />
             )}
             {s === "sent" && !expired && (
-              <MoreRow icon={RefreshCw} label="Renvoyer par email" hint={quote.client?.email ?? "Avec le PDF en pièce jointe"} onClick={openModal("send")} />
+              <MoreRow icon={RefreshCw} label="Renvoyer" hint={quote.client?.email ?? "Avec le PDF en pièce jointe"} onClick={openModal("send")} />
             )}
             {s === "sent" && <MoreRow icon={X} label="Marquer comme refusé" hint="Le client a dit non" onClick={openModal("reject")} />}
             {canConvert && s === "sent" && (

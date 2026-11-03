@@ -42,6 +42,7 @@ import { SetCrumb } from "@/components/layout/crumb"
 import { invoiceKindLabel, isArtisanKind, parseBillingContext, parseInvoiceKind } from "@/lib/artisan/billing"
 import { formatPercentFr, fromCents, toCents } from "@/lib/artisan/money"
 import { InvoicePaper } from "@/components/invoices/InvoicePaper"
+import { journeySteps, latestProblem, platformState, PLATFORM_STATE_LABEL, type PlatformInfo } from "@/lib/pa/outbound-view"
 import {
   type CompanyView, type InvoiceView, daysBetween, daysLate, formatIban, isOpen, longDate,
   mediumDate, plural, shortDate, subjectFromLines, timeOf, yearOf,
@@ -130,6 +131,8 @@ export interface InvoiceDetailViewProps {
   invoiceHref?: (ref: { id: string; number: string }) => string
   /** Lien du devis d'origine d'un acompte, d'une situation ou d'un solde. */
   quoteHref?: (quoteId: string) => string
+  /** Envoi par la plateforme agréée (tentative active), ou null si la facture est partie par email. */
+  platform?: PlatformInfo | null
 }
 
 /* ------------------------------------------------------------------ */
@@ -139,7 +142,7 @@ export interface InvoiceDetailViewProps {
 export function InvoiceDetailView({
   invoice, company, today, backHref, clientHref, quote, creditNotesHref, settingsCompanyHref, handlers: h,
   autoReminders = describeInvoiceSchedule(DEFAULT_REMINDER_SETTINGS),
-  payment, paymentBanner, invoiceHref, quoteHref,
+  payment, paymentBanner, invoiceHref, quoteHref, platform = null,
 }: InvoiceDetailViewProps) {
   const router = useRouter()
   const status = invoice.status
@@ -217,10 +220,18 @@ export function InvoiceDetailView({
   const mainTransition = transitions.find((t) => t.main) ?? null
   const otherTransitions = transitions.filter((t) => t !== mainTransition)
 
+  // Envoi par la plateforme non abouti (refusé au dépôt ou rejeté ensuite) : « Renvoyer » passe devant
+  const pState = platform ? platformState(platform) : null
+  const retry = !draft && resend && (pState === "failed" || pState === "rejected") ? resend : null
+
   let primary: Action | null
   let secondaries: Action[]
   let menu: Action[]
-  if (draft) {
+  if (retry) {
+    primary = retry
+    secondaries = [mainTransition, credit].filter(Boolean) as Action[]
+    menu = [...(xml ? [xml] : []), print, ...otherTransitions, archive]
+  } else if (draft) {
     primary = send ?? edit
     secondaries = send && edit ? [edit] : []
     menu = [print, archive, ...(del ? [del] : [])]
@@ -329,6 +340,27 @@ export function InvoiceDetailView({
 
       {/* ---- Bandeaux ---- */}
       {paymentBanner}
+      {platform && (pState === "failed" || pState === "rejected") && !draft && (
+        <Banner
+          tone="warn"
+          icon={AlertTriangle}
+          title="La facture n’est pas arrivée chez votre client"
+          action={retry ? <ActionButton action={retry} run={run} size="sm" /> : undefined}
+        >
+          {latestProblem(platform) ?? "L’envoi par la plateforme agréée n’a pas abouti."} Corrigez ce qui est indiqué, puis renvoyez-la.
+        </Banner>
+      )}
+      {platform && (pState === "refused" || pState === "disputed") && (
+        <Banner
+          tone="warn"
+          icon={AlertTriangle}
+          title={pState === "refused" ? "Refusée par votre client" : "Mise en litige par votre client"}
+          action={pState === "refused" && credit ? <ActionButton action={credit} run={run} size="sm" /> : undefined}
+        >
+          {latestProblem(platform) ? <>Motif : {latestProblem(platform)}. </> : null}
+          {pState === "refused" ? "Une facture émise ne se modifie pas : corrigez-la par un avoir, puis émettez une nouvelle facture." : "Voyez avec votre client ce qu’il conteste."}
+        </Banner>
+      )}
       {invoice.is_archived && (
         <Banner icon={Archive} title="Facture archivée" action={<ActionButton action={{ ...archive, label: "Désarchiver" }} run={run} size="sm" />}>
           Elle n&apos;apparaît plus dans la liste principale. Vous pouvez la désarchiver à tout moment.
@@ -390,7 +422,7 @@ export function InvoiceDetailView({
 
         <div className="order-1 flex min-w-0 flex-col gap-4 lg:order-2 print:hidden">
           <Panel title="Historique" className="order-2 lg:order-1" bodyClassName="px-5 pb-5 pt-2">
-            <Timeline invoice={invoice} today={today} year={year} />
+            <Timeline steps={buildSteps(invoice, today, year, platform)} />
             {open && clientEmail && (journal || !invoice.reminder_2_sent_at) && (
               <p className="q-field-hint mt-3 border-t border-[var(--q-line-soft)] pt-3">
                 {autoReminders
@@ -399,6 +431,17 @@ export function InvoiceDetailView({
               </p>
             )}
           </Panel>
+
+          {platform?.depositedAt && (
+            <Panel title="Parcours de la facture" className="order-3" bodyClassName="px-5 pb-5 pt-2">
+              <p className="mb-3 text-[13px] text-[var(--q-text-3)]">
+                {PLATFORM_STATE_LABEL[pState ?? "in_transit"]}
+                {platform.recipientAddress ? <> · <span className="font-mono">{platform.recipientAddress}</span></> : null}
+              </p>
+              <Timeline steps={journeySteps(platform).map((st) => ({ title: st.title, sub: [st.at ? stamp(st.at, year) : "", st.sub ?? ""].filter(Boolean).join(" · "), state: st.state }))} />
+              <p className="q-field-hint mt-3 border-t border-[var(--q-line-soft)] pt-3">Chaque étape est transmise par la plateforme. Qonforme affiche ce qu’elle reçoit, sans rien inventer.</p>
+            </Panel>
+          )}
 
           <Panel title="Paiement" className="order-1 lg:order-2" bodyClassName="flex flex-col gap-3.5 px-5 pb-5 pt-2">
             <dl className="flex flex-col gap-2.5 text-sm">
@@ -692,12 +735,14 @@ function stamp(value: string | null | undefined, year: number): string {
   return `${shortDate(value, year)}${t ? ` · ${t}` : ""}`
 }
 
-function buildSteps(inv: InvoiceView, today: string, year: number): Step[] {
+function buildSteps(inv: InvoiceView, today: string, year: number, platform: PlatformInfo | null = null): Step[] {
   const steps: Step[] = []
   const status = inv.status
   if (inv.created_at) steps.push({ title: "Brouillon créé", sub: stamp(inv.created_at, year), state: "done" })
 
-  if (inv.sent_at) {
+  if (platform?.depositedAt) {
+    steps.push({ title: "Envoyée par la plateforme agréée", sub: `${stamp(platform.depositedAt, year)}${platform.recipientAddress ? ` · à ${platform.recipientAddress}` : ""}`, state: platform.phase === "rejected" ? "warn" : "done" })
+  } else if (inv.sent_at) {
     steps.push({ title: "Envoyée par email", sub: `${stamp(inv.sent_at, year)}${inv.client?.email ? ` · à ${inv.client.email}` : ""}`, state: "done" })
   } else if (status !== "draft") {
     steps.push({ title: "Émise", sub: `Facture datée du ${shortDate(inv.issue_date, year)}`, state: "done" })
@@ -738,8 +783,7 @@ function buildSteps(inv: InvoiceView, today: string, year: number): Step[] {
   return steps
 }
 
-function Timeline({ invoice, today, year }: { invoice: InvoiceView; today: string; year: number }) {
-  const steps = buildSteps(invoice, today, year)
+function Timeline({ steps }: { steps: Step[] }) {
   return (
     <ol className="flex flex-col">
       {steps.map((s, i) => {

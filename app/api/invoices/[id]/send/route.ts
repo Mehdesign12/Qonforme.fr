@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { CLIENT_EMAIL_REQUIRED } from "@/lib/email/client-email"
 import { createAdminClient, createClient } from "@/lib/supabase/server"
 import { statusAfterSend } from "@/lib/utils/document-status"
 import { requireIssuingAccess } from "@/lib/stripe/subscription"
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     console.log(`[invoice-send] Client: ${invoice.client?.name}, email: ${clientEmail}`)
     if (!clientEmail) {
-      return NextResponse.json({ error: "Le client n'a pas d'adresse email" }, { status: 422 })
+      return NextResponse.json({ error: "Le client n'a pas d'adresse email", code: CLIENT_EMAIL_REQUIRED }, { status: 422 })
     }
 
     // 2. Entreprise

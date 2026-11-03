@@ -8,7 +8,7 @@ import { claimLock, checkConnection, ConnectionError, loadConnection, releaseLoc
 import { hasPlan } from "@/lib/pa/server"
 import { syncConnection, type SyncResult } from "@/lib/pa/sync"
 import { isPaStatus, SYNCABLE, type PaStatus } from "@/lib/pa/status"
-import { notifyNewInvoices, notifyStatus, runDigest } from "@/lib/pa/notify"
+import { notifyNewInvoices, notifyOutboundChanges, notifyStatus, runDigest } from "@/lib/pa/notify"
 import { ApiError } from "@/lib/pa/superpdp/api"
 import type { Fetch } from "@/lib/pa/superpdp/oauth"
 
@@ -47,6 +47,7 @@ export async function runConnection(
 
     const sync = await syncConnection(admin, row, opts)
     if (sync.newInvoices > 0) await notifyNewInvoices(admin, row, sync.newInvoices)
+    if (sync.outboundChanged.length > 0) await notifyOutboundChanges(admin, row, sync.outboundChanged)
     await runDigest(admin, row, opts.now)
     return { ok: true, status, sync }
   } catch (err) {

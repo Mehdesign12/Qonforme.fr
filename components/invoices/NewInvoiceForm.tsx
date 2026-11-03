@@ -1,5 +1,6 @@
 'use client'
 
+import { needsClientEmail, sendWindowHref } from "@/lib/email/client-email"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -114,6 +115,11 @@ export default function NewInvoiceForm() {
         if (isSubscriptionRequired(sendRes.status, sendJson)) {
           // Brouillon sans numéro : il ne le recevra qu'à l'envoi
           setPaywallInvoice({ id: json.invoice.id, number: json.invoice.invoice_number ?? undefined })
+          return
+        }
+        // Client sans adresse : la fiche s'ouvre sur la fenêtre d'envoi, qui la demande
+        if (needsClientEmail(sendRes.status, sendJson)) {
+          router.push(sendWindowHref(`/invoices/${json.invoice.id}`))
           return
         }
         if (!sendRes.ok) {

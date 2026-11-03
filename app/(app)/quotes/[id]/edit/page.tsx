@@ -2,6 +2,7 @@
 
 export const dynamic = "force-dynamic"
 
+import { needsClientEmail, sendWindowHref } from "@/lib/email/client-email"
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { toast } from "sonner"
@@ -100,6 +101,10 @@ export default function EditQuotePage() {
       if (action === "send") {
         const sendRes  = await fetch(`/api/quotes/${id}/send`, { method: "POST" })
         const sendJson = await sendRes.json()
+        if (needsClientEmail(sendRes.status, sendJson)) {
+          router.push(sendWindowHref(`/quotes/${id}`))
+          return
+        }
         if (!sendRes.ok) {
           if (!toastCompanyRequired(sendRes.status, sendJson)) toast.error(sendJson.error ?? "Brouillon enregistré, mais l'envoi par email a échoué")
           router.push(`/quotes/${id}`)
