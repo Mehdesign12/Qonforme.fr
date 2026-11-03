@@ -5,6 +5,7 @@
  * dite « en attente », jamais datée.
  */
 import { OUTBOUND_STATUS_LABEL, type OutboundEvent, type OutboundPhase, type OutboundRow } from "@/lib/pa/outbound"
+import { REASON_LABELS } from "@/lib/reception/lifecycle"
 
 /** Ce que renvoie `GET /api/invoices/[id]/platform` pour la tentative active. */
 export interface PlatformInfo {
@@ -81,7 +82,14 @@ export interface JourneyStep {
 }
 
 /** Motif d'un événement (code de refus, note du client ou du contrôle). */
-const reasonOf = (e: OutboundEvent): string | null => (e.reason?.trim() || null)
+export function reasonOf(e: Pick<OutboundEvent, "reason">): string | null {
+  const raw = e.reason?.trim()
+  if (!raw) return null
+  // Le code de motif (« MONTANTTOTAL_ERR ») est remplacé par son libellé
+  const [first, ...rest] = raw.split(" · ")
+  const label = REASON_LABELS[first]
+  return label ? [label, ...rest].join(" · ") : raw
+}
 
 /**
  * Étapes du parcours : chaque statut officiel reçu (fr:*), dans l'ordre, une

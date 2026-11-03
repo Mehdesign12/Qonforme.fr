@@ -42,7 +42,7 @@ import { SetCrumb } from "@/components/layout/crumb"
 import { invoiceKindLabel, isArtisanKind, parseBillingContext, parseInvoiceKind } from "@/lib/artisan/billing"
 import { formatPercentFr, fromCents, toCents } from "@/lib/artisan/money"
 import { InvoicePaper } from "@/components/invoices/InvoicePaper"
-import { journeySteps, latestProblem, platformState, PLATFORM_STATE_LABEL, type PlatformInfo } from "@/lib/pa/outbound-view"
+import { journeySteps, latestProblem, platformState, PLATFORM_STATE_LABEL, type PlatformInfo, type PlatformState } from "@/lib/pa/outbound-view"
 import {
   type CompanyView, type InvoiceView, daysBetween, daysLate, formatIban, isOpen, longDate,
   mediumDate, plural, shortDate, subjectFromLines, timeOf, yearOf,
@@ -227,7 +227,13 @@ export function InvoiceDetailView({
   let primary: Action | null
   let secondaries: Action[]
   let menu: Action[]
-  if (retry) {
+  // Refusée ou contestée par le client : la correction passe par un avoir
+  const contested = !draft && credit && (pState === "refused" || pState === "disputed")
+  if (contested) {
+    primary = credit
+    secondaries = [mainTransition, remind].filter(Boolean) as Action[]
+    menu = [...(xml ? [xml] : []), print, ...otherTransitions, archive]
+  } else if (retry) {
     primary = retry
     secondaries = [mainTransition, credit].filter(Boolean) as Action[]
     menu = [...(xml ? [xml] : []), print, ...otherTransitions, archive]
@@ -297,7 +303,7 @@ export function InvoiceDetailView({
           <div className="flex flex-wrap items-center gap-2.5">
             {invoice.invoice_number && <span className="font-mono text-sm text-[var(--q-text-3)]">{invoice.invoice_number}</span>}
             {kindLabel && <span className="q-tag">{kindLabel}</span>}
-            <StatusPills invoice={invoice} lateDays={lateDays} notDelivered={pState === "failed" || pState === "rejected"} />
+            <StatusPills invoice={invoice} lateDays={lateDays} platform={pState} />
           </div>
           <h1 className="q-h1 md:!text-[30px]">
             {clientName}
@@ -331,7 +337,7 @@ export function InvoiceDetailView({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {kindLabel && <span className="q-tag">{kindLabel}</span>}
-          <StatusPills invoice={invoice} lateDays={lateDays} notDelivered={pState === "failed" || pState === "rejected"} />
+          <StatusPills invoice={invoice} lateDays={lateDays} platform={pState} />
           <span className={cn("text-[13px]", late ? "font-semibold text-[var(--q-warn)]" : "text-[var(--q-text-3)]")}>
             Échéance {shortDate(invoice.due_date, year)}
           </span>
@@ -649,13 +655,19 @@ function MoreMenu({ actions, run, triggerClassName }: { actions: Action[]; run: 
 }
 
 /** Statut du document, retard et archivage : toujours un libellé, jamais la couleur seule. */
-function StatusPills({ invoice, lateDays, notDelivered = false }: { invoice: InvoiceView; lateDays: number; notDelivered?: boolean }) {
+function StatusPills({ invoice, lateDays, platform = null }: { invoice: InvoiceView; lateDays: number; platform?: PlatformState | null }) {
+  // Envoi par la plateforme : la facture est émise (numérotée), mais « Envoyée » serait
+  // faux si elle n'est pas arrivée, ou si le client l'a refusée ou contestée.
+  const platformPill = invoice.status === "sent" || invoice.status === "overdue"
+    ? platform === "failed" || platform === "rejected" ? { tone: "warn" as const, label: "Non transmise" }
+    : platform === "refused" ? { tone: "danger" as const, label: "Refusée par le client" }
+    : platform === "disputed" ? { tone: "warn" as const, label: "En litige" }
+    : null
+    : null
   return (
     <>
-      {/* Envoi par la plateforme non abouti ou rejeté : la facture est émise (numérotée) mais
-          n'est pas chez le client ; « Envoyée » serait faux. */}
-      {notDelivered && invoice.status === "sent" ? (
-        <StatusPill tone="warn" icon={<AlertTriangle strokeWidth={2.25} aria-hidden />}>Non transmise</StatusPill>
+      {platformPill ? (
+        <StatusPill tone={platformPill.tone} icon={<AlertTriangle strokeWidth={2.25} aria-hidden />}>{platformPill.label}</StatusPill>
       ) : invoice.status === "overdue" && lateDays > 0 ? (
         <DocStatusPill kind="invoice" status="overdue" label={`Retard ${lateDays} j`} />
       ) : (

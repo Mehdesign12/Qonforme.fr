@@ -100,7 +100,8 @@ export function toOutboundEvent(e: SpEvent): OutboundEvent {
     code: e.status_code,
     at: e.created_at,
     text: e.status_text ?? null,
-    reason: (detail?.reason ?? note ?? null) || null,
+    // Motif (code de la liste MDT-113) et précision du client : les deux sont gardés
+    reason: [detail?.reason, note].filter((x): x is string => !!x && !!x.trim()).join(" · ") || null,
   }
 }
 
