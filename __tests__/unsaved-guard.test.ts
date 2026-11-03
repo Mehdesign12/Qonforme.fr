@@ -130,3 +130,37 @@ describe("fenêtre avant de quitter", () => {
     expect(event.defaultPrevented).toBe(true)
   })
 })
+
+describe("bouton Retour du navigateur", () => {
+  it("popAction : retour depuis l'entrée ajoutée → fenêtre ; sans saisie → on saute", async () => {
+    const { popAction, HISTORY_MARK } = await import("@/lib/ui/history-guard")
+    const base = { [HISTORY_MARK]: "base" }
+    const top = { [HISTORY_MARK]: "top" }
+    expect(popAction(base, { armed: true, skipping: false })).toBe("hold")
+    expect(popAction(base, { armed: false, skipping: false })).toBe("back")
+    expect(popAction(top, { armed: false, skipping: false })).toBe("back-skip")
+    expect(popAction(top, { armed: true, skipping: false })).toBe("none")
+    expect(popAction(base, { armed: false, skipping: true })).toBe("consume")
+    expect(popAction({ __NA: true }, { armed: true, skipping: false })).toBe("none")
+    expect(popAction(null, { armed: true, skipping: false })).toBe("none")
+  })
+
+  it("holdBack ajoute une entrée identique et un retour ouvre la fenêtre", async () => {
+    const mod = await import("@/lib/ui/history-guard")
+    mod.resetHistoryGuard()
+    window.history.replaceState({ __NA: true }, "", "/quotes/new")
+    const length = window.history.length
+    const open = vi.fn()
+    const release = mod.holdBack({ open })
+    expect(window.history.length).toBe(length + 1)
+    expect((window.history.state as Record<string, unknown>)[mod.HISTORY_MARK]).toBe("top")
+    window.dispatchEvent(new PopStateEvent("popstate", { state: { [mod.HISTORY_MARK]: "base" } }))
+    expect(open).toHaveBeenCalledTimes(1)
+    release()
+    const back = vi.spyOn(window.history, "back").mockImplementation(() => {})
+    window.dispatchEvent(new PopStateEvent("popstate", { state: { [mod.HISTORY_MARK]: "base" } }))
+    expect(open).toHaveBeenCalledTimes(1)
+    expect(back).toHaveBeenCalledTimes(1)
+    back.mockRestore()
+  })
+})

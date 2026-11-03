@@ -32,6 +32,7 @@ export function CookieDetails({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        data-cookie-details=""
         showCloseButton={false}
         className={cn(
           "z-[80] max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto p-6 sm:max-w-[580px] md:p-8",
