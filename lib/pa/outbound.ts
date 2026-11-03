@@ -258,11 +258,12 @@ async function updateRow(admin: SupabaseClient, id: string, patch: Partial<Outbo
 export async function markDeposited(
   admin: SupabaseClient,
   row: Pick<OutboundRow, "id" | "events">,
-  input: { platformInvoiceId: number; events?: OutboundEvent[] },
+  input: { platformInvoiceId: number; events?: OutboundEvent[]; documentNumber?: string | null },
 ): Promise<boolean> {
   const events = mergeEvents(row.events, input.events ?? [])
   const last = latestOfficial(events)
   return updateRow(admin, row.id, {
+    ...(input.documentNumber ? { document_number: input.documentNumber } : {}),
     phase: phaseAfter("sent", events),
     platform_invoice_id: input.platformInvoiceId,
     deposited_at: new Date().toISOString(),
@@ -274,8 +275,12 @@ export async function markDeposited(
 }
 
 /** Dépôt refusé (contrôle, annuaire, doublon, panne) : la raison, pour l'afficher. */
-export async function markFailed(admin: SupabaseClient, id: string, error: string): Promise<boolean> {
-  return updateRow(admin, id, { phase: "failed", error: trimError(error.trim() || "Envoi refusé par la plateforme.") }, "sending")
+export async function markFailed(admin: SupabaseClient, id: string, error: string, documentNumber?: string | null): Promise<boolean> {
+  return updateRow(admin, id, {
+    phase: "failed",
+    error: trimError(error.trim() || "Envoi refusé par la plateforme."),
+    ...(documentNumber ? { document_number: documentNumber } : {}),
+  }, "sending")
 }
 
 /**

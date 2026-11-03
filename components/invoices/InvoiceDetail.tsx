@@ -512,7 +512,9 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         ? mergeInvoice(prev, json.invoice)
         : { ...invoice, status: "sent" as InvoiceStatus, sent_at: new Date().toISOString() })
       trackJourney("invoice_sent")
-      toast.success(`Facture envoyée à ${json.sentTo}`)
+      toast.success(json.channel === "platform"
+        ? `Facture transmise par la plateforme agréée (${json.sentTo})`
+        : `Facture envoyée à ${json.sentTo}`)
       setShowSendModal(false)
     } catch { toast.error("Erreur réseau") }
     finally { setSendLoading(false) }
