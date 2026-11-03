@@ -666,3 +666,15 @@ Réception seulement : raccordement (OAuth avec PKCE, jetons chiffrés, rotation
 ### Ouverture (30/10/2026)
 
 Essai en bac à sable réussi (raccordement, adresse `0225:315143296_117753`, relève d'une facture envoyée depuis Tricatel, décision « Approuvée » reçue par le fournisseur en fr:205). Migrations `20261003_received_invoices.sql` et `20261030_pa_connections.sql` appliquées, application de production créée, variables dans Vercel, site redéployé : tous les comptes avec une formule voient le raccordement. Textes publics, politique de confidentialité (SUPER G ajouté aux sous-traitants) et consignes des générateurs mis à jour.
+
+### Émission par la plateforme : plan validé, lot 0 fait (03/11/2026)
+
+Le fondateur valide le plan (canevas, planches D14, D15, M13) : lot 0 essai en bac à sable, lot 1 enregistrement des envois, lot 2 choix du canal (plateforme si le client professionnel est dans l'annuaire, email sinon et toujours pour un particulier), lot 3 dépôt, lot 4 suivi des statuts, lot 5 encaissement (fr:212) et avoirs, lot 6 démo, textes, tests. E-reporting des ventes aux particuliers dans un lot à part. Le raccordement actuel suffit pour émettre (`superpdp_send_and_receive` ne règle que l'inscription à l'annuaire) : aucun artisan n'a à se raccorder de nouveau.
+
+**Essai du 03/11/2026, bac à sable** (Tricatel émet, Burger Queen, le compte d'essai, reçoit) : 9 PDF produits par le code de Qonforme (taux normal ; 5,5/10/20 % ; franchise 293 B ; autoliquidation de la sous-traitance ; remise en ligne négative ; acompte 386 ; situation avec reprise d'acompte et retenue de garantie ; solde ; avoir 381) passés au contrôle de Super PDP (`/validation_reports`, schématron Factur-X EN 16931 du FNFE), puis envoyés : tous déposés, émis, reçus et mis à disposition (fr:200 à fr:203) en quelques secondes.
+- **Défaut trouvé et corrigé** : la situation et la facture de solde étaient refusées (`TypeCode` de la facture d'acompte citée en BG-3, réservé au profil EXTENDED). Retiré du XML ; ces factures envoyées par email jusqu'ici portaient le même défaut.
+- **Ajout** : adresse de facturation électronique de l'annuaire (BT-34, BT-49) au lieu du SIREN seul quand elle est connue (`electronic_address`).
+- **Avertissement restant, non bloquant** : PEPPOL-EN16931-R008 (élément de livraison vide).
+- **Contrôles synchrones** : client absent de l'annuaire → 400 « pre-check: receiver address … does not exist » ; même facture renvoyée → 400 « La facture est déjà existante », **même avec un autre `external_id`** (Super PDP reconnaît la facture). Les statuts ne sont pas rendus dans l'ordre : trier par date.
+- **Encaissement** : `fr:212` sans détail accepté, montant = total TTC par taux.
+- **Question ouverte, à poser à Super PDP** : après un rejet (fr:213), peut-on renvoyer la facture corrigée sous le même numéro, vu leur contrôle des doublons ?
