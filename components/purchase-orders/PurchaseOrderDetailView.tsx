@@ -14,7 +14,8 @@
  * « Facturer l'acompte » ni de devis lié (le code ne rattache le bon ni à un
  * devis ni à une facture), pas de notes internes.
  */
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { normalizeEmail } from "@/lib/pa/delivery"
 import Link from "next/link"
 import {
   AlertTriangle, Check, ChevronLeft, Download, Loader2, MoreHorizontal, Pencil, Printer, RefreshCw, Send, Trash2, Users, XCircle,
@@ -57,7 +58,7 @@ export interface PurchaseOrderDetailData {
 export interface PurchaseOrderDetailActions {
   onDownloadPdf: () => void
   /** Envoi par email ; vrai si l'envoi a réussi (la fenêtre se ferme). */
-  onSend: () => Promise<boolean>
+  onSend: (email?: string) => Promise<boolean>
   onChangeStatus: (status: POStatus) => Promise<boolean>
   onDelete: () => Promise<boolean>
   editHref: string
@@ -76,7 +77,12 @@ export function PurchaseOrderDetailView({
   companySettingsHref,
   actions,
   signature,
+  openSend = false,
+  onSendOpened,
 }: {
+  /** Arrivée depuis l'éditeur (client sans email, `?send=1`) : la fenêtre d'envoi s'ouvre et demande l'adresse. */
+  openSend?: boolean
+  onSendOpened?: () => void
   /** Panneau « Signature en ligne », quand la fonction est disponible. */
   signature?: React.ReactNode
   po: PurchaseOrderDetailData
@@ -97,6 +103,12 @@ export function PurchaseOrderDetailView({
   const clientName = po.client?.name ?? null
   const late = s === "sent" && !!po.delivery_date && po.delivery_date < today
   const canSendEmail = s === "draft" || s === "sent"
+  const [typedEmail, setTypedEmail] = useState("")
+  useEffect(() => {
+    if (!openSend) return
+    setModal("send")
+    onSendOpened?.()
+  }, [openSend]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const run = async (fn: () => Promise<boolean>) => { if (await fn()) close() }
   const setStatus = (next: POStatus) => run(() => actions.onChangeStatus(next))
@@ -144,12 +156,12 @@ export function PurchaseOrderDetailView({
       pdfBtn, printBtn,
       <Act key="edit" label="Modifier" icon={Pencil} href={actions.editHref} />,
       <Act key="del" label="Supprimer" icon={Trash2} variant="danger" onClick={open("delete")} loading={busy.delete} />,
-      <Act key="send" label="Envoyer par email" icon={Send} variant="primary" onClick={open("send")} loading={busy.send} />,
+      <Act key="send" label="Envoyer" icon={Send} variant="primary" onClick={open("send")} loading={busy.send} />,
     ]
   } else if (s === "sent") {
     headerActions = [
       pdfBtn, printBtn,
-      <Act key="resend" label="Renvoyer par email" icon={RefreshCw} onClick={open("send")} loading={busy.send} />,
+      <Act key="resend" label="Renvoyer" icon={RefreshCw} onClick={open("send")} loading={busy.send} />,
       <Act key="cancel" label="Annuler" icon={XCircle} variant="danger" onClick={open("cancel")} />,
       <Act key="confirm" label="Confirmer la commande" icon={Check} variant="primary" onClick={() => setStatus("confirmed")} loading={busy.status} />,
     ]
@@ -379,7 +391,7 @@ export function PurchaseOrderDetailView({
       <MobileActionBar>
         {s === "draft" && (
           <>
-            <BarBtn primary label="Envoyer par email" icon={Send} onClick={open("send")} loading={busy.send} />
+            <BarBtn primary label="Envoyer" icon={Send} onClick={open("send")} loading={busy.send} />
             <div className="grid grid-cols-2 gap-2.5">
               <BarBtn label="Modifier" icon={Pencil} href={actions.editHref} />
               <BarBtn label="PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
@@ -411,11 +423,11 @@ export function PurchaseOrderDetailView({
           label: busy.send ? "Envoi…" : s === "draft" ? "Envoyer" : "Renvoyer",
           icon: busy.send ? <Loader2 className="animate-spin" aria-hidden /> : <Send aria-hidden />,
           variant: "primary",
-          onClick: () => run(actions.onSend),
-          disabled: busy.send || !po.client?.email || !canSendEmail,
+          onClick: () => run(() => actions.onSend(po.client?.email ? undefined : typedEmail.trim())),
+          disabled: busy.send || (!po.client?.email && !normalizeEmail(typedEmail)) || !canSendEmail,
         }]}
       >
-        <RecipientBox name={clientName} email={po.client?.email} clientHref={po.client?.editHref ?? po.client?.href} />
+        <RecipientBox name={clientName} email={po.client?.email} clientHref={po.client?.editHref ?? po.client?.href} typed={typedEmail} onTyped={setTypedEmail} />
         <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
           Le bon de commande <span className="font-mono">{po.po_number}</span> part avec son PDF en pièce jointe.
           {s === "draft" && <> Son statut passe alors à «&nbsp;Envoyé&nbsp;».</>}

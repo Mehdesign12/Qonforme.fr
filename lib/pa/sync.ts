@@ -14,6 +14,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { statusFromCode, type ReceivedStatus } from "@/lib/reception/lifecycle"
 import { applyPlatformStatus, ingestInboundInvoice } from "@/lib/reception/ingest"
 import { apiFor, updateConnection, type ConnectionRow } from "@/lib/pa/store"
+import { applyOutboundEvents, type OutboundRow } from "@/lib/pa/outbound"
 import type { Fetch } from "@/lib/pa/superpdp/oauth"
 
 /** Identifiant d'une facture Super PDP dans la colonne `platform_id`. */
@@ -39,6 +40,8 @@ export interface SyncResult {
   newInvoices: number
   unreadable: number
   statuses: number
+  /** Envois par la plateforme dont le statut ou la phase vient de changer (alertes). */
+  outboundChanged: OutboundRow[]
   /** Une page entière a été lue jusqu'au bout (rien d'autre en attente). */
   complete: boolean
 }
@@ -51,7 +54,7 @@ export async function syncConnection(
   opts: { fetch?: Fetch; maxPages?: number } = {},
 ): Promise<SyncResult> {
   const api = await apiFor(admin, row, opts)
-  const result: SyncResult = { newInvoices: 0, unreadable: 0, statuses: 0, complete: true }
+  const result: SyncResult = { newInvoices: 0, unreadable: 0, statuses: 0, outboundChanged: [], complete: true }
   const maxPages = opts.maxPages ?? MAX_PAGES
 
   // 1. Factures reçues
@@ -90,7 +93,13 @@ export async function syncConnection(
   // 2. Statuts venus de la plateforme
   let evCursor = row.events_cursor ?? null
   for (let page = 0; page < maxPages; page++) {
+    const pageStart = evCursor
     const { data, hasAfter } = await api.listEvents(evCursor)
+    // Statuts des factures envoyées par Qonforme (émission par la plateforme) ;
+    // base injoignable : le curseur reste avant cette page, elle sera relue
+    const outbound = await applyOutboundEvents(admin, row.mode, data, row.user_id)
+    if (outbound === null) { evCursor = pageStart; result.complete = false; break }
+    result.outboundChanged.push(...outbound.changed)
     for (const ev of data) {
       const status = platformStatusOf(ev.status_code)
       if (status) {

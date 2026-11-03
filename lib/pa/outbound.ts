@@ -293,6 +293,7 @@ export async function applyOutboundEvents(
   admin: SupabaseClient,
   mode: PaMode,
   events: readonly SpEvent[],
+  userId?: string,
 ): Promise<{ updated: number; changed: OutboundRow[] } | null> {
   const byInvoice = new Map<number, OutboundEvent[]>()
   for (const e of events) {
@@ -302,11 +303,13 @@ export async function applyOutboundEvents(
     byInvoice.set(e.invoice_id, list)
   }
   if (byInvoice.size === 0) return { updated: 0, changed: [] }
-  const { data, error } = await admin
+  let query = admin
     .from(OUTBOUND_TABLE)
     .select("*")
     .eq("mode", mode)
     .in("platform_invoice_id", Array.from(byInvoice.keys()))
+  if (userId) query = query.eq("user_id", userId)
+  const { data, error } = await query
   if (error) return isMissingTable(error) ? { updated: 0, changed: [] } : null
   let updated = 0
   const changed: OutboundRow[] = []

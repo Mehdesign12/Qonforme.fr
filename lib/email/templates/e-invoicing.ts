@@ -102,3 +102,34 @@ export function buildSyncFailureEmail(p: { companyName: string }): { subject: st
     }),
   }
 }
+
+/** Ce qui arrive à une facture envoyée par la plateforme, pour l'alerte à l'artisan. */
+export type OutboundAlertKind = "refused" | "rejected" | "disputed"
+
+/**
+ * Alerte quand une facture envoyée par la plateforme est refusée par le client
+ * (fr:210), mise en litige (fr:207) ou rejetée par une plateforme (fr:213, avant
+ * de toucher le client). Le motif reçu est repris tel quel, échappé.
+ */
+export function buildOutboundAlertEmail(p: {
+  kind: OutboundAlertKind
+  number: string
+  invoiceUrl: string
+  reason?: string | null
+}): { subject: string; html: string } {
+  const what = {
+    refused: { subject: `Facture ${p.number} refusée par votre client`, headline: "Facture refusée", accent: "par votre client.", text: `Votre client a refusé la facture ${esc(p.number)} sur sa plateforme. Une facture émise ne se modifie pas : corrigez-la par un avoir, puis émettez une nouvelle facture.`, cta: "Voir la facture" },
+    disputed: { subject: `Facture ${p.number} mise en litige`, headline: "Facture", accent: "en litige.", text: `Votre client a mis la facture ${esc(p.number)} en litige : il conteste tout ou partie de la facture. Voyez avec lui ce qui ne va pas.`, cta: "Voir la facture" },
+    rejected: { subject: `Facture ${p.number} rejetée par la plateforme`, headline: "Facture rejetée", accent: "par la plateforme.", text: `La facture ${esc(p.number)} n'a pas atteint votre client : une plateforme l'a rejetée au contrôle. Corrigez ce qui est indiqué, puis renvoyez-la depuis sa fiche.`, cta: "Renvoyer la facture" },
+  }[p.kind]
+  const reason = p.reason?.trim()
+  const body = `
+    <p style="margin:0;font-size:16px;line-height:1.6;color:#2B2E35;">${what.text}</p>
+    ${reason ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;border:1px solid #E7E4DC;border-radius:8px;"><tr><td style="padding:14px 16px;">${monoLabel("Motif indiqué")}<div style="margin-top:6px;font-family:${FONT_BODY};font-size:15px;line-height:1.5;color:#15171C;">${esc(reason.slice(0, 500))}</div></td></tr></table>` : ""}
+    ${ctaButton(what.cta, p.invoiceUrl)}
+    ${FOOT}`
+  return {
+    subject: what.subject,
+    html: emailBase({ companyName: "Qonforme", preheader: what.subject, headline: what.headline, headlineAccent: what.accent, body, source: "email-facturation-electronique", replyNote: "" }),
+  }
+}

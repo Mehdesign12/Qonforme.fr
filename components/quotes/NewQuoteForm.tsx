@@ -1,5 +1,6 @@
 'use client'
 
+import { needsClientEmail, sendWindowHref } from "@/lib/email/client-email"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -71,6 +72,11 @@ export default function NewQuoteForm() {
       if (action === "send" && json.quote?.id) {
         const sendRes = await fetch(`/api/quotes/${json.quote.id}/send`, { method: "POST" })
         const sendJson = await sendRes.json()
+        // Client sans adresse : la fiche s'ouvre sur la fenêtre d'envoi, qui la demande
+        if (needsClientEmail(sendRes.status, sendJson)) {
+          router.push(sendWindowHref(`/quotes/${json.quote.id}`))
+          return
+        }
         if (!sendRes.ok) {
           if (!toastCompanyRequired(sendRes.status, sendJson)) toast.error(sendJson.error ?? "Devis créé mais l'envoi par email a échoué")
           router.push(`/quotes/${json.quote.id}`)

@@ -469,20 +469,45 @@ export function useIsCompact(): boolean {
 
 /** Bloc « Destinataire » des fenêtres d'envoi par email. */
 export function RecipientBox({
-  name, email, clientHref,
-}: { name: string | null | undefined; email: string | null | undefined; clientHref?: string | null }) {
+  name, email, clientHref, typed, onTyped,
+}: {
+  name: string | null | undefined
+  email: string | null | undefined
+  clientHref?: string | null
+  /** Client sans adresse : champ pour la taper dans la fenêtre (enregistrée sur sa fiche à l'envoi). */
+  typed?: string
+  onTyped?: (value: string) => void
+}) {
   return (
     <div className="q-inset flex flex-col gap-0.5 p-3.5">
       <span className="text-xs text-[var(--q-text-4)]">Destinataire</span>
       <span className="text-sm font-semibold">{name ?? "Aucun client"}</span>
       {email
         ? <span className="truncate font-mono text-[13px] text-[var(--q-text-3)]">{email}</span>
-        : (
-          <span className="text-[13px] text-[var(--q-danger)]">
-            Aucune adresse email : ajoutez-en une dans la{" "}
-            {clientHref ? <Link href={clientHref} className="underline">fiche client</Link> : "fiche client"}.
-          </span>
-        )}
+        : onTyped
+          ? (
+            <label className="mt-1.5 flex min-w-0 flex-col gap-1">
+              <span className="text-[13px] text-[var(--q-text-3)]">
+                Adresse email{name ? <> de {name}</> : null} (enregistrée sur sa fiche)
+              </span>
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                className="q-input w-full"
+                placeholder="client@exemple.fr"
+                value={typed ?? ""}
+                onChange={(e) => onTyped(e.target.value)}
+                data-replay-mask
+              />
+            </label>
+          )
+          : (
+            <span className="text-[13px] text-[var(--q-danger)]">
+              Aucune adresse email : ajoutez-en une dans la{" "}
+              {clientHref ? <Link href={clientHref} className="underline">fiche client</Link> : "fiche client"}.
+            </span>
+          )}
     </div>
   )
 }
