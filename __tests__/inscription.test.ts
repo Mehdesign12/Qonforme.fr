@@ -14,7 +14,7 @@ let db: FakeCompanyDb
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => db.client, createAdminClient: () => db.client }))
 
 import {
-  COMPANY_REQUIRED, INSCRIPTION_STEPS, SIREN_INVALID, inscriptionStepNumber, inscriptionSteps, isCompanyRequired,
+  COMPANY_REQUIRED, INSCRIPTION_STEPS, SIREN_INVALID, SIREN_KEY_WARNING, sirenKeyWarning, inscriptionStepNumber, inscriptionSteps, isCompanyRequired,
   mergeCompanyProfile, mergeSignupDraft, mergeTradeProfile, parseInscriptionPatch, parseSignupDraft, pendingInscriptionStep, validateCompanyInput,
   validateFirstName, validateTradeInput, vatNumberAfterSirenChange, vatNumberAfterTrade, type CompanyInput,
 } from "@/lib/onboarding/inscription"
@@ -105,9 +105,13 @@ describe("entreprise (étape 1)", () => {
     expect(v.company_type).toBeNull()
   })
 
-  it("SIREN faux : refusé avec le message du répertoire", () => {
-    expect(error({ ...GARNIER, siren: "948211375" })).toBe(SIREN_INVALID)
+  it("SIREN de moins de 9 chiffres : refusé ; clé de contrôle fausse : accepté avec un avertissement", () => {
     expect(error({ ...GARNIER, siren: "12345" })).toBe(SIREN_INVALID)
+    expect(error({ ...GARNIER, siren: "948211375" })).toBeNull()
+    expect(sirenKeyWarning("948211375")).toBe(SIREN_KEY_WARNING)
+    expect(sirenKeyWarning("948 211 376")).toBe(sirenKeyWarning("948211376"))
+    expect(sirenKeyWarning("552100554")).toBeNull()
+    expect(sirenKeyWarning("")).toBeNull()
     expect(SIREN_INVALID).toContain(" :")
   })
 
