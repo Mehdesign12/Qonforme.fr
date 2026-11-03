@@ -7,7 +7,7 @@
  *
  * Ne coche que ce qui se vérifie dans les données : SIREN et adresse de
  * l'entreprise, SIREN des clients. La réception suit le raccordement du compte à
- * Super PDP (lib/pa) ; l'émission par la plateforme reste prévue pour 2027.
+ * Super PDP (lib/pa) ; l'émission suit lib/pa/sending.ts (bac à sable, puis production).
  */
 import { useEffect, useState } from "react"
 import Link from "next/link"
@@ -19,6 +19,7 @@ import { fetchEInvoicingView } from "@/components/e-invoicing/reception-info"
 import { StatusPill } from "@/components/app/kit"
 import { cn } from "@/lib/utils"
 import { hrefFor, plural, type DashMode, type DashboardView } from "@/components/dashboard/model"
+import { platformSendingOpenFor } from "@/lib/pa/sending"
 
 type Tone = "ok" | "warn" | "info" | "pending"
 
@@ -148,12 +149,22 @@ export function ReformCard({ reform, mode }: { reform: DashboardView["reform"]; 
           )
         )}
         <ReceptionItem view={eInvoicing} mode={mode} />
-        <Item
-          tone="pending"
-          title="Émission par plateforme agréée"
-          pill="Prévue pour 2027"
-          sub="Obligatoire au 1er septembre 2027 pour les PME, TPE et micro-entreprises. D'ici là, vos factures partent par email."
-        />
+        {eInvoicing && platformSendingOpenFor(eInvoicing.mode) && eInvoicing.connection?.status === "active" ? (
+          <Item
+            tone="ok"
+            title="Émission par plateforme agréée"
+            sub="Vos factures et avoirs partent par la plateforme vers vos clients professionnels inscrits à l'annuaire ; les autres par email."
+          />
+        ) : (
+          <Item
+            tone="pending"
+            title="Émission par plateforme agréée"
+            pill={eInvoicing && platformSendingOpenFor(eInvoicing.mode) ? "Raccordement à activer" : "Prévue pour 2027"}
+            sub={eInvoicing && platformSendingOpenFor(eInvoicing.mode)
+              ? "Une fois votre réception active, vos factures partent par la plateforme vers les clients inscrits à l'annuaire."
+              : "Obligatoire au 1er septembre 2027 pour les PME, TPE et micro-entreprises. D'ici là, vos factures partent par email."}
+          />
+        )}
       </ul>
     </section>
   )

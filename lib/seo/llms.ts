@@ -2,6 +2,7 @@ import { FREE_FEATURES, PLANS, TAX_SUFFIX, formatEuros } from "@/lib/stripe/plan
 import { METIERS } from "@/lib/pseo/metiers"
 import { lcFirst } from "@/components/content/text"
 import { GUIDES } from "@/lib/pseo/guides"
+import { SENDING_SENTENCE } from "@/lib/pa/sending"
 
 /*
  * /llms.txt (proposition llmstxt.org) : résumé du site pour les assistants IA qui le
@@ -30,7 +31,7 @@ export function buildLlmsTxt(): string {
     a.available
       ? `- Formule ${a.name} : ${prix(a.monthlyPrice)} par mois ou ${prix(a.yearlyPrice)} par an. Tout ${e.name}, plus : ${a.features.map(lcFirst).join(", ")}.`
       : `- Formule ${a.name} : bientôt disponible, pas encore en vente.`,
-    `- Facturation électronique : Qonforme est « solution compatible », raccordé à la plateforme agréée Super PDP ; avec ${e.name}, les factures fournisseurs arrivent par cette plateforme. L'émission par la plateforme est prévue pour 2027.`,
+    `- Facturation électronique : Qonforme est « solution compatible », raccordé à la plateforme agréée Super PDP ; avec ${e.name}, les factures fournisseurs arrivent par cette plateforme. ${SENDING_SENTENCE}`,
     ...(e.upcoming.length ? [`- Pas encore disponible : ${e.upcoming.map(lcFirst).join(", ")}.`] : []),
     "- Factures et avoirs émis au format Factur-X ; une facture émise ne se modifie pas, une erreur se corrige par un avoir.",
     "- Qonforme n'encaisse pas les paiements : les clients de l'artisan le paient par virement sur son propre compte.",

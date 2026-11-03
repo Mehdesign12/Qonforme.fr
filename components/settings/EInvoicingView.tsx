@@ -32,6 +32,7 @@ import { PageHeader, StatusPill, type Tone } from "@/components/app/kit"
 import type { ShellMode } from "@/components/layout/nav"
 import { settingsHref } from "@/components/settings/sections"
 import { SettingsCard } from "@/components/settings/ui"
+import { SENDING_SENTENCE } from "@/lib/pa/sending"
 
 const OFFICIAL = {
   platforms: "https://www.impots.gouv.fr/facturation-electronique-et-plateformes-agreees",
@@ -156,7 +157,7 @@ export function EInvoicingView({ mode }: { mode: ShellMode }) {
             title="Factures émises"
             tone="ok"
             pill="Factur-X"
-            text="Chaque facture émise embarque son XML Factur-X (profil EN 16931). Leur transmission par une plateforme agréée, obligatoire pour les TPE et PME au 1er septembre 2027, est en préparation."
+            text={`Chaque facture émise embarque son XML Factur-X (profil EN 16931). ${SENDING_SENTENCE}`}
           />
         </ul>
       </SettingsCard>
