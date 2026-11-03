@@ -11,13 +11,14 @@ import { todayInParis } from "@/lib/utils/paris-date"
 import { paymentLinkFor } from "@/lib/payment-link/server"
 import { artisanEmailExtras, isArtisanKind } from "@/lib/artisan/billing"
 import { requireArtisanAccess } from "@/lib/artisan/access"
+import { parseDeliveryChoice } from "@/lib/pa/delivery"
 
 interface Params { params: Promise<{ id: string }> }
 
 // Timeout étendu : génération PDF + envoi Resend peut prendre > 10s
 export const maxDuration = 30
 
-export async function POST(_req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, { params }: Params) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -25,6 +26,14 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
     const { id } = await params
     console.log(`[invoice-send] Début envoi facture ${id} par user ${user.id}`)
+
+    // Canal choisi dans la fenêtre d'envoi (sans corps : email, comme avant).
+    // L'envoi par la plateforme agréée arrive au lot 3 : refusé d'ici là, rien n'est émis.
+    const choice = parseDeliveryChoice(await req.json().catch(() => ({})))
+    if ("error" in choice) return NextResponse.json({ error: choice.error }, { status: 400 })
+    if (choice.channel === "platform") {
+      return NextResponse.json({ error: "L'envoi par la plateforme agréée n'est pas encore ouvert. Envoyez la facture par email." }, { status: 409 })
+    }
 
     // 1. Facture + client
     const { data: loaded, error: invErr } = await supabase

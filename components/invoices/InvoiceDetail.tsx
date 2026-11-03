@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import { toastCompanyRequired } from "@/components/shared/company-required"
-import { FileText, Info, RotateCcw, Send } from "lucide-react"
+import { FileText, Info, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
@@ -29,6 +29,8 @@ import { usePaymentLink } from "@/components/payment-link/usePaymentLink"
 import { isPayableStatus } from "@/lib/payment-link/rules"
 import { SEND_PARAM, sendAfterPaymentOutcome, wantsSendAfterPayment } from "@/lib/stripe/activation"
 import { trackJourney } from "@/lib/journey"
+import { SendInvoiceDialog } from "@/components/invoices/SendInvoiceDialog"
+import type { DeliveryChoice } from "@/lib/pa/delivery"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -487,11 +489,15 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     finally { setArchiveLoading(false) }
   }
 
-  const sendByEmail = async () => {
+  const sendInvoice = async (choice: DeliveryChoice = { channel: "email" }) => {
     if (!invoice) return
     setSendLoading(true)
     try {
-      const res = await fetch(`/api/invoices/${invoiceId}/send`, { method: "POST" })
+      const res = await fetch(`/api/invoices/${invoiceId}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(choice),
+      })
       const json = await res.json()
       if (isSubscriptionRequired(res.status, json)) { setShowSendModal(false); setPaywall("send"); return }
       if (isArtisanPaywall(res.status, json)) { setShowSendModal(false); setPaywall("artisan"); return }
@@ -573,49 +579,15 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         nextPath={`/invoices/${invoice.id}`}
       />
 
-      {/* Fenêtre envoi email */}
-      <Dialog open={showSendModal} onOpenChange={(o) => { if (!o && !sendLoading) setShowSendModal(false) }}>
-        <DialogContent showCloseButton={!sendLoading} className="gap-0 overflow-hidden p-0 sm:max-w-[500px]">
-          <DialogHead
-            title={invoice.status === "draft" ? "Envoyer la facture" : "Renvoyer la facture"}
-            sub={<><span className={cn(invoice.invoice_number && "font-mono")}>{invoiceNumberLabel(invoice.invoice_number)}</span>{invoice.client ? ` · ${invoice.client.name}` : ""}</>}
-          />
-          <div className="flex flex-col gap-3.5 px-[22px] pb-5 pt-[18px]">
-            <div className="q-inset px-4 py-3.5 text-sm leading-relaxed text-[var(--q-text-2)]">
-              {invoice.client?.email ? (
-                <span className="mb-1.5 block text-xs text-[var(--q-text-4)]">À : {invoice.client.email}</span>
-              ) : (
-                <span className="mb-1.5 block text-xs text-[var(--q-danger)]">Aucune adresse email : ajoutez-en une dans la fiche client</span>
-              )}
-              Objet : <span className="font-medium text-[var(--q-ink)]">Facture {invoice.invoice_number ?? "(numéro attribué à l’envoi)"} — {company?.name ?? "votre entreprise"}</span>
-            </div>
-            <div className="q-banner text-[13px] leading-normal">
-              <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
-              {invoice.status === "draft" ? (
-                <p>
-                  Le PDF de la facture est joint à l&apos;email et une copie vous est adressée.
-                  {!invoice.invoice_number && " La facture reçoit son numéro définitif, à la date du jour."}
-                  {" "}Elle passe au statut <strong>Envoyée</strong> : elle ne pourra plus être modifiée.
-                </p>
-              ) : (
-                <p>
-                  Une copie de la facture et de son PDF est renvoyée à votre client, avec une copie pour vous.
-                  Son numéro et son statut ne changent pas.
-                </p>
-              )}
-            </div>
-          </div>
-          <DialogFoot>
-            <Button variant="ghost" onClick={() => setShowSendModal(false)} disabled={sendLoading}>
-              Annuler
-            </Button>
-            <Button onClick={sendByEmail} disabled={sendLoading || !invoice.client?.email}>
-              <Send />
-              {sendLoading ? "Envoi en cours…" : invoice.status === "draft" ? "Envoyer" : "Renvoyer"}
-            </Button>
-          </DialogFoot>
-        </DialogContent>
-      </Dialog>
+      {/* Fenêtre d'envoi : plateforme agréée ou email */}
+      <SendInvoiceDialog
+        open={showSendModal}
+        onOpenChange={setShowSendModal}
+        invoice={invoice}
+        companyName={company?.name}
+        loading={sendLoading}
+        onSend={sendInvoice}
+      />
 
       {/* Fenêtre avoir (montée à l'ouverture pour repartir d'un formulaire vierge) */}
       {showCreditModal && (
