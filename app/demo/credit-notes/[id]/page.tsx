@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { EmptyState } from "@/components/app/kit"
 import { CreditNoteDetailView } from "@/components/credit-notes/CreditNoteDetailView"
 import { DEMO_CREDIT_COMPANY, demoCreditNoteDetail } from "@/components/credit-notes/demo"
+import { demoCreditNotePlatform } from "@/lib/demo/platform"
 
 /** La démo n'enregistre rien : les actions invitent à créer un compte. */
 const ctaToast = (what: string) => toast(`Créez un compte pour ${what}`, {
@@ -33,9 +34,10 @@ export default function DemoCreditNoteDetailPage() {
       company={DEMO_CREDIT_COMPANY}
       listHref="/demo/credit-notes"
       companySettingsHref="/demo/settings/company"
+      platform={demoCreditNotePlatform(note.client)}
       actions={{
         onDownloadPdf: () => ctaToast("télécharger vos avoirs en PDF"),
-        onSend: async () => { ctaToast("envoyer vos avoirs par email"); return false },
+        onSend: async (choice) => { ctaToast(choice.channel === "platform" ? "envoyer vos avoirs par la plateforme agréée" : "envoyer vos avoirs par email"); return false },
         busy: { pdf: false, send: false },
       }}
     />

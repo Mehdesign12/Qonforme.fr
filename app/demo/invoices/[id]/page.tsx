@@ -14,6 +14,7 @@ import { demoPaymentLinkState } from "@/lib/demo/payment-link"
 import { isPayableStatus } from "@/lib/payment-link/rules"
 import { DEMO_LEGAL_NOTICE, DEMO_LEGAL_PROFILE, demoLegalSnapshot } from "@/lib/demo/legal-profile"
 import { demoChantierOf } from "@/lib/demo/chantiers"
+import { demoPlatformInfo } from "@/lib/demo/platform"
 
 /** Miroir de /invoices/[id] : même fiche, données de démo, rien n'est enregistré ni envoyé. */
 const COMPANY: CompanyView = {
@@ -101,6 +102,7 @@ export default function DemoInvoiceDetailPage() {
       invoiceHref={(ref) => `/demo/invoices/${ref.number.toLowerCase()}`}
       quoteHref={(id) => `/demo/quotes/${id}`}
       creditNotesHref="/demo/credit-notes"
+      platform={demoPlatformInfo(data)}
       settingsCompanyHref="/demo/settings"
       autoReminders={describeInvoiceSchedule(DEMO_REMINDER_SETTINGS)}
       payment={

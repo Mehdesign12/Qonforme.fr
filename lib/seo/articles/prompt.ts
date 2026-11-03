@@ -20,6 +20,7 @@ import { referenceFacts } from "@/lib/ai/reference-facts"
 import type { ArticleType } from "@/lib/seo/types"
 import type { ArticleSettings, BrandSettings, StrategySettings } from "@/lib/seo/settings"
 import { FREE_RULE, keywordForm, titleDirectives } from "@/lib/seo/articles/search-language"
+import { SENDING_PROMPT_RULE } from "@/lib/pa/sending"
 
 /* ------------------------------------------------------------------ */
 /* Faits de référence                                                  */
@@ -173,7 +174,7 @@ export function buildSystemPrompt({ brand, strategy, prefs }: PromptContext, rol
     "- Vouvoyez toujours le lecteur.",
     "- N'inventez aucun chiffre, aucune statistique, aucun avis, aucune note, aucun témoignage, aucun client : seulement des faits vérifiables (textes de loi, sources officielles, faits de référence ci-dessus).",
     "- Ne citez jamais un autre logiciel, éditeur ou marque de devis, de facturation ou de comptabilité : ni nom, ni comparaison, ni « alternative à ». Pour comparer des approches, décrivez des critères sans nommer personne.",
-    `- N'écrivez jamais que ${name} est certifié, homologué ou agréé, ni qu'il est une plateforme agréée, ni qu'il envoie les factures électroniques des artisans à leurs clients (prévu pour 2027). Vrai et permis : avec la formule Essentiel, ${name} reçoit les factures fournisseurs par la plateforme agréée Super PDP, à laquelle il est raccordé.`,
+    `- N'écrivez jamais que ${name} est certifié, homologué ou agréé, ni qu'il est une plateforme agréée. Vrai et permis : avec la formule Essentiel, ${name} reçoit les factures fournisseurs par la plateforme agréée Super PDP, à laquelle il est raccordé. ${SENDING_PROMPT_RULE}`,
     `- Ne présentez comme fonction de ${name} que ce qui figure dans l'offre et les bénéfices ci-dessus.`,
     "- Ne promettez aucun contact humain : ni appel, ni rendez-vous, ni visio, ni réponse personnalisée, ni support téléphonique.",
     "- Dites « plateforme agréée », jamais « PDP ».",

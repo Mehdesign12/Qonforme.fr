@@ -20,14 +20,11 @@
  * saisit alors à la main, sans exiger de SIREN ; Super PDP la contrôle au dépôt.
  * Jamais en production : on n'y envoie qu'à une adresse active de l'annuaire.
  */
+import { PLATFORM_SENDING_MODES } from "@/lib/pa/sending"
 import type { PaMode } from "@/lib/pa/superpdp/config"
 
-/**
- * Modes dans lesquels l'envoi par la plateforme est ouvert. Vide tant que le
- * dépôt (lot 3) n'est pas livré ; le bac à sable seul (comptes d'essai) depuis
- * le lot 3 (03/11/2026) ; la production une fois l'essai complet réussi.
- */
-export const PLATFORM_SENDING_MODES: readonly PaMode[] = ["test"]
+/** Modes ouverts à l'envoi par la plateforme : réglage unique dans lib/pa/sending.ts. */
+export { PLATFORM_SENDING_MODES }
 
 export const ADDRESS_SCHEME = "0225"
 
