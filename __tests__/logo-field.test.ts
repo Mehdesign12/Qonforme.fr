@@ -28,7 +28,7 @@ const logo = (preview: string | null) => ({
   openPicker: () => {},
   upload: async () => {},
   remove: async () => {},
-  input: null,
+  input: null, url: null,
 })
 
 describe("aperçu du logo (LogoDropzone)", () => {

@@ -23,6 +23,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createAdminClient, createClient } from "@/lib/supabase/server"
 import { selectCompanyWithProfile } from "@/lib/legal/db"
+import { storedLogoUrl } from "@/lib/company/stored-logo"
 import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { buildImportRows, tradeItems } from "@/lib/catalogue/trades"
 import {
@@ -101,6 +102,9 @@ async function saveCompany(supabase: SupabaseClient, userId: string, input: Comp
       // La fenêtre « Bienvenue » remplace l'ancienne fenêtre de premiers pas (WelcomeModal)
       onboarding_seen_at: new Date().toISOString(),
     }
+    // Logo déjà envoyé avant l'entreprise (aucun blocage) : rattaché à sa création
+    const logo = await storedLogoUrl(createAdminClient(), userId)
+    if (logo) row.logo_url = logo
     const profile = profileAvailable ? mergeCompanyProfile(null, input) : null
     let { error } = await supabase.from("companies").insert(profile ? { ...row, legal_profile: profile } : row)
     if (error && profile && isMissingSchemaError(error)) {
