@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 import { parseLegalProfile } from "@/lib/legal/profile"
 import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
+import { storedLogoUrl } from "@/lib/company/stored-logo"
 
 // Helper : résout l'utilisateur ET le client DB adapté.
 // - Cookie (navigateur) : createClient() cookie-based → RLS via session cookie ✅
@@ -65,6 +66,8 @@ export async function POST(request: NextRequest) {
     iban: body.iban || null,
     invoice_prefix: body.invoice_prefix || "F",
     invoice_sequence: 1,
+    // Logo déjà envoyé avant l'entreprise (aucun blocage) : rattaché à sa création
+    ...await storedLogoUrl(createAdminClient(), user.id).then((url) => (url ? { logo_url: url } : {})),
   }
   // Métier et régime de TVA choisis à l'inscription (lib/legal/profile.ts) ;
   // sans la colonne (migration pas encore appliquée), l'entreprise s'enregistre sans eux

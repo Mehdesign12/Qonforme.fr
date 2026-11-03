@@ -283,7 +283,8 @@ export function CompanySettingsForm({
         const { data, error } = await supabase
           .from("companies")
           .upsert(
-            { ...payload, invoice_prefix: "F", payment_terms: DEFAULT_PAYMENT_TERMS, invoice_sequence: 1 },
+            // Logo ajouté avant l'enregistrement de l'entreprise : rattaché à sa création
+            { ...payload, ...(logo.url ? { logo_url: logo.url } : {}), invoice_prefix: "F", payment_terms: DEFAULT_PAYMENT_TERMS, invoice_sequence: 1 },
             { onConflict: "user_id" },
           )
           .select("id")
@@ -347,11 +348,7 @@ export function CompanySettingsForm({
             description="Affiché en haut de vos devis, factures, avoirs et bons de commande."
           >
             <div className="grid items-stretch gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr))]">
-              <LogoDropzone
-                logo={logo}
-                disabled={!companyId}
-                disabledReason="Enregistrez d'abord votre entreprise, puis ajoutez votre logo."
-              />
+              <LogoDropzone logo={logo} />
               <LogoDocPreview logo={logo.preview} companyName={fields.name} number={`D-${year}-001`} />
             </div>
           </SettingsCard>

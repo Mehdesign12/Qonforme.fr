@@ -25,6 +25,8 @@ export interface CompanyLogo {
   openPicker: () => void
   upload: (file: File) => Promise<void>
   remove: () => Promise<void>
+  /** URL publique du logo enregistré (rattachée à l'entreprise à sa création si elle n'existait pas). */
+  url: string | null
   /** Champ de fichier caché, à rendre une fois dans la page. */
   input: React.ReactNode
 }
@@ -129,7 +131,7 @@ export function useCompanyLogo({
     />
   )
 
-  return { preview, uploading, openPicker: () => ref.current?.click(), upload, remove, input }
+  return { preview, uploading, openPicker: () => ref.current?.click(), upload, remove, input, url: savedUrl }
 }
 
 /* ------------------------------------------------------------------ */
