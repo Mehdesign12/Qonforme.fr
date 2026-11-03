@@ -46,7 +46,7 @@ export default function EditClientPage() {
       })
   }, [id, router])
 
-  const save = async (payload: ClientPayload) => {
+  const save = async (payload: ClientPayload, next?: string) => {
     try {
       const res = await fetch(`/api/clients/${id}`, {
         method: "PATCH",
@@ -56,7 +56,7 @@ export default function EditClientPage() {
       const json = await res.json().catch(() => ({}))
       if (!res.ok) { toast.error(json.error || "Erreur lors de la sauvegarde"); return }
       toast.success("Client mis à jour")
-      router.push(`/clients/${id}`)
+      router.push(next ?? `/clients/${id}`)
       router.refresh()
     } catch {
       toast.error("Erreur réseau")

@@ -12,6 +12,7 @@
 import { useEffect, useRef, useState } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { NAVIGATION_HELD_EVENT } from "@/lib/ui/unsaved-guard"
 
 type Phase = "idle" | "loading" | "done"
 
@@ -53,10 +54,14 @@ export function NavigationProgress() {
       clearTimeout(giveUp)
       giveUp = setTimeout(() => setPhase("idle"), GIVE_UP_MS)
     }
+    // Lien retenu par la fenêtre « … n'est pas enregistré » : pas de chargement
+    const onHeld = () => { clearTimeout(giveUp); setPhase("idle") }
     // Phase de capture : avant le routeur, qui peut arrêter l'évènement
     document.addEventListener("click", onClick, true)
+    window.addEventListener(NAVIGATION_HELD_EVENT, onHeld)
     return () => {
       document.removeEventListener("click", onClick, true)
+      window.removeEventListener(NAVIGATION_HELD_EVENT, onHeld)
       clearTimeout(giveUp)
     }
   }, [])

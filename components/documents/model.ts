@@ -374,3 +374,12 @@ export function withDocClient(clients: DocClient[], client: DocClient | null | u
   if (!client?.id || clients.some((c) => c.id === client.id)) return clients
   return [...clients, client]
 }
+
+/**
+ * Le document contient-il quelque chose qui serait perdu en quittant la page ?
+ * (garde « non enregistré » de DocumentEditor : un client choisi seul ne compte pas)
+ */
+export function hasEnteredContent(form: DocForm): boolean {
+  return form.lines.some((l) => l.description.trim() !== "" || String(l.unit_price_ht).trim() !== "")
+    || Boolean(form.notes?.trim()) || Boolean(form.reference?.trim())
+}

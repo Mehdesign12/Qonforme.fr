@@ -72,7 +72,7 @@ export default function EditQuotePage() {
   const artisan = useArtisanPlan()
   const [artisanPaywall, setArtisanPaywall] = useState(false)
 
-  const submit = async (action: "draft" | "send") => {
+  const submit = async (action: "draft" | "send", next?: string) => {
     if (!doc.validate()) { toast.error("Corrigez les erreurs avant de continuer"); return }
     if (action === "send") setSending(true); else setSaving(true)
 
@@ -111,7 +111,7 @@ export default function EditQuotePage() {
       } else {
         toast.success("Brouillon sauvegardé !")
       }
-      router.push(`/quotes/${id}`)
+      router.push(next ?? `/quotes/${id}`)
       router.refresh()
     } catch {
       toast.error("Erreur réseau")
@@ -142,11 +142,12 @@ export default function EditQuotePage() {
         clients={clients}
         clientsLoading={false}
         newClientHref="/clients/new"
+        onClientCreated={(created) => setClients((prev) => (prev.some((x) => x.id === created.id) ? prev : [created, ...prev]))}
         clientHref={(clientId) => `/clients/${clientId}/edit`}
         company={company}
         catalog={{ manageHref: "/products" }}
         actions={{
-          onSaveDraft: () => submit("draft"),
+          onSaveDraft: (next) => submit("draft", next),
           onSend:      () => submit("send"),
           saving,
           sending,

@@ -83,7 +83,7 @@ export default function NewInvoiceForm() {
     }
   }
 
-  const submit = async (action: "draft" | "send") => {
+  const submit = async (action: "draft" | "send", next?: string) => {
     if (!doc.validate()) { toast.error("Corrigez les erreurs avant de continuer"); return }
     if (action === "send") setLoading(true); else setSaving(true)
     try {
@@ -127,7 +127,7 @@ export default function NewInvoiceForm() {
       } else {
         toast.success("Brouillon sauvegardé !")
       }
-      router.push("/invoices")
+      router.push(next ?? "/invoices")
       router.refresh()
     } catch {
       toast.error("Erreur réseau")
@@ -168,12 +168,13 @@ export default function NewInvoiceForm() {
         clients={clients}
         clientsLoading={clientsLoading}
         newClientHref="/clients/new"
+        onClientCreated={(created) => setClients((prev) => (prev.some((x) => x.id === created.id) ? prev : [created, ...prev]))}
         clientHref={(id) => `/clients/${id}/edit`}
         company={company}
         catalog={{ manageHref: "/products" }}
         banners={showTip && <PersonalizeTip href="/settings/invoices" cta="Configurer" onDismiss={() => setTipDismissed(true)} />}
         actions={{
-          onSaveDraft: () => submit("draft"),
+          onSaveDraft: (next) => submit("draft", next),
           onSend:      () => submit("send"),
           onPreviewPdf: previewPDF,
           saving,

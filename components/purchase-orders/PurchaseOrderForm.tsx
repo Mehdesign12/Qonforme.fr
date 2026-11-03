@@ -74,7 +74,7 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
 
   // ── Soumission ────────────────────────────────────────────────────────────
 
-  const submit = async (action: "draft" | "send") => {
+  const submit = async (action: "draft" | "send", next?: string) => {
     if (!doc.validate()) { toast.error("Corrigez les erreurs avant de continuer"); return }
     if (action === "send") setSending(true); else setSaving(true)
 
@@ -125,7 +125,7 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
         }
       }
 
-      router.push(`/purchase-orders/${po_id}`)
+      router.push(next ?? `/purchase-orders/${po_id}`)
       router.refresh()
     } catch {
       toast.error("Erreur réseau")
@@ -152,11 +152,12 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
       clients={clients}
       clientsLoading={clientsLoading}
       newClientHref="/clients/new"
+        onClientCreated={(created) => setClients((prev) => (prev.some((x) => x.id === created.id) ? prev : [created, ...prev]))}
       clientHref={(id) => `/clients/${id}/edit`}
       company={company}
       catalog={{ manageHref: "/products" }}
       actions={{
-        onSaveDraft: () => submit("draft"),
+        onSaveDraft: (next) => submit("draft", next),
         onSend:      () => submit("send"),
         saving,
         sending,
