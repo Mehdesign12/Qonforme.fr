@@ -53,3 +53,17 @@ describe("alertes à l'artisan", () => {
     expect(m.html).toContain("corrigez-la par un avoir")
   })
 })
+
+describe("motif d'un refus ou d'un litige (essai du 03/11/2026)", () => {
+  it("le code de motif devient son libellé, la précision du client est gardée", async () => {
+    const { reasonOf, latestProblem } = await import("@/lib/pa/outbound-view")
+    const { toOutboundEvent } = await import("@/lib/pa/outbound")
+    const ev = toOutboundEvent({ id: 1, invoice_id: 9, status_code: "fr:210", created_at: "2026-11-03T21:00:00Z", details: [{ reason: "MONTANTTOTAL_ERR", notes: [{ contents: [{ content: "Le montant ne correspond pas au devis signé." }] }] }] } as never)
+    expect(ev.reason).toBe("MONTANTTOTAL_ERR · Le montant ne correspond pas au devis signé.")
+    expect(reasonOf(ev)).toBe("Montant total erroné · Le montant ne correspond pas au devis signé.")
+    expect(latestProblem({ events: [ev], error: null })).toBe("Montant total erroné · Le montant ne correspond pas au devis signé.")
+    // Ancien événement enregistré avec le seul code
+    expect(reasonOf({ reason: "PU_ERR" })).toBe("Prix unitaire incorrect")
+    expect(reasonOf({ reason: "texte libre" })).toBe("texte libre")
+  })
+})
