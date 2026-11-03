@@ -117,7 +117,7 @@ export function SendInvoiceDialog({ open, onOpenChange, invoice, companyName, lo
             <div className="q-inset flex flex-col gap-2 px-4 py-3.5 text-sm leading-relaxed text-[var(--q-text-2)]">
               {platform.addresses.length === 1 && !platform.manualEntry ? (
                 <p>
-                  {clientName} trouvé dans l&apos;annuaire :{" "}
+                  Adresse de {clientName} dans l&apos;annuaire :{" "}
                   <span className="font-mono text-[var(--q-ink)]" data-replay-mask>{platform.addresses[0].identifier}</span>
                 </p>
               ) : platform.addresses.length > 0 ? (

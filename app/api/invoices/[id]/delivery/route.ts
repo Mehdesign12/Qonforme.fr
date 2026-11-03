@@ -25,7 +25,7 @@ export async function GET(_req: Request, { params }: Params) {
   if (error) return NextResponse.json({ error: "Lecture impossible pour le moment." }, { status: 503 })
   if (!invoice) return NextResponse.json({ error: "Facture introuvable" }, { status: 404 })
   const client = (Array.isArray(invoice.client) ? invoice.client[0] : invoice.client) ?? null
-  const res = await loadDeliveryOptions(createAdminClient(), user.id, client)
+  const res = await loadDeliveryOptions(createAdminClient(), user.id, client, { document: { type: "invoice", id } })
   if (!res.ok) return NextResponse.json({ error: res.error }, { status: res.status })
   return NextResponse.json({ options: res.options }, { headers: { "Cache-Control": "no-store" } })
 }

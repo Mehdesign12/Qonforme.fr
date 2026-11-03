@@ -5,7 +5,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { deliveryOptions, needsDirectory, type DeliveryInput, type DeliveryOptions } from "@/lib/pa/delivery"
-import { OUTBOUND_TABLE } from "@/lib/pa/outbound"
+import { canResend, loadActiveOutbound, OUTBOUND_TABLE, type OutboundDocType } from "@/lib/pa/outbound"
 import { hasPlan, paModeFor } from "@/lib/pa/server"
 import { isMissingTable, loadConnection } from "@/lib/pa/store"
 import { createSuperPdpApi, type SpFrenchEntry } from "@/lib/pa/superpdp/api"
@@ -25,27 +25,32 @@ export async function lookupDirectory(siren: string, f: Fetch = fetch): Promise<
   return Promise.race([call, timeout])
 }
 
-export type DeliveryLoad = { ok: true; options: DeliveryOptions } | { ok: false; status: number; error: string }
+export type DeliveryLoad =
+  | { ok: true; options: DeliveryOptions; mode: DeliveryInput["mode"] }
+  | { ok: false; status: number; error: string }
 
 export async function loadDeliveryOptions(
   admin: SupabaseClient,
   userId: string,
   client: DeliveryInput["client"],
-  opts: { fetch?: Fetch; mode?: DeliveryInput["mode"] } = {},
+  opts: { fetch?: Fetch; mode?: DeliveryInput["mode"]; document?: { type: OutboundDocType; id: string } } = {},
 ): Promise<DeliveryLoad> {
-  const [mode, plan, conn, installed] = await Promise.all([
+  const [mode, plan, conn, installed, active] = await Promise.all([
     opts.mode !== undefined ? Promise.resolve(opts.mode) : paModeFor(userId),
     hasPlan(admin, userId),
     loadConnection(admin, userId),
     outboundInstalled(admin),
+    opts.document ? loadActiveOutbound(admin, userId, opts.document.type, opts.document.id) : Promise.resolve(null),
   ])
+  // Déjà déposée, ou envoi en cours : pas de second envoi par la plateforme
+  const alreadySent = !!(active?.ok && active.row && !canResend(active.row))
   const connection = conn.ok && conn.row ? { status: conn.row.status, address: conn.row.electronic_address } : null
   // Lecture de la formule en échec : ne rien conclure pour un artisan raccordé
   if (plan === null && connection?.status === "active") {
     return { ok: false, status: 503, error: "Lecture impossible pour le moment. Réessayez dans un instant." }
   }
-  const base = { mode, outboundInstalled: installed, connection, hasPlan: plan === true, client }
+  const base = { mode, outboundInstalled: installed, connection, hasPlan: plan === true, client, alreadySent }
   const siren = needsDirectory(base)
   const directory = siren ? await lookupDirectory(siren, opts.fetch) : undefined
-  return { ok: true, options: deliveryOptions({ ...base, directory }) }
+  return { ok: true, options: deliveryOptions({ ...base, directory }), mode }
 }

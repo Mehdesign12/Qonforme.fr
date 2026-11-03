@@ -42,14 +42,22 @@ describe("annuaire", () => {
   })
 })
 
+/** Ouvre des modes le temps d'un test, puis rend la liste telle qu'elle était. */
+function openModes(...extra: string[]) {
+  const modes = PLATFORM_SENDING_MODES as unknown as string[]
+  const before = [...modes]
+  modes.push(...extra)
+  return () => { modes.length = 0; modes.push(...before) }
+}
+
 describe("canaux proposés", () => {
   const live = (over: Partial<DeliveryInput> = {}): DeliveryInput => ({
     mode: "live", outboundInstalled: true, connection: { status: "active", address: "0225:552100554" }, hasPlan: true,
     client: { email: "compta@client.fr", siren: "853 322 915", country: "FR" }, directory: SUPERG, ...over,
   })
 
-  it("fermé tant que le dépôt n'est pas livré (lot 3) : email seul, raison tue", () => {
-    expect(PLATFORM_SENDING_MODES).toEqual([])
+  it("ouvert au bac à sable seul (lot 3) : en production, email seul, raison tue", () => {
+    expect(PLATFORM_SENDING_MODES).toEqual(["test"])
     const o = deliveryOptions(live())
     expect(o.platform).toEqual({ offered: false, reason: "disabled" })
     expect(o.recommended).toBe("email")
@@ -66,19 +74,18 @@ describe("canaux proposés", () => {
       ["client à l'étranger", { client: { email: "a@b.fr", siren: "853322915", country: "BE" } }, "abroad"],
       ["client absent de l'annuaire", { directory: [] }, "not_in_directory"],
       ["annuaire injoignable", { directory: null }, "directory_down"],
+      ["déjà transmise", { alreadySent: true }, "already_sent"],
     ])("%s : email", (_l, over, reason) => {
-      const modes = PLATFORM_SENDING_MODES as unknown as string[]
-      modes.push("live")
+      const restore = openModes("live")
       try {
         const o = deliveryOptions(live(over as Partial<DeliveryInput>))
         expect(o.platform).toEqual({ offered: false, reason })
         expect(o.recommended).toBe("email")
-      } finally { modes.length = 0 }
+      } finally { restore() }
     })
 
     it("client dans l'annuaire : plateforme recommandée, adresse principale choisie, email possible", () => {
-      const modes = PLATFORM_SENDING_MODES as unknown as string[]
-      modes.push("live")
+      const restore = openModes("live")
       try {
         const input = live()
         expect(needsDirectory(input)).toBe("853322915")
@@ -89,19 +96,18 @@ describe("canaux proposés", () => {
         expect(choiceAllowed(o, { channel: "platform", address: "0225:853322915_85332291500010" })).toBe(true)
         // Une adresse hors de l'annuaire n'est jamais acceptée en production
         expect(choiceAllowed(o, { channel: "platform", address: "0225:853322915_INVENTEE" })).toBe(false)
-      } finally { modes.length = 0 }
+      } finally { restore() }
     })
 
     it("bac à sable : saisie manuelle, sans SIREN ni annuaire", () => {
-      const modes = PLATFORM_SENDING_MODES as unknown as string[]
-      modes.push("test")
+      const restore = openModes("test")
       try {
         const o = deliveryOptions(live({ mode: "test", client: { email: null, siren: null }, directory: undefined }))
         expect(o.platform).toMatchObject({ offered: true, addresses: [], manualEntry: true, defaultAddress: null })
         expect(o.email.offered).toBe(false)
         expect(choiceAllowed(o, { channel: "platform", address: "0225:315143296_117728" })).toBe(true)
         expect(choiceAllowed(o, { channel: "email" })).toBe(false)
-      } finally { modes.length = 0 }
+      } finally { restore() }
     })
   })
 })

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient, createClient } from "@/lib/supabase/server"
 import { statusAfterSend } from "@/lib/utils/document-status"
 import { requireIssuingAccess } from "@/lib/stripe/subscription"
 import { requireIssuerIdentity } from "@/lib/legal/issuer"
@@ -11,7 +11,13 @@ import { todayInParis } from "@/lib/utils/paris-date"
 import { paymentLinkFor } from "@/lib/payment-link/server"
 import { artisanEmailExtras, isArtisanKind } from "@/lib/artisan/billing"
 import { requireArtisanAccess } from "@/lib/artisan/access"
-import { parseDeliveryChoice } from "@/lib/pa/delivery"
+import { choiceAllowed, parseDeliveryChoice, PLATFORM_UNAVAILABLE_TEXT } from "@/lib/pa/delivery"
+import { loadDeliveryOptions } from "@/lib/pa/delivery-server"
+import { markDeposited, markFailed, reserveOutbound, toOutboundEvent } from "@/lib/pa/outbound"
+import { depositErrorText, depositExternalId, duplicateIdOf, obtainToken } from "@/lib/pa/deposit"
+import { loadConnection } from "@/lib/pa/store"
+import { createSuperPdpApi } from "@/lib/pa/superpdp/api"
+import type { SupabaseClient } from "@supabase/supabase-js"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -27,13 +33,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     const { id } = await params
     console.log(`[invoice-send] Début envoi facture ${id} par user ${user.id}`)
 
-    // Canal choisi dans la fenêtre d'envoi (sans corps : email, comme avant).
-    // L'envoi par la plateforme agréée arrive au lot 3 : refusé d'ici là, rien n'est émis.
+    // Canal choisi dans la fenêtre d'envoi (sans corps : email, comme avant)
     const choice = parseDeliveryChoice(await req.json().catch(() => ({})))
     if ("error" in choice) return NextResponse.json({ error: choice.error }, { status: 400 })
-    if (choice.channel === "platform") {
-      return NextResponse.json({ error: "L'envoi par la plateforme agréée n'est pas encore ouvert. Envoyez la facture par email." }, { status: 409 })
-    }
 
     // 1. Facture + client
     const { data: loaded, error: invErr } = await supabase
@@ -61,6 +63,9 @@ export async function POST(req: NextRequest, { params }: Params) {
       ? await requireArtisanAccess(supabase, user.id)
       : await requireIssuingAccess(supabase, user.id)
     if (blocked) return blocked
+
+    // Par la plateforme agréée : aucun email au client, l'adresse vient de l'annuaire
+    if (choice.channel === "platform") return sendByPlatform({ supabase, userId: user.id, id, invoice, address: choice.address })
 
     const clientEmail = invoice.client?.email
     console.log(`[invoice-send] Client: ${invoice.client?.name}, email: ${clientEmail}`)
@@ -197,4 +202,121 @@ function sendFailed(err: unknown, invoice: { invoice_number?: string | null }, w
     },
     { status: 502 },
   )
+}
+
+const CLIENT_SELECT = "*, client:clients(id,name,email,address,zip_code,city,country,siren,vat_number)"
+const COMPANY_SELECT = "name,siren,siret,vat_number,address,zip_code,city,country,iban,legal_notice,accent_color,logo_url,email,invoice_prefix"
+
+type InvoiceRecord = Record<string, unknown> & { status: string; invoice_number?: string | null; client?: Record<string, unknown> | null }
+
+/**
+ * Envoi par la plateforme agréée (Super PDP, lib/pa). Ordre : contrôle des
+ * canaux, réservation de l'envoi, jeton (sous verrou), puis émission du
+ * brouillon, PDF Factur-X avec les adresses de l'annuaire, dépôt. Tout ce qui
+ * échoue avant l'émission laisse la facture en brouillon ; après, elle reste
+ * émise et se renvoie depuis sa fiche (comme un email non parti).
+ */
+async function sendByPlatform(p: { supabase: SupabaseClient; userId: string; id: string; invoice: InvoiceRecord; address: string }) {
+  const { supabase, userId, id, address } = p
+  let invoice = p.invoice
+  const admin = createAdminClient()
+
+  // 1. La route refait le contrôle de la fenêtre : mode ouvert, raccordement,
+  //    client dans l'annuaire, adresse proposée, pas déjà transmise
+  const delivery = await loadDeliveryOptions(admin, userId, invoice.client as never, { document: { type: "invoice", id } })
+  if (!delivery.ok) return NextResponse.json({ error: delivery.error }, { status: delivery.status })
+  const { options, mode } = delivery
+  if (!mode || !choiceAllowed(options, { channel: "platform", address })) {
+    const error = options.platform.offered
+      ? "Cette adresse de facturation électronique n'est pas celle de votre client dans l'annuaire."
+      : PLATFORM_UNAVAILABLE_TEXT[options.platform.reason]
+    return NextResponse.json({ error }, { status: 409 })
+  }
+  const conn = await loadConnection(admin, userId)
+  const senderAddress = conn.ok ? conn.row?.electronic_address ?? null : null
+
+  // 2. Réservation : un seul envoi à la fois pour cette facture
+  const reserved = await reserveOutbound(admin, {
+    userId, mode, type: "invoice", documentId: id,
+    documentNumber: invoice.invoice_number ?? "Brouillon",
+    recipientAddress: address, senderAddress,
+  })
+  if (!reserved.ok) {
+    const error = reserved.reason === "in_progress" ? "Un envoi de cette facture par la plateforme est déjà en cours."
+      : reserved.reason === "already_sent" ? "Cette facture a déjà été transmise par la plateforme agréée."
+      : "L'envoi par la plateforme est indisponible pour le moment. Réessayez dans un instant."
+    return NextResponse.json({ error }, { status: reserved.reason === "error" || reserved.reason === "missing" ? 503 : 409 })
+  }
+  const row = reserved.row
+
+  // 3. Jeton : un raccordement indisponible n'attribue aucun numéro
+  const token = await obtainToken(admin, userId)
+  if (!token.ok) {
+    await markFailed(admin, row.id, token.error)
+    return NextResponse.json({ error: token.error }, { status: 503 })
+  }
+
+  const { data: company } = await supabase.from("companies").select(COMPANY_SELECT).eq("user_id", userId).single()
+
+  // 4. Émission du brouillon (numéro, statut, date du jour), avant le PDF qui porte le numéro
+  let wasIssuedNow = false
+  if (invoice.status === "draft") {
+    const issued = await issueDraftInvoice<InvoiceRecord>(supabase, {
+      invoiceId: id,
+      userId,
+      companyPrefix: (company as { invoice_prefix?: string | null } | null)?.invoice_prefix,
+      draft: invoice as never,
+      status: statusAfterSend("invoice", invoice.status),
+      today: todayInParis(),
+      selectClause: CLIENT_SELECT,
+    })
+    if (issued.error || !issued.data) {
+      await markFailed(admin, row.id, issued.error?.message ?? "Émission impossible.")
+      return NextResponse.json({ error: issued.error?.message ?? "La facture n'a pas pu être émise. Réessayez." }, { status: 500 })
+    }
+    invoice = issued.data
+    wasIssuedNow = true
+  }
+  const number = invoice.invoice_number ?? null
+  const failedAfterIssue = async (text: string, status = 502) => {
+    await markFailed(admin, row.id, text, number)
+    if (!wasIssuedNow) return NextResponse.json({ error: text }, { status })
+    return NextResponse.json({ error: `La facture ${number} est émise, mais elle n'est pas partie : ${text} Renvoyez-la depuis sa fiche.`, issued: true, invoice }, { status })
+  }
+
+  // 5. PDF Factur-X avec les adresses de facturation électronique de l'annuaire
+  let pdf: Uint8Array
+  try {
+    pdf = await generateInvoicePdf({
+      invoice: { ...invoice, client: { ...(invoice.client ?? {}), electronic_address: address } } as never,
+      company: { ...(company ?? {}), electronic_address: senderAddress } as never,
+    })
+  } catch (err) {
+    console.error("[invoice-send] PDF pour la plateforme:", err)
+    return failedAfterIssue("Le fichier de la facture n'a pas pu être produit.", 500)
+  }
+
+  // 6. Dépôt chez Super PDP
+  let platformInvoiceId: number
+  let events: ReturnType<typeof toOutboundEvent>[] = []
+  try {
+    const deposited = await createSuperPdpApi(token.token).depositInvoice(pdf, { externalId: depositExternalId(id, row.attempt) })
+    platformInvoiceId = deposited.id
+    events = (deposited.events ?? []).map(toOutboundEvent)
+  } catch (err) {
+    // Déjà déposée (un essai précédent interrompu avant la réponse) : on la reprend
+    const existing = duplicateIdOf(err)
+    if (existing == null) {
+      console.error("[invoice-send] Dépôt refusé:", err instanceof Error ? err.message : err)
+      return failedAfterIssue(depositErrorText(err))
+    }
+    platformInvoiceId = existing
+  }
+  await markDeposited(admin, row, { platformInvoiceId, events, documentNumber: number })
+
+  // 7. Statut « Envoyée » et date d'envoi (jamais par-dessus un statut payé ou crédité)
+  const sentAt = new Date().toISOString()
+  const status = statusAfterSend("invoice", invoice.status)
+  await supabase.from("invoices").update({ status, sent_at: sentAt }).eq("id", id).eq("user_id", userId)
+  return NextResponse.json({ success: true, channel: "platform", sentTo: address, invoice: { ...invoice, status, sent_at: sentAt } })
 }
