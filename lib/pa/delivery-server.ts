@@ -35,21 +35,23 @@ export async function loadDeliveryOptions(
   client: DeliveryInput["client"],
   opts: { fetch?: Fetch; mode?: DeliveryInput["mode"]; document?: { type: OutboundDocType; id: string } } = {},
 ): Promise<DeliveryLoad> {
-  const [mode, plan, conn, installed, active] = await Promise.all([
+  const [mode, plan, conn, installed, active, company] = await Promise.all([
     opts.mode !== undefined ? Promise.resolve(opts.mode) : paModeFor(userId),
     hasPlan(admin, userId),
     loadConnection(admin, userId),
     outboundInstalled(admin),
     opts.document ? loadActiveOutbound(admin, userId, opts.document.type, opts.document.id) : Promise.resolve(null),
+    admin.from("companies").select("siren").eq("user_id", userId).maybeSingle(),
   ])
   // Déjà déposée, ou envoi en cours : pas de second envoi par la plateforme
   const alreadySent = !!(active?.ok && active.row && !canResend(active.row))
-  const connection = conn.ok && conn.row ? { status: conn.row.status, address: conn.row.electronic_address } : null
+  const connection = conn.ok && conn.row ? { status: conn.row.status, address: conn.row.electronic_address, siren: conn.row.siren } : null
   // Lecture de la formule en échec : ne rien conclure pour un artisan raccordé
   if (plan === null && connection?.status === "active") {
     return { ok: false, status: 503, error: "Lecture impossible pour le moment. Réessayez dans un instant." }
   }
-  const base = { mode, outboundInstalled: installed, connection, hasPlan: plan === true, client, alreadySent }
+  const issuerSiren = (company?.data as { siren?: string | null } | null)?.siren ?? null
+  const base = { mode, outboundInstalled: installed, connection, hasPlan: plan === true, client, alreadySent, issuerSiren }
   const siren = needsDirectory(base)
   const directory = siren ? await lookupDirectory(siren, opts.fetch) : undefined
   return { ok: true, options: deliveryOptions({ ...base, directory }), mode }

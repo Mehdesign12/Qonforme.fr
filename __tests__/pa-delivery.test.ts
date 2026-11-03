@@ -75,6 +75,7 @@ describe("canaux proposés", () => {
       ["client absent de l'annuaire", { directory: [] }, "not_in_directory"],
       ["annuaire injoignable", { directory: null }, "directory_down"],
       ["déjà transmise", { alreadySent: true }, "already_sent"],
+      ["SIREN de l'entreprise ≠ entreprise raccordée", { issuerSiren: "552 100 554", connection: { status: "active", address: "0225:853322915", siren: "853322915" } }, "siren_mismatch"],
     ])("%s : email", (_l, over, reason) => {
       const restore = openModes("live")
       try {

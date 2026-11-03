@@ -44,7 +44,7 @@ vi.mock("@/lib/stripe/subscription", () => ({ requireIssuingAccess: async () => 
 vi.mock("@/lib/artisan/access", () => ({ requireArtisanAccess: async () => null }))
 vi.mock("@/lib/email/resend", () => ({ sendEmail: async () => { m.steps.push("email"); return { id: "e" } } }))
 vi.mock("@/lib/pa/delivery-server", () => ({ loadDeliveryOptions: async () => { m.steps.push("contrôle"); return m.options } }))
-vi.mock("@/lib/pa/store", async (orig) => ({ ...(await orig<typeof import("@/lib/pa/store")>()), loadConnection: async () => ({ ok: true, row: { electronic_address: "0225:552100554", status: "active" } }) }))
+vi.mock("@/lib/pa/store", async (orig) => ({ ...(await orig<typeof import("@/lib/pa/store")>()), loadConnection: async () => ({ ok: true, row: { electronic_address: "0225:552100554", status: "active", siren: "000000001" } }) }))
 vi.mock("@/lib/pa/outbound", async (orig) => ({
   ...(await orig<typeof import("@/lib/pa/outbound")>()),
   reserveOutbound: async () => { m.steps.push("réservation"); return m.reserve },
@@ -86,6 +86,8 @@ describe("envoi par la plateforme", () => {
     expect(m.steps).toEqual(["contrôle", "réservation", "jeton", "émission", "pdf", "dépôt", "statut"])
     expect((m.pdfInput!.invoice.client as Record<string, unknown>).electronic_address).toBe(ADDRESS)
     expect(m.pdfInput!.company.electronic_address).toBe("0225:552100554")
+    // Bac à sable : vendeur = entreprise raccordée, au numéro fictif de Super PDP
+    expect(m.pdfInput!.company).toMatchObject({ siren: "000000001", siret: null, vat_number: "FR15000000001" })
     expect(m.deposited[0]).toMatchObject({ platformInvoiceId: 1700500, documentNumber: "F-2026-007" })
   })
 

@@ -17,6 +17,7 @@ import { markDeposited, markFailed, reserveOutbound, toOutboundEvent } from "@/l
 import { depositErrorText, depositExternalId, duplicateIdOf, obtainToken } from "@/lib/pa/deposit"
 import { loadConnection } from "@/lib/pa/store"
 import { createSuperPdpApi } from "@/lib/pa/superpdp/api"
+import { sirenToVAT } from "@/lib/utils/invoice"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 interface Params { params: Promise<{ id: string }> }
@@ -245,6 +246,9 @@ async function sendByPlatform(p: { supabase: SupabaseClient; userId: string; id:
   }
   const conn = await loadConnection(admin, userId)
   const senderAddress = conn.ok ? conn.row?.electronic_address ?? null : null
+  // Bac à sable : Super PDP exige que le vendeur soit l'entreprise raccordée, au numéro
+  // fictif (« 000000001 ») ; en production, la concordance est contrôlée plus haut
+  const platformSiren = mode === "test" && conn.ok ? conn.row?.siren ?? null : null
 
   // 2. Réservation : un seul envoi à la fois pour cette facture
   const reserved = await reserveOutbound(admin, {
@@ -300,7 +304,11 @@ async function sendByPlatform(p: { supabase: SupabaseClient; userId: string; id:
   try {
     pdf = await generateInvoicePdf({
       invoice: { ...invoice, client: { ...(invoice.client ?? {}), electronic_address: address } } as never,
-      company: { ...(company ?? {}), electronic_address: senderAddress } as never,
+      company: {
+        ...(company ?? {}),
+        electronic_address: senderAddress,
+        ...(platformSiren && /^\d{9}$/.test(platformSiren) ? { siren: platformSiren, siret: null, vat_number: sirenToVAT(platformSiren) } : {}),
+      } as never,
     })
   } catch (err) {
     console.error("[invoice-send] PDF pour la plateforme:", err)
