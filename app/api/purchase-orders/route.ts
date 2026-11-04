@@ -1,3 +1,4 @@
+import { prepareLinesForSave } from "@/lib/documents/discounts"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { insertWithSequentialNumber } from "@/lib/utils/document-numbering"
@@ -44,10 +45,10 @@ export async function POST(request: NextRequest) {
   const prefix = `BC-${year}-`
 
   // Calcul des totaux
-  const lines       = body.lines || []
-  const subtotal_ht = lines.reduce((s: number, l: { total_ht: number }) => s + (l.total_ht || 0), 0)
-  const total_vat   = lines.reduce((s: number, l: { total_vat: number }) => s + (l.total_vat || 0), 0)
-  const total_ttc   = subtotal_ht + total_vat
+  // Remises contrôlées et recalculées, totaux au centime (lib/documents/discounts.ts)
+  const prepared = prepareLinesForSave(body.lines || [])
+  if (!prepared.ok) return NextResponse.json({ error: prepared.error }, { status: 400 })
+  const { subtotal_ht, total_vat, total_ttc } = prepared
 
   const { data: po, error } = await insertWithSequentialNumber(supabase, {
     table: "purchase_orders",
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
       issue_date:    body.issue_date,
       delivery_date: body.delivery_date || null,
       reference:     body.reference?.trim() || null,
-      lines:         body.lines,
+      lines:         prepared.lines,
       subtotal_ht,
       total_vat,
       total_ttc,

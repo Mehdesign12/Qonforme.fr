@@ -14,6 +14,7 @@ import { applyRetention, parseRetentionMode, parseRetentionRate, type RetentionM
 import { applyReverseCharge } from "./reverse-charge"
 import type { Chantier } from "./chantier"
 import { fromCents, toCents } from "./money"
+import { foldGlobalDiscount } from "@/lib/documents/discounts"
 
 export interface QuoteRow extends QuoteForBilling {
   client_id: string
@@ -127,7 +128,8 @@ export function buildArtisanInvoice(billing: QuoteBilling, req: CreateRequest, t
       deductions: [], retention: null,
     }
   } else if (req.kind === "situation") {
-    const r = computeSituation(lines, req.progress, state.previous, { records: state.deposits, deducted: state.deducted })
+    // Remise globale répartie sur les lignes : l'avancement porte sur le net
+    const r = computeSituation(foldGlobalDiscount(lines), req.progress, state.previous, { records: state.deposits, deducted: state.deducted })
     if (!r.ok) return { error: r.error, status: 422 }
     out = r
     context = {

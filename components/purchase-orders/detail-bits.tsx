@@ -20,6 +20,8 @@ import { formatCurrency } from "@/lib/utils/invoice"
 import { fmtAmount, fmtQty, fmtRate, fmtSiren, fmtUnit, vatBreakdown } from "@/components/quotes/QuoteListHelpers"
 import { PaperMentions } from "@/components/documents/PaperMentions"
 import { SheetGrip } from "@/components/ui/sheet-grip"
+import { DiscountTotalRows, LineDiscountNote } from "@/components/documents/DiscountBits"
+import { itemLines } from "@/lib/documents/discounts"
 
 /** Montant d'avoir : « − 2 400,00 € » (signe moins typographique, espace insécable). */
 export function negCurrency(n: number): string {
@@ -145,9 +147,9 @@ export function DocPaper({
           <span className="text-right">TVA</span>
           <span className="text-right">Total HT</span>
         </div>
-        {lines.map((l, i) => (
+        {itemLines(lines).map((l, i) => (
           <div key={i} className={cn(cols, "border-b border-[#F1F4F8] py-2 tabular-nums")}>
-            <span className="min-w-0 break-words">{l.description}</span>
+            <span className="min-w-0 break-words">{l.description}<LineDiscountNote line={l} /></span>
             <span className="text-right">{fmtQty(l.quantity)}{l.unit ? ` ${fmtUnit(l.quantity, l.unit)}` : ""}</span>
             <span className="text-right">{fmtAmount(l.unit_price_ht)}</span>
             <span className="text-right">{fmtRate(l.vat_rate)} %</span>
@@ -157,6 +159,7 @@ export function DocPaper({
       </div>
 
       <div className="ml-auto flex w-[58%] flex-col gap-1.5 tabular-nums">
+        <DiscountTotalRows lines={lines} sign={negative ? -1 : 1} rowClassName="flex justify-between" labelClassName="text-[#475569]" />
         <div className="flex justify-between"><span className="text-[#475569]">Total HT</span><span>{money(subtotal_ht)}</span></div>
         {vatBreakdown(lines).map((v) => (
           <div key={v.rate} className="flex justify-between"><span className="text-[#475569]">TVA {fmtRate(v.rate)} %</span><span>{money(v.amount)}</span></div>

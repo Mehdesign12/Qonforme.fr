@@ -91,6 +91,16 @@ export interface FxLine {
   total_vat?: number | null
   /** Traitement de TVA propre à la ligne (ex. autoliquidation). */
   vat_treatment?: VatTreatment | null
+  /**
+   * Remise de la ligne, en euros (lib/documents/discounts.ts) : `total_ht` est
+   * déjà net de cette remise ; déclarée en remise de ligne (BG-27).
+   */
+  discount_amount?: number | null
+  /**
+   * « document_discount » : remise globale (une ligne par taux), déclarée en
+   * remise de pied de facture (BG-20) et non en ligne.
+   */
+  kind?: string | null
 }
 
 /** Cadre de facturation (BT-23, BR-FR-08). */
@@ -160,9 +170,23 @@ export interface FxComputedLine {
   exemption?: VatExemption
 }
 
+/** Remise de pied de facture (BG-20), une par catégorie et taux. */
+export interface FxAllowance {
+  category: FxVatCategory
+  rate: number
+  /** Montant de la remise (BT-92), positif, en centimes. */
+  amountCents: number
+  /** Motif (BT-97). */
+  reason: string
+}
+
 export interface FxTotals {
   /** Somme des montants nets des lignes (BT-106). */
   lineTotal: number
+  /** Somme des remises de pied (BT-107). */
+  allowanceTotal: number
+  /** Remises de pied de facture (BG-20). */
+  allowances: FxAllowance[]
   /** Total HT (BT-109). */
   taxBasis: number
   /** Total TVA (BT-110). */
@@ -199,7 +223,7 @@ export function documentVatTreatment(doc: Pick<FxDocument, "vat_treatment" | "se
  */
 export function computeFacturXTotals(doc: Pick<FxDocument, "lines" | "vat_treatment" | "seller" | "notes">): FxTotals {
   const treatment = documentVatTreatment(doc)
-  const lines: FxComputedLine[] = doc.lines.map((line, index) => {
+  const all: FxComputedLine[] = doc.lines.map((line, index) => {
     const vat = resolveLineVat(Number(line.vat_rate), parseVatTreatment(line.vat_treatment), treatment)
     const netCents = toCents(line.total_ht)
     const taxCents = vat.category === "S"
@@ -207,10 +231,20 @@ export function computeFacturXTotals(doc: Pick<FxDocument, "lines" | "vat_treatm
       : 0
     return { index, line, category: vat.category, rate: vat.rate, netCents, taxCents, exemption: vat.exemption }
   })
+  // Remise globale : hors des lignes (BG-25), en remises de pied (BG-20)
+  const isAllowance = (l: FxComputedLine) => l.line.kind === "document_discount"
+  const lines = all.filter((l) => !isAllowance(l)).map((l, index) => ({ ...l, index }))
+  const allowanceLines = all.filter(isAllowance)
+  const allowances: FxAllowance[] = allowanceLines.map((l) => ({
+    category: l.category,
+    rate: l.rate,
+    amountCents: -l.netCents,
+    reason: (l.line.description ?? "").trim() || "Remise",
+  }))
 
   // Une ventilation par catégorie et taux (E, AE, K, G, Z : taux 0, une seule chacune)
   const groups = new Map<string, { category: FxVatCategory; rate: number; base: number; tax: number; exemption?: VatExemption }>()
-  for (const l of lines) {
+  for (const l of all) {
     const key = `${l.category}|${l.rate}`
     const g = groups.get(key) ?? { category: l.category, rate: l.rate, base: 0, tax: 0, exemption: l.exemption }
     g.base += l.netCents
@@ -222,13 +256,17 @@ export function computeFacturXTotals(doc: Pick<FxDocument, "lines" | "vat_treatm
     .map((g) => ({ category: g.category, rate: g.rate, base: fromCents(g.base), tax: fromCents(g.tax), exemption: g.exemption }))
 
   const lineTotalCents = lines.reduce((s, l) => s + l.netCents, 0)
-  const taxTotalCents = lines.reduce((s, l) => s + l.taxCents, 0)
+  const allowanceCents = allowances.reduce((s, a) => s + a.amountCents, 0)
+  const basisCents = lineTotalCents - allowanceCents
+  const taxTotalCents = all.reduce((s, l) => s + l.taxCents, 0)
   return {
     lineTotal: fromCents(lineTotalCents),
-    taxBasis: fromCents(lineTotalCents),
+    allowanceTotal: fromCents(allowanceCents),
+    allowances,
+    taxBasis: fromCents(basisCents),
     taxTotal: fromCents(taxTotalCents),
-    grandTotal: fromCents(lineTotalCents + taxTotalCents),
-    duePayable: fromCents(lineTotalCents + taxTotalCents),
+    grandTotal: fromCents(basisCents + taxTotalCents),
+    duePayable: fromCents(basisCents + taxTotalCents),
     breakdown,
     lines,
     treatment,
@@ -422,6 +460,8 @@ export function buildFacturX(doc: FxDocument): FacturXResult {
     const price = Number(line.unit_price_ht) || 0
     const qty = (Number(line.quantity) || 0) * (price < 0 ? -1 : 1)
     const name = line.description?.trim() || `Ligne ${l.index + 1}`
+    // Remise de la ligne (BG-27) : quantité × prix − remise = montant net (BT-131)
+    const lineDiscount = price >= 0 ? Math.max(0, toCents(line.discount_amount)) : 0
     return `
     <ram:IncludedSupplyChainTradeLineItem>
       <ram:AssociatedDocumentLineDocument>
@@ -443,7 +483,14 @@ export function buildFacturX(doc: FxDocument): FacturXResult {
           <ram:TypeCode>VAT</ram:TypeCode>
           <ram:CategoryCode>${l.category}</ram:CategoryCode>
           <ram:RateApplicablePercent>${rate(l.rate)}</ram:RateApplicablePercent>
-        </ram:ApplicableTradeTax>
+        </ram:ApplicableTradeTax>${lineDiscount > 0 ? `
+        <ram:SpecifiedTradeAllowanceCharge>
+          <ram:ChargeIndicator>
+            <udt:Indicator>false</udt:Indicator>
+          </ram:ChargeIndicator>
+          <ram:ActualAmount>${amt(fromCents(lineDiscount))}</ram:ActualAmount>
+          <ram:Reason>Remise</ram:Reason>
+        </ram:SpecifiedTradeAllowanceCharge>` : ""}
         <ram:SpecifiedTradeSettlementLineMonetarySummation>
           <ram:LineTotalAmount>${amt(fromCents(l.netCents))}</ram:LineTotalAmount>
         </ram:SpecifiedTradeSettlementLineMonetarySummation>
@@ -537,6 +584,21 @@ ${addressXml(buyer, "        ")}${buyerUri ? `
         <ram:RateApplicablePercent>${rate(b.rate)}</ram:RateApplicablePercent>
       </ram:ApplicableTradeTax>`).join("")
 
+  // Remises de pied de facture (BG-20) : la remise globale, une par taux
+  const allowancesXml = totals.allowances.map((a) => `
+      <ram:SpecifiedTradeAllowanceCharge>
+        <ram:ChargeIndicator>
+          <udt:Indicator>false</udt:Indicator>
+        </ram:ChargeIndicator>
+        <ram:ActualAmount>${amt(fromCents(a.amountCents))}</ram:ActualAmount>
+        <ram:Reason>${esc(a.reason)}</ram:Reason>
+        <ram:CategoryTradeTax>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>${a.category}</ram:CategoryCode>
+          <ram:RateApplicablePercent>${rate(a.rate)}</ram:RateApplicablePercent>
+        </ram:CategoryTradeTax>
+      </ram:SpecifiedTradeAllowanceCharge>`).join("")
+
   // Conditions de paiement : texte fourni, sinon pour un avoir le rappel de la
   // facture d'origine (BR-CO-25 exige BT-9 ou BT-20 quand un montant est dû)
   const termsText = doc.payment_terms?.trim()
@@ -595,9 +657,10 @@ ${addressXml(buyer, "        ")}${buyerUri ? `
     <ram:ApplicableHeaderTradeAgreement>${sellerXml}${buyerXml}${contractXml}
     </ram:ApplicableHeaderTradeAgreement>${deliveryXml}
     <ram:ApplicableHeaderTradeSettlement>
-      <ram:InvoiceCurrencyCode>${currency}</ram:InvoiceCurrencyCode>${paymentMeansXml}${taxXml}${termsXml}
+      <ram:InvoiceCurrencyCode>${currency}</ram:InvoiceCurrencyCode>${paymentMeansXml}${taxXml}${allowancesXml}${termsXml}
       <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
-        <ram:LineTotalAmount>${amt(totals.lineTotal)}</ram:LineTotalAmount>
+        <ram:LineTotalAmount>${amt(totals.lineTotal)}</ram:LineTotalAmount>${totals.allowances.length ? `
+        <ram:AllowanceTotalAmount>${amt(totals.allowanceTotal)}</ram:AllowanceTotalAmount>` : ""}
         <ram:TaxBasisTotalAmount>${amt(totals.taxBasis)}</ram:TaxBasisTotalAmount>
         <ram:TaxTotalAmount currencyID="${currency}">${amt(totals.taxTotal)}</ram:TaxTotalAmount>
         <ram:GrandTotalAmount>${amt(totals.grandTotal)}</ram:GrandTotalAmount>

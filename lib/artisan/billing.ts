@@ -583,6 +583,16 @@ export interface FinalResult {
   ttc: number
 }
 
+/** Champs de remise d'une ligne de devis (lib/documents/discounts.ts), recopiés sur la facture de solde. */
+function discountFieldsOf(l: SourceLine): Record<string, unknown> {
+  const src = l as Record<string, unknown>
+  const out: Record<string, unknown> = {}
+  for (const k of ["kind", "discount_kind", "discount_value", "discount_amount", "discount_label"]) {
+    if (src[k] != null && src[k] !== "") out[k] = src[k]
+  }
+  return out
+}
+
 /** Facture de solde : toutes les lignes du devis, moins chaque acompte repris en ligne. */
 export function computeFinal(quoteLines: SourceLine[], deposits: DepositRecord[], deducted: DeductedRecord[] = []): FinalResult | BillingError {
   if (quoteLines.length === 0) return { ok: false, error: "Le devis n'a aucune ligne." }
@@ -602,6 +612,8 @@ export function computeFinal(quoteLines: SourceLine[], deposits: DepositRecord[]
       total_vat: fromCents(vat),
       total_ttc: fromCents(ht + vat),
       ...(rate === 0 && lineTreatment(l) !== "standard" ? { vat_treatment: lineTreatment(l) } : {}),
+      // Remises du devis gardées telles quelles (remise de ligne, remise globale)
+      ...discountFieldsOf(l),
     }
   })
   const ded = deductDeposits(deposits, deducted, { num: 1, den: 1 })

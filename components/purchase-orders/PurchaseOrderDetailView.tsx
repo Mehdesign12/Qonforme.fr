@@ -32,6 +32,8 @@ import {
   fmtQty, fmtRate, fmtUnit, longDate, parisDay, shortDate, vatBreakdown, vatRatesLabel,
 } from "@/components/quotes/QuoteListHelpers"
 import { resolveDocumentMentions } from "@/lib/legal/mentions"
+import { LineDiscountNote, discountTotalRows } from "@/components/documents/DiscountBits"
+import { itemLines } from "@/lib/documents/discounts"
 
 export interface PurchaseOrderDetailData {
   id: string
@@ -295,21 +297,23 @@ export function PurchaseOrderDetailView({
           <section aria-label="Articles commandés" className="flex flex-col gap-2 lg:hidden print:hidden">
             <div className="flex items-baseline justify-between">
               <h2 className="q-h2">Articles commandés</h2>
-              <span className="text-[13px] tabular-nums text-[var(--q-text-4)]">{po.lines.length}</span>
+              <span className="text-[13px] tabular-nums text-[var(--q-text-4)]">{itemLines(po.lines).length}</span>
             </div>
             <div className="q-card q-list overflow-hidden rounded-[18px]">
-              {po.lines.map((l, i) => (
+              {itemLines(po.lines).map((l, i) => (
                 <div key={i} className="q-list-row px-3.5 py-2.5">
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-[15px] font-semibold">{l.description || "Article"}</span>
                     <span className="truncate text-[13px] tabular-nums text-[var(--q-text-4)]">
                       {fmtQty(l.quantity)}{l.unit ? ` ${fmtUnit(l.quantity, l.unit)}` : ""} × {formatCurrency(l.unit_price_ht)} · TVA {fmtRate(l.vat_rate)} %
                     </span>
+                    <LineDiscountNote line={l} className="text-[13px] text-[var(--q-ok)]" />
                   </span>
                   <span className="shrink-0 text-[15px] font-semibold tabular-nums">{formatCurrency(l.total_ht)}</span>
                 </div>
               ))}
               <div className="flex flex-col gap-1.5 bg-[var(--q-surface-2)] px-3.5 py-3 text-sm tabular-nums">
+                {discountTotalRows(po.lines).map((r) => <TotalRow key={r.label} label={r.label} value={r.value} />)}
                 <TotalRow label="Total HT" value={formatCurrency(po.subtotal_ht)} />
                 {vatBreakdown(po.lines).map((v) => (
                   <TotalRow key={v.rate} label={`TVA ${fmtRate(v.rate)} %`} value={formatCurrency(v.amount)} />

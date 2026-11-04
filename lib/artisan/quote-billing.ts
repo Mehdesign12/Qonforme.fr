@@ -20,6 +20,7 @@ import {
   type BillingLine, type DeductedRecord, type DepositRecord, type InvoiceKind, type SituationPrevious, type SourceLine,
 } from "./billing"
 import { toCents } from "./money"
+import { foldGlobalDiscount } from "@/lib/documents/discounts"
 
 export interface QuoteForBilling {
   id: string
@@ -95,7 +96,7 @@ export function quoteBillingState(quote: QuoteForBilling, invoices: InvoiceForBi
   const deductedTtc = deducted.reduce((s, d) => s + sumGroups(d.groups).ttc, 0)
 
   const situations = live.filter((i) => kindOf(i) === "situation")
-  const previous = previousProgress(lines.length, situations.map((s) => ({ lines: s.lines as BillingLine[] })))
+  const previous = previousProgress(foldGlobalDiscount(lines).length, situations.map((s) => ({ lines: s.lines as BillingLine[] })))
   const numbers = artisan
     .filter((i) => kindOf(i) === "situation" && i.status !== "draft")
     .map((i) => parseBillingContext(i.billing_context)?.situation?.number ?? 0)

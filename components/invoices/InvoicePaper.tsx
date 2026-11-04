@@ -20,6 +20,8 @@ import { initialsOf } from "@/components/app/kit"
 import {
   type CompanyView, type InvoiceView, formatIban, formatSiren, mediumDate,
 } from "@/components/invoices/invoice-view"
+import { DiscountTotalRows, LineDiscountNote } from "@/components/documents/DiscountBits"
+import { itemLines } from "@/lib/documents/discounts"
 
 const num = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const qty = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 })
@@ -149,12 +151,12 @@ export function InvoicePaper({
           <span className="text-right">TVA</span>
           <span className="text-right">Total HT</span>
         </div>
-        {(invoice.lines ?? []).map((l, i) => (
+        {itemLines(invoice.lines).map((l, i) => (
           <div
             key={i}
             className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-0.5 border-b border-[#F1F4F8] py-2 tabular-nums sm:grid-cols-[minmax(0,1fr)_48px_84px_44px_88px]"
           >
-            <span className="min-w-0 break-words">{l.description}</span>
+            <span className="min-w-0 break-words">{l.description}<LineDiscountNote line={l} /></span>
             <span className="hidden text-right sm:block">{qty.format(l.quantity)}{l.unit ? ` ${l.unit}` : ""}</span>
             <span className="hidden text-right sm:block">{num.format(l.unit_price_ht)}</span>
             <span className="hidden text-right sm:block">{qty.format(l.vat_rate)} %</span>
@@ -183,6 +185,7 @@ export function InvoicePaper({
 
       {/* Totaux */}
       <div className="ml-auto flex w-full flex-col gap-1.5 tabular-nums sm:w-[58%]">
+        <DiscountTotalRows lines={invoice.lines} labelClassName="text-[#475569]" />
         <div className="flex justify-between gap-4"><span className="text-[#475569]">Sous-total HT</span><span>{formatCurrency(invoice.subtotal_ht)}</span></div>
         {vatRows.length > 1 ? (
           vatRows.map(([rate, amount]) => (

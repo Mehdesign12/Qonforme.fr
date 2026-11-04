@@ -8,11 +8,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ProductSuggestion } from "@/components/products/ProductCombobox"
 import {
-  computeLines, computeTotals, lineFromProduct, newLine, validateDoc,
-  type DocForm, type DocKind, type DocLine, type VatRate,
+  computeDocTotals, computeLines, lineFromProduct, newLine, validateDoc,
+  type DocForm, type DocGlobalDiscount, type DocKind, type DocLine, type VatRate,
 } from "./model"
 
-type FieldKey = Exclude<keyof DocForm, "lines">
+type FieldKey = Exclude<keyof DocForm, "lines" | "global_discount" | "autoliquidation">
 
 export function useDocumentForm(kind: DocKind, init: () => DocForm) {
   const [form, setForm] = useState<DocForm>(init)
@@ -42,6 +42,21 @@ export function useDocumentForm(kind: DocKind, init: () => DocForm) {
         l.id === id ? { ...l, [key]: key === "vat_rate" ? (Number(value) as VatRate) : value } : l,
       ),
     }))
+  }, [])
+
+  /** Remise globale : patch partiel, ou null pour la retirer. */
+  const setGlobalDiscount = useCallback((patch: Partial<DocGlobalDiscount> | null) => {
+    setForm((prev) => ({
+      ...prev,
+      global_discount: patch === null ? null : { kind: "pct", value: "", label: "Remise commerciale", ...(prev.global_discount ?? {}), ...patch },
+    }))
+    clearError("global_discount")
+  }, [clearError])
+
+  /** Retire la remise de toutes les lignes (interrupteur « Remise par ligne » coupé). */
+  const clearLineDiscounts = useCallback(() => {
+    setForm((prev) => ({ ...prev, lines: prev.lines.map((l) => ({ ...l, discount_value: "" })) }))
+    setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => !/^line_\d+_disc$/.test(k))))
   }, [])
 
   /** Ajoute une ligne vide et renvoie son identifiant (le mobile l'ouvre aussitôt). */
@@ -87,8 +102,8 @@ export function useDocumentForm(kind: DocKind, init: () => DocForm) {
     })
   }, [])
 
-  const computed = useMemo(() => computeLines(form.lines), [form.lines])
-  const totals = useMemo(() => computeTotals(computed), [computed])
+  const computed = useMemo(() => computeLines(form.lines, Boolean(form.autoliquidation)), [form.lines, form.autoliquidation])
+  const totals = useMemo(() => computeDocTotals(form), [form])
 
   const validate = useCallback((): boolean => {
     const errs = validateDoc(kind, form)
@@ -107,7 +122,7 @@ export function useDocumentForm(kind: DocKind, init: () => DocForm) {
 
   return {
     kind, form, errors, computed, totals, dirty,
-    setValue, setLineValue, addLine, removeLine, insertProduct, setAutoliquidation,
+    setValue, setLineValue, addLine, removeLine, insertProduct, setAutoliquidation, setGlobalDiscount, clearLineDiscounts,
     validate, clearError, load,
   }
 }
@@ -115,7 +130,14 @@ export function useDocumentForm(kind: DocKind, init: () => DocForm) {
 export type DocumentFormApi = ReturnType<typeof useDocumentForm>
 
 function stripIds(form: DocForm) {
-  return { ...form, lines: form.lines.map(({ description, quantity, unit_price_ht, vat_rate }) => ({ description, quantity, unit_price_ht, vat_rate })) }
+  return {
+    ...form,
+    global_discount: form.global_discount && form.global_discount.value.trim() !== "" ? form.global_discount : null,
+    lines: form.lines.map(({ description, quantity, unit_price_ht, vat_rate, discount_kind, discount_value }) => ({
+      description, quantity, unit_price_ht, vat_rate,
+      discount: discount_value.trim() === "" ? null : `${discount_kind}:${discount_value}`,
+    })),
+  }
 }
 
 /**

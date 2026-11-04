@@ -29,7 +29,7 @@ export default function NewQuoteForm() {
     client_id: "", issue_date: isoDateIn(0), due_date: "", valid_until: isoDateIn(30),
     delivery_date: "", reference: "", notes: "", lines: [newLine()],
   }))
-  const { form, computed } = doc
+  const { form, computed, totals } = doc
   usePreselectedClient(doc, clients)
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function NewQuoteForm() {
         issue_date:  form.issue_date,
         valid_until: form.valid_until,
         notes:       form.notes || null,
-        lines:       toPayloadLines(form.lines, computed, form.autoliquidation),
+        lines:       toPayloadLines(form.lines, computed, form.autoliquidation, totals.discount_lines),
         status:      "draft",
       }
 

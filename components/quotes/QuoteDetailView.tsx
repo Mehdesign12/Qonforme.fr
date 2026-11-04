@@ -39,6 +39,8 @@ import {
 import { SheetGrip } from "@/components/ui/sheet-grip"
 import { RecipientBox } from "@/components/purchase-orders/detail-bits"
 import { normalizeEmail } from "@/lib/pa/delivery"
+import { DiscountTotalRows, LineDiscountNote, discountTotalRows } from "@/components/documents/DiscountBits"
+import { itemLines } from "@/lib/documents/discounts"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -445,21 +447,23 @@ export function QuoteDetailView({
           <section aria-label="Prestations" className="flex flex-col gap-2 lg:hidden print:hidden">
             <div className="flex items-baseline justify-between">
               <h2 className="q-h2">Prestations</h2>
-              <span className="text-[13px] tabular-nums text-[var(--q-text-4)]">{quote.lines.length}</span>
+              <span className="text-[13px] tabular-nums text-[var(--q-text-4)]">{itemLines(quote.lines).length}</span>
             </div>
             <div className="q-card q-list overflow-hidden rounded-[18px]">
-              {quote.lines.map((l, i) => (
+              {itemLines(quote.lines).map((l, i) => (
                 <div key={i} className="q-list-row px-3.5 py-2.5">
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-[15px] font-semibold">{l.description || "Prestation"}</span>
                     <span className="truncate text-[13px] tabular-nums text-[var(--q-text-4)]">
                       {fmtQty(l.quantity)}{l.unit ? ` ${fmtUnit(l.quantity, l.unit)}` : ""} × {formatCurrency(l.unit_price_ht)} · TVA {fmtRate(l.vat_rate)} %
                     </span>
+                    <LineDiscountNote line={l} className="text-[13px] text-[var(--q-ok)]" />
                   </span>
                   <span className="shrink-0 text-[15px] font-semibold tabular-nums">{formatCurrency(l.total_ht)}</span>
                 </div>
               ))}
               <div className="flex flex-col gap-1.5 bg-[var(--q-surface-2)] px-3.5 py-3 text-sm tabular-nums">
+                {discountTotalRows(quote.lines).map((r) => <TotalRow key={r.label} label={r.label} value={r.value} />)}
                 <TotalRow label="Total HT" value={formatCurrency(quote.subtotal_ht)} />
                 {vatBreakdown(quote.lines).map((v) => (
                   <TotalRow key={v.rate} label={v.rate === 0 && hasReverseCharge(quote.lines) ? "TVA (autoliquidation)" : `TVA ${fmtRate(v.rate)} %`} value={formatCurrency(v.amount)} />
@@ -814,9 +818,9 @@ function QuotePaper({ quote, company, companySettings }: { quote: QuoteDetailDat
           <span className="text-right">TVA</span>
           <span className="text-right">Total HT</span>
         </div>
-        {quote.lines.map((l, i) => (
+        {itemLines(quote.lines).map((l, i) => (
           <div key={i} className={cn(cols, "border-b border-[#F1F4F8] py-2 tabular-nums")}>
-            <span className="min-w-0 break-words">{l.description}</span>
+            <span className="min-w-0 break-words">{l.description}<LineDiscountNote line={l} /></span>
             <span className="text-right">{fmtQty(l.quantity)}{l.unit ? ` ${fmtUnit(l.quantity, l.unit)}` : ""}</span>
             <span className="text-right">{fmtAmount(l.unit_price_ht)}</span>
             <span className="text-right">{fmtRate(l.vat_rate)} %</span>
@@ -826,6 +830,7 @@ function QuotePaper({ quote, company, companySettings }: { quote: QuoteDetailDat
       </div>
 
       <div className="ml-auto flex w-[58%] flex-col gap-1.5 tabular-nums">
+        <DiscountTotalRows lines={quote.lines} rowClassName="flex justify-between" labelClassName="text-[#475569]" />
         <div className="flex justify-between"><span className="text-[#475569]">Total HT</span><span>{formatCurrency(quote.subtotal_ht)}</span></div>
         {vatBreakdown(quote.lines).map((v) => (
           <div key={v.rate} className="flex justify-between"><span className="text-[#475569]">{v.rate === 0 && hasReverseCharge(quote.lines) ? "TVA (autoliquidation)" : `TVA ${fmtRate(v.rate)} %`}</span><span>{formatCurrency(v.amount)}</span></div>

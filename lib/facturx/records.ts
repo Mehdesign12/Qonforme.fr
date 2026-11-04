@@ -56,6 +56,9 @@ export interface LineRecord {
   total_ht?: number | string | null
   total_vat?: number | string | null
   vat_treatment?: string | null
+  /** Remises (lib/documents/discounts.ts). */
+  kind?: string | null
+  discount_amount?: number | string | null
 }
 
 const num = (v: unknown): number => {
@@ -105,6 +108,8 @@ export function linesFromRecords(lines: LineRecord[] | null | undefined): FxLine
     total_ht:      num(l.total_ht),
     total_vat:     l.total_vat == null || l.total_vat === "" ? null : num(l.total_vat),
     vat_treatment: parseVatTreatment(l.vat_treatment) ?? null,
+    ...(l.kind === "document_discount" ? { kind: l.kind } : {}),
+    ...(num(l.discount_amount) > 0 ? { discount_amount: num(l.discount_amount) } : {}),
   }))
 }
 

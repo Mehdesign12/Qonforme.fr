@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { toastCompanyRequired } from "@/components/shared/company-required"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { useDocumentForm, usePreselectedClient } from "@/components/documents/useDocumentForm"
-import { isoDateIn, lineFromSaved, newLine, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
+import { globalDiscountFromSaved, isoDateIn, linesFromSaved, newLine, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -50,7 +50,8 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
         delivery_date: initial.delivery_date ?? "",
         reference:     initial.reference ?? "",
         notes:         initial.notes ?? "",
-        lines:         initial.lines.map(lineFromSaved),
+        lines:         linesFromSaved(initial.lines),
+        global_discount: globalDiscountFromSaved(initial.lines),
       }
     }
     return {
@@ -58,7 +59,7 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
       reference: "", notes: "", lines: [newLine()],
     }
   })
-  const { form, computed } = doc
+  const { form, computed, totals } = doc
   usePreselectedClient(doc, clients, !initial)
 
   useEffect(() => {
@@ -86,7 +87,7 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
         delivery_date: form.delivery_date || null,
         reference:     form.reference.trim() || null,
         notes:         form.notes || null,
-        lines:         toPayloadLines(form.lines, computed),
+        lines:         toPayloadLines(form.lines, computed, false, totals.discount_lines),
       }
 
       let po_id: string

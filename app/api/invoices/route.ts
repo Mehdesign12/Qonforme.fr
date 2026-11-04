@@ -1,3 +1,4 @@
+import { prepareLinesForSave } from "@/lib/documents/discounts"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { INITIAL_STATUS } from "@/lib/utils/document-status"
@@ -65,10 +66,10 @@ export async function POST(request: NextRequest) {
     .single()
 
   // Calculer les totaux
-  const lines       = body.lines || []
-  const subtotal_ht = lines.reduce((sum: number, l: { total_ht: number }) => sum + (l.total_ht || 0), 0)
-  const total_vat   = lines.reduce((sum: number, l: { total_vat: number }) => sum + (l.total_vat || 0), 0)
-  const total_ttc   = subtotal_ht + total_vat
+  // Remises contrôlées et recalculées, totaux au centime (lib/documents/discounts.ts)
+  const prepared = prepareLinesForSave(body.lines || [])
+  if (!prepared.ok) return NextResponse.json({ error: prepared.error }, { status: 400 })
+  const { subtotal_ht, total_vat, total_ttc } = prepared
 
   const { data: invoice, error } = await insertDraftInvoice(supabase, {
     userId: user.id,
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
       status: INITIAL_STATUS, // jamais un statut fourni par la requête (avoir, annulée…)
       issue_date: body.issue_date,
       due_date: body.due_date,
-      lines: body.lines,
+      lines: prepared.lines,
       subtotal_ht,
       total_vat,
       total_ttc,

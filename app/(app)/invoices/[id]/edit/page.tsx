@@ -13,7 +13,7 @@ import { useArtisanPlan } from "@/components/artisan/useArtisanPlan"
 import { SetCrumb } from "@/components/layout/crumb"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { useDocumentForm } from "@/components/documents/useDocumentForm"
-import { lineFromSaved, newLine, savedIsReverseCharge, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
+import { globalDiscountFromSaved, linesFromSaved, newLine, savedIsReverseCharge, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
 import { trackJourney } from "@/lib/journey"
 
 export default function EditInvoicePage() {
@@ -34,7 +34,7 @@ export default function EditInvoicePage() {
     client_id: "", issue_date: "", due_date: "", valid_until: "", delivery_date: "",
     reference: "", notes: "", lines: [newLine()],
   }))
-  const { form, computed, load } = doc
+  const { form, computed, totals, load } = doc
 
   // Charger la facture + les clients (+ l'entreprise, pour l'aperçu)
   useEffect(() => {
@@ -63,7 +63,8 @@ export default function EditInvoicePage() {
           delivery_date: "",
           reference:     "",
           notes:         inv.notes      || "",
-          lines:         (inv.lines || []).map(lineFromSaved),
+          lines:         linesFromSaved(inv.lines),
+          global_discount: globalDiscountFromSaved(inv.lines),
           autoliquidation: savedIsReverseCharge(inv.lines),
         })
         setClients(withDocClient(cliJson.clients ?? [], inv.client))
@@ -83,7 +84,7 @@ export default function EditInvoicePage() {
         issue_date: form.issue_date,
         due_date:   form.due_date,
         notes:      form.notes || null,
-        lines:      toPayloadLines(form.lines, computed, form.autoliquidation),
+        lines:      toPayloadLines(form.lines, computed, form.autoliquidation, totals.discount_lines),
       }
 
       // 1. Enregistrer le brouillon

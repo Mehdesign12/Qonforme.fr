@@ -36,7 +36,7 @@ export default function NewInvoiceForm() {
     client_id: "", issue_date: isoDateIn(0), due_date: isoDateIn(30), valid_until: "",
     delivery_date: "", reference: "", notes: "", lines: [newLine()],
   }))
-  const { form, computed } = doc
+  const { form, computed, totals } = doc
   usePreselectedClient(doc, clients)
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export default function NewInvoiceForm() {
         body: JSON.stringify({
           client_id: form.client_id, issue_date: form.issue_date,
           due_date: form.due_date, notes: form.notes || null,
-          lines: toPayloadLines(form.lines, computed, form.autoliquidation),
+          lines: toPayloadLines(form.lines, computed, form.autoliquidation, totals.discount_lines),
         }),
       })
       if (!res.ok) {
@@ -93,7 +93,7 @@ export default function NewInvoiceForm() {
         issue_date: form.issue_date,
         due_date:   form.due_date,
         notes:      form.notes || null,
-        lines:      toPayloadLines(form.lines, computed, form.autoliquidation),
+        lines:      toPayloadLines(form.lines, computed, form.autoliquidation, totals.discount_lines),
         status:     "draft",
       }
       const res  = await fetch("/api/invoices", {
