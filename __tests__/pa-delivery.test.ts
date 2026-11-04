@@ -43,10 +43,12 @@ describe("annuaire", () => {
 })
 
 /** Ouvre des modes le temps d'un test, puis rend la liste telle qu'elle était. */
-function openModes(...extra: string[]) {
+/** Fixe la liste des modes ouverts le temps d'un test. */
+function openModes(...only: string[]) {
   const modes = PLATFORM_SENDING_MODES as unknown as string[]
   const before = [...modes]
-  modes.push(...extra)
+  modes.length = 0
+  modes.push(...only)
   return () => { modes.length = 0; modes.push(...before) }
 }
 
@@ -56,12 +58,18 @@ describe("canaux proposés", () => {
     client: { email: "compta@client.fr", siren: "853 322 915", country: "FR" }, directory: SUPERG, ...over,
   })
 
-  it("ouvert au bac à sable seul (lot 3) : en production, email seul, raison tue", () => {
-    expect(PLATFORM_SENDING_MODES).toEqual(["test"])
-    const o = deliveryOptions(live())
-    expect(o.platform).toEqual({ offered: false, reason: "disabled" })
-    expect(o.recommended).toBe("email")
-    expect(needsDirectory(live())).toBeNull()
+  it("production ouverte le 04/11/2026 : bac à sable et production", () => {
+    expect(PLATFORM_SENDING_MODES).toEqual(["test", "live"])
+  })
+
+  it("mode fermé : email seul, raison tue", () => {
+    const restore = openModes("test")
+    try {
+      const o = deliveryOptions(live())
+      expect(o.platform).toEqual({ offered: false, reason: "disabled" })
+      expect(o.recommended).toBe("email")
+      expect(needsDirectory(live())).toBeNull()
+    } finally { restore() }
   })
 
   describe("une fois ouvert", () => {

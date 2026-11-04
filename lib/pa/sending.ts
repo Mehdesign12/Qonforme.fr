@@ -14,7 +14,7 @@
  */
 import type { PaMode } from "@/lib/pa/superpdp/config"
 
-export const PLATFORM_SENDING_MODES: readonly PaMode[] = ["test"]
+export const PLATFORM_SENDING_MODES: readonly PaMode[] = ["test", "live"]
 
 /** Émission ouverte aux comptes de production : les textes publics la présentent comme livrée. */
 export const PLATFORM_SENDING_LIVE: boolean = PLATFORM_SENDING_MODES.includes("live")
