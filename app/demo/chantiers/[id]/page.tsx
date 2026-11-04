@@ -2,13 +2,15 @@
 
 export const dynamic = "force-dynamic"
 
-import { useMemo } from "react"
+import { useCallback, useMemo } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { HardHat } from "lucide-react"
 import { EmptyState } from "@/components/app/kit"
 import { ChantierDetailView } from "@/components/artisan/ChantierDetailView"
 import { NotesPanel } from "@/components/planning/NotesPanel"
+import { ChantierAppointments } from "@/components/planning/ChantierAppointments"
+import { DEMO_APPOINTMENTS } from "@/lib/demo/planning"
 import { demoNotesApi } from "@/lib/demo/notes"
 import { DEMO_TODAY } from "@/lib/demo/data"
 import { demoChantier, demoChantierDocs, demoChantierSummary } from "@/lib/demo/chantiers"
@@ -26,6 +28,10 @@ const DOC_PATHS: Record<ChantierDoc["type"], string> = {
 export default function DemoChantierPage({ params }: { params: { id: string } }) {
   const c = demoChantier(params.id)
   const notesApi = useMemo(() => demoNotesApi(), [])
+  const loadAppointments = useCallback(
+    async () => ({ available: true, appointments: DEMO_APPOINTMENTS.filter((a) => a.chantier_id === params.id) }),
+    [params.id],
+  )
   if (!c) return (
     <div className="q-card">
       <EmptyState
@@ -49,6 +55,14 @@ export default function DemoChantierPage({ params }: { params: { id: string } })
       clientHref={c.client_id ? `/demo/clients/${c.client_id}` : null}
       newQuoteHref="/demo/quotes/new"
       notes={<NotesPanel api={notesApi} scope={{ chantier_id: c.id }} title="À faire et notes du chantier" />}
+      appointments={
+        <ChantierAppointments
+          today={DEMO_TODAY}
+          load={loadAppointments}
+          planningHref="/demo/planning"
+          newHref={`/demo/planning?nouveau=1&chantier=${encodeURIComponent(c.id)}`}
+        />
+      }
       actions={{
         onEdit: () => ctaToast("modifier vos chantiers"),
         onAttach: () => ctaToast("rattacher vos documents à un chantier"),

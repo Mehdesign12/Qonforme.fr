@@ -11,6 +11,7 @@ import { PAYMENT_METHODS_TEXT, PLANS, TAX_SUFFIX, VAT_COLLECTED, formatEuros, sc
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { artisanOnSaleFor } from '@/lib/stripe/availability'
 import { SENDING_SENTENCE } from "@/lib/pa/sending"
+import { SOLUTION_COMPATIBLE, SolutionCompatible } from '@/components/brand/SolutionCompatible'
 
 const essentiel = PLANS.starter
 
@@ -33,16 +34,16 @@ export const dynamic = 'force-dynamic'
 const nbsp = (text: string) => text.replace(/ ([?:;!€%])/g, '\u00A0$1')
 
 const FAQ = ([
-  { question: "Faut-il une carte bancaire pour commencer ?", reponse: "Non. Les devis sont gratuits et illimités. Le moyen de paiement n'est demandé qu'au moment d'envoyer votre première facture." },
+  { question: "Qonforme est-il prêt pour la facturation électronique ?", reponse: `Oui. Qonforme est solution compatible facturation électronique : vos factures sont conformes à la réforme, au format Factur-X. Avec Essentiel, vos factures fournisseurs arrivent par la plateforme agréée Super PDP, sans frais en plus. ${SENDING_SENTENCE}` },
+  { question: "Puis-je commencer sans carte bancaire ?", reponse: "Oui. Les devis sont gratuits et illimités, sans carte bancaire. Le moyen de paiement n'est demandé qu'au moment d'envoyer votre première facture." },
   { question: `Que comprend la formule ${essentiel.name} ?`, reponse: `${essentiel.features.map((f, i) => (i === 0 ? f : f.charAt(0).toLowerCase() + f.slice(1))).join(', ')}. ${formatEuros(essentiel.monthlyPrice)}${TAX_SUFFIX} par mois, ou ${formatEuros(essentiel.yearlyPrice)}${TAX_SUFFIX} par an.` },
+  PLANS.pro.available
+    ? { question: `Que comprend la formule ${PLANS.pro.name} ?`, reponse: `Tout ${essentiel.name}, plus la gestion de vos chantiers : une fiche par chantier avec ses documents, ses rendez-vous et ses montants, les factures d'acompte, les situations de travaux, la retenue de garantie et l'autoliquidation en sous-traitance. ${formatEuros(PLANS.pro.monthlyPrice)}${TAX_SUFFIX} par mois, ou ${formatEuros(PLANS.pro.yearlyPrice)}${TAX_SUFFIX} par an.` }
+    : { question: `La formule ${PLANS.pro.name} est-elle disponible ?`, reponse: `Ses fonctions sont prêtes : suivi par chantier, factures d'acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance. Vous pouvez les essayer dans la démo. La formule n'est pas encore en vente.` },
+  { question: "Planning, notes et scan de documents : sont-ils inclus ?", reponse: `Oui, pour tous les comptes, la version gratuite comprise : planning de rendez-vous, notes et rappels par client ou par chantier, et scan des devis, bons de commande et bons de livraison avec votre téléphone. L'espace de scan est de ${scanQuotaText('free')} en version gratuite, et de ${scanQuotaText('starter')} avec Essentiel ou Artisan.` },
   { question: "Et si Qonforme ne me convient pas ?", reponse: `Vous êtes remboursé intégralement dans les ${GUARANTEE_DAYS} jours qui suivent votre premier paiement, sans avoir à vous justifier, directement depuis votre espace. Vos documents restent consultables et téléchargeables.` },
   { question: "Puis-je résilier à tout moment ?", reponse: "Oui, sans engagement. La résiliation se fait depuis Paramètres › Abonnement et prend effet à la fin de la période déjà payée. Vos factures restent consultables après résiliation." },
   { question: "Comment payer ?", reponse: VAT_COLLECTED ? `Par ${PAYMENT_METHODS_TEXT}. Les prix sont hors taxes : la TVA à 20 % s'y ajoute.` : `Par ${PAYMENT_METHODS_TEXT}. Le prix affiché est le montant prélevé.` },
-  PLANS.pro.available
-    ? { question: `Que comprend la formule ${PLANS.pro.name} ?`, reponse: `Tout ${essentiel.name}, plus le suivi par chantier, les factures d'acompte, les situations de travaux, la retenue de garantie et l'autoliquidation en sous-traitance. ${formatEuros(PLANS.pro.monthlyPrice)}${TAX_SUFFIX} par mois, ou ${formatEuros(PLANS.pro.yearlyPrice)}${TAX_SUFFIX} par an.` }
-    : { question: `La formule ${PLANS.pro.name} est-elle disponible ?`, reponse: `Ses fonctions sont prêtes : suivi par chantier, factures d'acompte, situations de travaux, retenue de garantie et autoliquidation en sous-traitance. Vous pouvez les essayer dans la démo. La formule n'est pas encore en vente.` },
-  { question: "Qonforme est-il prêt pour la facturation électronique ?", reponse: `Qonforme produit des factures PDF accompagnées de leurs données structurées Factur-X. Avec Essentiel, vos factures fournisseurs arrivent par la plateforme agréée Super PDP, sans frais en plus. ${SENDING_SENTENCE}` },
-  { question: "Planning, notes et scan de documents : sont-ils disponibles ?", reponse: `Oui, pour tous les comptes, la version gratuite comprise : planning de rendez-vous, notes et rappels par client ou par chantier, et scan des devis, bons de commande et bons de livraison avec votre téléphone. L'espace de scan est de ${scanQuotaText('free')} en version gratuite, et de ${scanQuotaText('starter')} avec Essentiel ou Artisan.` },
   { question: "Est-ce que Qonforme fonctionne sur mobile ?", reponse: "Oui. Qonforme fonctionne sur téléphone, tablette et ordinateur, et s'installe sur l'écran d'accueil de votre téléphone." },
 ]).map((f) => ({ question: nbsp(f.question), reponse: nbsp(f.reponse) }))
 
@@ -80,8 +81,8 @@ export default async function PricingPage() {
           <header className="relative mx-auto flex max-w-[1200px] flex-col items-center gap-[18px] px-4 pt-[120px] text-center sm:px-6 sm:pt-[152px]">
             <Doodles layout="page" {...pictosFor("Tarifs : paiement de la facture, devis gratuits")} />
             <h1 className="max-w-[860px] font-display text-[clamp(38px,4.6vw,64px)] font-semibold leading-[1.04] tracking-[-0.035em] text-q-ink-strong [text-wrap:balance]">
-              <span className="sm:block">Vos devis sont gratuits.</span>{' '}
-              <span className="q-serif sm:block">Vous payez quand vous facturez.</span>
+              <span className="sm:block">Zéro euro pour chiffrer.</span>{' '}
+              <span className="q-serif sm:block">Tout ce qu&apos;il faut pour encaisser.</span>
             </h1>
             <p className="max-w-[600px] text-[17px] leading-[1.55] text-q-text-3 [text-wrap:pretty] sm:text-lg">
               Commencez sans carte bancaire. Vous choisissez une formule au moment d&apos;envoyer votre première facture.
@@ -91,6 +92,14 @@ export default async function PricingPage() {
           {/* Formules */}
           <section aria-label="Formules" className="mx-auto max-w-[1200px] px-4 pt-8 sm:px-6 sm:pt-10">
             <PricingSelector isAuthenticated={!!user} artisanOnSale={artisanOnSale} />
+            {SOLUTION_COMPATIBLE && (
+              <div className="mt-10 flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-center sm:gap-6 sm:text-left">
+                <SolutionCompatible />
+                <p className="max-w-[360px] text-[15px] leading-[1.55] text-q-text-3">
+                  Factures conformes à la réforme de la facturation électronique, dans les deux formules.
+                </p>
+              </div>
+            )}
           </section>
 
           {/* Comparaison */}

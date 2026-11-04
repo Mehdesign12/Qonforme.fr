@@ -20,9 +20,15 @@
 - **Ne jamais mentionner un concurrent** en public : site, publicités, emails, contenus, réseaux sociaux. Qonforme a sa place, on ne se compare pas.
   - Conséquence : les 8 pages `/comparatif/*` (« Qonforme contre X ») ont été **retirées le 02/10/2026**, avec une redirection permanente vers `/pricing`. Les sujets « Qonforme vs … » sont sortis du générateur d'articles du blog, et sa consigne interdit désormais de nommer un autre logiciel. Un guide neutre du type « Comment choisir son premier logiciel de facturation quand on est artisan » reste possible, sans aucun nom.
   - Les données de concurrence restent un outil interne, par exemple pour fixer les prix.
-- **Aucune affirmation invérifiable :** pas de faux avis, pas de faux chiffres, pas de fausse homologation ou certification. Les éléments actuels du site sont listés dans le lot 1 de la stratégie.
-- **Aucune promesse de contact humain :** pas d'appel, de visio, de rendez-vous, de « un humain vous répond » ni de message signé du fondateur. Ce service n'existe pas : le promettre serait une affirmation invérifiable de plus. Les emails partent au nom de Qonforme, sans inviter à répondre. L'aide passe par le produit : écrans clairs, devis d'essai, tableau de bord explorable.
-- **Ton :** vouvoiement. Dates exactes de la réforme : réception obligatoire depuis le 1er septembre 2026, émission obligatoire pour les TPE au 1er septembre 2027. Pas de marketing de la peur.
+- **Copywriting libre, orienté conversion (décision du fondateur, 04/11/2026).** Les enregistrements des sessions montraient des visiteurs arrêtés sur un ton trop prudent (« ce que Qonforme ne fait pas », « pas d'avis inventés », « seulement ce qui existe »). Désormais :
+  - **on vend des bénéfices, pas des mécanismes** : gagner du temps, être payé plus vite, être en règle, garder la main sur ses chantiers ;
+  - **on ne dit pas ce que Qonforme ne fait pas** : plus de section « Ce que … ne fait pas », plus de phrase d'auto-justification visible (elles restent des règles d'écriture, pas du texte) ; une réponse de FAQ commence par « Oui » ou par le bénéfice ;
+  - **positionnement élargi** : Qonforme n'est pas qu'un logiciel de devis et factures, il gère le chantier (chantier, planning, notes, scan, acomptes et situations), du chiffrage à l'encaissement ;
+  - **« conforme » est permis** pour les factures et la réforme (« factures conformes à la réforme de la facturation électronique ») : mentions obligatoires générées, Factur-X validé sur les règles EN 16931 et françaises, envoi et réception par la plateforme agréée Super PDP ;
+  - **urgence permise si elle est vraie et datée** (« le 1er septembre 2027… ») ;
+  - **restent interdits** : nommer un concurrent ; un faux avis, une fausse note, un faux témoignage ou un chiffre inventé (utilisateurs, gains, délais) ; « certifié », « homologué », « agréé par l'État », « plateforme agréée » pour Qonforme (charte DGFiP, § 13) ; présenter comme disponible une fonction qui n'existe pas ; dire « gratuit » pour autre chose que ce qui l'est (devis, clients, catalogue, brouillons, planning, notes, scan, outils et modèles). Une fonction réservée à une formule le dit (« avec Essentiel », « avec Artisan ») : c'est un argument de vente, pas une limite.
+- **Aucune promesse de contact humain :** pas d'appel, de visio, de rendez-vous, de « un humain vous répond » ni de message signé du fondateur. Ce service n'existe pas : le promettre serait une affirmation invérifiable de plus. Les emails partent au nom de Qonforme, sans inviter à répondre. L'aide passe par le produit : écrans clairs, devis d'essai, tableau de bord explorable. (Exception : Christophe, par email seulement, `CLAUDE.md`.)
+- **Ton :** vouvoiement, direct, concret. Dates exactes de la réforme : réception obligatoire depuis le 1er septembre 2026, émission obligatoire pour les TPE et PME au 1er septembre 2027.
 
 ## 3. Acquisition — validée
 
@@ -532,6 +538,8 @@ Le **chantier** est le fil conducteur : chaque document y est rattaché.
 Le fondateur déclare le 17/10/2026 que Qonforme a obtenu le label de la DGFiP. Le logotype s'affiche donc sur l'accueil (§ « Où il s'affiche »). **Le dépôt ne contient pas la preuve** (date du raccordement, nom de la plateforme agréée, fonctions couvertes) : la noter ici dès qu'elle est sous la main, car la charte permet à l'État de contrôler l'usage et d'en exiger le retrait.
 
 > Preuve consignée le 30/10/2026 : plateforme agréée raccordée : **Super PDP** (SUPER G, Paris, immatriculée en décembre 2025) · application de production créée le 30/10/2026 (contrat 132136, au nom de Diez Agency LLC) · parcours essayé de bout en bout en bac à sable le même jour (raccordement, relève d'une facture, décision transmise au fournisseur) · fonctions couvertes : **réception** ; émission et e-reporting pas encore (§ 16).
+>
+> Mise à jour du 04/11/2026 : **émission ouverte en production** (factures et avoirs aux clients professionnels de l'annuaire, statuts, encaissement fr:212 ; § 16). Fonctions couvertes : réception et émission ; e-reporting des ventes aux particuliers pas encore.
 
 ### Ce que dit la charte (DGFiP, 30/07/2025)
 

@@ -146,7 +146,7 @@ export function TradesCarousel() {
       <Doodles layout="sides-short" icons={[PlugZap, BrickWall]} />
       <div className="px-6">
         <div className={D_WRAP}>
-          <SectionTitle align="center" title="Un logiciel pensé" accent="pour tous les artisans du bâtiment." />
+          <SectionTitle align="center" title="Pensé pour" accent="votre métier." />
         </div>
       </div>
 

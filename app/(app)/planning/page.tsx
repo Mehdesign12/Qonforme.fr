@@ -9,6 +9,7 @@ import { NotesPanel } from "@/components/planning/NotesPanel"
 import { appNotesApi } from "@/lib/planning/notes-api"
 import { weekRangeIso, type Appointment } from "@/lib/planning/appointments"
 import { todayInParis } from "@/lib/utils/paris-date"
+import { chantierDefaults, type ChantierOption } from "@/lib/planning/chantier-defaults"
 
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -26,7 +27,10 @@ function PlanningPage() {
   const params = useSearchParams()
   const [today, setToday] = useState<string | null>(null)
   const [clients, setClients] = useState<PlanningClient[]>([])
-  const [chantiers, setChantiers] = useState<{ id: string; name: string }[]>([])
+  const [chantiers, setChantiers] = useState<ChantierOption[]>([])
+  const [chantiersLoaded, setChantiersLoaded] = useState(false)
+  // Fiche d'un chantier › « Planifier » : ?nouveau=1&chantier=<id>
+  const chantierParam = params.get("chantier")
 
   useEffect(() => {
     setToday(todayInParis())
@@ -35,8 +39,8 @@ function PlanningPage() {
     }).catch(() => {})
     // Chantiers : table facultative (formule Artisan), la liste reste vide sans elle
     fetch("/api/chantiers").then((r) => r.json()).then((j) => {
-      if (j.available !== false && Array.isArray(j.chantiers)) setChantiers(j.chantiers.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })))
-    }).catch(() => {})
+      if (j.available !== false && Array.isArray(j.chantiers)) setChantiers(j.chantiers.map((c: ChantierOption) => ({ id: c.id, name: c.name, client_id: c.client_id ?? null, address: c.address ?? null, zip_code: c.zip_code ?? null, city: c.city ?? null })))
+    }).catch(() => {}).finally(() => setChantiersLoaded(true))
   }, [])
 
   const api = useMemo<PlanningApi>(() => ({
@@ -56,7 +60,10 @@ function PlanningPage() {
     async remove(id) { await call(`/api/appointments/${id}`, { method: "DELETE" }) },
   }), [])
 
-  return <PlanningView mode="app" today={today} api={api} clients={clients} chantiers={chantiers} openNew={params.get("nouveau") === "1"}
+  const newDefaults = useMemo(() => chantierDefaults(chantiers, chantierParam), [chantiers, chantierParam])
+
+  return <PlanningView mode="app" today={today} api={api} clients={clients} chantiers={chantiers}
+    openNew={params.get("nouveau") === "1" && (!chantierParam || chantiersLoaded)} newDefaults={newDefaults}
     footer={<NotesPanel api={appNotesApi} scope={{}} focusComposer={params.get("note") === "1"} />} />
 }
 

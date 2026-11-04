@@ -137,7 +137,7 @@ export const PLANS: Record<PlanId, Plan> = {
   starter: {
     id: 'starter',
     name: 'Essentiel',
-    tagline: 'Pour facturer sans limite.',
+    tagline: 'Pour facturer et être payé.',
     monthlyPrice: 24,
     yearlyPrice: 240,
     yearlyMonthlyEquivalent: 20,
@@ -169,7 +169,7 @@ export const PLANS: Record<PlanId, Plan> = {
   pro: {
     id: 'pro',
     name: 'Artisan',
-    tagline: 'Pour les pros du bâtiment.',
+    tagline: 'Pour piloter vos chantiers.',
     monthlyPrice: 34,
     yearlyPrice: 340,
     yearlyMonthlyEquivalent: 28.33,

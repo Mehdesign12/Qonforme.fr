@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { HardHat, Percent, ShieldCheck } from "lucide-react"
 import { PLANS, TAX_SUFFIX, formatEuros } from "@/lib/stripe/plans"
-import { DevisBlock, FacturationBlock, PilotageBlock } from "@/components/home/Features"
+import { ChantierBlock, DevisBlock, FacturationBlock } from "@/components/home/Features"
 import { ProductPage, type ProductFaq } from "@/components/content/ProductPage"
 
 /*
@@ -12,8 +12,7 @@ import { ProductPage, type ProductFaq } from "@/components/content/ProductPage"
  *
  * Honnêteté : ces fonctions sont celles de la formule Artisan (lib/artisan/). Elles ne sont
  * dites disponibles que si la formule est en vente (PLANS.pro.available, lu au build) ;
- * sinon « bientôt disponible ». Aucun écran de chantier n'a encore de capture : les blocs
- * montrent le devis, la facture et le tableau de bord, et la démo des chantiers est liée.
+ * sinon « bientôt disponible ». Le bloc Chantier montre la fiche d'un chantier de la démo.
  */
 
 const PATH = "/logiciel-situations-travaux"
@@ -88,14 +87,14 @@ export default function Page() {
         ["Ce qu'il fait", "Factures d'acompte, situations de travaux cumulées (globales ou par ligne), acomptes repris au prorata, retenue de garantie, facture de solde, autoliquidation en sous-traitance, suivi par chantier."],
         ["Ce qu'il coûte", enVente ? `Avec ${artisan.name} : ${prix(artisan.monthlyPrice)} par mois, ou ${prix(artisan.yearlyPrice)} par an. Sans engagement.` : `Formule ${artisan.name}, bientôt disponible : ${prix(artisan.monthlyPrice)} par mois. Les devis restent gratuits.`],
         ["Par chantier", "Signé, facturé, encaissé, reste à facturer et retenues : sur une seule page, avec les documents rattachés."],
-        ["Ce qu'il ne fait pas", "Ni suivi des heures, ni achats de matériaux, ni calcul de marge : il facture le chantier, il ne le pilote pas."],
+        ["Pourquoi l'adopter", "Chaque situation se calcule seule, acomptes déduits et retenue à part : vous facturez l'avancement sans tableur et sans erreur de cumul."],
       ]}
       fonctions={{ title: "Du devis signé", accent: "à la facture de solde." }}
       blocks={
         <>
-          <DevisBlock reverse={false} />
+          <ChantierBlock reverse={false} />
           <FacturationBlock reverse />
-          <PilotageBlock reverse={false} />
+          <DevisBlock reverse={false} />
         </>
       }
       terrain={[
@@ -120,15 +119,6 @@ export default function Page() {
         ],
       }}
       inlineCta={{ title: "Commencez par le devis :", accent: "il est gratuit." }}
-      limites={{
-        title: "Ce que Qonforme",
-        accent: "ne fait pas.",
-        paragraphes: [
-          "Qonforme facture vos chantiers ; il ne les pilote pas. Pas de suivi des heures, pas d'achats de matériaux, pas de calcul de marge ni de planning d'équipe.",
-          "Le pourcentage d'avancement est celui que vous saisissez : aucun relevé de chantier n'est fait à votre place.",
-          ...(enVente ? [] : [`Ces fonctions appartiennent à la formule ${artisan.name}, qui n'est pas encore en vente.`]),
-        ],
-      }}
       faq={FAQ}
       liens={[
         { href: "/modele/facture-situation", label: "Modèle de facture de situation" },

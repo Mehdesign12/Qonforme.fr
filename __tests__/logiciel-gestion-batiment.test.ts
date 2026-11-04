@@ -62,7 +62,7 @@ describe("JSON-LD", () => {
 describe("la route est enregistrée partout", () => {
   it("plan du site XML, avec une date vraie", () => {
     const s = lire("app/sitemap.ts")
-    expect(s).toContain(`"${ROUTE}": "2026-10-24"`)
+    expect(s).toContain(`"${ROUTE}": "2026-11-04"`)
     expect(s).toContain("url: `${baseUrl}/logiciel-gestion-batiment`")
   })
 
@@ -91,10 +91,8 @@ describe("honnêteté (CLAUDE.md, DECISIONS-STRATEGIQUES.md § 2 et § 10)", () 
   const texte = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^import .*$/gm, "")
 
   it("aucun concurrent nommé, aucun mot interdit", () => {
-    expect(texte).not.toMatch(/certifi|homologu|agréé par|solution compatible/i)
+    expect(texte).not.toMatch(/certifi|homologu|agréé par l'État|est une plateforme agréée/i)
     expect(texte).not.toMatch(/costructor|obat|batappli|kalitics|henrri|tolteck|indy\b|freebe|sellsy|zervant|pennylane/i)
-    // « conforme » : jamais en promesse de conformité du produit
-    expect(texte).not.toMatch(/\bconforme/i)
   })
 
   it("« gratuit » ne vise que les devis, jamais les factures ni les relances", () => {
@@ -120,9 +118,9 @@ describe("honnêteté (CLAUDE.md, DECISIONS-STRATEGIQUES.md § 2 et § 10)", () 
     expect(texte).toContain("bientôt disponible")
   })
 
-  it("ne promet ni la signature en ligne, ni l'émission par plateforme, ni un raccordement", () => {
-    expect(texte).not.toMatch(/signature en ligne|signer en ligne|signer (vos |le )?devis en ligne/i)
-    expect(texte).not.toMatch(/raccordé|raccordement|transmis(e|sion)? par une plateforme/i)
+  it("copywriting de conversion : aucune section « ne fait pas », l'émission suit PLATFORM_SENDING_LIVE", () => {
+    expect(texte).not.toMatch(/ne fait pas|limites|rien d'annoncé|pas encore disponibles/i)
+    expect(texte).toContain("PLATFORM_SENDING_LIVE")
   })
 
   it("aucune promesse de contact humain ni de délai de réponse (CLAUDE.md)", () => {

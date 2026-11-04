@@ -11,7 +11,8 @@ import { dateFr, fr, lcFirst } from "@/components/content/text"
  * Page publique de produit sur le modèle de /logiciel-gestion-batiment (règle « Layout des
  * pages publiques de produit » de CLAUDE.md) : en-tête avec photo, « L'essentiel », blocs
  * de maquettes de l'accueil, bandeau photo, « Et aussi », parcours, métiers en tuiles
- * photo, limites, FAQ (JSON-LD bâti sur les mêmes questions), appel final.
+ * photo, FAQ (JSON-LD bâti sur les mêmes questions), appel final. Jamais de section
+ * « Ce que … ne fait pas » (décision du fondateur, 04/11/2026).
  *
  * Chaque page passe son contenu ; le composant ne contient aucun fait, aucun prix et
  * aucune promesse : ils viennent de la page, qui les lit dans lib/stripe/plans.ts.
@@ -47,7 +48,6 @@ export interface ProductPageProps {
   aussi: { icone: LucideIcon; titre: string; texte: string; href: string; lien: string }[]
   etapes: { titre: string; accent: string; items: { titre: string; texte: string }[] }
   inlineCta: { title: string; accent: string }
-  limites: { title: string; accent: string; paragraphes: string[] }
   faq: ProductFaq[]
   liens: { href: string; label: string }[]
   sources?: { label: string; href?: string }[]
@@ -129,7 +129,7 @@ export function ProductPage(p: ProductPageProps) {
 
         <section aria-labelledby="fonctions" className="px-4 pb-10 pt-16 sm:px-6 sm:pb-12 sm:pt-20">
           <div className={WRAP}>
-            <SectionHeading id="fonctions" title={p.fonctions.title} accent={p.fonctions.accent} sub={p.fonctions.sub ?? "Les vrais écrans de l'application, avec des données d'exemple. Seulement ce qui existe : rien d'annoncé qui ne soit pas livré."} />
+            <SectionHeading id="fonctions" title={p.fonctions.title} accent={p.fonctions.accent} sub={p.fonctions.sub ?? "Les vrais écrans de Qonforme, sur ordinateur et sur téléphone."} />
           </div>
         </section>
 
@@ -249,17 +249,6 @@ export function ProductPage(p: ProductPageProps) {
               </li>
             </ul>
             {metiersListe.length > 0 && <ChipLinks links={metiersListe} className="mt-6" />}
-          </div>
-        </section>
-
-        <section aria-labelledby="limites" className="px-4 pt-16 sm:px-6 sm:pt-20">
-          <div className="mx-auto w-full max-w-[860px]">
-            <SectionHeading id="limites" title={p.limites.title} accent={p.limites.accent} className="mb-6" />
-            <div className="flex flex-col gap-4 text-[16px] leading-[1.7] text-q-text-3">
-              {p.limites.paragraphes.map((t) => (
-                <p key={t}>{fr(t)}</p>
-              ))}
-            </div>
           </div>
         </section>
 

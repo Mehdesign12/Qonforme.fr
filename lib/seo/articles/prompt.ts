@@ -20,7 +20,7 @@ import { referenceFacts } from "@/lib/ai/reference-facts"
 import type { ArticleType } from "@/lib/seo/types"
 import type { ArticleSettings, BrandSettings, StrategySettings } from "@/lib/seo/settings"
 import { FREE_RULE, keywordForm, titleDirectives } from "@/lib/seo/articles/search-language"
-import { SENDING_PROMPT_RULE } from "@/lib/pa/sending"
+import { PLATFORM_SENDING_LIVE, SENDING_PROMPT_RULE } from "@/lib/pa/sending"
 
 /* ------------------------------------------------------------------ */
 /* Faits de référence                                                  */
@@ -383,7 +383,9 @@ export function buildReviewPrompt(input: { title: string; content: string; lengt
     "",
     "Catégories :",
     "- stale_value : chiffre, seuil, taux, date ou article de loi différent des faits de référence (valeur périmée) ;",
-    "- forbidden_claim : affirmation interdite (logiciel certifié, homologué ou agréé, plateforme agréée, envoi des factures électroniques des artisans à leurs clients par Qonforme (la réception par Super PDP, avec Essentiel, est vraie), contact humain promis, autre logiciel nommé, avis, note, témoignage ou statistique inventés, fonction absente de l'offre) ;",
+    PLATFORM_SENDING_LIVE
+      ? "- forbidden_claim : affirmation interdite (logiciel certifié, homologué ou agréé, plateforme agréée, contact humain promis, autre logiciel nommé, avis, note, témoignage ou statistique inventés, fonction absente de l'offre ; vrai et permis : l'envoi et la réception des factures par la plateforme agréée Super PDP, avec Essentiel) ;"
+      : "- forbidden_claim : affirmation interdite (logiciel certifié, homologué ou agréé, plateforme agréée, envoi des factures électroniques des artisans à leurs clients par Qonforme (la réception par Super PDP, avec Essentiel, est vraie), contact humain promis, autre logiciel nommé, avis, note, témoignage ou statistique inventés, fonction absente de l'offre) ;",
     "- unverifiable_claim : chiffre ou règle avancés sans source sûre ;",
     "- factual_error : règle juridique ou fiscale inexacte ;",
     "- instruction : consigne non respectée (tutoiement, titre de niveau 1, tableau, lien vers un site non officiel).",

@@ -11,7 +11,7 @@ import { DEMO_PRODUCTS } from "@/lib/demo/data"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { HomeHero, EInvoicingBand, TradesStrip } from "@/components/home/HomeHero"
 import { OfferFacts, SimpleBand, TimeBand } from "@/components/home/Bands"
-import { CatalogueBlock, DevisBlock, FacturationBlock, PilotageBlock, RelancesBlock } from "@/components/home/Features"
+import { CatalogueBlock, ChantierBlock, DevisBlock, FacturationBlock, PilotageBlock, RelancesBlock } from "@/components/home/Features"
 import { ConvertBand, type ConvertBandData } from "@/components/home/ConvertBand"
 import { TradesCarousel } from "@/components/home/TradesCarousel"
 import { Assurances, Commitments, FAQ_ITEMS, FinalBand, HomeFaq } from "@/components/home/Closing"
@@ -27,8 +27,9 @@ import { D_SECTION, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
  * Chaque élément du modèle a son équivalent vrai : la note d'avis devient le
  * label « Solution compatible », les logos de presse les métiers, les chiffres
  * d'utilisateurs les faits de l'offre, les avis nos engagements écrits, la vidéo
- * les trois étapes animées, la signature électronique (pas encore vendue) le
- * passage du devis à la facture. Aucun élément flottant, aucune affirmation
+ * les trois étapes animées. Promesse du 04/11/2026 : « Chiffrez, organisez,
+ * encaissez » (le chantier, pas seulement les devis et factures), en
+ * copywriting de conversion. Aucun élément flottant, aucune affirmation
  * invérifiable (CLAUDE.md, DECISIONS-STRATEGIQUES.md § 2).
  *
  * Composants dans components/home/. FAQ : son JSON-LD vient des mêmes
@@ -67,7 +68,7 @@ function StepsSection() {
           sub="Votre SIREN, vos prestations, votre devis : voici ce que vous ferez à votre première connexion."
         />
         <StepsShowcase data={STEPS_DATA} />
-        <CtaButtons reveal className="mt-12" primary={{ href: SIGNUP_HREF, label: "Créer mon premier devis" }} secondary={null} />
+        <CtaButtons reveal className="mt-12" primary={{ href: SIGNUP_HREF, label: "Faire mon premier devis gratuit" }} secondary={null} />
       </div>
     </section>
   )
@@ -96,12 +97,13 @@ export default function HomePage() {
         <TradesStrip />
         <SimpleBand />
         <OfferFacts />
-        <DevisBlock />
-        <FacturationBlock />
+        <DevisBlock reverse={false} />
+        <ChantierBlock reverse />
+        <FacturationBlock reverse={false} />
         <TimeBand />
-        <RelancesBlock />
-        <PilotageBlock />
-        <CatalogueBlock />
+        <RelancesBlock reverse />
+        <PilotageBlock reverse={false} />
+        <CatalogueBlock reverse />
         <ConvertBand data={CONVERT_DATA} />
         <TradesCarousel />
         <Assurances />

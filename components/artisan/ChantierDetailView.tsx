@@ -55,6 +55,8 @@ export interface ChantierDetailViewProps {
   demoHref?: string
   /** Panneau « À faire et notes » du chantier (fourni par la page : routes réelles ou démo). */
   notes?: React.ReactNode
+  /** Panneau « Prochains rendez-vous » du chantier (planning), en tête de la colonne de droite. */
+  appointments?: React.ReactNode
 }
 
 const GROUPS: { type: ChantierDoc["type"]; title: string; icon: typeof FileText }[] = [
@@ -65,7 +67,7 @@ const GROUPS: { type: ChantierDoc["type"]; title: string; icon: typeof FileText 
 ]
 
 export function ChantierDetailView({
-  chantier: c, documents, summary: s, today, artisan, backHref, docHref, clientHref, newQuoteHref, actions, busy = {}, demoHref, notes,
+  chantier: c, documents, summary: s, today, artisan, backHref, docHref, clientHref, newQuoteHref, actions, busy = {}, demoHref, notes, appointments,
 }: ChantierDetailViewProps) {
   const [reception, setReception] = useState(c.reception_date ?? "")
   const address = [c.address, [c.zip_code, c.city].filter(Boolean).join(" ")].filter(Boolean).join(", ")
@@ -160,6 +162,7 @@ export function ChantierDetailView({
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
+          {appointments}
           {/* Retenue de garantie */}
           <Panel title="Retenue de garantie" action={<ShieldCheck className="size-4 text-[var(--q-text-4)]" aria-hidden />} bodyClassName="flex flex-col gap-3 px-5 pb-5 pt-1 text-sm">
             <p className="text-[var(--q-text-3)]">

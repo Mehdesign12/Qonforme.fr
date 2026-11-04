@@ -264,10 +264,10 @@ function DocumentCard({ data, step, play }: { data: ConvertBandData; step: numbe
    Le bandeau
 ───────────────────────────────────────────────────────── */
 const POINTS = [
-  "Client, lignes et TVA repris tels quels",
-  "Un brouillon à relire avant l'envoi",
-  "Des factures numérotées à la suite",
-  "PDF envoyé par email, avec votre IBAN",
+  "Client, lignes, remises et TVA repris tels quels",
+  "La facture prête en un clic",
+  "Numérotation continue, gérée pour vous",
+  "Envoyée par email avec votre IBAN",
 ]
 
 export function ConvertBand({ data }: { data: ConvertBandData }) {
@@ -358,11 +358,11 @@ export function ConvertBand({ data }: { data: ConvertBandData }) {
             Du devis accepté <span className="q-serif !text-[#BFD3FF]">à la facture envoyée.</span>
           </h2>
           <p className="mt-4 max-w-[520px] text-[17px] leading-[1.6] text-[#DBE4FF] sm:text-[18px]">
-            Le devis accepté devient une facture en brouillon, sans ressaisie. Vous la relisez, puis elle part par email avec votre IBAN.
+            Votre client a dit oui : un clic, et la facture est prête. Vous la relisez, elle part, vous êtes payé.
           </p>
           <CheckList items={POINTS} tone="dark" className="mt-6" />
           <Link href={SIGNUP_HREF} className="lp-btn-p mt-8 focus-visible:!outline-white">
-            Essayer gratuitement
+            Faire mon premier devis gratuit
             <ArrowRight className="lp-btn-arrow h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
           </Link>
         </div>

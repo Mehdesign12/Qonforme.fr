@@ -1,13 +1,14 @@
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, FileSpreadsheet, Hammer, HardHat, ScanLine } from "lucide-react"
+import { ArrowRight, FileCheck, FileSpreadsheet, HardHat, ScanLine } from "lucide-react"
 import { METIERS } from "@/lib/pseo/metiers"
 import { PHOTOS } from "@/lib/landing/photos"
 import { PLANS, TAX_SUFFIX, formatEuros, scanQuotaText } from "@/lib/stripe/plans"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, FaqList, InlineCta, SectionHeading, WRAP } from "@/components/content/ui"
 import { TRADE_PHOTOS } from "@/components/content/metier"
-import { CatalogueBlock, DevisBlock, FacturationBlock, PilotageBlock, PlanningBlock, RelancesBlock } from "@/components/home/Features"
+import { CatalogueBlock, ChantierBlock, DevisBlock, FacturationBlock, PilotageBlock, RelancesBlock } from "@/components/home/Features"
+import { PLATFORM_SENDING_LIVE, SENDING_SENTENCE } from "@/lib/pa/sending"
 import { dateFr, fr, lcFirst } from "@/components/content/text"
 
 /*
@@ -23,11 +24,14 @@ import { dateFr, fr, lcFirst } from "@/components/content/text"
  *   sont présentées comme disponibles que si la formule est en vente (PLANS.pro.available) ;
  * - les prix, les fonctions et les « à venir » viennent de lib/stripe/plans.ts, jamais écrits ici ;
  * - « gratuit » ne vise que les devis ; aucun concurrent nommé, aucun chiffre ni avis inventé ;
- * - ni « certifié », ni « conforme », ni promesse de raccordement à une plateforme agréée.
+ * - ni « certifié » ni « homologué » ; « conforme » pour les factures et la réforme seulement.
+ *
+ * Copywriting de conversion (04/11/2026) : bénéfices d'abord, aucune section « ce que
+ * Qonforme ne fait pas », réponses de FAQ qui commencent par « Oui ».
  *
  * GEO (visibilité dans les réponses des assistants IA) : définition en une phrase dès
  * le chapeau, bloc « L'essentiel » en liste de faits, questions posées comme on les tape,
- * critères de choix explicites, limites écrites noir sur blanc, date de vérification.
+ * critères de choix explicites, date de vérification.
  *
  * Mise en page (retour du fondateur, 24/10/2026) : pas de section « Qu'est-ce que… » ni de
  * grille de tarifs (la page Tarifs et « L'essentiel » suffisent) ; à la place, les mêmes
@@ -69,13 +73,13 @@ const AUSSI = [
     lien: "Voir dans la démo",
   },
   {
-    icone: Hammer,
-    titre: "Chantiers, acomptes et situations",
-    texte: artisanEnVente
-      ? `Avec la formule ${artisan.name} : factures d'acompte, situations de travaux, retenue de garantie, autoliquidation en sous-traitance et suivi par chantier.`
-      : `La formule ${artisan.name}, bientôt disponible, ajoute les factures d'acompte, les situations de travaux, la retenue de garantie, l'autoliquidation en sous-traitance et le suivi par chantier.`,
-    href: "/guide/facture-acompte",
-    lien: "La facture d'acompte",
+    icone: FileCheck,
+    titre: "Facture électronique",
+    texte: PLATFORM_SENDING_LIVE
+      ? `Vos factures partent et arrivent par la plateforme agréée Super PDP, au format de la réforme : avec ${essentiel.name}, sans frais en plus.`
+      : `Vos factures fournisseurs arrivent par la plateforme agréée Super PDP, au format de la réforme : avec ${essentiel.name}, sans frais en plus.`,
+    href: "/guide/facture-electronique-2026",
+    lien: "Ce que la réforme change",
   },
   {
     icone: FileSpreadsheet,
@@ -95,8 +99,8 @@ const TERRAIN = [
 
 const ETAPES = [
   { titre: "Vous chiffrez", texte: "Le devis se compose à partir de votre catalogue, avec la TVA par ligne. C'est gratuit, sans limite." },
-  { titre: "Vous envoyez", texte: "Le devis part par e-mail, en PDF. Quand votre client accepte, vous le marquez accepté." },
-  { titre: "Vous facturez", texte: `Avec ${essentiel.name}, le devis accepté devient une facture en brouillon, que vous relisez. Le numéro est attribué à l'envoi.` },
+  { titre: "Vous envoyez", texte: `Le devis part par e-mail, en PDF, et se signe en ligne avec ${essentiel.name}.` },
+  { titre: "Vous facturez", texte: `Avec ${essentiel.name}, le devis accepté devient une facture en un clic, que vous relisez avant l'envoi.` },
   { titre: "Vous suivez", texte: "Le tableau de bord montre ce qui est facturé, à encaisser et en retard ; les relances partent selon vos réglages." },
   { titre: "Vous clôturez", texte: "Vous marquez la facture payée avec sa date, puis exportez le tout pour votre comptable." },
 ]
@@ -112,7 +116,7 @@ const FAQ = [
   },
   {
     question: "Existe-t-il un logiciel de gestion pour le bâtiment gratuit ?",
-    reponse: `Chez Qonforme, les devis sont gratuits et illimités, avec les clients, le catalogue, le planning, les notes et le scan de documents. Les factures se préparent en brouillon sans frais ; leur envoi, les relances et l'export comptable demandent la formule ${essentiel.name}, à ${prix(essentiel.monthlyPrice)} par mois.`,
+    reponse: `Oui : chez Qonforme, les devis sont gratuits et illimités, avec les clients, le catalogue, le planning, les notes et le scan de documents. Les factures se préparent en brouillon sans frais ; leur envoi, les relances et l'export comptable demandent la formule ${essentiel.name}, à ${prix(essentiel.monthlyPrice)} par mois.`,
   },
   {
     question: "Peut-on gérer ses devis et ses factures depuis un téléphone ?",
@@ -130,11 +134,11 @@ const FAQ = [
   },
   {
     question: "Une facture émise peut-elle être corrigée ?",
-    reponse: "Une facture émise ne se modifie pas et ne se supprime pas : la numérotation reste continue et une erreur se corrige par un avoir, comme le prévoit l'article 242 nonies A de l'annexe II au code général des impôts. Vos documents émis restent consultables et téléchargeables, même sans formule.",
+    reponse: "Oui, par un avoir, créé depuis la facture en quelques clics : la numérotation reste continue, comme le prévoit l'article 242 nonies A de l'annexe II au code général des impôts. Vos documents émis restent consultables et téléchargeables, même sans formule.",
   },
   {
     question: "Mes factures sont-elles prêtes pour la facturation électronique ?",
-    reponse: "Les factures et avoirs émis sont des PDF Factur-X, avec leurs données structurées jointes. L'obligation de recevoir des factures électroniques s'applique depuis le 1er septembre 2026, et celle d'en émettre à partir du 1er septembre 2027 pour les PME, TPE et micro-entreprises. Notre guide explique les étapes et le rôle de la plateforme agréée.",
+    reponse: `Oui. Les factures et avoirs émis sont des PDF Factur-X, conformes à la réforme, et Qonforme est raccordé à la plateforme agréée Super PDP : avec ${essentiel.name}, vos factures fournisseurs arrivent par la plateforme. ${SENDING_SENTENCE} L'obligation de recevoir des factures électroniques s'applique depuis le 1er septembre 2026, et celle d'en émettre à partir du 1er septembre 2027 pour les PME, TPE et micro-entreprises.`,
   },
 ]
 
@@ -181,7 +185,7 @@ export default function LogicielGestionBatimentPage() {
           eyebrow={<><HardHat className="h-3.5 w-3.5" aria-hidden />Pour les artisans du bâtiment</>}
           title={TITRE}
           accent="pour artisans."
-          sub="Qonforme est un logiciel de gestion pour artisans du bâtiment : vos devis, vos factures, vos relances et votre planning au même endroit. Les devis sont gratuits et illimités ; vous choisissez une formule quand vous envoyez votre première facture."
+          sub="Qonforme est un logiciel de gestion pour artisans du bâtiment : chiffrez, organisez et encaissez vos chantiers au même endroit, des devis aux relances, avec le planning et les notes. Les devis sont gratuits et illimités ; vous choisissez une formule quand vous envoyez votre première facture."
           media={
             photoHero ? (
               <div className="relative aspect-[16/10] overflow-hidden rounded-[24px] border border-q-line bg-q-sunken lg:aspect-[4/5]">
@@ -203,10 +207,10 @@ export default function LogicielGestionBatimentPage() {
             <dl data-reveal="" className="grid gap-px overflow-hidden rounded-[20px] border border-q-line bg-q-line shadow-[shadow:var(--q-shadow-card)] md:grid-cols-[220px_1fr]">
               {[
                 ["Pour qui", `Les artisans du bâtiment, en ${METIERS.length} métiers : ${METIERS.map((m) => lcFirst(m.nom)).join(", ")}.`],
-                ["Ce qu'il fait", "Devis, bons de commande, factures et avoirs, clients et catalogue de prestations, planning et notes, scan de documents, relances des impayés, export comptable (FEC)."],
+                ["Ce qu'il fait", `Devis avec remises et signature en ligne, bons de commande, factures et avoirs, ${artisanEnVente ? "suivi par chantier, acomptes et situations, " : ""}clients et catalogue de prestations, planning et notes, scan de documents, relances des impayés, export comptable (FEC).`],
                 ["Ce qu'il coûte", `Devis gratuits et illimités. Factures, relances et export avec ${essentiel.name} : ${prix(essentiel.monthlyPrice)} par mois, ou ${prix(essentiel.yearlyPrice)} par an. Sans engagement.`],
                 ["Où l'utiliser", "Dans le navigateur, sur ordinateur comme sur téléphone, sans rien installer."],
-                ["Ce qu'il ne fait pas", "Ni comptabilité complète, ni paie, ni gestion de stock : il s'arrête à l'envoi de vos documents et au suivi de ce qui est payé."],
+                ["Pourquoi l'adopter", "Un seul outil du devis au paiement : rien à ressaisir, des factures conformes, des relances qui partent seules et chaque chantier suivi au même endroit."],
               ].map(([terme, texte]) => (
                 <div key={terme} className="contents">
                   <dt className="bg-q-surface-2 px-5 py-4 text-[14px] font-semibold text-q-ink-strong md:py-5">{terme}</dt>
@@ -219,7 +223,7 @@ export default function LogicielGestionBatimentPage() {
 
         <section aria-labelledby="fonctions" className="px-4 pb-10 pt-16 sm:px-6 sm:pb-12 sm:pt-20">
           <div className={WRAP}>
-            <SectionHeading id="fonctions" title="Ce que Qonforme gère" accent="aujourd'hui." sub="Les vrais écrans de l'application, avec des données d'exemple. Seulement ce qui existe : rien d'annoncé qui ne soit pas livré." />
+            <SectionHeading id="fonctions" title="Tout votre chantier," accent="dans un seul logiciel." sub="Les vrais écrans de Qonforme, sur ordinateur et sur téléphone." />
           </div>
         </section>
 
@@ -228,7 +232,7 @@ export default function LogicielGestionBatimentPage() {
         <DevisBlock reverse />
         <FacturationBlock reverse={false} />
         <RelancesBlock reverse />
-        <PlanningBlock reverse={false} />
+        <ChantierBlock reverse={false} />
         <PilotageBlock reverse />
 
         <section aria-labelledby="terrain" className="px-4 pt-16 sm:px-6 sm:pt-20">
@@ -341,21 +345,6 @@ export default function LogicielGestionBatimentPage() {
               </li>
             </ul>
             {metiersListe.length > 0 && <ChipLinks links={metiersListe} className="mt-6" />}
-          </div>
-        </section>
-
-        {/* Limites écrites : un assistant IA ou un artisan qui compare cherche aussi ce qu'un logiciel ne fait pas */}
-        <section aria-labelledby="limites" className="px-4 pt-16 sm:px-6 sm:pt-20">
-          <div className="mx-auto w-full max-w-[860px]">
-            <SectionHeading id="limites" title="Ce que Qonforme" accent="ne fait pas." className="mb-6" />
-            <div className="flex flex-col gap-4 text-[16px] leading-[1.7] text-q-text-3">
-              <p>Qonforme ne remplace ni votre comptable ni un logiciel de paie : il prépare l&apos;export de vos écritures et s&apos;arrête là. Il ne gère pas non plus les stocks.</p>
-              {essentiel.upcoming.length > 0 && (
-                <p>
-                  Pas encore disponibles, et donc pas vendues : {essentiel.upcoming.map((u) => lcFirst(u)).join(", ")}.
-                </p>
-              )}
-            </div>
           </div>
         </section>
 

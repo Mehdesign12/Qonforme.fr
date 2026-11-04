@@ -25,8 +25,8 @@ describe("pages métier : « logiciel devis {métier} »", () => {
       expect(m.description.length, m.slug).toBeLessThanOrEqual(DESCRIPTION_MAX)
       expect(m.description, m.slug).toMatch(/avec Essentiel\.$/)
       descriptions.add(m.description)
-      expect(m.intro, m.slug).toMatch(/^Faites vos devis (de |d')\S/)
-      expect(m.intro, m.slug).toContain("gratuitement et sans limite, puis vos factures avec Essentiel.")
+      expect(m.intro, m.slug).toMatch(/^Chiffrez vos devis (de |d')\S/)
+      expect(m.intro, m.slug).toContain("gratuitement et sans limite, organisez vos chantiers et encaissez vos factures avec Essentiel.")
       // L'introduction n'est plus la copie de la méta-description
       expect(m.intro, m.slug).not.toBe(m.description)
       expect(`${m.description} ${m.intro}`, m.slug).not.toMatch(/factures? gratuites?|relances? gratuites?/i)
@@ -145,7 +145,8 @@ describe("layout racine et démo", () => {
   })
 
   it("accueil et blog parlent des artisans du bâtiment", () => {
-    expect(lire("components/home/HomeHero.tsx")).toContain("Le logiciel des artisans du bâtiment")
+    // Titre du 04/11/2026 (« Chiffrez, organisez, encaissez. ») : les artisans du bâtiment restent nommés dans le héros
+    expect(lire("components/home/HomeHero.tsx")).toContain("Pensé pour les artisans du bâtiment")
     const blog = lire("app/blog/page.tsx")
     expect(blog).toContain('title: "Blog : devis, factures et TVA pour artisans du bâtiment"')
     expect(blog).not.toMatch(/artisans et TPE/)

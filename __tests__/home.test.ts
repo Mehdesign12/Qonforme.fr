@@ -34,11 +34,27 @@ describe("accueil", () => {
     }
   })
 
-  it("aucune réponse de la FAQ ne dit que la plateforme agréée transmet déjà l'émission de 2027", () => {
+  it("FAQ de conversion : chaque réponse commence par « Oui », jamais « certifié », le chantier a sa question", () => {
+    for (const item of FAQ_ITEMS) expect(item.a).toMatch(/^Oui\b/)
     const toutes = FAQ_ITEMS.map((i) => `${i.q} ${i.a}`).join(" ")
-    expect(toutes).not.toMatch(/prêt pour la facture électronique/i)
-    expect(toutes).not.toMatch(/certifi|homologu/i)
-    expect(toutes).toMatch(/pas une plateforme agréée/)
+    expect(toutes).not.toMatch(/certifi|homologu|agréé par l'État/i)
+    expect(toutes).not.toMatch(/est une plateforme agréée/i)
+    expect(FAQ_ITEMS.some((i) => /chantiers?/.test(i.q))).toBe(true)
+  })
+
+  it("titre de l'accueil : « Chiffrez, organisez, encaissez. » puis la seconde voix", () => {
+    const hero = lire("components/home/HomeHero.tsx")
+    expect(hero).toContain("Chiffrez, organisez, encaissez.")
+    expect(hero).toMatch(/<span className="q-serif block">Tout votre chantier dans une seule appli\.<\/span>/)
+    expect(hero).toContain("Zéro euro pour chiffrer. Tout ce qu&apos;il faut pour encaisser. Sans carte bancaire.")
+  })
+
+  it("aucune phrase d'auto-justification ni de « ne fait pas » sur l'accueil", () => {
+    const tout = ["HomeHero", "Bands", "Features", "ConvertBand", "TradesCarousel", "Closing", "Resources"]
+      .map((n) => lire(`components/home/${n}.tsx`))
+      .join("\n")
+      .replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "")
+    expect(tout).not.toMatch(/ne fait pas|Pas d'avis inventés|noir sur blanc|rien d'annoncé/i)
   })
 
   it("canonical vers « / », titre et description du layout, un seul h1", () => {

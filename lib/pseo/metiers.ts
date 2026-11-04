@@ -85,7 +85,7 @@ function metier(
     nom,
     titre: `Logiciel de devis gratuit pour ${nomMin}`,
     description: DESCRIPTIONS[slug] ?? `Logiciel de devis gratuit pour ${nomMin} : devis illimités avec les mentions obligatoires et la TVA par ligne. Factures avec Essentiel.`,
-    intro: `Faites vos devis ${ouvrage.devisDe} gratuitement et sans limite, puis vos factures avec Essentiel. ${ouvrage.detail}`.trim(),
+    intro: `Chiffrez vos devis ${ouvrage.devisDe} gratuitement et sans limite, organisez vos chantiers et encaissez vos factures avec Essentiel. ${ouvrage.detail}`.trim(),
     motsCles: [`logiciel devis ${nomMin}`, `devis ${nomMin}`, `facture ${nomMin}`, `logiciel facturation ${nomMin}`, ...motsCles],
     features: [...catFeatures, ...COMMON_FEATURES],
     obligations,
