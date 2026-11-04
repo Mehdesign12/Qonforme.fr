@@ -1,7 +1,8 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, ChevronRight } from "lucide-react"
+import { ArrowRight, ChevronRight, Monitor } from "lucide-react"
 import { CheckList, D_WRAP, GridLines, SIGNUP_HREF } from "@/components/home/kit"
+import { HeroParallax } from "@/components/home/HeroParallax"
 import { TradesStripLive, type TradeItem } from "@/components/home/TradesStrip"
 import { CtaButtons } from "@/components/landing/ui"
 import { SolutionCompatible } from "@/components/brand/SolutionCompatible"
@@ -21,18 +22,25 @@ import { cn } from "@/lib/utils"
  *
  * Règles (CLAUDE.md) : contenu vrai seulement ; RIEN posé sur la photo (aucun
  * élément flottant, décision du fondateur) ; icônes au trait, sans tuile ni
- * pastille ; entrée du héros en CSS pur (.lp-fade-up, .dz-arch-in, .dz-kenburns),
+ * pastille ; entrée du héros en CSS pur (.lp-fade-up, .dz-arch-in), parallaxe de l'artisan
+ * par HeroParallax (translate seul),
  * jouée une seule fois avant l'hydratation et annulée par « Réduire les
  * animations » ; ni backdrop-filter ni will-change.
  */
 
 /*
- * Arche : coins du haut en demi-cercle, coins du bas arrondis à 28 px.
+ * L'artisan du héros (04/11/2026, canevas https://claude.ai/artifact/XFVvBbReSVjNk4S3amdbBe,
+ * ordinateur et version B du téléphone choisis par le fondateur) : un détourage sur fond
+ * transparent qui dépasse de son cadre par le haut et les côtés ; le bas de l'image est
+ * coupé au bord du cadre, la parallaxe (HeroParallax) ne fait jamais voir cette coupe.
+ *
+ * Arche (ordinateur) : coins du haut en demi-cercle, coins du bas arrondis à 28 px.
  * Rayons du haut en pourcentages (50 % de la largeur, 40 % de la hauteur pour un
  * cadre 4/5) et non « 999px » : le navigateur réduirait alors TOUS les rayons
  * dans la même proportion, et les coins du bas tomberaient à 6 px environ.
+ * Téléphone et tablette : une carte bleue sous le texte, d'où l'artisan sort.
  */
-const ARCH = "aspect-[4/5] rounded-t-[50%_40%] rounded-b-[28px]"
+const ARCH = "lg:rounded-t-[50%_40%] lg:rounded-b-[28px]"
 
 // La signature en ligne demande Essentiel : elle n'est pas promise à côté de « gratuits »
 const PROMISES = [
@@ -41,31 +49,61 @@ const PROMISES = [
   "Factures conformes, envoyées en un clic",
   "Relances automatiques : payé sans courir après",
 ]
+const MOBILE_PROMISE = "Devis gratuits, chantier, planning, factures conformes et relances automatiques, au même endroit."
+
+const ARTISAN = {
+  src: "/landing/hero/artisan-quatre-bras.webp",
+  width: 1229,
+  height: 1280,
+  alt: "Un artisan du bâtiment aux quatre bras tient un marteau, une pelle, des plans, un devis signé et un ordinateur portable",
+}
+
+/** Label et phrase sous le héros : à côté des boutons sur ordinateur, sous l'artisan sur téléphone. */
+function HeroReassurance({ className, priority = false }: { className?: string; priority?: boolean }) {
+  return (
+    <div className={className}>
+      <SolutionCompatible priority={priority} />
+      <p className="max-w-[300px] text-[14px] leading-[1.55] text-q-text-3">
+        {"Zéro euro pour chiffrer. Tout ce qu'il faut pour encaisser. Sans carte bancaire."}
+      </p>
+    </div>
+  )
+}
 
 /* ─────────────────────────────────────────────────────────
-   A — Héros : texte à gauche (7/12), photo en arche (5/12)
+   A — Héros : texte à gauche (7/12), artisan dans l'arche (5/12) ;
+   en dessous de 1 024 px : texte centré, puis l'artisan qui sort
+   du bandeau bleu
 ───────────────────────────────────────────────────────── */
-function HeroPhoto() {
-  const photo = PHOTOS.nouvelInstalle
-  if (!photo) return null
+function HeroArtisan() {
   return (
     <div className="lg:col-span-5">
-      {/* Marge droite et basse : la place du liseré décalé, sans débordement sur téléphone */}
-      <div className="dz-arch-in relative mx-auto w-full max-w-[376px] pb-4 pr-4 lg:max-w-[476px]">
-        <div className="relative">
-          <div aria-hidden className={cn(ARCH, "absolute inset-0 translate-x-4 translate-y-4 border border-q-wash-line")} />
-          <div className={cn(ARCH, "lp-clip relative bg-q-bg")}>
-            <Image
-              src={photo.src}
-              alt={photo.alt}
-              fill
-              priority
-              sizes="(min-width: 1024px) 460px, 360px"
-              className="dz-kenburns object-cover"
-            />
+      {/* Marge droite et basse (ordinateur) : la place du liseré décalé */}
+      <div className="dz-arch-in relative mx-auto w-full max-w-[420px] lg:max-w-[436px] lg:pb-4 lg:pr-4">
+        <div className="relative aspect-[358/420] lg:aspect-[4/5]">
+          <div aria-hidden className={cn("absolute inset-0 hidden translate-x-4 translate-y-4 rounded-[28px] border border-q-wash-line lg:block", ARCH)} />
+          <div aria-hidden className={cn("absolute inset-x-0 bottom-0 top-[28.6%] overflow-hidden rounded-[28px] bg-[#2563EB] lg:top-0 lg:bg-q-wash", ARCH)}>
+            {[25, 50, 75].map((x) => (
+              <span key={x} className="absolute inset-y-0 border-l border-dashed border-white/20 lg:hidden" style={{ left: `${x}%` }} />
+            ))}
+          </div>
+          {/* Le cadre coupe le bas de l'image ; par le haut et les côtés, l'artisan dépasse */}
+          <div className="absolute -left-[4%] -right-[4%] bottom-0 top-0 overflow-hidden lg:-left-[40%] lg:-right-[40%] lg:-top-[60%]">
+            <HeroParallax max={40} maxMobile={18} className="absolute inset-0">
+              <Image
+                src={ARTISAN.src}
+                alt={ARTISAN.alt}
+                width={ARTISAN.width}
+                height={ARTISAN.height}
+                priority
+                sizes="(min-width: 1024px) 620px, 400px"
+                className="absolute left-1/2 top-[12%] h-auto w-[98%] max-w-none -translate-x-1/2 lg:bottom-[-6%] lg:top-auto lg:w-[72%] xl:w-[82%]"
+              />
+            </HeroParallax>
           </div>
         </div>
       </div>
+      <HeroReassurance className="mt-8 flex flex-col items-center gap-3 text-center lg:hidden" />
     </div>
   )
 }
@@ -75,8 +113,8 @@ export function HomeHero() {
     <section aria-labelledby="hero-title" className="relative bg-q-surface px-6 pb-[clamp(32px,6vw,80px)] pt-[100px] sm:pt-[136px]">
       {/* Fond en lignes pointillées, le même que la section « Créez vos devis » */}
       <GridLines />
-      <div className={cn(D_WRAP, "grid grid-cols-1 items-center gap-8 sm:gap-12 lg:grid-cols-12 lg:gap-10")}>
-        <div className="flex flex-col items-start lg:col-span-7">
+      <div className={cn(D_WRAP, "grid grid-cols-1 items-center gap-0 sm:gap-4 lg:grid-cols-12 lg:gap-10")}>
+        <div className="flex flex-col items-center text-center lg:col-span-7 lg:items-start lg:text-left">
           <a
             href="#facture-electronique"
             className="lp-fade-up group flex max-w-full items-center gap-2 rounded-full border border-q-line bg-q-surface py-[3px] pl-[3px] pr-2.5 text-[12px] leading-[1.3] text-q-text-2 sm:gap-2.5 sm:py-[5px] sm:pl-[5px] sm:pr-3.5 sm:text-[13.5px] sm:shadow-[0_1px_2px_rgba(10,17,34,.04)] sm:transition-[border-color,box-shadow] sm:hover:border-q-field sm:hover:shadow-[0_1px_2px_rgba(10,17,34,.05),0_8px_20px_-12px_rgba(10,17,34,.22)]"
@@ -101,27 +139,34 @@ export function HomeHero() {
             <span className="q-serif block">Tout votre chantier dans une seule appli.</span>
           </h1>
 
-          <div className="lp-fade-up mt-4 sm:mt-8" style={{ animationDelay: ".16s" }}>
-            <CheckList items={PROMISES} className="gap-1.5 sm:gap-3" />
+          {/* Ordinateur : les quatre coches ; téléphone et tablette : une phrase, pour laisser la place à l'artisan */}
+          <div className="lp-fade-up mt-8 hidden lg:block" style={{ animationDelay: ".16s" }}>
+            <CheckList items={PROMISES} className="gap-3" />
           </div>
+          <p className="lp-fade-up mt-4 max-w-[340px] text-[15px] leading-[1.5] text-q-text-3 sm:max-w-[460px] sm:text-[17px] lg:hidden" style={{ animationDelay: ".16s" }}>
+            {MOBILE_PROMISE}
+          </p>
 
-          <div className="lp-fade-up mt-5 w-full max-sm:[&_.lp-btn-s]:hidden sm:mt-9" style={{ animationDelay: ".24s" }}>
-            <CtaButtons align="start" primary={{ href: SIGNUP_HREF, label: "Faire mon premier devis gratuit" }} />
+          <div className="lp-fade-up mt-5 w-full max-lg:[&_.lp-btn-s]:hidden sm:mt-8 lg:mt-9" style={{ animationDelay: ".24s" }}>
+            <CtaButtons className="lg:mx-0 lg:justify-start" primary={{ href: SIGNUP_HREF, label: "Faire mon premier devis gratuit" }} />
           </div>
+          <Link
+            href="/demo"
+            className="lp-fade-up mt-2 inline-flex min-h-[44px] items-center gap-2 text-[15px] font-semibold text-q-accent-strong hover:underline lg:hidden"
+            style={{ animationDelay: ".28s" }}
+          >
+            <Monitor className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
+            Voir la démo
+          </Link>
 
           {/* Label de la DGFiP : règles de la charte dans components/brand/SolutionCompatible.tsx */}
-          <div
-            className="lp-fade-up mt-5 flex flex-col items-start gap-3 sm:mt-8 sm:flex-row sm:items-center sm:gap-5"
-            style={{ animationDelay: ".32s" }}
-          >
-            <SolutionCompatible priority />
-            <p className="max-w-[300px] text-[14px] leading-[1.55] text-q-text-3">
-              Zéro euro pour chiffrer. Tout ce qu&apos;il faut pour encaisser. Sans carte bancaire.
-            </p>
-          </div>
+          <HeroReassurance
+            priority
+            className="lp-fade-up mt-8 hidden items-center gap-5 lg:flex"
+          />
         </div>
 
-        <HeroPhoto />
+        <HeroArtisan />
       </div>
     </section>
   )
