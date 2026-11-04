@@ -651,6 +651,26 @@ describe("reprise des rédactions", () => {
     const out = await runJobStep(client, job.id, { deadline: Date.now() + 290_000 })
     expect(out).toMatchObject({ ran: "plan", step: "write" })
   })
+
+  it("passe interrompue par le serveur (verrou expiré, jamais rendu) : comptée comme un essai, signalée, puis échec au troisième", async () => {
+    const { db, client, topicId } = setup()
+    const job = await startJob(client, topicId)
+    const row = db.tables.seo_article_jobs[0]
+    // Première interruption : la passe est relancée et le motif est noté
+    Object.assign(row, { status: "running", lock_until: new Date(Date.now() - 1_000).toISOString(), attempts: 0 })
+    const first = await runJobStep(client, job.id, { deadline: Date.now() + 290_000 })
+    expect(first).toMatchObject({ ran: "plan", step: "write" })
+    expect(first.notices.join(" ")).toContain("s'était interrompue")
+
+    // Deux interruptions déjà comptées : la troisième arrête la rédaction, sans appel au modèle
+    mocks.text.mockClear()
+    Object.assign(row, { status: "running", lock_until: new Date(Date.now() - 1_000).toISOString(), attempts: 2 })
+    const last = await runJobStep(client, job.id, { deadline: Date.now() + 290_000 })
+    expect(last.status).toBe("failed")
+    expect(last.error).toContain("s'est interrompue 3 fois")
+    expect(mocks.text).not.toHaveBeenCalled()
+    expect(db.tables.seo_topics[0]).toMatchObject({ status: "failed" })
+  })
 })
 
 describe("garde-fous de la rédaction", () => {

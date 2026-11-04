@@ -20,6 +20,9 @@ const LABELS: Record<Exclude<RunnerStep, "done">, string> = {
   save: "Enregistrement",
 }
 
+/** Ordre des passes : à la reprise d'une rédaction, celles d'avant la passe en cours sont faites. */
+const ORDER: RunnerStep[] = ["plan", "write", "check", "fix", "links", "images", "cover", "save", "done"]
+
 const RUNNING: Record<RunnerStep, string> = {
   plan: "Plan…",
   write: "Rédaction…",
@@ -55,7 +58,7 @@ export function JobProgress({ state, withCover, withPhotos = false }: { state: R
 
       <ol className="flex flex-col gap-2" aria-label="Passes de la rédaction">
         {steps.map((s) => {
-          const passed = finished || (state.done.includes(s) && state.step !== s)
+          const passed = finished || (state.step !== s && (state.done.includes(s) || ORDER.indexOf(s) < ORDER.indexOf(state.step)))
           const current = !finished && state.step === s && state.status === "running"
           return (
             <li key={s} className="flex items-center gap-3 text-sm">
@@ -76,6 +79,10 @@ export function JobProgress({ state, withCover, withPhotos = false }: { state: R
           )
         })}
       </ol>
+
+      {state.waiting && state.status === "running" && (
+        <p className="text-[13px] text-[var(--q-text-3)]">Une passe est déjà en cours sur le serveur : l&apos;écran attend qu&apos;elle se termine.</p>
+      )}
 
       {state.notices.length > 0 && (
         <ul className="flex flex-col gap-1.5">

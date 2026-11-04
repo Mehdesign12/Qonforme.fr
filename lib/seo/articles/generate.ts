@@ -1169,9 +1169,43 @@ export async function runJobStep(db: SeoDb, jobId: string, opts: { now?: Date; d
   const remaining = opts.deadline - Date.now()
   if (remaining < budget.min) return outcomeOf(current, null, { deferred: true })
 
-  const job = await acquireJobLock(db, jobId, now)
-  if (!job) return outcomeOf(current, null, { locked: true })
+  // Passe interrompue : statut « running » et verrou expiré sans avoir été rendu (fonction
+  // arrêtée par l'hébergeur en cours de passe). Elle compte comme un essai, sinon elle se
+  // rejouerait sans fin et la rédaction resterait « en cours ».
+  const abandoned = current.status === "running" && Boolean(current.lock_until) && Date.parse(current.lock_until as string) < now.getTime()
+
+  const locked = await acquireJobLock(db, jobId, now)
+  if (!locked) return outcomeOf(current, null, { locked: true })
+  let job = locked
   const step = job.step as Exclude<JobStep, "done">
+  if (abandoned) {
+    const attempts = (job.attempts ?? 0) + 1
+    const label = STEP_LABELS[step].replace(/…$/, "")
+    const nowIso = new Date().toISOString()
+    if (attempts >= MAX_ATTEMPTS) {
+      const message = `La passe « ${label} » s'est interrompue ${attempts} fois (délai du serveur dépassé). « Réessayer » relance la rédaction.`
+      const rows = must(
+        await db
+          .from("seo_article_jobs")
+          .update({ status: "failed", attempts, error: message, lock_until: null, updated_at: nowIso, state: { ...job.state, lastFailure: { step, fatal: false, message } } })
+          .eq("id", jobId)
+          .select(JOB_COLUMNS),
+        "la rédaction",
+      ) as JobRow[]
+      if (job.topic_id) {
+        const { error: topicError } = await db.from("seo_topics").update({ status: "failed", last_error: message, updated_at: nowIso }).eq("id", job.topic_id)
+        if (topicError) console.error("[seo-articles] sujet non passé en échec", topicError.message)
+      }
+      return outcomeOf(rows[0] ?? { ...job, status: "failed", error: message, attempts }, step)
+    }
+    const notice = `La passe « ${label} » s'était interrompue (délai du serveur dépassé) : elle est relancée.`
+    const notices = Array.from(new Set([...(job.state?.notices ?? []), notice]))
+    const rows = must(
+      await db.from("seo_article_jobs").update({ attempts, state: { ...job.state, notices } }).eq("id", jobId).select(JOB_COLUMNS),
+      "la rédaction",
+    ) as JobRow[]
+    job = rows[0] ?? { ...job, attempts, state: { ...job.state, notices } }
+  }
   const timeoutMs = Math.max(5_000, Math.min(budget.max, opts.deadline - Date.now() - 10_000))
 
   try {
