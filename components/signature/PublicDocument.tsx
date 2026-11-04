@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { fmtQty, fmtRate, fmtSiren, fmtUnit, longDate, vatBreakdown } from "@/components/quotes/QuoteListHelpers"
 import type { PublicCompanyView, PublicDocView } from "@/lib/signature/view"
+import { DiscountTotalRows, LineDiscountNote } from "@/components/documents/DiscountBits"
+import { itemLines } from "@/lib/documents/discounts"
 
 export function PublicDocument({ doc, company }: { doc: PublicDocView; company: PublicCompanyView }) {
   const label = "block text-[11px] font-semibold uppercase tracking-[.06em] text-[#64748B]"
@@ -54,13 +56,14 @@ export function PublicDocument({ doc, company }: { doc: PublicDocView; company: 
       {/* Prestations : cartes empilées sur téléphone */}
       <div className="flex flex-col md:hidden">
         <strong className={cn(label, "mb-1")}>Prestations</strong>
-        {doc.lines.map((l, i) => (
+        {itemLines(doc.lines).map((l, i) => (
           <div key={i} className="flex items-start justify-between gap-3 border-b border-[#EEF1F5] py-2.5">
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="break-words font-medium">{l.description || "Prestation"}</span>
               <span className="text-[13px] tabular-nums text-[#64748B]">
                 {fmtQty(l.quantity)}{l.unit ? ` ${fmtUnit(l.quantity, l.unit)}` : ""} × {formatCurrency(l.unit_price_ht)} HT · TVA {fmtRate(l.vat_rate)} %
               </span>
+              <LineDiscountNote line={l} className="text-[13px] text-[#15803d]" />
             </span>
             <span className="shrink-0 font-semibold tabular-nums">{formatCurrency(l.total_ht)}</span>
           </div>
@@ -80,9 +83,9 @@ export function PublicDocument({ doc, company }: { doc: PublicDocView; company: 
           </tr>
         </thead>
         <tbody>
-          {doc.lines.map((l, i) => (
+          {itemLines(doc.lines).map((l, i) => (
             <tr key={i} className="border-b border-[#F1F4F8] align-top">
-              <td className="break-words py-2 pr-2">{l.description}</td>
+              <td className="break-words py-2 pr-2">{l.description}<LineDiscountNote line={l} className="block text-[12px] text-[#15803d]" /></td>
               <td className="whitespace-nowrap py-2 pr-2 text-right">{fmtQty(l.quantity)}{l.unit ? ` ${fmtUnit(l.quantity, l.unit)}` : ""}</td>
               <td className="whitespace-nowrap py-2 pr-2 text-right">{formatCurrency(l.unit_price_ht)}</td>
               <td className="whitespace-nowrap py-2 pr-2 text-right">{fmtRate(l.vat_rate)} %</td>
@@ -93,6 +96,7 @@ export function PublicDocument({ doc, company }: { doc: PublicDocView; company: 
       </table>
 
       <div className="ml-auto flex w-full flex-col gap-1.5 tabular-nums sm:w-[60%]">
+        <DiscountTotalRows lines={doc.lines} rowClassName="flex justify-between gap-3" labelClassName="text-[#475569]" />
         <div className="flex justify-between gap-3"><span className="text-[#475569]">Total HT</span><span>{formatCurrency(doc.subtotal_ht)}</span></div>
         {vatBreakdown(doc.lines).map((v) => (
           <div key={v.rate} className="flex justify-between gap-3"><span className="text-[#475569]">TVA {fmtRate(v.rate)} %</span><span>{formatCurrency(v.amount)}</span></div>

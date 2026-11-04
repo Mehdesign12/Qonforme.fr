@@ -7,6 +7,7 @@
  * XML Factur-X embarqué, type de document 381 et référence à la facture
  * d'origine (lib/facturx). Montants et mentions imprimés sont ceux du XML.
  */
+import { discountSummary, itemLines, lineDiscountLabel } from "@/lib/documents/discounts"
 import { PDFDocument, rgb, PageSizes } from "pdf-lib"
 import { addUriLink } from "@/lib/pdf/link"
 import { drawDivider, drawHeaderBand, drawLogoBacking, drawPartiesFill, drawTableHead, drawTotalBox, pdfTheme, templateOf } from "@/lib/pdf/theme"
@@ -283,13 +284,17 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
   curY -= 20
 
   // ── TABLEAU DES LIGNES ───────────────────────────────────────────────────
-  const colDesc = mL; const colQty = mL + 250; const colPU = mL + 300
+  // Remises (lib/documents/discounts.ts) : colonne « Remise » si une ligne en a une, récapitulatif avant le total HT
+  const disc = discountSummary(creditNote.lines)
+  const hasDiscCol = Boolean(disc?.hasLineDiscount)
+  const colDesc = mL; const colQty = mL + (hasDiscCol ? 215 : 250); const colPU = mL + (hasDiscCol ? 265 : 300); const colDisc = mL + 322
   const colTVA  = mL + 378; const colTotal = mR; const tableHeaderH = 20
 
   drawTableHead(page, theme, mL, curY - 4, cW, tableHeaderH)
   draw("Désignation", colDesc,  curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text })
   draw("Qté",         colQty,   curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
   draw("P.U. HT",     colPU,    curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
+  if (hasDiscCol) draw("Remise", colDisc, curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
   draw("TVA",         colTVA,   curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
   draw("Total HT",    colTotal, curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
   curY -= tableHeaderH + 2
@@ -298,11 +303,12 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
     = creditNote.lines ?? []
 
   const rowH = 18
-  lines.forEach((line, i) => {
+  itemLines(lines).forEach((line, i) => {
     if (i % 2 === 1) rect(mL, curY - 4, cW, rowH, rowAlt)
-    draw(line.description,           colDesc,  curY + 2, { size: 8.5, color: black,       maxWidth: 240 })
+    draw(line.description,           colDesc,  curY + 2, { size: 8.5, color: black,       maxWidth: hasDiscCol ? 205 : 240 })
     draw(String(line.quantity),      colQty,   curY + 2, { size: 8.5, color: grayDark,    align: "right" })
     draw(fmt(line.unit_price_ht),    colPU,    curY + 2, { size: 8.5, color: grayDark,    align: "right" })
+    if (hasDiscCol) draw(lineDiscountLabel(line) ?? "–", colDisc, curY + 2, { size: 8.5, color: grayDark, align: "right" })
     draw(`${fmtRate(line.vat_rate)} %`, colTVA, curY + 2, { size: 8.5, color: grayDark,   align: "right" })
     draw(`-${fmt(line.total_ht)}`,   colTotal, curY + 2, { size: 8.5, bold: true, color: theme.primary, align: "right" })
     curY -= rowH
@@ -313,6 +319,21 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
   // ── TOTAUX — ceux du XML Factur-X, calculés au centime depuis les lignes ──
   const totBlockW = 210; const totX = mR - totBlockW; const totValX = mR
 
+  if (disc) {
+    draw("Total HT avant remise", totX, curY, { size: 8.5, color: grayDark })
+    draw(`-${fmt(disc.gross)}`, totValX, curY, { size: 8.5, color: black, align: "right" })
+    curY -= 14
+    if (disc.lineDiscount > 0) {
+      draw("Remises sur les lignes", totX, curY, { size: 8.5, color: grayDark })
+      draw(fmt(disc.lineDiscount), totValX, curY, { size: 8.5, color: black, align: "right" })
+      curY -= 14
+    }
+    if (disc.global) {
+      draw(disc.global.label, totX, curY, { size: 8.5, color: grayDark, maxWidth: totBlockW - 70 })
+      draw(fmt(disc.global.amount), totValX, curY, { size: 8.5, color: black, align: "right" })
+      curY -= 14
+    }
+  }
   draw("Sous-total HT", totX, curY, { size: 8.5, color: grayDark })
   draw(`-${fmt(totals.taxBasis)}`, totValX, curY, { size: 8.5, color: grayDark, align: "right" })
   curY -= 14

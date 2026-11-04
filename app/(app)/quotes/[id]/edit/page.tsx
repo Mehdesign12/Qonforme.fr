@@ -13,7 +13,7 @@ import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { PaywallDialog, isArtisanPaywall } from "@/components/billing/PaywallDialog"
 import { useArtisanPlan } from "@/components/artisan/useArtisanPlan"
 import { useDocumentForm } from "@/components/documents/useDocumentForm"
-import { lineFromSaved, newLine, savedIsReverseCharge, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
+import { globalDiscountFromSaved, linesFromSaved, newLine, savedIsReverseCharge, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
 import { trackJourney } from "@/lib/journey"
 
 export default function EditQuotePage() {
@@ -31,7 +31,7 @@ export default function EditQuotePage() {
     client_id: "", issue_date: "", due_date: "", valid_until: "", delivery_date: "",
     reference: "", notes: "", lines: [newLine()],
   }))
-  const { form, computed, load } = doc
+  const { form, computed, totals, load } = doc
 
   useEffect(() => {
     fetch("/api/company")
@@ -59,7 +59,8 @@ export default function EditQuotePage() {
           delivery_date: "",
           reference:     "",
           notes:         q.notes       || "",
-          lines:         (q.lines || []).map(lineFromSaved),
+          lines:         linesFromSaved(q.lines),
+          global_discount: globalDiscountFromSaved(q.lines),
           autoliquidation: savedIsReverseCharge(q.lines),
         })
         setClients(withDocClient(cliJson.clients ?? [], q.client))
@@ -83,7 +84,7 @@ export default function EditQuotePage() {
         issue_date:  form.issue_date,
         valid_until: form.valid_until,
         notes:       form.notes || null,
-        lines:       toPayloadLines(form.lines, computed, form.autoliquidation),
+        lines:       toPayloadLines(form.lines, computed, form.autoliquidation, totals.discount_lines),
       }
 
       // 1. Enregistrer le brouillon

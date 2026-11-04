@@ -1,3 +1,4 @@
+import { creditLinesFromSelection, sumLines } from "@/lib/documents/discounts"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { insertWithSequentialNumber } from "@/lib/utils/document-numbering"
@@ -16,7 +17,8 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   const { id } = await params
   const body = await request.json()
-  const { reason, lines } = body // lines = toutes ou une sélection
+  // lines (ancien format) ou line_indexes (rangs des prestations choisies) : avoir partiel
+  const { reason, lines, line_indexes } = body
 
   if (!reason?.trim()) {
     return NextResponse.json({ error: "Le motif de l'avoir est obligatoire" }, { status: 400 })
@@ -44,29 +46,44 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Cette facture a déjà été annulée par avoir" }, { status: 400 })
   }
 
-  // 4. Lignes de l'avoir (toutes les lignes de la facture ou sélection)
-  const creditLines = (lines ?? invoice.lines ?? []).map((l: {
+  // 4. Lignes de l'avoir (toutes les lignes de la facture ou sélection). Une
+  // sélection par rangs reprend la remise globale au prorata (lib/documents/discounts.ts).
+  const source = Array.isArray(line_indexes)
+    ? creditLinesFromSelection(invoice.lines ?? [], line_indexes.map(Number))
+    : (lines ?? invoice.lines ?? [])
+  const creditLines = source.map((l: {
     description: string
     quantity: number
+    unit?: string | null
     unit_price_ht: number
     vat_rate: number
     total_ht: number
     total_vat: number
     total_ttc: number
+    kind?: string | null
+    vat_treatment?: string | null
+    discount_kind?: string | null
+    discount_value?: number | null
+    discount_amount?: number | null
+    discount_label?: string | null
   }) => ({
     description: l.description,
     quantity: l.quantity,
+    ...(l.unit ? { unit: l.unit } : {}),
     unit_price_ht: l.unit_price_ht,
     vat_rate: l.vat_rate,
     total_ht: l.total_ht,
     total_vat: l.total_vat,
     total_ttc: l.total_ttc,
+    ...(l.kind ? { kind: l.kind } : {}),
+    ...(l.vat_treatment ? { vat_treatment: l.vat_treatment } : {}),
+    ...(l.discount_kind ? { discount_kind: l.discount_kind, discount_value: l.discount_value, discount_amount: l.discount_amount } : {}),
+    ...(l.discount_label ? { discount_label: l.discount_label } : {}),
   }))
+  if (creditLines.length === 0) return NextResponse.json({ error: "Sélectionnez au moins une ligne" }, { status: 400 })
 
   // 5. Calcul des totaux de l'avoir
-  const subtotal_ht = creditLines.reduce((s: number, l: { total_ht: number }) => s + l.total_ht, 0)
-  const total_vat   = creditLines.reduce((s: number, l: { total_vat: number }) => s + l.total_vat, 0)
-  const total_ttc   = subtotal_ht + total_vat
+  const { subtotal_ht, total_vat, total_ttc } = sumLines(creditLines)
 
   // 6. Un avoir partiel ne doit ni dépasser le solde restant de la facture,
   //    ni bloquer l'émission d'avoirs partiels suivants sur ce qui reste dû.

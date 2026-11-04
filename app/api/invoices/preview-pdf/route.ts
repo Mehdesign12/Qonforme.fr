@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { generateInvoicePdf } from "@/lib/pdf/invoice"
 import { DRAFT_INVOICE_LABEL } from "@/lib/utils/document-numbering"
 import { selectCompanyWithProfile } from "@/lib/legal/db"
+import { prepareLinesForSave } from "@/lib/documents/discounts"
 
 // POST /api/invoices/preview-pdf — génère un aperçu PDF SANS créer de facture.
 //
@@ -37,10 +38,10 @@ export async function POST(request: NextRequest) {
   // facture (lib/utils/document-numbering.ts), « Brouillon » en tient lieu.
   const invoice_number = DRAFT_INVOICE_LABEL
 
-  const lines       = body.lines || []
-  const subtotal_ht = lines.reduce((s: number, l: { total_ht: number }) => s + (l.total_ht || 0), 0)
-  const total_vat    = lines.reduce((s: number, l: { total_vat: number }) => s + (l.total_vat || 0), 0)
-  const total_ttc    = subtotal_ht + total_vat
+  // Remises recalculées comme à l'enregistrement (lib/documents/discounts.ts)
+  const prepared = prepareLinesForSave(body.lines || [])
+  if (!prepared.ok) return NextResponse.json({ error: prepared.error }, { status: 400 })
+  const { lines, subtotal_ht, total_vat, total_ttc } = prepared
 
   try {
     const buffer = await generateInvoicePdf({
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
         total_vat,
         total_ttc,
         notes: body.notes ?? null,
-        lines,
+        lines: lines as never,
         client,
       },
       company,

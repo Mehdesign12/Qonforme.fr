@@ -133,7 +133,7 @@ export interface LoadedDoc {
   valid_until: string | null
   delivery_date: string | null
   reference: string | null
-  lines: { description: string; quantity: number; unit?: string | null; unit_price_ht: number; vat_rate: number; total_ht: number; total_vat?: number | null }[]
+  lines: { description: string; quantity: number; unit?: string | null; unit_price_ht: number; vat_rate: number; total_ht: number; total_vat?: number | null; kind?: string | null; vat_treatment?: string | null; discount_kind?: string | null; discount_value?: number | null; discount_amount?: number | null; discount_label?: string | null }[]
   subtotal_ht: number
   total_vat: number
   total_ttc: number
@@ -176,6 +176,11 @@ export async function loadDocument(admin: Admin, type: SignatureDocType, id: str
       vat_rate: Number(l.vat_rate) || 0,
       total_ht: Number(l.total_ht) || 0,
       total_vat: l.total_vat == null ? null : Number(l.total_vat),
+      // Remises (lib/documents/discounts.ts) : gardées pour le PDF signé
+      ...(l.kind ? { kind: l.kind } : {}),
+      ...(l.vat_treatment ? { vat_treatment: l.vat_treatment } : {}),
+      ...(l.discount_kind ? { discount_kind: l.discount_kind, discount_value: Number(l.discount_value) || 0, discount_amount: Number(l.discount_amount) || 0 } : {}),
+      ...(l.discount_label ? { discount_label: l.discount_label } : {}),
     })),
     subtotal_ht: Number(raw.subtotal_ht) || 0,
     total_vat: Number(raw.total_vat) || 0,

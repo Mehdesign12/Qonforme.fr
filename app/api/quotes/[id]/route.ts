@@ -1,3 +1,4 @@
+import { prepareLinesForSave } from "@/lib/documents/discounts"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { canTransition, isContentLocked, transitionError } from "@/lib/utils/document-status"
@@ -75,12 +76,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
 
   if (body.lines) {
-    const subtotal_ht = body.lines.reduce((s: number, l: { total_ht: number }) => s + (l.total_ht || 0), 0)
-    const total_vat   = body.lines.reduce((s: number, l: { total_vat: number }) => s + (l.total_vat || 0), 0)
-    update.lines       = body.lines
-    update.subtotal_ht = subtotal_ht
-    update.total_vat   = total_vat
-    update.total_ttc   = subtotal_ht + total_vat
+    // Remises contrôlées et recalculées, totaux au centime (lib/documents/discounts.ts)
+    const prepared = prepareLinesForSave(body.lines)
+    if (!prepared.ok) return NextResponse.json({ error: prepared.error }, { status: 400 })
+    update.lines       = prepared.lines
+    update.subtotal_ht = prepared.subtotal_ht
+    update.total_vat   = prepared.total_vat
+    update.total_ttc   = prepared.total_ttc
   }
 
   if (body.status)      update.status      = body.status

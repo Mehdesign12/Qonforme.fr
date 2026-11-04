@@ -4,6 +4,7 @@
  * Fiche facture réelle : chargement, actions (API) et fenêtres (envoi, avoir,
  * mur de paiement). L'affichage est InvoiceDetailView, partagé avec la démo.
  */
+import { creditLinesFromSelection, itemLines, sumLines } from "@/lib/documents/discounts"
 import { downloadPdf, PdfDownloadError } from "@/lib/utils/download-pdf"
 import { useCallback, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -157,8 +158,10 @@ function CreditNoteModal({
   const [reason, setReason]           = useState("")
   const [customReason, setCustomReason] = useState("")
   const [creditType, setCreditType]   = useState<"total" | "partial">("total")
+  // Prestations seules (la remise globale est reprise au prorata, lib/documents/discounts.ts)
+  const items = itemLines(invoice.lines)
   const [selectedLines, setSelectedLines] = useState<boolean[]>(
-    invoice.lines.map(() => true)
+    items.map(() => true)
   )
   const [loading, setLoading]         = useState(false)
   const [reasonError, setReasonError] = useState("")
@@ -169,11 +172,10 @@ function CreditNoteModal({
     setSelectedLines(prev => prev.map((v, idx) => idx === i ? !v : v))
   }
 
-  const selectedLinesData = creditType === "total"
-    ? invoice.lines
-    : invoice.lines.filter((_, i) => selectedLines[i])
-
-  const totalAvoir = selectedLinesData.reduce((s, l) => s + l.total_ttc, 0)
+  const selectedIndexes = items.map((_, i) => i).filter((i) => selectedLines[i])
+  const selectedLinesData = creditType === "total" ? items : items.filter((_, i) => selectedLines[i])
+  const creditedLines = creditType === "total" ? invoice.lines : creditLinesFromSelection(invoice.lines, selectedIndexes)
+  const totalAvoir = sumLines(creditedLines).total_ttc
 
   const handleSubmit = async () => {
     if (!finalReason.trim()) { setReasonError("Le motif est obligatoire"); return }
@@ -187,7 +189,7 @@ function CreditNoteModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           reason: finalReason,
-          lines: creditType === "partial" ? selectedLinesData : undefined,
+          line_indexes: creditType === "partial" ? selectedIndexes : undefined,
         }),
       })
       const json = await res.json()
@@ -276,9 +278,10 @@ function CreditNoteModal({
             <div className="overflow-hidden rounded-xl border border-[var(--q-line)]">
               <p className="border-b border-[var(--q-line-soft)] bg-[var(--q-surface-2)] px-4 py-2.5 text-xs font-medium text-[var(--q-text-4)]">
                 Lignes à créditer
+                {items.length < invoice.lines.length && " · la remise globale est reprise au prorata"}
               </p>
               <div className="q-list">
-                {invoice.lines.map((line, i) => (
+                {items.map((line, i) => (
                   <label key={i} className="flex cursor-pointer items-center gap-3 px-4 py-3 hover:bg-[var(--q-row-hover)]">
                     <input
                       type="checkbox"

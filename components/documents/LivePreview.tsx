@@ -6,12 +6,13 @@
  * Feuille blanche sur fond grisé (q-paper-bed > q-paper), blanche aussi en
  * thème sombre. Ce n'est pas le PDF : le PDF reste la référence.
  */
+import { formatPercent } from "@/lib/documents/discounts"
 import Image from "next/image"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { isAllowedLogoUrl } from "@/lib/utils/logo-url"
 import { initialsOf } from "@/components/app/kit"
 import {
-  DOC_TEXT, formatDayFr, formatRate, formatSiren, num, secondDateOf, vatBreakdown,
+  DOC_TEXT, formLineDiscountLabel, formatDayFr, formatRate, formatSiren, num, secondDateOf, vatBreakdown,
   type DocClient, type DocCompany, type DocKind,
 } from "./model"
 import type { DocumentFormApi } from "./useDocumentForm"
@@ -37,7 +38,9 @@ export function LivePreview({
 }) {
   const { form, computed, totals } = doc
   const text = DOC_TEXT[kind]
-  const breakdown = vatBreakdown(form.lines, computed)
+  const breakdown = vatBreakdown(form.lines, computed, totals.discount_lines)
+  const hasLineDisc = computed.some((c) => c.discountHT > 0)
+  const grid = hasLineDisc ? "grid-cols-[minmax(0,1fr)_34px_56px_46px_62px]" : "grid-cols-[minmax(0,1fr)_40px_62px_66px]"
   const second = secondDateOf(kind, form)
   const lines = form.lines.filter((l, i) => l.description.trim() || computed[i].totalHT > 0)
   const companyName = company?.name?.trim() || "Votre entreprise"
@@ -108,10 +111,11 @@ export function LivePreview({
 
         {/* Lignes */}
         <div className="flex flex-col">
-          <div className="grid grid-cols-[minmax(0,1fr)_40px_62px_66px] gap-1.5 border-b border-[#E6E9F0] py-1.5 text-[10.5px] font-semibold text-[#64748B]">
+          <div className={`grid ${grid} gap-1.5 border-b border-[#E6E9F0] py-1.5 text-[10.5px] font-semibold text-[#64748B]`}>
             <span>Désignation</span>
             <span className="text-right">Qté</span>
             <span className="text-right">Prix HT</span>
+            {hasLineDisc && <span className="text-right">Remise</span>}
             <span className="text-right">Total HT</span>
           </div>
           {lines.length === 0 ? (
@@ -120,10 +124,11 @@ export function LivePreview({
             form.lines.map((line, i) => {
               if (!line.description.trim() && computed[i].totalHT === 0) return null
               return (
-                <div key={line.id} className="grid grid-cols-[minmax(0,1fr)_40px_62px_66px] gap-1.5 border-b border-[#F1F4F8] py-1.5 tabular-nums">
+                <div key={line.id} className={`grid ${grid} gap-1.5 border-b border-[#F1F4F8] py-1.5 tabular-nums`}>
                   <span className="min-w-0 break-words">{line.description.trim() || <span className="text-[#94A3B8]">Sans désignation</span>}</span>
                   <span className="text-right">{String(num(line.quantity)).replace(".", ",")}</span>
                   <span className="text-right">{formatAmount(num(line.unit_price_ht))}</span>
+                  {hasLineDisc && <span className="text-right text-[#475569]">{computed[i].discountHT > 0 ? formLineDiscountLabel(line) : "–"}</span>}
                   <span className="text-right">{formatAmount(computed[i].totalHT)}</span>
                 </div>
               )
@@ -133,6 +138,24 @@ export function LivePreview({
 
         {/* Totaux */}
         <div className="flex flex-col gap-1 self-end tabular-nums" style={{ minWidth: "min(220px, 100%)" }}>
+          {(totals.line_discount > 0 || totals.global_discount > 0) && (
+            <div className="flex justify-between gap-5">
+              <span className="text-[#475569]">Total HT avant remise</span>
+              <span>{formatCurrency(totals.gross_ht)}</span>
+            </div>
+          )}
+          {totals.line_discount > 0 && (
+            <div className="flex justify-between gap-5">
+              <span className="text-[#475569]">Remises sur les lignes</span>
+              <span>−{formatCurrency(totals.line_discount)}</span>
+            </div>
+          )}
+          {totals.global_discount > 0 && totals.discount_lines[0] && (
+            <div className="flex justify-between gap-5">
+              <span className="text-[#475569]">{totals.discount_lines[0].discount_label}{totals.discount_lines[0].discount_kind === "pct" ? ` ${formatPercent(totals.discount_lines[0].discount_value)} %` : ""}</span>
+              <span>−{formatCurrency(totals.global_discount)}</span>
+            </div>
+          )}
           <div className="flex justify-between gap-5">
             <span className="text-[#475569]">Total HT</span>
             <span>{formatCurrency(totals.subtotal_ht)}</span>
@@ -144,7 +167,7 @@ export function LivePreview({
             </div>
           ) : breakdown.map((v) => (
             <div key={v.rate} className="flex justify-between gap-5">
-              <span className="text-[#475569]">{form.autoliquidation && v.rate === 0 ? "TVA (autoliquidation)" : `TVA ${formatRate(v.rate)}`}</span>
+              <span className="text-[#475569]">{form.autoliquidation && v.rate === 0 ? "TVA (autoliquidation)" : `TVA ${formatRate(v.rate)}${totals.global_discount > 0 && breakdown.length > 1 ? ` sur ${formatCurrency(v.base)}` : ""}`}</span>
               <span>{formatCurrency(v.amount)}</span>
             </div>
           ))}

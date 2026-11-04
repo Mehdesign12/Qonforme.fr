@@ -19,6 +19,7 @@ import { invoiceTitle, type BillingLine } from "@/lib/artisan/billing"
 import { RETENTION_MAX_RATE, type RetentionMode } from "@/lib/artisan/retention"
 import { formatPercentFr, fromCents, toCents } from "@/lib/artisan/money"
 import { ArtisanTag, money } from "./ui"
+import { foldGlobalDiscount } from "@/lib/documents/discounts"
 
 export type ArtisanInvoiceKind = "deposit" | "situation" | "final"
 
@@ -44,7 +45,8 @@ const parseNum = (v: string) => {
 export function ArtisanInvoiceDialog({
   open, onOpenChange, kind, billing, clientName, today, submitting, onSubmit, submitLabel,
 }: ArtisanInvoiceDialogProps) {
-  const lines = billing.quote.lines ?? []
+  // Prestations du devis, remise globale répartie dedans (comme la situation)
+  const lines = foldGlobalDiscount(billing.quote.lines ?? [])
   const prev = billing.state.previous.percents
   const def = defaultRetention(billing)
 

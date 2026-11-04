@@ -1,3 +1,4 @@
+import { prepareLinesForSave } from "@/lib/documents/discounts"
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient, createClient } from "@/lib/supabase/server"
 import { reportInvoicePayment, type PaymentReport } from "@/lib/pa/payment"
@@ -141,13 +142,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   let updateData: Record<string, unknown> = {}
 
   if (body.lines) {
-    const subtotal_ht = body.lines.reduce((sum: number, l: { total_ht: number }) => sum + (l.total_ht || 0), 0)
-    const total_vat = body.lines.reduce((sum: number, l: { total_vat: number }) => sum + (l.total_vat || 0), 0)
+    // Remises contrôlées et recalculées, totaux au centime (lib/documents/discounts.ts)
+    const prepared = prepareLinesForSave(body.lines)
+    if (!prepared.ok) return NextResponse.json({ error: prepared.error }, { status: 400 })
     updateData = {
-      lines: body.lines,
-      subtotal_ht,
-      total_vat,
-      total_ttc: subtotal_ht + total_vat,
+      lines: prepared.lines,
+      subtotal_ht: prepared.subtotal_ht,
+      total_vat: prepared.total_vat,
+      total_ttc: prepared.total_ttc,
     }
   }
 

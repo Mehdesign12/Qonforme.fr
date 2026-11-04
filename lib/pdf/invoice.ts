@@ -7,6 +7,7 @@
  * (lib/facturx). Montants et mentions imprimés sont ceux que déclare le XML.
  * Brouillon ou aperçu : PDF simple filigrané, sans XML.
  */
+import { discountSummary, itemLines, lineDiscountLabel } from "@/lib/documents/discounts"
 import { PDFDocument, rgb, PageSizes, degrees } from "pdf-lib"
 import { addUriLink } from "@/lib/pdf/link"
 import { drawDivider, drawHeaderBand, drawLogoBacking, drawPartiesFill, drawTableHead, drawTotalBox, pdfTheme, templateOf, tint } from "@/lib/pdf/theme"
@@ -314,23 +315,28 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   if (refs.length || ctx?.deductions.length) curY -= 3
 
   // TABLEAU
-  const colDesc = mL, colQty = mL + 250, colPU = mL + 300, colTVA = mL + 378, colTotal = mR
+  // Remises (lib/documents/discounts.ts) : colonne « Remise » si une ligne en a une, récapitulatif avant le total HT
+  const disc = discountSummary(invoice.lines)
+  const hasDiscCol = Boolean(disc?.hasLineDiscount)
+  const colDesc = mL, colQty = mL + (hasDiscCol ? 215 : 250), colPU = mL + (hasDiscCol ? 265 : 300), colDisc = mL + 322, colTVA = mL + 378, colTotal = mR
   const tableHeaderH = 20
   drawTableHead(page, theme, mL, curY - 4, cW, tableHeaderH)
   draw("Désignation", colDesc,  curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text })
   draw("Qté",         colQty,   curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
   draw("P.U. HT",     colPU,    curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
+  if (hasDiscCol) draw("Remise", colDisc, curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
   draw("TVA",         colTVA,   curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
   draw("Total HT",    colTotal, curY + 4, { size: 7.5, bold: true, color: theme.tableHead.text, align: "right" })
   curY -= tableHeaderH + 2
 
   const lines = invoice.lines ?? []
   const rowH  = 18
-  lines.forEach((line, i) => {
+  itemLines(lines).forEach((line, i) => {
     if (i % 2 === 1) rect(mL, curY - 4, cW, rowH, rowAlt)
-    draw(line.description,        colDesc,  curY + 2, { size: 8.5, color: black, maxWidth: 240 })
+    draw(line.description,        colDesc,  curY + 2, { size: 8.5, color: black, maxWidth: hasDiscCol ? 205 : 240 })
     draw(String(line.quantity),   colQty,   curY + 2, { size: 8.5, color: grayDark, align: "right" })
     draw(fmt(line.unit_price_ht), colPU,    curY + 2, { size: 8.5, color: grayDark, align: "right" })
+    if (hasDiscCol) draw(lineDiscountLabel(line) ?? "–", colDisc, curY + 2, { size: 8.5, color: grayDark, align: "right" })
     draw(`${fmtRate(line.vat_rate)} %`, colTVA, curY + 2, { size: 8.5, color: grayDark, align: "right" })
     draw(fmt(line.total_ht),      colTotal, curY + 2, { size: 8.5, bold: true, color: black, align: "right" })
     curY -= rowH
@@ -363,6 +369,21 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
       y -= 12
     }
     recapBottom = y - 4
+  }
+  if (disc) {
+    draw("Total HT avant remise", totX, curY, { size: 8.5, color: grayDark })
+    draw(fmt(disc.gross), totValX, curY, { size: 8.5, color: black, align: "right" })
+    curY -= 14
+    if (disc.lineDiscount > 0) {
+      draw("Remises sur les lignes", totX, curY, { size: 8.5, color: grayDark })
+      draw(fmt(-disc.lineDiscount), totValX, curY, { size: 8.5, color: black, align: "right" })
+      curY -= 14
+    }
+    if (disc.global) {
+      draw(disc.global.label, totX, curY, { size: 8.5, color: grayDark, maxWidth: totBlockW - 70 })
+      draw(fmt(-disc.global.amount), totValX, curY, { size: 8.5, color: black, align: "right" })
+      curY -= 14
+    }
   }
   draw("Sous-total HT", totX, curY, { size: 8.5, color: grayDark })
   draw(fmt(totals.taxBasis), totValX, curY, { size: 8.5, color: black, align: "right" })

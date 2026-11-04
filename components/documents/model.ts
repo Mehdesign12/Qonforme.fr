@@ -6,8 +6,12 @@
  * (création, modification, envoi, mur de paiement) et ne délègue que l'état
  * et le rendu. Les trois documents partagent ainsi le même écran.
  */
-import { calculateLineTotals, calculateInvoiceTotals, formatCurrency } from "@/lib/utils/invoice"
+import { formatCurrency } from "@/lib/utils/invoice"
 import type { ProductSuggestion } from "@/components/products/ProductCombobox"
+import {
+  computeDocument, fromCents, isDocumentDiscountLine, lineAmounts, lineDiscountLabel, parseDiscountKind, readGlobalDiscount,
+  DEFAULT_GLOBAL_LABEL, type DiscountKind, type DocumentDiscountLine,
+} from "@/lib/documents/discounts"
 
 export type DocKind = "invoice" | "quote" | "purchase_order"
 export type VatRate = 0 | 5.5 | 10 | 20
@@ -18,6 +22,16 @@ export interface DocLine {
   quantity: string
   unit_price_ht: string
   vat_rate: VatRate
+  /** Remise de la ligne (lib/documents/discounts.ts) : unité et valeur saisie (vide = aucune). */
+  discount_kind: DiscountKind
+  discount_value: string
+}
+
+/** Remise globale saisie : en % ou en € sur le total HT, avant TVA. */
+export interface DocGlobalDiscount {
+  kind: DiscountKind
+  value: string
+  label: string
 }
 
 /** État du formulaire. Chaque document n'utilise que ses propres dates. */
@@ -40,6 +54,8 @@ export interface DocForm {
    * (CGI, art. 283, 2 nonies ; lib/artisan/reverse-charge.ts).
    */
   autoliquidation?: boolean
+  /** Remise globale (null : aucune). */
+  global_discount?: DocGlobalDiscount | null
 }
 
 /** Client tel que renvoyé par GET /api/clients (champs utiles à l'écran). */
@@ -69,15 +85,32 @@ export interface DocCompany {
 }
 
 export interface ComputedLine {
+  /** Montant HT après remise. */
   totalHT: number
   totalVAT: number
   totalTTC: number
+  /** Quantité × prix, avant remise. */
+  grossHT: number
+  /** Remise de la ligne (0 sans remise). */
+  discountHT: number
+  /** Remise impossible (plus de 100 %, plus que la ligne…). */
+  discountError: string | null
 }
 
 export interface DocTotals {
   subtotal_ht: number
   total_vat: number
   total_ttc: number
+  /** Total avant toute remise. */
+  gross_ht: number
+  /** Somme des remises de ligne. */
+  line_discount: number
+  /** Remise globale. */
+  global_discount: number
+  /** Remise globale impossible. */
+  global_error: string | null
+  /** Lignes de remise globale, une par taux (ce qui sera enregistré). */
+  discount_lines: DocumentDiscountLine[]
 }
 
 /* ------------------------------------------------------------------ */
@@ -165,7 +198,7 @@ export function daysBetween(from: string, to: string): number | null {
 /* ------------------------------------------------------------------ */
 
 export function newLine(): DocLine {
-  return { id: crypto.randomUUID(), description: "", quantity: "1", unit_price_ht: "", vat_rate: 20 }
+  return { id: crypto.randomUUID(), description: "", quantity: "1", unit_price_ht: "", vat_rate: 20, discount_kind: "pct", discount_value: "" }
 }
 
 /** Ligne issue du catalogue : même libellé que l'ancien formulaire (nom — description). */
@@ -177,59 +210,153 @@ export function lineFromProduct(product: ProductSuggestion): DocLine {
     // Prix à 0 € : prestation importée « Prix à compléter » ; la ligne reste à chiffrer
     unit_price_ht: Number(product.unit_price_ht) > 0 ? String(product.unit_price_ht) : "",
     vat_rate: product.vat_rate as VatRate,
+    discount_kind: "pct",
+    discount_value: "",
   }
 }
 
+type SavedLine = {
+  kind?: string | null
+  description: string
+  quantity: number
+  unit_price_ht: number
+  vat_rate: number
+  discount_kind?: string | null
+  discount_value?: number | string | null
+}
+
 /** Ligne enregistrée (API) → ligne éditable. */
-export function lineFromSaved(l: { description: string; quantity: number; unit_price_ht: number; vat_rate: number }): DocLine {
+export function lineFromSaved(l: SavedLine): DocLine {
+  const value = Number(l.discount_value)
   return {
     id: crypto.randomUUID(),
     description: l.description,
     quantity: String(l.quantity),
     unit_price_ht: String(l.unit_price_ht),
     vat_rate: l.vat_rate as VatRate,
+    discount_kind: parseDiscountKind(l.discount_kind) ?? "pct",
+    discount_value: parseDiscountKind(l.discount_kind) && value > 0 ? String(value) : "",
   }
+}
+
+/** Lignes enregistrées → lignes éditables (sans les lignes de remise globale). */
+export function linesFromSaved(lines: SavedLine[] | null | undefined): DocLine[] {
+  return (lines ?? []).filter((l) => !isDocumentDiscountLine(l)).map(lineFromSaved)
+}
+
+/** Remise globale d'un document enregistré, à rouvrir dans l'éditeur. */
+export function globalDiscountFromSaved(lines: SavedLine[] | null | undefined): DocGlobalDiscount | null {
+  const g = readGlobalDiscount(lines)
+  return g ? { kind: g.kind, value: String(g.value), label: g.label } : null
 }
 
 export function num(value: string): number {
   return parseFloat(value) || 0
 }
 
-export function computeLines(lines: DocLine[]): ComputedLine[] {
-  return lines.map((line) => calculateLineTotals(num(line.quantity), num(line.unit_price_ht), line.vat_rate))
+/** Ligne du formulaire au format des calculs de remise. */
+function asDiscountable(line: DocLine) {
+  return {
+    quantity: num(line.quantity),
+    unit_price_ht: num(line.unit_price_ht),
+    vat_rate: line.vat_rate,
+    discount_kind: line.discount_value.trim() === "" ? null : line.discount_kind,
+    discount_value: num(line.discount_value),
+  }
 }
 
-export function computeTotals(computed: ComputedLine[]): DocTotals {
-  return calculateInvoiceTotals(computed.map((l) => ({ total_ht: l.totalHT, total_vat: l.totalVAT, total_ttc: l.totalTTC })))
+export function computeLines(lines: DocLine[], autoliquidation = false): ComputedLine[] {
+  return lines.map((line) => {
+    const a = lineAmounts(asDiscountable(line), autoliquidation)
+    return {
+      totalHT: fromCents(a.netCents),
+      totalVAT: fromCents(a.vatCents),
+      totalTTC: fromCents(a.netCents + a.vatCents),
+      grossHT: fromCents(a.grossCents),
+      discountHT: fromCents(a.discountCents),
+      discountError: a.error,
+    }
+  })
 }
 
-/** TVA ventilée par taux (aperçu : « TVA 10 % », « TVA 20 % »). */
-export function vatBreakdown(lines: DocLine[], computed: ComputedLine[]): { rate: VatRate; amount: number }[] {
-  const byRate = new Map<VatRate, number>()
+/** Remise globale du formulaire au format des calculs (null : aucune ou vide). */
+function globalOf(form: Pick<DocForm, "global_discount">) {
+  const g = form.global_discount
+  if (!g || g.value.trim() === "") return null
+  return { kind: g.kind, value: num(g.value), label: g.label.trim() || DEFAULT_GLOBAL_LABEL }
+}
+
+/** Totaux du document : remises de ligne, remise globale par taux, TVA, TTC. */
+export function computeDocTotals(form: Pick<DocForm, "lines" | "global_discount" | "autoliquidation">): DocTotals {
+  const doc = computeDocument(form.lines.map(asDiscountable), globalOf(form), Boolean(form.autoliquidation))
+  return {
+    subtotal_ht: fromCents(doc.htCents),
+    total_vat: fromCents(doc.vatCents),
+    total_ttc: fromCents(doc.ttcCents),
+    gross_ht: fromCents(doc.grossCents),
+    line_discount: fromCents(doc.lineDiscountCents),
+    global_discount: fromCents(doc.globalDiscountCents),
+    global_error: doc.globalError,
+    discount_lines: doc.discountLines,
+  }
+}
+
+/** TVA ventilée par taux (aperçu : « TVA 10 % », « TVA 20 % »), remise globale déduite. */
+export function vatBreakdown(
+  lines: DocLine[],
+  computed: ComputedLine[],
+  discountLines: DocumentDiscountLine[] = [],
+): { rate: VatRate; amount: number; base: number }[] {
+  const byRate = new Map<VatRate, { vat: number; base: number }>()
+  const add = (rate: VatRate, base: number, vat: number) => {
+    const g = byRate.get(rate) ?? { vat: 0, base: 0 }
+    g.vat += Math.round(vat * 100)
+    g.base += Math.round(base * 100)
+    byRate.set(rate, g)
+  }
   lines.forEach((line, i) => {
     if (computed[i].totalHT === 0) return
-    byRate.set(line.vat_rate, (byRate.get(line.vat_rate) ?? 0) + computed[i].totalVAT)
+    add(line.vat_rate, computed[i].totalHT, computed[i].totalVAT)
   })
+  for (const d of discountLines) add(d.vat_rate as VatRate, d.total_ht, d.total_vat)
   return Array.from(byRate.entries())
     .sort((a, b) => b[0] - a[0])
-    .map(([rate, amount]) => ({ rate, amount: Math.round(amount * 100) / 100 }))
+    .map(([rate, g]) => ({ rate, amount: g.vat / 100, base: g.base / 100 }))
 }
 
 /**
- * Lignes au format attendu par les routes (totaux recalculés côté client, comme avant).
- * Autoliquidation : taux 0, aucune TVA, traitement posé sur chaque ligne.
+ * Lignes au format attendu par les routes : prestations (avec leur remise),
+ * puis les lignes de remise globale (une par taux). Le serveur recalcule les
+ * remises (normalizeDiscountLines) ; les lignes sans remise gardent le calcul
+ * d'avant. Autoliquidation : taux 0, aucune TVA, traitement posé sur chaque ligne.
  */
-export function toPayloadLines(lines: DocLine[], computed: ComputedLine[], autoliquidation = false) {
-  return lines.map((line, i) => ({
-    description: line.description.trim(),
-    quantity: num(line.quantity),
-    unit_price_ht: num(line.unit_price_ht),
-    vat_rate: autoliquidation ? 0 : line.vat_rate,
-    total_ht: computed[i].totalHT,
-    total_vat: autoliquidation ? 0 : computed[i].totalVAT,
-    total_ttc: autoliquidation ? computed[i].totalHT : computed[i].totalTTC,
-    ...(autoliquidation ? { vat_treatment: "autoliquidation_btp" as const } : {}),
-  }))
+export function toPayloadLines(
+  lines: DocLine[],
+  computed: ComputedLine[],
+  autoliquidation = false,
+  discountLines: DocumentDiscountLine[] = [],
+) {
+  const items = lines.map((line, i) => {
+    const d = asDiscountable(line)
+    const discounted = d.discount_kind !== null && computed[i].discountHT > 0
+    return {
+      description: line.description.trim(),
+      quantity: num(line.quantity),
+      unit_price_ht: num(line.unit_price_ht),
+      vat_rate: autoliquidation ? 0 : line.vat_rate,
+      total_ht: computed[i].totalHT,
+      total_vat: autoliquidation ? 0 : computed[i].totalVAT,
+      total_ttc: autoliquidation ? computed[i].totalHT : computed[i].totalTTC,
+      ...(discounted ? { discount_kind: line.discount_kind, discount_value: d.discount_value, discount_amount: computed[i].discountHT } : {}),
+      ...(autoliquidation ? { vat_treatment: "autoliquidation_btp" as const } : {}),
+    }
+  })
+  return [...items, ...discountLines]
+}
+
+/** Lignes à enregistrer pour le formulaire entier (prestations et remise globale). */
+export function payloadLines(form: DocForm, computed: ComputedLine[], totals: DocTotals) {
+  return toPayloadLines(form.lines, computed, Boolean(form.autoliquidation), totals.discount_lines)
 }
 
 /** Le document enregistré est-il en autoliquidation (toutes ses lignes) ? */
@@ -243,6 +370,11 @@ export function lineSummary(line: DocLine): string {
   const qty = num(line.quantity)
   const qtyLabel = Number.isInteger(qty) ? String(qty) : String(qty).replace(".", ",")
   return `${qtyLabel} × ${formatCurrency(num(line.unit_price_ht))} · TVA ${formatRate(line.vat_rate)}`
+}
+
+/** « −10 % », « −50,00 € » ou null : remise d'une ligne du formulaire. */
+export function formLineDiscountLabel(line: DocLine): string | null {
+  return lineDiscountLabel(asDiscountable(line))
 }
 
 /** 5.5 → « 5,5 % ». */
@@ -264,12 +396,18 @@ export function validateDoc(kind: DocKind, form: DocForm): Record<string, string
     if (!line.description.trim()) errs[`line_${i}_desc`] = "Description requise"
     if (!line.quantity || parseFloat(line.quantity) <= 0) errs[`line_${i}_qty`] = "Quantité invalide"
     if (line.unit_price_ht === "" || parseFloat(line.unit_price_ht) < 0) errs[`line_${i}_price`] = "Prix invalide"
+    if (line.discount_value.trim() !== "") {
+      const err = lineAmounts(asDiscountable(line), Boolean(form.autoliquidation)).error
+      if (err) errs[`line_${i}_disc`] = err
+    }
   })
+  const globalErr = computeDocTotals(form).global_error
+  if (globalErr) errs.global_discount = globalErr
   return errs
 }
 
 export function lineHasError(errors: Record<string, string>, index: number): boolean {
-  return Boolean(errors[`line_${index}_desc`] || errors[`line_${index}_qty`] || errors[`line_${index}_price`])
+  return Boolean(errors[`line_${index}_desc`] || errors[`line_${index}_qty`] || errors[`line_${index}_price`] || errors[`line_${index}_disc`])
 }
 
 /* ------------------------------------------------------------------ */
