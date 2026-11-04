@@ -87,7 +87,10 @@ export async function PATCH(request: NextRequest) {
   const { user, supabase } = await resolveAuth(request)
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
-  const body = await request.json()
+  const body = await request.json().catch(() => null)
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Requête invalide" }, { status: 400 })
+  }
 
   // logo_url est fetch()é côté serveur à chaque génération de PDF (lib/pdf/*) —
   // ne jamais accepter autre chose que le bucket Supabase Storage de ce projet
@@ -118,8 +121,18 @@ export async function PATCH(request: NextRequest) {
     })
     .eq("user_id", user.id)
     .select()
-    .single()
+    .maybeSingle()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error("[PATCH /api/company]", error.message)
+    return NextResponse.json({ error: "L'entreprise n'a pas pu être enregistrée. Réessayez." }, { status: 500 })
+  }
+  // Aucune entreprise pour ce compte : rien à mettre à jour (elle se crée par POST)
+  if (!data) {
+    return NextResponse.json(
+      { error: "Aucune entreprise à mettre à jour : enregistrez d'abord votre entreprise.", code: "COMPANY_NOT_FOUND" },
+      { status: 404 },
+    )
+  }
   return NextResponse.json({ company: data })
 }
