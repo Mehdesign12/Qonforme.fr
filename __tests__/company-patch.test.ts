@@ -27,7 +27,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createClientWithToken: () => client(),
 }))
 
-const { PATCH } = await import("@/app/api/company/route")
+import { PATCH } from "@/app/api/company/route"
 const req = (body: string) => new NextRequest("https://qonforme.fr/api/company", { method: "PATCH", body, headers: { "content-type": "application/json" } })
 
 describe("PATCH /api/company", () => {
