@@ -424,7 +424,7 @@ export function QuoteDetailView({
       {/* Indicateurs (ordinateur) */}
       <KpiGrid className="hidden lg:grid print:hidden">
         <Kpi label="Total TTC" value={formatCurrency(quote.total_ttc)} sub={`${formatCurrency(quote.subtotal_ht)} HT · ${vatRatesLabel(quote.lines)}`} />
-        <Kpi label="Date du devis" value={shortDate(quote.issue_date)} sub={plural(quote.lines.length, "prestation")} />
+        <Kpi label="Date du devis" value={shortDate(quote.issue_date)} sub={plural(itemLines(quote.lines).length, "prestation")} />
         <Kpi label="Validité" value={validityKpi.value} sub={validityKpi.sub} tone={s === "sent" && expired ? "warn" : "default"} />
         <Kpi label="Prochaine étape" value={nextKpi.value} sub={nextKpi.sub} tone="ink" />
       </KpiGrid>

@@ -24,6 +24,7 @@ import { useQuoteBilling } from "@/components/artisan/useQuoteBilling"
 import { conversionBlockedBy } from "@/lib/artisan/quote-billing"
 import { snapshotOf } from "@/lib/legal/mentions"
 import { trackJourney } from "@/lib/journey"
+import { pickDiscountFields } from "@/lib/documents/discounts"
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -283,6 +284,8 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       total_ht: Number(l.total_ht) || 0,
       total_vat: l.total_vat ?? null,
       vat_treatment: (l as { vat_treatment?: string | null }).vat_treatment ?? null,
+      // Remises (lib/documents/discounts.ts) : sans elles, la remise globale passerait pour une prestation
+      ...pickDiscountFields(l),
     })),
     subtotal_ht: Number(quote.subtotal_ht) || 0,
     total_vat: Number(quote.total_vat) || 0,

@@ -116,7 +116,8 @@ type SubjectSource = { subject?: string | null; lines?: { description?: string |
  */
 export function quoteSubject(q: SubjectSource, withCount = true): string {
   if (q.subject) return q.subject
-  const lines = (q.lines ?? []).filter((l) => l.description?.trim())
+  // Jamais la ligne de remise globale (lib/documents/discounts.ts)
+  const lines = (q.lines ?? []).filter((l) => l.description?.trim() && (l as { kind?: string | null }).kind !== "document_discount")
   if (lines.length === 0) return "Devis sans prestation"
   const first = lines[0].description!.trim()
   if (!withCount || lines.length === 1) return first
