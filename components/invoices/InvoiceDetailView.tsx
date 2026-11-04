@@ -47,6 +47,7 @@ import {
   type CompanyView, type InvoiceView, daysBetween, daysLate, formatIban, isOpen, longDate,
   mediumDate, plural, shortDate, subjectFromLines, timeOf, yearOf,
 } from "@/components/invoices/invoice-view"
+import { itemLines } from "@/lib/documents/discounts"
 
 /* ------------------------------------------------------------------ */
 /* Règles d'affichage des actions                                       */
@@ -408,7 +409,7 @@ export function InvoiceDetailView({
 
       {/* ---- Ordinateur : indicateurs ---- */}
       <KpiGrid className="hidden lg:grid print:hidden">
-        <Kpi label="Total TTC" value={formatCurrency(invoice.total_ttc)} sub={plural(invoice.lines?.length ?? 0, "ligne", "lignes")} />
+        <Kpi label="Total TTC" value={formatCurrency(invoice.total_ttc)} sub={plural(itemLines(invoice.lines).length, "ligne", "lignes")} />
         <Kpi label="Total HT" value={formatCurrency(invoice.subtotal_ht)} sub={`TVA ${formatCurrency(invoice.total_vat)}`} />
         <Kpi label="Échéance" value={shortDate(invoice.due_date, year)} sub={dueSub} tone={late ? "warn" : "default"} />
         <Kpi

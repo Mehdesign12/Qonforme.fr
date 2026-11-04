@@ -578,3 +578,13 @@ export function foldGlobalDiscount<T extends DiscountableLine>(lines: T[] | null
     total_ttc: fromCents(ht[i] + vat[i]),
   }))
 }
+
+/** Champs de remise d'une ligne, à garder quand une vue recopie les lignes champ par champ. */
+export function pickDiscountFields(line: unknown): Pick<DiscountableLine, "kind" | "discount_kind" | "discount_value" | "discount_amount" | "discount_label"> {
+  const src = (line ?? {}) as Record<string, unknown>
+  const out: Record<string, unknown> = {}
+  for (const k of ["kind", "discount_kind", "discount_value", "discount_amount", "discount_label"]) {
+    if (src[k] != null && src[k] !== "") out[k] = src[k]
+  }
+  return out as Pick<DiscountableLine, "kind" | "discount_kind" | "discount_value" | "discount_amount" | "discount_label">
+}
