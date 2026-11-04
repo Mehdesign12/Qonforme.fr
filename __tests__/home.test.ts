@@ -46,7 +46,10 @@ describe("accueil", () => {
     const hero = lire("components/home/HomeHero.tsx")
     expect(hero).toContain("Chiffrez, organisez, encaissez.")
     expect(hero).toMatch(/<span className="q-serif block">Tout votre chantier dans une seule appli\.<\/span>/)
-    expect(hero).toContain("Zéro euro pour chiffrer. Tout ce qu&apos;il faut pour encaisser. Sans carte bancaire.")
+    expect(hero).toContain("Zéro euro pour chiffrer. Tout ce qu'il faut pour encaisser. Sans carte bancaire.")
+    // Artisan aux quatre bras, détouré : arche sur ordinateur, bandeau bleu sur téléphone (canevas du 04/11/2026)
+    expect(hero).toContain("/landing/hero/artisan-quatre-bras.webp")
+    expect(hero).toContain("<HeroParallax")
   })
 
   it("aucune phrase d'auto-justification ni de « ne fait pas » sur l'accueil", () => {
@@ -90,5 +93,24 @@ describe("accueil", () => {
     expect(slugs.sort()).toEqual(
       ["carreleur", "chauffagiste", "couvreur", "electricien", "macon", "menuisier", "peintre", "plaquiste", "plombier", "serrurier", "paysagiste"].sort(),
     )
+  })
+})
+
+describe("parallaxe du héros", () => {
+  it("avance de 0 à 1 pendant que le cadre traverse l'écran, décalage borné", async () => {
+    const { parallaxOffset, parallaxProgress } = await import("@/components/home/HeroParallax")
+    expect(parallaxProgress(900, 500, 900)).toBe(0)
+    expect(parallaxProgress(-500, 500, 900)).toBe(1)
+    expect(parallaxProgress(200, 500, 900)).toBeCloseTo(0.5, 5)
+    expect(parallaxProgress(2000, 500, 900)).toBe(0)
+    expect(parallaxOffset(0.5, 40)).toBe(20)
+    expect(parallaxOffset(3, 40)).toBe(40)
+    expect(parallaxOffset(-1, 40)).toBe(0)
+  })
+  it("translate seul, jamais will-change ni backdrop-filter, rien avec « Réduire les animations »", () => {
+    const src = lire("components/home/HeroParallax.tsx").replace(/\/\*[\s\S]*?\*\//g, "")
+    expect(src).toContain("style.translate")
+    expect(src).toContain("prefers-reduced-motion: reduce")
+    expect(src).not.toMatch(/will-change|willChange|backdrop/i)
   })
 })
