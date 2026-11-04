@@ -4,8 +4,8 @@
  *
  * Mêmes gardes que __tests__/logiciel-gestion-batiment.test.ts : balises sous les limites
  * de Google, route enregistrée partout, JSON-LD bâti sur la FAQ affichée, règles
- * d'honnêteté de CLAUDE.md (aucun concurrent, ni « certifié » ni « conforme », prix lus
- * dans plans.ts, « gratuit » jamais pour les factures).
+ * de CLAUDE.md (aucun concurrent, ni « certifié » ni « homologué », prix lus dans
+ * plans.ts, « gratuit » jamais pour les factures, aucune section « ne fait pas »).
  */
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
@@ -55,7 +55,7 @@ describe.each(ROUTES)("%s", (route) => {
   })
 
   it("enregistrée partout où une page publique doit l'être", () => {
-    expect(lire("app/sitemap.ts")).toContain(`"${route}": "2026-10-30"`)
+    expect(lire("app/sitemap.ts")).toContain(`"${route}": "2026-11-04"`)
     expect(lire("app/sitemap.ts")).toContain(`url: \`\${baseUrl}${route}\``)
     expect(lire("lib/supabase/middleware.ts")).toContain(`'${route}'`)
     expect(lire("public/sw.js")).toContain(`'${route}'`)
@@ -65,10 +65,11 @@ describe.each(ROUTES)("%s", (route) => {
     expect(buildLlmsTxt()).toContain(`https://qonforme.fr${route}`)
   })
 
-  it("honnête : aucun concurrent, ni certifié ni conforme, aucun prix écrit en dur", () => {
+  it("aucun concurrent, ni certifié ni homologué, aucun prix écrit en dur, aucune section « ne fait pas »", () => {
     const src = lire(page)
     expect(src).not.toMatch(CONCURRENTS)
-    expect(src).not.toMatch(/certifi|homologu|plateforme agréée|\bconforme\b/i)
+    expect(src).not.toMatch(/certifi|homologu|agréé par l'État|est une plateforme agréée/i)
+    expect(src.replace(/\/\*[\s\S]*?\*\//g, "")).not.toMatch(/ne fait pas|ne couvre pas|limites=\{/i)
     expect(src).not.toMatch(/\d+\s?€\s?(HT|TTC|par mois)/)
     expect(src).not.toMatch(/factur\w*\s+gratuite?s?/i)
   })

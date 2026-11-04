@@ -67,7 +67,7 @@ function toValues(a: Appointment): AppointmentFormValues {
 }
 
 export function PlanningView({
-  mode, today, api, clients, chantiers = [], openNew = false, footer,
+  mode, today, api, clients, chantiers = [], openNew = false, newDefaults, footer,
 }: {
   mode: "app" | "demo"
   today: string | null
@@ -76,6 +76,8 @@ export function PlanningView({
   chantiers?: { id: string; name: string }[]
   /** Ouvre la fenêtre de création à l'arrivée (menu « Nouveau », ?nouveau=1). */
   openNew?: boolean
+  /** Valeurs de départ de cette création (fiche d'un chantier : ?chantier=<id>). */
+  newDefaults?: Partial<AppointmentFormValues>
   /** Sous le calendrier : tâches et notes (fourni par la page). */
   footer?: React.ReactNode
 }) {
@@ -117,9 +119,10 @@ export function PlanningView({
   useEffect(() => {
     if (openNew && today && !openedNew.current && !loading && !unavailable) {
       openedNew.current = true
-      openCreate()
+      if (newDefaults) setDialog({ editing: null, values: { ...emptyValues(selected ?? today), ...newDefaults } })
+      else openCreate()
     }
-  }, [openNew, today, loading, unavailable, openCreate])
+  }, [openNew, newDefaults, today, selected, loading, unavailable, openCreate])
 
   const days = useMemo(() => (week ? weekDays(week) : []), [week])
   const goTo = (day: string) => { setWeek(weekStart(day)); setSelected(day) }

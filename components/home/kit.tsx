@@ -149,6 +149,7 @@ export interface FeatureLink {
 
 export function FeatureBlock({
   id,
+  badge,
   title,
   accent,
   intro,
@@ -161,6 +162,8 @@ export function FeatureBlock({
   className,
 }: {
   id?: string
+  /** Pastille au-dessus du titre (« Avec Artisan ») : la formule qui ouvre le bloc. */
+  badge?: string
   title: string
   accent?: string
   intro?: string
@@ -183,6 +186,11 @@ export function FeatureBlock({
           data-reveal={reverse ? "right" : "left"}
           className={cn("flex flex-col items-start lg:col-span-5", reverse ? "lg:order-2 lg:col-start-8 lg:pl-4" : "lg:pr-4")}
         >
+          {badge && (
+            <p className="mb-4 inline-flex h-7 items-center rounded-full border border-q-wash-line bg-q-wash px-3 text-[13px] font-semibold text-q-accent-strong">
+              {badge}
+            </p>
+          )}
           <h2 className="font-display text-[clamp(30px,3.2vw,44px)] font-semibold leading-[1.08] tracking-[-0.03em] text-q-ink-strong [text-wrap:balance]">
             {title}
             {accent && (

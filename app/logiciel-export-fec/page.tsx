@@ -43,7 +43,7 @@ const CONTENU = [
   ["Comptes", "411 (clients) au débit, 706 (prestations de services) au crédit, TVA collectée sur un compte par taux : 20 %, 10 %, 5,5 % et 2,1 %."],
   ["Documents inclus", "Les factures émises et les avoirs de la période choisie ; jamais les brouillons."],
   ["Format", "Les 18 colonnes de l'arrêté du 29 juillet 2013, séparées par des tabulations, dates AAAAMMJJ, montants à virgule, fichier nommé SIREN + FEC + date de clôture."],
-  ["Ce qu'il ne contient pas", "Ni achats, ni banque, ni règlements, ni salaires : c'est le FEC de vos ventes, que votre comptable intègre à la comptabilité complète."],
+  ["Pour votre comptable", "Le FEC de vos ventes, qu'il importe dans son logiciel et complète avec vos achats et votre banque, sans rien ressaisir."],
 ]
 
 const FAQ: ProductFaq[] = [
@@ -53,11 +53,11 @@ const FAQ: ProductFaq[] = [
   },
   {
     question: "Quel logiciel de facturation pour le bâtiment fournit un export FEC ?",
-    reponse: `Qonforme, avec la formule ${essentiel.name} : l'export FEC des factures et des avoirs émis, pour la période de votre choix, dans Paramètres › Exports. Vérifiez toujours ce que contient l'export d'un logiciel : celui de Qonforme couvre les ventes et les avoirs, pas les achats ni la banque.`,
+    reponse: `Qonforme, avec la formule ${essentiel.name} : l'export FEC des factures et des avoirs émis, pour la période de votre choix, dans Paramètres › Exports, au format exact de l'administration.`,
   },
   {
-    question: "Le FEC de Qonforme suffit-il en cas de contrôle fiscal ?",
-    reponse: "Non, pas seul. Il contient vos ventes et vos avoirs ; le FEC remis à l'administration doit couvrir toute la comptabilité de l'exercice. Votre expert-comptable ou votre logiciel de comptabilité importe ce fichier et le complète avec les achats, la banque et les autres écritures.",
+    question: "Comment mon comptable utilise-t-il le FEC de Qonforme ?",
+    reponse: "Il l'importe dans son logiciel de comptabilité : vos ventes et vos avoirs y arrivent au bon format, avec la TVA par taux, sans ressaisie. Il y ajoute vos achats et votre banque pour tenir la comptabilité complète de l'exercice, celle que l'administration demande en cas de contrôle.",
   },
   {
     question: "Mon comptable peut-il récupérer mes factures sans me les demander ?",
@@ -88,7 +88,7 @@ export default function Page() {
         ["Ce qu'il exporte", "Le FEC des factures et des avoirs émis (journaux des ventes et des avoirs), les ventes en CSV et les PDF de la période."],
         ["Ce qu'il coûte", `Avec ${essentiel.name} : ${prix(essentiel.monthlyPrice)} par mois, ou ${prix(essentiel.yearlyPrice)} par an. Sans engagement.`],
         ["Pour le comptable", "Un accès en lecture seule, sur invitation, pour consulter et télécharger lui-même ; retiré d'un clic."],
-        ["Ce qu'il ne fait pas", "Ni comptabilité complète, ni achats, ni rapprochement bancaire : le FEC couvre vos ventes, le reste reste chez votre comptable."],
+        ["Pourquoi l'adopter", "Plus de factures à recopier pour votre comptable : vos ventes partent au format de l'administration, et il les récupère lui-même."],
       ]}
       fonctions={{ title: "De la facture", accent: "à l'écriture comptable." }}
       blocks={
@@ -113,14 +113,6 @@ export default function Page() {
         ],
       }}
       inlineCta={{ title: "Vos ventes au format du fisc,", accent: "sans ressaisie." }}
-      limites={{
-        title: "Ce que l'export",
-        accent: "ne couvre pas.",
-        paragraphes: [
-          "Le FEC de Qonforme contient vos ventes et vos avoirs. Il ne contient ni vos achats, ni vos relevés bancaires, ni vos règlements, ni vos salaires : il ne remplace pas la comptabilité tenue par votre expert-comptable.",
-          "Les comptes utilisés sont ceux d'une entreprise de prestations de services (706) : si votre comptable utilise d'autres numéros, il les reprend à l'import.",
-        ],
-      }}
       faq={FAQ}
       liens={[
         { href: "/glossaire/fec", label: "Le FEC en une définition" },

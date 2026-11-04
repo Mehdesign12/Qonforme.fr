@@ -22,8 +22,8 @@ export const revalidate = 3600
  * façon significative.
  */
 const MAJ: Record<string, string> = {
-  "/": "2026-10-17",
-  "/pricing": "2026-10-02",
+  "/": "2026-11-04",
+  "/pricing": "2026-11-04",
   "/contact": "2026-10-22",
   "/demo": "2026-10-04",
   "/signup": "2026-10-06",
@@ -36,13 +36,13 @@ const MAJ: Record<string, string> = {
   "/modele/devis-electricien": "2026-10-16",
   "/modele/lettre-relance-impaye": "2026-10-16",
   "/facturation": "2026-10-15",
-  "/logiciel-gestion-batiment": "2026-10-24",
-  "/logiciel-devis-gratuit": "2026-10-30",
-  "/logiciel-relance-factures-impayees": "2026-10-30",
-  "/logiciel-export-fec": "2026-10-30",
-  "/logiciel-situations-travaux": "2026-10-30",
+  "/logiciel-gestion-batiment": "2026-11-04",
+  "/logiciel-devis-gratuit": "2026-11-04",
+  "/logiciel-relance-factures-impayees": "2026-11-04",
+  "/logiciel-export-fec": "2026-11-04",
+  "/logiciel-situations-travaux": "2026-11-04",
   // 16/10/2026 : title, H1 et introduction des 11 pages métier (MOTS-CLES-COMPACTS-2026-10.md § 0)
-  ...Object.fromEntries(METIERS.map((m) => [`/facturation/${m.slug}`, "2026-10-16"])),
+  ...Object.fromEntries(METIERS.map((m) => [`/facturation/${m.slug}`, "2026-11-04"])),
   "/devenir-a-son-compte/electricien": "2026-10-15",
 }
 

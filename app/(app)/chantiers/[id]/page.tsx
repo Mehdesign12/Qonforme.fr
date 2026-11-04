@@ -10,6 +10,8 @@ import { HardHat, Loader2 } from "lucide-react"
 import { EmptyState } from "@/components/app/kit"
 import { ChantierDetailView } from "@/components/artisan/ChantierDetailView"
 import { NotesPanel } from "@/components/planning/NotesPanel"
+import { ChantierAppointments } from "@/components/planning/ChantierAppointments"
+import type { Appointment } from "@/lib/planning/appointments"
 import { appNotesApi } from "@/lib/planning/notes-api"
 import { ChantierFormDialog, chantierFormBody, chantierToForm, type ChantierFormValues } from "@/components/artisan/ChantierFormDialog"
 import { AttachDocumentDialog, type AttachCandidateView } from "@/components/artisan/AttachDocumentDialog"
@@ -63,6 +65,16 @@ export default function ChantierPage({ params }: { params: { id: string } }) {
   }, [params.id])
 
   useEffect(() => { void load() }, [load])
+
+  /** Rendez-vous du chantier : d'hier à 60 jours (fenêtre de 62 jours au plus côté route). */
+  const loadAppointments = useCallback(async (): Promise<{ available: boolean; appointments: Appointment[] }> => {
+    const from = new Date(Date.now() - 86_400_000).toISOString()
+    const to = new Date(Date.now() + 60 * 86_400_000).toISOString()
+    const res = await fetch(`/api/appointments?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&chantier=${encodeURIComponent(params.id)}`)
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(json.error ?? "Erreur réseau")
+    return { available: json.available !== false, appointments: Array.isArray(json.appointments) ? json.appointments : [] }
+  }, [params.id])
 
   /** Écriture d'une route Artisan : 402 → mur de paiement. Renvoie le JSON si tout va bien. */
   const write = async (url: string, init: RequestInit): Promise<Record<string, unknown> | null> => {
@@ -216,6 +228,14 @@ export default function ChantierPage({ params }: { params: { id: string } }) {
         newQuoteHref={c.client_id ? `/quotes/new?client=${c.client_id}` : "/quotes/new"}
         busy={busy}
         notes={<NotesPanel api={appNotesApi} scope={{ chantier_id: c.id }} title="À faire et notes du chantier" />}
+        appointments={
+          <ChantierAppointments
+            today={data.today}
+            load={loadAppointments}
+            planningHref="/planning"
+            newHref={`/planning?nouveau=1&chantier=${encodeURIComponent(c.id)}`}
+          />
+        }
         actions={{
           onEdit: openEdit,
           onAttach: openAttach,

@@ -35,9 +35,9 @@ const essentiel = PLANS.starter
    Bandeau bleu pleine largeur : une phrase, trois coches
 ───────────────────────────────────────────────────────── */
 const SIMPLE_POINTS = [
-  "Dans le navigateur, rien à installer",
+  "Rien à installer",
   "Ordinateur, tablette et téléphone",
-  "Devis gratuits et illimités",
+  "Tout synchronisé, partout",
 ]
 
 export function SimpleBand() {
@@ -50,7 +50,7 @@ export function SimpleBand() {
           data-reveal=""
           className="max-w-[860px] font-display text-[clamp(28px,3.4vw,42px)] font-semibold leading-[1.1] tracking-[-0.03em] text-white [text-wrap:balance]"
         >
-          {"Gérer vos devis et factures n'a jamais été aussi simple"}
+          {"Moins de paperasse, plus de chantiers."}
         </h2>
         {/* Téléphone : les coches partagent un bord gauche sous le titre centré */}
         <ul className="mx-auto mt-7 flex w-fit flex-col items-start gap-3 md:w-auto md:flex-row md:flex-wrap md:items-center md:justify-center md:gap-x-10">
@@ -79,10 +79,10 @@ export function SimpleBand() {
 const TRADE_COUNT = Object.keys(TRADE_CATALOGUES).filter((k) => k !== "autre").length
 
 const OFFER_FACTS = [
-  { icon: FileText, value: 0, unit: "€", label: "pour vos devis, sans limite" },
-  { icon: ReceiptText, value: essentiel.monthlyPrice, unit: TAX_SUFFIX ? `€${NB}HT` : "€", label: `par mois pour facturer (${essentiel.name})` },
+  { icon: FileText, value: 0, unit: "€", label: "pour chiffrer, sans limite" },
+  { icon: ReceiptText, value: essentiel.monthlyPrice, unit: TAX_SUFFIX ? `€${NB}HT` : "€", label: `par mois pour facturer et encaisser (${essentiel.name})` },
   { icon: RotateCcw, value: GUARANTEE_DAYS, unit: "jours", label: "satisfait ou remboursé" },
-  { icon: PencilRuler, value: TRADE_COUNT, unit: "métiers", label: "avec leurs prestations prêtes à importer" },
+  { icon: PencilRuler, value: TRADE_COUNT, unit: "métiers", label: "prêts à chiffrer, prestations comprises" },
 ]
 
 export function OfferFacts() {
@@ -116,7 +116,7 @@ export function OfferFacts() {
           ))}
         </ul>
         <p data-reveal="" className="mt-6 text-center text-[13px] leading-[1.5] text-q-text-4">
-          {"Tarif hors taxes, sans engagement. Détail des formules sur "}
+          {`${TAX_SUFFIX ? "Tarif hors taxes, sans" : "Sans"} engagement. Détail des formules sur `}
           <Link href="/pricing" className="q-link hover:underline">
             la page Tarifs
           </Link>
@@ -135,21 +135,21 @@ const TIME_FACTS = [
   {
     value: 0,
     suffix: `${NB}ressaisie`,
-    label: "du devis accepté à la facture",
-    text: "Client, lignes et TVA sont repris tels quels dans la facture en brouillon.",
+    label: "du devis signé à la facture",
+    text: "Client, lignes, remises et TVA repris tels quels : la facture est prête en un clic.",
   },
   {
     value: 3,
     suffix: `${NB}étapes`,
     label: "pour votre premier devis",
-    text: "Votre SIREN, vos prestations, votre devis.",
+    text: "Votre SIREN, vos prestations, votre devis : c'est parti.",
   },
   {
     // Zéro : rien à compter, le nombre s'affiche tel quel
     value: 0,
     suffix: `${NB}relance`,
     label: "à écrire vous-même",
-    text: `Avec ${essentiel.name}, les relances des factures impayées partent seules, au nom de votre entreprise.`,
+    text: `Avec ${essentiel.name}, vos relances partent seules, au nom de votre entreprise.`,
   },
 ]
 
@@ -178,7 +178,7 @@ export function TimeBand() {
             </li>
           ))}
         </ul>
-        <CtaButtons reveal className="mt-12" primary={{ href: SIGNUP_HREF, label: "S'inscrire gratuitement" }} secondary={null} />
+        <CtaButtons reveal className="mt-12" primary={{ href: SIGNUP_HREF, label: "Créer mon compte gratuit" }} secondary={null} />
       </div>
     </section>
   )

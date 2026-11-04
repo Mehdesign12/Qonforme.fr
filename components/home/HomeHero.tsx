@@ -6,6 +6,8 @@ import { TradesStripLive, type TradeItem } from "@/components/home/TradesStrip"
 import { CtaButtons } from "@/components/landing/ui"
 import { SolutionCompatible } from "@/components/brand/SolutionCompatible"
 import { PHOTOS } from "@/lib/landing/photos"
+import { PLATFORM_SENDING_LIVE } from "@/lib/pa/sending"
+import { PLANS } from "@/lib/stripe/plans"
 import { cn } from "@/lib/utils"
 
 /**
@@ -13,6 +15,9 @@ import { cn } from "@/lib/utils"
  * électronique, rangée des métiers. Le label « Solution compatible » (DGFiP)
  * tient la place d'une note d'avis, les métiers du bâtiment celle de logos de
  * presse : aucun avis, aucune note, aucun logo qui ne soit vrai.
+ *
+ * Copywriting de conversion (DECISIONS-STRATEGIQUES.md § 2, 04/11/2026) :
+ * le bénéfice d'abord, la promesse « chiffrer, organiser, encaisser ».
  *
  * Règles (CLAUDE.md) : contenu vrai seulement ; RIEN posé sur la photo (aucun
  * élément flottant, décision du fondateur) ; icônes au trait, sans tuile ni
@@ -29,11 +34,12 @@ import { cn } from "@/lib/utils"
  */
 const ARCH = "aspect-[4/5] rounded-t-[50%_40%] rounded-b-[28px]"
 
+// La signature en ligne demande Essentiel : elle n'est pas promise à côté de « gratuits »
 const PROMISES = [
-  "Vos devis, gratuits et sans limite",
-  "Vos factures envoyées par email, avec votre IBAN",
-  "Les relances des impayés, sans vous",
-  "Sur ordinateur et sur téléphone, rien à installer",
+  "Devis gratuits et illimités, prêts en quelques minutes",
+  "Chantier, planning et notes au même endroit",
+  "Factures conformes, envoyées en un clic",
+  "Relances automatiques : payé sans courir après",
 ]
 
 /* ─────────────────────────────────────────────────────────
@@ -78,8 +84,10 @@ export function HomeHero() {
             <span className="shrink-0 whitespace-nowrap rounded-full bg-[#0A1122] px-2 py-0.5 text-[11px] sm:px-2.5 sm:py-1 sm:text-[12px] font-semibold tracking-[.01em] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.14)]">
               Nouveau
             </span>
-            <span className="sm:hidden">Solution compatible facturation électronique</span>
-            <span className="hidden sm:inline">Qonforme est solution compatible facturation électronique</span>
+            <span className="sm:hidden">{PLATFORM_SENDING_LIVE ? "Facture électronique : envoi ouvert" : "Solution compatible facturation électronique"}</span>
+            <span className="hidden sm:inline">
+              {PLATFORM_SENDING_LIVE ? "Facture électronique : envoi et réception ouverts" : "Qonforme est solution compatible facturation électronique"}
+            </span>
             <ChevronRight className="hidden h-3.5 w-3.5 shrink-0 text-q-text-4 transition-transform group-hover:translate-x-0.5 sm:block" strokeWidth={2} aria-hidden />
           </a>
 
@@ -88,9 +96,9 @@ export function HomeHero() {
             className="lp-fade-up mt-5 font-display text-[clamp(31px,8.6vw,38px)] sm:mt-7 sm:text-[clamp(38px,4.6vw,62px)] font-semibold leading-[1.04] tracking-[-0.04em] text-q-ink-strong [text-wrap:balance]"
             style={{ animationDelay: ".08s" }}
           >
-            Le logiciel des artisans du bâtiment{" "}
-            {/* Seconde voix sur sa propre ligne dès 640 px : elle ne se coupe pas après « pour » */}
-            <span className="q-serif sm:block">pour vos devis et factures.</span>
+            Chiffrez, organisez, encaissez.{" "}
+            {/* Seconde voix toujours sur sa propre ligne */}
+            <span className="q-serif block">Tout votre chantier dans une seule appli.</span>
           </h1>
 
           <div className="lp-fade-up mt-4 sm:mt-8" style={{ animationDelay: ".16s" }}>
@@ -98,7 +106,7 @@ export function HomeHero() {
           </div>
 
           <div className="lp-fade-up mt-5 w-full max-sm:[&_.lp-btn-s]:hidden sm:mt-9" style={{ animationDelay: ".24s" }}>
-            <CtaButtons align="start" primary={{ href: SIGNUP_HREF, label: "Essayer gratuitement" }} />
+            <CtaButtons align="start" primary={{ href: SIGNUP_HREF, label: "Faire mon premier devis gratuit" }} />
           </div>
 
           {/* Label de la DGFiP : règles de la charte dans components/brand/SolutionCompatible.tsx */}
@@ -108,7 +116,7 @@ export function HomeHero() {
           >
             <SolutionCompatible priority />
             <p className="max-w-[300px] text-[14px] leading-[1.55] text-q-text-3">
-              Sans carte bancaire. Vous payez à partir de votre première facture.
+              Zéro euro pour chiffrer. Tout ce qu&apos;il faut pour encaisser. Sans carte bancaire.
             </p>
           </div>
         </div>
@@ -123,7 +131,9 @@ export function HomeHero() {
    B — Bandeau de la facture électronique (cible de la
    pastille du héros)
 ───────────────────────────────────────────────────────── */
-const EINVOICING_PILLS = ["Factur-X", "Mentions obligatoires", "Numérotation continue"]
+const EINVOICING_PILLS = PLATFORM_SENDING_LIVE
+  ? ["Envoi et réception", "Factur-X", `Inclus dans ${PLANS.starter.name}`]
+  : ["Factur-X", "Mentions obligatoires", "Numérotation continue"]
 
 export function EInvoicingBand() {
   return (
@@ -144,10 +154,24 @@ export function EInvoicingBand() {
             id="facture-electronique-title"
             className="font-display text-[clamp(22px,2vw,24px)] font-semibold leading-[1.2] tracking-[-0.025em] text-q-ink-strong [text-wrap:balance]"
           >
-            Solution compatible facturation électronique
+            {PLATFORM_SENDING_LIVE ? (
+              <>
+                Facture électronique 2027&nbsp;: <span className="q-serif">vous êtes déjà prêt.</span>
+              </>
+            ) : (
+              "Solution compatible facturation électronique"
+            )}
           </h2>
           <p className="mt-3 max-w-[560px] text-[16px] leading-[1.6] text-q-text-3 [text-wrap:pretty]">
-            Qonforme est raccordé à une plateforme agréée. Le 1er&nbsp;septembre 2027, les TPE et PME émettront leurs factures entre entreprises en électronique&nbsp;: votre logiciel suit la réforme.
+            {PLATFORM_SENDING_LIVE ? (
+              <>
+                Qonforme envoie et reçoit vos factures par la plateforme agréée Super PDP, au format exigé par la réforme. Le 1er&nbsp;septembre 2027, vous n&apos;aurez rien à changer.
+              </>
+            ) : (
+              <>
+                Qonforme est raccordé à une plateforme agréée. Le 1er&nbsp;septembre 2027, les TPE et PME émettront leurs factures entre entreprises en électronique&nbsp;: votre logiciel suit la réforme.
+              </>
+            )}
           </p>
           <Link
             href="/guide/facture-electronique-2026"

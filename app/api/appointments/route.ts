@@ -2,7 +2,7 @@
  * Planning : rendez-vous de l'artisan (visite, chantier, livraison).
  *
  * GET  : rendez-vous qui chevauchent la fenêtre `from`–`to` (instants ISO,
- *        7 à 62 jours au plus) ; `available: false` tant que la migration
+ *        62 jours au plus), ceux d'un seul chantier avec `chantier=<id>` ; `available: false` tant que la migration
  *        20261021_planning_appointments.sql n'est pas appliquée.
  * POST : crée un rendez-vous (date, heure et durée à l'heure de Paris).
  *
@@ -18,6 +18,8 @@ import { addDays, todayInParis } from "@/lib/utils/paris-date"
 export const dynamic = "force-dynamic"
 
 const MAX_RANGE_MS = 62 * 86_400_000
+/** Identifiant de chantier (uuid en base) : rien d'autre ne part dans le filtre. */
+const CHANTIER_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -35,12 +37,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Période invalide." }, { status: 400 })
   }
 
-  const { data, error } = await supabase
+  // Facultatif : seulement les rendez-vous d'un chantier (fiche du chantier)
+  const chantier = params.get("chantier")
+  if (chantier !== null && !CHANTIER_ID.test(chantier)) {
+    return NextResponse.json({ error: "Chantier invalide." }, { status: 400 })
+  }
+
+  let query = supabase
     .from("appointments")
     .select(APPOINTMENT_COLUMNS)
     .eq("user_id", user.id)
     .lt("starts_at", new Date(toMs).toISOString())
     .gt("ends_at", new Date(fromMs).toISOString())
+  if (chantier) query = query.eq("chantier_id", chantier)
+  const { data, error } = await query
     .order("starts_at", { ascending: true })
     .limit(500)
   if (error) {

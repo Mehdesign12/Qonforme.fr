@@ -18,7 +18,7 @@ import { lcFirst } from "@/components/content/text"
  *
  * Honnêteté : « gratuit » ne vise que ce que FREE_FEATURES liste (devis illimités, envoi par
  * e-mail compris, aucune limite dans app/api/quotes) ; les factures s'envoient avec Essentiel.
- * La signature en ligne fait partie d'Essentiel (lib/stripe/plans.ts) : pas dans le compte gratuit.
+ * La signature en ligne fait partie d'Essentiel (lib/stripe/plans.ts) : jamais dite gratuite.
  */
 
 const PATH = "/logiciel-devis-gratuit"
@@ -79,7 +79,7 @@ export default function Page() {
       path={PATH}
       titre={TITRE}
       accent="du bâtiment."
-      sub={`Qonforme est un logiciel de devis gratuit et illimité pour les artisans du bâtiment : catalogue de prestations, TVA par ligne, mentions légales et envoi par e-mail, sans carte bancaire. Vous ne payez que si vous envoyez des factures, avec ${essentiel.name}.`}
+      sub={`Qonforme est un logiciel de devis gratuit et illimité pour les artisans du bâtiment : catalogue de prestations, remises, TVA par ligne, mentions légales et envoi par e-mail, sans carte bancaire. Vous payez seulement quand vous facturez, avec ${essentiel.name}.`}
       description={DESCRIPTION}
       verifieLe={VERIFIE_LE}
       photo="nouvelInstalle"
@@ -88,9 +88,9 @@ export default function Page() {
         ["Ce qui est gratuit", `${FREE_FEATURES.join(", ")}.`],
         ["Ce qui est payant", `L'envoi des factures, les relances et l'export comptable, avec ${essentiel.name} : ${prix(essentiel.monthlyPrice)} par mois, sans engagement.`],
         ["Où l'utiliser", "Dans le navigateur, sur ordinateur comme sur téléphone, sans rien installer."],
-        ["Ce qu'il ne fait pas", "Pas de prix inventés : le catalogue vous propose les prestations de votre métier, c'est vous qui fixez vos tarifs."],
+        ["Pourquoi l'adopter", "Un devis pro en quelques minutes, avec vos prix et vos remises, qui devient une facture en un clic le jour où vous facturez."],
       ]}
-      fonctions={{ title: "Ce que fait", accent: "le compte gratuit." }}
+      fonctions={{ title: "Tout pour chiffrer,", accent: "gratuitement." }}
       blocks={
         <>
           <DevisBlock reverse={false} />
@@ -119,14 +119,6 @@ export default function Page() {
         ],
       }}
       inlineCta={{ title: "Votre prochain devis,", accent: "gratuit et sans limite." }}
-      limites={{
-        title: "Ce que le compte gratuit",
-        accent: "ne fait pas.",
-        paragraphes: [
-          `Il n'envoie pas de factures : elles se préparent en brouillon, et leur envoi, les relances et l'export comptable demandent ${essentiel.name}.`,
-          `La signature en ligne des devis demande ${essentiel.name} : avec le compte gratuit, le client signe le PDF et vous marquez le devis accepté.`,
-        ],
-      }}
       faq={FAQ}
       liens={[
         ...METIERS.slice(0, 6).map((m) => ({ href: `/facturation/${m.slug}`, label: `Logiciel de devis pour ${lcFirst(m.nom)}` })),

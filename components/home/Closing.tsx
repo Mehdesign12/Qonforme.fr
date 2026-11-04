@@ -1,11 +1,12 @@
 import Link from "next/link"
-import { ArrowRight, BadgeCheck, Check, ChevronDown, FolderOpen, HardHat, Lamp, Lock, PaintRoller, Ruler, Stamp, Wrench } from "lucide-react"
+import { ArrowRight, BadgeCheck, Check, ChevronDown, FolderOpen, HardHat, Lamp, PaintRoller, Ruler, ShieldCheck, Stamp, Wrench } from "lucide-react"
 import { Doodles } from "@/components/brand/Doodles"
 import { D_SECTION, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
 import { SOLUTION_COMPATIBLE, SolutionCompatible } from "@/components/brand/SolutionCompatible"
 import { CtaButtons, SectionTitle } from "@/components/landing/ui"
 import { GUARANTEE_DAYS } from "@/lib/stripe/access"
 import { PLANS, TAX_SUFFIX } from "@/lib/stripe/plans"
+import { PLATFORM_SENDING_LIVE } from "@/lib/pa/sending"
 import { cn } from "@/lib/utils"
 
 /**
@@ -43,9 +44,9 @@ const ASSURANCES = [
     ? [{ visual: <SolutionCompatible size="sm" />, title: "Solution compatible", text: "Raccordé à une plateforme agréée" }]
     : []),
   {
-    visual: <Lock className="h-[30px] w-[30px] text-q-accent-strong" strokeWidth={1.6} aria-hidden />,
-    title: "Factures non modifiables",
-    text: "Une fois envoyée, une facture se corrige par un avoir",
+    visual: <ShieldCheck className="h-[30px] w-[30px] text-q-accent-strong" strokeWidth={1.6} aria-hidden />,
+    title: "Factures conformes",
+    text: "Mentions obligatoires, numérotation continue, Factur-X",
   },
   {
     visual: <FolderOpen className="h-[30px] w-[30px] text-q-accent-strong" strokeWidth={1.6} aria-hidden />,
@@ -117,9 +118,8 @@ export function Commitments() {
       <div className={D_WRAP}>
         <SectionTitle
           align="center"
-          title="Nos engagements,"
-          accent="noir sur blanc."
-          sub={fr("Pas d'avis inventés : ce que nous vous garantissons, tel qu'écrit dans nos conditions générales.")}
+          title="Zéro risque"
+          accent="pour commencer."
         />
         <div className="mt-12 columns-1 gap-5 md:columns-2 lg:columns-3">
           {COMMITMENTS.map((c, i) => (
@@ -136,13 +136,6 @@ export function Commitments() {
             </article>
           ))}
         </div>
-        <p data-reveal="" className="mt-3 text-center text-[13px] leading-[1.5] text-q-text-4">
-          {"Engagements détaillés dans nos "}
-          <Link href="/cgu" className="q-link hover:underline">
-            conditions générales
-          </Link>
-          {" (article 4)."}
-        </p>
       </div>
     </section>
   )
@@ -158,12 +151,12 @@ export function FinalBand() {
       <Doodles layout="frame" tone="light" icons={[HardHat, Ruler, PaintRoller, Wrench]} />
       <div data-reveal="scale" className={cn(D_WRAP, "relative flex flex-col items-center text-center")}>
         <h2 className="max-w-[820px] font-display text-[clamp(32px,4vw,52px)] font-semibold leading-[1.08] tracking-[-0.03em] text-white [text-wrap:balance]">
-          {`Prêt${NB}? Votre premier devis`} <span className="q-serif inline-block !text-[#9DBBFF]">est gratuit.</span>
+          Votre prochain chantier <span className="q-serif inline-block !text-[#9DBBFF]">commence ici.</span>
         </h2>
         <p className="mt-5 max-w-[560px] text-[17px] leading-[1.6] text-[#AFBDD3] [text-wrap:pretty] sm:text-[18px]">
-          Sans carte bancaire. Vous payez à partir de votre première facture.
+          {`Zéro euro pour chiffrer. Tout ce qu'il faut pour encaisser. Sans carte bancaire.`}
         </p>
-        <CtaButtons className="mt-9" primary={{ href: SIGNUP_HREF, label: "Essayer Qonforme gratuitement" }} />
+        <CtaButtons className="mt-9" primary={{ href: SIGNUP_HREF, label: "Faire mon premier devis gratuit" }} />
         <SolutionCompatible size="sm" className="mt-10" />
       </div>
     </section>
@@ -176,7 +169,11 @@ export function FinalBand() {
 export const FAQ_ITEMS: { q: string; a: string; logo?: boolean }[] = [
   {
     q: "Puis-je essayer Qonforme gratuitement ?",
-    a: `Oui. Les devis, les clients, le catalogue et les factures en brouillon sont gratuits, sans limite de durée et sans carte bancaire. Une formule n'est demandée qu'au moment d'envoyer une facture : ${essentiel.name}, ${ht(essentiel.monthlyPrice)} par mois ou ${ht(essentiel.yearlyPrice)} par an.`,
+    a: `Oui. Devis, clients, catalogue, planning, notes et factures en brouillon sont gratuits, sans limite de durée et sans carte bancaire. Vous choisissez une formule au moment d'envoyer votre première facture : ${essentiel.name}, ${ht(essentiel.monthlyPrice)} par mois ou ${ht(essentiel.yearlyPrice)} par an.`,
+  },
+  {
+    q: "Puis-je gérer mes chantiers avec Qonforme ?",
+    a: `Oui. Le planning de rendez-vous, les notes, les tâches et le scan de documents sont inclus dans tous les comptes. Avec ${PLANS.pro.name}, chaque chantier a sa fiche : devis, factures, acomptes, situations, retenue de garantie et rendez-vous au même endroit, avec ce qui est signé, facturé, encaissé et reste à facturer.`,
   },
   {
     q: "Puis-je l'utiliser sur mon téléphone ?",
@@ -186,8 +183,10 @@ export const FAQ_ITEMS: { q: string; a: string; logo?: boolean }[] = [
   ...(SOLUTION_COMPATIBLE
     ? [
         {
-          q: "Qonforme est-il une plateforme agréée ?",
-          a: "Non. Qonforme est un logiciel de facturation, pas une plateforme agréée. C'est une solution compatible facturation électronique : il est raccordé à une plateforme agréée, qui seule transmet les factures.",
+          q: "Qonforme est-il prêt pour la facturation électronique ?",
+          a: PLATFORM_SENDING_LIVE
+            ? `Oui. Qonforme est solution compatible facturation électronique, raccordé à la plateforme agréée Super PDP. Avec ${essentiel.name}, vos factures fournisseurs arrivent par la plateforme et vos factures partent vers vos clients professionnels au format de la réforme. Le 1er septembre 2027, vous n'aurez rien à changer.`
+            : `Oui. Qonforme est solution compatible facturation électronique, raccordé à la plateforme agréée Super PDP. Avec ${essentiel.name}, vos factures fournisseurs arrivent par la plateforme, et vos factures sont émises au format Factur-X de la réforme.`,
           logo: true,
         },
       ]
@@ -197,16 +196,12 @@ export const FAQ_ITEMS: { q: string; a: string; logo?: boolean }[] = [
     a: `Oui. La mention « TVA non applicable, art. 293${NB}B du CGI » s'ajoute à vos documents depuis Paramètres, à partir d'un modèle prêt à l'emploi.`,
   },
   {
-    q: "Mon client est un particulier, sans SIREN. Est-ce un problème ?",
-    a: "Non. Un client particulier se crée sans SIREN, et ses devis et factures se font comme les autres.",
+    q: "Puis-je faire des devis et factures pour un particulier ?",
+    a: "Oui. Un client particulier se crée sans SIREN, et ses devis et factures se font comme les autres, avec les mentions qui le concernent.",
   },
   {
     q: "Puis-je résilier à tout moment ?",
-    a: `Oui, sans engagement ni frais, depuis vos paramètres. Vos documents restent consultables, téléchargeables et exportables après la résiliation. Et si Qonforme ne vous convient pas, vous êtes remboursé dans les ${GUARANTEE_DAYS}${NB}jours.`,
-  },
-  {
-    q: "Que se passe-t-il pour mes documents si j'arrête ?",
-    a: "Rien ne disparaît : vos devis et factures émis restent consultables, téléchargeables et exportables, avec ou sans formule.",
+    a: `Oui, sans engagement ni frais, depuis vos paramètres. Vos devis et factures restent consultables, téléchargeables et exportables, même après. Et si Qonforme ne vous convient pas, vous êtes remboursé dans les ${GUARANTEE_DAYS}${NB}jours.`,
   },
 ]
 

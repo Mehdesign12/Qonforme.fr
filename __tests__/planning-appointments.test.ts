@@ -200,6 +200,17 @@ describe("/api/appointments", () => {
     expect(json.appointments[0]).toMatchObject({ id: row.id, client_name: "M. Test", kind: "visite" })
     expect(h.calls[0].filters).toContainEqual(["eq:user_id", h.user!.id])
   })
+  it("GET : filtre sur un chantier (fiche du chantier), identifiant contrôlé", async () => {
+    const { GET } = await import("@/app/api/appointments/route")
+    const chantier = "22222222-2222-4222-8222-222222222222"
+    const res = await GET(req(`/api/appointments?from=2026-10-18T22:00:00Z&to=2026-10-25T22:00:00Z&chantier=${chantier}`))
+    expect(res.status).toBe(200)
+    expect(h.calls[0].filters).toContainEqual(["eq:chantier_id", chantier])
+    expect(h.calls[0].filters).toContainEqual(["eq:user_id", h.user!.id])
+    h.calls = []
+    expect((await GET(req("/api/appointments?from=2026-10-18T22:00:00Z&to=2026-10-25T22:00:00Z&chantier=1,2)or(x"))).status).toBe(400)
+    expect(h.calls).toHaveLength(0)
+  })
   it("GET : sans la migration, répond « indisponible » au lieu d'une erreur", async () => {
     const { GET } = await import("@/app/api/appointments/route")
     h.result = { data: null, error: MISSING }

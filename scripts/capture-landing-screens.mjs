@@ -52,6 +52,7 @@ const DESKTOP = [
   ["catalogue", "/demo/products"],
   ["relances", "/demo/relances"],
   ["planning", "/demo/planning"],
+  ["chantier", "/demo/chantiers/clos-fleuri"],
 ]
 const MOBILE = [
   ["mobile-tableau-de-bord", "/demo"],
@@ -61,6 +62,7 @@ const MOBILE = [
   ["mobile-relances", "/demo/relances"],
   ["mobile-catalogue", "/demo/products"],
   ["mobile-planning", "/demo/planning"],
+  ["mobile-chantier", "/demo/chantiers/clos-fleuri"],
 ]
 const ANALYTICS = /(posthog|facebook|sentry|google-analytics|googletagmanager|doubleclick)\./
 

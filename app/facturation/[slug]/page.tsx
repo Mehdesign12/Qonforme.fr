@@ -7,6 +7,7 @@ import { getInstallationBySlug } from "@/lib/pseo/installation"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, CtaButtons, FaqList, InlineCta, SectionHeading, WRAP } from "@/components/content/ui"
 import { MetierFeatures, MetierObligations, tradeHeroPhoto } from "@/components/content/metier"
 import { fr, lcFirst } from "@/components/content/text"
+import { ChantierBlock, DevisBlock } from "@/components/home/Features"
 
 export function generateStaticParams() {
   return METIERS.map(m => ({ slug: m.slug }))
@@ -88,7 +89,13 @@ export default async function MetierPage({ params }: { params: Promise<{ slug: s
 
         <MetierFeatures metier={metier} />
 
-        <div className="px-4 pt-16 sm:px-6 sm:pt-20">
+        {/* Les vrais écrans, comme sur l'accueil : le devis, puis le chantier */}
+        <div className="pt-10 sm:pt-14">
+          <DevisBlock reverse={false} />
+          <ChantierBlock reverse />
+        </div>
+
+        <div className="px-4 pt-6 sm:px-6 sm:pt-10">
           <InlineCta
             className={WRAP}
             title={`Votre prochain devis ${/^[aeiouéèê]/i.test(metier.nom) ? "d’" : "de "}${lcFirst(metier.nom)},`}

@@ -16,7 +16,7 @@ import { ProductPage, type ProductFaq } from "@/components/content/ProductPage"
  * échéance, lien de paiement par virement, retards au tableau de bord.
  *
  * Honnêteté : relances et envoi avec Essentiel (le cron saute les comptes sans formule) ;
- * Qonforme n'encaisse rien (virement sur l'IBAN de l'artisan) et ne fait pas de recouvrement.
+ * Les clients paient par virement sur l'IBAN de l'artisan (page de règlement, QR code).
  * Taux et indemnité lus dans lib/outils/penalites.ts, jamais écrits ici.
  */
 
@@ -65,12 +65,12 @@ const FAQ: ProductFaq[] = [
     reponse: "Après les relances amiables, envoyez une mise en demeure par lettre recommandée avec accusé de réception. Si elle reste sans effet, vous pouvez demander une injonction de payer au tribunal, ou, pour une petite créance, passer par la procédure simplifiée de recouvrement auprès d'un commissaire de justice. Gardez la trace de chaque relance.",
   },
   {
-    question: "Les relances automatiques sont-elles gratuites dans Qonforme ?",
-    reponse: `Non. L'envoi des factures et les relances demandent la formule ${essentiel.name}, à ${prix(essentiel.monthlyPrice)} par mois ou ${prix(essentiel.yearlyPrice)} par an, sans engagement. Les devis, eux, sont gratuits et illimités.`,
+    question: "Combien coûtent les relances automatiques dans Qonforme ?",
+    reponse: `Elles sont incluses dans la formule ${essentiel.name}, avec l'envoi des factures : ${prix(essentiel.monthlyPrice)} par mois ou ${prix(essentiel.yearlyPrice)} par an, sans engagement. Les devis, eux, sont gratuits et illimités.`,
   },
   {
-    question: "Qonforme encaisse-t-il les paiements de mes clients ?",
-    reponse: "Non. Vos clients vous paient par virement, directement sur votre compte. Chaque facture envoyée peut porter un lien vers une page avec votre IBAN, le montant, la référence et un QR code de virement ; le client peut y signaler qu'il a payé, et vous marquez la facture payée avec la date du paiement.",
+    question: "Comment mes clients me paient-ils ?",
+    reponse: "Par virement, directement sur votre compte. Chaque facture envoyée peut porter un lien vers une page avec votre IBAN, le montant, la référence et un QR code de virement ; le client peut y signaler qu'il a payé, et vous marquez la facture payée avec la date du paiement.",
   },
 ]
 
@@ -80,7 +80,7 @@ export default function Page() {
       path={PATH}
       titre={TITRE}
       accent="pour artisans."
-      sub={`Qonforme suit chaque facture que vous envoyez : un rappel avant l'échéance, des relances automatiques après, et les retards visibles au tableau de bord. Les relances s'arrêtent dès que la facture est marquée payée. Avec la formule ${essentiel.name}.`}
+      sub={`Qonforme relance vos clients à votre place : un rappel avant l'échéance, des relances automatiques après, et les retards visibles au tableau de bord. Les relances s'arrêtent dès que la facture est payée. Avec la formule ${essentiel.name}.`}
       description={DESCRIPTION}
       verifieLe={VERIFIE_LE}
       photo="finDeJournee"
@@ -90,7 +90,7 @@ export default function Page() {
         ["Ce qu'il fait", `Un rappel ${BEFORE_DUE_CHOICES.join(", ")} jours avant l'échéance au choix, des relances par e-mail à ${jours(AFTER_DUE_CHOICES)}, un bouton Relancer, la liste des relances à venir et le montant en retard au tableau de bord.`],
         ["Ce qu'il coûte", `Avec ${essentiel.name} : ${prix(essentiel.monthlyPrice)} par mois, ou ${prix(essentiel.yearlyPrice)} par an. Sans engagement. Les devis restent gratuits.`],
         ["Comment le client paie", "Par virement sur votre compte, avec une page qui donne votre IBAN, le montant, la référence et un QR code."],
-        ["Ce qu'il ne fait pas", "Ni encaissement, ni recouvrement judiciaire, ni mise en demeure envoyée à votre place : il relance à l'amiable et vous dit qui est en retard."],
+        ["Pourquoi l'adopter", "Vous n'écrivez plus une seule relance : elles partent seules, au nom de votre entreprise, et vous voyez d'un coup d'œil qui vous doit quoi."],
       ]}
       fonctions={{ title: "Ce qui se passe", accent: "après l'envoi." }}
       blocks={
@@ -121,15 +121,6 @@ export default function Page() {
         ],
       }}
       inlineCta={{ title: "Vos devis sont gratuits,", accent: "vos relances partent seules." }}
-      limites={{
-        title: "Ce que Qonforme",
-        accent: "ne fait pas.",
-        paragraphes: [
-          "Qonforme n'encaisse pas l'argent de vos clients et ne fait pas de recouvrement : il relance à l'amiable, par e-mail, et vous montre qui est en retard.",
-          "Une facture n'est jamais marquée payée automatiquement : c'est vous qui la marquez, avec la date du paiement, quand le virement est arrivé.",
-          `Sans formule, aucune relance ne part : l'envoi des factures et les relances demandent ${essentiel.name}.`,
-        ],
-      }}
       faq={FAQ}
       liens={[
         { href: "/modele/lettre-relance-impaye", label: "Modèle de relance de facture impayée" },

@@ -110,13 +110,15 @@ describe("lastmod", () => {
     expect(entree("/modele/facture-classique")!.lastModified).toBeUndefined()
   })
 
-  it("accueil remplacé le 17/10/2026 : sa date est celle du remplacement", () => {
-    expect(new Date(entree("")!.lastModified!).toISOString().slice(0, 10)).toBe("2026-10-17")
+  it("accueil réécrit le 04/11/2026 : sa date est celle de la réécriture", () => {
+    expect(new Date(entree("")!.lastModified!).toISOString().slice(0, 10)).toBe("2026-11-04")
   })
 
-  it("pages modifiées le 16/10/2026 : 11 pages métier, exemples de devis, relances", () => {
-    for (const p of ["/facturation/plombier", "/facturation/macon", "/facturation/paysagiste", "/modele/devis-electricien", "/modele/devis-travaux", "/modele/lettre-relance-impaye"])
+  it("pages modifiées le 16/10/2026 : exemples de devis, relances ; pages métier réécrites le 04/11/2026", () => {
+    for (const p of ["/modele/devis-electricien", "/modele/devis-travaux", "/modele/lettre-relance-impaye"])
       expect(new Date(entree(p)!.lastModified!).toISOString().slice(0, 10), p).toBe("2026-10-16")
+    for (const p of ["/facturation/plombier", "/facturation/macon", "/facturation/paysagiste"])
+      expect(new Date(entree(p)!.lastModified!).toISOString().slice(0, 10), p).toBe("2026-11-04")
     // le guide de la TVA des travaux prend sa date de vérification
     expect(new Date(entree("/guide/tva-travaux")!.lastModified!).toISOString().slice(0, 10)).toBe("2026-10-16")
   })
