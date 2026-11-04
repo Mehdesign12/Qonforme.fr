@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { ARTICLE_TYPE_LABELS, PUBLISH_MODE_LABELS, type ArticleType, type PublishMode } from "@/lib/seo/types"
 import type { TopicLite } from "@/lib/seo/articles/data"
 import { parisDayTime, type Slot } from "@/lib/seo/articles/schedule"
+import { canApplyTopicAction } from "@/lib/seo/articles/status"
 import { api } from "@/components/admin/seo/articles/api"
 import { useJobRunner } from "@/components/admin/seo/articles/job-runner"
 import { JobProgress } from "@/components/admin/seo/articles/JobProgress"
@@ -233,9 +234,18 @@ export function TopicDialog({
     setError(null)
     setJobStarted(false)
     runner.reset()
+    // Sujet en cours de rédaction : même écran d'avancement que « Générer un article », et l'écran fait avancer la rédaction
+    if (topic.status === "generating" && topic.jobId) void follow(topic.jobId)
     // Réinitialise à chaque sujet ouvert
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topic?.id])
+
+  async function follow(jobId: string) {
+    setJobStarted(true)
+    const final = await runner.resume(jobId)
+    if (final.status === "done") toast.success("Article rédigé")
+    if (final.status === "done" || final.status === "failed") router.refresh()
+  }
 
   function close() {
     runner.stop()
@@ -292,12 +302,32 @@ export function TopicDialog({
         open={open}
         onClose={close}
         title={topic?.title ?? ""}
-        description="Rédaction en cours"
+        description={runner.state.status === "done" ? "Article rédigé" : runner.state.status === "failed" ? "La rédaction a échoué" : "Rédaction en cours"}
         footer={
           <>
-            <button type="button" onClick={close} className="q-btn q-btn-ghost">
+            <button type="button" onClick={close} className="q-btn q-btn-ghost max-sm:q-btn-lg">
               Fermer
             </button>
+            {runner.state.status === "stopped" && runner.state.jobId && (
+              <button type="button" onClick={() => runner.state.jobId && void follow(runner.state.jobId)} className="q-btn q-btn-secondary max-sm:q-btn-lg">
+                <RotateCcw aria-hidden />
+                Reprendre le suivi
+              </button>
+            )}
+            {runner.state.status === "failed" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setJobStarted(false)
+                  void draft("retry")
+                }}
+                disabled={busy !== null}
+                className="q-btn q-btn-primary max-sm:q-btn-lg"
+              >
+                <RotateCcw aria-hidden />
+                Réessayer
+              </button>
+            )}
             {runner.state.status === "done" && runner.state.postId && (
               <Link href={`/admin/blog/${runner.state.postId}`} className="q-btn q-btn-primary">
                 Relire l&apos;article
@@ -336,17 +366,19 @@ export function TopicDialog({
                 Retirer du calendrier
               </button>
             )}
-            <button type="button" onClick={() => setView("reschedule")} disabled={busy !== null || topic?.status === "generating"} className="q-btn q-btn-secondary max-sm:q-btn-lg">
-              <CalendarClock aria-hidden />
-              Replanifier
-            </button>
+            {topic && canApplyTopicAction(topic.status, "schedule") && (
+              <button type="button" onClick={() => setView("reschedule")} disabled={busy !== null} className="q-btn q-btn-secondary max-sm:q-btn-lg">
+                <CalendarClock aria-hidden />
+                {topic.scheduledAt ? "Replanifier" : "Planifier"}
+              </button>
+            )}
             {failed ? (
               <button type="button" onClick={() => draft("retry")} disabled={busy !== null} className="q-btn q-btn-primary max-sm:q-btn-lg">
                 {busy === "retry" ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : <RotateCcw aria-hidden />}
                 Réessayer
               </button>
             ) : (
-              topic?.status === "planned" && (
+              (topic?.status === "planned" || topic?.status === "unplanned") && (
                 <button type="button" onClick={() => draft("draft")} disabled={busy !== null} className="q-btn q-btn-primary max-sm:q-btn-lg">
                   {busy === "draft" ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : <FilePen aria-hidden />}
                   Rédiger maintenant

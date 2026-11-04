@@ -50,9 +50,26 @@ export interface TopicLite {
   publishMode: PublishMode
   lastError: string | null
   postId: string | null
+  /** Dernière rédaction d'un sujet en cours de rédaction (suivi de l'avancement depuis l'écran). */
+  jobId?: string | null
 }
 
-function liteOf(t: TopicRow): TopicLite {
+/**
+ * Dernière rédaction de chaque sujet « en cours de rédaction » : l'écran la reprend
+ * (avancement et passes suivantes) au lieu d'un simple « Rédaction en cours ».
+ * Une lecture en échec ne bloque pas l'écran : le sujet s'affiche sans suivi.
+ */
+async function latestJobIds(db: SeoDb, rows: TopicRow[]): Promise<Map<string, string>> {
+  const ids = rows.filter((t) => t.status === "generating").map((t) => t.id)
+  const map = new Map<string, string>()
+  if (ids.length === 0) return map
+  const { data, error } = await db.from("seo_article_jobs").select("id, topic_id, created_at").in("topic_id", ids).order("created_at", { ascending: false }).limit(200)
+  if (error || !Array.isArray(data)) return map
+  for (const j of data as { id: string; topic_id: string | null }[]) if (j.topic_id && !map.has(j.topic_id)) map.set(j.topic_id, j.id)
+  return map
+}
+
+function liteOf(t: TopicRow, jobs?: Map<string, string>): TopicLite {
   return {
     id: t.id,
     title: t.title,
@@ -64,6 +81,7 @@ function liteOf(t: TopicRow): TopicLite {
     publishMode: t.publish_mode,
     lastError: t.last_error,
     postId: t.post_id,
+    jobId: jobs?.get(t.id) ?? null,
   }
 }
 
@@ -132,7 +150,7 @@ export async function loadGenerateDialog(db: SeoDb, now: Date): Promise<Generate
   const prefs = settings.value
   const slots = await freeSlots(db, prefs, now, 1)
   return {
-    topics: (must(topics, "les sujets") as TopicRow[]).map(liteOf),
+    topics: (must(topics, "les sujets") as TopicRow[]).map((t) => liteOf(t)),
     ...generateOptionsOf(prefs, must(keywords, "les mots-clés suivis") as { keyword: string; status: KeywordStatus }[], slots[0] ?? null),
   }
 }
@@ -262,7 +280,9 @@ async function calendarWithPrefs(db: SeoDb, month: string, now: Date, filter: Ar
       topic: null,
     })
   }
-  for (const t of must(topics, "les sujets planifiés") as TopicRow[]) {
+  const topicRows = must(topics, "les sujets planifiés") as TopicRow[]
+  const topicJobs = await latestJobIds(db, topicRows)
+  for (const t of topicRows) {
     const status = topicDisplayStatus(t)
     if (!status || !t.scheduled_at) continue
     const { day, time } = parisDayTime(t.scheduled_at)
@@ -278,7 +298,7 @@ async function calendarWithPrefs(db: SeoDb, month: string, now: Date, filter: Ar
       keyword: t.keyword,
       sourceTag: null,
       href: null,
-      topic: liteOf(t),
+      topic: liteOf(t, topicJobs),
     })
   }
   events.sort((a, b) => (a.day + a.time).localeCompare(b.day + b.time))
@@ -307,7 +327,7 @@ async function calendarWithPrefs(db: SeoDb, month: string, now: Date, filter: Ar
       monday: days[0],
       days: days.map((day) => ({ day, inMonth: day.slice(0, 7) === month, isToday: day === today, events: byDay.get(day) ?? [] })),
     })),
-    unplanned: (must(unplanned, "les sujets à planifier") as TopicRow[]).map(liteOf),
+    unplanned: (must(unplanned, "les sujets à planifier") as TopicRow[]).map((t) => liteOf(t)),
     slots: await freeSlots(db, settings.value, now, 3),
     defaultMode: settings.value.publishMode,
     coverImage: settings.value.coverImage,
@@ -427,6 +447,7 @@ export async function loadTopics(db: SeoDb, now: Date, opts: { archived: boolean
       }[])
     : []
   const postById = new Map(posts.map((p) => [p.id, p]))
+  const jobs = await latestJobIds(db, rows)
 
   const candidates = [
     ...((must(nextTopic, "la prochaine parution") as { scheduled_at: string }[]) ?? []),
@@ -446,7 +467,7 @@ export async function loadTopics(db: SeoDb, now: Date, opts: { archived: boolean
       const post = t.post_id ? postById.get(t.post_id) : undefined
       const published = Boolean(post?.is_published)
       return {
-        ...liteOf(t),
+        ...liteOf(t, jobs),
         source: t.source,
         notes: t.notes,
         createdAt: t.created_at,

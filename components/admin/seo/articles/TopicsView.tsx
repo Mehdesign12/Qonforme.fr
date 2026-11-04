@@ -70,7 +70,8 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
   const [busy, setBusy] = useState<string | null>(null)
   const [ideasOpen, setIdeasOpen] = useState(false)
   const [editing, setEditing] = useState<TopicFormValue | null>(null)
-  const [scheduling, setScheduling] = useState<TopicListItem | null>(null)
+  /** Fiche ouverte : « info » (et avancement d'une rédaction en cours) ou « reschedule ». */
+  const [opened, setOpened] = useState<{ topic: TopicListItem; view: "info" | "reschedule" } | null>(null)
   const [progress, setProgress] = useState<{ index: number; total: number; title: string; state: RunnerState } | null>(null)
   const cancelled = useRef(false)
   const headerBox = useRef<HTMLInputElement>(null)
@@ -115,6 +116,7 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
 
   /** Suit les rédactions créées, une à une (fermer la page n'arrête que le suivi). */
   async function follow(jobIds: string[], titles: string[]) {
+    let ok = 0
     for (let i = 0; i < jobIds.length && !cancelled.current; i++) {
       const final = await runJob(
         jobIds[i],
@@ -122,11 +124,14 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
         () => cancelled.current,
       )
       router.refresh()
+      if (final.status === "done") ok++
       if (final.status === "failed") toast.error(`« ${titles[i]} » : ${final.error ?? "la rédaction a échoué"}`)
+      // Suivi arrêté : jamais un faux « Brouillon rédigé »
+      if (final.status === "stopped" && !cancelled.current) toast.message(`« ${titles[i]} » : ${final.error ?? "la rédaction continue en arrière-plan"}`)
     }
     if (!cancelled.current) {
       setProgress(null)
-      toast.success(jobIds.length > 1 ? "Brouillons rédigés" : "Brouillon rédigé")
+      if (ok > 0) toast.success(ok > 1 ? `${ok} brouillons rédigés` : "Brouillon rédigé")
     }
   }
 
@@ -159,10 +164,14 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
       toast.error(res.error ?? "Action impossible")
       return
     }
+    router.refresh()
+    // Rédaction lancée : la fiche du sujet s'ouvre sur l'avancement (même écran que « Générer un article »)
+    if ((action === "draft" || action === "retry") && res.data?.jobId) {
+      setOpened({ topic: { ...t, status: "generating", displayStatus: "generating", lastError: null, jobId: res.data.jobId }, view: "info" })
+      return
+    }
     const messages = { draft: "Rédaction lancée", retry: "Rédaction relancée", unschedule: "Sujet retiré du calendrier", archive: "Sujet archivé", restore: "Sujet restauré" }
     toast.success(messages[action])
-    router.refresh()
-    if ((action === "draft" || action === "retry") && res.data?.jobId) void follow([res.data.jobId], [t.title])
   }
 
   const menu = (t: TopicListItem) => (
@@ -177,6 +186,12 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
             Ouvrir l&apos;article
           </DropdownMenuItem>
         )}
+        {t.status === "generating" && (
+          <DropdownMenuItem onClick={() => setOpened({ topic: t, view: "info" })}>
+            <Loader2 aria-hidden />
+            Voir l&apos;avancement
+          </DropdownMenuItem>
+        )}
         {canApplyTopicAction(t.status, "update") && (
           <DropdownMenuItem onClick={() => setEditing({ id: t.id, title: t.title, keyword: t.keyword, articleType: t.articleType, angle: t.angle, notes: t.notes })}>
             <PencilLine aria-hidden />
@@ -184,7 +199,7 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
           </DropdownMenuItem>
         )}
         {canApplyTopicAction(t.status, "schedule") && t.displayStatus !== "published" && (
-          <DropdownMenuItem onClick={() => setScheduling(t)}>
+          <DropdownMenuItem onClick={() => setOpened({ topic: t, view: "reschedule" })}>
             <CalendarClock aria-hidden />
             {t.scheduledAt ? "Replanifier" : "Planifier"}
           </DropdownMenuItem>
@@ -360,7 +375,13 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
                             {t.title}
                           </Link>
                         ) : (
-                          <span className="line-clamp-2 font-semibold leading-snug text-[var(--q-ink)]">{t.title}</span>
+                          <button
+                            type="button"
+                            onClick={() => setOpened({ topic: t, view: "info" })}
+                            className="line-clamp-2 text-left font-semibold leading-snug text-[var(--q-ink)] hover:text-[var(--q-accent-strong)]"
+                          >
+                            {t.title}
+                          </button>
                         )}
                         {t.status === "failed" && t.lastError && <p className="mt-1 line-clamp-2 text-xs text-[var(--q-danger)]">{t.lastError}</p>}
                       </td>
@@ -372,7 +393,13 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
                         <Tag>{TOPIC_SOURCE_LABELS[t.source]}</Tag>
                       </td>
                       <td>
-                        <TopicStatusPill status={t.displayStatus} />
+                        {t.status === "generating" ? (
+                          <button type="button" onClick={() => setOpened({ topic: t, view: "info" })} className="rounded-full" aria-label={`Voir l'avancement de « ${t.title} »`}>
+                            <TopicStatusPill status={t.displayStatus} />
+                          </button>
+                        ) : (
+                          <TopicStatusPill status={t.displayStatus} />
+                        )}
                       </td>
                       <td>
                         <ReleaseCell t={t} />
@@ -389,7 +416,15 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
                 <li key={t.id} className={cn("flex items-start gap-1 py-3 pl-1 pr-2", selected.has(t.id) && "bg-[var(--q-wash)]")}>
                   {checkbox(t)}
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-2.5">
-                    <span className="line-clamp-2 text-base font-semibold leading-snug text-[var(--q-ink)]">{t.title}</span>
+                    {t.postId ? (
+                      <Link href={`/admin/blog/${t.postId}`} className="line-clamp-2 text-base font-semibold leading-snug text-[var(--q-ink)]">
+                        {t.title}
+                      </Link>
+                    ) : (
+                      <button type="button" onClick={() => setOpened({ topic: t, view: "info" })} className="line-clamp-2 text-left text-base font-semibold leading-snug text-[var(--q-ink)]">
+                        {t.title}
+                      </button>
+                    )}
                     {t.keyword && <span className="font-mono text-[13px] text-[var(--q-text-2)]">{t.keyword}</span>}
                     <span className="flex flex-wrap items-center gap-1.5">
                       <TopicStatusPill status={t.displayStatus} />
@@ -439,26 +474,27 @@ export function TopicsView({ data, archived }: { data: TopicsData; archived: boo
       />
       <TopicDialog
         topic={
-          scheduling
+          opened
             ? {
-                id: scheduling.id,
-                title: scheduling.title,
-                keyword: scheduling.keyword,
-                articleType: scheduling.articleType,
-                angle: scheduling.angle,
-                status: scheduling.status,
-                scheduledAt: scheduling.scheduledAt,
-                publishMode: scheduling.scheduledAt ? scheduling.publishMode : data.defaultMode,
-                lastError: scheduling.lastError,
-                postId: scheduling.postId,
+                id: opened.topic.id,
+                title: opened.topic.title,
+                keyword: opened.topic.keyword,
+                articleType: opened.topic.articleType,
+                angle: opened.topic.angle,
+                status: opened.topic.status,
+                scheduledAt: opened.topic.scheduledAt,
+                publishMode: opened.topic.scheduledAt ? opened.topic.publishMode : data.defaultMode,
+                lastError: opened.topic.lastError,
+                postId: opened.topic.postId,
+                jobId: opened.topic.jobId ?? null,
               }
             : null
         }
-        onClose={() => setScheduling(null)}
+        onClose={() => setOpened(null)}
         slots={data.slots}
         coverImage={data.coverImage}
         inlineImages={data.inlineImages}
-        initialView="reschedule"
+        initialView={opened?.view ?? "info"}
       />
     </>
   )
