@@ -12,11 +12,11 @@ import { journeySteps } from "@/lib/pa/outbound-view"
 afterEach(() => { vi.resetModules(); vi.doUnmock("@/lib/pa/sending") })
 
 describe("réglage d'ouverture", () => {
-  it("aujourd'hui : bac à sable seul, production fermée", () => {
-    expect(PLATFORM_SENDING_MODES).toEqual(["test"])
-    expect(PLATFORM_SENDING_LIVE).toBe(false)
+  it("production ouverte le 04/11/2026", () => {
+    expect(PLATFORM_SENDING_MODES).toEqual(["test", "live"])
+    expect(PLATFORM_SENDING_LIVE).toBe(true)
     expect(platformSendingOpenFor("test")).toBe(true)
-    expect(platformSendingOpenFor("live")).toBe(false)
+    expect(platformSendingOpenFor("live")).toBe(true)
     expect(platformSendingOpenFor(null)).toBe(false)
   })
 
@@ -29,6 +29,7 @@ describe("réglage d'ouverture", () => {
   })
 
   it("formule Essentiel fermée : l'émission est « à venir »", async () => {
+    vi.doMock("@/lib/pa/sending", async (orig) => ({ ...(await orig<typeof import("@/lib/pa/sending")>()), PLATFORM_SENDING_LIVE: false }))
     const { PLANS } = await import("@/lib/stripe/plans")
     expect(PLANS.starter.upcoming.join(" ")).toMatch(/prévu pour 2027/)
     expect(PLANS.starter.features.join(" ")).not.toMatch(/factures et avoirs à vos clients par la plateforme/)
@@ -45,8 +46,9 @@ describe("réglage d'ouverture", () => {
 describe("démo", () => {
   const sent = { status: "sent", issue_date: "2026-10-01", sent_at: "2026-10-01T08:00:00Z", client: { siren: "552100554" } }
   it("rien tant que la production est fermée", () => {
-    expect(demoPlatformInfo(sent)).toBeNull()
-    expect(demoCreditNotePlatform(sent.client)).toBeNull()
+    expect(demoPlatformInfo(sent, false)).toBeNull()
+    expect(demoCreditNotePlatform(sent.client, false)).toBeNull()
+    expect(demoPlatformInfo(sent)).not.toBeNull()
   })
   it("ouverte : parcours d'une facture professionnelle, encaissement si payée", () => {
     const info = demoPlatformInfo(sent, true)!
