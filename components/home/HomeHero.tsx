@@ -79,7 +79,7 @@ function HeroArtisan() {
   return (
     <div className="lg:col-span-5">
       {/* Marge droite et basse (ordinateur) : la place du liseré décalé */}
-      <div className="dz-arch-in relative mx-auto w-full max-w-[420px] lg:max-w-[436px] lg:pb-4 lg:pr-4">
+      <div className="dz-arch-in relative mx-auto w-full max-w-[420px] lg:max-w-[380px] lg:pb-4 lg:pr-4">
         <div className="relative aspect-[358/420] lg:aspect-[4/5]">
           <div aria-hidden className={cn("absolute inset-0 hidden translate-x-4 translate-y-4 rounded-[28px] border border-q-wash-line lg:block", ARCH)} />
           <div aria-hidden className={cn("absolute inset-x-0 bottom-0 top-[28.6%] overflow-hidden rounded-[28px] bg-[#2563EB] lg:top-0 lg:bg-q-wash", ARCH)}>
@@ -97,7 +97,7 @@ function HeroArtisan() {
                 height={ARTISAN.height}
                 priority
                 sizes="(min-width: 1024px) 620px, 400px"
-                className="absolute left-1/2 top-[12%] h-auto w-[98%] max-w-none -translate-x-1/2 lg:bottom-[-6%] lg:top-auto lg:w-[72%] xl:w-[82%]"
+                className="absolute left-1/2 top-[12%] h-auto w-[98%] max-w-none -translate-x-1/2 lg:bottom-[-6%] lg:top-auto lg:w-[66%] xl:w-[74%]"
               />
             </HeroParallax>
           </div>
@@ -113,7 +113,7 @@ export function HomeHero() {
     <section aria-labelledby="hero-title" className="relative bg-q-surface px-6 pb-[clamp(32px,6vw,80px)] pt-[100px] sm:pt-[136px]">
       {/* Fond en lignes pointillées, le même que la section « Créez vos devis » */}
       <GridLines />
-      <div className={cn(D_WRAP, "grid grid-cols-1 items-center gap-0 sm:gap-4 lg:grid-cols-12 lg:gap-10")}>
+      <div className={cn(D_WRAP, "grid grid-cols-1 items-center gap-0 sm:gap-4 lg:grid-cols-12 lg:gap-16")}>
         <div className="flex flex-col items-center text-center lg:col-span-7 lg:items-start lg:text-left">
           <a
             href="#facture-electronique"
@@ -131,7 +131,7 @@ export function HomeHero() {
 
           <h1
             id="hero-title"
-            className="lp-fade-up mt-5 font-display text-[clamp(31px,8.6vw,38px)] sm:mt-7 sm:text-[clamp(38px,4.6vw,62px)] font-semibold leading-[1.04] tracking-[-0.04em] text-q-ink-strong [text-wrap:balance]"
+            className="lp-fade-up mt-5 font-display text-[clamp(31px,8.6vw,38px)] sm:mt-7 sm:text-[clamp(36px,3.6vw,52px)] font-semibold leading-[1.04] tracking-[-0.04em] text-q-ink-strong [text-wrap:balance]"
             style={{ animationDelay: ".08s" }}
           >
             Chiffrez, organisez, encaissez.{" "}
@@ -141,7 +141,7 @@ export function HomeHero() {
 
           {/* Ordinateur : les quatre coches ; téléphone et tablette : une phrase, pour laisser la place à l'artisan */}
           <div className="lp-fade-up mt-8 hidden lg:block" style={{ animationDelay: ".16s" }}>
-            <CheckList items={PROMISES} className="gap-3" />
+            <CheckList items={PROMISES} className="gap-2.5 [&_li]:text-[16px]" />
           </div>
           <p className="lp-fade-up mt-4 max-w-[340px] text-[15px] leading-[1.5] text-q-text-3 sm:max-w-[460px] sm:text-[17px] lg:hidden" style={{ animationDelay: ".16s" }}>
             {MOBILE_PROMISE}
