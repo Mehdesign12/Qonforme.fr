@@ -46,10 +46,10 @@ export async function POST(_req: Request, { params }: Params) {
     if (isMissingSchemaError(openError)) return NextResponse.json({ error: REVISION_UNAVAILABLE }, { status: 503 })
     return NextResponse.json({ error: "Le devis n'a pas pu être lu. Réessayez." }, { status: 500 })
   }
-  if (open && open.status === "draft") return NextResponse.json({ quote: open, existing: true })
-
+  // Refus d'abord : un devis accepté entre-temps ne rouvre pas sa correction en cours
   const refusal = reviseRefusal(quote)
   if (refusal) return NextResponse.json({ error: refusal }, { status: 409 })
+  if (open && open.status === "draft") return NextResponse.json({ quote: open, existing: true })
   if (open) return NextResponse.json({ error: `Ce devis a déjà une nouvelle version : ${open.quote_number}.` }, { status: 409 })
 
   const lines = Array.isArray(quote.lines) ? quote.lines : []
