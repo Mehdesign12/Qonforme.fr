@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { CalendarClock, Check, FileText, Globe, Monitor, PencilRuler, ReceiptText, RotateCcw, Send, Smartphone } from "lucide-react"
+import { BellRing, CalendarClock, Check, FileText, Globe, Monitor, PencilRuler, RotateCcw, Send, Smartphone } from "lucide-react"
 
 import { Doodles } from "@/components/brand/Doodles"
 
@@ -8,6 +8,7 @@ import { D_SECTION, D_WRAP, SIGNUP_HREF } from "@/components/home/kit"
 import { CtaButtons, SectionTitle } from "@/components/landing/ui"
 import { TRADE_CATALOGUES } from "@/lib/catalogue/trades"
 import { GUARANTEE_DAYS } from "@/lib/stripe/access"
+import { AFTER_DUE_CHOICES } from "@/lib/reminders/settings"
 import { PLANS, TAX_SUFFIX } from "@/lib/stripe/plans"
 import { cn } from "@/lib/utils"
 
@@ -80,7 +81,8 @@ const TRADE_COUNT = Object.keys(TRADE_CATALOGUES).filter((k) => k !== "autre").l
 
 const OFFER_FACTS = [
   { icon: FileText, value: 0, unit: "€", label: "pour chiffrer, sans limite" },
-  { icon: ReceiptText, value: essentiel.monthlyPrice, unit: TAX_SUFFIX ? `€${NB}HT` : "€", label: `par mois pour facturer et encaisser (${essentiel.name})` },
+  // Relances après l'échéance proposées dans Paramètres › Relances (J+7, J+15, J+30, J+45)
+  { icon: BellRing, value: AFTER_DUE_CHOICES.length, unit: "relances", label: `envoyées toutes seules après l'échéance (${essentiel.name})` },
   { icon: RotateCcw, value: GUARANTEE_DAYS, unit: "jours", label: "satisfait ou remboursé" },
   { icon: PencilRuler, value: TRADE_COUNT, unit: "métiers", label: "prêts à chiffrer, prestations comprises" },
 ]
