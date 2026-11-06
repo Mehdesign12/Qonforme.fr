@@ -146,7 +146,23 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Seuls les brouillons peuvent être supprimés" }, { status: 403 })
   }
 
-  const { error } = await supabase.from("quotes").delete().eq("id", id).eq("user_id", user.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // La table `quotes` de production n'a pas de règle d'accès (RLS) pour la suppression :
+  // la clé de l'utilisateur ne supprimait rien, sans erreur, et l'écran affichait « supprimé ».
+  // Propriété et statut viennent d'être vérifiés : la suppression passe par le serveur,
+  // limitée à ce brouillon de cet utilisateur, et le nombre de lignes supprimées est contrôlé.
+  let db: typeof supabase = supabase
+  try { db = createAdminClient() as unknown as typeof supabase } catch { /* clé serveur absente : clé de l'utilisateur */ }
+  const { data: removed, error } = await db
+    .from("quotes")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .eq("status", "draft")
+    .select("id")
+  if (error) {
+    console.error("[quote-delete]", error)
+    return NextResponse.json({ error: "Le brouillon n'a pas pu être supprimé. Réessayez." }, { status: 500 })
+  }
+  if (!removed?.length) return NextResponse.json({ error: "Le brouillon n'a pas pu être supprimé. Réessayez." }, { status: 500 })
   return NextResponse.json({ success: true })
 }
