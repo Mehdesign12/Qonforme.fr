@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient, createClient } from "@/lib/supabase/server"
 import { statusAfterSend } from "@/lib/utils/document-status"
 import { sendEmail } from "@/lib/email/resend"
 import { buildQuoteEmail } from "@/lib/email/templates/quote"
@@ -9,6 +9,7 @@ import { selectCompanyWithProfile } from "@/lib/legal/db"
 import { requireIssuerIdentity } from "@/lib/legal/issuer"
 import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 import { resolveRecipient } from "@/lib/email/recipient"
+import { checkRevisionOrigin, finalizeRevision } from "@/lib/quotes/revision"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -34,6 +35,11 @@ export async function POST(req: NextRequest, { params }: Params) {
     // Identité de l'émetteur (SIREN, adresse) : obligatoire sur le devis envoyé
     const noIdentity = await requireIssuerIdentity(supabase, user.id)
     if (noIdentity) return noIdentity
+
+    // Correction d'un devis envoyé (« Corriger ce devis ») : refusée si l'ancien
+    // devis a été accepté entre-temps, sinon il sera remplacé une fois celle-ci partie
+    const origin = await checkRevisionOrigin(supabase, user.id, quote)
+    if (origin.kind === "blocked") return NextResponse.json({ error: origin.message, code: "REVISION_ORIGIN_ACCEPTED" }, { status: 409 })
 
     // Client sans adresse : celle tapée dans la fenêtre d'envoi est enregistrée sur sa fiche
     const recipient = await resolveRecipient(req, supabase, user.id, quote.client)
@@ -71,6 +77,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       clientName,
       appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://qonforme.fr",
       link: share ? { url: share.url, mode: share.mode } : null,
+      replacesNumber: origin.kind === "replace" ? origin.number : null,
     })
 
     const cc        = senderEmail ? [senderEmail] : []
@@ -112,10 +119,18 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     await markShareLinkSent(share, clientEmail)
 
-    return NextResponse.json({ success: true, sentTo: clientEmail, link: share?.mode ?? null })
+    // L'ancien devis passe en « Remplacé », son lien de signature est fermé
+    const replaced = await finalizeRevision(supabase, safeAdmin(), user.id, id, origin)
+
+    return NextResponse.json({ success: true, sentTo: clientEmail, link: share?.mode ?? null, replaced: replaced && origin.kind === "replace" ? origin.number : null })
   } catch (err) {
     console.error("Quote send error:", err)
     const message = err instanceof Error ? err.message : "Erreur inconnue"
     return NextResponse.json({ error: message }, { status: 500 })
   }
+}
+
+/** Client service_role (liens de signature) ; null s'il n'est pas configuré. */
+function safeAdmin() {
+  try { return createAdminClient() } catch { return null }
 }

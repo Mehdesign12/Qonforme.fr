@@ -17,10 +17,14 @@ interface QuoteEmailData {
    * (Essentiel, Artisan), « view » pour consulter seulement (compte gratuit).
    */
   link?:         { url: string; mode: "sign" | "view" } | null
+  /** Correction d'un devis envoyé (« Corriger ce devis ») : numéro du devis remplacé. */
+  replacesNumber?: string | null
 }
 
 export function buildQuoteEmail(d: QuoteEmailData): { subject: string; html: string } {
-  const subject = `Devis ${d.quoteNumber} — ${d.companyName}`
+  const subject = d.replacesNumber
+    ? `Devis ${d.quoteNumber} (remplace ${d.replacesNumber}) — ${d.companyName}`
+    : `Devis ${d.quoteNumber} — ${d.companyName}`
 
   const isExpired = new Date(d.validUntil) < new Date()
 
@@ -30,6 +34,9 @@ export function buildQuoteEmail(d: QuoteEmailData): { subject: string; html: str
       Voici votre devis <strong>${d.quoteNumber}</strong> du <strong>${fmtDate(d.issueDate)}</strong>,
       valable jusqu'au <strong${isExpired ? ' style="color:#B42318;"' : ''}>${fmtDate(d.validUntil)}</strong>.
     </p>
+    ${d.replacesNumber ? `<p style="margin:12px 0 0;font-size:15.5px;color:#2B2E35;line-height:1.7;">
+      Il annule et remplace le devis <strong>${d.replacesNumber}</strong> que nous vous avions envoyé : seul ce nouveau devis est à prendre en compte.
+    </p>` : ""}
 
     ${amountBlock(d.subtotalHt, d.totalVat, d.totalTtc, d.accentColor)}
 
@@ -61,7 +68,7 @@ export function buildQuoteEmail(d: QuoteEmailData): { subject: string; html: str
       companyName: d.companyName,
       preheader:   `Devis ${d.quoteNumber} — ${fmtEur(d.totalTtc)} TTC — valable jusqu'au ${fmtDate(d.validUntil)}`,
       reference:   `N° ${d.quoteNumber}`,
-      headline:    "Votre devis,",
+      headline:    d.replacesNumber ? "Votre devis corrigé," : "Votre devis,",
       headlineAccent: d.link?.mode === "sign" ? "prêt à signer." : d.link ? "à consulter en ligne." : "joint à cet email.",
       body,
     }),

@@ -101,7 +101,8 @@ export interface Invoice {
 
 // ---- Devis ----
 // 'withdrawn' : rétracté par un particulier après une signature en ligne (migration 20261010)
-export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'withdrawn'
+// 'superseded' : remplacé par sa correction (« Corriger ce devis », migration 20261106)
+export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'withdrawn' | 'superseded'
 
 export interface Quote {
   id: string
@@ -118,6 +119,12 @@ export interface Quote {
   total_ttc: number
   notes?: string
   converted_invoice_id?: string
+  /** Correction d'un devis envoyé : devis corrigé (migration 20261106). */
+  revises_quote_id?: string | null
+  revises_quote_number?: string | null
+  /** Version qui a remplacé ce devis. */
+  superseded_by_quote_id?: string | null
+  superseded_at?: string | null
   created_at: string
   updated_at: string
 }

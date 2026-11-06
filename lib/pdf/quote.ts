@@ -31,6 +31,8 @@ export interface QuotePdfInput {
     status?: string | null
     /** Mentions figées à l'émission (lib/legal/mentions.ts). */
     legal_snapshot?: unknown
+    /** Correction d'un devis envoyé (« Corriger ce devis ») : numéro du devis remplacé. */
+    revises_quote_number?: string | null
     lines?: {
       description: string
       quantity: number
@@ -184,6 +186,9 @@ export async function generateQuotePdf({ quote, company: companyInput, watermark
   draw(quote.quote_number, mR, curY - 20, { size: 11, bold: true, color: theme.head.number, align: "right" })
   draw(`Émis le : ${fmtDate(quote.issue_date)}`,          mR, curY - 36, { size: 8.5, color: theme.head.sub, align: "right" })
   draw(`Valable jusqu'au : ${fmtDate(quote.valid_until)}`, mR, curY - 50, { size: 8.5, color: theme.head.sub, align: "right" })
+  if (quote.revises_quote_number) {
+    draw(`Annule et remplace le devis n° ${quote.revises_quote_number}`, mR, curY - 64, { size: 8.5, bold: true, color: theme.head.number, align: "right" })
+  }
 
   let infoY = curY - logoMaxH - 12
   if (company?.address)    { draw(company.address, mL, infoY, { size: 8.5, color: theme.head.sub }); infoY -= 14 }

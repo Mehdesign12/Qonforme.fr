@@ -20,7 +20,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
   Check, CheckCircle2, ChevronLeft, ChevronRight, CircleCheck, CircleX, Clock, Copy, Download, FileText, Info,
-  Loader2, MoreHorizontal, Pencil, Printer, RefreshCw, Send, Trash2, Undo2, X, type LucideIcon,
+  FilePen, Loader2, MoreHorizontal, Pencil, Printer, RefreshCw, Send, Trash2, Undo2, X, type LucideIcon,
 } from "lucide-react"
 import { DocStatusPill, INVOICE_PILLS, Initials, Kpi, KpiGrid, StatusPill, initialsOf } from "@/components/app/kit"
 import { SetCrumb } from "@/components/layout/crumb"
@@ -87,6 +87,13 @@ export interface QuoteDetailData {
   converted_invoice: { number?: string | null; status?: string | null; href: string } | null
   /** Mentions de l'entreprise figées à l'envoi (lib/legal/mentions.ts). */
   legal_snapshot?: unknown
+  /** Correction d'un devis envoyé : numéro et fiche du devis corrigé (lib/quotes/revision.ts). */
+  revises?: { number: string; href: string } | null
+  /**
+   * Version qui corrige ce devis : brouillon en cours tant que ce devis est « envoyé »,
+   * version qui l'a remplacé quand il est « Remplacé ».
+   */
+  revision?: { number: string; href: string; status: string } | null
 }
 
 export interface QuoteDetailCompany {
@@ -115,9 +122,12 @@ export interface QuoteDetailActions {
   /** Brouillon remis sans email (« sent »), accord ou refus du client ; true si le statut a changé. */
   onSetStatus: (status: "sent" | "accepted" | "rejected") => Promise<boolean>
   onConvert: () => unknown
+  /** « Corriger ce devis » : nouvelle version en brouillon. Absent : correction pas proposée (démo, migration absente). */
+  onRevise?: () => unknown
 }
 
 export interface QuoteDetailBusy {
+  revise?: boolean
   pdf?: boolean
   duplicate?: boolean
   delete?: boolean
@@ -126,7 +136,7 @@ export interface QuoteDetailBusy {
   convert?: boolean
 }
 
-type ModalKey = "send" | "accept" | "reject" | "delete" | "convert" | "more"
+type ModalKey = "send" | "accept" | "reject" | "delete" | "convert" | "revise" | "more"
 
 /* ------------------------------------------------------------------ */
 /* Vue                                                                 */
@@ -207,6 +217,13 @@ export function QuoteDetailView({
     await actions.onDelete()
     setModal(null)
   }
+  // Correction possible : devis envoyé, pas encore facturé (même règle que lib/quotes/revision.ts)
+  const canRevise = !!actions.onRevise && s === "sent" && !quote.converted
+  const openRevision = quote.revision && quote.revision.status === "draft" ? quote.revision : null
+  const revise = async () => {
+    await actions.onRevise?.()
+    setModal(null)
+  }
   const fromMore = (fn: () => void) => () => {
     setModal(null)
     fn()
@@ -218,6 +235,8 @@ export function QuoteDetailView({
     s === "draft" ? `Brouillon daté du ${longDate(quote.issue_date)} · ${validity}`
     : s === "sent" ? `${quote.sent_at ? `Envoyé le ${longDate(parisDay(quote.sent_at))}` : `Émis le ${longDate(quote.issue_date)}`} · ${validity}`
     : s === "accepted" ? `Émis le ${longDate(quote.issue_date)} · accepté par le client`
+    : s === "superseded" ? `Émis le ${longDate(quote.issue_date)} · remplacé${quote.revision ? ` par ${quote.revision.number}` : " par une nouvelle version"}`
+    : s === "withdrawn" ? `Émis le ${longDate(quote.issue_date)} · rétracté par le client`
     : `Émis le ${longDate(quote.issue_date)} · refusé par le client`
 
   /* ── Indicateurs ── */
@@ -231,6 +250,7 @@ export function QuoteDetailView({
     s === "draft" ? { value: "À envoyer", sub: "Brouillon modifiable" }
     : s === "sent" ? (expired ? { value: "Expiré", sub: "Renouvelez le devis" } : { value: "En attente", sub: "de l'accord du client" })
     : s === "accepted" ? (quote.converted ? { value: "Facturé", sub: invoiceNumber ?? "Facture créée" } : conversionBlocked ? { value: "En facturation", sub: "Acomptes et situations" } : { value: "À facturer", sub: "Convertissez-le en facture" })
+    : s === "superseded" ? { value: "Remplacé", sub: quote.revision ? `Par ${quote.revision.number}` : "Par une nouvelle version" }
     : { value: "Sans suite", sub: "Refusé par le client" }
 
   /* ── Historique (dates réelles uniquement) ── */
@@ -260,6 +280,8 @@ export function QuoteDetailView({
             ? { title: "Facturé par acomptes ou situations", sub: "Voir « Facturation du chantier »", state: "done" }
             : { title: "Facture à créer", sub: "Conversion en facture brouillon", state: "todo" },
       )
+    } else if (s === "superseded") {
+      events.push({ title: "Remplacé par une nouvelle version", sub: quote.revision?.number ?? "Correction envoyée", state: "done" })
     } else {
       events.push({ title: "Refusé par le client", sub: "Sans suite", state: "refused" })
     }
@@ -274,6 +296,9 @@ export function QuoteDetailView({
   )
   const printBtn = <Act key="print" label="Imprimer" icon={Printer} onClick={actions.onPrint} iconOnly />
   const editBtn = <Act key="edit" label="Modifier" icon={Pencil} href={actions.editHref} onClick={actions.onEdit} />
+  const reviseBtn = canRevise
+    ? <Act key="revise" label={openRevision ? `Reprendre ${openRevision.number}` : "Corriger ce devis"} icon={FilePen} href={openRevision?.href} onClick={openRevision ? undefined : openModal("revise")} loading={busy.revise} />
+    : null
 
   let headerActions: React.ReactNode[] = []
   if (s === "draft") {
@@ -284,14 +309,14 @@ export function QuoteDetailView({
     ]
   } else if (s === "sent" && !expired) {
     headerActions = [
-      pdfBtn(), dupBtn(), printBtn,
+      pdfBtn(), dupBtn(), printBtn, reviseBtn,
       <Act key="resend" label="Renvoyer" icon={RefreshCw} onClick={openModal("send")} loading={busy.send} />,
       <Act key="rej" label="Refusé ?" onClick={openModal("reject")} />,
       <Act key="acc" label="Marquer accepté" icon={Check} variant="primary" onClick={openModal("accept")} loading={busy.status} />,
     ]
   } else if (s === "sent") {
     headerActions = [
-      pdfBtn(), printBtn,
+      pdfBtn(), printBtn, reviseBtn,
       <Act key="rej" label="Refusé ?" onClick={openModal("reject")} />,
       <Act key="acc" label="Marquer accepté" icon={Check} onClick={openModal("accept")} loading={busy.status} />,
       dupBtn("Renouveler le devis", true),
@@ -305,9 +330,12 @@ export function QuoteDetailView({
           ? null
           : <Act key="conv" label="Convertir en facture" icon={FileText} variant="primary" onClick={openModal("convert")} loading={busy.convert} />,
     ].filter(Boolean)
+  } else if (s === "superseded" && quote.revision) {
+    headerActions = [pdfBtn(), printBtn, <Act key="new" label={`Voir ${quote.revision.number}`} icon={FileText} variant="primary" href={quote.revision.href} />]
   } else {
     headerActions = [pdfBtn(), printBtn, dupBtn("Dupliquer en nouveau devis", true)]
   }
+  headerActions = headerActions.filter(Boolean)
 
   return (
     <div className="flex flex-col gap-[18px]">
@@ -373,7 +401,42 @@ export function QuoteDetailView({
           <Link href={quote.converted_invoice.href} className="text-sm font-semibold hover:underline">Voir la facture</Link>
         </div>
       )}
-      {s !== "withdrawn" && s !== "rejected" && <DocumentChain steps={quoteChainSteps(quote, conversionBlocked)} className="lg:hidden" />}
+      {s === "superseded" && (
+        <div role="status" className="q-banner items-center print:hidden">
+          <FilePen className="size-5 shrink-0" aria-hidden />
+          <span className="min-w-[220px] flex-1 text-[15px] leading-snug">
+            <strong className="font-semibold">Ce devis a été remplacé{quote.revision ? ` par ${quote.revision.number}` : ""}.</strong> Votre client a reçu la nouvelle version ; celle-ci n&apos;est plus à signer.
+          </span>
+          {quote.revision && <Link href={quote.revision.href} className="text-sm font-semibold hover:underline">Voir {quote.revision.number}</Link>}
+        </div>
+      )}
+      {s === "draft" && quote.revises && (
+        <div role="status" className="q-banner items-center print:hidden">
+          <FilePen className="size-5 shrink-0" aria-hidden />
+          <span className="min-w-[220px] flex-1 text-[15px] leading-snug">
+            <strong className="font-semibold">Correction du devis {quote.revises.number}.</strong> Modifiez-la, puis envoyez-la : elle annulera et remplacera {quote.revises.number}, qui reste valable d&apos;ici là.
+          </span>
+          <Link href={quote.revises.href} className="text-sm font-semibold hover:underline">Voir {quote.revises.number}</Link>
+        </div>
+      )}
+      {s !== "draft" && quote.revises && (
+        <div role="status" className="q-banner items-center print:hidden">
+          <FilePen className="size-5 shrink-0" aria-hidden />
+          <span className="min-w-[220px] flex-1 text-[15px] leading-snug">
+            Ce devis annule et remplace le devis <Link href={quote.revises.href} className="font-semibold hover:underline">{quote.revises.number}</Link>.
+          </span>
+        </div>
+      )}
+      {s === "sent" && openRevision && (
+        <div role="status" className="q-banner items-center print:hidden">
+          <FilePen className="size-5 shrink-0" aria-hidden />
+          <span className="min-w-[220px] flex-1 text-[15px] leading-snug">
+            <strong className="font-semibold">Correction en cours : {openRevision.number}.</strong> Ce devis reste valable tant qu&apos;elle n&apos;est pas envoyée.
+          </span>
+          <Link href={openRevision.href} className="text-sm font-semibold hover:underline">Reprendre la correction</Link>
+        </div>
+      )}
+      {s !== "withdrawn" && s !== "rejected" && s !== "superseded" && <DocumentChain steps={quoteChainSteps(quote, conversionBlocked)} className="lg:hidden" />}
       {s === "withdrawn" && (
         <div role="status" className="q-banner q-banner-warn items-center print:hidden">
           <Undo2 className="size-5 shrink-0" aria-hidden />
@@ -528,7 +591,15 @@ export function QuoteDetailView({
                 <Act label="Refusé ?" size="sm" onClick={openModal("reject")} />
               </div>
             )}
-            {(s === "rejected" || s === "withdrawn") && (
+            {s === "superseded" && (
+          <>
+            {quote.revision
+              ? <BarBtn primary label={`Voir ${quote.revision.number}`} icon={FileText} href={quote.revision.href} />
+              : <BarBtn primary label="Dupliquer ce devis" icon={Copy} onClick={actions.onDuplicate} loading={busy.duplicate} />}
+            <BarBtn label="Télécharger le PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
+          </>
+        )}
+        {(s === "rejected" || s === "withdrawn") && (
               <div className="flex flex-wrap gap-2">
                 <Act label="Dupliquer" icon={Copy} size="sm" onClick={actions.onDuplicate} loading={busy.duplicate} />
               </div>
@@ -601,7 +672,9 @@ export function QuoteDetailView({
             {/* 3/2 : « Marquer accepté » tient sur une ligne dès 375 px, « PDF » n'en a pas besoin */}
             <div className="grid grid-cols-[3fr_2fr] gap-2.5">
               <BarBtn label="Marquer accepté" icon={Check} onClick={openModal("accept")} loading={busy.status} />
-              <BarBtn label="PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
+              {canRevise
+                ? <BarBtn label="Corriger" icon={FilePen} href={openRevision?.href} onClick={openRevision ? undefined : openModal("revise")} loading={busy.revise} />
+                : <BarBtn label="PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />}
             </div>
           </>
         )}
@@ -711,6 +784,24 @@ export function QuoteDetailView({
       </QuoteModal>
 
       <QuoteModal
+        open={modal === "revise"}
+        onOpenChange={(o) => !o && closeModal()}
+        compact={compact}
+        title="Corriger ce devis"
+        description={`${quote.quote_number} · ${formatCurrency(quote.total_ttc)} TTC`}
+        actions={[
+          { label: busy.revise ? "Création…" : "Créer la nouvelle version", icon: busy.revise ? <Loader2 className="animate-spin" aria-hidden /> : <FilePen aria-hidden />, variant: "primary", onClick: revise, disabled: busy.revise },
+        ]}
+      >
+        <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
+          Un devis envoyé ne se modifie pas. Une nouvelle version est créée en brouillon, avec le même client et les mêmes prestations : vous la corrigez, puis vous l&apos;envoyez.
+        </p>
+        <InfoNote>
+          À son envoi, elle annule et remplace <strong className="font-semibold">{quote.quote_number}</strong> : celui-ci passe en « Remplacé » et son lien de signature est fermé. D&apos;ici là, {quote.quote_number} reste valable.
+        </InfoNote>
+      </QuoteModal>
+
+      <QuoteModal
         open={modal === "delete"}
         onOpenChange={(o) => !o && closeModal()}
         compact={compact}
@@ -738,6 +829,15 @@ export function QuoteDetailView({
             )}
             {s === "sent" && !expired && (
               <MoreRow icon={RefreshCw} label="Renvoyer" hint={quote.client?.email ?? "Avec le PDF en pièce jointe"} onClick={openModal("send")} />
+            )}
+            {canRevise && (
+              <MoreRow
+                icon={FilePen}
+                label={openRevision ? `Reprendre ${openRevision.number}` : "Corriger ce devis"}
+                hint={openRevision ? "Correction en brouillon" : "Nouvelle version qui remplacera celle-ci"}
+                href={openRevision?.href}
+                onClick={openRevision ? () => setModal(null) : openModal("revise")}
+              />
             )}
             {s === "sent" && <MoreRow icon={X} label="Marquer comme refusé" hint="Le client a dit non" onClick={openModal("reject")} />}
             {canConvert && s === "sent" && (

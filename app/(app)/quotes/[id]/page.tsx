@@ -57,6 +57,9 @@ interface Quote {
   sent_at?: string | null
   /** Mentions figées à l'envoi (lib/legal/mentions.ts) ; absent avant la migration. */
   legal_snapshot?: unknown
+  /** « Corriger ce devis » : devis corrigé par celui-ci (migration 20261106). */
+  revises_quote_id?: string | null
+  revises_quote_number?: string | null
   client: {
     id: string
     name: string
@@ -74,6 +77,7 @@ const STATUS_LABELS: Record<QuoteStatus, string> = {
   accepted: "Accepté",
   rejected: "Refusé",
   withdrawn: "Rétracté",
+  superseded: "Remplacé",
 }
 
 /* ------------------------------------------------------------------ */
@@ -89,6 +93,9 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
   const [company, setCompany] = useState<QuoteDetailCompany | null>(null)
   const [invoice, setInvoice] = useState<{ invoice_number: string | null; status: string } | null>(null)
   const [loading, setLoading] = useState(true)
+  // « Corriger ce devis » (lib/quotes/revision.ts) : version liée, et fonction disponible (migration 20261106)
+  const [revision, setRevision] = useState<{ id: string; quote_number: string; status: string } | null>(null)
+  const [revisionAvailable, setRevisionAvailable] = useState(false)
   const [busy, setBusy]       = useState<QuoteDetailBusy>({})
 
   const setFlag = (k: keyof QuoteDetailBusy, v: boolean) => setBusy((b) => ({ ...b, [k]: v }))
@@ -101,6 +108,8 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       selectCompanyWithProfile(supabase, "name,address,zip_code,city,siret,siren,vat_number,legal_notice"),
     ]).then(([json, { data: comp }]) => {
       if (json.quote) setQuote(json.quote)
+      setRevision(json.revision ?? null)
+      setRevisionAvailable(!!json.revisionAvailable)
       if (comp) setCompany(comp as QuoteDetailCompany)
     }).finally(() => setLoading(false))
   }, [params.id])
@@ -148,7 +157,9 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       if (!res.ok) { toast.error(json.error); return false }
       // La route renvoie un client réduit : on garde la fiche client complète déjà chargée
       setQuote((prev) => prev ? { ...prev, ...json.quote, client: prev.client } : json.quote)
-      toast.success(`Statut mis à jour : ${STATUS_LABELS[newStatus]}`)
+      toast.success(json.replaced
+        ? `Statut mis à jour : ${STATUS_LABELS[newStatus]}. ${json.replaced} est remplacé par ce devis.`
+        : `Statut mis à jour : ${STATUS_LABELS[newStatus]}`)
       return true
     } catch { toast.error("Erreur réseau"); return false }
     finally { setFlag("status", false) }
@@ -198,7 +209,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
         legal_snapshot: quote.legal_snapshot ?? (quote.status === "draft" ? snapshotOf(company) : undefined),
       })
       trackJourney("quote_sent")
-      toast.success(`Devis envoyé à ${json.sentTo}`)
+      toast.success(json.replaced ? `Devis envoyé à ${json.sentTo}. Il remplace ${json.replaced}.` : `Devis envoyé à ${json.sentTo}`)
       void sig.reload()
       return true
     } catch { toast.error("Erreur réseau"); return false }
@@ -250,6 +261,22 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
     finally { setFlag("duplicate", false) }
   }
 
+  // « Corriger ce devis » : nouvelle version en brouillon, ouverte dans l'éditeur
+  const revise = async () => {
+    if (!quote) return
+    setFlag("revise", true)
+    try {
+      const res = await fetch(`/api/quotes/${params.id}/revise`, { method: "POST" })
+      const json = await res.json()
+      if (!res.ok || !json.quote) { toast.error(json.error ?? "La nouvelle version n'a pas pu être créée"); return }
+      toast.success(json.existing
+        ? `Correction ${json.quote.quote_number} rouverte`
+        : `Nouvelle version ${json.quote.quote_number} créée : corrigez-la, puis envoyez-la.`)
+      router.push(`/quotes/${json.quote.id}/edit`)
+    } catch { toast.error("Erreur réseau") }
+    finally { setFlag("revise", false) }
+  }
+
   /* ── Render ── */
   if (loading) return (
     <div className="grid min-h-[50vh] place-items-center">
@@ -297,6 +324,10 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       ? { number: invoice?.invoice_number ?? null, status: invoice?.status ?? null, href: `/invoices/${quote.converted_invoice_id}` }
       : null,
     legal_snapshot: quote.legal_snapshot,
+    revises: quote.revises_quote_id && quote.revises_quote_number
+      ? { number: quote.revises_quote_number, href: `/quotes/${quote.revises_quote_id}` }
+      : null,
+    revision: revision ? { number: revision.quote_number, href: `/quotes/${revision.id}${revision.status === "draft" ? "/edit" : ""}`, status: revision.status } : null,
   }
 
   const signature = sig.data?.available ? (
@@ -364,6 +395,7 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
         onSend: sendByEmail,
         onSetStatus: changeStatus,
         onConvert: convertToInvoice,
+        onRevise: revisionAvailable ? revise : undefined,
       }}
     />
     </>
