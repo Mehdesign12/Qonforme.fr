@@ -79,7 +79,7 @@ function HeroArtisan() {
   return (
     <div className="lg:col-span-5">
       {/* Marge droite et basse (ordinateur) : la place du liseré décalé */}
-      <div className="dz-arch-in relative mx-auto w-full max-w-[420px] lg:max-w-[380px] lg:pb-4 lg:pr-4">
+      <div className="dz-arch-in relative mx-auto w-full max-w-[420px] lg:pb-4 lg:pr-4">
         <div className="relative aspect-[358/420] lg:aspect-[4/5]">
           <div aria-hidden className={cn("absolute inset-0 hidden translate-x-4 translate-y-4 rounded-[28px] border border-q-wash-line lg:block", ARCH)} />
           <div aria-hidden className={cn("absolute inset-x-0 bottom-0 top-[28.6%] overflow-hidden rounded-[28px] bg-[#2563EB] lg:top-0 lg:bg-q-wash", ARCH)}>
@@ -97,7 +97,7 @@ function HeroArtisan() {
                 height={ARTISAN.height}
                 priority
                 sizes="(min-width: 1024px) 620px, 400px"
-                className="absolute left-1/2 top-[12%] h-auto w-[98%] max-w-none -translate-x-1/2 lg:bottom-[-6%] lg:top-auto lg:w-[66%] xl:w-[74%]"
+                className="absolute left-1/2 top-[12%] h-auto w-[98%] max-w-none -translate-x-1/2 lg:bottom-[-6%] lg:top-auto lg:w-[72%] xl:w-[80%]"
               />
             </HeroParallax>
           </div>
