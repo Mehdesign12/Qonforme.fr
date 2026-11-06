@@ -19,7 +19,7 @@ import { fetchEInvoicingView } from "@/components/e-invoicing/reception-info"
 import { StatusPill } from "@/components/app/kit"
 import { cn } from "@/lib/utils"
 import { hrefFor, plural, type DashMode, type DashboardView } from "@/components/dashboard/model"
-import { platformSendingOpenFor } from "@/lib/pa/sending"
+import { PLATFORM_SENDING_LIVE, platformSendingOpenFor } from "@/lib/pa/sending"
 
 type Tone = "ok" | "warn" | "info" | "pending"
 
@@ -108,6 +108,9 @@ export function ReformCard({ reform, mode }: { reform: DashboardView["reform"]; 
   const companyHref = hrefFor(mode, "/settings/company")
   const missing = reform.clientsWithoutSiren
   const [eInvoicing, setEInvoicing] = useState<EInvoicingView | null>(null)
+  // Tant que l'état n'est pas lu (rendu serveur, premier affichage), on suit le réglage
+  // général : jamais « Prévue pour 2027 » quand l'émission est ouverte en production.
+  const sendingOpen = eInvoicing ? platformSendingOpenFor(eInvoicing.mode) : PLATFORM_SENDING_LIVE
   useEffect(() => {
     let alive = true
     // Démo : vue d'exemple chargée à part, pour ne pas embarquer les données de démo dans l'application
@@ -149,7 +152,7 @@ export function ReformCard({ reform, mode }: { reform: DashboardView["reform"]; 
           )
         )}
         <ReceptionItem view={eInvoicing} mode={mode} />
-        {eInvoicing && platformSendingOpenFor(eInvoicing.mode) && eInvoicing.connection?.status === "active" ? (
+        {sendingOpen && eInvoicing?.connection?.status === "active" ? (
           <Item
             tone="ok"
             title="Émission par plateforme agréée"
@@ -159,8 +162,8 @@ export function ReformCard({ reform, mode }: { reform: DashboardView["reform"]; 
           <Item
             tone="pending"
             title="Émission par plateforme agréée"
-            pill={eInvoicing && platformSendingOpenFor(eInvoicing.mode) ? "Raccordement à activer" : "Prévue pour 2027"}
-            sub={eInvoicing && platformSendingOpenFor(eInvoicing.mode)
+            pill={sendingOpen ? "Raccordement à activer" : "Prévue pour 2027"}
+            sub={sendingOpen
               ? "Une fois votre réception active, vos factures partent par la plateforme vers les clients inscrits à l'annuaire."
               : "Obligatoire au 1er septembre 2027 pour les PME, TPE et micro-entreprises. D'ici là, vos factures partent par email."}
           />
