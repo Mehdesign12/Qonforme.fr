@@ -34,3 +34,20 @@ describe("auditArticle", () => {
     expect(f.rule.correction).toContain("37")
   })
 })
+
+describe("plateforme agréée et PPF", () => {
+  const ids = (t: string) => auditArticle(t).map((f) => f.rule.id)
+  it("repère Qonforme présenté comme une PDP ou une plateforme agréée", () => {
+    expect(ids("Qonforme est une PDP (Plateforme de Dématérialisation Partenaire) en cours d'immatriculation.")).toContain("qonforme-plateforme-agreee")
+    expect(ids("Qonforme est une plateforme agréée.")).toContain("qonforme-plateforme-agreee")
+  })
+  it("laisse passer Qonforme raccordé à une plateforme agréée", () => {
+    expect(ids("Qonforme est raccordé à la plateforme agréée Super PDP.")).not.toContain("qonforme-plateforme-agreee")
+    expect(ids("Qonforme n'est pas une plateforme agréée.")).not.toContain("qonforme-plateforme-agreee")
+  })
+  it("repère le PPF présenté comme une voie d'envoi", () => {
+    expect(ids("via une Plateforme de Dématérialisation Partenaire (PDP) ou le Portail Public de Facturation (PPF).")).toContain("ppf-alternative")
+    expect(ids("Vous pouvez choisir d'utiliser le Portail Public de Facturation (PPF).")).toContain("ppf-alternative")
+    expect(ids("Le portail public de facturation ne transmet pas les factures entre entreprises.")).not.toContain("ppf-alternative")
+  })
+})

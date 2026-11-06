@@ -2,6 +2,7 @@ import { LegalLayout } from "@/components/legal/LegalLayout"
 import type { Metadata } from "next"
 import { PAYMENT_METHODS_TEXT, PLANS, VAT_COLLECTED, formatEuros, scanQuotaText } from "@/lib/stripe/plans"
 import { PUBLISHER } from "@/lib/legal/publisher"
+import { PLATFORM_SENDING_LIVE } from "@/lib/pa/sending"
 
 export const metadata: Metadata = {
   title: "Conditions Générales d'Utilisation",
@@ -16,7 +17,7 @@ export default function CGUPage() {
       titleAccent="d'utilisation"
       path="/cgu"
       subtitle="Merci de lire attentivement ces conditions avant d'utiliser Qonforme."
-      lastUpdated="20 octobre 2026"
+      lastUpdated="6 novembre 2026"
     >
       <h2>Article 1 — Objet</h2>
       <p>
@@ -37,12 +38,28 @@ export default function CGUPage() {
         <li>Gérer un portefeuille de clients et un catalogue de produits</li>
         <li>Suivre les encaissements et relancer automatiquement les factures impayées</li>
         <li>Exporter les données comptables au format FEC</li>
+        <li>
+          {PLATFORM_SENDING_LIVE
+            ? "Recevoir les factures de ses fournisseurs et envoyer ses factures et avoirs à ses clients professionnels par la plateforme agréée Super PDP, à laquelle l'Utilisateur raccorde son compte"
+            : "Recevoir les factures de ses fournisseurs par la plateforme agréée Super PDP, à laquelle l'Utilisateur raccorde son compte"}{" "}
+          (inclus dans la formule {PLANS.starter.name})
+        </li>
       </ul>
-      <p>
-        Le Service ne constitue pas une Plateforme de Dématérialisation Partenaire (PDP) agréée. La transmission
-        effective des factures sur le portail Chorus Pro ou toute autre plateforme agréée reste à la charge de l&apos;Utilisateur,
-        avec l&apos;appui du guide fourni dans l&apos;application.
-      </p>
+      {PLATFORM_SENDING_LIVE ? (
+        <p>
+          Qonforme n&apos;est pas lui-même une plateforme agréée : il est raccordé à la plateforme agréée Super PDP, qui
+          transmet les factures. L&apos;envoi par la plateforme est proposé quand le client est un professionnel établi en
+          France et inscrit à l&apos;annuaire de la facturation électronique, et que le compte de l&apos;Utilisateur est raccordé
+          et abonné. Dans les autres cas, la facture est envoyée par email, et sa transmission par une plateforme agréée
+          reste à la charge de l&apos;Utilisateur.
+        </p>
+      ) : (
+        <p>
+          Qonforme n&apos;est pas lui-même une plateforme agréée : il est raccordé à la plateforme agréée Super PDP pour la
+          réception des factures. L&apos;envoi des factures par la plateforme n&apos;est pas encore proposé : leur transmission
+          par une plateforme agréée reste à la charge de l&apos;Utilisateur.
+        </p>
+      )}
 
       <h2>Article 3 — Création de compte et accès</h2>
       <h3>3.1 Éligibilité</h3>
@@ -124,7 +141,8 @@ export default function CGUPage() {
         <li>Ne pas tenter de contourner les limitations techniques ou les mécanismes de sécurité</li>
         <li>Ne pas utiliser le Service à des fins illicites, frauduleuses ou contraires aux bonnes mœurs</li>
         <li>S&apos;assurer de la conformité fiscale et comptable de ses propres documents (mentions obligatoires, TVA, etc.)</li>
-        <li>Effectuer lui-même la transmission des factures sur la plateforme agréée de son choix</li>
+        <li>Raccorder son compte à la plateforme agréée et vérifier que ses informations d&apos;entreprise (SIREN) sont exactes</li>
+        <li>Transmettre lui-même les factures que le Service n&apos;envoie pas par la plateforme agréée</li>
       </ul>
 
       <h2>Article 6 — Propriété intellectuelle</h2>
@@ -176,7 +194,7 @@ export default function CGUPage() {
       <p>
         Qonforme est une plateforme outil. La responsabilité de la conformité fiscale et légale des documents émis
         incombe exclusivement à l&apos;Utilisateur. Qonforme ne saurait être tenu responsable d&apos;une erreur dans les informations
-        renseignées par l&apos;Utilisateur, d&apos;un refus de transmission par une PDP ou Chorus Pro, ni des conséquences d&apos;un
+        renseignées par l&apos;Utilisateur, d&apos;un rejet ou d&apos;un refus d&apos;une facture par la plateforme agréée ou par le client, ni des conséquences d&apos;un
         défaut de transmission dans les délais légaux.
       </p>
       <p>

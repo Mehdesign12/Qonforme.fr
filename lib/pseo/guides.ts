@@ -1,5 +1,5 @@
 import { CERTIFICATION_DEVIS_10, CERTIFICATION_DEVIS_5_5, CERTIFICATION_FACTURE_10, CERTIFICATION_RESUME } from "@/lib/legal/certification-tva"
-import { SENDING_CLAUSE } from "@/lib/pa/sending"
+import { SENDING_CLAUSE, SENDING_SENTENCE } from "@/lib/pa/sending"
 
 export interface GuideSection {
   titre: string
@@ -316,7 +316,7 @@ export const GUIDES: Guide[] = [
       },
       {
         titre: "Et avec Qonforme ?",
-        contenu: "Qonforme produit déjà vos factures au format Factur-X : un PDF lisible qui contient les données structurées de la facture. Qonforme est une « solution compatible facturation électronique » : il est raccordé à une plateforme agréée, qui seule transmet les factures. La réception des factures de vos fournisseurs est obligatoire depuis le 1er septembre 2026 : vous pouvez aussi choisir vous-même votre plateforme agréée.",
+        contenu: `Qonforme produit vos factures au format Factur-X : un PDF lisible qui contient les données structurées de la facture. Qonforme est une « solution compatible facturation électronique », raccordée à la plateforme agréée Super PDP, qui transmet les factures : Qonforme n'est pas lui-même une plateforme agréée. Avec Essentiel, vous raccordez votre compte et vos factures fournisseurs arrivent par la plateforme, ce qui couvre l'obligation de réception en vigueur depuis le 1er septembre 2026. ${SENDING_SENTENCE}`,
       },
     ],
     faq: [
