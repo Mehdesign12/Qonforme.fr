@@ -15,3 +15,17 @@ describe("CGU et plateforme agréée", () => {
     expect(cgu).toMatch(/n&apos;est pas lui-même une plateforme agréée/)
   })
 })
+
+describe("Confidentialité et mentions légales et plateforme agréée", () => {
+  const conf = readFileSync("app/confidentialite/page.tsx", "utf8")
+  const ml = readFileSync("app/mentions-legales/page.tsx", "utf8")
+  it("la politique décrit l'envoi par Super PDP selon le réglage d'ouverture", () => {
+    expect(conf).toMatch(/PLATFORM_SENDING_LIVE/)
+    expect(conf).toMatch(/envoi de vos factures et avoirs à vos clients professionnels/)
+    expect(conf).toMatch(/déclare l'encaissement/)
+  })
+  it("les mentions légales citent Super PDP et renvoient à la liste complète", () => {
+    expect(ml).toMatch(/Super PDP/)
+    expect(ml).toMatch(/href="\/confidentialite"/)
+  })
+})
