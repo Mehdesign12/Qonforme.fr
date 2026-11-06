@@ -21,6 +21,8 @@ export default function EditQuotePage() {
   const { id } = useParams<{ id: string }>()
 
   const [quoteNumber, setQuoteNumber] = useState("")
+  // Correction d'un devis envoyé (« Corriger ce devis ») : numéro du devis qu'elle remplacera
+  const [revises, setRevises] = useState<string | null>(null)
   const [clients, setClients]         = useState<DocClient[]>([])
   const [company, setCompany]         = useState<DocCompany | null>(null)
   const [loadingData, setLoadingData] = useState(true)
@@ -51,6 +53,7 @@ export default function EditQuotePage() {
           return
         }
         setQuoteNumber(q.quote_number)
+        setRevises(q.revises_quote_number ?? null)
         load({
           client_id:     q.client_id   || "",
           issue_date:    q.issue_date  || "",
@@ -141,7 +144,7 @@ export default function EditQuotePage() {
         reverseCharge={{ locked: artisan === false, onLocked: () => setArtisanPaywall(true) }}
         doc={doc}
         title={quoteNumber ? `Modifier ${quoteNumber}` : "Modifier le devis"}
-        status={`${quoteNumber ? `${quoteNumber} · ` : ""}brouillon · ${doc.dirty ? "modifications non enregistrées" : "enregistré"}`}
+        status={`${quoteNumber ? `${quoteNumber} · ` : ""}${revises ? `correction de ${revises} · ` : ""}brouillon · ${doc.dirty ? "modifications non enregistrées" : "enregistré"}`}
         number={quoteNumber || null}
         backHref={`/quotes/${id}`}
         backLabel={quoteNumber || "Devis"}

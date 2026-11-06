@@ -1,10 +1,11 @@
 import { prepareLinesForSave } from "@/lib/documents/discounts"
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient, createClient } from "@/lib/supabase/server"
 import { canTransition, isContentLocked, transitionError } from "@/lib/utils/document-status"
 import { requireIssuerIdentity } from "@/lib/legal/issuer"
 import { requireArtisanAccess } from "@/lib/artisan/access"
 import { hasReverseCharge } from "@/lib/artisan/reverse-charge"
+import { checkRevisionOrigin, finalizeRevision, type OriginCheck } from "@/lib/quotes/revision"
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -23,7 +24,20 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })
-  return NextResponse.json({ quote: data })
+
+  // « Corriger ce devis » : version qui corrige ce devis (brouillon en cours ou version qui l'a
+  // remplacé). Colonne absente tant que la migration 20261106 n'est pas appliquée : rien.
+  let revision: { id: string; quote_number: string; status: string } | null = null
+  if (data && "revises_quote_id" in data) {
+    const { data: rev } = await supabase
+      .from("quotes")
+      .select("id, quote_number, status")
+      .eq("user_id", user.id)
+      .eq("revises_quote_id", id)
+      .maybeSingle()
+    revision = rev ?? null
+  }
+  return NextResponse.json({ quote: data, revision, revisionAvailable: !!data && "revises_quote_id" in data })
 }
 
 // PATCH /api/quotes/[id]
@@ -41,10 +55,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   const contentFields = ["lines", "client_id", "issue_date", "valid_until", "notes"]
   const touchesContent = contentFields.some((f) => body[f] !== undefined)
 
+  let origin: OriginCheck = { kind: "none" }
   if (touchesContent || body.status !== undefined) {
     const { data: current } = await supabase
       .from("quotes")
-      .select("status")
+      .select("*")
       .eq("id", id)
       .eq("user_id", user.id)
       .single()
@@ -64,6 +79,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (body.status !== undefined && current.status === "draft" && body.status !== "draft") {
       const noIdentity = await requireIssuerIdentity(supabase, user.id)
       if (noIdentity) return noIdentity
+      // Correction d'un devis envoyé : même règle qu'à l'envoi par email
+      if (body.status === "sent") {
+        origin = await checkRevisionOrigin(supabase, user.id, current)
+        if (origin.kind === "blocked") return NextResponse.json({ error: origin.message, code: "REVISION_ORIGIN_ACCEPTED" }, { status: 409 })
+      }
     }
   }
 
@@ -100,7 +120,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ quote: data })
+
+  // Correction remise sans email (« Marquer comme envoyé ») : l'ancien devis est remplacé
+  let admin = null
+  try { admin = createAdminClient() } catch { admin = null }
+  const replaced = await finalizeRevision(supabase, admin, user.id, id, origin)
+  return NextResponse.json({ quote: data, replaced: replaced && origin.kind === "replace" ? origin.number : null })
 }
 
 // DELETE /api/quotes/[id] — brouillons seulement

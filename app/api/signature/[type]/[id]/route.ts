@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { checkRevisionOriginById, finalizeRevision, type OriginCheck } from "@/lib/quotes/revision"
 import { createAdminClient, createClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/resend"
 import { buildSignatureRequestEmail } from "@/lib/email/templates/signature"
@@ -173,6 +174,13 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Ce devis a expiré : dupliquez-le pour proposer une version à jour." }, { status: 409 })
     }
 
+    // Correction d'un devis envoyé : refusée si l'ancien devis a été accepté entre-temps,
+    // sinon il est remplacé dès que la correction sort du brouillon (lib/quotes/revision.ts)
+    const origin: OriginCheck = type === "quote" && doc.status === "draft"
+      ? await checkRevisionOriginById(supabase, user.id, doc.id)
+      : { kind: "none" }
+    if (origin.kind === "blocked") return NextResponse.json({ error: origin.message, code: "REVISION_ORIGIN_ACCEPTED" }, { status: 409 })
+
     // L'email part uniquement à l'adresse de la fiche client, comme l'envoi classique
     let to: string | null = null
     if (action === "send") {
@@ -182,7 +190,10 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     // Un brouillon partagé pour signature est émis : il passe à « envoyé » et ne se modifie plus.
     // Par email, seulement une fois l'email parti (comme l'envoi classique).
-    if (action !== "send") await markDocumentSent(admin, doc, { byEmail: false })
+    if (action !== "send") {
+      await markDocumentSent(admin, doc, { byEmail: false })
+      await finalizeRevision(supabase, admin, user.id, doc.id, origin)
+    }
 
     const { row, token } = action === "renew"
       ? await createLink(admin, { doc, mode: "sign", settings: settings.settings })
@@ -205,6 +216,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         attachments: [{ filename: pdfFilename(doc.number, false), content: pdf }],
       })
       await markDocumentSent(admin, doc, { byEmail: true })
+      await finalizeRevision(supabase, admin, user.id, doc.id, origin)
       await admin.from("document_signatures").update({ sent_at: new Date().toISOString(), sent_to: to }).eq("id", row.id)
       await recordEvent(admin, row, "sent", requestMeta(req), { to })
     }

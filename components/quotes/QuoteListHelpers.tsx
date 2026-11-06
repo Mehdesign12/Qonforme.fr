@@ -12,7 +12,7 @@
 
 import { parisDayOf } from "@/lib/utils/paris-date"
 
-export type QuoteStatus = "draft" | "sent" | "accepted" | "rejected" | "withdrawn"
+export type QuoteStatus = "draft" | "sent" | "accepted" | "rejected" | "withdrawn" | "superseded"
 
 const MS_DAY = 86_400_000
 
@@ -203,6 +203,8 @@ export function quoteNextStep(
       return { text: "Sans suite", tone: "default" }
     case "withdrawn":
       return { text: "Rétracté par le client", tone: "warn" }
+    case "superseded":
+      return { text: "Remplacé par une nouvelle version", tone: "default" }
   }
 }
 

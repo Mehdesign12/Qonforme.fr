@@ -44,9 +44,9 @@ export interface QuoteListItem {
   href: string
 }
 
-/** Le filtre « Refusés » regroupe aussi les devis rétractés. */
-type Filter = "all" | Exclude<QuoteStatus, "withdrawn">
-const filterOf = (status: QuoteStatus): Filter => (status === "withdrawn" ? "rejected" : status)
+/** Le filtre « Refusés » regroupe aussi les devis rétractés ; un devis remplacé par sa correction n'apparaît que dans « Tous ». */
+type Filter = "all" | Exclude<QuoteStatus, "withdrawn" | "superseded">
+const filterOf = (status: QuoteStatus): Filter => (status === "withdrawn" ? "rejected" : status === "superseded" ? "all" : status)
 
 const FILTERS: { key: Filter; label: string }[] = [
   { key: "all", label: "Tous" },
@@ -95,7 +95,7 @@ export function QuoteListView({
     const accepted = recent.filter((q) => q.status === "accepted")
     const decided = recent.filter((q) => q.status === "accepted" || q.status === "rejected" || q.status === "withdrawn")
     const counts: Record<Filter, number> = { all: items.length, draft: 0, sent: 0, accepted: 0, rejected: 0 }
-    for (const q of items) counts[filterOf(q.status)] += 1
+    for (const q of items) if (q.status !== "superseded") counts[filterOf(q.status)] += 1
     return {
       year,
       yearCount: items.filter((q) => q.issue_date.startsWith(year)).length,

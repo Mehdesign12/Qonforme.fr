@@ -110,6 +110,7 @@ export default function DemoQuoteDetailPage({ params }: { params: { id: string }
         onSend: async () => { ctaToast("envoyer vos devis par email"); return false },
         onSetStatus: async () => { ctaToast("suivre l'accord de vos clients"); return false },
         onConvert: () => ctaToast("convertir vos devis en factures"),
+        onRevise: () => ctaToast("corriger un devis déjà envoyé"),
       }}
     />
   )

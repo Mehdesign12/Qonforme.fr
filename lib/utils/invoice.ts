@@ -86,6 +86,7 @@ export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
   accepted: 'Accepté',
   rejected: 'Refusé',
   withdrawn: 'Rétracté',
+  superseded: 'Remplacé',
 }
 
 // ---- Taux TVA disponibles ----
