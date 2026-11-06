@@ -1,6 +1,7 @@
 import { LegalLayout } from "@/components/legal/LegalLayout"
 import { CookieSettingsLink } from "@/components/consent/CookieSettingsLink"
 import type { Metadata } from "next"
+import { PLATFORM_SENDING_LIVE } from "@/lib/pa/sending"
 import { PUBLISHER } from "@/lib/legal/publisher"
 
 export const metadata: Metadata = {
@@ -19,7 +20,7 @@ export default function ConfidentialitePage() {
       titleAccent="confidentialité"
       path="/confidentialite"
       subtitle="Comment Qonforme collecte, utilise et protège vos données personnelles."
-      lastUpdated="30 octobre 2026"
+      lastUpdated="6 novembre 2026"
     >
       <h2>1. Responsable du traitement</h2>
       <p>
@@ -53,6 +54,10 @@ export default function ConfidentialitePage() {
         <li>Factures, devis, bons de commande et avoirs créés par l&apos;Utilisateur</li>
         <li>Coordonnées des clients de l&apos;Utilisateur</li>
         <li>Historique des transactions et paiements (géré par Stripe)</li>
+        <li>
+          Si vous raccordez votre compte à la plateforme agréée : factures reçues de vos fournisseurs
+          {PLATFORM_SENDING_LIVE ? ", factures et avoirs envoyés par la plateforme" : ""}, leurs statuts et vos décisions
+        </li>
       </ul>
 
       <h3>2.4 Données techniques</h3>
@@ -110,7 +115,20 @@ export default function ConfidentialitePage() {
         <li><strong>Stripe Inc.</strong> — traitement des paiements (certifié PCI-DSS)</li>
         <li><strong>Google LLC</strong> — connexion et inscription avec Google, à votre initiative seulement : Google transmet à Qonforme votre adresse email, votre prénom et votre nom ; Qonforme ne reçoit pas votre mot de passe Google</li>
         <li><strong>Resend Inc.</strong> — envoi d&apos;e-mails transactionnels (factures, relances, bienvenue)</li>
-        <li><strong>SUPER G (Super PDP)</strong> — plateforme agréée par l&apos;administration fiscale, établie à Paris : réception de vos factures fournisseurs, seulement si vous raccordez votre compte (page « Facturation électronique »). Qonforme lui transmet votre adresse email et le SIREN de votre entreprise pour préparer le raccordement, reçoit vos factures reçues et leurs statuts, et lui transmet vos décisions (prise en charge, approbation, refus). La vérification de votre identité et de votre entreprise est faite par Super PDP, sur son site et selon ses propres conditions : Qonforme ne reçoit pas votre pièce d&apos;identité</li>
+        <li>
+          <strong>SUPER G (Super PDP)</strong> — plateforme agréée par l&apos;administration fiscale, établie à Paris :{" "}
+          {PLATFORM_SENDING_LIVE
+            ? "réception de vos factures fournisseurs et envoi de vos factures et avoirs à vos clients professionnels"
+            : "réception de vos factures fournisseurs"}
+          , seulement si vous raccordez votre compte (page « Facturation électronique »). Qonforme lui transmet votre
+          adresse email et le SIREN de votre entreprise pour préparer le raccordement, reçoit vos factures reçues et leurs
+          statuts, et lui transmet vos décisions (prise en charge, approbation, refus).
+          {PLATFORM_SENDING_LIVE
+            ? " Quand une facture part par la plateforme, Qonforme lui transmet la facture ou l'avoir au format Factur-X (vos coordonnées, celles de votre client, les lignes et les montants), reçoit ses statuts et lui déclare l'encaissement quand vous la marquez payée ; pour proposer cet envoi, le SIREN du client est cherché dans l'annuaire de la facturation électronique."
+            : ""}{" "}
+          La vérification de votre identité et de votre entreprise est faite par Super PDP, sur son site et selon ses
+          propres conditions : Qonforme ne reçoit pas votre pièce d&apos;identité
+        </li>
         <li><strong>PostHog Inc.</strong> — mesure d&apos;audience (pages vues, provenance des visites) et enregistrement des parcours (voir section 8.2), qui font partie du service</li>
         <li><strong>Sentry (Functional Software Inc.)</strong> — surveillance des erreurs techniques et stabilité du service</li>
         <li><strong>Google LLC (Gemini API)</strong> — génération de contenu éditorial pour le blog (aucune donnée utilisateur transmise)</li>

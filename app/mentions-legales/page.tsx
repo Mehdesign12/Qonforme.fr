@@ -15,7 +15,7 @@ export default function MentionsLegalesPage() {
       titleAccent="légales"
       path="/mentions-legales"
       subtitle="Informations légales obligatoires conformément à la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN)."
-      lastUpdated="19 octobre 2026"
+      lastUpdated="6 novembre 2026"
     >
       <h2>1. Éditeur du site</h2>
       <p>
@@ -91,7 +91,15 @@ export default function MentionsLegalesPage() {
         <li><strong>Stripe</strong> — paiements (certifié PCI-DSS)</li>
         <li><strong>Resend</strong> — e-mails transactionnels</li>
         <li><strong>Vercel</strong> — hébergement applicatif</li>
+        <li><strong>SUPER G (Super PDP)</strong> — plateforme agréée de facturation électronique, si vous y raccordez votre compte</li>
+        <li><strong>PostHog</strong> — mesure d&apos;usage et enregistrement des parcours</li>
+        <li><strong>Sentry</strong> — surveillance des erreurs techniques</li>
+        <li><strong>Google</strong> — connexion avec Google, à votre initiative</li>
       </ul>
+      <p>
+        La liste complète, avec les données transmises à chacun, figure dans la{" "}
+        <a href="/confidentialite">politique de confidentialité</a>.
+      </p>
 
       <h2>5. Cookies</h2>
       <p>
