@@ -692,6 +692,14 @@ export function QuoteDetailView({
             <BarBtn label="Télécharger le PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
           </>
         )}
+        {s === "superseded" && (
+          <>
+            {quote.revision
+              ? <BarBtn primary label={`Voir ${quote.revision.number}`} icon={FileText} href={quote.revision.href} />
+              : <BarBtn primary label="Dupliquer ce devis" icon={Copy} onClick={actions.onDuplicate} loading={busy.duplicate} />}
+            <BarBtn label="Télécharger le PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
+          </>
+        )}
       </div>
 
       {/* ── Fenêtres ── */}
