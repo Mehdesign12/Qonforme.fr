@@ -15,15 +15,29 @@
 --      serveur ; la règle ci-dessous est ajoutée par sûreté.
 -- ============================================================
 
--- 1. Valeurs du type énuméré (seulement s'il existe)
+-- 1. Valeurs du type énuméré de la colonne quotes.status (quel que soit son schéma)
 DO $$
+DECLARE
+  t regtype;
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace
-             WHERE t.typname = 'quote_status' AND n.nspname = 'public' AND t.typtype = 'e') THEN
-    EXECUTE 'ALTER TYPE public.quote_status ADD VALUE IF NOT EXISTS ''withdrawn''';
-    EXECUTE 'ALTER TYPE public.quote_status ADD VALUE IF NOT EXISTS ''superseded''';
+  SELECT a.atttypid::regtype INTO t
+  FROM pg_attribute a
+  JOIN pg_type ty ON ty.oid = a.atttypid
+  WHERE a.attrelid = 'public.quotes'::regclass AND a.attname = 'status' AND ty.typtype = 'e';
+  IF t IS NOT NULL THEN
+    EXECUTE format('ALTER TYPE %s ADD VALUE IF NOT EXISTS %L', t, 'withdrawn');
+    EXECUTE format('ALTER TYPE %s ADD VALUE IF NOT EXISTS %L', t, 'superseded');
+    RAISE NOTICE 'Type % complété : withdrawn, superseded', t;
+  ELSE
+    RAISE NOTICE 'quotes.status n''est pas un type énuméré : rien à ajouter';
   END IF;
 END $$;
+
+-- Vérification (doit lister withdrawn et superseded) :
+--   SELECT e.enumlabel FROM pg_enum e
+--   JOIN pg_attribute a ON a.atttypid = e.enumtypid
+--   WHERE a.attrelid = 'public.quotes'::regclass AND a.attname = 'status'
+--   ORDER BY e.enumsortorder;
 
 -- 2. Suppression de ses propres brouillons de devis
 DO $$
