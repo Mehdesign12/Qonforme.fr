@@ -217,9 +217,19 @@ describe("vue publique : rétractation et acompte", () => {
   it("rétracté : état propre, plus de formulaire", () => {
     const v = toPublicView({ ...withExtras, status: "withdrawn", withdrawn_at: signedAt, withdrawal_name: "Nadia Lambert" }, doc, null, { onSite: false, now: new Date(), bank: BANK })
     expect(v.state).toBe("withdrawn")
-    expect(v.withdrawn).toEqual({ at: signedAt, name: "Nadia Lambert" })
+    expect(v.withdrawn).toEqual({ at: signedAt, name: "Nadia Lambert", emailed: true })
     expect(v.withdrawal.open).toBe(false)
     expect(v.deposit).toBeNull()
+  })
+
+  it("email du client en échec : la page ne dit pas qu'il est parti", () => {
+    const failedEmails = new Set(["confirmation", "withdrawal_ack"])
+    const signed = toPublicView(withExtras, doc, null, { onSite: false, now: new Date(), bank: BANK, failedEmails })
+    expect(signed.signed?.emailed).toBe(false)
+    const ok = toPublicView(withExtras, doc, null, { onSite: false, now: new Date(), bank: BANK })
+    expect(ok.signed?.emailed).toBe(true)
+    const back = toPublicView({ ...withExtras, status: "withdrawn", withdrawn_at: signedAt, withdrawal_name: "Nadia Lambert" }, doc, null, { onSite: false, now: new Date(), bank: BANK, failedEmails })
+    expect(back.withdrawn?.emailed).toBe(false)
   })
 
   it("à signer : acompte annoncé d'après le réglage, seulement avec un IBAN", () => {

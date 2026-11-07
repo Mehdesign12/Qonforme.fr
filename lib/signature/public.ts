@@ -50,6 +50,8 @@ export interface PublicViewOptions {
   depositPercent?: number
   /** Ouvrir le formulaire de rétractation (lien « Changer d'avis »). */
   openWithdrawal?: boolean
+  /** Emails du client qui n'ont pas pu partir (journal `email_failed`) : « confirmation », « withdrawal_ack ». */
+  failedEmails?: ReadonlySet<string>
 }
 
 export function toPublicView(row: SignatureRow, doc: LoadedDoc | null, company: CompanyInfo | null, opts: PublicViewOptions): PublicSignViewData {
@@ -120,7 +122,7 @@ export function toPublicView(row: SignatureRow, doc: LoadedDoc | null, company: 
     reducedVatText: reducedVat && !revoked ? reducedVatCertificationText(doc.lines) : null,
     closedMessage: state === "closed" ? closedMessage(doc) : null,
     signed: row.status === "signed" && signedAt
-      ? { name: row.signer_name ?? "", role: row.signer_role, company: row.signer_company, at: row.signed_at!, method: row.signature_method, order_number: row.client_order_number }
+      ? { name: row.signer_name ?? "", role: row.signer_role, company: row.signer_company, at: row.signed_at!, method: row.signature_method, order_number: row.client_order_number, emailed: !opts.failedEmails?.has("confirmation") }
       : null,
     refused: row.status === "refused" && row.refused_at ? { at: row.refused_at, reason: refusalLabel(row.refusal_reason) } : null,
     withdrawalDeadline: consumerSigned ? withdrawalDeadline(signedAt!) : null,
@@ -128,7 +130,9 @@ export function toPublicView(row: SignatureRow, doc: LoadedDoc | null, company: 
       available: extras && consumerSigned,
       open: extras && state === "signed" && canWithdraw(row, opts.now),
     },
-    withdrawn: row.status === "withdrawn" && row.withdrawn_at ? { at: row.withdrawn_at, name: row.withdrawal_name ?? null } : null,
+    withdrawn: row.status === "withdrawn" && row.withdrawn_at
+      ? { at: row.withdrawn_at, name: row.withdrawal_name ?? null, emailed: !!row.signer_email && !opts.failedEmails?.has("withdrawal_ack") }
+      : null,
     urgentRepair: !!row.consents?.urgent_repair_requested,
     depositPlanned: planned ? { percent: planned.percent, amount: planned.amount } : null,
     deposit: state === "signed" ? publicDeposit(depositOfRow(row), opts.bank, today) : null,
@@ -143,15 +147,30 @@ export async function buildPublicView(
   row: SignatureRow,
   opts: { onSite: boolean; now?: Date; openWithdrawal?: boolean },
 ): Promise<PublicSignViewData> {
-  const [doc, company, bank, settings] = await Promise.all([
+  const [doc, company, bank, settings, failedEmails] = await Promise.all([
     loadDocument(admin, row.document_type, row.document_id, row.user_id),
     loadCompany(admin, row.user_id),
     loadBankDetails(admin, row.user_id),
     // Réglages illisibles : la page s'affiche quand même, sans acompte annoncé
     getSignatureSettings(admin, row.user_id).catch(() => ({ settings: { deposit_percent: 0 } })),
+    failedClientEmails(admin, row.id),
   ])
   return toPublicView(row, doc, company, {
     onSite: opts.onSite, now: opts.now ?? new Date(), bank, depositPercent: settings.settings.deposit_percent,
-    openWithdrawal: opts.openWithdrawal,
+    openWithdrawal: opts.openWithdrawal, failedEmails,
   })
+}
+
+/**
+ * Emails du client restés sans envoi pour ce lien (journal `email_failed`). Journal
+ * illisible : ensemble vide, la page garde son texte habituel.
+ */
+async function failedClientEmails(admin: SupabaseClient, signatureId: string): Promise<Set<string>> {
+  const { data, error } = await admin
+    .from("document_signature_events")
+    .select("details")
+    .eq("signature_id", signatureId)
+    .eq("type", "email_failed")
+  if (error || !data) return new Set()
+  return new Set(data.map((e) => (e.details as { what?: unknown } | null)?.what).filter((w): w is string => typeof w === "string"))
 }

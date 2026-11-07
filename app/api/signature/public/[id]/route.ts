@@ -347,7 +347,7 @@ async function onSign(admin: Admin, row: SignatureRow, body: Record<string, unkn
     urgentRepair: !!p.consents.urgent_repair_requested,
     deposit,
   })
-  await trySend(admin, signed, "confirmation", () => sendEmail({
+  const emailed = await trySend(admin, signed, "confirmation", () => sendEmail({
     to: p.signer_email, subject: confirmation.subject, html: confirmation.html, fromName: companyName,
     replyTo: company?.email ?? artisanEmail ?? undefined,
     attachments: signedPdf ? [{ filename: pdfFilename(doc.number, true), content: Buffer.from(signedPdf) }] : [],
@@ -366,7 +366,7 @@ async function onSign(admin: Admin, row: SignatureRow, body: Record<string, unkn
   }
 
   return json({
-    ok: true, signed_at: signedAtIso, withdrawalDeadline: deadline, deposit,
+    ok: true, signed_at: signedAtIso, withdrawalDeadline: deadline, deposit, emailed,
     withdrawal: { available: extras && signed.client_kind === "consumer", open: extras && canWithdraw(signed, now) },
   })
 }
@@ -467,12 +467,13 @@ async function onWithdraw(admin: Admin, row: SignatureRow, body: Record<string, 
   const companyName = company?.name?.trim() || "L'entreprise"
   const artisanEmail = await ownerEmail(admin, row.user_id, company)
   const to = row.signer_email
+  let emailed = false
   if (to) {
     const ack = buildWithdrawalAckEmail({
       docType: row.document_type, docNumber: row.document_number, companyName, accentColor: company?.accent_color ?? "#2563EB",
       name, signedAt: new Date(row.signed_at ?? nowIso), withdrawnAt: now, message,
     })
-    await trySend(admin, withdrawn, "withdrawal_ack", () => sendEmail({
+    emailed = await trySend(admin, withdrawn, "withdrawal_ack", () => sendEmail({
       to, subject: ack.subject, html: ack.html, fromName: companyName, replyTo: company?.email ?? artisanEmail ?? undefined,
     }))
   }
@@ -485,5 +486,5 @@ async function onWithdraw(admin: Admin, row: SignatureRow, body: Record<string, 
     await trySend(admin, withdrawn, "notification", () => sendEmail({ to: artisanEmail, subject: notice.subject, html: notice.html, fromName: "Qonforme" }))
   }
 
-  return json({ ok: true, withdrawn_at: nowIso })
+  return json({ ok: true, withdrawn_at: nowIso, emailed })
 }

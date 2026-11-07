@@ -279,7 +279,9 @@ function StateBanner({
       <StateCard icon={CheckCircle2} tone="ok" title={`Signé par ${signed.name}`}>
         <span className="block">
           Le {parisDateTime(signed.at)} (heure de Paris){signed.role ? `, en qualité de ${signed.role}` : ""}{signed.company ? ` pour ${signed.company}` : ""}.
-          {signed.order_number && <> Numéro de commande : {signed.order_number}.</>} Votre exemplaire signé, avec son dossier de preuve, vous a été envoyé par email. {company} est prévenue.
+          {signed.order_number && <> Numéro de commande : {signed.order_number}.</>}{signed.emailed === false
+            ? <> L&apos;envoi de votre exemplaire signé par email n&apos;a pas abouti : téléchargez-le avec « PDF signé » ci-dessous, ou demandez-le à {company} : {contact}. {company} est prévenue.</>
+            : <> Votre exemplaire signé, avec son dossier de preuve, vous a été envoyé par email. {company} est prévenue.</>}
         </span>
         {data.clientKind === "consumer" && (
           <span className="mt-2 block">
@@ -297,7 +299,9 @@ function StateBanner({
     return (
       <StateCard icon={Undo2} tone="neutral" title="Votre rétractation est enregistrée">
         {withdrawn ? <>Le {parisDateTime(withdrawn.at)} (heure de Paris){withdrawn.name ? `, par ${withdrawn.name}` : ""}. </> : null}
-        {company} en est informée et un accusé de réception vous a été envoyé par email. Toute somme versée, acompte compris, doit vous
+        {withdrawn?.emailed === false
+          ? <>{company} en est informée. L&apos;accusé de réception n&apos;a pas pu vous être envoyé par email : gardez cette page ou une capture d&apos;écran comme trace de votre rétractation. </>
+          : <>{company} en est informée et un accusé de réception vous a été envoyé par email. </>}Toute somme versée, acompte compris, doit vous
         être remboursée dans les 14 jours. Pour toute question : {contact}.
       </StateCard>
     )
@@ -483,7 +487,7 @@ function SignForm({
     setBusy(false)
     if (r.ok) {
       onSigned(
-        { name: check.value.signer_name, role: check.value.signer_role, company: check.value.signer_company, at: String(r.json.signed_at ?? new Date().toISOString()), method, order_number: check.value.client_order_number },
+        { name: check.value.signer_name, role: check.value.signer_role, company: check.value.signer_company, at: String(r.json.signed_at ?? new Date().toISOString()), method, order_number: check.value.client_order_number, emailed: r.json.emailed !== false },
         (r.json.withdrawalDeadline as string | null) ?? null,
         {
           deposit: (r.json.deposit as PublicDeposit | null) ?? null,
