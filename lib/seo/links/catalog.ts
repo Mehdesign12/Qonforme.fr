@@ -40,6 +40,7 @@ export const MAIN_PAGES: LinkTarget[] = [
   { title: "Logiciel de relance des factures impayées", path: "/logiciel-relance-factures-impayees", kind: "page" },
   { title: "Logiciel de facturation avec export FEC", path: "/logiciel-export-fec", kind: "page" },
   { title: "Logiciel de situations de travaux et d'acomptes", path: "/logiciel-situations-travaux", kind: "page" },
+  { title: "Logiciel de dématérialisation des factures", path: "/logiciel-dematerialisation-factures", kind: "page" },
   { title: "S'installer à son compte dans le bâtiment", path: "/devenir-a-son-compte", kind: "page" },
   { title: "Glossaire", path: "/glossaire", kind: "page" },
   { title: "Blog", path: "/blog", kind: "page" },
@@ -76,12 +77,14 @@ const CURATED: Record<string, string[]> = {
   "/outils/generateur-conditions-paiement": ["conditions de paiement"],
   "/outils/calculateur-beton": ["calculer le béton", "quantité de béton", "volume de béton"],
   "/outils/calculateur-pente": ["calcul de pente", "pourcentage de pente"],
+  "/outils/lecteur-factur-x": ["lire une facture factur-x", "lecteur factur-x", "ouvrir une facture électronique"],
   "/facturation": ["logiciel de devis par métier"],
   "/logiciel-gestion-batiment": ["logiciel de gestion bâtiment", "logiciel de gestion pour le bâtiment", "logiciel de gestion btp", "logiciel de gestion pour artisan"],
   "/devenir-a-son-compte": ["devenir artisan à son compte", "s'installer à son compte"],
   "/logiciel-devis-gratuit": ["logiciel de devis gratuit", "logiciel devis gratuit"],
   "/logiciel-relance-factures-impayees": ["relance automatique des factures", "relances automatiques", "suivre les factures impayées"],
   "/logiciel-export-fec": ["export FEC", "export comptable FEC"],
+  "/logiciel-dematerialisation-factures": ["dématérialisation des factures", "dématérialiser ses factures", "factures dématérialisées"],
   "/logiciel-situations-travaux": ["situations de travaux", "situation de travaux"],
 }
 

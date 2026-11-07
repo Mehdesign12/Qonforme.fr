@@ -59,8 +59,8 @@ describe("adresses", () => {
     expect(entree("/signup")).toBeDefined()
   })
 
-  it("contient les 14 outils, tous les modèles, guides, métiers, installations et termes du glossaire", () => {
-    expect(urls().filter((u) => u.startsWith(`${BASE}/outils/`)).length).toBe(14)
+  it("contient les 15 outils, tous les modèles, guides, métiers, installations et termes du glossaire", () => {
+    expect(urls().filter((u) => u.startsWith(`${BASE}/outils/`)).length).toBe(15)
     expect(entree("/outils/calculateur-beton")).toBeDefined()
     expect(entree("/outils/calculateur-pente")).toBeDefined()
     for (const m of MODELES) expect(entree(`/modele/${m.slug}`), m.slug).toBeDefined()
@@ -104,10 +104,15 @@ describe("lastmod", () => {
   })
 
   it("pages modifiées le 15/10/2026 : outils neufs, hubs, modèles de devis", () => {
-    for (const p of ["/outils", "/outils/calculateur-beton", "/outils/calculateur-pente", "/modele", "/facturation"])
+    for (const p of ["/outils/calculateur-beton", "/outils/calculateur-pente", "/modele", "/facturation"])
       expect(new Date(entree(p)!.lastModified!).toISOString().slice(0, 10), p).toBe("2026-10-15")
     // un modèle qu'on n'a pas touché n'affiche pas de date
     expect(entree("/modele/facture-classique")!.lastModified).toBeUndefined()
+  })
+
+  it("hub des outils et lecteur Factur-X : 07/11/2026", () => {
+    for (const p of ["/outils", "/outils/lecteur-factur-x"])
+      expect(new Date(entree(p)!.lastModified!).toISOString().slice(0, 10), p).toBe("2026-11-07")
   })
 
   it("accueil réécrit le 04/11/2026 : sa date est celle de la réécriture", () => {

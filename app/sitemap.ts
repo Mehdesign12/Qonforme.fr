@@ -23,12 +23,13 @@ export const revalidate = 3600
  */
 const MAJ: Record<string, string> = {
   "/": "2026-11-04",
+  "/outils/lecteur-factur-x": "2026-11-07",
+  "/outils": "2026-11-07",
   "/pricing": "2026-11-04",
   "/contact": "2026-10-22",
   "/demo": "2026-10-04",
   "/signup": "2026-10-06",
   "/guide": "2026-10-05",
-  "/outils": "2026-10-15",
   "/outils/calculateur-beton": "2026-10-15",
   "/outils/calculateur-pente": "2026-10-15",
   "/modele": "2026-10-15",
@@ -40,6 +41,7 @@ const MAJ: Record<string, string> = {
   "/logiciel-devis-gratuit": "2026-11-04",
   "/logiciel-relance-factures-impayees": "2026-11-04",
   "/logiciel-export-fec": "2026-11-04",
+  "/logiciel-dematerialisation-factures": "2026-11-07",
   "/logiciel-situations-travaux": "2026-11-04",
   // 16/10/2026 : title, H1 et introduction des 11 pages métier (MOTS-CLES-COMPACTS-2026-10.md § 0)
   ...Object.fromEntries(METIERS.map((m) => [`/facturation/${m.slug}`, "2026-11-04"])),
@@ -168,6 +170,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}/logiciel-dematerialisation-factures`,
+      ...dateDe("/logiciel-dematerialisation-factures"),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/logiciel-situations-travaux`,
       ...dateDe("/logiciel-situations-travaux"),
       changeFrequency: "monthly",
@@ -234,6 +242,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       "generateur-conditions-paiement",
       "calculateur-beton",
       "calculateur-pente",
+      "lecteur-factur-x",
     ].map((slug) => ({
       url: `${baseUrl}/outils/${slug}`,
       ...dateDe(`/outils/${slug}`),

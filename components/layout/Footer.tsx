@@ -16,6 +16,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Relance des impayés", href: "/logiciel-relance-factures-impayees" },
       { label: "Export FEC", href: "/logiciel-export-fec" },
       { label: "Situations de travaux", href: "/logiciel-situations-travaux" },
+      { label: "Dématérialisation des factures", href: "/logiciel-dematerialisation-factures" },
       { label: "Tarifs", href: "/pricing" },
       { label: "Démo interactive", href: "/demo" },
     ],

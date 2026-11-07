@@ -1,5 +1,6 @@
 import { CERTIFICATION_DEVIS_10, CERTIFICATION_DEVIS_5_5, CERTIFICATION_FACTURE_10, CERTIFICATION_RESUME } from "@/lib/legal/certification-tva"
 import { SENDING_CLAUSE, SENDING_SENTENCE } from "@/lib/pa/sending"
+import { PLANS, TAX_SUFFIX, formatEuros } from "@/lib/stripe/plans"
 
 export interface GuideSection {
   titre: string
@@ -262,6 +263,83 @@ export const GUIDES: Guide[] = [
       { href: "/glossaire/e-reporting", label: "E-reporting" },
       { href: "/glossaire/factur-x", label: "Factur-X" },
     ],
+  },
+  {
+    slug: "facturation-electronique-auto-entrepreneur",
+    titre: "Facturation électronique : ce qui change pour l'auto-entrepreneur du bâtiment",
+    titreSeo: "Facturation électronique auto-entrepreneur : guide 2026-2027",
+    description: "Facturation électronique pour l'auto-entrepreneur du bâtiment : dates, factures à recevoir dès 2026, à émettre en 2027, clients particuliers et sous-traitance.",
+    motsCles: ["facturation électronique auto-entrepreneur", "facturation électronique micro entreprise", "auto entrepreneur facture électronique obligatoire", "logiciel facturation électronique auto entrepreneur", "facture électronique artisan"],
+    essentiel: [
+      "Oui, l'auto-entrepreneur est concerné, même en franchise de TVA : il reste assujetti à la TVA.",
+      "Depuis le 1er septembre 2026, il doit pouvoir recevoir les factures électroniques de ses fournisseurs.",
+      "À partir du 1er septembre 2027, il émet ses factures aux entreprises en facture électronique, par une plateforme agréée.",
+      "Pour ses clients particuliers, il remet sa facture comme aujourd'hui : ces ventes donnent lieu à une transmission de données à l'administration (e-reporting), pas à une facture électronique.",
+      "Le plus simple : un logiciel de facturation « solution compatible », raccordé à une plateforme agréée, qui fait la transmission pour lui.",
+    ],
+    sections: [
+      {
+        titre: "Pourquoi l'auto-entrepreneur est concerné",
+        contenu: "La réforme vise toutes les entreprises assujetties à la TVA établies en France. Un micro-entrepreneur en franchise en base de TVA ne facture pas la TVA, mais il reste assujetti : il entre donc dans la réforme, comme une société. Rien ne dépend de votre chiffre d'affaires.",
+      },
+      {
+        titre: "Les deux dates à retenir",
+        contenu: "Les dates sont fixées par la loi de finances pour 2024 (article 91).",
+        liste: [
+          "1er septembre 2026 : réception. Vos fournisseurs (négoce de matériaux, location de matériel, sous-traitants) peuvent vous envoyer des factures électroniques, et vous devez pouvoir les recevoir par une plateforme agréée.",
+          "1er septembre 2027 : émission. Vos factures aux entreprises établies en France deviennent des factures électroniques (Factur-X, UBL ou CII), transmises par votre plateforme agréée.",
+        ],
+      },
+      {
+        titre: "Vos clients particuliers",
+        contenu: "La plupart des artisans travaillent surtout pour des particuliers. Pour eux, pas de facture électronique : vous remettez la facture en PDF, par email ou en main propre. La facture électronique ne vise que les opérations entre entreprises assujetties à la TVA établies en France ; vos ventes aux particuliers donnent lieu à une transmission de données à l'administration (e-reporting), qui passe par votre plateforme agréée.",
+      },
+      {
+        titre: "Vos clients professionnels et la sous-traitance",
+        contenu: "Dès que votre client est une entreprise établie en France, la facture électronique s'applique à partir du 1er septembre 2027. C'est le cas typique du bâtiment :",
+        liste: [
+          "Sous-traitant d'une entreprise générale ou d'un autre artisan : votre facture (avec la mention « Autoliquidation » si vous facturez la TVA) part par votre plateforme vers celle de votre donneur d'ordre.",
+          "Travaux pour une SCI, un syndic, un commerce ou une agence immobilière : facture électronique aussi.",
+          "Vos fournisseurs vous envoient déjà leurs factures électroniques : depuis le 1er septembre 2026, vous devez pouvoir les recevoir.",
+        ],
+      },
+      {
+        titre: "Ce qu'il faut préparer",
+        contenu: "Trois choses suffisent :",
+        liste: [
+          "Un logiciel de facturation « solution compatible », raccordé à une plateforme agréée : il produit les factures au bon format et la plateforme les transmet.",
+          "Votre plateforme agréée déclarée dans l'annuaire de la facturation électronique : l'annuaire indique, pour chaque entreprise, la plateforme chargée de recevoir ses factures.",
+          "Le SIREN de vos clients professionnels dans votre logiciel : c'est une des nouvelles mentions obligatoires des factures.",
+        ],
+      },
+      {
+        titre: "Et avec Qonforme ?",
+        contenu: `Qonforme est une solution compatible facturation électronique, raccordée à la plateforme agréée Super PDP. Avec la formule ${PLANS.starter.name} (${formatEuros(PLANS.starter.monthlyPrice)}${TAX_SUFFIX} par mois, sans engagement), vos factures fournisseurs arrivent dans Qonforme, déjà lues et contrôlées, ce qui couvre l'obligation de réception. ${SENDING_SENTENCE} Vos factures portent la mention « TVA non applicable, article 293 B du CGI » si vous êtes en franchise. Vos devis restent gratuits.`,
+      },
+    ],
+    faq: [
+      { question: "Un auto-entrepreneur doit-il passer à la facture électronique ?", reponse: "Oui, même en franchise de TVA : il doit pouvoir recevoir des factures électroniques depuis le 1er septembre 2026 et émettra les siennes à ses clients professionnels à partir du 1er septembre 2027." },
+      { question: "Un auto-entrepreneur qui ne travaille que pour des particuliers est-il concerné ?", reponse: "Oui, mais simplement : il doit pouvoir recevoir les factures électroniques de ses fournisseurs, et ses ventes aux particuliers donnent lieu à une transmission de données à l'administration (e-reporting). Ses factures aux particuliers restent des PDF classiques." },
+      { question: "Quel logiciel de facturation électronique pour un auto-entrepreneur ?", reponse: `Un logiciel « solution compatible » raccordé à une plateforme agréée : il prépare les factures au bon format et la plateforme les transmet. Qonforme l'est, raccordé à la plateforme agréée Super PDP, avec ${PLANS.starter.name} à ${formatEuros(PLANS.starter.monthlyPrice)}${TAX_SUFFIX} par mois ; les devis y sont gratuits.` },
+      { question: "Une facture PDF envoyée par email suffit-elle encore ?", reponse: "Oui pour vos clients particuliers, et jusqu'au 31 août 2027 pour vos clients professionnels. Ensuite, vos factures aux entreprises établies en France doivent être des factures électroniques transmises par une plateforme agréée." },
+      { question: "Comment savoir si une facture reçue est une facture électronique ?", reponse: "Déposez-la dans notre lecteur Factur-X gratuit : il cherche les données de facture électronique dans le fichier et les affiche en clair. Une facture PDF simple n'en contient pas." },
+    ],
+    liens: [
+      { href: "/outils/lecteur-factur-x", label: "Lecteur Factur-X gratuit" },
+      { href: "/logiciel-dematerialisation-factures", label: "Dématérialiser ses factures" },
+      { href: "/guide/plateforme-agreee", label: "Choisir sa plateforme agréée" },
+      { href: "/guide/facture-electronique-2026", label: "Calendrier de la facture électronique" },
+      { href: "/guide/facture-auto-entrepreneur", label: "Facture auto-entrepreneur" },
+      { href: "/guide/tva-autoliquidation-sous-traitance", label: "Autoliquidation en sous-traitance" },
+    ],
+    sources: [
+      { label: "Service-public.gouv.fr, « Comment se mettre en conformité avec l'obligation de facturation électronique » (fiche F39785)", href: "https://entreprendre.service-public.gouv.fr/vosdroits/F39785" },
+      { label: "Service-public.gouv.fr, « Mentions obligatoires sur une facture » (fiche F31808)", href: "https://entreprendre.service-public.gouv.fr/vosdroits/F31808" },
+      { label: "impots.gouv.fr, « Franchise en base, micro-entrepreneur ou auto-entrepreneur : suis-je concerné ? »", href: "https://www.impots.gouv.fr/professionnel/questions/franchise-en-base-micro-entrepreneur-ou-auto-entrepreneur-suis-je-concerne" },
+      { label: "impots.gouv.fr, « Mes clients sont à la fois des entreprises et des particuliers »", href: "https://www.impots.gouv.fr/professionnel/questions/mes-clients-sont-la-fois-des-entreprises-et-des-particuliers-par-quel" },
+      { label: "Loi n° 2023-1322 du 29 décembre 2023 de finances pour 2024, article 91" },
+    ],
+    verifieLe: "2026-11-07",
   },
   {
     slug: "plateforme-agreee",

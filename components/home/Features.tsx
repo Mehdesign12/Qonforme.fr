@@ -1,6 +1,6 @@
 import { FeatureBlock, ScreenPair, SIGNUP_HREF } from "@/components/home/kit"
 import { SCREENS, type ScreenProps } from "@/components/landing/devices"
-import { PLANS } from "@/lib/stripe/plans"
+import { PLANS, scanQuotaText } from "@/lib/stripe/plans"
 import { PLATFORM_SENDING_LIVE } from "@/lib/pa/sending"
 import { DEMO_SUB_CHANTIER_ID } from "@/lib/demo/data"
 
@@ -188,6 +188,55 @@ export function PlanningBlock({ reverse = false }: { reverse?: boolean } = {}) {
       cta={{ href: SIGNUP_HREF, label: "Organiser ma semaine" }}
       link={{ href: "/demo/planning", label: "Voir l'agenda dans la démo" }}
       visual={<ScreenPair desktop={screen("planning")} phone={screen("mobilePlanning")} phoneSide={reverse ? "right" : "left"} />}
+    />
+  )
+}
+
+/* ─────────────────────────────────────────────────────────
+   Réception des factures fournisseurs par la plateforme agréée
+   (Essentiel), lues et contrôlées ; décisions transmises.
+───────────────────────────────────────────────────────── */
+export function ReceptionBlock({ reverse = false }: { reverse?: boolean } = {}) {
+  return (
+    <FeatureBlock
+      id="reception"
+      reverse={reverse}
+      title="Vos factures fournisseurs,"
+      accent="lues toutes seules."
+      items={[
+        "Elles arrivent par la plateforme agréée Super PDP, sans ressaisie",
+        "Lignes, TVA et totaux lus et contrôlés à l'arrivée",
+        "Approuvée, refusée ou en litige : votre décision part au fournisseur",
+        "Une facture Factur-X, UBL ou CII reçue par email s'importe en un clic",
+      ]}
+      note={`Réception par la plateforme agréée incluse dans ${essentiel}.`}
+      cta={{ href: SIGNUP_HREF, label: "Recevoir mes factures" }}
+      link={{ href: "/demo/received-invoices", label: "Voir les factures reçues dans la démo" }}
+      visual={<ScreenPair desktop={screen("facturesRecues")} phone={screen("mobileFacturesRecues")} phoneSide={reverse ? "right" : "left"} />}
+    />
+  )
+}
+
+/* ─────────────────────────────────────────────────────────
+   Scan des documents papier (tous les comptes, quotas de plans.ts)
+───────────────────────────────────────────────────────── */
+export function ScanBlock({ reverse = true }: { reverse?: boolean } = {}) {
+  return (
+    <FeatureBlock
+      id="scan"
+      reverse={reverse}
+      title="Le papier,"
+      accent="photographié et rangé."
+      items={[
+        "Bons de livraison, devis reçus, tickets : une photo avec le téléphone",
+        "Recadrage, plusieurs pages, un PDF propre",
+        "Classé par type, fournisseur, client et chantier",
+        "Scannez avec le téléphone, retrouvez sur l'ordinateur",
+      ]}
+      note={`Inclus dans tous les comptes : ${scanQuotaText("free")} avec le compte gratuit.`}
+      cta={{ href: SIGNUP_HREF, label: "Scanner mon premier document" }}
+      link={{ href: "/demo/documents", label: "Voir les documents dans la démo" }}
+      visual={<ScreenPair desktop={screen("documents")} phone={screen("mobileDocuments")} phoneSide={reverse ? "right" : "left"} />}
     />
   )
 }

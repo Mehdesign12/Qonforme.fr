@@ -21,6 +21,7 @@ export async function updateSession(request: NextRequest) {
     '/logiciel-relance-factures-impayees',
     '/logiciel-export-fec',
     '/logiciel-situations-travaux',
+    '/logiciel-dematerialisation-factures',
     // Fichier pour les assistants IA et clé IndexNow (Bing) : statiques, identiques pour tous
     '/llms.txt',
     '/ffdab55111a547e9b320f4c0f2c6d047.txt',

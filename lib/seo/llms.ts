@@ -45,6 +45,8 @@ export function buildLlmsTxt(): string {
     `- [Relance des factures impayées](${BASE}/logiciel-relance-factures-impayees) : rappels, relances automatiques, pénalités.`,
     `- [Facturation avec export FEC](${BASE}/logiciel-export-fec) : contenu exact du fichier des écritures comptables.`,
     `- [Situations de travaux et acomptes](${BASE}/logiciel-situations-travaux) : acomptes, situations, retenue de garantie.`,
+    `- [Dématérialisation des factures](${BASE}/logiciel-dematerialisation-factures) : factures fournisseurs reçues par la plateforme agréée, factures Factur-X, papier scanné.`,
+    `- [Lecteur Factur-X gratuit](${BASE}/outils/lecteur-factur-x) : lire une facture électronique Factur-X, UBL ou CII, dans le navigateur.`,
     `- [Tarifs](${BASE}/pricing)`,
     `- [Démo](${BASE}/demo) : le tableau de bord avec des données d'exemple.`,
     "",

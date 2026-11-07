@@ -53,6 +53,8 @@ const DESKTOP = [
   ["relances", "/demo/relances"],
   ["planning", "/demo/planning"],
   ["chantier", "/demo/chantiers/clos-fleuri"],
+  ["factures-recues", "/demo/received-invoices"],
+  ["documents", "/demo/documents"],
 ]
 const MOBILE = [
   ["mobile-tableau-de-bord", "/demo"],
@@ -63,6 +65,8 @@ const MOBILE = [
   ["mobile-catalogue", "/demo/products"],
   ["mobile-planning", "/demo/planning"],
   ["mobile-chantier", "/demo/chantiers/clos-fleuri"],
+  ["mobile-factures-recues", "/demo/received-invoices"],
+  ["mobile-documents", "/demo/documents"],
 ]
 const ANALYTICS = /(posthog|facebook|sentry|google-analytics|googletagmanager|doubleclick)\./
 
