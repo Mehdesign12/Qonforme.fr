@@ -85,7 +85,8 @@ export interface PublicSignViewData {
   reducedVatText: string | null
   /** Message pour l'état « closed ». */
   closedMessage: string | null
-  signed: { name: string; role: string | null; company: string | null; at: string; method: "drawn" | "typed" | null; order_number: string | null } | null
+  /** `emailed: false` : l'exemplaire signé n'a pas pu partir par email (absent : envoyé, ou inconnu en démo). */
+  signed: { name: string; role: string | null; company: string | null; at: string; method: "drawn" | "typed" | null; order_number: string | null; emailed?: boolean } | null
   refused: { at: string; reason: string } | null
   withdrawalDeadline: string | null
   /**
@@ -93,7 +94,8 @@ export interface PublicSignViewData {
    * appliquée) et le signataire un particulier ; `open` tant que le délai court.
    */
   withdrawal: { available: boolean; open: boolean }
-  withdrawn: { at: string; name: string | null } | null
+  /** `emailed: false` : l'accusé de réception n'a pas pu partir par email. */
+  withdrawn: { at: string; name: string | null; emailed?: boolean } | null
   /** Réparation urgente demandée à la signature sur place (art. L221-10, 4°). */
   urgentRepair: boolean
   /** Avant la signature : acompte qui sera demandé (réglage de l'artisan, IBAN renseigné). */

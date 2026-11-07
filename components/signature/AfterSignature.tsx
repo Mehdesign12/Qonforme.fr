@@ -134,7 +134,7 @@ export function WithdrawCard({
   defaultName: string
   theDoc: string
   startOpen: boolean
-  onWithdrawn: (info: { at: string; name: string }) => void
+  onWithdrawn: (info: { at: string; name: string; emailed: boolean }) => void
 }) {
   const [open, setOpen] = useState(startOpen)
   const [name, setName] = useState(defaultName)
@@ -157,7 +157,7 @@ export function WithdrawCard({
     setBusy(true)
     const r = await api.post("withdraw", { name, message, confirm })
     setBusy(false)
-    if (r.ok) { onWithdrawn({ at: String(r.json.withdrawn_at ?? new Date().toISOString()), name: check.value.name }); return }
+    if (r.ok) { onWithdrawn({ at: String(r.json.withdrawn_at ?? new Date().toISOString()), name: check.value.name, emailed: r.json.emailed !== false }); return }
     if (typeof r.json.field === "string") setErrors({ [r.json.field]: String(r.json.error) })
     else setFormError(String(r.json.error ?? "Votre rétractation n'a pas pu être enregistrée. Réessayez."))
   }
