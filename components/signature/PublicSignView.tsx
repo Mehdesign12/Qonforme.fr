@@ -287,8 +287,12 @@ function StateBanner({
           <span className="mt-2 block">
             Vous disposez d&apos;un délai de rétractation de {WITHDRAWAL_DAYS} jours{deadline ? <>, jusqu&apos;au {longDate(deadline)} inclus</> : null}.
             {withdrawal.open
-              ? <> Pour l&apos;exercer, utilisez « Changer d&apos;avis » ci-dessous, ou envoyez le formulaire reçu par email à {company} : {contact}.</>
-              : <> Pour l&apos;exercer, envoyez le formulaire de rétractation joint à l&apos;email de confirmation, ou toute déclaration sans ambiguïté, à {company} : {contact}.</>}
+              ? signed.emailed === false
+                ? <> Pour l&apos;exercer, utilisez « Changer d&apos;avis » ci-dessous, ou écrivez à {company} : {contact}.</>
+                : <> Pour l&apos;exercer, utilisez « Changer d&apos;avis » ci-dessous, ou envoyez le formulaire reçu par email à {company} : {contact}.</>
+              : signed.emailed === false
+                ? <> Pour l&apos;exercer, envoyez toute déclaration sans ambiguïté à {company} : {contact}.</>
+                : <> Pour l&apos;exercer, envoyez le formulaire de rétractation joint à l&apos;email de confirmation, ou toute déclaration sans ambiguïté, à {company} : {contact}.</>}
             {data.urgentRepair && <> Pour une réparation urgente que vous avez demandée, ce droit ne s&apos;applique pas aux travaux strictement nécessaires à l&apos;urgence.</>}
           </span>
         )}
