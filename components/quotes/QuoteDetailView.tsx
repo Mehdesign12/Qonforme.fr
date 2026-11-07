@@ -251,6 +251,7 @@ export function QuoteDetailView({
     : s === "sent" ? (expired ? { value: "Expiré", sub: "Renouvelez le devis" } : { value: "En attente", sub: "de l'accord du client" })
     : s === "accepted" ? (quote.converted ? { value: "Facturé", sub: invoiceNumber ?? "Facture créée" } : conversionBlocked ? { value: "En facturation", sub: "Acomptes et situations" } : { value: "À facturer", sub: "Convertissez-le en facture" })
     : s === "superseded" ? { value: "Remplacé", sub: quote.revision ? `Par ${quote.revision.number}` : "Par une nouvelle version" }
+    : s === "withdrawn" ? { value: "Rétracté", sub: "Remboursez toute somme reçue" }
     : { value: "Sans suite", sub: "Refusé par le client" }
 
   /* ── Historique (dates réelles uniquement) ── */
@@ -282,6 +283,9 @@ export function QuoteDetailView({
       )
     } else if (s === "superseded") {
       events.push({ title: "Remplacé par une nouvelle version", sub: quote.revision?.number ?? "Correction envoyée", state: "done" })
+    } else if (s === "withdrawn") {
+      events.push({ title: "Signé par le client", sub: "Accord enregistré", state: "done" })
+      events.push({ title: "Rétracté par le client", sub: "Dans le délai de 14 jours", state: "refused" })
     } else {
       events.push({ title: "Refusé par le client", sub: "Sans suite", state: "refused" })
     }
