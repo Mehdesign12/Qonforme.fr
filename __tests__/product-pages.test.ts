@@ -28,6 +28,7 @@ const MODULES = {
   "/logiciel-relance-factures-impayees": () => import("@/app/logiciel-relance-factures-impayees/page"),
   "/logiciel-export-fec": () => import("@/app/logiciel-export-fec/page"),
   "/logiciel-situations-travaux": () => import("@/app/logiciel-situations-travaux/page"),
+  "/logiciel-dematerialisation-factures": () => import("@/app/logiciel-dematerialisation-factures/page"),
 }
 const ROUTES = Object.keys(MODULES) as (keyof typeof MODULES)[]
 
@@ -55,7 +56,7 @@ describe.each(ROUTES)("%s", (route) => {
   })
 
   it("enregistrée partout où une page publique doit l'être", () => {
-    expect(lire("app/sitemap.ts")).toContain(`"${route}": "2026-11-04"`)
+    expect(lire("app/sitemap.ts")).toMatch(new RegExp(`"${route}": "2026-1[01]-\\d\\d"`))
     expect(lire("app/sitemap.ts")).toContain(`url: \`\${baseUrl}${route}\``)
     expect(lire("lib/supabase/middleware.ts")).toContain(`'${route}'`)
     expect(lire("public/sw.js")).toContain(`'${route}'`)

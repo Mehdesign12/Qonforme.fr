@@ -7,6 +7,7 @@ import {
   Calculator,
   ClipboardList,
   FileCheck,
+  FileSearch,
   FileText,
   Hash,
   Receipt,
@@ -24,7 +25,7 @@ export interface OutilLink {
   desc: string
 }
 
-/** Les 12 outils gratuits, rangés comme dans le hub /outils. */
+/** Les outils gratuits du menu, rangés comme dans le hub /outils (béton et pente : hub seulement). */
 export const OUTILS_CATEGORIES: { title: string; items: OutilLink[] }[] = [
   {
     title: "Calculateurs",
@@ -50,6 +51,7 @@ export const OUTILS_CATEGORIES: { title: string; items: OutilLink[] }[] = [
       { label: "Vérificateur SIREN/SIRET", href: "/outils/verification-siret", icon: Search, desc: "Vérifiez une entreprise" },
       { label: "Vérificateur mentions facture", href: "/outils/verificateur-mentions-facture", icon: FileCheck, desc: "Mentions obligatoires 2026" },
       { label: "Vérificateur conformité facture", href: "/outils/verificateur-conformite-facture", icon: Shield, desc: "Checklist de conformité 2026" },
+      { label: "Lecteur Factur-X", href: "/outils/lecteur-factur-x", icon: FileSearch, desc: "Lire une facture électronique" },
       { label: "Simulateur revenus net", href: "/outils/simulateur-revenu-net", icon: TrendingUp, desc: "Revenus réels après charges" },
     ],
   },

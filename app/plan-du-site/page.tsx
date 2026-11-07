@@ -74,6 +74,7 @@ export default async function PlanDuSitePage() {
         { href: "/logiciel-relance-factures-impayees", label: "Logiciel de relance des factures impayées" },
         { href: "/logiciel-export-fec", label: "Logiciel de facturation avec export FEC" },
         { href: "/logiciel-situations-travaux", label: "Logiciel de situations de travaux et d'acomptes" },
+        { href: "/logiciel-dematerialisation-factures", label: "Logiciel de dématérialisation des factures" },
         { href: "/demo", label: "Démo du tableau de bord" },
         { href: "/contact", label: "Contact" },
         { href: "/signup", label: "Créer mon compte" },

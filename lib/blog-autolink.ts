@@ -41,6 +41,7 @@ export const KEYWORD_LINKS: { pattern: RegExp; href: string }[] = [
   { pattern: /logiciels?\s+de\s+devis\s+gratuits?/i, href: "/logiciel-devis-gratuit" },
   { pattern: /relances?\s+automatiques?\s+des\s+factures/i, href: "/logiciel-relance-factures-impayees" },
   { pattern: /situations?\s+de\s+travaux/i, href: "/logiciel-situations-travaux" },
+  { pattern: /d[ée]mat[ée]rialisation\s+des\s+factures/i, href: "/logiciel-dematerialisation-factures" },
   { pattern: /logiciels?\s+de\s+gestion\s+(?:pour\s+(?:le\s+|les\s+)?|du\s+|des\s+)?(?:b[âa]timent|btp|artisans?)/i, href: "/logiciel-gestion-batiment" },
 ]
 

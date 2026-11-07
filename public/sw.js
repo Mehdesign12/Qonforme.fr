@@ -59,6 +59,7 @@ const CACHEABLE_PAGE_PREFIXES = [
   '/logiciel-relance-factures-impayees',
   '/logiciel-export-fec',
   '/logiciel-situations-travaux',
+  '/logiciel-dematerialisation-factures',
   '/guide',
   '/modele',
   '/glossaire',

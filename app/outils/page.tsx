@@ -1,17 +1,17 @@
 import type { Metadata } from "next"
-import { Calculator, FileText, Search, Receipt, FileCheck, Scale, TrendingUp, Hash, ClipboardList, Shield, Wrench, Layers, Ruler, type LucideIcon } from "lucide-react"
+import { Calculator, FileText, Search, Receipt, FileCheck, Scale, TrendingUp, Hash, ClipboardList, Shield, FileSearch, Wrench, Layers, Ruler, type LucideIcon } from "lucide-react"
 import { MetaPixelEvent } from "@/components/shared/MetaPixelEvent"
 import { OutilsHero } from "@/components/outils/OutilsHero"
 import { ToolCard, ToolShell } from "@/components/outils/kit"
 
 export const metadata: Metadata = {
   title: "Outils gratuits pour artisans du bâtiment",
-  description: "14 outils gratuits pour artisans : calculateurs de TVA, de béton et de pente, simulateurs de charges, vérificateur SIRET, facture et devis en PDF.",
+  description: "15 outils gratuits pour artisans : calculateurs de TVA, de béton et de pente, simulateurs de charges, vérificateur SIRET, facture et devis en PDF.",
   keywords: ["calculateur tva gratuit", "calculateur béton", "calculateur pente", "simulateur charges auto-entrepreneur", "vérificateur siret", "générateur facture gratuit", "outils artisan"],
   alternates: { canonical: "/outils" },
   openGraph: {
     title: "Outils gratuits pour artisans du bâtiment | Qonforme",
-    description: "14 outils gratuits pour les artisans du bâtiment : calculateurs, générateurs, vérificateurs, sans inscription.",
+    description: "15 outils gratuits pour les artisans du bâtiment : calculateurs, générateurs, vérificateurs, sans inscription.",
     url: "https://qonforme.fr/outils",
     images: [{ url: "/api/og?title=Outils%20gratuits&subtitle=Calculateurs%2C%20g%C3%A9n%C3%A9rateurs%20et%20v%C3%A9rificateurs", width: 1200, height: 630 }],
   },
@@ -60,6 +60,7 @@ const CATEGORIES: { title: string; accent: string; tools: Tool[] }[] = [
       { title: "Générateur conditions de paiement", desc: "Mentions légales à copier-coller : délai, pénalités, escompte.", href: "/outils/generateur-conditions-paiement", icon: Receipt },
       { title: "Vérificateur mentions facture", desc: "Checklist interactive des mentions obligatoires. Score instantané.", href: "/outils/verificateur-mentions-facture", icon: FileCheck },
       { title: "Vérificateur conformité facture", desc: "Critères de la réforme : format, mentions, Factur-X, archivage.", href: "/outils/verificateur-conformite-facture", icon: Shield },
+      { title: "Lecteur Factur-X", desc: "Lisez une facture électronique Factur-X, UBL ou CII : lignes, TVA, totaux et contrôles.", href: "/outils/lecteur-factur-x", icon: FileSearch },
     ],
   },
 ]
