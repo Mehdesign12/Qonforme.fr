@@ -94,6 +94,9 @@ function adresseInsee(a: Json | undefined): Pick<SireneResult, 'address' | 'zip_
   }
 }
 
+/** Attente avant le second essai de la recherche par nom (quota de l'API Recherche d'entreprises). */
+const RETRY_DELAY_MS = 600
+
 async function getJson(url: string, headers: Record<string, string> = {}): Promise<{ status: number; body: Json | null }> {
   const res = await fetch(url, {
     headers: { Accept: 'application/json', ...headers },
@@ -362,9 +365,16 @@ function versCandidat(r: SireneResult): SireneCandidate | null {
 }
 
 async function rechercheParNom(q: string): Promise<SireneSearchOutcome> {
+  const url = `${RECHERCHE}?q=${encodeURIComponent(q)}&per_page=${SIRENE_SEARCH_LIMIT}`
   let reponse: { status: number; body: Json | null }
   try {
-    reponse = await getJson(`${RECHERCHE}?q=${encodeURIComponent(q)}&per_page=${SIRENE_SEARCH_LIMIT}`)
+    reponse = await getJson(url)
+    // Quota par seconde de l'API (429) ou panne passagère (5xx) : un second essai, une seule fois.
+    // Pas après un délai dépassé (l'attente doublerait).
+    if (!reponse.body && (reponse.status === 429 || reponse.status >= 500)) {
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS))
+      reponse = await getJson(url)
+    }
   } catch {
     // Réseau, délai dépassé, réponse illisible
     return { status: 'unavailable' }
