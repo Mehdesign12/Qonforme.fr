@@ -150,7 +150,7 @@ export const PLANS: Record<PlanId, Plan> = {
       'Export comptable FEC',
       'Tableau de bord : chiffre du mois, encours, retards',
       // Ouverte en production le 30/10/2026 (DECISIONS § 16)
-      'Réception des factures fournisseurs par la plateforme agréée Super PDP',
+      'Réception des factures fournisseurs par une plateforme agréée',
       // Migrations 20261003 et 20261010 appliquées en production (confirmé par le fondateur le 30/10/2026)
       'Signature en ligne des devis et bons de commande',
       // Émission par la plateforme : « à venir » tant que la production n'est pas ouverte (lib/pa/sending.ts)

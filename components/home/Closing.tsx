@@ -185,8 +185,8 @@ export const FAQ_ITEMS: { q: string; a: string; logo?: boolean }[] = [
         {
           q: "Qonforme est-il prêt pour la facturation électronique ?",
           a: PLATFORM_SENDING_LIVE
-            ? `Oui. Qonforme est solution compatible facturation électronique, raccordé à la plateforme agréée Super PDP. Avec ${essentiel.name}, vos factures fournisseurs arrivent par la plateforme et vos factures partent vers vos clients professionnels au format de la réforme. Le 1er septembre 2027, vous n'aurez rien à changer.`
-            : `Oui. Qonforme est solution compatible facturation électronique, raccordé à la plateforme agréée Super PDP. Avec ${essentiel.name}, vos factures fournisseurs arrivent par la plateforme, et vos factures sont émises au format Factur-X de la réforme.`,
+            ? `Oui. Qonforme est solution compatible facturation électronique, raccordé à une plateforme agréée. Avec ${essentiel.name}, vos factures fournisseurs arrivent par la plateforme et vos factures partent vers vos clients professionnels au format de la réforme. Le 1er septembre 2027, vous n'aurez rien à changer.`
+            : `Oui. Qonforme est solution compatible facturation électronique, raccordé à une plateforme agréée. Avec ${essentiel.name}, vos factures fournisseurs arrivent par la plateforme, et vos factures sont émises au format Factur-X de la réforme.`,
           logo: true,
         },
       ]

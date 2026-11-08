@@ -34,7 +34,7 @@ export const dynamic = 'force-dynamic'
 const nbsp = (text: string) => text.replace(/ ([?:;!€%])/g, '\u00A0$1')
 
 const FAQ = ([
-  { question: "Qonforme est-il prêt pour la facturation électronique ?", reponse: `Oui. Qonforme est solution compatible facturation électronique : vos factures sont conformes à la réforme, au format Factur-X. Avec Essentiel, vos factures fournisseurs arrivent par la plateforme agréée Super PDP, sans frais en plus. ${SENDING_SENTENCE}` },
+  { question: "Qonforme est-il prêt pour la facturation électronique ?", reponse: `Oui. Qonforme est solution compatible facturation électronique : vos factures sont conformes à la réforme, au format Factur-X. Avec Essentiel, vos factures fournisseurs arrivent par une plateforme agréée, sans frais en plus. ${SENDING_SENTENCE}` },
   { question: "Puis-je commencer sans carte bancaire ?", reponse: "Oui. Les devis sont gratuits et illimités, sans carte bancaire. Le moyen de paiement n'est demandé qu'au moment d'envoyer votre première facture." },
   { question: `Que comprend la formule ${essentiel.name} ?`, reponse: `${essentiel.features.map((f, i) => (i === 0 ? f : f.charAt(0).toLowerCase() + f.slice(1))).join(', ')}. ${formatEuros(essentiel.monthlyPrice)}${TAX_SUFFIX} par mois, ou ${formatEuros(essentiel.yearlyPrice)}${TAX_SUFFIX} par an.` },
   PLANS.pro.available

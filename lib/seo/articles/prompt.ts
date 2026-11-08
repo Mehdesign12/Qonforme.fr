@@ -174,10 +174,10 @@ export function buildSystemPrompt({ brand, strategy, prefs }: PromptContext, rol
     "- Vouvoyez toujours le lecteur.",
     "- N'inventez aucun chiffre, aucune statistique, aucun avis, aucune note, aucun témoignage, aucun client : seulement des faits vérifiables (textes de loi, sources officielles, faits de référence ci-dessus).",
     "- Ne citez jamais un autre logiciel, éditeur ou marque de devis, de facturation ou de comptabilité : ni nom, ni comparaison, ni « alternative à ». Pour comparer des approches, décrivez des critères sans nommer personne.",
-    `- N'écrivez jamais que ${name} est certifié, homologué ou agréé, ni qu'il est une plateforme agréée. Vrai et permis : avec la formule Essentiel, ${name} reçoit les factures fournisseurs par la plateforme agréée Super PDP, à laquelle il est raccordé. ${SENDING_PROMPT_RULE}`,
+    `- N'écrivez jamais que ${name} est certifié, homologué ou agréé, ni qu'il est une plateforme agréée. Vrai et permis : avec la formule Essentiel, ${name} reçoit les factures fournisseurs par une plateforme agréée, à laquelle il est raccordé. ${SENDING_PROMPT_RULE}`,
     `- Ne présentez comme fonction de ${name} que ce qui figure dans l'offre et les bénéfices ci-dessus.`,
     "- Ne promettez aucun contact humain : ni appel, ni rendez-vous, ni visio, ni réponse personnalisée, ni support téléphonique.",
-    "- Dites « plateforme agréée », jamais « PDP ».",
+    "- Dites « plateforme agréée », jamais « PDP ». Ne nommez jamais la plateforme agréée à laquelle Qonforme est raccordé : écrivez « une plateforme agréée ».",
     `- ${FREE_RULE}`,
     "- Si vous n'êtes pas sûr d'une règle, d'un chiffre ou d'un article de loi, ne le citez pas.",
   )
@@ -384,8 +384,8 @@ export function buildReviewPrompt(input: { title: string; content: string; lengt
     "Catégories :",
     "- stale_value : chiffre, seuil, taux, date ou article de loi différent des faits de référence (valeur périmée) ;",
     PLATFORM_SENDING_LIVE
-      ? "- forbidden_claim : affirmation interdite (logiciel certifié, homologué ou agréé, plateforme agréée, contact humain promis, autre logiciel nommé, avis, note, témoignage ou statistique inventés, fonction absente de l'offre ; vrai et permis : l'envoi et la réception des factures par la plateforme agréée Super PDP, avec Essentiel) ;"
-      : "- forbidden_claim : affirmation interdite (logiciel certifié, homologué ou agréé, plateforme agréée, envoi des factures électroniques des artisans à leurs clients par Qonforme (la réception par Super PDP, avec Essentiel, est vraie), contact humain promis, autre logiciel nommé, avis, note, témoignage ou statistique inventés, fonction absente de l'offre) ;",
+      ? "- forbidden_claim : affirmation interdite (logiciel certifié, homologué ou agréé, plateforme agréée, contact humain promis, autre logiciel nommé, avis, note, témoignage ou statistique inventés, fonction absente de l'offre ; vrai et permis : l'envoi et la réception des factures par une plateforme agréée, avec Essentiel) ;"
+      : "- forbidden_claim : affirmation interdite (logiciel certifié, homologué ou agréé, plateforme agréée, envoi des factures électroniques des artisans à leurs clients par Qonforme (la réception par une plateforme agréée, avec Essentiel, est vraie), contact humain promis, autre logiciel nommé, avis, note, témoignage ou statistique inventés, fonction absente de l'offre) ;",
     "- unverifiable_claim : chiffre ou règle avancés sans source sûre ;",
     "- factual_error : règle juridique ou fiscale inexacte ;",
     "- instruction : consigne non respectée (tutoiement, titre de niveau 1, tableau, lien vers un site non officiel).",

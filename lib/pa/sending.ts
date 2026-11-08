@@ -27,7 +27,7 @@ export function platformSendingOpenFor(mode: PaMode | null | undefined): boolean
 /** Textes publics de l'émission, selon que la production est ouverte ou non. */
 export function sendingTexts(live: boolean) {
   return {
-    /** Fin de phrase après « vos factures fournisseurs arrivent par la plateforme agréée Super PDP ; ». */
+    /** Fin de phrase après « vos factures fournisseurs arrivent par une plateforme agréée ; ». */
     clause: live
       ? "vos factures à vos clients professionnels inscrits à l'annuaire partent aussi par la plateforme"
       : "l'envoi de vos factures par la plateforme est prévu pour 2027",
@@ -37,7 +37,7 @@ export function sendingTexts(live: boolean) {
       : "L'envoi de vos factures à vos clients par la plateforme agréée est prévu pour 2027 ; d'ici là, elles partent par email avec leur PDF Factur-X.",
     /** Consigne des générateurs d'articles. */
     promptRule: live
-      ? "Avec la formule Essentiel, Qonforme envoie aussi les factures et avoirs aux clients professionnels inscrits à l'annuaire de la facturation électronique par la plateforme agréée Super PDP ; les autres clients les reçoivent par email."
+      ? "Avec la formule Essentiel, Qonforme envoie aussi les factures et avoirs aux clients professionnels inscrits à l'annuaire de la facturation électronique par une plateforme agréée ; les autres clients les reçoivent par email."
       : "L'envoi des factures des artisans à leurs clients par la plateforme agréée n'est pas encore disponible (prévu pour 2027) : n'écrivez jamais que Qonforme envoie ou transmet les factures électroniques des artisans à leurs clients.",
   }
 }

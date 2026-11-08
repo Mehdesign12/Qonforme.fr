@@ -31,7 +31,7 @@ export function buildLlmsTxt(): string {
     a.available
       ? `- Formule ${a.name} : ${prix(a.monthlyPrice)} par mois ou ${prix(a.yearlyPrice)} par an. Tout ${e.name}, plus : ${a.features.map(lcFirst).join(", ")}.`
       : `- Formule ${a.name} : bientôt disponible, pas encore en vente.`,
-    `- Facturation électronique : Qonforme est « solution compatible », raccordé à la plateforme agréée Super PDP ; avec ${e.name}, les factures fournisseurs arrivent par cette plateforme. ${SENDING_SENTENCE}`,
+    `- Facturation électronique : Qonforme est « solution compatible », raccordé à une plateforme agréée ; avec ${e.name}, les factures fournisseurs arrivent par cette plateforme. ${SENDING_SENTENCE}`,
     ...(e.upcoming.length ? [`- Pas encore disponible : ${e.upcoming.map(lcFirst).join(", ")}.`] : []),
     "- Factures et avoirs émis au format Factur-X ; une facture émise ne se modifie pas, une erreur se corrige par un avoir.",
     "- Les clients de l'artisan le paient par virement, directement sur son compte : IBAN et QR code de virement sur chaque facture.",

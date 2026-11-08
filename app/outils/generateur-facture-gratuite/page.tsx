@@ -27,7 +27,7 @@ export default function GenerateurFacturePage() {
 
         <ToolCta
           title="Ce PDF n'est pas une facture électronique"
-          text={`Avec Qonforme, vos factures PDF partent avec leurs données Factur-X, se créent en un clic depuis un devis accepté et sont numérotées à la suite. Avec Essentiel, vos factures fournisseurs arrivent par la plateforme agréée Super PDP ; ${SENDING_CLAUSE}.`}
+          text={`Avec Qonforme, vos factures PDF partent avec leurs données Factur-X, se créent en un clic depuis un devis accepté et sont numérotées à la suite. Avec Essentiel, vos factures fournisseurs arrivent par une plateforme agréée ; ${SENDING_CLAUSE}.`}
           cta="Créer mon compte"
         />
       </ToolArea>

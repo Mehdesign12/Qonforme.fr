@@ -91,7 +91,7 @@ export default function MentionsLegalesPage() {
         <li><strong>Stripe</strong> — paiements (certifié PCI-DSS)</li>
         <li><strong>Resend</strong> — e-mails transactionnels</li>
         <li><strong>Vercel</strong> — hébergement applicatif</li>
-        <li><strong>SUPER G (Super PDP)</strong> — plateforme agréée de facturation électronique, si vous y raccordez votre compte</li>
+        <li><strong>Plateforme agréée de facturation électronique</strong> (nommée dans la politique de confidentialité) — si vous y raccordez votre compte</li>
         <li><strong>PostHog</strong> — mesure d&apos;usage et enregistrement des parcours</li>
         <li><strong>Sentry</strong> — surveillance des erreurs techniques</li>
         <li><strong>Google</strong> — connexion avec Google, à votre initiative</li>
