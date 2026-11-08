@@ -10,7 +10,9 @@ import { useArtisanPlan } from "@/components/artisan/useArtisanPlan"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { PersonalizeTip } from "@/components/documents/PersonalizeTip"
 import { useDocumentForm, usePreselectedClient } from "@/components/documents/useDocumentForm"
-import { isoDateIn, newLine, toPayloadLines, type DocClient, type DocCompany } from "@/components/documents/model"
+import { hasEnteredContent, isoDateIn, newLine, toPayloadLines, type DocClient, type DocCompany, type DocForm } from "@/components/documents/model"
+import { autosaveStatusText, payloadLinesOf, useDocumentAutosave } from "@/components/documents/useDocumentAutosave"
+import { RestoredDraftBanner } from "@/components/documents/RestoredDraftBanner"
 import { trackJourney } from "@/lib/journey"
 
 export default function NewInvoiceForm() {
@@ -32,12 +34,29 @@ export default function NewInvoiceForm() {
   // Dates calculées au montage du composant (pas au chargement du module) pour
   // ne pas rester figées sur la veille dans un onglet resté ouvert (ou
   // préchargé par Next.js) à cheval sur minuit.
-  const doc = useDocumentForm("invoice", () => ({
+  const blank = (): DocForm => ({
     client_id: "", issue_date: isoDateIn(0), due_date: isoDateIn(30), valid_until: "",
     delivery_date: "", reference: "", notes: "", lines: [newLine()],
-  }))
+  })
+  const doc = useDocumentForm("invoice", blank)
   const { form, computed, totals } = doc
   usePreselectedClient(doc, clients)
+  const [owner, setOwner] = useState<string | null>(null)
+
+  // Enregistrement automatique : copie sur l'appareil, puis brouillon dans « Factures »
+  // (un brouillon n'a pas de numéro : il ne le reçoit qu'à l'envoi)
+  const autosave = useDocumentAutosave({
+    kind: "invoice", doc, endpoint: "/api/invoices", entity: "invoice", owner, blank,
+    buildPayload: (f) => ({
+      client_id:  f.client_id,
+      issue_date: f.issue_date,
+      due_date:   f.due_date,
+      notes:      f.notes || null,
+      lines:      payloadLinesOf(f),
+      status:     "draft",
+    }),
+    onCreated: (_id, action) => trackJourney("invoice_created", { action }),
+  })
 
   useEffect(() => {
     fetch("/api/clients")
@@ -48,6 +67,7 @@ export default function NewInvoiceForm() {
       .then(r => r.json())
       .then(json => {
         setCompany(json?.company ?? null)
+        if (typeof json?.owner === "string") setOwner(json.owner)
         setHasLogo(!!json?.company?.logo_url)
       })
       .catch(() => {})
@@ -88,43 +108,34 @@ export default function NewInvoiceForm() {
     if (!doc.validate()) { toast.error("Corrigez les erreurs avant de continuer"); return }
     if (action === "send") setLoading(true); else setSaving(true)
     try {
-      const payload = {
-        client_id:  form.client_id,
-        issue_date: form.issue_date,
-        due_date:   form.due_date,
-        notes:      form.notes || null,
-        lines:      toPayloadLines(form.lines, computed, form.autoliquidation, totals.discount_lines),
-        status:     "draft",
-      }
-      const res  = await fetch("/api/invoices", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
-      })
-      const json = await res.json()
-      if (isArtisanPaywall(res.status, json)) { setArtisanPaywall(true); return }
-      if (!res.ok) {
+      // Met à jour le brouillon déjà enregistré automatiquement, ou le crée
+      const saved = await autosave.persist(form, action)
+      const { json } = saved
+      if (isArtisanPaywall(saved.status, json)) { setArtisanPaywall(true); return }
+      if (!saved.ok || !saved.id) {
         toast.error(json.error || "Erreur lors de la sauvegarde")
         return
       }
-      trackJourney("invoice_created", { action })
+      const invoiceId = saved.id
 
       // Si action "send" → envoyer réellement l'email via /api/invoices/{id}/send
-      if (action === "send" && json.invoice?.id) {
-        const sendRes = await fetch(`/api/invoices/${json.invoice.id}/send`, { method: "POST" })
+      if (action === "send") {
+        const sendRes = await fetch(`/api/invoices/${invoiceId}/send`, { method: "POST" })
         const sendJson = await sendRes.json()
         // Pas de formule : la facture reste un brouillon, le mur de paiement s'ouvre
         if (isSubscriptionRequired(sendRes.status, sendJson)) {
           // Brouillon sans numéro : il ne le recevra qu'à l'envoi
-          setPaywallInvoice({ id: json.invoice.id, number: json.invoice.invoice_number ?? undefined })
+          setPaywallInvoice({ id: invoiceId, number: json.invoice?.invoice_number ?? undefined })
           return
         }
         // Client sans adresse : la fiche s'ouvre sur la fenêtre d'envoi, qui la demande
         if (needsClientEmail(sendRes.status, sendJson)) {
-          router.push(sendWindowHref(`/invoices/${json.invoice.id}`))
+          router.push(sendWindowHref(`/invoices/${invoiceId}`))
           return
         }
         if (!sendRes.ok) {
           if (!toastCompanyRequired(sendRes.status, sendJson)) toast.error(sendJson.error ?? "Facture créée mais l'envoi par email a échoué")
-          router.push(`/invoices/${json.invoice.id}`)
+          router.push(`/invoices/${invoiceId}`)
           router.refresh()
           return
         }
@@ -168,7 +179,7 @@ export default function NewInvoiceForm() {
         reverseCharge={{ locked: artisan === false, onLocked: () => setArtisanPaywall(true) }}
         doc={doc}
         title="Nouvelle facture"
-        status="nouveau brouillon · non enregistré"
+        status={autosaveStatusText("invoice", autosave, doc.dirty, hasEnteredContent(form))}
         backHref="/invoices"
         backLabel="Factures"
         clients={clients}
@@ -178,7 +189,7 @@ export default function NewInvoiceForm() {
         clientHref={(id) => `/clients/${id}/edit`}
         company={company}
         catalog={{ manageHref: "/products" }}
-        banners={showTip && <PersonalizeTip href="/settings/invoices" cta="Configurer" onDismiss={() => setTipDismissed(true)} />}
+        banners={autosave.restoredAt ? <RestoredDraftBanner kind="invoice" savedAt={autosave.restoredAt} onDiscard={autosave.discardRestored} /> : showTip && <PersonalizeTip href="/settings/invoices" cta="Configurer" onDismiss={() => setTipDismissed(true)} />}
         actions={{
           onSaveDraft: (next) => submit("draft", next),
           onSend:      () => submit("send"),

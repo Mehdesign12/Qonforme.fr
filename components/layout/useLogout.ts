@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { purgePwaPageCache } from "@/lib/pwa/client"
+import { clearAllLocalDrafts } from "@/lib/documents/local-draft"
 
 /**
  * Déconnexion commune (barre latérale, menu du compte, feuille « Plus »).
@@ -19,6 +20,8 @@ export function useLogout() {
     // Vide le HTML retenu par le service worker : rien de la session précédente
     // ne doit pouvoir être resservi sur un appareil partagé.
     purgePwaPageCache()
+    // Copies locales des documents en cours (lib/documents/local-draft.ts) : effacées aussi
+    clearAllLocalDrafts()
     toast.success("À bientôt !")
     router.push("/login")
     router.refresh()

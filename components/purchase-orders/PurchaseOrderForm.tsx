@@ -7,7 +7,9 @@ import { toast } from "sonner"
 import { toastCompanyRequired } from "@/components/shared/company-required"
 import { DocumentEditor } from "@/components/documents/DocumentEditor"
 import { useDocumentForm, usePreselectedClient } from "@/components/documents/useDocumentForm"
-import { globalDiscountFromSaved, isoDateIn, linesFromSaved, newLine, toPayloadLines, withDocClient, type DocClient, type DocCompany } from "@/components/documents/model"
+import { computeDocTotals, computeLines, globalDiscountFromSaved, hasEnteredContent, isoDateIn, linesFromSaved, newLine, toPayloadLines, withDocClient, type DocClient, type DocCompany, type DocForm } from "@/components/documents/model"
+import { autosaveStatusText, useDocumentAutosave } from "@/components/documents/useDocumentAutosave"
+import { RestoredDraftBanner } from "@/components/documents/RestoredDraftBanner"
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -54,13 +56,28 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
         global_discount: globalDiscountFromSaved(initial.lines),
       }
     }
-    return {
-      client_id: "", issue_date: isoDateIn(0), due_date: "", valid_until: "", delivery_date: isoDateIn(30),
-      reference: "", notes: "", lines: [newLine()],
-    }
+    return blankPurchaseOrder()
   })
   const { form, computed, totals } = doc
   usePreselectedClient(doc, clients, !initial)
+  const [owner, setOwner] = useState<string | null>(null)
+
+  // Création seulement : copie sur l'appareil, puis brouillon dans « Bons de commande »
+  const payloadOf = (f: DocForm) => {
+    const auto = false
+    return {
+      client_id:     f.client_id,
+      issue_date:    f.issue_date,
+      delivery_date: f.delivery_date || null,
+      reference:     f.reference.trim() || null,
+      notes:         f.notes || null,
+      lines:         toPayloadLines(f.lines, computeLines(f.lines, auto), auto, computeDocTotals(f).discount_lines),
+    }
+  }
+  const autosave = useDocumentAutosave({
+    kind: "purchase_order", doc, endpoint: "/api/purchase-orders", entity: "purchase_order",
+    owner, blank: blankPurchaseOrder, buildPayload: payloadOf, enabled: !editId,
+  })
 
   useEffect(() => {
     fetch("/api/clients")
@@ -70,7 +87,7 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
     // Lecture seule : émetteur de l'aperçu et contrôle des coordonnées
     fetch("/api/company")
       .then(r => r.json())
-      .then(json => setCompany(json?.company ?? null))
+      .then(json => { setCompany(json?.company ?? null); if (typeof json?.owner === "string") setOwner(json.owner) })
       .catch(() => {})
   }, [initial?.client])
 
@@ -104,16 +121,11 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
         po_id = editId
         toast.success("Bon de commande mis à jour !")
       } else {
-        // Création
-        const res  = await fetch("/api/purchase-orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        })
-        const json = await res.json()
-        if (!res.ok) { toast.error(json.error || "Erreur lors de la création"); return }
-        po_id = json.purchase_order.id
-        toast.success("Bon de commande créé !")
+        // Création : met à jour le brouillon déjà enregistré automatiquement, ou le crée
+        const saved = await autosave.persist(form, action)
+        if (!saved.ok || !saved.id) { toast.error(saved.json?.error || "Erreur lors de la création"); return }
+        po_id = saved.id
+        toast.success("Bon de commande enregistré !")
       }
 
       // Envoi email si demandé
@@ -150,9 +162,10 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
       status={
         editId && initial
           ? `${initial.po_number} · brouillon · ${doc.dirty ? "modifications non enregistrées" : "enregistré"}`
-          : "nouveau brouillon · non enregistré"
+          : autosaveStatusText("purchase_order", autosave, doc.dirty, hasEnteredContent(form))
       }
       number={initial?.po_number}
+      banners={!editId && autosave.restoredAt ? <RestoredDraftBanner kind="purchase_order" savedAt={autosave.restoredAt} onDiscard={autosave.discardRestored} /> : undefined}
       backHref={editId ? `/purchase-orders/${editId}` : "/purchase-orders"}
       backLabel={editId && initial ? initial.po_number : "Bons de commande"}
       clients={clients}
@@ -173,4 +186,11 @@ export default function PurchaseOrderForm({ initial, editId }: PurchaseOrderForm
       }}
     />
   )
+}
+
+function blankPurchaseOrder(): DocForm {
+  return {
+    client_id: "", issue_date: isoDateIn(0), due_date: "", valid_until: "", delivery_date: isoDateIn(30),
+    reference: "", notes: "", lines: [newLine()],
+  }
 }

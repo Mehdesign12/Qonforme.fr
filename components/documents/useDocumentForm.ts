@@ -118,12 +118,23 @@ export function useDocumentForm(kind: DocKind, init: () => DocForm) {
     saved.current = JSON.stringify(stripIds(next))
   }, [])
 
+  /** Reprend une saisie (copie locale) sans la marquer comme enregistrée. */
+  const restore = useCallback((next: DocForm) => {
+    setForm(next)
+    setErrors({})
+  }, [])
+
+  /** Enregistrement automatique : marque comme enregistré l'état envoyé (pas celui tapé depuis). */
+  const markSaved = useCallback((snapshot: DocForm) => {
+    saved.current = JSON.stringify(stripIds(snapshot))
+  }, [])
+
   const dirty = JSON.stringify(stripIds(form)) !== saved.current
 
   return {
     kind, form, errors, computed, totals, dirty,
     setValue, setLineValue, addLine, removeLine, insertProduct, setAutoliquidation, setGlobalDiscount, clearLineDiscounts,
-    validate, clearError, load,
+    validate, clearError, load, restore, markSaved,
   }
 }
 

@@ -29,9 +29,9 @@ export type JourneyEvents = {
   onboarding_company_search_failed: { result: "not_found" | "unavailable"; kind: "number" | "name" }
   /** Le formulaire du devis ou de la facture est refusé : champs à corriger. */
   document_form_invalid: { document: "quote" | "invoice" }
-  /** Document enregistré (`action` : brouillon seul, ou création puis envoi). */
-  quote_created: { action: "draft" | "send" }
-  invoice_created: { action: "draft" | "send" }
+  /** Document enregistré (`action` : enregistrement automatique, brouillon seul, ou création puis envoi). */
+  quote_created: { action: "autosave" | "draft" | "send" }
+  invoice_created: { action: "autosave" | "draft" | "send" }
   /** Document envoyé par email au client. */
   quote_sent: Record<never, never>
   invoice_sent: Record<never, never>

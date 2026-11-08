@@ -85,7 +85,7 @@ export function DocumentEditor({
   kind: DocKind
   doc: DocumentFormApi
   title: string
-  /** Ligne d'état sous le titre (honnête : pas d'enregistrement automatique). */
+  /** Ligne d'état sous le titre : état réel de l'enregistrement (useDocumentAutosave pour une création). */
   status: string
   number?: string | null
   backHref: string
