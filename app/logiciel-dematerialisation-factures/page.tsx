@@ -57,7 +57,7 @@ const FAQ: ProductFaq[] = [
   },
   {
     question: "Qonforme est-il une solution compatible facturation électronique ?",
-    reponse: "Oui : Qonforme porte le label « Solution compatible – Facturation électronique » et il est raccordé à la plateforme agréée Super PDP, qui transmet les factures. Vous gardez un seul logiciel pour vos devis, vos factures et vos factures fournisseurs.",
+    reponse: "Oui : Qonforme porte le label « Solution compatible – Facturation électronique » et il est raccordé à une plateforme agréée, qui transmet les factures. Vous gardez un seul logiciel pour vos devis, vos factures et vos factures fournisseurs.",
   },
   {
     question: "Plus besoin d'OCR pour lire les factures fournisseurs ?",
@@ -79,13 +79,13 @@ export default function Page() {
       path={PATH}
       titre={TITRE}
       accent="pour artisans."
-      sub={`Qonforme dématérialise vos factures de bout en bout : vos factures fournisseurs arrivent par la plateforme agréée Super PDP, déjà lues, vos factures partent au format Factur-X, et le papier se photographie et se range. Avec la formule ${essentiel.name}.`}
+      sub={`Qonforme dématérialise vos factures de bout en bout : vos factures fournisseurs arrivent par une plateforme agréée, déjà lues, vos factures partent au format Factur-X, et le papier se photographie et se range. Avec la formule ${essentiel.name}.`}
       description={DESCRIPTION}
       verifieLe={VERIFIE_LE}
       photo="entrepriseGrandit"
       essentiel={[
         ["Pour qui", "Les artisans du bâtiment, auto-entrepreneurs compris, qui reçoivent des factures de leurs fournisseurs et facturent des particuliers comme des entreprises."],
-        ["Ce qu'il fait", `Il reçoit vos factures fournisseurs par la plateforme agréée Super PDP, les lit et les contrôle, transmet vos décisions, produit vos factures au format Factur-X${PLATFORM_SENDING_LIVE ? " et les envoie par la plateforme à vos clients professionnels" : ""}, et range le papier scanné.`],
+        ["Ce qu'il fait", `Il reçoit vos factures fournisseurs par une plateforme agréée, les lit et les contrôle, transmet vos décisions, produit vos factures au format Factur-X${PLATFORM_SENDING_LIVE ? " et les envoie par la plateforme à vos clients professionnels" : ""}, et range le papier scanné.`],
         ["Ce qu'il coûte", `Avec ${essentiel.name} : ${prix(essentiel.monthlyPrice)} par mois, ou ${prix(essentiel.yearlyPrice)} par an. Sans engagement. Devis et scan gratuits.`],
         ["Où l'utiliser", "Dans le navigateur, sur ordinateur comme sur téléphone, sans rien installer."],
         ["Pourquoi l'adopter", "Vous êtes prêt pour la réforme sans changer d'outil : un seul logiciel pour vos devis, vos factures et vos factures fournisseurs, sans ressaisie."],
@@ -112,7 +112,7 @@ export default function Page() {
         titre: "Dématérialisé",
         accent: "en quatre étapes.",
         items: [
-          { titre: "Raccorder", texte: "Vous rattachez votre compte à la plateforme agréée Super PDP depuis Qonforme ; elle vérifie votre entreprise." },
+          { titre: "Raccorder", texte: "Vous rattachez votre compte à la plateforme agréée depuis Qonforme ; elle vérifie votre entreprise." },
           { titre: "Recevoir", texte: "Vos factures fournisseurs arrivent dans « Factures reçues », lues et contrôlées." },
           { titre: "Envoyer", texte: PLATFORM_SENDING_LIVE ? "Vos factures partent au format Factur-X, par la plateforme vers vos clients professionnels, par email vers les autres." : "Vos factures partent par email, au format Factur-X." },
           { titre: "Ranger", texte: "Le papier se photographie et se classe par fournisseur et par chantier." },
@@ -150,7 +150,7 @@ export default function Page() {
               <SolutionCompatible />
               <div className="min-w-0 text-[15px] leading-[1.65] text-q-text-3">
                 <p>
-                  {fr("Qonforme porte le label « Solution compatible – Facturation électronique » de la DGFiP. Une solution compatible produit des factures au bon format et se raccorde à une plateforme agréée, qui seule les transmet : pour Qonforme, c'est Super PDP.")}
+                  {fr("Qonforme porte le label « Solution compatible – Facturation électronique » de la DGFiP. Une solution compatible produit des factures au bon format et se raccorde à une plateforme agréée, qui seule les transmet : Qonforme est raccordé à l'une d'elles.")}
                 </p>
                 <p className="mt-3">{fr(SENDING_SENTENCE)}</p>
               </div>

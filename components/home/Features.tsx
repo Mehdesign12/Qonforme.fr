@@ -204,7 +204,7 @@ export function ReceptionBlock({ reverse = false }: { reverse?: boolean } = {}) 
       title="Vos factures fournisseurs,"
       accent="lues toutes seules."
       items={[
-        "Elles arrivent par la plateforme agréée Super PDP, sans ressaisie",
+        "Elles arrivent par une plateforme agréée, sans ressaisie",
         "Lignes, TVA et totaux lus et contrôlés à l'arrivée",
         "Approuvée, refusée ou en litige : votre décision part au fournisseur",
         "Une facture Factur-X, UBL ou CII reçue par email s'importe en un clic",

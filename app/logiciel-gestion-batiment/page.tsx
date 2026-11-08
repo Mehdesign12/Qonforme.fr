@@ -76,8 +76,8 @@ const AUSSI = [
     icone: FileCheck,
     titre: "Facture électronique",
     texte: PLATFORM_SENDING_LIVE
-      ? `Vos factures partent et arrivent par la plateforme agréée Super PDP, au format de la réforme : avec ${essentiel.name}, sans frais en plus.`
-      : `Vos factures fournisseurs arrivent par la plateforme agréée Super PDP, au format de la réforme : avec ${essentiel.name}, sans frais en plus.`,
+      ? `Vos factures partent et arrivent par une plateforme agréée, au format de la réforme : avec ${essentiel.name}, sans frais en plus.`
+      : `Vos factures fournisseurs arrivent par une plateforme agréée, au format de la réforme : avec ${essentiel.name}, sans frais en plus.`,
     href: "/guide/facture-electronique-2026",
     lien: "Ce que la réforme change",
   },
@@ -138,7 +138,7 @@ const FAQ = [
   },
   {
     question: "Mes factures sont-elles prêtes pour la facturation électronique ?",
-    reponse: `Oui. Les factures et avoirs émis sont des PDF Factur-X, conformes à la réforme, et Qonforme est raccordé à la plateforme agréée Super PDP : avec ${essentiel.name}, vos factures fournisseurs arrivent par la plateforme. ${SENDING_SENTENCE} L'obligation de recevoir des factures électroniques s'applique depuis le 1er septembre 2026, et celle d'en émettre à partir du 1er septembre 2027 pour les PME, TPE et micro-entreprises.`,
+    reponse: `Oui. Les factures et avoirs émis sont des PDF Factur-X, conformes à la réforme, et Qonforme est raccordé à une plateforme agréée : avec ${essentiel.name}, vos factures fournisseurs arrivent par la plateforme. ${SENDING_SENTENCE} L'obligation de recevoir des factures électroniques s'applique depuis le 1er septembre 2026, et celle d'en émettre à partir du 1er septembre 2027 pour les PME, TPE et micro-entreprises.`,
   },
 ]
 

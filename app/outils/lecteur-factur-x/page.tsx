@@ -176,7 +176,7 @@ export default function LecteurFacturXPage() {
 
         <ToolCta
           title="Vos factures fournisseurs, lues toutes seules"
-          text="Avec Essentiel, vos factures fournisseurs arrivent dans Qonforme par la plateforme agréée Super PDP, déjà lues et contrôlées comme ici. Vos factures partent au format Factur-X. Les devis sont gratuits."
+          text="Avec Essentiel, vos factures fournisseurs arrivent dans Qonforme par une plateforme agréée, déjà lues et contrôlées comme ici. Vos factures partent au format Factur-X. Les devis sont gratuits."
           cta="Créer mon compte"
         />
       </ToolArea>

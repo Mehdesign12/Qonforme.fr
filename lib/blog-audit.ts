@@ -95,13 +95,20 @@ export const AUDIT_RULES: AuditRule[] = [
     id: "qonforme-plateforme-agreee",
     label: "Qonforme présenté comme une plateforme agréée (PDP)",
     pattern: /Qonforme,?\s+(?:est|sera|devient|deviendra)\s+(?:lui-même\s+)?(?:une?\s+)?(?:PDP\b|PA\b|plateforme (?:agréée|de dématérialisation))|Qonforme[^.\n]{0,60}en cours d['’]immatriculation/gi,
-    correction: "Qonforme n'est pas une plateforme agréée : c'est une « solution compatible facturation électronique », raccordée à la plateforme agréée Super PDP, qui transmet les factures.",
+    correction: "Qonforme n'est pas une plateforme agréée : c'est une « solution compatible facturation électronique », raccordée à une plateforme agréée, qui transmet les factures.",
   },
   {
     id: "ppf-alternative",
     label: "Portail public (PPF) présenté comme une voie d'envoi des factures",
     pattern: /(?:PDP\)?|partenaires?\)?|plateformes? agréées?\)?)\s+ou\s+(?:directement\s+)?(?:par\s+|via\s+)?(?:le|du)\s+(?:Portail Public de Facturation|PPF)\b|(?:choisir d['’]utiliser|passer (?:directement )?par)\s+le\s+(?:Portail Public de Facturation|PPF)\b/gi,
     correction: "Depuis la réorientation d'octobre 2024, le portail public de facturation (PPF) ne transmet pas les factures entre entreprises : chaque entreprise passe par une plateforme agréée, directement ou par un logiciel « solution compatible » raccordé à l'une d'elles.",
+  },
+  {
+    // Décision du fondateur (08/11/2026) : la plateforme agréée partenaire n'est pas nommée en public
+    id: "plateforme-nommee",
+    label: "Plateforme agréée partenaire nommée",
+    pattern: /\bSuper\s?PDP\b|\bSUPER G\b/gi,
+    correction: "Ne pas nommer la plateforme agréée partenaire : écrire « une plateforme agréée » (Qonforme est raccordé à une plateforme agréée, qui transmet les factures).",
   },
   {
     id: "pdp",

@@ -40,14 +40,14 @@ export default function CGUPage() {
         <li>Exporter les données comptables au format FEC</li>
         <li>
           {PLATFORM_SENDING_LIVE
-            ? "Recevoir les factures de ses fournisseurs et envoyer ses factures et avoirs à ses clients professionnels par la plateforme agréée Super PDP, à laquelle l'Utilisateur raccorde son compte"
-            : "Recevoir les factures de ses fournisseurs par la plateforme agréée Super PDP, à laquelle l'Utilisateur raccorde son compte"}{" "}
+            ? "Recevoir les factures de ses fournisseurs et envoyer ses factures et avoirs à ses clients professionnels par une plateforme agréée à laquelle l'Utilisateur raccorde son compte"
+            : "Recevoir les factures de ses fournisseurs par une plateforme agréée à laquelle l'Utilisateur raccorde son compte"}{" "}
           (inclus dans la formule {PLANS.starter.name})
         </li>
       </ul>
       {PLATFORM_SENDING_LIVE ? (
         <p>
-          Qonforme n&apos;est pas lui-même une plateforme agréée : il est raccordé à la plateforme agréée Super PDP, qui
+          Qonforme n&apos;est pas lui-même une plateforme agréée : il est raccordé à une plateforme agréée, qui
           transmet les factures. L&apos;envoi par la plateforme est proposé quand le client est un professionnel établi en
           France et inscrit à l&apos;annuaire de la facturation électronique, et que le compte de l&apos;Utilisateur est raccordé
           et abonné. Dans les autres cas, la facture est envoyée par email, et sa transmission par une plateforme agréée
@@ -55,7 +55,7 @@ export default function CGUPage() {
         </p>
       ) : (
         <p>
-          Qonforme n&apos;est pas lui-même une plateforme agréée : il est raccordé à la plateforme agréée Super PDP pour la
+          Qonforme n&apos;est pas lui-même une plateforme agréée : il est raccordé à une plateforme agréée pour la
           réception des factures. L&apos;envoi des factures par la plateforme n&apos;est pas encore proposé : leur transmission
           par une plateforme agréée reste à la charge de l&apos;Utilisateur.
         </p>

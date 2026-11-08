@@ -653,6 +653,10 @@ Remplace le point 2 du § 12 (« Pas d'app native »). Décision du fondateur, p
 
 ## 16. Plateforme agréée : Super PDP, en marque grise (30/10/2026)
 
+### Nom jamais écrit en public (08/11/2026)
+
+Décision du fondateur : la plateforme partenaire n'est **nommée nulle part en public** (accueil, tarifs, pages produit, outils, guides, pages métier, CGU, mentions légales, `/llms.txt`, articles générés, captures de l'accueil). On écrit « Qonforme est une solution compatible, raccordée à une plateforme agréée ». **Exception : la politique de confidentialité**, qui doit nommer ses sous-traitants (RGPD art. 13 et 28). L'application et la démo gardent le nom, utile à l'artisan pour le raccordement (vérification d'identité chez la plateforme) et pour comprendre ses messages d'erreur.
+
 ### La décision
 
 Le fondateur annonce le 30/10/2026 le partenariat avec **Super PDP** (SUPER G, Paris), plateforme agréée immatriculée en décembre 2025. La **marque blanche** est réservée aux entreprises elles-mêmes immatriculées plateformes agréées (réponse de Super PDP) : Qonforme passe par la **marque grise**, l'offre API de Super PDP pour les éditeurs. Le nom de Super PDP est visible par l'artisan (parcours d'inscription chez eux), donc nommé dans l'application. Ce n'est pas un concurrent : la règle « ne jamais nommer un concurrent » ne s'applique pas.
