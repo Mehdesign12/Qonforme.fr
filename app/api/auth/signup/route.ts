@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/resend"
 import { sendAccountEmail } from "@/lib/email/journal"
 import { notifyNewSignup } from "@/lib/email/admin-notify"
+import { attributeSignup } from "@/lib/affiliation/attribution"
+import { REF_COOKIE } from "@/lib/affiliation/model"
 import { buildWelcomeEmail } from "@/lib/email/templates/welcome"
 import { claimSequenceStep, enrollInOnboarding } from "@/lib/onboarding/store"
 import { listUnsubscribeHeaders, unsubscribePageUrl } from "@/lib/onboarding/unsubscribe"
@@ -90,6 +92,8 @@ export async function POST(request: NextRequest) {
     // l'email de bienvenue part comme avant, sans lien de désinscription.
     const userId = data.user?.id
     const enrolled = userId ? await enrollInOnboarding(admin, userId) : false
+    // Arrivé par un lien de partenaire (cookie q_ref) : compte rattaché (ne lève jamais)
+    if (userId) await attributeSignup(admin, { userId, cookie: request.cookies.get(REF_COOKIE)?.value, method: "email" })
     const to = input.email
 
     // Email de bienvenue — fire & forget (ne bloque pas la réponse) ; sans

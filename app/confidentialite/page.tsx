@@ -20,7 +20,7 @@ export default function ConfidentialitePage() {
       titleAccent="confidentialité"
       path="/confidentialite"
       subtitle="Comment Qonforme collecte, utilise et protège vos données personnelles."
-      lastUpdated="6 novembre 2026"
+      lastUpdated="10 novembre 2026"
     >
       <h2>1. Responsable du traitement</h2>
       <p>
@@ -192,9 +192,17 @@ export default function ConfidentialitePage() {
           sont conservés 30 jours au plus, sont consultés par l&apos;équipe de Qonforme seulement, et ne servent ni à la
           publicité ni à la vente de données.
         </li>
+        <li>
+          <strong>Lien d&apos;un partenaire</strong> (cookie <code>q_ref</code>, Qonforme, 90 jours) — quand vous
+          arrivez sur qonforme.fr par le lien d&apos;un site partenaire (adresse qui se termine par{" "}
+          <code>?ref=…</code>), nous comptons la visite (sans adresse IP ni identifiant) et gardons le code du
+          partenaire dans ce cookie. Si vous créez un compte, il est rattaché à ce partenaire, qui peut recevoir une
+          commission sur votre abonnement. Le partenaire ne voit que des totaux (visites, inscrits, abonnés,
+          commission) : jamais votre nom, votre adresse email ni vos documents.
+        </li>
       </ul>
       <p>
-        Ce traitement repose sur notre intérêt légitime (article 6.1.f du RGPD) et fait partie des conditions
+        Ces traitements reposent sur notre intérêt légitime (article 6.1.f du RGPD) et fait partie des conditions
         d&apos;utilisation du service (article 7 des CGU). Vous pouvez vous y opposer pour des raisons tenant à votre
         situation particulière (article 21 du RGPD) en écrivant à <strong>privacy@qonforme.fr</strong>.
       </p>

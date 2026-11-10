@@ -44,6 +44,7 @@ import { listUnsubscribeHeaders, unsubscribePageUrl } from "@/lib/onboarding/uns
 import { isReminderTarget } from "@/lib/onboarding/types"
 import { runPlanningReminders } from "@/lib/planning/reminders"
 import { runAllConnections } from "@/lib/pa/run"
+import { runWeeklyLinkChecks } from "@/lib/affiliation/admin"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -113,6 +114,17 @@ export async function GET(request: NextRequest) {
       job_name: "e-invoicing",
       status: "error" in eInvoicing || eInvoicing.errors > 0 ? "error" : "ok",
       results: eInvoicing,
+      duration_ms: Date.now() - startedAt,
+    })
+  }
+
+  // Affiliation : contrôle hebdomadaire des liens chez les partenaires, quelques pages par passage
+  const linkChecks = await runWeeklyLinkChecks(admin, { budgetMs: 20_000 }).catch((err) => ({ skipped: errorText(err) }))
+  if ("checked" in linkChecks && linkChecks.checked > 0) {
+    await admin.from("cron_logs").insert({
+      job_name: "affiliation-links",
+      status: "ok",
+      results: linkChecks,
       duration_ms: Date.now() - startedAt,
     })
   }

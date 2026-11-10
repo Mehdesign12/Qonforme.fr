@@ -63,6 +63,11 @@ export async function updateSession(request: NextRequest) {
     // (formulaire de l'application) reste réservé au compte connecté.
     '/contact',
     '/api/support/chat',
+    // Affiliation : arrivée par un lien de partenaire (?ref=, compte la visite) et
+    // page privée de statistiques du partenaire (/partenaire/<jeton>, sans compte).
+    // Propre à un partenaire : absente du service worker.
+    '/api/affiliation',
+    '/partenaire',
   ]
 
   const isPurePublic = purePublicPaths.some((path) =>
