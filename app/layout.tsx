@@ -20,6 +20,7 @@ import { SentryReplay } from "@/components/shared/SentryReplay";
 import { CookieBanner } from "@/components/consent/CookieBanner";
 import { SupportChat } from "@/components/support/SupportChat";
 import { TrackingLoader } from "@/components/consent/TrackingLoader";
+import { RefTracker } from "@/components/affiliation/RefTracker";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -247,6 +248,7 @@ export default function RootLayout({
            * Pas de balise <noscript> de suivi : sans JavaScript, aucun traceur ne part.
            */}
           <TrackingLoader />
+          <RefTracker />
           <CookieBanner />
           <SupportChat />
         </ThemeProvider>

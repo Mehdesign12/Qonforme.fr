@@ -12,6 +12,8 @@ import { sendActivationEmail } from '@/lib/stripe/activation-email'
 import { notifyNewSubscription } from '@/lib/email/admin-notify'
 import { mapStripeStatus } from '@/lib/stripe/access'
 import { logError } from '@/lib/logError'
+import { createAdminClient } from '@/lib/supabase/server'
+import { recordInvoiceCommission, voidInvoiceCommission } from '@/lib/affiliation/attribution'
 
 // IMPORTANT : lire le corps brut pour pouvoir valider la signature Stripe
 export const runtime = 'nodejs'
@@ -256,7 +258,34 @@ export async function POST(request: NextRequest) {
             currentPeriodEnd: getPeriodEnd(stripeSub) ?? undefined,
           })
           console.log(`[webhook] Échéance payée — subscription ${subscriptionId} → ${stripeSub.status}`)
+
+          // Affiliation : commission du partenaire qui a amené ce compte (ne lève jamais)
+          const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id
+          const userId = stripeSub.metadata?.user_id
+            || (customerId ? (await getSubscriptionByCustomerId(customerId))?.user_id : null)
+          const priceId = stripeSub.items.data[0]?.price.id
+          const planInfo = priceId ? getPlanByPriceId(priceId) : null
+          const paidTs = invoice.status_transitions?.paid_at
+          if (invoice.id && userId) {
+            await recordInvoiceCommission(createAdminClient(), {
+              stripeInvoiceId: invoice.id,
+              userId,
+              livemode: mode === 'live',
+              amountPaidCents: invoice.amount_paid ?? 0,
+              paidAt: new Date((paidTs || event.created) * 1000),
+              plan: planInfo?.plan ?? null,
+              billingPeriod: planInfo?.period ?? null,
+            })
+          }
         }
+        break
+      }
+
+      // Avoir avec remboursement (garantie, geste fait dans Stripe) : la commission de la facture est annulée
+      case 'credit_note.created': {
+        const note = event.data.object as Stripe.CreditNote
+        const invoiceId = typeof note.invoice === 'string' ? note.invoice : note.invoice?.id
+        if (invoiceId) await voidInvoiceCommission(createAdminClient(), invoiceId)
         break
       }
 

@@ -16,7 +16,8 @@
  * ne peut pas être limitée à la lecture (projets, rapports, suivis, analyses
  * payantes). Le site n'appelle donc QUE les outils de `OPENSEO_TOOLS` (liste
  * fermée, refusée par `callTool` pour tout autre nom) ; `get_keyword_metrics`
- * est le seul qui débite des crédits. La clé est lue dans process.env, jamais
+ * et `get_ranked_keywords` (pages d'un site partenaire, Admin › Affiliation)
+ * sont les seuls qui débitent des crédits. La clé est lue dans process.env, jamais
  * rendue, journalisée ni recopiée dans un message.
  *
  * Projet : `OPENSEO_PROJECT_ID`, sinon le projet du domaine qonforme.fr (ou le
@@ -39,7 +40,7 @@ export const OPENSEO_MCP_URL = "https://app.openseo.so/mcp"
 /** Mots-clés au plus par appel de `get_keyword_metrics` (documentation de l'outil). */
 export const OPENSEO_MAX_KEYWORDS = 700
 /** Seuls outils appelés par le site : la clé ne peut pas être limitée à la lecture. */
-export const OPENSEO_TOOLS = ["whoami", "list_projects", "get_keyword_metrics"] as const
+export const OPENSEO_TOOLS = ["whoami", "list_projects", "get_keyword_metrics", "get_ranked_keywords"] as const
 export type OpenSeoTool = (typeof OPENSEO_TOOLS)[number]
 
 const PROTOCOL_VERSION = "2025-03-26"
@@ -166,7 +167,9 @@ export function parseOpenSeoMetrics(payload: unknown): Map<string, KeywordMetric
 /** Projet du site parmi ceux du compte : celui de qonforme.fr, sinon le seul projet ; null si l'on ne peut pas choisir. */
 export function pickProject(payload: unknown): string | null {
   const projects = (Array.isArray(obj(payload)?.projects) ? (obj(payload)!.projects as unknown[]) : []).map(obj).filter((p): p is Json => p !== null && typeof p.id === "string")
-  const own = projects.find((p) => typeof p.domain === "string" && p.domain.replace(/^www\./, "").toLowerCase() === SITE_DOMAIN)
+  const owns = projects.filter((p) => typeof p.domain === "string" && p.domain.replace(/^www\./, "").toLowerCase() === SITE_DOMAIN)
+  // Plusieurs projets du domaine (une étude pour un autre pays) : celui de la France d'abord
+  const own = owns.find((p) => Number(p.locationCode) === DFS_LOCATION_FRANCE) ?? owns[0]
   if (own) return own.id as string
   return projects.length === 1 ? (projects[0].id as string) : null
 }
@@ -291,4 +294,45 @@ export async function fetchOpenSeoKeywordMetrics(keywords: string[], opts: { dea
   const out = new Map<string, KeywordMetrics>()
   keywords.forEach((keyword) => out.set(keyword, found.get(keyword) ?? { volume: null, cpc: null, difficulty: null, intent: null }))
   return out
+}
+
+/** Lignes rendues au plus par `get_ranked_keywords` (documentation de l'outil). */
+export const OPENSEO_MAX_RANKED = 100
+
+/**
+ * Mots-clés sur lesquels les pages d'un site sont classées dans Google France
+ * (position, volume, trafic estimé), triés par trafic estimé : sert aux
+ * recommandations de pages d'un partenaire (lib/affiliation/recommend.ts).
+ * Un seul appel, payant. Rend la réponse brute ; l'analyse est faite ailleurs.
+ */
+export async function fetchOpenSeoRankedKeywords(domain: string, opts: { deadline: number; maxRank?: number }): Promise<unknown> {
+  const key = openSeoApiKey()
+  if (!key) throw new OpenSeoError("OpenSEO n'est pas configuré : Paramètres › Connexions.")
+  const timeout = () => {
+    const left = opts.deadline - Date.now() - DFS_WRITE_RESERVE_MS
+    if (left < 1000) throw new OpenSeoError("OpenSEO n'a pas répondu à temps.")
+    return Math.min(DFS_CALL_TIMEOUT_MS, left)
+  }
+  const session = await openSession(key, timeout())
+  let projectId = process.env.OPENSEO_PROJECT_ID?.trim() || null
+  if (!projectId) {
+    projectId = pickProject(await callTool(session, "list_projects", {}, timeout()))
+    if (!projectId) throw new OpenSeoError("OpenSEO : projet introuvable. Ajoutez OPENSEO_PROJECT_ID (Paramètres › Connexions).")
+  }
+  return callTool(
+    session,
+    "get_ranked_keywords",
+    {
+      projectId,
+      target: domain,
+      scope: "subdomains",
+      limit: OPENSEO_MAX_RANKED,
+      sortBy: "traffic_estimate",
+      resultTypes: ["organic"],
+      maxRank: opts.maxRank ?? 30,
+      locationCode: DFS_LOCATION_FRANCE,
+      languageCode: DFS_LANGUAGE_FR,
+    },
+    timeout(),
+  )
 }

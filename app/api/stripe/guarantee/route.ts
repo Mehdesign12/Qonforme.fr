@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient, createClient } from '@/lib/supabase/server'
+import { voidUserCommissions } from '@/lib/affiliation/attribution'
 import { getStripe, modeOfSubscription } from '@/lib/stripe/mode'
 import { getSubscriptionByUserId, updateSubscriptionStatus } from '@/lib/stripe/subscription'
 import { applyGuarantee, GuaranteeError } from '@/lib/stripe/guarantee'
@@ -27,6 +28,9 @@ export async function POST() {
     for (const id of canceledSubscriptionIds) {
       await updateSubscriptionStatus(id, 'canceled', { canceledAt: new Date() })
     }
+
+    // Affiliation : un abonnement remboursé ne donne aucune commission (ne lève jamais)
+    await voidUserCommissions(createAdminClient(), user.id)
 
     console.log(`[guarantee] Remboursement de ${refunded / 100} € pour user ${user.id}`)
     return NextResponse.json({ refunded })
