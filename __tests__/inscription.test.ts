@@ -124,10 +124,9 @@ describe("entreprise (étape 1)", () => {
   it("champs requis et bornes", () => {
     expect(error(null)).toBe("Requête invalide.")
     expect(error({ ...GARNIER, name: "  " })).toBe("Indiquez le nom de votre entreprise.")
-    expect(error({ ...GARNIER, address: "" })).toBe("Indiquez l'adresse de votre entreprise.")
+    expect(validateCompanyInput({ ...GARNIER, address: "", zip_code: "", city: "" }).ok).toBe(true)
     expect(error({ ...GARNIER, zip_code: "4910" })).toBe("Code postal invalide (5 chiffres).")
     expect(error({ ...GARNIER, zip_code: "49 100" })).toBeNull()
-    expect(error({ ...GARNIER, city: "" })).toBe("Indiquez la ville.")
     expect(error({ ...GARNIER, name: "x".repeat(121) })).toMatch(/120 caractères/)
     expect(error({ ...GARNIER, address: "x".repeat(201) })).toMatch(/200 caractères/)
   })

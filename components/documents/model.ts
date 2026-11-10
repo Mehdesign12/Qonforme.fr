@@ -482,7 +482,7 @@ export function buildChecks(
 
   // Mentions de l'émetteur (SIREN et adresse) : imprimées depuis Paramètres › Entreprise
   if (company) {
-    const complete = Boolean(company.name && company.siren && company.address && company.city)
+    const complete = Boolean(company.name && company.siren?.trim() && company.address && company.city)
     check("company", complete, "Vos coordonnées et votre SIREN", "Compléter vos coordonnées (Paramètres › Entreprise)")
   }
 

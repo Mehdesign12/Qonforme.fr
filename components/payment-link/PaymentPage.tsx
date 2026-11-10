@@ -74,7 +74,7 @@ function Shell({ company, mode, backHref, children }: {
           {company && (
             <p>
               {[company.name, [company.address, [company.zipCode, company.city].filter(Boolean).join(" ")].filter(Boolean).join(", "),
-                company.siren ? `SIREN ${company.siren.replace(/(\d{3})(?=\d)/g, "$1 ")}` : null].filter(Boolean).join(" · ")}
+                company.siren?.trim() ? `SIREN ${company.siren.trim().replace(/(\d{3})(?=\d)/g, "$1 ")}` : null].filter(Boolean).join(" · ")}
             </p>
           )}
           <p>Page de règlement fournie par Qonforme. Aucun paiement n&apos;est encaissé par Qonforme.</p>

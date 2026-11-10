@@ -600,7 +600,7 @@ function ManualCompany({
               data-autofocus
             />
           </Field>
-          <Field id={`${uid}-address`} label="Adresse" error={errorOf("address")}>
+          <Field id={`${uid}-address`} label={<>Adresse <span className="font-normal text-[var(--q-text-4)]">(facultatif)</span></>} error={errorOf("address")}>
             <input {...inputProps("address")} type="text" autoComplete="street-address" placeholder="14 rue des Lices" className={AUTH_INPUT} />
           </Field>
           <div className="grid grid-cols-[2fr_3fr] gap-3">
@@ -613,11 +613,11 @@ function ManualCompany({
           </div>
           <Field
             id={`${uid}-siren`}
-            label={<>SIREN <span className="font-normal text-[var(--q-text-4)]">(facultatif pour l&rsquo;instant)</span></>}
+            label={<>SIREN <span className="font-normal text-[var(--q-text-4)]">(facultatif)</span></>}
             error={errorOf("siren")}
             hint={sirenKeyWarning(form.siren)
               ? <span className="text-[var(--q-warn)]">{sirenKeyWarning(form.siren)}</span>
-              : <>Obligatoire sur vos devis et vos factures&nbsp;: il vous sera demandé avant le premier envoi.</>}
+              : <>Vous pourrez l&rsquo;ajouter plus tard dans Paramètres&nbsp;› Entreprise.</>}
           >
             <input
               {...inputProps("siren")}

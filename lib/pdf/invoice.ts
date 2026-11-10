@@ -244,7 +244,7 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   const cityLine = [company?.zip_code, company?.city].filter(Boolean).join(" ")
   if (cityLine)            { draw(cityLine, mL, infoY, { size: 8.5, color: theme.head.sub }); infoY -= 14 }
   if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
-  else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
+  else if (company?.siren?.trim()) { draw(`SIREN : ${company.siren.trim()}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
   if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 8, color: theme.head.faint }) }
 
   drawDivider(page, theme, mL, cW, barY)
@@ -260,7 +260,7 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
     if (company?.address || invoice.client?.address) y -= 13
     if ([company?.zip_code, company?.city, invoice.client?.zip_code, invoice.client?.city].some(Boolean)) y -= 13
     y -= 13
-    if (company?.vat_number || invoice.client?.siren) y -= 13
+    if (company?.vat_number || invoice.client?.siren?.trim()) y -= 13
     drawPartiesFill(page, theme, mL, cW, barY - 8, y + 6)
   }
   draw("ÉMETTEUR",  mL,   curY, { size: 7, bold: true, color: theme.primary })
@@ -289,11 +289,11 @@ export async function generateInvoicePdf({ invoice, company: companyInput, water
   }
   if (invoice.client?.email) draw(invoice.client.email, col2, curY, { size: 8, color: grayDark })
   if (company?.siret)        draw(`SIRET ${company.siret}`, mL, curY, { size: 7.5, color: grayLight })
-  else if (company?.siren)   draw(`SIREN ${company.siren}`, mL, curY, { size: 7.5, color: grayLight })
+  else if (company?.siren?.trim())   draw(`SIREN ${company.siren.trim()}`, mL, curY, { size: 7.5, color: grayLight })
   curY -= 13
-  if (company?.vat_number || invoice.client?.siren) {
+  if (company?.vat_number || invoice.client?.siren?.trim()) {
     if (company?.vat_number)    draw(`TVA ${company.vat_number}`, mL, curY, { size: 7.5, color: grayLight })
-    if (invoice.client?.siren)  draw(`SIREN ${invoice.client.siren}`, col2, curY, { size: 7.5, color: grayLight })
+    if (invoice.client?.siren?.trim())  draw(`SIREN ${invoice.client.siren.trim()}`, col2, curY, { size: 7.5, color: grayLight })
     curY -= 13
   }
   curY -= 12

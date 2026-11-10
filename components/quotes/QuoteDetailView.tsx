@@ -895,7 +895,7 @@ function QuotePaper({ quote, company, companySettings }: { quote: QuoteDetailDat
               {company.name}
               {company.address && <><br />{company.address}{companyCity && `, ${companyCity}`}</>}
               {!company.address && companyCity && <><br />{companyCity}</>}
-              {(company.siret || company.siren) && <><br />{company.siret ? `SIRET ${fmtSiren(company.siret)}` : `SIREN ${fmtSiren(company.siren!)}`}</>}
+              {(company.siret || company.siren?.trim()) && <><br />{company.siret ? `SIRET ${fmtSiren(company.siret)}` : `SIREN ${fmtSiren(company.siren!)}`}</>}
               {company.vat_number && <><br />TVA {company.vat_number}</>}
             </>
           ) : (

@@ -113,12 +113,12 @@ describe("fermer la fenêtre sans valider", () => {
     mount()
     openManual()
     type("Garnier Plâtrerie, ou vos prénom et nom", "Garnier Plâtrerie")
-    type("Angers", "Angers")
+    type("49100", "491")
     act(() => { button(/Passer au tableau de bord/).click() })
     await flush()
 
     expect(calls.map((c) => c.body.step)).toEqual(["close"])
-    expect(calls[0].body.draft).toEqual({ company: { name: "Garnier Plâtrerie", city: "Angers", manual: true } })
+    expect(calls[0].body.draft).toEqual({ company: { name: "Garnier Plâtrerie", zip_code: "491", manual: true } })
     // Un second déclenchement (Échap, glisser) ne renvoie rien
     act(() => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })) })
     await flush()

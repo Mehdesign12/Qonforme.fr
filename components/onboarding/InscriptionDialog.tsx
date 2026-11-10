@@ -470,6 +470,8 @@ function InscriptionWindow({
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
+          // Repère du bandeau de cookies (otherModalOpen) : il s'efface tant que la fenêtre est ouverte
+          data-open=""
           onKeyDown={trapTab}
           className={cn(
             "relative flex w-full flex-col overflow-hidden bg-[var(--q-surface)] text-[var(--q-ink)]",

@@ -222,7 +222,7 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
   const cityLine = [company?.zip_code, company?.city].filter(Boolean).join(" ")
   if (cityLine)            { draw(cityLine, mL, infoY, { size: 8.5, color: theme.head.sub }); infoY -= 14 }
   if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
-  else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
+  else if (company?.siren?.trim()) { draw(`SIREN : ${company.siren.trim()}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
   if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 8, color: theme.head.faint }) }
 
   drawDivider(page, theme, mL, cW, barY)
@@ -237,7 +237,7 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
     if (company?.address || creditNote.client?.address) y -= 13
     if ([company?.zip_code, company?.city, creditNote.client?.zip_code, creditNote.client?.city].some(Boolean)) y -= 13
     y -= 13
-    if (company?.vat_number || creditNote.client?.siren) y -= 13
+    if (company?.vat_number || creditNote.client?.siren?.trim()) y -= 13
     drawPartiesFill(page, theme, mL, cW, barY - 8, y + 6)
   }
   draw("ÉMETTEUR",  mL,   curY, { size: 7, bold: true, color: theme.primary })
@@ -267,12 +267,12 @@ export async function generateCreditNotePdf({ creditNote, company: companyInput 
 
   if (creditNote.client?.email) draw(creditNote.client.email, col2, curY, { size: 8, color: grayDark })
   if (company?.siret)           draw(`SIRET ${company.siret}`, mL, curY, { size: 7.5, color: grayLight })
-  else if (company?.siren)      draw(`SIREN ${company.siren}`, mL, curY, { size: 7.5, color: grayLight })
+  else if (company?.siren?.trim())      draw(`SIREN ${company.siren.trim()}`, mL, curY, { size: 7.5, color: grayLight })
   curY -= 13
 
-  if (company?.vat_number || creditNote.client?.siren) {
+  if (company?.vat_number || creditNote.client?.siren?.trim()) {
     if (company?.vat_number)          draw(`TVA ${company.vat_number}`, mL, curY, { size: 7.5, color: grayLight })
-    if (creditNote.client?.siren)     draw(`SIREN ${creditNote.client.siren}`, col2, curY, { size: 7.5, color: grayLight })
+    if (creditNote.client?.siren?.trim())     draw(`SIREN ${creditNote.client.siren.trim()}`, col2, curY, { size: 7.5, color: grayLight })
     curY -= 13
   }
 

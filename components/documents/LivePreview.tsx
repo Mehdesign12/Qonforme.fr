@@ -81,7 +81,7 @@ export function LivePreview({
             <span className="flex min-w-0 flex-col">
               <strong className="text-[12.5px] font-semibold">{companyName}</strong>
               {companyAddress && <span className="text-[#64748B]">{companyAddress}</span>}
-              {company?.siren && <span className="font-mono text-[10.5px] text-[#64748B]">SIREN {formatSiren(company.siren)}</span>}
+              {company?.siren?.trim() && <span className="font-mono text-[10.5px] text-[#64748B]">SIREN {formatSiren(company.siren)}</span>}
             </span>
           </div>
           <div className="flex max-w-[48%] shrink-0 flex-col items-end gap-0.5 text-right">

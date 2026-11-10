@@ -106,7 +106,7 @@ export function InvoicePaper({
               <p className="font-semibold">{company.name}</p>
               {company.address && <p>{company.address}</p>}
               {(company.zip_code || company.city) && <p>{[company.zip_code, company.city].filter(Boolean).join(" ")}</p>}
-              {(company.siret || company.siren) && (
+              {(company.siret || company.siren?.trim()) && (
                 <p>{company.siret ? `SIRET ${company.siret}` : `SIREN ${formatSiren(company.siren!)}`}</p>
               )}
               {company.vat_number && <p>TVA {company.vat_number}</p>}

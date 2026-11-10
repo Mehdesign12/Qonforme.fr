@@ -196,7 +196,7 @@ export async function generatePurchaseOrderPdf({ po, company: companyInput }: Pu
   const cityLine = [company?.zip_code, company?.city].filter(Boolean).join(" ")
   if (cityLine)            { draw(cityLine, mL, infoY, { size: 8.5, color: theme.head.sub }); infoY -= 14 }
   if (company?.siret)      { draw(`SIRET : ${company.siret}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
-  else if (company?.siren) { draw(`SIREN : ${company.siren}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
+  else if (company?.siren?.trim()) { draw(`SIREN : ${company.siren.trim()}`, mL, infoY, { size: 8, color: theme.head.faint }); infoY -= 13 }
   if (company?.vat_number) { draw(`TVA : ${company.vat_number}`, mL, infoY, { size: 8, color: theme.head.faint }) }
 
   // Barre de couleur horizontale
@@ -212,7 +212,7 @@ export async function generatePurchaseOrderPdf({ po, company: companyInput }: Pu
     if (company?.address || po.client?.address) y -= 13
     if ([company?.zip_code, company?.city, po.client?.zip_code, po.client?.city].some(Boolean)) y -= 13
     y -= 13
-    if (company?.vat_number || po.client?.siren) y -= 13
+    if (company?.vat_number || po.client?.siren?.trim()) y -= 13
     drawPartiesFill(page, theme, mL, cW, barY - 8, y + 6)
   }
   draw("ÉMETTEUR",     mL,   curY, { size: 7, bold: true, color: theme.primary })
@@ -242,12 +242,12 @@ export async function generatePurchaseOrderPdf({ po, company: companyInput }: Pu
 
   if (po.client?.email)  draw(po.client.email,  col2, curY, { size: 8,   color: grayDark })
   if (company?.siret)    draw(`SIRET ${company.siret}`,  mL, curY, { size: 7.5, color: grayLight })
-  else if (company?.siren) draw(`SIREN ${company.siren}`, mL, curY, { size: 7.5, color: grayLight })
+  else if (company?.siren?.trim()) draw(`SIREN ${company.siren.trim()}`, mL, curY, { size: 7.5, color: grayLight })
   curY -= 13
 
-  if (company?.vat_number || po.client?.siren) {
+  if (company?.vat_number || po.client?.siren?.trim()) {
     if (company?.vat_number)  draw(`TVA ${company.vat_number}`, mL,   curY, { size: 7.5, color: grayLight })
-    if (po.client?.siren)     draw(`SIREN ${po.client.siren}`,  col2, curY, { size: 7.5, color: grayLight })
+    if (po.client?.siren?.trim())     draw(`SIREN ${po.client.siren.trim()}`,  col2, curY, { size: 7.5, color: grayLight })
     curY -= 13
   }
   curY -= 12
