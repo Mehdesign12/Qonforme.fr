@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { sirenDigits } from "@/components/clients/ClientForm"
+import { sirenDigits } from "@/lib/clients/siren"
 
 describe("SIREN d'un client (jamais bloquant pour sa clé)", () => {
   it("garde les chiffres, ramène un SIRET à son SIREN", () => {
