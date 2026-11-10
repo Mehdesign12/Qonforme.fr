@@ -255,7 +255,7 @@ describe("envoi à la main", () => {
 
   it("conseille le modèle selon le blocage", () => {
     expect(suggestedTemplate({ ...facts, hasSiren: false }, 0)).toBe("manual_company")
-    expect(suggestedTemplate({ ...facts, oldestDraftQuote: { id: "q", number: null, clientName: null, totalTtc: null, clientHasEmail: true } }, 1)).toBe("manual_quote_send")
+    expect(suggestedTemplate({ ...facts, oldestDraftQuote: { id: "q", number: null, clientName: null, totalTtc: null, clientHasEmail: true, createdAt: "2026-11-01T10:00:00Z" } }, 1)).toBe("manual_quote_send")
     expect(suggestedTemplate(facts, 0)).toBe("manual_first_quote")
     expect(suggestedTemplate({ ...facts, quotesSent: 2 }, 2)).toBe("manual_free")
   })
