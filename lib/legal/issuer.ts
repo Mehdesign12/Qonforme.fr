@@ -1,20 +1,23 @@
 /**
- * Identité de l'émetteur, exigée avant tout envoi d'un devis, d'une facture ou
- * d'un bon de commande : nom ou dénomination, adresse complète et SIREN
- * figurent obligatoirement sur ces documents (code de commerce, art. R123-237 ;
- * CGI, ann. II, art. 242 nonies A ; service-public.gouv.fr, F31808 et F31144).
+ * Identité de l'émetteur avant l'envoi d'un devis, d'une facture ou d'un bon de
+ * commande.
  *
- * Depuis l'inscription en deux champs (06/10/2026), l'entreprise peut être
- * saisie à la main sans SIREN : les brouillons, aperçus et PDF restent libres,
- * seul l'envoi est refusé (409 `COMPANY_REQUIRED`) tant que l'identité est
- * incomplète. La garde passe AVANT le mur de paiement : un artisan ne paie
- * jamais une formule pour se voir ensuite refuser l'envoi.
+ * Depuis le 10/11/2026 (décision du fondateur : un inscrit est parti après
+ * l'alerte « SIREN manquant »), **seul le nom de l'entreprise est exigé** :
+ * sans SIREN ni adresse, le document part quand même. Ces mentions restent
+ * obligatoires sur une facture (C. com. R123-237 ; CGI ann. II art. 242 nonies A) :
+ * l'artisan les complète quand il veut (Paramètres › Entreprise, barre latérale
+ * « SIREN à compléter »), le Factur-X le signale en avertissement, et l'envoi par
+ * la plateforme agréée garde sa propre exigence de SIREN (lib/pa/delivery.ts).
+ *
+ * Refus (409 `COMPANY_REQUIRED`) seulement sans entreprise ou sans nom : un
+ * document sans émetteur n'a pas de sens. La garde passe AVANT le mur de
+ * paiement.
  *
  * Routes gardées : POST /api/quotes/[id]/send, POST /api/invoices/[id]/send,
  * PATCH /api/invoices/[id] quand la facture quitte le brouillon,
  * POST /api/purchase-orders/[id]/send, création, envoi et renouvellement d'un
- * lien de signature (POST /api/signature/[type]/[id]). Jamais les relances
- * d'une facture déjà émise ni les avoirs.
+ * lien de signature (POST /api/signature/[type]/[id]).
  */
 import { NextResponse } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -22,7 +25,7 @@ import type { CompanyRow } from "@/lib/legal/db"
 import { COMPANY_REQUIRED } from "@/lib/onboarding/inscription"
 
 export const COMPANY_REQUIRED_MESSAGE =
-  "Ajoutez le SIREN et l'adresse de votre entreprise avant l'envoi : ils figurent obligatoirement sur vos devis et vos factures (Paramètres › Entreprise)."
+  "Ajoutez le nom de votre entreprise avant l'envoi : il figure sur vos devis et vos factures (Paramètres › Entreprise)."
 
 /** Colonnes lues par la garde. */
 export const ISSUER_COLUMNS = "name,siren,siret,address,zip_code,city"
@@ -45,11 +48,10 @@ export function issuerSiren(company: CompanyRow | null | undefined): string | nu
   return /^\d{14}$/.test(siret) ? siret.slice(0, 9) : null
 }
 
-/** Message à afficher si l'identité de l'émetteur est incomplète, sinon null. */
+/** Message à afficher s'il n'y a ni entreprise ni nom, sinon null (SIREN et adresse facultatifs à l'envoi). */
 export function issuerIdentityError(company: CompanyRow | null): string | null {
-  if (!company) return COMPANY_REQUIRED_MESSAGE
-  const complete = ["name", "address", "zip_code", "city"].every((k) => filled(company[k]))
-  return complete && issuerSiren(company) ? null : COMPANY_REQUIRED_MESSAGE
+  if (!company || !filled(company.name)) return COMPANY_REQUIRED_MESSAGE
+  return null
 }
 
 /**

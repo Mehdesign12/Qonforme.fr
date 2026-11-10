@@ -56,6 +56,11 @@ const EMPTY: ClientFormValues = {
   name: "", siren: "", vat_number: "", email: "", phone: "", address: "", zip_code: "", city: "",
 }
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+/** Chiffres du SIREN saisi ; un SIRET (14 chiffres) est ramené à son SIREN. */
+export function sirenDigits(value: string): string {
+  const d = value.replace(/\D/g, "")
+  return d.length === 14 ? d.slice(0, 9) : d
+}
 const FIELD_ORDER: (keyof ClientFormValues)[] = ["name", "siren", "vat_number", "email", "phone", "address", "zip_code", "city"]
 
 /** Champs plus hauts et plus ronds sur mobile (planche mobile : 48 px, rayon 14). */
@@ -173,14 +178,11 @@ export function ClientFormPage({
     if (fields.name.trim().length < 2) {
       errs.name = isPro ? "Raison sociale requise (2 caractères min.)" : "Nom requis (2 caractères min.)"
     }
-    const siren = fields.siren.trim()
-    if (isPro && siren) {
-      // Clé de contrôle exigée pour un SIREN saisi ou modifié ; un SIREN déjà
-      // enregistré reste modifiable sans bloquer le reste de la fiche
-      const unchanged = mode === "edit" && siren === (initial?.siren ?? "").trim()
-      if (!/^\d{9}$/.test(siren)) errs.siren = "SIREN invalide (9 chiffres)"
-      else if (!unchanged && !isValidSiren(siren)) errs.siren = "SIREN invalide (clé de contrôle)"
-    }
+    // SIREN facultatif et jamais bloquant pour sa clé de contrôle (10/11/2026 :
+    // le moins de friction possible) ; un SIRET de 14 chiffres est ramené à son SIREN
+    const siren = sirenDigits(fields.siren)
+    if (isPro && siren && !/^\d{9}$/.test(siren)) errs.siren = "SIREN : 9 chiffres (ou laissez vide)"
+
     if (fields.email.trim() && !EMAIL_RE.test(fields.email.trim())) errs.email = "Adresse e-mail invalide"
     return errs
   }
@@ -202,7 +204,7 @@ export function ClientFormPage({
     try {
       await onSubmit({
         name: fields.name.trim(),
-        siren: isPro ? clean(fields.siren) : null,
+        siren: isPro ? sirenDigits(fields.siren) || null : null,
         vat_number: isPro ? clean(fields.vat_number) : null,
         email: clean(fields.email),
         phone: clean(fields.phone),
@@ -217,7 +219,7 @@ export function ClientFormPage({
   }
 
   /* ── Vérifications (colonne de droite) ────────────────────────────── */
-  const sirenOk = isValidSiren(fields.siren.trim())
+  const sirenOk = isValidSiren(sirenDigits(fields.siren))
   const emailOk = EMAIL_RE.test(fields.email.trim())
   const addressOk = Boolean(fields.address.trim() && fields.zip_code.trim() && fields.city.trim())
   const checks = [
@@ -227,8 +229,8 @@ export function ClientFormPage({
           label: "SIREN valide",
           sub: lookup.status === "found" && sirenOk ? "Trouvé au répertoire Sirene"
             : sirenOk ? "Clé de contrôle vérifiée"
-            : fields.siren ? "Clé de contrôle incorrecte"
-            : "Obligatoire pour un client professionnel",
+            : fields.siren ? "Clé de contrôle incorrecte : vérifiez-le si vous pouvez"
+            : "Facultatif : utile pour un client professionnel",
         }
       : { ok: true, label: "Particulier", sub: "Pas de SIREN à saisir" },
     { ok: emailOk, label: "E-mail", sub: emailOk ? "Prêt pour l'envoi des devis et factures" : "Nécessaire pour envoyer devis et factures" },
