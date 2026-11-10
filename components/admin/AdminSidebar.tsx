@@ -14,7 +14,8 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
-import { ArrowLeft, ChevronRight, Ellipsis, LogOut } from 'lucide-react'
+import { ArrowLeft, BellDot, ChevronRight, Ellipsis, LogOut } from 'lucide-react'
+import { AFF_SEEN_EVENT } from '@/lib/affiliation/news'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { LOGO_LONG_BLUE, LOGO_LONG_LIGHT } from '@/lib/brand'
@@ -30,6 +31,30 @@ export interface AdminCounts {
   unreadSupport: number | null
   /** Erreurs non résolues (null : lecture impossible). */
   unresolvedErrors: number | null
+  /** Nouveaux inscrits et nouvelles commissions des partenaires (lus dans le navigateur, voir useAffNews). */
+  affPartners?: number | null
+  affCommissions?: number | null
+}
+
+/**
+ * Nouveaux événements de l'affiliation : relus à chaque page et dès qu'une page
+ * les marque vus (cookie de l'admin, lib/affiliation/news.ts).
+ */
+function useAffCounts(counts: AdminCounts): AdminCounts {
+  const pathname = usePathname()
+  const [news, setNews] = useState<{ partners: number | null; commissions: number | null } | null>(null)
+  useEffect(() => {
+    let alive = true
+    const load = () =>
+      fetch('/api/admin/affiliation/news', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (alive && d) setNews({ partners: d.partners ?? null, commissions: d.commissions ?? null }) })
+        .catch(() => {})
+    load()
+    window.addEventListener(AFF_SEEN_EVENT, load)
+    return () => { alive = false; window.removeEventListener(AFF_SEEN_EVENT, load) }
+  }, [pathname])
+  return news ? { ...counts, affPartners: news.partners, affCommissions: news.commissions } : counts
 }
 
 /* ------------------------------------------------------------------ */
@@ -80,6 +105,8 @@ export function AdminBrand({ height = 19 }: { height?: number }) {
 function countOf(badge: AdminBadge | undefined, counts: AdminCounts): number | null {
   if (badge === 'support') return counts.unreadSupport
   if (badge === 'errors') return counts.unresolvedErrors
+  if (badge === 'aff-partners') return counts.affPartners ?? null
+  if (badge === 'aff-commissions') return counts.affCommissions ?? null
   return null
 }
 
@@ -87,15 +114,21 @@ function countOf(badge: AdminBadge | undefined, counts: AdminCounts): number | n
 function CountBadge({ badge, counts, className }: { badge?: AdminBadge; counts: AdminCounts; className?: string }) {
   const n = countOf(badge, counts)
   if (!badge || !n) return null
-  const label = badge === 'support' ? `${n} message${n > 1 ? 's' : ''} non lu${n > 1 ? 's' : ''}` : `${n} erreur${n > 1 ? 's' : ''} non résolue${n > 1 ? 's' : ''}`
+  const label =
+    badge === 'support' ? `${n} message${n > 1 ? 's' : ''} non lu${n > 1 ? 's' : ''}`
+    : badge === 'errors' ? `${n} erreur${n > 1 ? 's' : ''} non résolue${n > 1 ? 's' : ''}`
+    : badge === 'aff-partners' ? `${n} nouvel${n > 1 ? 's' : ''} inscrit${n > 1 ? 's' : ''}`
+    : `${n} nouvel${n > 1 ? 's' : ''} événement${n > 1 ? 's' : ''}`
+  const affiliation = badge === 'aff-partners' || badge === 'aff-commissions'
   return (
     <span
       className={cn(
         'q-pill !h-5 !min-w-5 justify-center !px-1.5 !text-[11px] tabular-nums',
-        badge === 'errors' ? 'q-pill-danger' : 'q-pill-warn',
+        badge === 'errors' ? 'q-pill-danger' : affiliation ? 'q-pill-info !gap-0.5' : 'q-pill-warn',
         className,
       )}
     >
+      {affiliation && <BellDot className="size-3 shrink-0" aria-hidden />}
       <span aria-hidden>{n > 99 ? '99+' : n}</span>
       <span className="sr-only">{label}</span>
     </span>
@@ -128,7 +161,8 @@ function NavItem({ link, pathname, counts, onNavigate }: { link: AdminNavLink; p
   )
 }
 
-export function AdminSidebar({ counts }: { counts: AdminCounts }) {
+export function AdminSidebar({ counts: serverCounts }: { counts: AdminCounts }) {
+  const counts = useAffCounts(serverCounts)
   const pathname = usePathname()
   const logout = useAdminLogout()
 
@@ -249,7 +283,8 @@ function PlusSheet({ open, onOpenChange, counts }: { open: boolean; onOpenChange
   )
 }
 
-export function AdminMobileNav({ counts }: { counts: AdminCounts }) {
+export function AdminMobileNav({ counts: serverCounts }: { counts: AdminCounts }) {
+  const counts = useAffCounts(serverCounts)
   const pathname = usePathname()
   const [plusOpen, setPlusOpen] = useState(false)
   const inTabs = TABS.some((t) => isAdminActive(pathname, t.href))

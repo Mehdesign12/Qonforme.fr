@@ -5,9 +5,12 @@ import { createAdminClient } from "@/lib/supabase/server"
 import { EmptyState, Kpi, KpiGrid, Panel, StatusPill } from "@/components/app/kit"
 import { fmtDate, fmtInt } from "@/components/admin/ui"
 import { SetCrumb } from "@/components/layout/crumb"
-import { AffiliationError, WeeklyBars, planText } from "@/components/admin/affiliation/ui"
+import { cookies } from "next/headers"
+import { AffiliationError, NewBadge, NewTag, WeeklyBars, newLabel, planText } from "@/components/admin/affiliation/ui"
+import { MarkAffSeen } from "@/components/admin/affiliation/MarkSeen"
+import { SEEN_COOKIE, isNewLine, isNewSignup, parseSeen } from "@/lib/affiliation/news"
 import { EditPartnerButton, LinkGenerator, PagesPanel, PayoutButton, StatsLinkButton } from "@/components/admin/affiliation/client"
-import { partnerDetail } from "@/lib/affiliation/data"
+import { partnerDetail, recentSignups } from "@/lib/affiliation/data"
 import { DISPLAY_LABEL, DISPLAY_TONE, euros, percent, rateText } from "@/lib/affiliation/model"
 import { MAIN_PAGES } from "@/lib/seo/links/catalog"
 import { cn } from "@/lib/utils"
@@ -31,10 +34,15 @@ export default async function PartnerPage({ params, searchParams }: { params: Pr
   const { onglet } = await searchParams
   if (!UUID.test(id)) notFound()
   const tab: TabKey = (TABS.find((t) => t.key === onglet)?.key ?? "apercu") as TabKey
-  const res = await partnerDetail(createAdminClient(), id)
+  const db = createAdminClient()
+  const [res, signups] = await Promise.all([partnerDetail(db, id), recentSignups(db)])
   if (!res.ok) return <AffiliationError failure={res} />
   if (!res.data) notFound()
   const { partner, stats, pages, links, weeks, visitsByPath, lines } = res.data
+  // Nouveaux événements, relus avant que l'onglet ouvert ne les marque vus
+  const seen = parseSeen((await cookies()).get(SEEN_COOKIE)?.value)
+  const newSignups = signups.ok ? signups.data.filter((s) => s.partner_id === partner.id && isNewSignup(s, seen)).length : 0
+  const newEvents = lines.filter((l) => isNewLine(l, seen)).length
   const c = stats.commissions
   const terms = rateText(partner.commission_rate, partner.commission_months)
 
@@ -66,18 +74,23 @@ export default async function PartnerPage({ params, searchParams }: { params: Pr
 
       <nav aria-label="Sections du partenaire" className="q-tabs">
         {TABS.map((t) => (
-          <Link key={t.key} href={`/admin/affiliation/${partner.id}${t.key === "apercu" ? "" : `?onglet=${t.key}`}`} aria-current={tab === t.key ? "page" : undefined} scroll={false}>
+          <Link key={t.key} href={`/admin/affiliation/${partner.id}${t.key === "apercu" ? "" : `?onglet=${t.key}`}`} aria-current={tab === t.key ? "page" : undefined} scroll={false} className="inline-flex items-center gap-1.5">
             {t.label}
+            {t.key === "apercu" && <NewBadge count={newSignups} label={newLabel(newSignups, "signup")} />}
+            {t.key === "commissions" && <NewBadge count={newEvents} label={newLabel(newEvents, "event")} />}
             {t.key === "pages" && links.missing > 0 && <span className="q-count !text-[var(--q-danger)]">{links.missing}</span>}
           </Link>
         ))}
       </nav>
 
+      {tab === "apercu" && signups.ok && <MarkAffSeen partnerSignups={partner.id} />}
+      {tab === "commissions" && <MarkAffSeen partnerCommissions={partner.id} />}
+
       {tab === "apercu" && (
         <>
           <KpiGrid>
             <Kpi label="Visites · 30 jours" value={fmtInt(stats.visits30)} sub={`${fmtInt(stats.visitsAll)} depuis le début`} />
-            <Kpi label="Inscrits · 30 jours" value={fmtInt(stats.signups30)} sub={`${fmtInt(stats.signupsAll)} depuis le début`} />
+            <Kpi label={<span className="inline-flex items-center gap-1.5">Inscrits · 30 jours<NewBadge count={newSignups} label={newLabel(newSignups, "signup")} /></span>} value={fmtInt(stats.signups30)} sub={`${fmtInt(stats.signupsAll)} depuis le début`} />
             <Kpi label="Abonnés payants" value={fmtInt(stats.paidAll)} sub={`dont ${fmtInt(stats.paid30)} ces 30 jours`} />
             <Kpi label="Visite → inscrit" value={percent(stats.signups30, stats.visits30)} sub="sur 30 jours" />
           </KpiGrid>
@@ -136,8 +149,8 @@ export default async function PartnerPage({ params, searchParams }: { params: Pr
                 <thead><tr><th>Paiement du</th><th>Formule</th><th className="q-num">Montant payé</th><th className="q-num">Commission</th><th>État</th></tr></thead>
                 <tbody>
                   {lines.map((l) => (
-                    <tr key={l.id} className={cn(!l.livemode && "opacity-60")}>
-                      <td className="tabular-nums">{fmtDate(l.paid_at)}</td>
+                    <tr key={l.id} className={cn(isNewLine(l, seen) ? "bg-[var(--q-info-bg)]" : !l.livemode && "opacity-60")}>
+                      <td className="tabular-nums"><span className="inline-flex items-center gap-2">{fmtDate(l.paid_at)}{isNewLine(l, seen) && <NewTag />}</span></td>
                       <td>{planText(l.plan, l.billing_period)}{!l.livemode && <StatusPill tone="warn" className="ml-2">Essai</StatusPill>}</td>
                       <td className="q-num">{euros(l.amount_paid_cents)}</td>
                       <td className="q-num font-semibold">{l.display === "void" ? "—" : euros(l.commission_cents)}</td>

@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-export type AdminBadge = "support" | "errors"
+export type AdminBadge = "support" | "errors" | "aff-partners" | "aff-commissions"
 
 export interface AdminNavLink {
   key: string
@@ -62,8 +62,8 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     key: "acquisition",
     label: "Acquisition",
     links: [
-      { key: "affiliation", label: "Partenaires", href: "/admin/affiliation", icon: Link2, hint: "Sites qui citent Qonforme et leurs liens" },
-      { key: "affiliation-commissions", label: "Commissions", href: "/admin/affiliation/commissions", icon: Coins, hint: "À verser aux partenaires" },
+      { key: "affiliation", label: "Partenaires", href: "/admin/affiliation", icon: Link2, hint: "Sites qui citent Qonforme et leurs liens", badge: "aff-partners" },
+      { key: "affiliation-commissions", label: "Commissions", href: "/admin/affiliation/commissions", icon: Coins, hint: "À verser aux partenaires", badge: "aff-commissions" },
     ],
   },
   {

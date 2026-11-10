@@ -3,16 +3,30 @@ import { CircleAlert, Link2 } from "lucide-react"
 import { createAdminClient } from "@/lib/supabase/server"
 import { EmptyState, Kpi, KpiGrid, PageHeader, StatusPill } from "@/components/app/kit"
 import { fmtInt } from "@/components/admin/ui"
-import { AffiliationError } from "@/components/admin/affiliation/ui"
+import { cookies } from "next/headers"
+import { AffiliationError, NewBadge } from "@/components/admin/affiliation/ui"
+import { MarkAffSeen } from "@/components/admin/affiliation/MarkSeen"
+import { SEEN_COOKIE, isNewLine, isNewSignup, parseSeen } from "@/lib/affiliation/news"
 import { NewPartnerButton } from "@/components/admin/affiliation/client"
-import { listPartners } from "@/lib/affiliation/data"
+import { listPartners, recentCommissionEvents, recentSignups } from "@/lib/affiliation/data"
 import { euros, percent } from "@/lib/affiliation/model"
 
 export const dynamic = "force-dynamic"
 export const metadata = { title: "Admin — Partenaires" }
 
 export default async function AffiliationPage() {
-  const res = await listPartners(createAdminClient())
+  const db = createAdminClient()
+  const [res, signups, lines] = await Promise.all([listPartners(db), recentSignups(db), recentCommissionEvents(db)])
+  // Nouveaux événements par partenaire, relus avant que la page ne marque les inscrits vus
+  const seen = parseSeen((await cookies()).get(SEEN_COOKIE)?.value)
+  const fresh = new Map<string, { signups: number; events: number }>()
+  const bump = (id: string, k: "signups" | "events") => {
+    const f = fresh.get(id) ?? { signups: 0, events: 0 }
+    f[k]++
+    fresh.set(id, f)
+  }
+  if (signups.ok) signups.data.forEach((s) => isNewSignup(s, seen) && bump(s.partner_id, "signups"))
+  if (lines.ok) lines.data.forEach((l) => isNewLine(l, seen) && bump(l.partner_id, "events"))
 
   return (
     <div className="flex flex-col gap-5">
@@ -31,13 +45,25 @@ export default async function AffiliationPage() {
           action={<NewPartnerButton />}
         />
       ) : (
-        <List items={res.data} />
+        <List items={res.data} fresh={fresh} />
       )}
+      {res.ok && signups.ok && <MarkAffSeen signups />}
     </div>
   )
 }
 
-function List({ items }: { items: Extract<Awaited<ReturnType<typeof listPartners>>, { ok: true }>["data"] }) {
+type Fresh = Map<string, { signups: number; events: number }>
+
+function freshText(f: { signups: number; events: number } | undefined): { n: number; label: string } {
+  if (!f) return { n: 0, label: "" }
+  const parts = [
+    f.signups ? `${f.signups} nouvel${f.signups > 1 ? "s" : ""} inscrit${f.signups > 1 ? "s" : ""}` : "",
+    f.events ? `${f.events} nouvel${f.events > 1 ? "s" : ""} événement${f.events > 1 ? "s" : ""} de commission` : "",
+  ].filter(Boolean)
+  return { n: f.signups + f.events, label: parts.join(", ") }
+}
+
+function List({ items, fresh }: { items: Extract<Awaited<ReturnType<typeof listPartners>>, { ok: true }>["data"]; fresh: Fresh }) {
   const active = items.filter((i) => i.partner.status === "active")
   const sum = (f: (i: (typeof items)[number]) => number) => active.reduce((s, i) => s + f(i), 0)
   const visits = sum((i) => i.stats.visits30)
@@ -73,7 +99,10 @@ function List({ items }: { items: Extract<Awaited<ReturnType<typeof listPartners
             {items.map(({ partner, stats, links }) => (
               <tr key={partner.id} className={partner.status === "archived" ? "opacity-60" : undefined}>
                 <td>
-                  <Link href={`/admin/affiliation/${partner.id}`} className="font-semibold text-[var(--q-ink)] hover:text-[var(--q-accent-strong)]">{partner.name}</Link>
+                  <span className="inline-flex items-center gap-2">
+                    <Link href={`/admin/affiliation/${partner.id}`} className="font-semibold text-[var(--q-ink)] hover:text-[var(--q-accent-strong)]">{partner.name}</Link>
+                    <NewBadge count={freshText(fresh.get(partner.id)).n} label={freshText(fresh.get(partner.id)).label} />
+                  </span>
                   <div className="text-xs text-[var(--q-text-4)]">{partner.site || "—"}{partner.status === "archived" ? " · archivé" : ""}</div>
                 </td>
                 <td><span className="font-mono text-[13px] text-[var(--q-text-2)]">{partner.code}</span></td>
@@ -93,7 +122,10 @@ function List({ items }: { items: Extract<Awaited<ReturnType<typeof listPartners
           <li key={partner.id}>
             <Link href={`/admin/affiliation/${partner.id}`} className="q-list-row">
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-semibold">{partner.name}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-semibold">{partner.name}</span>
+                  <NewBadge count={freshText(fresh.get(partner.id)).n} label={freshText(fresh.get(partner.id)).label} />
+                </span>
                 <span className="truncate text-xs text-[var(--q-text-4)]">{fmtInt(stats.visits30)} visites · {fmtInt(stats.signups30)} inscrits · {fmtInt(stats.paidAll)} abonnés</span>
               </span>
               <span className="flex flex-col items-end gap-1">
