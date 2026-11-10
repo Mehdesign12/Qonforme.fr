@@ -34,6 +34,9 @@ export async function updateSession(request: NextRequest) {
     '/plan-du-site',
     '/devenir-a-son-compte',
     '/api/webhooks/stripe',
+    // Webhook Resend (journal des emails) et liens de retour des emails : sans connexion
+    '/api/webhooks/resend',
+    '/api/emails/c',
     '/api/og',
     '/api/cron',
     '/api/outils',

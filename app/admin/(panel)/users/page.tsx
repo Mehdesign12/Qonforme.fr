@@ -7,23 +7,27 @@ import AdminQuickPlanToggle from './AdminQuickPlanToggle'
 import { ProgressCell } from '@/components/admin/ProgressCell'
 import { computeProgress, type Progress, type ProgressStatus } from '@/lib/admin/onboarding-progress'
 import { fetchProgressCounts } from '@/lib/admin/progress-data'
+import { loadLastEmails, type AccountEmailRow } from '@/lib/admin/account-emails'
+import { LastEmailCell } from '@/components/admin/emails/LastEmailCell'
+import { templateLabel } from '@/lib/email/account-templates'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin — Utilisateurs' }
 
-interface SearchParams { q?: string; plan?: string; status?: string; parcours?: string }
+interface SearchParams { q?: string; plan?: string; status?: string; parcours?: string; emails?: string }
 
 const PROGRESS_FILTERS: ProgressStatus[] = ['needs_help', 'in_progress', 'complete']
 
 const LIMIT = 200
 const INACTIVE_MS = 30 * 24 * 60 * 60 * 1000
+const STALE_EMAIL_MS = 3 * 24 * 60 * 60 * 1000
 
 /** Échappe les jokers de LIKE (% _ \) : « 50% » cherche « 50% ». */
 function likePattern(term: string): string {
   return `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
 }
 
-async function getUsers(search: string, planFilter: string, statusFilter: string, progressFilter: string) {
+async function getUsers(search: string, planFilter: string, statusFilter: string, progressFilter: string, emailFilter: string) {
   const admin = createAdminClient()
 
   // Emails et dernières connexions via l'API Auth Admin (un seul appel)
@@ -68,7 +72,10 @@ async function getUsers(search: string, planFilter: string, statusFilter: string
 
   // Parcours (SIREN, devis, factures) : lu en base, sans cookie. Une lecture en échec n'est jamais lue « zéro ».
   const sirenByUser = new Map(companies.map(c => [c.user_id, (c as { siren?: string | null }).siren ?? null]))
-  const counts = await fetchProgressCounts(admin, userIds, sirenByUser)
+  const [counts, lastEmails] = await Promise.all([
+    fetchProgressCounts(admin, userIds, sirenByUser),
+    loadLastEmails(admin, userIds),
+  ])
 
   let rows = companies.map(c => {
     const sub  = subMap.get(c.user_id)
@@ -87,6 +94,7 @@ async function getUsers(search: string, planFilter: string, statusFilter: string
       progress: (counts && counts.get(c.user_id)
         ? computeProgress(counts.get(c.user_id)!, auth?.createdAt ?? c.created_at)
         : null) as Progress | null,
+      lastEmail: (lastEmails ? lastEmails.get(c.user_id) ?? null : undefined) as AccountEmailRow | null | undefined,
     }
   })
 
@@ -95,6 +103,10 @@ async function getUsers(search: string, planFilter: string, statusFilter: string
   if (statusFilter) rows = rows.filter(r => r.subStatus === statusFilter)
   // Sans lecture du parcours, le filtre ne peut rien dire : il est ignoré et l'écran le signale
   if (progressFilter && counts) rows = rows.filter(r => r.progress?.status === progressFilter)
+  // Bloqués sans email depuis 3 jours : à relancer à la main
+  if (emailFilter === 'stale' && counts && lastEmails) {
+    rows = rows.filter(r => r.progress?.status === 'needs_help' && (!r.lastEmail || Date.now() - new Date(r.lastEmail.sent_at).getTime() > STALE_EMAIL_MS))
+  }
 
   return { rows, error: null, authError: !!authError, truncated: companies.length === LIMIT, progressError: !counts }
 }
@@ -113,9 +125,10 @@ export default async function AdminUsersPage({
   const plan   = params.plan ?? ''
   const status = params.status ?? ''
   const parcours = PROGRESS_FILTERS.includes(params.parcours as ProgressStatus) ? (params.parcours as string) : ''
-  const filtered = !!(q || plan || status || parcours)
+  const emails = params.emails === 'stale' ? 'stale' : ''
+  const filtered = !!(q || plan || status || parcours || emails)
 
-  const { rows: users, error, authError, truncated, progressError } = await getUsers(q, plan, status, parcours)
+  const { rows: users, error, authError, truncated, progressError } = await getUsers(q, plan, status, parcours, emails)
 
   return (
     <div className="flex flex-col gap-5">
@@ -161,6 +174,15 @@ export default async function AdminUsersPage({
             { value: 'complete', label: 'Première facture envoyée' },
           ]}
         />
+        <FilterSelect
+          name="emails"
+          label="Emails"
+          defaultValue={emails}
+          options={[
+            { value: '', label: 'Tous les emails' },
+            { value: 'stale', label: 'Bloqués sans email depuis 3 jours' },
+          ]}
+        />
       </FilterBar>
 
       {progressError && !error && (
@@ -190,13 +212,14 @@ export default async function AdminUsersPage({
           {/* Tableau (ordinateur) */}
           <section aria-label="Liste des utilisateurs" className="q-card hidden overflow-hidden md:block">
             <div className="overflow-x-auto">
-              <table className="q-table min-w-[980px] [&_th]:border-t-0">
+              <table className="q-table min-w-[1180px] [&_th]:border-t-0">
                 <thead>
                   <tr className="bg-[var(--q-surface-2)]">
                     <th scope="col">Compte</th>
                     <th scope="col">Formule</th>
                     <th scope="col">Abonnement</th>
                     <th scope="col">Parcours</th>
+                    <th scope="col">Dernier email</th>
                     <th scope="col">Inscription</th>
                     <th scope="col">Dernière connexion</th>
                   </tr>
@@ -223,6 +246,7 @@ export default async function AdminUsersPage({
                       </td>
                       <td className="!py-2.5"><SubscriptionPill status={u.subStatus} /></td>
                       <td className="!py-2.5"><ProgressCell progress={u.progress} /></td>
+                      <td className="!py-2.5"><LastEmailCell email={u.lastEmail} /></td>
                       <td className="!py-2.5 whitespace-nowrap text-[13px] text-[var(--q-text-3)]">{fmtDate(u.created_at)}</td>
                       <td className="!py-2.5 whitespace-nowrap text-[13px] text-[var(--q-text-3)]">
                         <span className="flex flex-col items-start gap-1">
@@ -257,6 +281,9 @@ export default async function AdminUsersPage({
                           ? `Bloqué : ${u.progress.stuckAt}`
                           : `Parcours ${u.progress.completed}/${u.progress.total}`}
                     </span>
+                  )}
+                  {u.lastEmail && (
+                    <span className="truncate text-xs text-[var(--q-text-4)]">Dernier email : {templateLabel(u.lastEmail.template)}</span>
                   )}
                 </span>
                 <SubscriptionPill status={u.subStatus} className="shrink-0" />

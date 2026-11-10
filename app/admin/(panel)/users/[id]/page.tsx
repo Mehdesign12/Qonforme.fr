@@ -6,6 +6,9 @@ import { SetCrumb } from '@/components/layout/crumb'
 import { InfoList, InfoRow, LoadError, SubscriptionPill, fmtDate, fmtEuro, periodLabel, planLabel } from '@/components/admin/ui'
 import AdminChangePlanButton from './AdminChangePlanButton'
 import AdminSubscriptionActions from './AdminSubscriptionActions'
+import { AccountEmails } from '@/components/admin/emails/AccountEmails'
+import { loadEmailHistory, suggestedTemplate } from '@/lib/admin/account-emails'
+import { loadRepriseFacts } from '@/lib/onboarding/reprise-facts'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin — Fiche utilisateur' }
@@ -23,6 +26,9 @@ async function getUserData(userId: string) {
     productsCountRes,
     purchaseOrdersCountRes,
     recentInvoicesRes,
+    emailHistory,
+    repriseRes,
+    prefsRes,
   ] = await Promise.all([
     admin.auth.admin.getUserById(userId),
     admin.from('companies').select('*').eq('user_id', userId).maybeSingle(),
@@ -37,6 +43,9 @@ async function getUserData(userId: string) {
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(5),
+    loadEmailHistory(admin, userId),
+    loadRepriseFacts(admin, [userId]),
+    admin.from('email_preferences').select('onboarding_emails').eq('user_id', userId).maybeSingle(),
   ])
 
   // Compte introuvable → 404. Toute autre erreur (réseau, API Auth en panne)
@@ -66,6 +75,11 @@ async function getUserData(userId: string) {
     },
     recentInvoices: recentInvoicesRes.data ?? [],
     recentInvoicesError: !!recentInvoicesRes.error,
+    emailHistory,
+    suggested: repriseRes.error
+      ? 'manual_free' as const
+      : suggestedTemplate(repriseRes.facts.get(userId)!, count(quotesCountRes) ?? 0),
+    optedOut: (prefsRes.data as { onboarding_emails?: boolean } | null)?.onboarding_emails === false,
   }
 }
 
@@ -125,6 +139,14 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
         <Kpi label="Prestations" value={counts.products ?? '—'} />
         <Kpi label="Bons de commande" value={counts.purchaseOrders ?? '—'} className="max-sm:col-span-2" />
       </KpiGrid>
+
+      <AccountEmails
+        userId={id}
+        accountLabel={fullName}
+        history={data.emailHistory}
+        suggested={data.suggested}
+        optedOut={data.optedOut}
+      />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="Compte">

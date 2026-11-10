@@ -102,7 +102,7 @@ export function fakeOnboardingDb(initial: Record<string, Row[]> = {}): FakeOnboa
         const list = Array.isArray(values) ? values : [values as Row]
         const out: Row[] = []
         for (const v of list) {
-          const row: Row = { id: `row-${nextId++}`, ...v }
+          const row: Row = { id: `00000000-0000-4000-8000-${String(nextId++).padStart(12, "0")}`, ...v }
           if (kind === "upsert") {
             const keys = (upsertOpts.onConflict ?? "id").split(",")
             const existing = rows.find((r) => keys.every((k) => r[k] === row[k]))
@@ -171,6 +171,8 @@ export function fakeOnboardingDb(initial: Record<string, Row[]> = {}): FakeOnboa
       in: (k: string, list: unknown[]) => { filters.push((r) => list.includes(r[k])); return api },
       lte: (k: string, v: unknown) => { filters.push((r) => compare(r[k], v) <= 0); return api },
       gte: (k: string, v: unknown) => { filters.push((r) => compare(r[k], v) >= 0); return api },
+      lt: (k: string, v: unknown) => { filters.push((r) => compare(r[k], v) < 0); return api },
+      is: (k: string, v: unknown) => { filters.push((r) => (r[k] ?? null) === v); return api },
       order: () => api,
       limit: (n: number) => { limit = n; return api },
       range: (a: number, b: number) => { range = [a, b]; return api },
