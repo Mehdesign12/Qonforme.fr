@@ -29,7 +29,7 @@ const POST_COLUMNS = "slug, title, excerpt, cover_url, published_at, content, ai
  * casse jamais.
  */
 async function getPosts(): Promise<RawPost[]> {
-  const admin = createAdminClient()
+  const admin = createAdminClient({ allowCache: true })
   const read = (columns: string) =>
     admin.from("blog_posts").select(columns).eq("is_published", true).order("published_at", { ascending: false })
   const withAlt = await read(`${POST_COLUMNS}, cover_alt`)
