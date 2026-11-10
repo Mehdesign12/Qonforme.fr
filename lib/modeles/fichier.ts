@@ -26,8 +26,24 @@ function depuisExemple(nom: string, exemple: ExempleDevis, mentionsMetier: strin
   }
 }
 
-const exempleElectricien = getModeleBySlug("devis-electricien")?.exemple
-if (!exempleElectricien) throw new Error("Le modèle « devis-electricien » doit porter un exemple chiffré")
+/** Exemple chiffré d'une page modèle ; une page sans exemple est une erreur de construction. */
+function exempleDe(slug: string): ExempleDevis {
+  const e = getModeleBySlug(slug)?.exemple
+  if (!e) throw new Error(`Le modèle « ${slug} » doit porter un exemple chiffré`)
+  return e
+}
+
+const exempleElectricien = exempleDe("devis-electricien")
+
+/** Exemples par métier (lib/pseo/modeles-metiers.ts) : nom du fichier, page, mentions propres au métier. */
+const EXEMPLES_METIERS: [string, string, string[]][] = [
+  ["exemple-devis-auto-entrepreneur", "devis-auto-entrepreneur", ["Auto-entrepreneur en franchise de TVA : prix sans TVA, mention « TVA non applicable, art. 293 B du CGI », « EI » après votre nom."]],
+  ["exemple-devis-paysagiste", "devis-paysagiste", ["Espaces verts (plantations, gazon) : TVA à 20 %, exclus des taux réduits. Allée, clôture ou terrasse rattachées à un logement de plus de deux ans : 10 %."]],
+  ["exemple-devis-peinture", "devis-peinture", ["Peinture : produit, finition et nombre de couches. Façade : déclaration préalable en mairie si la couleur ou l'aspect change ; autorisation de la commune pour un échafaudage sur la voie publique."]],
+  ["exemple-devis-maconnerie", "devis-maconnerie", ["Mur porteur : linteau ou poutre dimensionné par un bureau d'études ou une note de calcul ; accord de la copropriété le cas échéant."]],
+  ["exemple-devis-plomberie", "devis-plomberie", ["Frais de déplacement annoncés avant les travaux. Chaudière au gaz ou au fioul : TVA à 20 % depuis le 1er mars 2025."]],
+  ["exemple-devis-placo", "devis-placo", ["Doublage isolant à 5,5 % : rénovation énergétique et résistance thermique d'au moins 3,7 m².K/W pour un mur en façade ou en pignon, indiquée sur la ligne."]],
+]
 
 /** Modèles téléchargeables, par nom de fichier sans extension. */
 export const MODELES_TELECHARGEABLES: Record<string, OptionsModele> = {
@@ -35,6 +51,7 @@ export const MODELES_TELECHARGEABLES: Record<string, OptionsModele> = {
   "exemple-devis-electricien": depuisExemple("exemple-devis-electricien", exempleElectricien, [
     "Installation électrique : indiquez la norme appliquée (NF C 15-100). Neuve ou entièrement rénovée avec coupure du réseau : attestation de conformité visée par le Consuel avant la mise en service.",
   ]),
+  ...Object.fromEntries(EXEMPLES_METIERS.map(([nom, slug, mentions]) => [nom, depuisExemple(nom, exempleDe(slug), mentions)])),
 }
 
 export interface FichierModele {

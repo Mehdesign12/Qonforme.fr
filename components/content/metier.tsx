@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { Check, FileText } from "lucide-react"
+import { ArrowRightLeft, Check, FileSpreadsheet, FileText, ListChecks, Mail, ShieldCheck, Undo2, type LucideIcon } from "lucide-react"
 import { PHOTOS, type LandingPhoto } from "@/lib/landing/photos"
 import type { Metier } from "@/lib/pseo/metiers"
 import { SectionHeading } from "./ui"
@@ -36,6 +36,16 @@ export function tradeHeroPhoto(slug: string): React.ReactNode | undefined {
   )
 }
 
+/** Une icône par fonction (titres de lib/pseo/metiers.ts) : des cartes qu'on distingue d'un coup d'œil. */
+const FEATURE_ICONS: Record<string, LucideIcon> = {
+  "Devis détaillés": ListChecks,
+  "Du devis à la facture": ArrowRightLeft,
+  "Décennale sur vos documents": ShieldCheck,
+  "Envoi par email": Mail,
+  "Avoirs": Undo2,
+  "Export comptable FEC": FileSpreadsheet,
+}
+
 /** Fonctions utiles au métier (lib/pseo/metiers.ts ne liste que des fonctions livrées). */
 export function MetierFeatures({ metier, limit }: { metier: Metier; limit?: number }) {
   const features = metier.features.slice(0, limit)
@@ -45,15 +55,18 @@ export function MetierFeatures({ metier, limit }: { metier: Metier; limit?: numb
       <div className="mx-auto w-full max-w-[1200px]">
         <SectionHeading id="fonctions" title="Ce qui vous" accent="fait gagner du temps." className="mb-8" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
-          {features.map((f) => (
+          {features.map((f) => {
+            const Icon = FEATURE_ICONS[f.titre] ?? FileText
+            return (
             <div key={f.titre} className="rounded-[20px] border border-q-line bg-q-surface p-6 shadow-[shadow:var(--q-shadow-card)]">
               <span className="mb-5 grid h-10 w-10 place-items-center text-q-accent-strong q-glyph">
-                <FileText className="h-5 w-5" aria-hidden />
+                <Icon className="h-5 w-5" aria-hidden />
               </span>
               <h3 className="font-display text-[19px] font-semibold leading-[1.25] tracking-[-0.02em] text-q-ink-strong">{fr(f.titre)}</h3>
               <p className="mt-2 text-[14px] leading-[1.6] text-q-text-3">{fr(f.texte)}</p>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>

@@ -26,6 +26,8 @@ export function ExempleDevisCard({
   const pct = (n: number) => fr(`${formatNombreFr(n)} %`)
   const plusieursTaux = t.ventilation.length > 1
   const facture = exemple.document === "facture"
+  // Franchise en base (CGI 293 B) : ni taux ni montant de TVA, le total est le prix à payer
+  const sansTva = exemple.franchise === true
   const acompte = exemple.acomptePourcent !== undefined ? fr(`${formatNombreFr(exemple.acomptePourcent)} %`) : ""
 
   return (
@@ -42,7 +44,7 @@ export function ExempleDevisCard({
         <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-q-line px-5 py-4 sm:px-7">
           <span className="font-display text-[18px] font-semibold tracking-[-0.02em] text-q-ink-strong">{fr(exemple.titre)}</span>
           <span className="text-[13px] text-q-text-4">
-            {facture ? "Facture" : "Devis"} d&apos;exemple · TVA {plusieursTaux ? t.ventilation.map((v) => pct(v.taux)).join(" et ") : fr(taux)}
+            {facture ? "Facture" : "Devis"} d&apos;exemple · {sansTva ? "sans TVA (franchise)" : <>TVA {plusieursTaux ? t.ventilation.map((v) => pct(v.taux)).join(" et ") : fr(taux)}</>}
           </span>
         </figcaption>
 
@@ -51,9 +53,9 @@ export function ExempleDevisCard({
             <tr>
               <th scope="col" className="px-5 py-2.5 font-semibold sm:px-7">Désignation</th>
               <th scope="col" className="hidden px-3 py-2.5 text-right font-semibold sm:table-cell">Qté</th>
-              <th scope="col" className="hidden whitespace-nowrap px-3 py-2.5 text-right font-semibold sm:table-cell">Prix unit. HT</th>
+              <th scope="col" className="hidden whitespace-nowrap px-3 py-2.5 text-right font-semibold sm:table-cell">{sansTva ? "Prix unitaire" : "Prix unit. HT"}</th>
               {plusieursTaux && <th scope="col" className="hidden px-3 py-2.5 text-right font-semibold sm:table-cell">TVA</th>}
-              <th scope="col" className="whitespace-nowrap px-5 py-2.5 text-right font-semibold sm:px-7">Total HT</th>
+              <th scope="col" className="whitespace-nowrap px-5 py-2.5 text-right font-semibold sm:px-7">{sansTva ? "Total" : "Total HT"}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-q-line-soft">
@@ -65,7 +67,7 @@ export function ExempleDevisCard({
                   <td className="px-5 py-3 text-q-text-2 sm:px-7">
                     {fr(l.description)}
                     <span className="mt-1 block text-[13px] tabular-nums text-q-text-4 sm:hidden">
-                      {quantite} × {prix} HT{plusieursTaux ? ` · TVA ${pct(l.tauxTVA)}` : ""}
+                      {quantite} × {prix}{sansTva ? "" : " HT"}{plusieursTaux ? ` · TVA ${pct(l.tauxTVA)}` : ""}
                     </span>
                   </td>
                   <td className="hidden whitespace-nowrap px-3 py-3 text-right tabular-nums text-q-text-3 sm:table-cell">{quantite}</td>
@@ -80,11 +82,15 @@ export function ExempleDevisCard({
 
         <div className="flex justify-end border-t border-q-line px-5 py-4 sm:px-7">
           <dl className="grid w-full max-w-[340px] gap-1.5 text-[14px] tabular-nums">
-            <div className="flex justify-between gap-4 text-q-text-3">
-              <dt>Total HT</dt>
-              <dd>{formatCentimes(t.htCentimes)}</dd>
-            </div>
-            {plusieursTaux ? (
+            {sansTva ? (
+              <div className="text-q-text-3">{fr("TVA non applicable, art. 293 B du CGI")}</div>
+            ) : (
+              <div className="flex justify-between gap-4 text-q-text-3">
+                <dt>Total HT</dt>
+                <dd>{formatCentimes(t.htCentimes)}</dd>
+              </div>
+            )}
+            {sansTva ? null : plusieursTaux ? (
               t.ventilation.map((v) => (
                 <div key={v.taux} className="flex justify-between gap-4 text-q-text-3">
                   <dt>
@@ -100,7 +106,7 @@ export function ExempleDevisCard({
               </div>
             )}
             <div className="mt-1 flex justify-between gap-4 border-t border-q-line-soft pt-2 text-[15px] font-semibold text-q-ink-strong">
-              <dt>Total TTC</dt>
+              <dt>{sansTva ? "Total à payer" : "Total TTC"}</dt>
               <dd>{formatCentimes(t.ttcCentimes)}</dd>
             </div>
             {t.acompteCentimes !== undefined && !facture && (

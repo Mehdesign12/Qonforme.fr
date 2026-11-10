@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { EXEMPLE_DEVIS_PAR_METIER } from "@/lib/pseo/modeles-metiers"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowRight, Check, ExternalLink, HardHat } from "lucide-react"
@@ -178,7 +179,8 @@ export default async function InstallationPage({ params }: { params: Promise<{ s
                     { href: "/guide/tva-travaux", label: "TVA des travaux" },
                     { href: "/guide/mentions-obligatoires-devis", label: "Mentions obligatoires d'un devis" },
                     { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
-                    ...(inst.slug === "electricien" ? [{ href: "/modele/devis-electricien", label: "Exemple de devis d'électricien" }] : []),
+                    ...(EXEMPLE_DEVIS_PAR_METIER[inst.slug] ? [EXEMPLE_DEVIS_PAR_METIER[inst.slug]] : []),
+                    { href: "/modele/devis-auto-entrepreneur", label: "Exemple de devis auto-entrepreneur" },
                     { href: "/guide/mentions-obligatoires-facture", label: "Mentions obligatoires d'une facture" },
                     { href: "/outils/simulateur-charges-auto-entrepreneur", label: "Simuler mes cotisations" },
                     { href: "/devenir-a-son-compte", label: "Tous les métiers" },
