@@ -2,7 +2,7 @@
  * Briques serveur de l'admin › Affiliation : état « pas encore activée » ou
  * « lecture impossible », graphique des visites par semaine.
  */
-import { CircleAlert, CloudOff } from "lucide-react"
+import { BellDot, CircleAlert, CloudOff } from "lucide-react"
 import type { Failure } from "@/lib/affiliation/data"
 import { PLANS, isPlanId } from "@/lib/stripe/plans"
 
@@ -48,4 +48,33 @@ export function WeeklyBars({ weeks, height = 130 }: { weeks: { start: string; co
       </figcaption>
     </figure>
   )
+}
+
+/**
+ * Repère « nouvel événement » : pastille bleue avec une cloche et un nombre,
+ * à côté d'un onglet, d'une carte ou d'un partenaire. Rien à zéro.
+ */
+export function NewBadge({ count, label, className }: { count: number; label: string; className?: string }) {
+  if (!count) return null
+  return (
+    <span className={`q-pill q-pill-info !h-5 !gap-1 !px-1.5 !text-[11px] font-semibold tabular-nums ${className ?? ""}`} title={label}>
+      <BellDot className="size-3 shrink-0" aria-hidden />
+      <span aria-hidden>{count > 99 ? "99+" : count}</span>
+      <span className="sr-only">{label}</span>
+    </span>
+  )
+}
+
+/** Mention « Nouveau » sur une ligne de commission ou un partenaire. */
+export function NewTag() {
+  return (
+    <span className="q-pill q-pill-info !h-5 !gap-1 !px-1.5 !text-[11px] font-semibold">
+      <BellDot className="size-3 shrink-0" aria-hidden />Nouveau
+    </span>
+  )
+}
+
+export function newLabel(n: number, what: "event" | "signup"): string {
+  if (what === "signup") return `${n} nouvel${n > 1 ? "s" : ""} inscrit${n > 1 ? "s" : ""}`
+  return `${n} nouvel${n > 1 ? "s" : ""} événement${n > 1 ? "s" : ""}`
 }
