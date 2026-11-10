@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Check, FileText, Receipt, FileCheck, ClipboardList, Mail, Wand2 } from "lucide-react"
+import { ArrowRight, BrickWall, Briefcase, Calculator, Check, ClipboardList, FilePen, FilePlus2, FileText, Hammer, Layers, Mail, PaintRoller, Percent, Receipt, Repeat, Trees, Undo2, UserRound, Wand2, Wrench, Zap, type LucideIcon } from "lucide-react"
 import { MODELES } from "@/lib/pseo/modeles"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, FaqList, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
 import { TelechargerModele } from "@/components/content/TelechargerModele"
@@ -26,12 +26,35 @@ export const metadata: Metadata = {
   },
 }
 
-const TYPE_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
-  facture: { label: "Facture", icon: <Receipt /> },
-  devis: { label: "Devis", icon: <FileText /> },
-  avoir: { label: "Avoir", icon: <FileCheck /> },
-  "bon-de-commande": { label: "Bon de commande", icon: <ClipboardList /> },
-  relance: { label: "Relance", icon: <Mail /> },
+const TYPE_LABELS: Record<string, string> = {
+  facture: "Facture",
+  devis: "Devis",
+  avoir: "Avoir",
+  "bon-de-commande": "Bon de commande",
+  relance: "Relance",
+}
+
+/** Une icône par modèle (métier ou usage) : les cartes ne se ressemblent plus toutes. */
+const MODELE_ICONS: Record<string, LucideIcon> = {
+  "devis-travaux": Hammer,
+  "devis-electricien": Zap,
+  "devis-auto-entrepreneur": UserRound,
+  "devis-paysagiste": Trees,
+  "devis-peinture": PaintRoller,
+  "devis-vierge": FilePlus2,
+  "devis-maconnerie": BrickWall,
+  "devis-plomberie": Wrench,
+  "devis-placo": Layers,
+  "devis-prestation-service": Briefcase,
+  "facture-auto-entrepreneur": UserRound,
+  "facture-classique": Receipt,
+  "facture-acompte": Percent,
+  "facture-proforma": FilePen,
+  "facture-situation": Calculator,
+  "facture-recurrente": Repeat,
+  "avoir-annulation": Undo2,
+  "bon-de-commande": ClipboardList,
+  "lettre-relance-impaye": Mail,
 }
 
 /** Les devis d'abord : c'est ce que cherchent les visiteurs de cette page. */
@@ -142,13 +165,13 @@ export default function ModeleIndexPage() {
             />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
               {MODELES_ORDONNES.map((modele) => {
-                const typeInfo = TYPE_LABELS[modele.type] ?? { label: modele.type, icon: <FileText /> }
+                const Icon = MODELE_ICONS[modele.slug] ?? FileText
                 return (
                   <LinkCard
                     key={modele.slug}
                     href={`/modele/${modele.slug}`}
-                    icon={typeInfo.icon}
-                    kicker={<span className="q-pill q-pill-info">{typeInfo.label}</span>}
+                    icon={<Icon />}
+                    kicker={<span className="q-pill q-pill-info">{TYPE_LABELS[modele.type] ?? modele.type}</span>}
                     title={modele.titre}
                     text={modele.description}
                     cta="Voir le modèle"

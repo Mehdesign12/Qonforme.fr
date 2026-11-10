@@ -27,6 +27,13 @@ export const KEYWORD_LINKS: { pattern: RegExp; href: string }[] = [
   { pattern: /mod[eè]le\s+de\s+facture\s+classique/i, href: "/modele/facture-classique" },
   { pattern: /mod[eè]le\s+de\s+devis\s+travaux/i, href: "/modele/devis-travaux" },
   { pattern: /exemples?\s+de\s+devis\s+(?:d['']\s*)?[eé]lectricien/i, href: "/modele/devis-electricien" },
+  { pattern: /exemples?\s+de\s+devis\s+(?:d['']\s*|de\s+)?(?:auto-?entrepreneur|micro-?entrepreneur)/i, href: "/modele/devis-auto-entrepreneur" },
+  { pattern: /exemples?\s+de\s+devis\s+(?:de\s+)?paysagiste/i, href: "/modele/devis-paysagiste" },
+  { pattern: /exemples?\s+de\s+devis\s+(?:de\s+)?peinture/i, href: "/modele/devis-peinture" },
+  { pattern: /exemples?\s+de\s+devis\s+(?:de\s+)?ma[cç]onnerie/i, href: "/modele/devis-maconnerie" },
+  { pattern: /exemples?\s+de\s+devis\s+(?:de\s+)?plomberie/i, href: "/modele/devis-plomberie" },
+  { pattern: /exemples?\s+de\s+devis\s+(?:de\s+)?placo/i, href: "/modele/devis-placo" },
+  { pattern: /devis\s+vierges?/i, href: "/modele/devis-vierge" },
   { pattern: /mod[eè]le\s+d['']avoir/i, href: "/modele/avoir-annulation" },
   // Glossaire
   { pattern: /Factur-X/i, href: "/glossaire/factur-x" },
