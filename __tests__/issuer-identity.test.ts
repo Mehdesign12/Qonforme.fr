@@ -1,6 +1,7 @@
 /**
- * Garde d'envoi (lib/legal/issuer.ts) : sans nom, adresse complète ni SIREN
- * valide, l'envoi d'un devis, d'une facture ou d'un bon de commande et le
+ * Garde d'envoi (lib/legal/issuer.ts) : depuis le 10/11/2026, seul le nom de
+ * l'entreprise est exigé ; SIREN et adresse manquants ne bloquent plus. Sans
+ * entreprise ou sans nom, l'envoi d'un devis, d'une facture ou d'un bon de commande et le
  * partage d'un lien de signature répondent 409 `COMPANY_REQUIRED`, AVANT le mur
  * de paiement (un artisan ne paie jamais pour être bloqué ensuite). Les
  * brouillons, l'archivage et la désactivation d'un lien restent libres.
@@ -44,6 +45,7 @@ const USER = "user-1"
 const SIREN = "948211370" // clé de Luhn valide
 const COMPLETE = { user_id: USER, name: "GARNIER PLÂTRERIE", siren: SIREN, siret: null, address: "14 rue des Lices", zip_code: "49100", city: "Angers" }
 const NO_SIREN = { ...COMPLETE, siren: "" }
+const NO_NAME = { ...COMPLETE, name: "" }
 
 describe("identité de l'émetteur", () => {
   it("complète : nom, adresse, code postal, ville et SIREN valide", () => {
@@ -51,34 +53,30 @@ describe("identité de l'émetteur", () => {
     expect(issuerIdentityError({ ...COMPLETE, siren: "948 211 370" })).toBeNull()
   })
 
-  it("sans entreprise, sans SIREN (« » en base) ou avec un SIREN mal formé : message de la route", () => {
+  it("sans entreprise ou sans nom : message de la route", () => {
     expect(issuerIdentityError(null)).toBe(COMPANY_REQUIRED_MESSAGE)
-    expect(issuerIdentityError(NO_SIREN)).toBe(COMPANY_REQUIRED_MESSAGE)
-    expect(issuerIdentityError({ ...COMPLETE, siren: null })).toBe(COMPANY_REQUIRED_MESSAGE)
-    expect(issuerIdentityError({ ...COMPLETE, siren: "94821137" })).toBe(COMPANY_REQUIRED_MESSAGE)
-    expect(issuerIdentityError({ ...COMPLETE, siren: "SIREN" })).toBe(COMPANY_REQUIRED_MESSAGE)
+    expect(issuerIdentityError(NO_NAME)).toBe(COMPANY_REQUIRED_MESSAGE)
+    expect(issuerIdentityError({ ...COMPLETE, name: "  " })).toBe(COMPANY_REQUIRED_MESSAGE)
+    expect(issuerIdentityError({ ...COMPLETE, name: null })).toBe(COMPANY_REQUIRED_MESSAGE)
   })
 
-  it("SIREN de 9 chiffres à la clé fausse (saisi avec l'ancien formulaire) : jamais bloqué d'un coup", () => {
-    expect(issuerIdentityError({ ...COMPLETE, siren: "948211375" })).toBeNull()
-  })
-
-  it("adresse, code postal, ville ou nom manquant : refusé", () => {
-    for (const key of ["name", "address", "zip_code", "city"]) {
-      expect(issuerIdentityError({ ...COMPLETE, [key]: "  " })).toBe(COMPANY_REQUIRED_MESSAGE)
-      expect(issuerIdentityError({ ...COMPLETE, [key]: null })).toBe(COMPANY_REQUIRED_MESSAGE)
+  it("sans SIREN, avec un SIREN mal formé ou sans adresse : l'envoi n'est plus bloqué", () => {
+    expect(issuerIdentityError(NO_SIREN)).toBeNull()
+    expect(issuerIdentityError({ ...COMPLETE, siren: null })).toBeNull()
+    expect(issuerIdentityError({ ...COMPLETE, siren: "94821137" })).toBeNull()
+    for (const key of ["address", "zip_code", "city"]) {
+      expect(issuerIdentityError({ ...NO_SIREN, [key]: null })).toBeNull()
     }
   })
 
   it("SIRET seul : son SIREN suffit", () => {
     expect(issuerSiren({ ...NO_SIREN, siret: `${SIREN}00017` })).toBe(SIREN)
-    expect(issuerIdentityError({ ...NO_SIREN, siret: `${SIREN}00017` })).toBeNull()
     expect(issuerSiren({ ...NO_SIREN, siret: "94821137" })).toBeNull()
   })
 
   it("message : vouvoiement, espace insécable avant les deux-points, où compléter", () => {
     expect(COMPANY_REQUIRED_MESSAGE).toBe(
-      "Ajoutez le SIREN et l'adresse de votre entreprise avant l'envoi : ils figurent obligatoirement sur vos devis et vos factures (Paramètres › Entreprise).",
+      "Ajoutez le nom de votre entreprise avant l'envoi : il figure sur vos devis et vos factures (Paramètres › Entreprise).",
     )
   })
 })
@@ -87,13 +85,13 @@ describe("requireIssuerIdentity", () => {
   beforeEach(() => { mocks.db = fakeCompanyDb({ companies: [] }) })
 
   it("409 COMPANY_REQUIRED, null si l'identité est complète", async () => {
-    mocks.db.tables.companies.push({ ...NO_SIREN })
+    mocks.db.tables.companies.push({ ...NO_NAME })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = await requireIssuerIdentity(mocks.db.client as any, USER)
     expect(res?.status).toBe(409)
     expect(await res?.json()).toEqual({ code: COMPANY_REQUIRED, error: COMPANY_REQUIRED_MESSAGE })
 
-    mocks.db.tables.companies[0].siren = SIREN
+    mocks.db.tables.companies[0].name = "GARNIER PLÂTRERIE"
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(await requireIssuerIdentity(mocks.db.client as any, USER)).toBeNull()
   })
@@ -132,7 +130,7 @@ describe("routes d'envoi", () => {
     mocks.paywall.length = 0
     mocks.sent.length = 0
     mocks.db = fakeCompanyDb({
-      companies: [{ ...NO_SIREN }],
+      companies: [{ ...NO_NAME }],
       quotes: [{ id: DOC_ID, user_id: USER, status: "draft", quote_number: "D-2026-001", issue_date: "2026-10-06", valid_until: "2026-11-05", lines: [LINE], client: CLIENT }],
       purchase_orders: [{ id: DOC_ID, user_id: USER, status: "draft", po_number: "BC-2026-001", issue_date: "2026-10-06", lines: [LINE], client: CLIENT }],
       invoices: [{ id: DOC_ID, user_id: USER, status: "draft", invoice_number: null, issue_date: "2026-10-06", due_date: "2026-11-05", lines: [LINE], client: { ...CLIENT, email: "lambert@example.com" } }],
@@ -143,17 +141,17 @@ describe("routes d'envoi", () => {
 
   const status = (table: string) => mocks.db.tables[table][0].status
 
-  it("devis : 409 sans SIREN, rien n'est envoyé ni marqué envoyé", async () => {
+  it("devis : 409 sans nom d'entreprise, rien n'est envoyé ni marqué envoyé", async () => {
     await expectCompanyRequired(await sendQuote(post(), params))
     expect(status("quotes")).toBe("draft")
   })
 
   it("devis : identité complète, la route continue (client sans email : 422)", async () => {
-    mocks.db.tables.companies[0].siren = SIREN
+    mocks.db.tables.companies[0].name = "GARNIER PLÂTRERIE"
     expect((await sendQuote(post(), params)).status).toBe(422)
   })
 
-  it("bon de commande : 409 sans SIREN", async () => {
+  it("bon de commande : 409 sans nom d'entreprise", async () => {
     await expectCompanyRequired(await sendPurchaseOrder(post(), params))
     expect(status("purchase_orders")).toBe("draft")
   })
@@ -163,8 +161,14 @@ describe("routes d'envoi", () => {
     expect(mocks.db.tables.invoices[0]).toMatchObject({ status: "draft", invoice_number: null })
   })
 
+  it("facture sans SIREN ni adresse : plus bloquée, le mur de paiement vient ensuite", async () => {
+    mocks.db.tables.companies[0] = { ...NO_SIREN, address: "", zip_code: "", city: "" }
+    expect((await sendInvoice(post(), params)).status).toBe(402)
+    expect(mocks.paywall).toEqual(["issuing"])
+  })
+
   it("facture : identité complète, le mur de paiement vient ensuite", async () => {
-    mocks.db.tables.companies[0].siren = SIREN
+    mocks.db.tables.companies[0].name = "GARNIER PLÂTRERIE"
     expect((await sendInvoice(post(), params)).status).toBe(402)
     expect(mocks.paywall).toEqual(["issuing"])
   })
@@ -173,19 +177,19 @@ describe("routes d'envoi", () => {
     await expectCompanyRequired(await patchInvoice(patchReq({ status: "sent" }), params))
     expect(status("invoices")).toBe("draft")
 
-    mocks.db.tables.companies[0].siren = SIREN
+    mocks.db.tables.companies[0].name = "GARNIER PLÂTRERIE"
     expect((await patchInvoice(patchReq({ status: "sent" }), params)).status).toBe(402)
     expect(mocks.paywall).toEqual(["issuing"])
   })
 
-  it("devis et bon de commande « Marquer comme envoyé » : 409 sans SIREN, brouillon modifiable", async () => {
+  it("devis et bon de commande « Marquer comme envoyé » : 409 sans nom d'entreprise, brouillon modifiable", async () => {
     await expectCompanyRequired(await patchQuote(patchReq({ status: "sent" }), params))
     expect(status("quotes")).toBe("draft")
     await expectCompanyRequired(await patchPurchaseOrder(patchReq({ status: "sent" }), params))
     expect(status("purchase_orders")).toBe("draft")
     expect((await patchQuote(patchReq({ notes: "Accès par la cour" }), params)).status).toBe(200)
 
-    mocks.db.tables.companies[0].siren = SIREN
+    mocks.db.tables.companies[0].name = "GARNIER PLÂTRERIE"
     expect((await patchQuote(patchReq({ status: "sent" }), params)).status).toBe(200)
     expect(status("quotes")).toBe("sent")
   })
@@ -198,7 +202,7 @@ describe("routes d'envoi", () => {
   })
 
   it("entreprise illisible : 503, ni mur de paiement ni envoi", async () => {
-    mocks.db.tables.companies[0].siren = SIREN
+    mocks.db.tables.companies[0].name = "GARNIER PLÂTRERIE"
     mocks.db.failing.add("companies")
     expect((await sendInvoice(post(), params)).status).toBe(503)
     expect(mocks.paywall).toEqual([])
@@ -210,7 +214,7 @@ describe("routes d'envoi", () => {
     }
     expect(status("quotes")).toBe("draft")
 
-    mocks.db.tables.companies[0].siren = SIREN
+    mocks.db.tables.companies[0].name = "GARNIER PLÂTRERIE"
     expect((await signatureAction(signReq("link"), { params: { type: "quote", id: DOC_ID } })).status).toBe(402)
     expect(mocks.paywall).toEqual(["signature"])
   })
