@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { EXEMPLE_DEVIS_PAR_METIER } from "@/lib/pseo/modeles-metiers"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowRight, Briefcase } from "lucide-react"
@@ -160,7 +161,8 @@ export default async function MetierPage({ params }: { params: Promise<{ slug: s
             { href: "/guide/facture-electronique-2026", label: "Facture électronique 2026" },
             { href: "/modele/facture-classique", label: "Modèle de facture gratuit" },
             { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
-            ...(metier.slug === "electricien" ? [{ href: "/modele/devis-electricien", label: "Exemple de devis d'électricien" }] : []),
+            ...(EXEMPLE_DEVIS_PAR_METIER[metier.slug] ? [EXEMPLE_DEVIS_PAR_METIER[metier.slug]] : []),
+            { href: "/modele/devis-auto-entrepreneur", label: "Exemple de devis auto-entrepreneur" },
             ...(OUTILS_CHANTIER[metier.slug] ?? []),
             { href: "/pricing", label: "Tarifs" },
             { href: "/blog", label: "Blog" },

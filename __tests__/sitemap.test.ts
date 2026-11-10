@@ -104,10 +104,14 @@ describe("lastmod", () => {
   })
 
   it("pages modifiées le 15/10/2026 : outils neufs, hubs, modèles de devis", () => {
-    for (const p of ["/outils/calculateur-beton", "/outils/calculateur-pente", "/modele", "/facturation"])
+    for (const p of ["/outils/calculateur-beton", "/outils/calculateur-pente", "/facturation"])
       expect(new Date(entree(p)!.lastModified!).toISOString().slice(0, 10), p).toBe("2026-10-15")
     // un modèle qu'on n'a pas touché n'affiche pas de date
     expect(entree("/modele/facture-classique")!.lastModified).toBeUndefined()
+  })
+
+  it("hub des modèles : 10/11/2026 (exemples de devis par métier)", () => {
+    expect(new Date(entree("/modele")!.lastModified!).toISOString().slice(0, 10)).toBe("2026-11-10")
   })
 
   it("hub des outils et lecteur Factur-X : 07/11/2026", () => {

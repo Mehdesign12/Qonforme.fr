@@ -1,6 +1,7 @@
 import type { ExempleDevis } from "@/lib/pseo/guides"
 import { INDEMNITE_FORFAITAIRE, SEMESTRE_REFERENCE, TAUX_PENALITES_DEFAUT } from "@/lib/outils/penalites"
 import { CERTIFICATION_DEVIS_10, CERTIFICATION_RESUME } from "@/lib/legal/certification-tva"
+import { MODELES_DEVIS_METIERS } from "./modeles-metiers"
 
 /** « 12,40 % » : taux BCE + 10 points du semestre en cours (lib/outils/penalites.ts, mis à jour chaque semestre). */
 const TAUX_DEFAUT_FR = `${TAUX_PENALITES_DEFAUT.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`
@@ -295,6 +296,8 @@ export const MODELES: Modele[] = [
       },
     ],
   },
+  // Exemples de devis par métier et devis vierge (plan mots-clés du 16/10/2026)
+  ...MODELES_DEVIS_METIERS,
   {
     slug: "devis-prestation-service",
     titre: "Modèle de devis prestation de service gratuit",

@@ -42,6 +42,8 @@ export interface ExempleDevis {
   lignes: { designation: string; quantite: number; unite: string; prixUnitaireHT: number; tauxTva?: number }[]
   /** Taux du document, appliqué aux lignes qui n'en précisent pas. */
   tauxTva: number
+  /** Franchise en base de TVA (CGI 293 B) : aucune TVA, le total est le prix à payer. Avec `tauxTva: 0`. */
+  franchise?: boolean
   /** Devis : acompte demandé à la signature. Facture : acompte déjà versé et déduit. En pourcentage du TTC. */
   acomptePourcent?: number
   /** Facture : référence de l'acompte déduit (« facture d'acompte F-2026-014 »). */
@@ -698,6 +700,8 @@ export const GUIDES: Guide[] = [
       { href: "/guide/mentions-obligatoires-devis", label: "Mentions obligatoires d'un devis" },
       { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
       { href: "/modele/devis-electricien", label: "Exemple de devis d'électricien" },
+      { href: "/modele/devis-auto-entrepreneur", label: "Exemple de devis auto-entrepreneur" },
+      { href: "/modele/devis-vierge", label: "Devis vierge à imprimer" },
       { href: "/outils/generateur-devis-gratuit", label: "Générateur de devis gratuit" },
       { href: "/guide/devis-obligatoire", label: "Quand le devis est obligatoire" },
       { href: "/guide/tva-travaux", label: "TVA des travaux" },

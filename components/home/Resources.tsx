@@ -39,6 +39,8 @@ const GUIDES = [
 const TEMPLATES = [
   { href: "/modele/devis-travaux", label: "Modèle de devis travaux" },
   { href: "/modele/devis-electricien", label: "Exemple de devis d'électricien" },
+  { href: "/modele/devis-auto-entrepreneur", label: "Exemple de devis auto-entrepreneur" },
+  { href: "/modele/devis-vierge", label: "Devis vierge à imprimer" },
   { href: "/modele/facture-classique", label: "Modèle de facture" },
   { href: "/modele/facture-auto-entrepreneur", label: "Modèle de facture auto-entrepreneur" },
   { href: "/modele", label: "Tous les modèles" },

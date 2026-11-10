@@ -21,19 +21,19 @@ Volumes mensuels en France (Google Ads via OpenSEO, 16/10/2026), estimations à 
 | Mot-clé exact | Recherches/mois | Ce que veut la personne | Page | État |
 |---|---|---|---|---|
 | logiciel devis facture bâtiment | 880 | acheter un logiciel | accueil | existe (déjà ciblé) |
-| exemple devis auto entrepreneur | 480 | rédiger son devis | `/modele/devis-auto-entrepreneur` | à créer |
+| exemple devis auto entrepreneur | 480 | rédiger son devis | `/modele/devis-auto-entrepreneur` | fait (10/11/2026) |
 | exemple devis remplacement tableau électrique | 390 | rédiger son devis | `/modele/devis-electricien` | fait (16/10/2026) |
-| exemple devis paysagiste | 390 | rédiger son devis | `/modele/devis-paysagiste` | à créer |
-| exemple devis peinture, peinture façade extérieure | 320 + 320 | rédiger son devis | `/modele/devis-peinture` | à créer |
-| devis vierge à imprimer, devis vierge pdf | 260 + 170 | rédiger son devis | `/modele/devis-vierge` | à créer |
+| exemple devis paysagiste | 390 | rédiger son devis | `/modele/devis-paysagiste` | fait (10/11/2026) |
+| exemple devis peinture, peinture façade extérieure | 320 + 320 | rédiger son devis | `/modele/devis-peinture` | fait (10/11/2026) |
+| devis vierge à imprimer, devis vierge pdf | 260 + 170 | rédiger son devis | `/modele/devis-vierge` | fait (10/11/2026) |
 | logiciel plombier | 260 | acheter un logiciel | `/facturation/plombier` | fait (16/10/2026) |
 | exemple devis électricité maison 100m2 | 210 | rédiger son devis | `/modele/devis-electricien` | fait (16/10/2026) |
-| exemple devis maçonnerie | 170 | rédiger son devis | `/modele/devis-maconnerie` | à créer |
-| modèle devis auto entrepreneur sans tva | 140 | rédiger son devis | `/modele/devis-auto-entrepreneur` | à créer |
-| exemple devis plomberie | 140 | rédiger son devis | `/modele/devis-plomberie` | à créer |
+| exemple devis maçonnerie | 170 | rédiger son devis | `/modele/devis-maconnerie` | fait (10/11/2026) |
+| modèle devis auto entrepreneur sans tva | 140 | rédiger son devis | `/modele/devis-auto-entrepreneur` | fait (10/11/2026) |
+| exemple devis plomberie | 140 | rédiger son devis | `/modele/devis-plomberie` | fait (10/11/2026) |
 | logiciel chauffagiste | 140 | acheter un logiciel | `/facturation/chauffagiste` | fait (16/10/2026) |
 | attestation tva 10 travaux | 140 | appliquer la bonne TVA | `/guide/tva-travaux` | fait (16/10/2026) |
-| exemple devis placo | 110 | rédiger son devis | `/modele/devis-placo` | à créer |
+| exemple devis placo | 110 | rédiger son devis | `/modele/devis-placo` | fait (10/11/2026) |
 | relance facture impayée mail | 110 | se faire payer | `/modele/lettre-relance-impaye` | fait (16/10/2026) |
 | logiciel devis bâtiment gratuit | 90 | acheter un logiciel | pages métier | existe |
 | logiciel devis artisan | 90 | acheter un logiciel | accueil | existe |
@@ -52,13 +52,13 @@ Les requêtes « logiciel… » sont peu nombreuses, mais ce sont des acheteurs 
    - [x] `/guide/tva-travaux` : section et question sur l'attestation TVA 10 % (16/10/2026). Titre ajusté en « remplacée par une mention en 2025 » : d'après le BOFiP du 09/09/2026, l'obligation est supprimée mais le formulaire 1301-SD reste admis ; modèles officiels de mention repris (BOI-LETTRE-000280) ;
    - [x] `/modele/lettre-relance-impaye` : versions mail (1re relance, 2e rappel, avant mise en demeure) et lettre de mise en demeure (16/10/2026 ; la page n'avait aucun texte).
 2. **Ensuite, 7 pages à créer**, chacune avec un vrai exemple chiffré et ses fichiers PDF, Word et Excel :
-   - [ ] `/modele/devis-vierge`
-   - [ ] `/modele/devis-auto-entrepreneur`
-   - [ ] `/modele/devis-paysagiste`
-   - [ ] `/modele/devis-peinture`
-   - [ ] `/modele/devis-maconnerie`
-   - [ ] `/modele/devis-plomberie`
-   - [ ] `/modele/devis-placo`
+   - [x] `/modele/devis-vierge` (10/11/2026)
+   - [x] `/modele/devis-auto-entrepreneur` (10/11/2026)
+   - [x] `/modele/devis-paysagiste` (10/11/2026)
+   - [x] `/modele/devis-peinture` (10/11/2026)
+   - [x] `/modele/devis-maconnerie` (10/11/2026)
+   - [x] `/modele/devis-plomberie` (10/11/2026)
+   - [x] `/modele/devis-placo` (10/11/2026)
 3. **Après chaque mise en ligne** : le fondateur demande l'indexation de la page dans la Search Console.
 4. **Mesure** dans la Search Console, 4 à 8 semaines après publication.
 5. **Ensuite seulement, le blog** (§ 6) : rattacher les articles par métier aux nouvelles pages (redirections montrées avant d'être faites).
