@@ -9,10 +9,10 @@
  * PATCH /api/onboarding/inscription partagent les mêmes étapes, les mêmes
  * contrôles et les mêmes messages.
  *
- * Le SIREN reste facultatif à l'inscription (entreprise saisie à la main, ou
- * pas encore immatriculée) : il est demandé avant le premier envoi d'un devis
- * ou d'une facture (lib/legal/issuer.ts, 409 `COMPANY_REQUIRED`), car il figure
- * obligatoirement sur les documents (service-public.gouv.fr, F31808).
+ * Seul le nom de l'entreprise est demandé (décision du 10/11/2026 : réduire les
+ * frictions au maximum). SIREN et adresse sont facultatifs, à l'inscription comme
+ * à l'envoi (lib/legal/issuer.ts) ; ils figurent sur une facture
+ * (service-public.gouv.fr, F31808) : le tableau de bord les rappelle.
  */
 import {
   COMPANY_TYPES, LIMITS, isTradeId, parseLegalProfile,
@@ -138,7 +138,7 @@ function line(value: unknown): string {
 /** Chiffres seuls (« 948 211 375 » → « 948211375 »). */
 const digits = (value: unknown): string => (typeof value === "string" ? value.replace(/[\s.  -]/g, "") : "")
 
-/** Entreprise de l'étape 1 : champs requis, SIREN facultatif mais valide s'il est saisi. */
+/** Entreprise de l'étape 1 : nom requis ; adresse et SIREN facultatifs, valides s'ils sont saisis. */
 export function validateCompanyInput(x: unknown): Parsed<CompanyInput> {
   if (!x || typeof x !== "object" || Array.isArray(x)) return { ok: false, error: INVALID_REQUEST }
   const v = x as Record<string, unknown>
@@ -150,16 +150,16 @@ export function validateCompanyInput(x: unknown): Parsed<CompanyInput> {
   }
 
   const address = line(v.address)
-  if (!address) return { ok: false, error: "Indiquez l'adresse de votre entreprise." }
+  // Adresse facultative (décision du 10/11/2026 : rien ne bloque l'inscription) :
+  // elle figure sur les documents, le tableau de bord la rappelle tant qu'elle manque
   if (address.length > INSCRIPTION_LIMITS.address) {
     return { ok: false, error: `L'adresse ne peut pas dépasser ${INSCRIPTION_LIMITS.address} caractères.` }
   }
 
   const zip_code = digits(v.zip_code)
-  if (!/^\d{5}$/.test(zip_code)) return { ok: false, error: "Code postal invalide (5 chiffres)." }
+  if (zip_code && !/^\d{5}$/.test(zip_code)) return { ok: false, error: "Code postal invalide (5 chiffres)." }
 
   const city = line(v.city)
-  if (!city) return { ok: false, error: "Indiquez la ville." }
   if (city.length > INSCRIPTION_LIMITS.city) {
     return { ok: false, error: `La ville ne peut pas dépasser ${INSCRIPTION_LIMITS.city} caractères.` }
   }

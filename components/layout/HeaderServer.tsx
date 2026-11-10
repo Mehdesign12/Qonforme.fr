@@ -38,7 +38,7 @@ export async function getShellIdentity(): Promise<ShellIdentity> {
       identity.planName = PLANS[sub.plan].name
     }
     identity.companyName = company?.name || null
-    identity.siren = company?.siren || null
+    identity.siren = company?.siren?.trim() || null
   } catch {
     // Non bloquant
   }

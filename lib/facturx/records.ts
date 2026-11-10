@@ -73,7 +73,7 @@ export function sellerFromCompany(company: CompanyRecord | null | undefined): Fx
     zip_code:     company?.zip_code,
     city:         company?.city,
     country:      company?.country,
-    siren:        company?.siren,
+    siren:        company?.siren?.trim() || undefined,
     siret:        company?.siret,
     vat_number:   company?.vat_number,
     iban:         company?.iban,

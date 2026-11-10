@@ -53,10 +53,9 @@ describe("fenêtre « Bienvenue » : entreprise choisie", () => {
     expect(validateCompanyInput({ ...input, siren: "732829320" }).ok).toBe(true)
   })
 
-  it("une fiche sans adresse est refusée (complétée à la main)", () => {
+  it("une fiche sans adresse est acceptée (adresse facultative depuis le 10/11/2026)", () => {
     const r = validateCompanyInput(candidateToInput({ ...DEMO_CANDIDATES[2], siren: "732829320" }))
-    expect(r.ok).toBe(false)
-    if (!r.ok) expect(companyErrorField(r.error)).toBe("address")
+    expect(r.ok).toBe(true)
   })
 
   it("chaque message de contrôle vise son champ", () => {
@@ -68,9 +67,11 @@ describe("fenêtre « Bienvenue » : entreprise choisie", () => {
     expect(fieldOf({})).toBe("ok")
     expect(fieldOf({ name: " " })).toBe("name")
     expect(fieldOf({ name: "x".repeat(200) })).toBe("name")
-    expect(fieldOf({ address: "" })).toBe("address")
+    expect(fieldOf({ address: "" })).toBe("ok")
+    expect(fieldOf({ address: "x".repeat(400) })).toBe("address")
     expect(fieldOf({ zip_code: "4910" })).toBe("zip_code")
-    expect(fieldOf({ city: "" })).toBe("city")
+    expect(fieldOf({ city: "" })).toBe("ok")
+    expect(fieldOf({ zip_code: "" })).toBe("ok")
     expect(fieldOf({ siren: "12345" })).toBe("siren")
     expect(fieldOf({ siren: "948211375" })).toBe("ok") // clé fausse : avertissement seulement
     expect(companyErrorField("Requête invalide.")).toBeNull()
