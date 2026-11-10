@@ -55,12 +55,9 @@ type LookupState =
 const EMPTY: ClientFormValues = {
   name: "", siren: "", vat_number: "", email: "", phone: "", address: "", zip_code: "", city: "",
 }
+import { sirenDigits } from "@/lib/clients/siren"
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-/** Chiffres du SIREN saisi ; un SIRET (14 chiffres) est ramené à son SIREN. */
-export function sirenDigits(value: string): string {
-  const d = value.replace(/\D/g, "")
-  return d.length === 14 ? d.slice(0, 9) : d
-}
 const FIELD_ORDER: (keyof ClientFormValues)[] = ["name", "siren", "vat_number", "email", "phone", "address", "zip_code", "city"]
 
 /** Champs plus hauts et plus ronds sur mobile (planche mobile : 48 px, rayon 14). */
