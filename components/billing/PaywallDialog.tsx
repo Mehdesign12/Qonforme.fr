@@ -13,6 +13,22 @@ import { ARTISAN_REQUIRED } from '@/lib/artisan/plan'
 import { trackEvent } from '@/lib/meta-pixel'
 import { captureEvent } from '@/components/shared/PostHogProvider'
 import { useArtisanOnSale } from './useArtisanOnSale'
+import { SolutionCompatible } from '@/components/brand/SolutionCompatible'
+import { PLATFORM_SENDING_LIVE } from '@/lib/pa/sending'
+import { emissionCountdownText } from '@/lib/billing/reform'
+
+/**
+ * Piste B (canevas https://claude.ai/artifact/5ZyR3KUG2RBz64VJieJvHE, 10/11/2026) :
+ * pour l'envoi d'une facture, l'échéance de la facture électronique en tête, le
+ * logotype Solution compatible et deux colonnes de bénéfices. Rien que de vrai :
+ * fonctions d'Essentiel (lib/stripe/plans.ts), dates de la réforme (lib/billing/reform.ts).
+ */
+const REFORM_BENEFITS = [
+  PLATFORM_SENDING_LIVE ? 'Envoi par une plateforme agréée' : 'Réception par une plateforme agréée',
+  'Factures fournisseurs reçues',
+  'Factur-X et mentions obligatoires',
+]
+const PAID_BENEFITS = ['Factures et avoirs illimités', 'Relances automatiques', 'Signature en ligne des devis']
 
 /**
  * Mur de paiement « Votre facture est prête » — s'ouvre quand une route
@@ -57,6 +73,7 @@ export function PaywallDialog({
   const artisanOnSale = useArtisanOnSale()
   const onSale = artisan ? artisanOnSale : plan.available
 
+  const reform = reason === 'send' && !artisan
   const next = invoiceId ? `/invoices/${invoiceId}${reason === 'send' ? '?send=1' : ''}` : nextPath ?? null
   const chargeHt = period === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
 
@@ -91,14 +108,28 @@ export function PaywallDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent data-replay-clear className="max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto p-[22px] sm:max-w-[460px]">
-        <div className="flex flex-col gap-1.5 pr-8">
+      <DialogContent data-replay-clear className={cn('max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto p-[22px]', reform ? 'sm:max-w-[600px]' : 'sm:max-w-[460px]')}>
+        {reform && (
+          <div className="-mx-[22px] -mt-[22px] flex flex-col gap-3 border-b border-[var(--q-line)] bg-[var(--q-accent-wash,var(--q-sunken))] px-[22px] pb-5 pt-[22px] sm:flex-row sm:items-center sm:gap-5">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5 pr-8 sm:pr-0">
+              <span className="text-xs font-semibold uppercase tracking-[0.06em] text-[var(--q-accent-strong)]">Facture électronique obligatoire</span>
+              <span className="q-display text-[19px] leading-snug text-[var(--q-ink)] sm:text-[21px]">
+                1<sup>er</sup> septembre 2027 : vos factures partent par une plateforme agréée.
+              </span>
+              <span className="text-[14px] leading-relaxed text-[var(--q-text-3)]">{emissionCountdownText()}</span>
+            </div>
+            <SolutionCompatible size="sm" priority className="self-start sm:self-center" />
+          </div>
+        )}
+        <div className={cn('flex flex-col gap-1.5', !reform && 'pr-8')}>
           {/* Pictogrammes de marque : ce que débloque la formule */}
+          {!reform && (
           <PictoCluster
             size="sm"
             className="mb-2"
             icon={artisan ? <Construction /> : reason === 'remind' ? <BellRing /> : reason === 'signature' ? <Signature /> : <Send />}
           />
+          )}
           <DialogTitle className="q-display text-[22px] leading-tight text-[var(--q-ink)]">
             {artisan
               ? `Cette fonction fait partie de la formule ${plan.name}.`
@@ -106,7 +137,10 @@ export function PaywallDialog({
               ? 'Les relances font partie de la formule.'
               : reason === 'signature'
                 ? 'La signature en ligne fait partie de la formule.'
-                : invoiceNumber ? <>Votre facture <span data-replay-mask>{invoiceNumber}</span> est prête.</> : 'Votre facture est prête.'}
+                : <>
+                    {invoiceNumber ? <>Votre facture <span data-replay-mask>{invoiceNumber}</span> est prête.</> : 'Votre facture est prête.'}{' '}
+                    <span className="q-serif">Vous aussi.</span>
+                  </>}
           </DialogTitle>
           <DialogDescription className="text-[15px] leading-relaxed text-[var(--q-text-3)]">
             {artisan
@@ -117,7 +151,7 @@ export function PaywallDialog({
               ? 'Choisissez votre formule pour relancer vos clients. Vos devis restent gratuits.'
               : reason === 'signature'
                 ? 'Votre client lit et signe vos devis en ligne. Vos devis restent gratuits : sans formule, envoyez-les par email avec leur PDF.'
-                : 'Choisissez votre formule pour l’envoyer. Vos devis restent gratuits.'}
+                : `Avec ${plan.name}, envoyez-la maintenant et soyez en règle pour la réforme. Vos devis restent gratuits.`}
           </DialogDescription>
         </div>
 
@@ -156,6 +190,23 @@ export function PaywallDialog({
         </div>
         )}
 
+        {reform ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {([['Être en règle', REFORM_BENEFITS, 'text-[var(--q-accent)]'], ['Être payé', PAID_BENEFITS, 'text-[var(--q-ok)]']] as const).map(([title, items, tone]) => (
+              <div key={title} className="rounded-xl border border-[var(--q-line)] p-4">
+                <p className="text-sm font-semibold text-[var(--q-ink)]">{title}</p>
+                <ul className="mt-2 flex flex-col gap-1.5">
+                  {items.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-[var(--q-text-2)]">
+                      <Check className={cn('mt-0.5 size-4 shrink-0', tone)} strokeWidth={2.5} aria-hidden />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="q-inset p-4">
           <p className="text-sm font-semibold text-[var(--q-ink)]">{plan.name}</p>
           <ul className="mt-2 flex flex-col gap-1.5">
@@ -167,6 +218,7 @@ export function PaywallDialog({
             ))}
           </ul>
         </div>
+        )}
 
         {!onSale ? (
           <div className="flex flex-col gap-2">
@@ -184,7 +236,7 @@ export function PaywallDialog({
         ) : (
         <div className="flex flex-col gap-2">
           <button type="button" onClick={choose} className="q-btn q-btn-primary q-btn-lg w-full">
-            {reason === 'send' ? `Choisir ${plan.name} et envoyer ma facture` : `Choisir ${plan.name}`}
+            {reason === 'send' ? `Passer à ${plan.name} et envoyer ma facture` : `Choisir ${plan.name}`}
           </button>
           <p className="text-center text-[13px] tabular-nums text-[var(--q-text-4)]">
             {formatEuros(chargeHt)}{VAT_COLLECTED ? ' HT' : ''} {period === 'monthly' ? 'par mois' : 'par an'}{VAT_COLLECTED && <>, soit {formatEuros(withVat(chargeHt))} TTC</>}

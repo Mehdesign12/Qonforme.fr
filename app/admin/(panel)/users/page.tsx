@@ -95,7 +95,7 @@ async function getUsers(search: string, planFilter: string, statusFilter: string
       progress: (counts && counts.get(c.user_id)
         ? computeProgress(counts.get(c.user_id)!, auth?.createdAt ?? c.created_at)
         : null) as Progress | null,
-      lastEmail: (lastEmails ? lastEmails.get(c.user_id) ?? null : undefined) as AccountEmailRow | null | undefined,
+      lastEmail: (lastEmails ? lastEmails.get(String(c.user_id).toLowerCase()) ?? null : undefined) as AccountEmailRow | null | undefined,
     }
   })
 

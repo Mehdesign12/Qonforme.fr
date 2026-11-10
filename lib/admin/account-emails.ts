@@ -50,22 +50,39 @@ export async function loadEmailHistory(admin: SupabaseClient, userId: string, li
   return { kind: "ok", rows: (data ?? []) as AccountEmailRow[] }
 }
 
-/** Dernier email de chaque compte (liste des utilisateurs). null : lecture impossible. */
+/** Colonnes lues pour la colonne « Dernier email » (les mêmes que la page Emails, plus le suivi). */
+const LAST_COLUMNS =
+  "user_id,id,category,template,subject,status,sent_at,delivered_at,bounced_at,opened_at,first_clicked_at,click_count"
+
+/**
+ * Dernier email de chaque compte (liste des utilisateurs). null : lecture impossible
+ * (l'erreur part dans les journaux). Lecture par lots de 50 comptes : une adresse trop
+ * longue ne doit jamais vider la colonne. Seule une table absente (migration pas
+ * appliquée) rend une liste vide sans erreur.
+ */
 export async function loadLastEmails(
   admin: SupabaseClient,
   userIds: string[],
 ): Promise<Map<string, AccountEmailRow> | null> {
   const last = new Map<string, AccountEmailRow>()
-  if (userIds.length === 0) return last
-  const { data, error } = await admin
-    .from("account_emails")
-    .select(`user_id,${ROW_COLUMNS}`)
-    .in("user_id", userIds)
-    .order("sent_at", { ascending: false })
-    .limit(2000)
-  if (error) return isMissingSchemaError(error) ? last : null
-  for (const row of (data ?? []) as (AccountEmailRow & { user_id: string })[]) {
-    if (!last.has(row.user_id)) last.set(row.user_id, row)
+  const ids = Array.from(new Set(userIds.filter(Boolean)))
+  for (let i = 0; i < ids.length; i += 50) {
+    const { data, error } = await admin
+      .from("account_emails")
+      .select(LAST_COLUMNS)
+      .in("user_id", ids.slice(i, i + 50))
+      .neq("status", "sending")
+      .order("sent_at", { ascending: false })
+      .limit(1000)
+    if (error) {
+      if (error.code === "42P01" || error.code === "PGRST205") return last
+      console.error("[admin/users] dernier email illisible :", error.code, error.message)
+      return null
+    }
+    for (const row of (data ?? []) as unknown as (AccountEmailRow & { user_id: string })[]) {
+      const key = String(row.user_id).toLowerCase()
+      if (!last.has(key)) last.set(key, row)
+    }
   }
   return last
 }
