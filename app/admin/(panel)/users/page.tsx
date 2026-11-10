@@ -8,7 +8,8 @@ import { ProgressCell } from '@/components/admin/ProgressCell'
 import { computeProgress, type Progress, type ProgressStatus } from '@/lib/admin/onboarding-progress'
 import { fetchProgressCounts } from '@/lib/admin/progress-data'
 import { loadLastEmails, type AccountEmailRow } from '@/lib/admin/account-emails'
-import { LastEmailCell } from '@/components/admin/emails/LastEmailCell'
+import { LastEmailCell, emailFailed } from '@/components/admin/emails/LastEmailCell'
+import { fmtWhen } from '@/components/admin/emails/track'
 import { QuickEmailButton } from '@/components/admin/emails/QuickEmailButton'
 import { templateLabel } from '@/lib/email/account-templates'
 
@@ -251,7 +252,7 @@ export default async function AdminUsersPage({
                         <span className="flex flex-col items-start gap-2">
                           <LastEmailCell email={u.lastEmail} />
                           {u.progress && u.email && (
-                            <QuickEmailButton userId={u.user_id} accountLabel={u.name} done={u.progress.done} className="!h-7 !text-xs" />
+                            <QuickEmailButton userId={u.user_id} accountLabel={u.name} done={u.progress.done} lastTemplate={u.lastEmail?.template ?? null} className="!h-7 !text-xs" />
                           )}
                         </span>
                       </td>
@@ -292,14 +293,16 @@ export default async function AdminUsersPage({
                     </span>
                   )}
                   {u.lastEmail && (
-                    <span className="truncate text-xs text-[var(--q-text-4)]">Dernier email : {templateLabel(u.lastEmail.template)}</span>
+                    <span className={emailFailed(u.lastEmail) ? 'truncate text-xs font-semibold text-[var(--q-danger)]' : 'truncate text-xs font-semibold text-[var(--q-ok)]'}>
+                      {emailFailed(u.lastEmail) ? 'Email non remis' : '✓ Email envoyé'} · {fmtWhen(u.lastEmail.sent_at)} · {templateLabel(u.lastEmail.template)}
+                    </span>
                   )}
                 </span>
                 <SubscriptionPill status={u.subStatus} className="shrink-0" />
               </Link>
               {u.progress && u.email && (
                 <div className="px-3.5 pb-2.5 pl-[66px]">
-                  <QuickEmailButton userId={u.user_id} accountLabel={u.name} done={u.progress.done} className="!h-8 !text-xs" />
+                  <QuickEmailButton userId={u.user_id} accountLabel={u.name} done={u.progress.done} lastTemplate={u.lastEmail?.template ?? null} className="!h-8 !text-xs" />
                 </div>
               )}
               </div>

@@ -3,6 +3,9 @@ import { AdminSidebar, AdminMobileNav, type AdminCounts } from '@/components/adm
 import { AdminHeader } from '@/components/admin/AdminHeader'
 import { CrumbProvider } from '@/components/layout/crumb'
 
+// Aucune requête de l'admin n'est gardée en cache (voir createAdminClient : force-dynamic ne suffit pas en Next 14.2)
+export const fetchCache = 'force-no-store'
+
 export const metadata = {
   title: 'Admin',
   robots: { index: false, follow: false },
