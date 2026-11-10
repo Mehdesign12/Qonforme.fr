@@ -46,3 +46,22 @@ export const TEMPLATE_LABELS: Record<string, string> = {
 
 export const templateLabel = (t: string) => TEMPLATE_LABELS[t] ?? t
 
+
+/**
+ * Raccourci d'Admin › Utilisateurs : modèle conseillé d'après les cinq étapes du
+ * parcours (entreprise, devis créé, devis envoyé, facture créée, facture envoyée),
+ * et libellé du bouton. Même logique que `suggestedTemplate` de la fiche.
+ */
+export function templateForSteps(done: readonly boolean[]): ManualTemplate {
+  if (!done[0]) return "manual_company"
+  if (!done[1] && !done[3]) return "manual_first_quote"
+  if (done[1] && !done[2]) return "manual_quote_send"
+  return "manual_free"
+}
+
+export const SHORTCUT_LABELS: Record<ManualTemplate, string> = {
+  manual_company: "Aider : entreprise",
+  manual_first_quote: "Aider : premier devis",
+  manual_quote_send: "Aider : envoyer le devis",
+  manual_free: "Écrire un email",
+}
