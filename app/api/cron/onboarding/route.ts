@@ -30,7 +30,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createAdminClient } from "@/lib/supabase/server"
-import { sendEmail } from "@/lib/email/resend"
+import { sendAccountEmail, EMAIL_RETENTION_DAYS } from "@/lib/email/journal"
+import { buildAccountEmail } from "@/lib/email/templates/reprise"
+import { planReprise } from "@/lib/onboarding/reprise"
+import { loadRepriseFacts } from "@/lib/onboarding/reprise-facts"
 import { buildLaterReminderEmail, buildSequenceEmail, type SequenceEmailStep } from "@/lib/email/templates/onboarding"
 import { REMINDER_STALE_HOURS } from "@/lib/onboarding/reminder"
 import { frenchDay } from "@/lib/onboarding/paris-time"
@@ -52,7 +55,7 @@ const errorText = (err: unknown) => (err instanceof Error ? err.message : String
 
 const LONG_DATE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "long", year: "numeric" })
 
-type Account = { email: string; firstName: string }
+type Account = { email: string; firstName: string; lastSignInAt: string | null; hasSignupDraft: boolean }
 
 /**
  * Adresse et prénom du compte (Supabase Auth). `gone` : compte supprimé ou sans
@@ -63,8 +66,15 @@ async function accountOf(admin: SupabaseClient, userId: string): Promise<{ accou
     const { data, error } = await admin.auth.admin.getUserById(userId)
     if (error) return (error as { status?: number }).status === 404 || /not found/i.test(error.message) ? { gone: true } : { error: error.message }
     if (!data?.user?.email) return { gone: true }
-    const meta = (data.user.user_metadata ?? {}) as { first_name?: unknown }
-    return { account: { email: data.user.email, firstName: typeof meta.first_name === "string" ? meta.first_name : "" } }
+    const meta = (data.user.user_metadata ?? {}) as { first_name?: unknown; signup_draft?: unknown }
+    return {
+      account: {
+        email: data.user.email,
+        firstName: typeof meta.first_name === "string" ? meta.first_name : "",
+        lastSignInAt: data.user.last_sign_in_at ?? null,
+        hasSignupDraft: !!meta.signup_draft && typeof meta.signup_draft === "object",
+      },
+    }
   } catch (err) {
     return { error: errorText(err) }
   }
@@ -116,6 +126,14 @@ export async function GET(request: NextRequest) {
 
   const reminders = await sendDueReminders(admin, now)
   const sequence = isSequenceSendingTime(now) ? await sendSequence(admin, now) : { ...summary(), outsideHours: true }
+
+  // Copies des emails gardées 12 mois (journal des emails des comptes)
+  const retention = new Date(now.getTime() - EMAIL_RETENTION_DAYS * 86_400_000).toISOString()
+  try {
+    await admin.from("account_emails").delete().lt("sent_at", retention)
+  } catch (err) {
+    console.error("[cron/onboarding] purge du journal des emails :", errorText(err))
+  }
 
   const results = { reminders, sequence, planning }
   const hasErrors = reminders.errors.length > 0 || sequence.errors.length > 0
@@ -181,7 +199,8 @@ async function sendDueReminders(admin: SupabaseClient, now: Date): Promise<Summa
         target: row.target,
         requestedOn: frenchDay(new Date(row.created_at)),
       })
-      await sendEmail({ to: account.email, subject, html, fromName: "Qonforme" })
+      const out = await sendAccountEmail(admin, { userId: row.user_id, category: "onboarding", template: "later_reminder", to: account.email, subject, html })
+      if ("error" in out) throw new Error(out.error)
       await admin.from("onboarding_reminders").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", row.id)
       res.sent++
     } catch (err) {
@@ -219,7 +238,9 @@ async function sendSequence(admin: SupabaseClient, now: Date): Promise<Summary> 
 
   for (let i = 0; i < journeys.length; i += 150) {
     const batch = journeys.slice(i, i + 150)
-    const { states, error } = await loadAccountStates(admin, batch.map((j) => j.user_id))
+    const ids = batch.map((j) => j.user_id)
+    const [{ states, error: stateError }, reprise] = await Promise.all([loadAccountStates(admin, ids), loadRepriseFacts(admin, ids)])
+    const error = stateError ?? reprise.error
     if (error) {
       // Faits incertains : aucun email pour ce lot à ce passage
       res.errors.push(`Lecture des faits : ${error.message}`)
@@ -229,18 +250,54 @@ async function sendSequence(admin: SupabaseClient, now: Date): Promise<Summary> 
 
     for (const journey of batch) {
       const state = states.get(journey.user_id)
-      if (!state) continue
-      const step = planSequenceEmail({ now, enrolledAt: journey.enrolled_at, ...state })
-      if (!step || step === "welcome") continue
+      const rf = reprise.facts.get(journey.user_id)
+      if (!state || !rf) continue
+      const lastEmailAt = [state.lastReminderSentAt, rf.lastEmailAt]
+        .filter((v): v is string => !!v)
+        .reduce<string | null>((a, b) => (!a || b > a ? b : a), null)
+
+      // Reprise d'abord (le compte est arrêté à une étape), puis la séquence de démarrage
+      const repriseInput = {
+        now, enrolledAt: journey.enrolled_at, optedOut: state.optedOut, hasSiren: rf.hasSiren,
+        oldestDraftQuoteAt: rf.oldestDraftQuote?.createdAt ?? null, quotesSent: rf.quotesSent,
+        hasDocuments: state.facts.quotes + state.facts.invoices > 0, sent: rf.repriseSent, lastEmailAt,
+      }
+      let repriseStep = reprise.journal ? planReprise({ ...repriseInput, lastSignInAt: null }) : null
+      let found: Awaited<ReturnType<typeof accountOf>> | null = null
+      // Inactivité : seulement à partir de 14 jours, il faut la dernière connexion
+      if (!repriseStep && reprise.journal && rf.hasSiren && !rf.repriseSent.has("reprise_inactive_14") && repriseInput.hasDocuments) {
+        found = await accountOf(admin, journey.user_id)
+        if ("account" in found) repriseStep = planReprise({ ...repriseInput, lastSignInAt: found.account.lastSignInAt })
+      }
+      // Sans entreprise, « faites votre premier devis » n'a pas de sens : seule la reprise parle
+      const step = repriseStep ? null : rf.hasSiren ? planSequenceEmail({ now, enrolledAt: journey.enrolled_at, ...state, lastReminderSentAt: lastEmailAt }) : null
+      if (!repriseStep && (!step || step === "welcome")) continue
 
       // Pas de lien de désinscription (secret absent) : pas d'email (art. L34-5 du CPCE)
       const unsubscribeUrl = unsubscribePageUrl(journey.user_id)
       const headers = listUnsubscribeHeaders(journey.user_id)
       if (!unsubscribeUrl || !headers) { res.errors.push("Secret de désinscription absent"); return res }
 
-      const found = await accountOf(admin, journey.user_id)
+      found = found ?? await accountOf(admin, journey.user_id)
       if (!("account" in found)) { res.skipped++; continue }
       const account = found.account
+
+      if (repriseStep) {
+        const { subject, html } = buildAccountEmail(repriseStep, {
+          firstName: account.firstName,
+          unsubscribeUrl,
+          signupDate: LONG_DATE.format(new Date(journey.enrolled_at)),
+          draftQuote: rf.oldestDraftQuote,
+          hasSignupDraft: account.hasSignupDraft,
+          pending: { draftQuotes: rf.draftQuotes, draftInvoices: state.facts.draftInvoices, quotesAwaiting: rf.quotesAwaiting },
+        })
+        const out = await sendAccountEmail(admin, { userId: journey.user_id, category: "reprise", template: repriseStep, to: account.email, subject, html, headers })
+        if ("taken" in out) res.skipped++
+        else if ("error" in out) res.errors.push(`${journey.user_id}/${repriseStep}: ${out.error}`)
+        else res.sent++
+        continue
+      }
+      if (!step) continue
 
       const claim = await claimSequenceStep(admin, { user_id: journey.user_id, step, sent_to: account.email })
       if ("taken" in claim) { res.skipped++; continue }
@@ -253,7 +310,8 @@ async function sendSequence(admin: SupabaseClient, now: Date): Promise<Summary> 
           signupDate: LONG_DATE.format(new Date(journey.enrolled_at)),
           hasDraftInvoice: state.facts.draftInvoices > 0,
         })
-        await sendEmail({ to: account.email, subject, html, fromName: "Qonforme", headers })
+        const out = await sendAccountEmail(admin, { userId: journey.user_id, category: "onboarding", template: step, to: account.email, subject, html, headers })
+        if ("error" in out) throw new Error(out.error)
         res.sent++
       } catch (err) {
         await releaseSequenceStep(admin, claim.id)

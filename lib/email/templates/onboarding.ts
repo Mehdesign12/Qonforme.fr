@@ -42,16 +42,16 @@ export function escapeHtml(value: string): string {
 const e = escapeHtml
 
 /** « Bonjour Thomas, » ou « Bonjour, ». */
-function hello(firstName: string | null | undefined): string {
+export function hello(firstName: string | null | undefined): string {
   const name = firstName?.trim()
   return name ? `Bonjour ${e(name)},` : "Bonjour,"
 }
 
-function p(html: string, extra = ""): string {
+export function p(html: string, extra = ""): string {
   return `<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:${TEXT};${extra}">${html}</p>`
 }
 
-function button(label: string, href: string): string {
+export function button(label: string, href: string): string {
   return `
   <table cellpadding="0" cellspacing="0" role="presentation" style="margin:8px 0 0;">
     <tr>
@@ -62,11 +62,11 @@ function button(label: string, href: string): string {
   </table>`
 }
 
-function textLink(label: string, href: string): string {
+export function textLink(label: string, href: string): string {
   return `<a href="${e(href)}" style="color:${ACCENT};font-weight:600;text-decoration:none;">${e(label)}</a>`
 }
 
-function bullets(items: string[]): string {
+export function bullets(items: string[]): string {
   return `
   <table cellpadding="0" cellspacing="0" role="presentation" width="100%" style="margin:0 0 18px;">
     ${items.map((item) => `
@@ -77,7 +77,7 @@ function bullets(items: string[]): string {
   </table>`
 }
 
-function steps(items: { title: string; text: string }[]): string {
+export function steps(items: { title: string; text: string }[]): string {
   return `
   <table cellpadding="0" cellspacing="0" role="presentation" width="100%" style="margin:0 0 20px;">
     ${items.map((s, i) => `
@@ -94,7 +94,7 @@ function steps(items: { title: string; text: string }[]): string {
 }
 
 /** Encadré gris clair (choix secondaires, rappel des conditions). */
-function aside(html: string): string {
+export function aside(html: string): string {
   return `
   <table cellpadding="0" cellspacing="0" role="presentation" width="100%" style="margin:8px 0 20px;background-color:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;">
     <tr><td style="padding:16px 20px;font-size:14px;line-height:1.6;color:${TEXT};">${html}</td></tr>
@@ -185,7 +185,7 @@ export interface SequenceEmailContext {
 }
 
 /** « 5 octobre 2026 » sans coupure de ligne. */
-const unbreakable = (date: string) => date.replace(/ /g, " ")
+export const unbreakable = (date: string) => date.replace(/ /g, " ")
 
 const sequenceReason = (signupDate: string) =>
   `Vous recevez ces conseils de démarrage parce que vous avez créé votre compte Qonforme le ${unbreakable(signupDate)}. Ils s'arrêtent d'eux-mêmes après 30 jours.`

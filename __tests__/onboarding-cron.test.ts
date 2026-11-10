@@ -47,6 +47,8 @@ beforeEach(() => {
     invoices: [],
     subscriptions: [],
     cron_logs: [],
+    companies: [{ user_id: NEW, siren: "732829320" }],
+    account_emails: [],
   })
   db.users[NEW] = { email: "nouveau@example.com", user_metadata: { first_name: "Léa" } }
   db.users[OLD] = { email: "ancien@example.com", user_metadata: { first_name: "Marc" } }
@@ -93,7 +95,8 @@ describe("séquence", () => {
     at("2026-10-12T08:00:00Z")
     await call()
     expect(sent.map((s) => s.subject)).toEqual(["Votre premier devis en quelques minutes", "Un devis, quand vous voulez"])
-    expect(sent[1].html).toContain("/dashboard")
+    // Liens de retour suivis : le chemin est encodé dans l'adresse
+    expect(sent[1].html.replace(/%2F/gi, "/")).toContain("/dashboard")
   })
 
   it("devis envoyé puis facture en brouillon : du devis à la facture, puis Essentiel", async () => {
@@ -173,7 +176,7 @@ describe("rappels « plus tard »", () => {
     expect(sent).toHaveLength(1)
     expect(sent[0].to).toBe("ancien@example.com")
     expect(sent[0].subject).toBe("Votre rappel : faire votre premier devis")
-    expect(sent[0].html).toContain("/quotes/new")
+    expect(sent[0].html.replace(/%2F/gi, "/")).toContain("/quotes/new")
     expect(sent[0].headers).toBeUndefined()
     expect(db.tables.onboarding_reminders[0].status).toBe("sent")
   })
@@ -230,3 +233,28 @@ it("refuse un appel sans le secret du cron", async () => {
   const res = await GET(new NextRequest("https://qonforme.fr/api/cron/onboarding"))
   expect(res.status).toBe(401)
 })
+
+describe("reprise par blocage", () => {
+  it("sans SIREN : « Votre entreprise en 10 secondes » à J+1, au journal, une seule fois, jamais « premier devis »", async () => {
+    db.tables.companies = []
+    at("2026-10-06T08:30:00Z")
+    await call()
+    expect(sent.map((m) => m.subject)).toEqual(["Votre entreprise en 10 secondes"])
+    expect(db.tables.account_emails).toHaveLength(1)
+    expect(db.tables.account_emails[0]).toMatchObject({ user_id: NEW, category: "reprise", template: "reprise_company_1", status: "sent" })
+    // Lien de retour suivi dans l'email, désinscription intacte
+    expect(sent[0].html).toContain("/api/emails/c?e=")
+    expect(sent[0].html).toContain("/desinscription?t=")
+    at("2026-10-07T08:30:00Z")
+    await call()
+    expect(sent).toHaveLength(1)
+    expect(db.tables.onboarding_emails.filter((r) => r.step === "first_quote")).toHaveLength(0)
+  })
+
+  it("les emails de la séquence vont aussi au journal", async () => {
+    at("2026-10-06T08:30:00Z")
+    await call()
+    expect(db.tables.account_emails[0]).toMatchObject({ category: "onboarding", template: "first_quote" })
+  })
+})
+
