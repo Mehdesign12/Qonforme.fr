@@ -53,7 +53,7 @@ const DESKTOP = [
   ["relances", "/demo/relances"],
   ["planning", "/demo/planning"],
   ["chantier", "/demo/chantiers/clos-fleuri"],
-  ["factures-recues", "/demo/received-invoices"],
+  ["reception", "/demo/received-invoices"],
   ["documents", "/demo/documents"],
 ]
 const MOBILE = [
@@ -65,7 +65,7 @@ const MOBILE = [
   ["mobile-catalogue", "/demo/products"],
   ["mobile-planning", "/demo/planning"],
   ["mobile-chantier", "/demo/chantiers/clos-fleuri"],
-  ["mobile-factures-recues", "/demo/received-invoices"],
+  ["mobile-reception", "/demo/received-invoices"],
   ["mobile-documents", "/demo/documents"],
 ]
 const ANALYTICS = /(posthog|facebook|sentry|google-analytics|googletagmanager|doubleclick)\./
@@ -105,6 +105,10 @@ async function shoot(ctx, name, path, safeArea) {
     for (const b of document.querySelectorAll("button[aria-label]")) {
       const l = b.getAttribute("aria-label") || ""
       if (l.startsWith("Discuter avec") || l.startsWith("Ouvrir la discussion") || l.startsWith("Fermer la discussion")) hide(b)
+    }
+    // La plateforme agréée partenaire n'est pas nommée en public (décision du 08/11/2026)
+    for (const el of document.querySelectorAll("span, p, strong, div")) {
+      if (el.children.length === 0 && /^(Super\s?PDP|SUPER G)$/.test(el.textContent.trim())) hide(el)
     }
     for (const a of document.querySelectorAll("a")) {
       const t = a.textContent.trim()

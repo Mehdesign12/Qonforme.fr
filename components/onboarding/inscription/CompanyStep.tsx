@@ -30,6 +30,9 @@ import {
 
 type SearchStatus = "idle" | "loading" | "ok" | "empty" | "error"
 
+/** Attente avant le second essai silencieux d'une recherche refusée par le répertoire (503). */
+const SEARCH_RETRY_MS = 1200
+
 type ManualForm = Record<CompanyField, string>
 
 const EMPTY_FORM: ManualForm = { name: "", address: "", zip_code: "", city: "", siren: "" }
@@ -103,6 +106,8 @@ function SearchCompany({
   const [status, setStatus] = useState<SearchStatus>("idle")
   const [results, setResults] = useState<SireneCandidate[]>([])
   const [searchError, setSearchError] = useState<string | null>(null)
+  // Répertoire injoignable (503, réseau), à distinguer d'une saisie refusée (numéro à la clé fausse…)
+  const [directoryDown, setDirectoryDown] = useState(false)
   const [active, setActive] = useState(-1)
   const [error, setError] = useState<string | null>(initialError)
 
@@ -156,8 +161,15 @@ function SearchCompany({
         setStatus(list.length ? "ok" : "empty")
         return
       }
+      // Répertoire indisponible (quota, panne passagère) : un second essai silencieux avant de l'afficher
+      const ask = () => fetch(`/api/sirene/search?q=${encodeURIComponent(trimmed)}`, { signal: controller.signal })
       try {
-        const res = await fetch(`/api/sirene/search?q=${encodeURIComponent(trimmed)}`, { signal: controller.signal })
+        let res = await ask()
+        if (res.status === 503 && !controller.signal.aborted) {
+          await new Promise((r) => setTimeout(r, SEARCH_RETRY_MS))
+          if (controller.signal.aborted) return
+          res = await ask()
+        }
         const json = await res.json().catch(() => ({}))
         if (controller.signal.aborted) return
         if (!res.ok) {
@@ -168,6 +180,7 @@ function SearchCompany({
               ? json.error
               : res.status === 503 ? SEARCH_UNAVAILABLE : "La recherche n'a pas abouti. Réessayez.",
           )
+          setDirectoryDown(res.status >= 500)
           setStatus("error")
           reportSearchFailure("unavailable", trimmed)
           return
@@ -181,6 +194,7 @@ function SearchCompany({
         if (controller.signal.aborted) return
         setResults([])
         setSearchError(SEARCH_UNAVAILABLE)
+        setDirectoryDown(true)
         setStatus("error")
         reportSearchFailure("unavailable", trimmed)
       }
@@ -340,28 +354,78 @@ function SearchCompany({
           </div>
         )}
 
-        {status === "empty" && (
-          <p className="m-0 mt-3 text-[14px] leading-normal text-[var(--q-text-2)]">
-            Aucune entreprise trouvée pour «&nbsp;{trimmed}&nbsp;».
-          </p>
+        {(status === "empty" || (status === "error" && searchError)) ? (
+          <SearchHelp
+            query={trimmed}
+            error={status === "error" ? searchError : null}
+            down={status === "error" && directoryDown}
+            onManual={() => onManual(manualPrefill(trimmed), status === "empty" ? trimmed : null)}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => onManual({ ...manualPrefill(trimmed), ...(saved && !picked ? savedAsForm(saved) : {}) }, null)}
+            className="q-link mt-3 inline-flex min-h-11 items-center self-start text-left text-[14px] touch-manipulation sm:mt-3.5 sm:min-h-0"
+          >
+            Je ne la trouve pas, ou je n&rsquo;ai pas encore de SIREN
+          </button>
         )}
-        {status === "error" && searchError && (
-          <p role="alert" className="q-field-error m-0 mt-3 !text-[14px] leading-normal">{searchError}</p>
-        )}
-
-        <button
-          type="button"
-          onClick={() => onManual({ siren: sirenFromQuery(trimmed), ...(saved && !picked ? savedAsForm(saved) : {}) }, status === "empty" ? trimmed : null)}
-          className="q-link mt-3 inline-flex min-h-11 items-center self-start text-left text-[14px] touch-manipulation sm:mt-3.5 sm:min-h-0"
-        >
-          Je ne la trouve pas, ou je n&rsquo;ai pas encore de SIREN
-        </button>
 
         <StepError message={error} />
       </div>
 
       <StepFooter submitLabel="Continuer" busy={busy} />
     </form>
+  )
+}
+
+/**
+ * Saisie à la main préremplie depuis la recherche : le numéro tapé devient le SIREN,
+ * un nom tapé devient le nom de l'entreprise (il n'y a plus qu'à compléter l'adresse).
+ */
+export function manualPrefill(query: string): Partial<ManualForm> {
+  const siren = sirenFromQuery(query)
+  if (siren) return { siren }
+  const name = query.trim()
+  return /\d{5,}/.test(name) || name.length < 2 ? {} : { name: name.slice(0, COMPANY_MAX_LENGTH.name) }
+}
+
+/**
+ * Recherche sans résultat ou répertoire indisponible : pas une impasse. Ce qui peut
+ * marcher (le SIREN, la ville), pourquoi un nom peut manquer, et la saisie à la main
+ * en un clic, déjà préremplie (constat du 08/11/2026 : 2 inscrits sur 6 n'ont rien trouvé
+ * par leur nom, deux fois chacun).
+ */
+function SearchHelp({ query, error, down, onManual }: { query: string; error: string | null; down: boolean; onManual: () => void }) {
+  const unavailable = down
+  const byNumber = Boolean(sirenFromQuery(query)) || /^\d[\d\s]*$/.test(query)
+  return (
+    <div role={unavailable || error ? "alert" : "status"} className="mt-3 rounded-[14px] border border-[var(--q-line)] bg-[var(--q-surface-2)] px-4 py-3.5 text-[14px] leading-normal">
+      <p className="m-0 font-semibold text-[var(--q-ink)]">
+        {unavailable
+          ? "Le répertoire des entreprises ne répond pas pour le moment."
+          : error ?? <>Aucune entreprise trouvée pour «&nbsp;{query}&nbsp;»</>}
+      </p>
+      {!unavailable && !error && (
+        <ul className="m-0 mt-2 list-disc space-y-1 pl-5 text-[13px] text-[var(--q-text-3)]">
+          {byNumber ? (
+            <li>Vérifiez les chiffres : 9 pour un SIREN, 14 pour un SIRET.</li>
+          ) : (
+            <>
+              <li>Essayez votre SIREN (9 chiffres) : il figure sur votre attestation Urssaf, votre avis de situation INSEE ou votre Kbis.</li>
+              <li>Ajoutez votre ville au nom, par exemple «&nbsp;{query.split(/\s+/)[0] || "Dupont"} Lyon&nbsp;».</li>
+              <li>Entreprise individuelle : si vos informations ne sont pas publiques, votre nom n&rsquo;apparaît pas dans la recherche.</li>
+            </>
+          )}
+        </ul>
+      )}
+      {unavailable && (
+        <p className="m-0 mt-1.5 text-[13px] text-[var(--q-text-3)]">Rien n&rsquo;est perdu : saisissez votre entreprise, vous pourrez la compléter plus tard.</p>
+      )}
+      <button type="button" onClick={onManual} className="q-btn q-btn-secondary q-btn-sm mt-3 min-h-11 touch-manipulation sm:min-h-0">
+        Saisir mon entreprise à la main
+      </button>
+    </div>
   )
 }
 

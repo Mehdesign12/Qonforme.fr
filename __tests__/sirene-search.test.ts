@@ -226,6 +226,23 @@ describe("searchCompanies : recherche par nom", () => {
     expect(await searchCompanies("garnier")).toEqual({ status: "unavailable" })
   })
 
+  it("quota de l'API (429) ou panne passagère : un second essai, une seule fois", async () => {
+    fetchMock.mockImplementationOnce(() => reply(429)).mockImplementationOnce(() => reply(200, { results: [SARL] }))
+    const o = await searchCompanies("garnier")
+    expect(o.status).toBe("ok")
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    fetchMock.mockReset()
+    fetchMock.mockImplementation(() => reply(503))
+    expect(await searchCompanies("garnier")).toEqual({ status: "unavailable" })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it("pas de second essai après une panne réseau ou un délai dépassé", async () => {
+    fetchMock.mockImplementation(() => Promise.reject(new TypeError("fetch failed")))
+    expect(await searchCompanies("garnier")).toEqual({ status: "unavailable" })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it("panne réseau ou délai dépassé : répertoire indisponible", async () => {
     fetchMock.mockImplementation(() => Promise.reject(new TypeError("fetch failed")))
     expect(await searchCompanies("garnier")).toEqual({ status: "unavailable" })

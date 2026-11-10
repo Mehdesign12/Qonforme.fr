@@ -64,10 +64,10 @@ export const LECTEUR_FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Puis-je créer mes propres factures au format Factur-X ?",
-    a: `Oui, avec Qonforme : chaque facture envoyée avec la formule Essentiel est un PDF Factur-X${PLATFORM_SENDING_LIVE ? ", et elle peut partir par la plateforme agréée Super PDP" : ""}. Vos devis, eux, sont gratuits.`,
+    a: `Oui, avec Qonforme : chaque facture envoyée avec la formule Essentiel est un PDF Factur-X${PLATFORM_SENDING_LIVE ? ", et elle peut partir par une plateforme agréée" : ""}. Vos devis, eux, sont gratuits.`,
   },
   {
     q: "Puis-je recevoir mes factures fournisseurs automatiquement ?",
-    a: "Oui : avec Essentiel, vos factures fournisseurs arrivent dans Qonforme par la plateforme agréée Super PDP, déjà lues et contrôlées comme dans ce lecteur. La réception des factures électroniques est obligatoire pour toutes les entreprises depuis le 1er septembre 2026.",
+    a: "Oui : avec Essentiel, vos factures fournisseurs arrivent dans Qonforme par une plateforme agréée, déjà lues et contrôlées comme dans ce lecteur. La réception des factures électroniques est obligatoire pour toutes les entreprises depuis le 1er septembre 2026.",
   },
 ]

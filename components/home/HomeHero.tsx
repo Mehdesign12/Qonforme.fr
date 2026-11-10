@@ -210,7 +210,7 @@ export function EInvoicingBand() {
           <p className="mt-3 max-w-[560px] text-[16px] leading-[1.6] text-q-text-3 [text-wrap:pretty]">
             {PLATFORM_SENDING_LIVE ? (
               <>
-                Qonforme envoie et reçoit vos factures par la plateforme agréée Super PDP, au format exigé par la réforme. Le 1er&nbsp;septembre 2027, vous n&apos;aurez rien à changer.
+                Qonforme envoie et reçoit vos factures par une plateforme agréée, au format exigé par la réforme. Le 1er&nbsp;septembre 2027, vous n&apos;aurez rien à changer.
               </>
             ) : (
               <>
