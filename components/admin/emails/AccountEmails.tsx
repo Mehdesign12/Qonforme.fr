@@ -107,7 +107,7 @@ function ViewEmailDialog({ row, onClose }: { row: EmailRow | null; onClose: () =
   )
 }
 
-function SendEmailDialog({
+export function SendEmailDialog({
   open,
   onClose,
   userId,

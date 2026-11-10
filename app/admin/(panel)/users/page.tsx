@@ -9,6 +9,7 @@ import { computeProgress, type Progress, type ProgressStatus } from '@/lib/admin
 import { fetchProgressCounts } from '@/lib/admin/progress-data'
 import { loadLastEmails, type AccountEmailRow } from '@/lib/admin/account-emails'
 import { LastEmailCell } from '@/components/admin/emails/LastEmailCell'
+import { QuickEmailButton } from '@/components/admin/emails/QuickEmailButton'
 import { templateLabel } from '@/lib/email/account-templates'
 
 export const dynamic = 'force-dynamic'
@@ -246,7 +247,14 @@ export default async function AdminUsersPage({
                       </td>
                       <td className="!py-2.5"><SubscriptionPill status={u.subStatus} /></td>
                       <td className="!py-2.5"><ProgressCell progress={u.progress} /></td>
-                      <td className="!py-2.5"><LastEmailCell email={u.lastEmail} /></td>
+                      <td className="!py-2.5">
+                        <span className="flex flex-col items-start gap-2">
+                          <LastEmailCell email={u.lastEmail} />
+                          {u.progress && u.email && (
+                            <QuickEmailButton userId={u.user_id} accountLabel={u.name} done={u.progress.done} className="!h-7 !text-xs" />
+                          )}
+                        </span>
+                      </td>
                       <td className="!py-2.5 whitespace-nowrap text-[13px] text-[var(--q-text-3)]">{fmtDate(u.created_at)}</td>
                       <td className="!py-2.5 whitespace-nowrap text-[13px] text-[var(--q-text-3)]">
                         <span className="flex flex-col items-start gap-1">
@@ -268,7 +276,8 @@ export default async function AdminUsersPage({
           {/* Liste (mobile) — le changement de formule se fait depuis la fiche */}
           <section aria-label="Liste des utilisateurs" className="q-card q-list overflow-hidden !rounded-[18px] md:hidden">
             {users.map((u) => (
-              <Link key={u.user_id} href={`/admin/users/${u.user_id}`} className="q-list-row !gap-3 !px-3.5 !py-2.5">
+              <div key={u.user_id} className="flex flex-col">
+              <Link href={`/admin/users/${u.user_id}`} className="q-list-row !gap-3 !px-3.5 !py-2.5">
                 <Initials name={u.name} className="!size-10 !rounded-xl !text-[13px]" />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-[15px] font-semibold">{u.name}</span>
@@ -288,6 +297,12 @@ export default async function AdminUsersPage({
                 </span>
                 <SubscriptionPill status={u.subStatus} className="shrink-0" />
               </Link>
+              {u.progress && u.email && (
+                <div className="px-3.5 pb-2.5 pl-[66px]">
+                  <QuickEmailButton userId={u.user_id} accountLabel={u.name} done={u.progress.done} className="!h-8 !text-xs" />
+                </div>
+              )}
+              </div>
             ))}
           </section>
         </>
