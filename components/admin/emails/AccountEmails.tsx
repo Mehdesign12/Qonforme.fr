@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { CATEGORY_LABELS, fmtWhen, trackSteps, type TrackableEmail } from "@/components/admin/emails/track"
-import { templateLabel, type ManualTemplate } from "@/lib/email/account-templates"
+import { FREE_EMAIL_PRESETS, templateLabel, type ManualTemplate } from "@/lib/email/account-templates"
 
 export interface EmailRow extends TrackableEmail {
   id: string
@@ -125,6 +125,30 @@ export function SendEmailDialog({
   const [note, setNote] = useState("")
   const [freeSubject, setFreeSubject] = useState("")
   const [freeBody, setFreeBody] = useState("")
+  const [presetId, setPresetId] = useState<string | null>(null)
+
+  // Sujet prérempli : objet et texte modifiables. On ne remplace jamais sans
+  // prévenir un texte que l'admin a modifié.
+  function applyPreset(id: string | null) {
+    const current = FREE_EMAIL_PRESETS.find((p) => p.id === presetId)
+    const edited = (freeSubject.trim() || freeBody.trim())
+      && !(current && current.subject === freeSubject && current.body === freeBody)
+    if (edited && !window.confirm("Remplacer l'objet et le texte que vous avez écrits ?")) return
+    const next = FREE_EMAIL_PRESETS.find((p) => p.id === id)
+    setPresetId(next ? next.id : null)
+    setFreeSubject(next?.subject ?? "")
+    setFreeBody(next?.body ?? "")
+  }
+
+  // Email libre choisi avec des champs vides : premier sujet proposé d'office.
+  useEffect(() => {
+    if (template !== "manual_free" || freeSubject || freeBody || presetId !== null) return
+    const first = FREE_EMAIL_PRESETS[0]
+    setPresetId(first.id)
+    setFreeSubject(first.subject)
+    setFreeBody(first.body)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [template])
   const [preview, setPreview] = useState<{ subject: string; html: string; to: string; blocker: string | null } | null>(null)
   const [previewError, setPreviewError] = useState(false)
   const [busy, setBusy] = useState<"test" | "send" | null>(null)
@@ -219,13 +243,38 @@ export function SendEmailDialog({
 
             {free ? (
               <>
+                <div className="flex flex-col gap-1.5">
+                  <span className="q-label">Sujet</span>
+                  <div className="flex flex-wrap gap-1.5" role="group" aria-label="Sujet de l'email">
+                    {[...FREE_EMAIL_PRESETS.map((p) => ({ id: p.id as string | null, label: p.label })), { id: null, label: "Vierge" }].map((p) => {
+                      const active = p.id === presetId
+                      return (
+                        <button
+                          key={p.id ?? "vierge"}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => applyPreset(p.id)}
+                          className={cn(
+                            "rounded-full border px-3 py-1 text-xs font-medium",
+                            active
+                              ? "border-[var(--q-accent)] bg-[var(--q-accent-wash,var(--q-sunken))] text-[var(--q-accent-strong)]"
+                              : "border-[var(--q-line)] text-[var(--q-text-2)] hover:border-[var(--q-accent)]",
+                          )}
+                        >
+                          {p.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <span className="text-xs text-[var(--q-text-3)]">Objet et texte préremplis, à modifier si besoin. « Bonjour » et le prénom sont ajoutés pour vous.</span>
+                </div>
                 <label className="flex flex-col gap-1.5">
                   <span className="q-label">Objet</span>
                   <Input value={freeSubject} maxLength={150} onChange={(e) => setFreeSubject(e.target.value)} />
                 </label>
                 <label className="flex flex-col gap-1.5">
                   <span className="q-label">Texte</span>
-                  <Textarea value={freeBody} rows={7} maxLength={5000} onChange={(e) => setFreeBody(e.target.value)} />
+                  <Textarea value={freeBody} rows={10} maxLength={5000} onChange={(e) => setFreeBody(e.target.value)} />
                   <span className="text-xs text-[var(--q-text-3)]">Une ligne vide sépare deux paragraphes. Jamais d&apos;appel ni de rendez-vous promis.</span>
                 </label>
               </>
