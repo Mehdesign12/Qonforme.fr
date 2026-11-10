@@ -76,6 +76,8 @@ describe("analyse des réponses", () => {
     expect(pickProject({ projects: [{ id: "p-seul", domain: "autre.fr" }] })).toBe("p-seul")
     expect(pickProject({ projects: [{ id: "a", domain: "a.fr" }, { id: "b", domain: "b.fr" }] })).toBeNull()
     expect(pickProject({ projects: [] })).toBeNull()
+    // Deux projets du domaine (une étude américaine) : celui de la France
+    expect(pickProject({ projects: [{ id: "us", domain: "qonforme.fr", locationCode: 2840 }, { id: "fr", domain: "qonforme.fr", locationCode: 2250 }] })).toBe("fr")
   })
 
   it("messages en français : clé refusée, crédits, limite, panne", () => {
@@ -87,8 +89,9 @@ describe("analyse des réponses", () => {
     expect(openSeoMessage(null, "projet inconnu")).toBe("OpenSEO n'a pas pu répondre : « projet inconnu ».")
   })
 
-  it("le site n'appelle que trois outils (la clé ne peut pas être limitée à la lecture)", () => {
-    expect([...OPENSEO_TOOLS]).toEqual(["whoami", "list_projects", "get_keyword_metrics"])
+  it("le site n'appelle que quatre outils de lecture (la clé ne peut pas être limitée à la lecture)", () => {
+    // get_ranked_keywords : pages d'un site partenaire (Admin › Affiliation, 10/11/2026)
+    expect([...OPENSEO_TOOLS]).toEqual(["whoami", "list_projects", "get_keyword_metrics", "get_ranked_keywords"])
   })
 })
 

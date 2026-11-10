@@ -4,6 +4,8 @@ import { safeNextPath } from "@/lib/stripe/access"
 import { isFreshOAuthSignup, oauthSignupMetadata } from "@/lib/auth/oauth"
 import { sendAccountEmail } from "@/lib/email/journal"
 import { notifyNewSignup } from "@/lib/email/admin-notify"
+import { attributeSignup } from "@/lib/affiliation/attribution"
+import { REF_COOKIE } from "@/lib/affiliation/model"
 import { buildWelcomeEmail } from "@/lib/email/templates/welcome"
 import { claimSequenceStep, enrollInOnboarding } from "@/lib/onboarding/store"
 import { listUnsubscribeHeaders, unsubscribePageUrl } from "@/lib/onboarding/unsubscribe"
@@ -25,7 +27,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}/login?error=oauth`)
     }
     const next = safeNextPath(requestUrl.searchParams.get("next"))
-    const fresh = await onGoogleSignup(data.user, requestUrl.searchParams.get("ab"))
+    const fresh = await onGoogleSignup(data.user, requestUrl.searchParams.get("ab"), request.cookies.get(REF_COOKIE)?.value)
     if (next) return NextResponse.redirect(`${origin}${next}`)
     return NextResponse.redirect(`${origin}${fresh ? "/dashboard?bienvenue=1" : "/dashboard"}`)
   }
@@ -69,10 +71,13 @@ export async function GET(request: NextRequest) {
 async function onGoogleSignup(
   user: { id: string; email?: string | null; created_at?: string; app_metadata?: Record<string, unknown> | null; user_metadata?: Record<string, unknown> | null },
   variant: string | null,
+  refCookie?: string | null,
 ): Promise<boolean> {
   if (!isFreshOAuthSignup(user)) return false
   try {
     const admin = createAdminClient()
+    // Arrivé par un lien de partenaire (cookie q_ref) : compte rattaché (ne lève jamais)
+    await attributeSignup(admin, { userId: user.id, cookie: refCookie, method: "google" })
     const meta = oauthSignupMetadata(user, variant)
     const { error } = await admin.auth.admin.updateUserById(user.id, {
       user_metadata: { ...(user.user_metadata ?? {}), ...meta },

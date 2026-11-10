@@ -6,7 +6,7 @@
 import {
   LayoutDashboard, Users, CreditCard, MessageSquare, TriangleAlert, Activity,
   ChartColumn, FileText, Mail, Bot, ShieldAlert, Palette, UserSearch, Megaphone,
-  Gauge, ListChecks, KeyRound, Newspaper, Sparkles, Settings2, TrendingUp, Wallet,
+  Gauge, ListChecks, KeyRound, Newspaper, Sparkles, Settings2, TrendingUp, Wallet, Link2, Coins,
   type LucideIcon,
 } from "lucide-react"
 
@@ -59,6 +59,14 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     ],
   },
   {
+    key: "acquisition",
+    label: "Acquisition",
+    links: [
+      { key: "affiliation", label: "Partenaires", href: "/admin/affiliation", icon: Link2, hint: "Sites qui citent Qonforme et leurs liens" },
+      { key: "affiliation-commissions", label: "Commissions", href: "/admin/affiliation/commissions", icon: Coins, hint: "À verser aux partenaires" },
+    ],
+  },
+  {
     key: "seo",
     label: "SEO",
     links: [
@@ -98,6 +106,9 @@ const ALL_LINKS: AdminNavLink[] = ADMIN_NAV.flatMap((g) => g.links)
 export function isAdminActive(pathname: string, href: string): boolean {
   if (href === "/admin") return pathname === "/admin"
   if (href === "/admin/seo") return pathname === "/admin/seo"
+  if (href === "/admin/affiliation") {
+    return (pathname === href || pathname.startsWith(href + "/")) && !pathname.startsWith("/admin/affiliation/commissions")
+  }
   if (href === "/admin/blog") {
     return (pathname === href || pathname.startsWith(href + "/"))
       && !pathname.startsWith("/admin/blog/ai")
