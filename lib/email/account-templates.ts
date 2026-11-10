@@ -65,3 +65,79 @@ export const SHORTCUT_LABELS: Record<ManualTemplate, string> = {
   manual_quote_send: "Aider : envoyer le devis",
   manual_free: "Écrire un email",
 }
+
+/**
+ * Sujets prêts à l'emploi de l'« email libre » : objet et texte préremplis,
+ * modifiables avant l'envoi. Le modèle ajoute lui-même « Bonjour {prénom}, » et
+ * le bouton « Ouvrir Qonforme » : les textes n'en parlent pas. Vouvoiement,
+ * fonctions réellement livrées, ni appel, ni rendez-vous, ni délai de réponse.
+ */
+export interface FreeEmailPreset {
+  id: string
+  label: string
+  subject: string
+  body: string
+}
+
+export const FREE_EMAIL_PRESETS: readonly FreeEmailPreset[] = [
+  {
+    id: "aide",
+    label: "Besoin d'aide ?",
+    subject: "Besoin d'un coup de main pour démarrer ?",
+    body: [
+      "Vous avez créé votre compte Qonforme il y a peu, et je voulais savoir si tout se passe bien.",
+      "Si quelque chose vous bloque (votre entreprise, votre premier devis, l'envoi à un client), écrivez-nous depuis la page Contact de qonforme.fr ou la bulle en bas de l'écran : nous vous répondons par email.",
+      "Vos devis sont gratuits et sans limite : vous pouvez en faire autant que vous voulez.",
+    ].join("\n\n"),
+  },
+  {
+    id: "reforme",
+    label: "Facture électronique 2027",
+    subject: "Facture électronique : vous êtes prêt pour le 1er septembre 2027",
+    body: [
+      "Depuis le 1er septembre 2026, toutes les entreprises doivent pouvoir recevoir leurs factures par une plateforme agréée. Au 1er septembre 2027, les TPE et les micro-entreprises devront aussi les envoyer par ce moyen.",
+      "Avec la formule Essentiel, Qonforme reçoit vos factures fournisseurs et envoie vos factures à vos clients professionnels par une plateforme agréée, au format Factur-X, avec les mentions obligatoires ajoutées pour vous.",
+      "Vous n'avez rien à installer : tout se règle depuis la page Facturation électronique de votre compte.",
+    ].join("\n\n"),
+  },
+  {
+    id: "relances",
+    label: "Relances automatiques",
+    subject: "Vos factures impayées relancées toutes seules",
+    body: [
+      "Relancer un client qui tarde à payer prend du temps, et c'est rarement agréable.",
+      "Avec la formule Essentiel, Qonforme envoie un rappel avant l'échéance puis des relances après (à 7, 15, 30 et 45 jours, selon vos réglages), avec le PDF de la facture et vos coordonnées de virement.",
+      "Vous choisissez les dates dans Paramètres › Relances, et vous voyez toutes les relances à venir sur la page Relances.",
+    ].join("\n\n"),
+  },
+  {
+    id: "signature",
+    label: "Signature en ligne",
+    subject: "Faites signer vos devis en ligne",
+    body: [
+      "Plus besoin d'imprimer, de scanner ou d'attendre un courrier : votre client peut signer son devis depuis son téléphone ou son ordinateur.",
+      "Avec la formule Essentiel, envoyez le lien de signature depuis la fiche du devis : vous êtes prévenu dès qu'il est signé, et le PDF signé est gardé dans votre compte.",
+      "Une fois le devis accepté, il se transforme en facture en un clic.",
+    ].join("\n\n"),
+  },
+  {
+    id: "logo",
+    label: "Logo et modèles",
+    subject: "Des devis à vos couleurs",
+    body: [
+      "Saviez-vous que vous pouvez ajouter votre logo et choisir l'habillage de vos documents ?",
+      "Dans Paramètres › Entreprise, importez votre logo ; dans Paramètres › Modèles de documents, choisissez parmi cinq modèles (Classique, Chantier, Moderne, Épuré, Prestige) et votre couleur.",
+      "Vos devis, factures et bons de commande prennent aussitôt cette présentation.",
+    ].join("\n\n"),
+  },
+  {
+    id: "terrain",
+    label: "Planning et scan",
+    subject: "Votre planning et vos papiers de chantier au même endroit",
+    body: [
+      "Qonforme ne sert pas qu'aux devis et aux factures : le Planning garde vos visites, chantiers et livraisons, avec un rappel par email.",
+      "Depuis votre téléphone, la page Documents scanne vos bons de livraison, tickets et factures papier, et les range par client ou par chantier.",
+      "Ces deux outils sont inclus dans votre compte, même gratuit.",
+    ].join("\n\n"),
+  },
+]
