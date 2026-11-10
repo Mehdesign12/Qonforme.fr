@@ -2,7 +2,7 @@ import { createAdminClient, createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { safeNextPath } from "@/lib/stripe/access"
 import { isFreshOAuthSignup, oauthSignupMetadata } from "@/lib/auth/oauth"
-import { sendEmail } from "@/lib/email/resend"
+import { sendAccountEmail } from "@/lib/email/journal"
 import { notifyNewSignup } from "@/lib/email/admin-notify"
 import { buildWelcomeEmail } from "@/lib/email/templates/welcome"
 import { claimSequenceStep, enrollInOnboarding } from "@/lib/onboarding/store"
@@ -88,14 +88,17 @@ async function onGoogleSignup(
       firstName: typeof meta.first_name === "string" ? meta.first_name : null,
       unsubscribeUrl: enrolled ? unsubscribePageUrl(user.id) : null,
     })
-    await sendEmail({
+    await sendAccountEmail(admin, {
+      userId: user.id,
+      category: "onboarding",
+      template: "welcome",
       to,
       subject,
       html,
-      fromName: "Qonforme",
       headers: (enrolled && listUnsubscribeHeaders(user.id)) || undefined,
     })
-      .then(async () => {
+      .then(async (out) => {
+        if ("error" in out) throw new Error(out.error)
         if (enrolled) await claimSequenceStep(admin, { user_id: user.id, step: "welcome", sent_to: to })
       })
       .catch((err) => console.error("[auth/callback] email de bienvenue :", err))

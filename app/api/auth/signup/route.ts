@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/resend"
+import { sendAccountEmail } from "@/lib/email/journal"
 import { notifyNewSignup } from "@/lib/email/admin-notify"
 import { buildWelcomeEmail } from "@/lib/email/templates/welcome"
 import { claimSequenceStep, enrollInOnboarding } from "@/lib/onboarding/store"
@@ -97,13 +98,12 @@ export async function POST(request: NextRequest) {
       firstName: input.first_name ?? null,
       unsubscribeUrl: enrolled && userId ? unsubscribePageUrl(userId) : null,
     })
-    sendEmail({
-      to,
-      subject,
-      html,
-      fromName: "Qonforme",
-      headers: (enrolled && userId && listUnsubscribeHeaders(userId)) || undefined,
-    })
+    const welcomeHeaders = (enrolled && userId && listUnsubscribeHeaders(userId)) || undefined
+    const welcome: Promise<unknown> = userId
+      ? sendAccountEmail(admin, { userId, category: "onboarding", template: "welcome", to, subject, html, headers: welcomeHeaders })
+          .then((out) => { if ("error" in out) throw new Error(out.error) })
+      : sendEmail({ to, subject, html, fromName: "Qonforme", headers: welcomeHeaders })
+    welcome
       .then(async () => {
         // Bienvenue au journal : compte pour l'écart minimal avec l'email suivant
         if (enrolled && userId) await claimSequenceStep(admin, { user_id: userId, step: "welcome", sent_to: to })

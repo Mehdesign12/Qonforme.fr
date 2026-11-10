@@ -5,7 +5,7 @@
  */
 import {
   LayoutDashboard, Users, CreditCard, MessageSquare, TriangleAlert, Activity,
-  ChartColumn, FileText, Bot, ShieldAlert, Palette, UserSearch, Megaphone,
+  ChartColumn, FileText, Mail, Bot, ShieldAlert, Palette, UserSearch, Megaphone,
   Gauge, ListChecks, KeyRound, Newspaper, Sparkles, Settings2, TrendingUp, Wallet,
   type LucideIcon,
 } from "lucide-react"
@@ -53,6 +53,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     links: [
       { key: "support", label: "Support", href: "/admin/support", icon: MessageSquare, hint: "Signalements et messages", badge: "support" },
       { key: "errors", label: "Erreurs", href: "/admin/errors", icon: TriangleAlert, hint: "Erreurs enregistrées par l'application", badge: "errors" },
+      { key: "emails", label: "Emails", href: "/admin/emails", icon: Mail, hint: "Emails envoyés aux comptes et ce qu'ils déclenchent" },
       { key: "health", label: "Santé du système", href: "/admin/health", icon: Activity, hint: "Services et tâches planifiées" },
       { key: "analytics", label: "Audience", href: "/admin/analytics", icon: ChartColumn, hint: "Visites et inscriptions (PostHog)" },
     ],
