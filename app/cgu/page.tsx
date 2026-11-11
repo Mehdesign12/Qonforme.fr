@@ -1,6 +1,6 @@
 import { LegalLayout } from "@/components/legal/LegalLayout"
 import type { Metadata } from "next"
-import { PAYMENT_METHODS_TEXT, PLANS, VAT_COLLECTED, formatEuros, scanQuotaText } from "@/lib/stripe/plans"
+import { PAYMENT_METHODS_TEXT, PLANS, PRICE_TAX_NOTE, VAT_COLLECTED, formatEuros, scanQuotaText } from "@/lib/stripe/plans"
 import { PUBLISHER } from "@/lib/legal/publisher"
 import { PLATFORM_SENDING_LIVE } from "@/lib/pa/sending"
 
@@ -17,7 +17,7 @@ export default function CGUPage() {
       titleAccent="d'utilisation"
       path="/cgu"
       subtitle="Merci de lire attentivement ces conditions avant d'utiliser Qonforme."
-      lastUpdated="6 novembre 2026"
+      lastUpdated="11 novembre 2026"
     >
       <h2>Article 1 — Objet</h2>
       <p>
@@ -93,14 +93,15 @@ export default function CGUPage() {
           des avoirs, relances des factures impayées, export comptable, espace de scan porté à {scanQuotaText("starter")}.
         </li>
         <li>
-          <strong>Formule Artisan</strong> — {formatEuros(PLANS.pro.monthlyPrice)}{VAT_COLLECTED ? " HT" : ""} par mois, ou {formatEuros(PLANS.pro.yearlyPrice)}{VAT_COLLECTED ? " HT" : ""} par an : proposée lorsque ses fonctionnalités
-          propres (situations de travaux, retenue de garantie, autoliquidation) seront disponibles.
+          <strong>Formule Artisan</strong> — {formatEuros(PLANS.pro.monthlyPrice)}{VAT_COLLECTED ? " HT" : ""} par mois, ou {formatEuros(PLANS.pro.yearlyPrice)}{VAT_COLLECTED ? " HT" : ""} par an : {PLANS.pro.available
+            ? <>toutes les fonctions d&apos;Essentiel, plus {PLANS.pro.features.map((f) => f.charAt(0).toLowerCase() + f.slice(1)).join(", ")}.</>
+            : <>proposée lorsque ses fonctionnalités propres (situations de travaux, retenue de garantie, autoliquidation) seront disponibles.</>}
         </li>
       </ul>
       <p>
         {VAT_COLLECTED
           ? "Les prix s'entendent hors taxes ; la TVA au taux en vigueur (20 %) s'y ajoute."
-          : "Les prix s'entendent en euros. Le montant affiché est le montant prélevé."}
+          : `Les prix s'entendent en euros. ${PRICE_TAX_NOTE}`}
       </p>
       <h3>4.2 Paiement</h3>
       <p>
