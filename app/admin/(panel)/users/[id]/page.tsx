@@ -6,6 +6,9 @@ import { SetCrumb } from '@/components/layout/crumb'
 import { InfoList, InfoRow, LoadError, SubscriptionPill, fmtDate, fmtEuro, periodLabel, planLabel } from '@/components/admin/ui'
 import AdminChangePlanButton from './AdminChangePlanButton'
 import AdminSubscriptionActions from './AdminSubscriptionActions'
+import { GrantPlanButton } from '@/components/admin/users/PlanAdmin'
+import { hasLiveStripeSubscription, isGranted } from '@/lib/admin/grant'
+import { StatusPill } from '@/components/app/kit'
 import { AccountEmails } from '@/components/admin/emails/AccountEmails'
 import { loadEmailHistory, suggestedTemplate } from '@/lib/admin/account-emails'
 import { loadRepriseFacts } from '@/lib/onboarding/reprise-facts'
@@ -177,16 +180,31 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
           {data.subscriptionError ? (
             <LoadError what="l'abonnement de ce compte" compact />
           ) : !subscription ? (
-            <p className="px-5 pb-5 text-sm text-[var(--q-text-3)]">
-              Aucun abonnement : le compte utilise la version gratuite (devis, clients, brouillons).
-            </p>
+            <div className="flex flex-col gap-3 px-5 pb-5">
+              <p className="text-sm text-[var(--q-text-3)]">
+                Aucun abonnement : le compte utilise la version gratuite (devis, clients, brouillons).
+              </p>
+              <GrantPlanButton userId={id} />
+            </div>
           ) : (
             <>
               <InfoList>
-                <InfoRow label="Formule">{planLabel(subscription.plan)}</InfoRow>
+                <InfoRow label="Formule">
+                  <span className="inline-flex flex-wrap items-center justify-end gap-2">
+                    {planLabel(subscription.plan)}
+                    {isGranted(subscription) && <StatusPill tone="info">Offerte</StatusPill>}
+                  </span>
+                </InfoRow>
+                {isGranted(subscription) && subscription.granted_note && (
+                  <InfoRow label="Note">{subscription.granted_note}</InfoRow>
+                )}
                 <InfoRow label="Facturation">{periodLabel(subscription.billing_period)}</InfoRow>
                 <InfoRow label="Statut"><SubscriptionPill status={subscription.status} /></InfoRow>
-                <InfoRow label="Fin de période">{subscription.current_period_end ? fmtDate(subscription.current_period_end, { day: 'numeric', month: 'long', year: 'numeric' }) : null}</InfoRow>
+                <InfoRow label={isGranted(subscription) ? 'Offerte jusqu’au' : 'Fin de période'}>
+                  {subscription.current_period_end
+                    ? fmtDate(subscription.current_period_end, { day: 'numeric', month: 'long', year: 'numeric' })
+                    : isGranted(subscription) ? 'Sans limite' : null}
+                </InfoRow>
                 <InfoRow label="Abonnement Stripe">
                   {subscription.stripe_subscription_id && (
                     <StripeLink href={`https://dashboard.stripe.com/subscriptions/${subscription.stripe_subscription_id}`}>
@@ -209,6 +227,15 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
                     currentPlan={subscription.plan}
                     hasStripeSubscription={!!subscription.stripe_subscription_id && (subscription.status === 'active' || subscription.status === 'past_due')}
                     isDowngrade={subscription.plan === 'pro'}
+                  />
+                )}
+                {!hasLiveStripeSubscription(subscription) && (
+                  <GrantPlanButton
+                    userId={id}
+                    label={isGranted(subscription) && subscription.status === 'active' ? 'Modifier la formule offerte' : 'Offrir une formule'}
+                    current={subscription.plan === 'starter' || subscription.plan === 'pro'
+                      ? { plan: subscription.plan, period: subscription.billing_period === 'yearly' ? 'yearly' : 'monthly' }
+                      : undefined}
                   />
                 )}
                 <AdminSubscriptionActions
