@@ -35,10 +35,10 @@ describe("réglage d'ouverture", () => {
     expect(PLANS.starter.features.join(" ")).not.toMatch(/factures et avoirs à vos clients par la plateforme/)
   })
 
-  it("formule Essentiel ouverte : la fonction est listée, plus rien « à venir »", async () => {
+  it("formule Essentiel ouverte : la fonction est listée, l'envoi n'est plus « à venir »", async () => {
     vi.doMock("@/lib/pa/sending", async (orig) => ({ ...(await orig<typeof import("@/lib/pa/sending")>()), PLATFORM_SENDING_LIVE: true }))
     const { PLANS } = await import("@/lib/stripe/plans")
-    expect(PLANS.starter.upcoming).toEqual([])
+    expect(PLANS.starter.upcoming.some((u) => u.startsWith("Envoi de vos factures"))).toBe(false)
     expect(PLANS.starter.features).toContain("Envoi de vos factures et avoirs à vos clients par la plateforme agréée")
   })
 })

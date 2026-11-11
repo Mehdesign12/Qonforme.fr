@@ -11,6 +11,7 @@ import { PAYMENT_METHODS_TEXT, PLANS, PRICE_TAX_NOTE, TAX_SUFFIX, VAT_COLLECTED,
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { artisanOnSaleFor } from '@/lib/stripe/availability'
 import { SENDING_SENTENCE } from "@/lib/pa/sending"
+import { EREPORTING_LIVE, EREPORTING_SENTENCE } from "@/lib/pa/ereporting"
 import { SOLUTION_COMPATIBLE, SolutionCompatible } from '@/components/brand/SolutionCompatible'
 
 const essentiel = PLANS.starter
@@ -35,6 +36,7 @@ const nbsp = (text: string) => text.replace(/ ([?:;!€%])/g, '\u00A0$1')
 
 const FAQ = ([
   { question: "Qonforme est-il prêt pour la facturation électronique ?", reponse: `Oui. Qonforme est solution compatible facturation électronique : vos factures sont conformes à la réforme, au format Factur-X. Avec Essentiel, vos factures fournisseurs arrivent par une plateforme agréée, sans frais en plus. ${SENDING_SENTENCE}` },
+  { question: "Qonforme prend-il en charge l'e-reporting ?", reponse: EREPORTING_LIVE ? `Oui. ${EREPORTING_SENTENCE}` : `Oui, avec Essentiel. ${EREPORTING_SENTENCE}` },
   { question: "Puis-je commencer sans carte bancaire ?", reponse: "Oui. Les devis sont gratuits et illimités, sans carte bancaire. Le moyen de paiement n'est demandé qu'au moment d'envoyer votre première facture." },
   { question: `Que comprend la formule ${essentiel.name} ?`, reponse: `${essentiel.features.map((f, i) => (i === 0 ? f : f.charAt(0).toLowerCase() + f.slice(1))).join(', ')}. ${formatEuros(essentiel.monthlyPrice)}${TAX_SUFFIX} par mois, ou ${formatEuros(essentiel.yearlyPrice)}${TAX_SUFFIX} par an.` },
   PLANS.pro.available

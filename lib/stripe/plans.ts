@@ -1,4 +1,5 @@
 import { PLATFORM_SENDING_LIVE, SENDING_FEATURE, SENDING_UPCOMING } from "@/lib/pa/sending"
+import { EREPORTING_FEATURE, EREPORTING_LIVE, EREPORTING_UPCOMING } from "@/lib/pa/ereporting"
 /**
  * Formules tarifaires Qonforme — grille du 19/10/2026 (DECISIONS-STRATEGIQUES.md
  * § 14) : Essentiel 24 €/mois ou 240 €/an, Artisan 34 €/mois ou 340 €/an.
@@ -163,8 +164,13 @@ export const PLANS: Record<PlanId, Plan> = {
       'Signature en ligne des devis et bons de commande',
       // Émission par la plateforme : « à venir » tant que la production n'est pas ouverte (lib/pa/sending.ts)
       ...(PLATFORM_SENDING_LIVE ? [SENDING_FEATURE] : []),
+      // E-reporting : « à venir » tant qu'il n'est pas livré (lib/pa/ereporting.ts)
+      ...(EREPORTING_LIVE ? [EREPORTING_FEATURE] : []),
     ],
-    upcoming: PLATFORM_SENDING_LIVE ? [] : [SENDING_UPCOMING],
+    upcoming: [
+      ...(PLATFORM_SENDING_LIVE ? [] : [SENDING_UPCOMING]),
+      ...(EREPORTING_LIVE ? [] : [EREPORTING_UPCOMING]),
+    ],
     stripePriceIds: {
       monthly: process.env.STRIPE_PRICE_ESSENTIEL_MONTHLY ?? '',
       yearly: process.env.STRIPE_PRICE_ESSENTIEL_YEARLY ?? '',

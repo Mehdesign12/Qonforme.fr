@@ -20,3 +20,25 @@ describe("TVA des prix et formule Artisan, dits clairement", () => {
     expect(cgu).toMatch(/PLANS\.pro\.available\s*\?/)
   })
 })
+
+describe("e-reporting dit clairement", async () => {
+  const { EREPORTING_LIVE, EREPORTING_SENTENCE, ereportingTexts } = await import("@/lib/pa/ereporting")
+  const { PLANS } = await import("@/lib/stripe/plans")
+
+  it("tant qu'il n'est pas livré : promesse datée, ligne « à venir » d'Essentiel", () => {
+    expect(ereportingTexts(false).sentence).toMatch(/avant le 1er septembre 2027/)
+    expect(ereportingTexts(false).sentence).toMatch(/avec Essentiel/)
+    expect(ereportingTexts(true).sentence).toBe("Avec Essentiel, Qonforme transmet votre e-reporting : ventes aux particuliers et encaissements, au rythme de votre régime de TVA.")
+    if (!EREPORTING_LIVE) expect(PLANS.starter.upcoming.join(" ")).toMatch(/E-reporting/)
+    else expect(PLANS.starter.features.join(" ")).toMatch(/E-reporting/)
+    expect(PLANS.pro.features.join(" ")).not.toMatch(/E-reporting/)
+  })
+
+  it("repris par llms.txt, la FAQ des Tarifs, le guide et Paramètres, sans nommer la plateforme", () => {
+    expect(buildLlmsTxt()).toContain(EREPORTING_SENTENCE)
+    for (const f of ["app/pricing/page.tsx", "lib/pseo/guides.ts", "components/settings/EInvoicingView.tsx"]) {
+      expect(readFileSync(f, "utf8")).toContain("EREPORTING_SENTENCE")
+    }
+    expect(`${ereportingTexts(false).sentence} ${ereportingTexts(true).sentence}`).not.toMatch(/super ?pdp/i)
+  })
+})
