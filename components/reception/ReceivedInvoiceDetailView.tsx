@@ -15,6 +15,7 @@ import {
   AlertTriangle, Check, ChevronLeft, CircleCheck, CircleDot, Download, Eye, FileText, Inbox, MoreHorizontal,
   PauseCircle, Send, Trash2, X, type LucideIcon,
 } from "lucide-react"
+import { MobileActions, type MobileAction } from "@/components/app/MobileActions"
 import { cn } from "@/lib/utils"
 import { Kpi, KpiGrid, Panel } from "@/components/app/kit"
 import {
@@ -164,6 +165,14 @@ export function ReceivedInvoiceDetailView({ invoice: inv, today, backHref, pdfUr
         </div>
       </section>
 
+      {/* ---- Téléphone : décision dans la page, sous le montant ---- */}
+      <MobileActions
+        actions={[secondary && toMobile(secondary), primary && toMobile(primary)]}
+        primaryIndex={primary ? (secondary ? 1 : 0) : -1}
+        pill={false}
+        even
+      />
+
       {/* ---- Bandeaux ---- */}
       {inv.status === "refused" && (
         <Banner tone="danger" icon={X} title={`Refusée${reasonText ? ` : ${reasonText}` : ""}`}>
@@ -262,20 +271,6 @@ export function ReceivedInvoiceDetailView({ invoice: inv, today, backHref, pdfUr
         </div>
       </div>
 
-      {/* ---- Téléphone : barre d'actions au-dessus de la barre de navigation ---- */}
-      {(primary || secondary) && (
-        <>
-          <div aria-hidden className="h-[72px] lg:hidden" />
-          <div
-            className="q-card fixed inset-x-3 z-30 grid gap-2.5 rounded-3xl p-3 shadow-[shadow:var(--q-shadow-pop)] lg:hidden"
-            style={{ bottom: "calc(96px + env(safe-area-inset-bottom))", gridTemplateColumns: primary && secondary ? "1fr 1fr" : "1fr" }}
-          >
-            {secondary && <ActionButton action={secondary} size="lg" className="w-full" short />}
-            {primary && <ActionButton action={primary} primary size="lg" className="w-full" short />}
-          </div>
-        </>
-      )}
-
       <StatusDialog
         status={dialog}
         invoiceLabel={label}
@@ -311,6 +306,10 @@ function stamp(value: string | null | undefined, year: number): string {
   if (!value) return "—"
   const t = timeOf(value)
   return `${shortDate(value, year)}${t ? ` · ${t}` : ""}`
+}
+
+function toMobile(a: Action): MobileAction {
+  return { key: a.key, label: a.short ?? a.label, icon: a.icon, onClick: a.run, loading: a.busy, danger: a.danger }
 }
 
 function ActionButton({ action: a, primary, size, className, short }: {
