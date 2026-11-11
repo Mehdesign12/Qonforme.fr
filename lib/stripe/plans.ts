@@ -42,6 +42,14 @@ export const VAT_COLLECTED = false
 export const TAX_SUFFIX = VAT_COLLECTED ? ' HT' : ''
 
 /**
+ * Phrase sur la TVA des prix, reprise par la page Tarifs, sa FAQ, les CGU et
+ * /llms.txt (question de clients : « vos prix sont-ils HT ou TTC ? »).
+ */
+export const PRICE_TAX_NOTE = VAT_COLLECTED
+  ? "Prix hors taxes : la TVA à 20 % s'y ajoute."
+  : 'Prix nets, sans TVA facturée : le montant affiché est le montant payé.'
+
+/**
  * Le prélèvement SEPA est-il proposé pour l'abonnement ? false depuis le 20/10/2026
  * (décision du fondateur) : Stripe demande des vérifications d'identité supplémentaires
  * pour l'activer sur le compte de la LLC, l'abonnement se paie donc par carte bancaire.

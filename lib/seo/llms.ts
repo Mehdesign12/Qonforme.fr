@@ -1,4 +1,4 @@
-import { FREE_FEATURES, PLANS, TAX_SUFFIX, formatEuros } from "@/lib/stripe/plans"
+import { FREE_FEATURES, PLANS, PRICE_TAX_NOTE, TAX_SUFFIX, formatEuros } from "@/lib/stripe/plans"
 import { METIERS } from "@/lib/pseo/metiers"
 import { lcFirst } from "@/components/content/text"
 import { GUIDES } from "@/lib/pseo/guides"
@@ -31,6 +31,7 @@ export function buildLlmsTxt(): string {
     a.available
       ? `- Formule ${a.name} : ${prix(a.monthlyPrice)} par mois ou ${prix(a.yearlyPrice)} par an. Tout ${e.name}, plus : ${a.features.map(lcFirst).join(", ")}.`
       : `- Formule ${a.name} : bientôt disponible, pas encore en vente.`,
+    `- ${PRICE_TAX_NOTE}`,
     `- Facturation électronique : Qonforme est « solution compatible », raccordé à une plateforme agréée ; avec ${e.name}, les factures fournisseurs arrivent par cette plateforme. ${SENDING_SENTENCE}`,
     ...(e.upcoming.length ? [`- Pas encore disponible : ${e.upcoming.map(lcFirst).join(", ")}.`] : []),
     "- Factures et avoirs émis au format Factur-X ; une facture émise ne se modifie pas, une erreur se corrige par un avoir.",

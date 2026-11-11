@@ -7,7 +7,7 @@ import PublicHeaderWrapper from '@/components/layout/PublicHeaderWrapper'
 import { Doodles } from '@/components/brand/Doodles'
 import { pictosFor } from '@/components/brand/pictos'
 import { MetaPixelEvent } from '@/components/shared/MetaPixelEvent'
-import { PAYMENT_METHODS_TEXT, PLANS, TAX_SUFFIX, VAT_COLLECTED, formatEuros, scanQuotaText } from '@/lib/stripe/plans'
+import { PAYMENT_METHODS_TEXT, PLANS, PRICE_TAX_NOTE, TAX_SUFFIX, VAT_COLLECTED, formatEuros, scanQuotaText } from '@/lib/stripe/plans'
 import { GUARANTEE_DAYS } from '@/lib/stripe/access'
 import { artisanOnSaleFor } from '@/lib/stripe/availability'
 import { SENDING_SENTENCE } from "@/lib/pa/sending"
@@ -43,7 +43,7 @@ const FAQ = ([
   { question: "Planning, notes et scan de documents : sont-ils inclus ?", reponse: `Oui, pour tous les comptes, la version gratuite comprise : planning de rendez-vous, notes et rappels par client ou par chantier, et scan des devis, bons de commande et bons de livraison avec votre téléphone. L'espace de scan est de ${scanQuotaText('free')} en version gratuite, et de ${scanQuotaText('starter')} avec Essentiel ou Artisan.` },
   { question: "Et si Qonforme ne me convient pas ?", reponse: `Vous êtes remboursé intégralement dans les ${GUARANTEE_DAYS} jours qui suivent votre premier paiement, sans avoir à vous justifier, directement depuis votre espace. Vos documents restent consultables et téléchargeables.` },
   { question: "Puis-je résilier à tout moment ?", reponse: "Oui, sans engagement. La résiliation se fait depuis Paramètres › Abonnement et prend effet à la fin de la période déjà payée. Vos factures restent consultables après résiliation." },
-  { question: "Comment payer ?", reponse: VAT_COLLECTED ? `Par ${PAYMENT_METHODS_TEXT}. Les prix sont hors taxes : la TVA à 20 % s'y ajoute.` : `Par ${PAYMENT_METHODS_TEXT}. Le prix affiché est le montant prélevé.` },
+  { question: "Comment payer ?", reponse: `Par ${PAYMENT_METHODS_TEXT}. ${PRICE_TAX_NOTE}` },
   { question: "Est-ce que Qonforme fonctionne sur mobile ?", reponse: "Oui. Qonforme fonctionne sur téléphone, tablette et ordinateur, et s'installe sur l'écran d'accueil de votre téléphone." },
 ]).map((f) => ({ question: nbsp(f.question), reponse: nbsp(f.reponse) }))
 
@@ -111,7 +111,7 @@ export default async function PricingPage() {
             <p className="mt-3.5 text-[13px] leading-relaxed text-q-text-4">
               {VAT_COLLECTED
                 ? <>Prix hors taxes&nbsp;: la TVA à 20&nbsp;% s&apos;y ajoute, le montant TTC est indiqué sous chaque prix. </>
-                : <>Le prix affiché est le montant prélevé. </>}
+                : <>{PRICE_TAX_NOTE} </>}
               Vos factures restent consultables après résiliation.
             </p>
           </section>
