@@ -26,6 +26,7 @@ import { DocStatusPill, INVOICE_PILLS, Initials, Kpi, KpiGrid, StatusPill, initi
 import { SetCrumb } from "@/components/layout/crumb"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
+import { MobileActions, type MobileAction } from "@/components/app/MobileActions"
 import { cn } from "@/lib/utils"
 import { DocumentChain, quoteChainSteps } from "@/components/documents/DocumentChain"
 import { formatCurrency } from "@/lib/utils/invoice"
@@ -341,6 +342,42 @@ export function QuoteDetailView({
   }
   headerActions = headerActions.filter(Boolean)
 
+  /* ---- Actions du téléphone (piste C) ---- */
+  const pdfAction: MobileAction = { key: "pdf", label: "PDF", icon: Download, onClick: actions.onDownloadPdf, loading: busy.pdf }
+  const mobileActions: (MobileAction | null)[] =
+    s === "draft" ? [
+      { key: "send", label: "Envoyer", icon: Send, onClick: openModal("send"), loading: busy.send },
+      { key: "edit", label: "Modifier", icon: Pencil, href: actions.editHref, onClick: actions.onEdit },
+      pdfAction,
+    ]
+    : s === "sent" ? [
+      expired
+        ? { key: "renew", label: "Renouveler le devis", icon: Copy, onClick: actions.onDuplicate, loading: busy.duplicate }
+        : { key: "accept", label: "Marquer accepté", icon: Check, onClick: openModal("accept"), loading: busy.status },
+      expired
+        ? { key: "accept", label: "Marquer accepté", icon: Check, onClick: openModal("accept"), loading: busy.status }
+        : canRevise
+          ? { key: "revise", label: "Corriger", icon: FilePen, href: openRevision?.href, onClick: openRevision ? undefined : openModal("revise"), loading: busy.revise }
+          : { key: "resend", label: "Renvoyer", icon: RefreshCw, onClick: openModal("send"), loading: busy.send },
+      pdfAction,
+    ]
+    : s === "accepted" ? [
+      quote.converted && quote.converted_invoice
+        ? { key: "invoice", label: invoiceNumber ? `Voir la facture ${invoiceNumber}` : "Voir la facture", icon: FileText, href: quote.converted_invoice.href }
+        : conversionBlocked ? null : { key: "convert", label: "Convertir en facture", icon: FileText, onClick: openModal("convert"), loading: busy.convert },
+      pdfAction,
+    ]
+    : s === "superseded" ? [
+      quote.revision
+        ? { key: "revision", label: `Voir ${quote.revision.number}`, icon: FileText, href: quote.revision.href }
+        : { key: "duplicate", label: "Dupliquer ce devis", icon: Copy, onClick: actions.onDuplicate, loading: busy.duplicate },
+      pdfAction,
+    ]
+    : [
+      { key: "duplicate", label: "Dupliquer ce devis", icon: Copy, onClick: actions.onDuplicate, loading: busy.duplicate },
+      pdfAction,
+    ]
+
   return (
     <div className="flex flex-col gap-[18px]">
       <SetCrumb label={quote.quote_number} />
@@ -488,6 +525,9 @@ export function QuoteDetailView({
         </div>
       </section>
 
+      {/* Actions (téléphone) : dans la page, pilule de l'action principale après défilement */}
+      <MobileActions actions={mobileActions} />
+
       {/* Indicateurs (ordinateur) */}
       <KpiGrid className="hidden lg:grid print:hidden">
         <Kpi label="Total TTC" value={formatCurrency(quote.total_ttc)} sub={`${formatCurrency(quote.subtotal_ht)} HT · ${vatRatesLabel(quote.lines)}`} />
@@ -596,14 +636,13 @@ export function QuoteDetailView({
               </div>
             )}
             {s === "superseded" && (
-          <>
-            {quote.revision
-              ? <BarBtn primary label={`Voir ${quote.revision.number}`} icon={FileText} href={quote.revision.href} />
-              : <BarBtn primary label="Dupliquer ce devis" icon={Copy} onClick={actions.onDuplicate} loading={busy.duplicate} />}
-            <BarBtn label="Télécharger le PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
-          </>
-        )}
-        {(s === "rejected" || s === "withdrawn") && (
+              <div className="flex flex-wrap gap-2">
+                {quote.revision
+                  ? <Act label={`Voir ${quote.revision.number}`} icon={FileText} size="sm" href={quote.revision.href} />
+                  : <Act label="Dupliquer" icon={Copy} size="sm" onClick={actions.onDuplicate} loading={busy.duplicate} />}
+              </div>
+            )}
+            {(s === "rejected" || s === "withdrawn") && (
               <div className="flex flex-wrap gap-2">
                 <Act label="Dupliquer" icon={Copy} size="sm" onClick={actions.onDuplicate} loading={busy.duplicate} />
               </div>
@@ -649,61 +688,6 @@ export function QuoteDetailView({
             </section>
           )}
         </div>
-      </div>
-
-      {/* Réserve sous la barre d'actions mobile */}
-      <div aria-hidden className="h-[132px] lg:hidden print:hidden" />
-
-      {/* Barre d'actions collée en bas (mobile), au-dessus de la barre de navigation */}
-      <div
-        className="fixed inset-x-3 z-30 flex flex-col gap-2.5 rounded-3xl border border-[var(--q-line)] bg-[var(--q-surface)] p-3 shadow-[shadow:var(--q-shadow-float)] lg:hidden print:hidden"
-        style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
-      >
-        {s === "draft" && (
-          <>
-            <BarBtn primary label="Envoyer" icon={Send} onClick={openModal("send")} loading={busy.send} />
-            <div className="grid grid-cols-2 gap-2.5">
-              <BarBtn label="Modifier" icon={Pencil} href={actions.editHref} onClick={actions.onEdit} />
-              <BarBtn label="PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
-            </div>
-          </>
-        )}
-        {s === "sent" && (
-          <>
-            {expired
-              ? <BarBtn primary label="Renouveler le devis" icon={Copy} onClick={actions.onDuplicate} loading={busy.duplicate} />
-              : <BarBtn primary label="Renvoyer" icon={RefreshCw} onClick={openModal("send")} loading={busy.send} />}
-            {/* 3/2 : « Marquer accepté » tient sur une ligne dès 375 px, « PDF » n'en a pas besoin */}
-            <div className="grid grid-cols-[3fr_2fr] gap-2.5">
-              <BarBtn label="Marquer accepté" icon={Check} onClick={openModal("accept")} loading={busy.status} />
-              {canRevise
-                ? <BarBtn label="Corriger" icon={FilePen} href={openRevision?.href} onClick={openRevision ? undefined : openModal("revise")} loading={busy.revise} />
-                : <BarBtn label="PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />}
-            </div>
-          </>
-        )}
-        {s === "accepted" && (
-          <>
-            {quote.converted && quote.converted_invoice
-              ? <BarBtn primary label={invoiceNumber ? `Voir la facture ${invoiceNumber}` : "Voir la facture"} icon={FileText} href={quote.converted_invoice.href} />
-              : !conversionBlocked && <BarBtn primary label="Convertir en facture" icon={FileText} onClick={openModal("convert")} loading={busy.convert} />}
-            <BarBtn label="Télécharger le PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
-          </>
-        )}
-        {(s === "rejected" || s === "withdrawn") && (
-          <>
-            <BarBtn primary label="Dupliquer ce devis" icon={Copy} onClick={actions.onDuplicate} loading={busy.duplicate} />
-            <BarBtn label="Télécharger le PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
-          </>
-        )}
-        {s === "superseded" && (
-          <>
-            {quote.revision
-              ? <BarBtn primary label={`Voir ${quote.revision.number}`} icon={FileText} href={quote.revision.href} />
-              : <BarBtn primary label="Dupliquer ce devis" icon={Copy} onClick={actions.onDuplicate} loading={busy.duplicate} />}
-            <BarBtn label="Télécharger le PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
-          </>
-        )}
       </div>
 
       {/* ── Fenêtres ── */}
@@ -1035,28 +1019,6 @@ function Act({
       {content}
     </button>
   )
-}
-
-/** Bouton de la barre d'actions mobile : 52 px pour l'action principale, 48 px sinon. */
-function BarBtn({
-  label, icon: Icon, onClick, href, primary, loading,
-}: {
-  label: string
-  icon: IconType
-  onClick?: () => void
-  href?: string
-  primary?: boolean
-  loading?: boolean
-}) {
-  const cls = cn("q-btn w-full", primary ? "q-btn-primary q-btn-xl" : "q-btn-secondary q-btn-lg !px-3 !whitespace-normal")
-  const content = (
-    <>
-      {loading ? <Loader2 className="animate-spin" aria-hidden /> : <Icon aria-hidden />}
-      <span className={primary ? "truncate" : "text-center leading-tight"}>{label}</span>
-    </>
-  )
-  if (href) return <Link href={href} className={cls}>{content}</Link>
-  return <button type="button" className={cls} onClick={onClick} disabled={loading}>{content}</button>
 }
 
 function MoreRow({

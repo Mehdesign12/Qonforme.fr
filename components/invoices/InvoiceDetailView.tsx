@@ -27,6 +27,7 @@ import {
   CreditCard, Download, FileCheck2, FileCode, FileX, HardHat, MoreHorizontal, Pencil, Printer,
   RotateCcw, Send, Trash2, XCircle, CheckCircle2, type LucideIcon,
 } from "lucide-react"
+import { MobileActions, type MobileAction } from "@/components/app/MobileActions"
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/utils/invoice"
 import { invoiceNumberLabel } from "@/lib/utils/document-numbering"
@@ -260,6 +261,16 @@ export function InvoiceDetailView({
     if (a.href) router.push(a.href)
     else a.onClick?.()
   }
+  const toMobile = (a: Action): MobileAction => ({
+    key: a.key,
+    label: a.busy && a.busyLabel ? a.busyLabel : SHORT_LABELS[a.label] ?? a.label,
+    icon: a.icon,
+    ...(a.href && !a.onClick ? { href: a.href } : { onClick: () => run(a) }),
+    loading: a.busy,
+    disabled: a.disabled,
+    danger: a.danger,
+    title: a.title,
+  })
 
   /* ---- Montants ---- */
   // Reste à encaisser à l'échéance : la retenue de garantie se règle à sa libération
@@ -344,6 +355,14 @@ export function InvoiceDetailView({
           </span>
         </div>
       </section>
+
+      {/* ---- Téléphone : actions dans la page, pilule de l'action principale après défilement ---- */}
+      <MobileActions
+        actions={[primary && toMobile(primary), mobileSecond && toMobile(mobileSecond), toMobile(pdf)]}
+        primaryIndex={primary ? 0 : -1}
+        pill={!!primary}
+        even={!primary}
+      />
 
       {/* ---- Bandeaux ---- */}
       {paymentBanner}
@@ -543,18 +562,6 @@ export function InvoiceDetailView({
         </div>
       </div>
 
-      {/* ---- Téléphone : barre d'actions collée en bas, au-dessus de la barre de navigation ---- */}
-      <div aria-hidden className={cn("lg:hidden print:hidden", primary ? "h-[124px]" : "h-[64px]")} />
-      <div
-        className="q-card fixed inset-x-3 z-30 flex flex-col gap-2.5 rounded-3xl p-3 shadow-[shadow:var(--q-shadow-pop)] lg:hidden print:hidden"
-        style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
-      >
-        {primary && <ActionButton action={primary} run={run} primary size="xl" className="w-full" />}
-        <div className={cn("grid gap-2.5", mobileSecond ? "grid-cols-2" : "grid-cols-1")}>
-          {mobileSecond && <ActionButton action={mobileSecond} run={run} size="lg" className="w-full" short />}
-          <ActionButton action={pdf} run={run} size="lg" className="w-full" />
-        </div>
-      </div>
     </div>
   )
 }

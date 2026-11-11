@@ -22,8 +22,9 @@ import {
 } from "lucide-react"
 import { DocStatusPill, Initials, Kpi, KpiGrid, PURCHASE_ORDER_PILLS } from "@/components/app/kit"
 import { SetCrumb } from "@/components/layout/crumb"
+import { MobileActions } from "@/components/app/MobileActions"
 import {
-  Act, BarBtn, DocModal, DocPaper, LinkedRow, MobileActionBar, MoreRow, RecipientBox, Timeline, TotalRow,
+  Act, DocModal, DocPaper, LinkedRow, MoreRow, RecipientBox, Timeline, TotalRow,
   useIsCompact, type PaperLine, type PaperParty, type TimelineEvent,
 } from "@/components/purchase-orders/detail-bits"
 import type { POStatus } from "@/components/purchase-orders/PurchaseOrderListView"
@@ -247,6 +248,24 @@ export function PurchaseOrderDetailView({
         </div>
       </section>
 
+      {/* Actions (téléphone) : dans la page, pilule de l'action principale après défilement */}
+      <MobileActions
+        actions={
+          s === "draft" ? [
+            { key: "send", label: "Envoyer", icon: Send, onClick: open("send"), loading: busy.send },
+            { key: "edit", label: "Modifier", icon: Pencil, href: actions.editHref },
+            { key: "pdf", label: "PDF", icon: Download, onClick: actions.onDownloadPdf, loading: busy.pdf },
+          ]
+          : s === "sent" ? [
+            { key: "confirm", label: "Confirmer", icon: Check, onClick: () => setStatus("confirmed"), loading: busy.status, title: "Confirmer la commande" },
+            { key: "resend", label: "Renvoyer", icon: RefreshCw, onClick: open("send"), loading: busy.send },
+            { key: "pdf", label: "PDF", icon: Download, onClick: actions.onDownloadPdf, loading: busy.pdf },
+          ]
+          : [{ key: "pdf", label: "Télécharger le PDF", icon: Download, onClick: actions.onDownloadPdf, loading: busy.pdf }]
+        }
+        pill={s === "draft" || s === "sent"}
+      />
+
       {/* Indicateurs (ordinateur) */}
       <KpiGrid className="hidden lg:grid print:hidden">
         <Kpi label="Total TTC" value={formatCurrency(po.total_ttc)} sub={`${formatCurrency(po.subtotal_ht)} HT · ${vatRatesLabel(po.lines)}`} />
@@ -391,30 +410,6 @@ export function PurchaseOrderDetailView({
         </div>
       </div>
 
-      {/* Barre d'actions collée en bas (mobile) */}
-      <MobileActionBar>
-        {s === "draft" && (
-          <>
-            <BarBtn primary label="Envoyer" icon={Send} onClick={open("send")} loading={busy.send} />
-            <div className="grid grid-cols-2 gap-2.5">
-              <BarBtn label="Modifier" icon={Pencil} href={actions.editHref} />
-              <BarBtn label="PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
-            </div>
-          </>
-        )}
-        {s === "sent" && (
-          <>
-            <BarBtn primary label="Confirmer la commande" icon={Check} onClick={() => setStatus("confirmed")} loading={busy.status} />
-            <div className="grid grid-cols-2 gap-2.5">
-              <BarBtn label="Renvoyer" icon={RefreshCw} onClick={open("send")} loading={busy.send} />
-              <BarBtn label="PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
-            </div>
-          </>
-        )}
-        {(s === "confirmed" || s === "cancelled") && (
-          <BarBtn primary label="Télécharger le PDF" icon={Download} onClick={actions.onDownloadPdf} loading={busy.pdf} />
-        )}
-      </MobileActionBar>
 
       {/* ── Fenêtres ── */}
       <DocModal
