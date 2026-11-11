@@ -64,7 +64,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://qonforme.fr";
 
   // Fetch published blog posts for dynamic entries
-  const admin = createAdminClient();
+  const admin = createAdminClient({ allowCache: true });
   const { data: posts } = await admin
     .from("blog_posts")
     .select("slug, updated_at")

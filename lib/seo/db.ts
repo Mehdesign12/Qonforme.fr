@@ -15,8 +15,9 @@ import { isMissingSchemaError } from "@/lib/supabase/schema-guard"
 
 export type SeoDb = SupabaseClient
 
-export function seoDb(): SeoDb {
-  return createAdminClient()
+/** `allowCache` : seulement pour une page publique à `revalidate` (voir createAdminClient). */
+export function seoDb(opts: { allowCache?: boolean } = {}): SeoDb {
+  return createAdminClient(opts)
 }
 
 export type SeoReadFailure = "migration_pending" | "read_failed"

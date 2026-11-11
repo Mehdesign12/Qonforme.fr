@@ -10,17 +10,20 @@ import { useState } from "react"
 import { Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SendEmailDialog } from "@/components/admin/emails/AccountEmails"
-import { SHORTCUT_LABELS, templateForSteps } from "@/lib/email/account-templates"
+import { shortcutLabel, templateForSteps } from "@/lib/email/account-templates"
 
 export function QuickEmailButton({
   userId,
   accountLabel,
   done,
+  lastTemplate,
   className,
 }: {
   userId: string
   accountLabel: string
   done: boolean[]
+  /** Modèle du dernier email envoyé à ce compte : le bouton dit alors « Relancer : … ». */
+  lastTemplate?: string | null
   className?: string
 }) {
   const [open, setOpen] = useState(false)
@@ -29,7 +32,7 @@ export function QuickEmailButton({
     <>
       <Button variant="outline" size="sm" className={className} onClick={() => setOpen(true)}>
         <Send aria-hidden />
-        {SHORTCUT_LABELS[template]}
+        {shortcutLabel(template, lastTemplate)}
       </Button>
       {open && (
         <SendEmailDialog

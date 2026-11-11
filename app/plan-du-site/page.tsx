@@ -28,7 +28,7 @@ type Item = { href: string; label: string }
 /** Articles publiés ; en cas d'erreur, la rubrique garde au moins le lien vers le blog. */
 async function getBlogPosts(): Promise<Item[]> {
   try {
-    const { data, error } = await createAdminClient()
+    const { data, error } = await createAdminClient({ allowCache: true })
       .from("blog_posts")
       .select("slug, title")
       .eq("is_published", true)

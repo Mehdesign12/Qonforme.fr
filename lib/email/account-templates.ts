@@ -141,3 +141,12 @@ export const FREE_EMAIL_PRESETS: readonly FreeEmailPreset[] = [
     ].join("\n\n"),
   },
 ]
+
+/**
+ * Libellé du raccourci. Le même modèle déjà envoyé à ce compte : « Relancer : … »,
+ * pour qu'on voie tout de suite que l'aide est déjà partie.
+ */
+export function shortcutLabel(template: ManualTemplate, lastTemplate?: string | null): string {
+  if (lastTemplate !== template || template === "manual_free") return SHORTCUT_LABELS[template]
+  return SHORTCUT_LABELS[template].replace(/^Aider : /, "Relancer : ")
+}

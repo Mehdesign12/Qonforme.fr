@@ -77,6 +77,9 @@ export interface CommissionLine extends CommissionRow {
   rate: number
   payout_at: string | null
   display: CommissionDisplay
+  /** Écriture de la ligne et annulation : dates des « nouveaux événements » (lib/affiliation/news.ts). */
+  created_at?: string | null
+  voided_at?: string | null
 }
 
 export interface PartnerStats {
@@ -101,7 +104,7 @@ export interface LinkSummary {
 const PARTNER_COLUMNS =
   "id, name, site, code, contact_email, commission_rate, commission_months, status, notes, stats_token_created_at, stats_views, stats_last_viewed_at, recommendations, recommendations_at, created_at"
 const PAGE_COLUMNS = "id, partner_id, url, target_path, status, rel, link_href, check_error, last_checked_at, last_found_at, created_at"
-const COMMISSION_COLUMNS = "id, partner_id, user_id, plan, billing_period, amount_paid_cents, rate, commission_cents, paid_at, state, payout_at, livemode"
+const COMMISSION_COLUMNS = "id, partner_id, user_id, plan, billing_period, amount_paid_cents, rate, commission_cents, paid_at, state, payout_at, livemode, created_at, voided_at"
 
 function toPartner(row: Record<string, unknown>): PartnerRow {
   return {
@@ -137,6 +140,8 @@ function toLine(row: Record<string, unknown>, now: Date): CommissionLine {
     state,
     payout_at: (row.payout_at as string | null) ?? null,
     livemode: row.livemode !== false,
+    created_at: (row.created_at as string | null) ?? null,
+    voided_at: (row.voided_at as string | null) ?? null,
     display: displayState(state, row.paid_at as string, now),
   }
 }
@@ -286,6 +291,29 @@ export async function partnerDetail(db: Db, id: string, now: Date = new Date()):
       }),
     },
   }
+}
+
+/** Inscrits venus d'un partenaire sur les `days` derniers jours (repères « nouveau »). */
+export async function recentSignups(db: Db, days = 90, now: Date = new Date()): Promise<Result<{ partner_id: string; signed_up_at: string }[]>> {
+  const { data, error } = await db
+    .from("affiliate_referrals")
+    .select("partner_id, signed_up_at")
+    .gte("signed_up_at", new Date(now.getTime() - days * DAY).toISOString())
+    .order("signed_up_at", { ascending: false })
+    .limit(5000)
+  if (error) return failureOf(error, "les inscrits des partenaires")
+  return { ok: true, data: (data ?? []) as { partner_id: string; signed_up_at: string }[] }
+}
+
+/** Commissions récentes, pour les compteurs de la barre latérale. */
+export async function recentCommissionEvents(db: Db, now: Date = new Date()): Promise<Result<CommissionLine[]>> {
+  const { data, error } = await db
+    .from("affiliate_commissions")
+    .select(COMMISSION_COLUMNS)
+    .gte("paid_at", new Date(now.getTime() - 120 * DAY).toISOString())
+    .limit(5000)
+  if (error) return failureOf(error, "les commissions")
+  return { ok: true, data: (data ?? []).map((r) => toLine(r as Record<string, unknown>, now)) }
 }
 
 export interface CommissionListLine extends CommissionLine {

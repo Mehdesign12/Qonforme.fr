@@ -22,7 +22,7 @@ import { getSettings } from "@/lib/seo/settings"
 export const revalidate = 60
 
 async function getPost(slug: string) {
-  const admin = createAdminClient()
+  const admin = createAdminClient({ allowCache: true })
   const { data } = await admin
     .from("blog_posts")
     // « * » : seo_title, seo_description et robots (migration 20261006) sont lus s'ils existent, sans casser la page sinon
@@ -40,7 +40,7 @@ async function getPost(slug: string) {
  */
 async function autoLinksEnabled(): Promise<boolean> {
   try {
-    return (await getSettings(seoDb(), "articles")).value.autoLinks
+    return (await getSettings(seoDb({ allowCache: true }), "articles")).value.autoLinks
   } catch {
     return true
   }
@@ -55,7 +55,7 @@ async function autoLinksEnabled(): Promise<boolean> {
  */
 async function withInternalLinks(markdown: string, post: { slug: string; title: string; target_keyword?: string | null }): Promise<string> {
   try {
-    const candidates = await loadLinkCandidates(seoDb())
+    const candidates = await loadLinkCandidates(seoDb({ allowCache: true }))
     return topUpLinks(markdown, candidates, {
       selfPath: `/blog/${post.slug}`,
       keyword: post.target_keyword ?? null,
@@ -80,7 +80,7 @@ interface SimilarPost {
 const SIMILAR_COLUMNS = "slug, title, excerpt, cover_url, published_at, ai_prompt, content"
 
 async function getSimilarPosts(currentSlug: string, aiPrompt: string | null) {
-  const admin = createAdminClient()
+  const admin = createAdminClient({ allowCache: true })
   const read = (columns: string) =>
     admin.from("blog_posts").select(columns).eq("is_published", true).neq("slug", currentSlug).order("published_at", { ascending: false }).limit(20)
   // Texte alternatif des couvertures (cover_alt, migration 20261006) ; relu sans lui si la colonne manque
@@ -99,7 +99,7 @@ async function getSimilarPosts(currentSlug: string, aiPrompt: string | null) {
 }
 
 async function getAdjacentPosts(currentPublishedAt: string) {
-  const admin = createAdminClient()
+  const admin = createAdminClient({ allowCache: true })
 
   // Previous (older) post
   const { data: prev } = await admin
