@@ -45,6 +45,7 @@ import { isReminderTarget } from "@/lib/onboarding/types"
 import { runPlanningReminders } from "@/lib/planning/reminders"
 import { runAllConnections } from "@/lib/pa/run"
 import { runWeeklyLinkChecks } from "@/lib/affiliation/admin"
+import { expireGrantedPlans } from "@/lib/admin/grant"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -125,6 +126,17 @@ export async function GET(request: NextRequest) {
       job_name: "affiliation-links",
       status: "ok",
       results: linkChecks,
+      duration_ms: Date.now() - startedAt,
+    })
+  }
+
+  // Formules offertes par l'admin arrivées à échéance : retour à la version gratuite
+  const expiredGrants = await expireGrantedPlans(admin, now)
+  if (expiredGrants > 0) {
+    await admin.from("cron_logs").insert({
+      job_name: "granted-plans",
+      status: "ok",
+      results: { expired: expiredGrants },
       duration_ms: Date.now() - startedAt,
     })
   }

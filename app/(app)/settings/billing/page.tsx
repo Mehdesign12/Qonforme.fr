@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { isGranted } from '@/lib/admin/grant'
 import { createClient } from '@/lib/supabase/server'
 import BillingPageClient, {
   type BillingIdentity,
@@ -189,7 +190,8 @@ export default async function BillingPage() {
       // Synchro aussi si current_period_end ou stripe_subscription_id manquent
       const missingDetails = !enriched.current_period_end || !enriched.stripe_subscription_id
 
-      if (enriched.stripe_customer_id && (planIsUnknown || statusStale || missingDetails)) {
+      // Formule offerte par l'admin : rien à relire chez Stripe (l'ancien abonnement, s'il y en a eu un, est terminé)
+      if (!isGranted(enriched) && enriched.stripe_customer_id && (planIsUnknown || statusStale || missingDetails)) {
         subscription = await syncFromStripe(getStripe(modeOfSubscription(enriched)), enriched, user.id, user.email)
       } else {
         subscription = enriched
@@ -197,7 +199,7 @@ export default async function BillingPage() {
     }
 
     // Les lectures Stripe suivantes se font dans le mode de l'abonnement (production ou essai)
-    const stripe = subscription?.stripe_customer_id ? getStripe(modeOfSubscription(subscription)) : null
+    const stripe = subscription?.stripe_customer_id && !isGranted(subscription) ? getStripe(modeOfSubscription(subscription)) : null
 
     // Formule en cours : garantie, résiliation programmée et moyen de paiement lus chez Stripe
     if (stripe && subscription?.stripe_customer_id && canIssueInvoices(subscription.status)) {
@@ -257,6 +259,7 @@ export default async function BillingPage() {
       invoices={invoices}
       identity={identity}
       artisanOnSale={artisanOnSale}
+      offered={isGranted(subscription)}
     />
   )
 }
