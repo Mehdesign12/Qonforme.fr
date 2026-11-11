@@ -1,5 +1,6 @@
 import { CERTIFICATION_DEVIS_10, CERTIFICATION_DEVIS_5_5, CERTIFICATION_FACTURE_10, CERTIFICATION_RESUME } from "@/lib/legal/certification-tva"
 import { SENDING_CLAUSE, SENDING_SENTENCE } from "@/lib/pa/sending"
+import { EREPORTING_SENTENCE } from "@/lib/pa/ereporting"
 import { PLANS, TAX_SUFFIX, formatEuros } from "@/lib/stripe/plans"
 
 export interface GuideSection {
@@ -294,7 +295,7 @@ export const GUIDES: Guide[] = [
       },
       {
         titre: "Vos clients particuliers",
-        contenu: "La plupart des artisans travaillent surtout pour des particuliers. Pour eux, pas de facture électronique : vous remettez la facture en PDF, par email ou en main propre. La facture électronique ne vise que les opérations entre entreprises assujetties à la TVA établies en France ; vos ventes aux particuliers donnent lieu à une transmission de données à l'administration (e-reporting), qui passe par votre plateforme agréée.",
+        contenu: `La plupart des artisans travaillent surtout pour des particuliers. Pour eux, pas de facture électronique : vous remettez la facture en PDF, par email ou en main propre. La facture électronique ne vise que les opérations entre entreprises assujetties à la TVA établies en France ; vos ventes aux particuliers donnent lieu à une transmission de données à l'administration (e-reporting), qui passe par votre plateforme agréée. ${EREPORTING_SENTENCE}`,
       },
       {
         titre: "Vos clients professionnels et la sous-traitance",
@@ -321,7 +322,7 @@ export const GUIDES: Guide[] = [
     ],
     faq: [
       { question: "Un auto-entrepreneur doit-il passer à la facture électronique ?", reponse: "Oui, même en franchise de TVA : il doit pouvoir recevoir des factures électroniques depuis le 1er septembre 2026 et émettra les siennes à ses clients professionnels à partir du 1er septembre 2027." },
-      { question: "Un auto-entrepreneur qui ne travaille que pour des particuliers est-il concerné ?", reponse: "Oui, mais simplement : il doit pouvoir recevoir les factures électroniques de ses fournisseurs, et ses ventes aux particuliers donnent lieu à une transmission de données à l'administration (e-reporting). Ses factures aux particuliers restent des PDF classiques." },
+      { question: "Un auto-entrepreneur qui ne travaille que pour des particuliers est-il concerné ?", reponse: `Oui, mais simplement : il doit pouvoir recevoir les factures électroniques de ses fournisseurs, et ses ventes aux particuliers donnent lieu à une transmission de données à l'administration (e-reporting). Ses factures aux particuliers restent des PDF classiques. ${EREPORTING_SENTENCE}` },
       { question: "Quel logiciel de facturation électronique pour un auto-entrepreneur ?", reponse: `Un logiciel « solution compatible » raccordé à une plateforme agréée : il prépare les factures au bon format et la plateforme les transmet. Qonforme l'est, raccordé à une plateforme agréée, avec ${PLANS.starter.name} à ${formatEuros(PLANS.starter.monthlyPrice)}${TAX_SUFFIX} par mois ; les devis y sont gratuits.` },
       { question: "Une facture PDF envoyée par email suffit-elle encore ?", reponse: "Oui pour vos clients particuliers, et jusqu'au 31 août 2027 pour vos clients professionnels. Ensuite, vos factures aux entreprises établies en France doivent être des factures électroniques transmises par une plateforme agréée." },
       { question: "Comment savoir si une facture reçue est une facture électronique ?", reponse: "Déposez-la dans notre lecteur Factur-X gratuit : il cherche les données de facture électronique dans le fichier et les affiche en clair. Une facture PDF simple n'en contient pas." },

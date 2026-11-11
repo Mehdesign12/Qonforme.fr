@@ -3,6 +3,7 @@ import { METIERS } from "@/lib/pseo/metiers"
 import { lcFirst } from "@/components/content/text"
 import { GUIDES } from "@/lib/pseo/guides"
 import { SENDING_SENTENCE } from "@/lib/pa/sending"
+import { EREPORTING_SENTENCE } from "@/lib/pa/ereporting"
 
 /*
  * /llms.txt (proposition llmstxt.org) : résumé du site pour les assistants IA qui le
@@ -33,6 +34,7 @@ export function buildLlmsTxt(): string {
       : `- Formule ${a.name} : bientôt disponible, pas encore en vente.`,
     `- ${PRICE_TAX_NOTE}`,
     `- Facturation électronique : Qonforme est « solution compatible », raccordé à une plateforme agréée ; avec ${e.name}, les factures fournisseurs arrivent par cette plateforme. ${SENDING_SENTENCE}`,
+    `- ${EREPORTING_SENTENCE}`,
     ...(e.upcoming.length ? [`- Pas encore disponible : ${e.upcoming.map(lcFirst).join(", ")}.`] : []),
     "- Factures et avoirs émis au format Factur-X ; une facture émise ne se modifie pas, une erreur se corrige par un avoir.",
     "- Les clients de l'artisan le paient par virement, directement sur son compte : IBAN et QR code de virement sur chaque facture.",

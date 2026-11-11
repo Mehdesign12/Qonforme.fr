@@ -33,6 +33,7 @@ import type { ShellMode } from "@/components/layout/nav"
 import { settingsHref } from "@/components/settings/sections"
 import { SettingsCard } from "@/components/settings/ui"
 import { SENDING_SENTENCE } from "@/lib/pa/sending"
+import { EREPORTING_SENTENCE } from "@/lib/pa/ereporting"
 
 const OFFICIAL = {
   platforms: "https://www.impots.gouv.fr/facturation-electronique-et-plateformes-agreees",
@@ -227,8 +228,7 @@ export function EInvoicingView({ mode }: { mode: ShellMode }) {
               <span className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold text-[var(--q-ink)]">1er septembre 2027 · émission pour les TPE et PME</span>
                 <span className="text-[13px] leading-relaxed text-[var(--q-text-4)]">
-                  Vos factures partiront par une plateforme agréée. Le e-reporting (ventes aux particuliers,
-                  données de paiement) suit le même calendrier.
+                  Vos factures partiront par une plateforme agréée. {EREPORTING_SENTENCE}
                 </span>
               </span>
             </li>
