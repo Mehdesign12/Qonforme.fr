@@ -81,6 +81,8 @@ interface BillingPageClientProps {
   mode?: ShellMode
   /** Artisan est-il vendable à ce compte ? Décidé côté serveur (un compte d'essai le voit en vente). */
   artisanOnSale?: boolean
+  /** Formule offerte par Qonforme (sans paiement ni abonnement Stripe) : pas d'espace de paiement. */
+  offered?: boolean
 }
 
 function formatDate(iso: string | null): string {
@@ -120,6 +122,7 @@ export default function BillingPageClient({
   identity = null,
   mode = 'app',
   artisanOnSale,
+  offered = false,
 }: BillingPageClientProps) {
   const demo = mode === 'demo'
   const router = useRouter()
@@ -265,13 +268,18 @@ export default function BillingPageClient({
                 : <StatusPill tone="ok" icon={<Check strokeWidth={2.75} aria-hidden />}>Active</StatusPill>}
             </span>
             <span className="text-sm text-[var(--q-text-4)]">
-              {chargeHt !== null && (
+              {!offered && chargeHt !== null && (
                 <>
                   <span className="font-semibold tabular-nums text-[var(--q-ink)]">{formatEuros(chargeHt)}{TAX_SUFFIX}</span>{' '}
                   {monthly ? 'par mois' : 'par an'}{VAT_COLLECTED && <> ({formatEuros(withVat(chargeHt))} TTC)</>}
                 </>
               )}
-              {subscription.current_period_end && (
+              {offered ? (
+                <>
+                  <span className="font-semibold text-[var(--q-ink)]">Offerte par Qonforme</span>
+                  {subscription.current_period_end ? <> · jusqu&apos;au {formatDate(subscription.current_period_end)}</> : <> · sans date de fin</>}
+                </>
+              ) : subscription.current_period_end && (
                 <>
                   {' · '}
                   {cancelAtPeriodEnd
@@ -281,20 +289,24 @@ export default function BillingPageClient({
               )}
             </span>
           </div>
-          <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
+          {!offered && <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
             <button type="button" onClick={openPortal} disabled={loadingPortal} className="q-btn q-btn-secondary">
               {loadingPortal ? <Loader2 className="animate-spin" aria-hidden /> : <ExternalLink aria-hidden />}
               {loadingPortal ? 'Ouverture…' : 'Gérer mon abonnement'}
             </button>
             {portalError && <p className="q-field-error" role="alert">{portalError}</p>}
-          </div>
+          </div>}
         </div>
         {plan && plan.features.length > 0 && <FeatureList items={plan.features} />}
         <p className="text-xs text-[var(--q-text-4)]">
-          Moyen de paiement, factures d&apos;abonnement, passage à l&apos;année et résiliation : dans l&apos;espace de paiement sécurisé.
+          {offered
+            ? <>Aucun paiement : cette formule vous est offerte. À son échéance, votre compte repasse en version gratuite, sans rien perdre.</>
+            : <>Moyen de paiement, factures d&apos;abonnement, passage à l&apos;année et résiliation : dans l&apos;espace de paiement sécurisé.</>}
         </p>
       </SettingsCard>
 
+      {/* Formule offerte : ni paiement, ni factures, ni résiliation chez Stripe */}
+      {!offered && <>
       {subscription.plan === 'starter' && (
         <SettingsCard id="artisan" title={`Formule ${artisan.name}`}>
           <p className="text-sm leading-relaxed text-[var(--q-text-3)]">
@@ -390,6 +402,7 @@ export default function BillingPageClient({
             : 'Fin à l’échéance, dans l’espace de paiement sécurisé. Vos documents restent consultables.'}
         </p>
       </div>
+      </>}
     </>
   )
 }

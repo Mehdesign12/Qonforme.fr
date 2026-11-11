@@ -4,6 +4,8 @@ import { Users } from 'lucide-react'
 import { EmptyState, Initials, PageHeader, StatusPill } from '@/components/app/kit'
 import { FilterBar, FilterSearch, FilterSelect, LoadError, SubscriptionPill, fmtDate, plural } from '@/components/admin/ui'
 import AdminQuickPlanToggle from './AdminQuickPlanToggle'
+import { CreateUserButton } from '@/components/admin/users/PlanAdmin'
+import { isGranted } from '@/lib/admin/grant'
 import { ProgressCell } from '@/components/admin/ProgressCell'
 import { computeProgress, type Progress, type ProgressStatus } from '@/lib/admin/onboarding-progress'
 import { fetchProgressCounts } from '@/lib/admin/progress-data'
@@ -58,19 +60,38 @@ async function getUsers(search: string, planFilter: string, statusFilter: string
     companiesQuery = companiesQuery.ilike('name', likePattern(search))
   }
 
-  const { data: companies, error: companiesError } = await companiesQuery.limit(LIMIT)
+  const { data: companyRows, error: companiesError } = await companiesQuery.limit(LIMIT)
   if (companiesError) return { rows: [], error: 'companies' as const, authError: !!authError, truncated: false, progressError: false }
-  if (!companies?.length) return { rows: [], error: null, authError: !!authError, truncated: false, progressError: false }
+
+  // Comptes sans entreprise (inscription pas terminée, compte créé depuis l'admin) : listés aussi,
+  // sauf pour une recherche par nom d'entreprise (ils n'en ont pas)
+  type CompanyRow = { user_id: string; name: string | null; city: string | null; created_at: string; siren: string | null }
+  let companies = (companyRows ?? []) as CompanyRow[]
+  if (!authError && !(search && !byEmail)) {
+    const { data: owners, error: ownersError } = await admin.from('companies').select('user_id').limit(10_000)
+    if (!ownersError) {
+      const withCompany = new Set((owners ?? []).map(o => o.user_id as string))
+      const needle = search.toLowerCase()
+      const orphans: CompanyRow[] = authUsers
+        .filter(u => !withCompany.has(u.id) && (!byEmail || (u.email ?? '').toLowerCase().includes(needle)))
+        .map(u => ({ user_id: u.id, name: null, city: null, created_at: u.created_at ?? new Date(0).toISOString(), siren: null }))
+      companies = [...companies, ...orphans]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, LIMIT)
+    }
+  }
+  if (!companies.length) return { rows: [], error: null, authError: !!authError, truncated: false, progressError: false }
 
   // Abonnements de ces comptes
   const userIds = companies.map(c => c.user_id)
   const { data: subs, error: subsError } = await admin
     .from('subscriptions')
-    .select('user_id, plan, status, billing_period, current_period_end')
+    .select('*')
     .in('user_id', userIds)
   if (subsError) return { rows: [], error: 'subscriptions' as const, authError: !!authError, truncated: false, progressError: false }
 
   const subMap = new Map((subs ?? []).map(s => [s.user_id, s]))
+  const companyNames = new Set((companyRows ?? []).map(c => c.user_id as string))
 
   // Parcours (SIREN, devis, factures) : lu en base, sans cookie. Une lecture en échec n'est jamais lue « zéro ».
   const sirenByUser = new Map(companies.map(c => [c.user_id, (c as { siren?: string | null }).siren ?? null]))
@@ -84,7 +105,7 @@ async function getUsers(search: string, planFilter: string, statusFilter: string
     const auth = authMap.get(c.user_id)
     return {
       user_id:  c.user_id,
-      name:     c.name || 'Entreprise sans nom',
+      name:     c.name || (companyNames.has(c.user_id) ? 'Entreprise sans nom' : 'Entreprise non renseignée'),
       email:    auth?.email ?? '',
       lastSignIn: auth?.lastSignIn ?? null,
       city:     c.city || '',
@@ -93,6 +114,7 @@ async function getUsers(search: string, planFilter: string, statusFilter: string
       subStatus: sub?.status ?? 'none',
       billing_period: sub?.billing_period ?? null,
       period_end: sub?.current_period_end ?? null,
+      granted: isGranted(sub),
       progress: (counts && counts.get(c.user_id)
         ? computeProgress(counts.get(c.user_id)!, auth?.createdAt ?? c.created_at)
         : null) as Progress | null,
@@ -137,6 +159,7 @@ export default async function AdminUsersPage({
       <PageHeader
         title="Utilisateurs"
         subtitle={error ? 'Lecture impossible' : `${plural(users.length, 'compte')}${filtered ? ' correspondant aux filtres' : ''}${truncated ? ` (les ${LIMIT} plus récents)` : ''}`}
+        actions={<CreateUserButton />}
       />
 
       <FilterBar resetHref="/admin/users" active={filtered} label="Filtrer les utilisateurs">
@@ -241,7 +264,10 @@ export default async function AdminUsersPage({
                       </td>
                       <td className="!py-2.5">
                         {u.plan === 'starter' || u.plan === 'pro' ? (
-                          <AdminQuickPlanToggle userId={u.user_id} currentPlan={u.plan} billingPeriod={u.billing_period} accountName={u.name} />
+                          <span className="inline-flex flex-col items-start gap-1">
+                            <AdminQuickPlanToggle userId={u.user_id} currentPlan={u.plan} billingPeriod={u.billing_period} accountName={u.name} />
+                            {u.granted && <StatusPill tone="neutral" className="!h-5 !text-[11px]">Offerte</StatusPill>}
+                          </span>
                         ) : (
                           <span className="text-[var(--q-placeholder)]">—</span>
                         )}
