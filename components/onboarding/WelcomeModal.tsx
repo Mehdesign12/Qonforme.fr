@@ -12,7 +12,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { UserPlus, FileText, FileCheck2, Building2, Loader2, ArrowRight } from 'lucide-react'
+import { UserPlus, FileText, FileCheck2, Building2, Loader2, ArrowRight, X } from 'lucide-react'
 import { LOGO_Q } from '@/lib/brand'
 import { markOnboardingSeen } from '@/components/dashboard/onboarding'
 import { SheetGrip } from "@/components/ui/sheet-grip"
@@ -109,8 +109,18 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
       >
         <SheetGrip className="sm:hidden" />
 
+        {/* Fermer : même effet que « Je ferai ça plus tard », Échap ou glisser vers le bas */}
+        <button
+          type="button"
+          onClick={handleLater}
+          aria-label="Fermer"
+          className="absolute right-3 top-3 z-10 flex size-11 items-center justify-center rounded-full text-[var(--q-text-3)] transition-colors hover:bg-[var(--q-sunken)] hover:text-[var(--q-ink)] max-sm:top-4"
+        >
+          <X className="size-5" aria-hidden />
+        </button>
+
         {/* ── En-tête ── */}
-        <div className="flex flex-col gap-3 px-6 pb-2 pt-6">
+        <div className="flex flex-col gap-3 px-6 pb-2 pr-14 pt-6">
           <Image src={LOGO_Q} alt="Qonforme" width={32} height={32} className="size-8" sizes="32px" priority />
           <div className="flex flex-col gap-1">
             <h2 id="welcome-title" className="q-display text-[22px] leading-tight text-[var(--q-ink)]">
