@@ -1,5 +1,5 @@
 /**
- * Pictogrammes de marque : les 42 icônes au trait fin des couvertures d'articles
+ * Pictogrammes de marque : les 44 icônes au trait fin des couvertures d'articles
  * (lib/blog-images/cover/icon-markup.ts), en composants Lucide pour les pages.
  *
  * Le choix suit la même règle que les couvertures (pickCoverIcons) : un métier
@@ -7,14 +7,14 @@
  * TVA, relance…) ses documents avec un casque et une maison, sinon le chantier.
  * Une page et l'article du même sujet portent donc les mêmes pictogrammes.
  *
- * Ce module charge les 42 icônes : à garder côté serveur (pages publiques). Les
+ * Ce module charge les 44 icônes : à garder côté serveur (pages publiques). Les
  * composants clients prennent quelques icônes choisies à la main.
  */
 import {
-  Axe, BadgeCheck, Bath, Bell, BrickWall, Building2, Cable, CalendarClock, Calculator, ClipboardCheck,
+  AirVent, Axe, BadgeCheck, Bath, Bell, BrickWall, Building2, Cable, CalendarClock, Calculator, ClipboardCheck,
   Construction, DoorOpen, Drill, Droplets, Euro, Fence, FileText, Flame, Grid3x3, HandCoins, Hammer,
   HardHat, House, Lamp, Layers, Mail, PaintRoller, Paintbrush, PencilRuler, Pickaxe, PlugZap, ReceiptText,
-  Ruler, Scale, Send, Shovel, ShowerHead, Signature, Stamp, ThermometerSun, Warehouse, Wrench,
+  Ruler, Scale, Send, Shovel, ShowerHead, Signature, Snowflake, Stamp, ThermometerSun, Warehouse, Wrench,
   type LucideIcon,
 } from "lucide-react"
 import type { CoverIconId } from "@/lib/blog-images/cover/icon-markup"
@@ -33,6 +33,8 @@ export const PICTOS: Record<CoverIconId, LucideIcon> = {
   "brick-wall": BrickWall,
   "plug-zap": PlugZap,
   droplets: Droplets,
+  snowflake: Snowflake,
+  "air-vent": AirVent,
   "thermometer-sun": ThermometerSun,
   "pencil-ruler": PencilRuler,
   construction: Construction,

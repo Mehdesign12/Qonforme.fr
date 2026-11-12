@@ -22,6 +22,7 @@ const TRADES = [
   { slug: "couvreur", nom: "Couvreur" },
   { slug: "plaquiste", nom: "Plaquiste" },
   { slug: "chauffagiste", nom: "Chauffagiste" },
+  { slug: "climaticien", nom: "Climaticien" },
   { slug: "serrurier", nom: "Serrurier" },
   { slug: "paysagiste", nom: "Paysagiste" },
 ]

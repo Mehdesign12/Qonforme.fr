@@ -20,6 +20,8 @@ export const TRADE_PHOTOS: Record<string, LandingPhoto | null> = {
   couvreur: PHOTOS.couvreur,
   plaquiste: PHOTOS.plaquiste,
   chauffagiste: PHOTOS.chauffagiste,
+  // Pas encore de photo de climaticien : tuile avec une icône, en-tête sans photo
+  climaticien: null,
 }
 
 /**

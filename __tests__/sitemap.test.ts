@@ -104,14 +104,15 @@ describe("lastmod", () => {
   })
 
   it("pages modifiées le 15/10/2026 : outils neufs, hubs, modèles de devis", () => {
-    for (const p of ["/outils/calculateur-beton", "/outils/calculateur-pente", "/facturation"])
+    for (const p of ["/outils/calculateur-beton", "/outils/calculateur-pente"])
       expect(new Date(entree(p)!.lastModified!).toISOString().slice(0, 10), p).toBe("2026-10-15")
     // un modèle qu'on n'a pas touché n'affiche pas de date
     expect(entree("/modele/facture-classique")!.lastModified).toBeUndefined()
   })
 
-  it("hub des modèles : 10/11/2026 (exemples de devis par métier)", () => {
-    expect(new Date(entree("/modele")!.lastModified!).toISOString().slice(0, 10)).toBe("2026-11-10")
+  it("climaticien, 12/11/2026 : hubs des modèles et des métiers, pages neuves, guide de la TVA", () => {
+    for (const p of ["/modele", "/facturation", "/facturation/climaticien", "/facturation/chauffagiste", "/modele/devis-climatisation", "/devenir-a-son-compte/climaticien", "/guide/tva-travaux"])
+      expect(new Date(entree(p)!.lastModified!).toISOString().slice(0, 10), p).toBe("2026-11-12")
   })
 
   it("hub des outils et lecteur Factur-X : 07/11/2026", () => {
@@ -128,8 +129,6 @@ describe("lastmod", () => {
       expect(new Date(entree(p)!.lastModified!).toISOString().slice(0, 10), p).toBe("2026-10-16")
     for (const p of ["/facturation/plombier", "/facturation/macon", "/facturation/paysagiste"])
       expect(new Date(entree(p)!.lastModified!).toISOString().slice(0, 10), p).toBe("2026-11-04")
-    // le guide de la TVA des travaux prend sa date de vérification
-    expect(new Date(entree("/guide/tva-travaux")!.lastModified!).toISOString().slice(0, 10)).toBe("2026-10-16")
   })
 
   it("articles : leur mise à jour ; hub du blog : le plus récent des articles visibles (pas l'article masqué)", () => {

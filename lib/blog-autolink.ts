@@ -33,6 +33,7 @@ export const KEYWORD_LINKS: { pattern: RegExp; href: string }[] = [
   { pattern: /exemples?\s+de\s+devis\s+(?:de\s+)?ma[cç]onnerie/i, href: "/modele/devis-maconnerie" },
   { pattern: /exemples?\s+de\s+devis\s+(?:de\s+)?plomberie/i, href: "/modele/devis-plomberie" },
   { pattern: /exemples?\s+de\s+devis\s+(?:de\s+)?placo/i, href: "/modele/devis-placo" },
+  { pattern: /exemples?\s+de\s+devis\s+(?:de\s+)?(?:climatisation|clim)\b/i, href: "/modele/devis-climatisation" },
   { pattern: /devis\s+vierges?/i, href: "/modele/devis-vierge" },
   { pattern: /mod[eè]le\s+d['']avoir/i, href: "/modele/avoir-annulation" },
   // Glossaire

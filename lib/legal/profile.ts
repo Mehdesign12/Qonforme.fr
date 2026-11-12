@@ -33,6 +33,7 @@ export const TRADES = [
   { id: "peintre", label: "Peintre en bâtiment" },
   { id: "plombier", label: "Plombier" },
   { id: "chauffagiste", label: "Chauffagiste" },
+  { id: "climaticien", label: "Climaticien, frigoriste" },
   { id: "electricien", label: "Électricien" },
   { id: "carreleur", label: "Carreleur" },
   { id: "macon", label: "Maçon" },

@@ -42,6 +42,7 @@ const EXEMPLES_METIERS: [string, string, string[]][] = [
   ["exemple-devis-peinture", "devis-peinture", ["Peinture : produit, finition et nombre de couches. Façade : déclaration préalable en mairie si la couleur ou l'aspect change ; autorisation de la commune pour un échafaudage sur la voie publique."]],
   ["exemple-devis-maconnerie", "devis-maconnerie", ["Mur porteur : linteau ou poutre dimensionné par un bureau d'études ou une note de calcul ; accord de la copropriété le cas échéant."]],
   ["exemple-devis-plomberie", "devis-plomberie", ["Frais de déplacement annoncés avant les travaux. Chaudière au gaz ou au fioul : TVA à 20 % depuis le 1er mars 2025."]],
+  ["exemple-devis-climatisation", "devis-climatisation", ["Climatisation réversible à 5,5 % : classe A++ en mono-split ou A+ en multi-split jusqu'à 12 kW, fluide conforme au règlement (UE) 2024/573, gestion à distance (arrêté du 13 juillet 2026). Sinon : appareil à 20 %, pose à 10 %. Mise en service par une entreprise titulaire de l'attestation de capacité."]],
   ["exemple-devis-placo", "devis-placo", ["Doublage isolant à 5,5 % : rénovation énergétique et résistance thermique d'au moins 3,7 m².K/W pour un mur en façade ou en pignon, indiquée sur la ligne."]],
 ]
 

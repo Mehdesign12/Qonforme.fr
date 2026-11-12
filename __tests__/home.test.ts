@@ -87,11 +87,11 @@ describe("accueil", () => {
     expect(lire("components/layout/PublicNav.tsx")).not.toContain("#pricing")
   })
 
-  it("le bloc « Ressources » lie les 11 métiers du bâtiment", () => {
+  it("le bloc « Ressources » lie les 12 métiers du bâtiment", () => {
     const ressources = lire("components/home/Resources.tsx")
     const slugs = Array.from(ressources.matchAll(/slug: "([a-z]+)"/g), (m) => m[1])
     expect(slugs.sort()).toEqual(
-      ["carreleur", "chauffagiste", "couvreur", "electricien", "macon", "menuisier", "peintre", "plaquiste", "plombier", "serrurier", "paysagiste"].sort(),
+      ["carreleur", "chauffagiste", "couvreur", "electricien", "macon", "menuisier", "peintre", "plaquiste", "plombier", "serrurier", "paysagiste", "climaticien"].sort(),
     )
   })
 })

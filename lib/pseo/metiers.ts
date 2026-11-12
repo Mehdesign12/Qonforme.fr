@@ -51,6 +51,7 @@ const DESCRIPTIONS: Record<string, string> = {
   chauffagiste: "Logiciel de devis gratuit pour chauffagiste : devis de chauffage illimités, installation, dépannage et entretien, TVA par ligne. Factures avec Essentiel.",
   serrurier: "Logiciel de devis gratuit pour serrurier : devis de serrurerie illimités, urgences, serrures et déplacement détaillés. Factures avec Essentiel.",
   paysagiste: "Logiciel de devis gratuit pour paysagiste : devis de jardin illimités, création, plantation, entretien et déchets verts. Factures avec Essentiel.",
+  climaticien: "Logiciel de devis gratuit pour climaticien et frigoriste : devis de climatisation illimités, split, entretien, TVA par ligne. Factures avec Essentiel.",
 }
 
 /** L'ouvrage tel que le tapent les chercheurs (« devis de maçonnerie »), puis le détail du métier. */
@@ -65,6 +66,7 @@ const OUVRAGES: Record<string, { devisDe: string; detail: string }> = {
   plaquiste: { devisDe: "de plâtrerie et de placo", detail: "Cloisons, plafonds, isolation, bandes et enduit chiffrés au mètre carré, avec la bonne TVA sur chaque ligne." },
   chauffagiste: { devisDe: "de chauffage", detail: "Installation, dépannage et entretien annuel détaillés, avec le taux de TVA qui correspond à l'équipement posé." },
   serrurier: { devisDe: "de serrurerie", detail: "Déplacement, main-d'œuvre, fournitures et majorations de nuit ou de week-end bien visibles, sur un devis remis avant d'intervenir." },
+  climaticien: { devisDe: "de climatisation", detail: "Pose de split et de multi-split, liaisons frigorifiques, mise en service et entretien ligne par ligne, avec le bon taux de TVA : 5,5 % pour une climatisation réversible qui remplit les critères, sinon appareil à 20 % et pose à 10 % dans un logement de plus de deux ans." },
   paysagiste: { devisDe: "de paysagisme et d'entretien de jardin", detail: "Création, plantation, tonte et taille ligne par ligne, avec l'évacuation des déchets verts et le taux de TVA qui correspond aux travaux." },
 }
 
@@ -202,7 +204,7 @@ export const METIERS: Metier[] = [
       { question: "Comment facturer l'entretien annuel d'une chaudière ?", reponse: "L'entretien annuel obligatoire (décret n° 2009-649) se facture généralement au forfait. Détaillez les opérations effectuées (nettoyage, vérifications, mesure de combustion) et remettez l'attestation d'entretien au client." },
       { question: "Un chauffagiste est-il concerné par Factur-X 2026 ?", reponse: "Oui, comme tous les professionnels du BTP : réception des factures électroniques depuis le 1er septembre 2026 et, pour les TPE et PME, émission des factures B2B dans un format structuré à partir du 1er septembre 2027. Les factures aux particuliers relèveront du e-reporting." },
     ],
-    ["plombier", "electricien", "couvreur", "macon"],
+    ["climaticien", "plombier", "electricien", "couvreur"],
   ),
   metier("serrurier", "Serrurier", "btp",
     ["facture serrurerie", "devis serrurier"],
@@ -228,6 +230,32 @@ export const METIERS: Metier[] = [
       { question: "Un paysagiste est-il concerné par Factur-X 2026 ?", reponse: "Oui. Les paysagistes doivent pouvoir recevoir des factures électroniques depuis le 1er septembre 2026. À partir du 1er septembre 2027, ils devront émettre au format électronique leurs factures aux entreprises ; le e-reporting s'appliquera aux prestations pour les particuliers." },
     ],
     ["macon", "menuisier", "carreleur", "peintre"],
+  ),
+  /*
+   * Climaticien (12/11/2026). Sources vérifiées le 12/11/2026 :
+   * - TVA : arrêté du 13 juillet 2026 (CGI, ann. IV, art. 30-0 D ter, 1° bis) et
+   *   service-public A19002 : PAC air/air réversible à 5,5 % depuis le 18/07/2026 sous
+   *   critères ; BOFiP BOI-TVA-LIQ-30-20-90-20 (09/09/2026) : fourniture d'un système de
+   *   climatisation ou d'une PAC air/air exclue du 10 % (ann. IV, art. 30-00 A), pose au
+   *   taux réduit si les conditions de l'art. 279-0 bis sont remplies.
+   * - Fluides : attestation de capacité (C. environnement, art. R543-99), service-public F39053.
+   * - Entretien : C. environnement, art. R224-44 à R224-44-5, arrêté du 24 juillet 2020.
+   */
+  metier("climaticien", "Climaticien", "btp",
+    ["logiciel climatisation", "logiciel clim", "logiciel frigoriste", "facture climatisation", "devis climatisation", "logiciel devis frigoriste"],
+    [
+      "Attestation de capacité pour manipuler les fluides frigorigènes (Code de l'environnement, art. R543-99)",
+      "Entretien des systèmes de 4 à 70 kW au moins tous les deux ans, attestation remise dans les 15 jours",
+      "Assurance décennale pour les travaux de construction",
+    ],
+    [
+      { question: "Quel taux de TVA pour une climatisation ?", reponse: "Depuis le 18 juillet 2026, une climatisation réversible (pompe à chaleur air/air) fixe, posée dans un logement achevé depuis plus de deux ans, peut être facturée à 5,5 % si elle remplit les critères de l'arrêté du 13 juillet 2026 : classe A++ en mono-split ou A+ en multi-split jusqu'à 12 kW, fluide frigorigène conforme au règlement européen de 2024 et gestion à distance. Sinon, le climatiseur et ses pièces sont à 20 % (ils sont exclus du taux de 10 %), et la pose reste à 10 % dans un logement de plus de deux ans. Le neuf et les locaux professionnels sont à 20 %. Pour un taux réduit, le client certifie les conditions sur le devis ou la facture." },
+      { question: "Faut-il une attestation de capacité pour poser une climatisation ?", reponse: "Oui : une entreprise qui manipule des fluides frigorigènes (mise en service, recharge, récupération) doit détenir une attestation de capacité, délivrée par un organisme accrédité et valable cinq ans. Ses techniciens ont en plus une attestation d'aptitude." },
+      { question: "L'entretien d'une climatisation est-il obligatoire ?", reponse: "Oui pour les pompes à chaleur et climatisations de 4 à 70 kW : un entretien au moins tous les deux ans, le premier au plus tard deux ans après la pose. Le technicien remet une attestation d'entretien dans les quinze jours qui suivent sa visite (Code de l'environnement, art. R224-44 et suivants). Facturez-le au forfait, en détaillant les contrôles faits." },
+      { question: "Un climaticien doit-il avoir une assurance décennale ?", reponse: "Oui dès qu'il réalise des travaux de construction : la pose d'une climatisation fixe peut engager la garantie décennale (Code civil, art. 1792). Indiquez votre assureur, votre numéro de contrat et la zone couverte sur chaque devis et chaque facture, et vérifiez avec votre assureur que la climatisation figure dans vos activités déclarées." },
+      { question: "Un climaticien est-il concerné par la facture électronique ?", reponse: "Oui, comme tous les professionnels du bâtiment : réception des factures électroniques depuis le 1er septembre 2026 et, pour les TPE et PME, émission des factures aux clients professionnels dans un format structuré à partir du 1er septembre 2027. Les ventes aux particuliers relèveront du e-reporting." },
+    ],
+    ["chauffagiste", "electricien", "plombier", "couvreur"],
   ),
 ]
 

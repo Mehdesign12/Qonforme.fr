@@ -93,6 +93,7 @@ const fold = foldText
  * précis, des outils et des matériaux vrais, jamais un sourire de pose.
  */
 const TRADE_SCENE: Record<TradeId, string> = {
+  climaticien: "Un climaticien sur un escabeau fixe l'unité intérieure murale d'une climatisation dans un séjour, liaisons frigorifiques isolées dans une goulotte, manifolds et pompe à vide posés au pied de l'escabeau.",
   chauffagiste: "Un chauffagiste accroupi règle le groupe extérieur d'une pompe à chaleur fixé au mur d'une maison, tablette de réglage et manomètres posés à côté.",
   plombier: "Un plombier, de profil, soude un raccord en cuivre sous l'évier d'une cuisine en rénovation ; tuyaux en cuivre, chiffon et clé à molette sur le plan de travail.",
   electricien: "Un électricien raccorde les fils d'un tableau électrique ouvert sur un chantier de rénovation, tournevis isolé en main, gaines et domino de connexion visibles.",

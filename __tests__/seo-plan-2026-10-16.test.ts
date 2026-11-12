@@ -14,7 +14,7 @@ const lire = (chemin: string) => readFileSync(chemin, "utf8")
 describe("pages métier : « logiciel devis {métier} »", () => {
   it("title, description et introduction suivent la requête, sans promettre des factures gratuites", async () => {
     const { METIERS } = await import("@/lib/pseo/metiers")
-    expect(METIERS).toHaveLength(11)
+    expect(METIERS).toHaveLength(12)
     const descriptions = new Set<string>()
     for (const m of METIERS) {
       const nom = m.nom.toLowerCase()

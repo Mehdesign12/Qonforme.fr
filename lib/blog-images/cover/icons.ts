@@ -31,6 +31,7 @@ const TRADE_ICONS: Record<TradeId, { main: CoverIconId; related: CoverIconId[] }
   menuisier: { main: "axe", related: ["hammer", "drill", "ruler", "door-open"] },
   couvreur: { main: "house", related: ["hard-hat", "hammer", "construction", "ruler"] },
   plaquiste: { main: "layers", related: ["drill", "ruler", "hammer", "pencil-ruler"] },
+  climaticien: { main: "snowflake", related: ["air-vent", "thermometer-sun", "wrench", "pencil-ruler"] },
   chauffagiste: { main: "flame", related: ["thermometer-sun", "wrench", "droplets", "pencil-ruler"] },
   serrurier: { main: "door-open", related: ["wrench", "hammer", "warehouse", "drill"] },
   paysagiste: { main: "shovel", related: ["fence", "pickaxe", "house", "ruler"] },

@@ -46,4 +46,16 @@ export const PLAN_KEYWORDS: PlanKeyword[] = [
   { keyword: "logiciel devis artisan", volume: 90, intent: "commercial", targetPath: "/" },
   { keyword: "logiciel devis menuisier", volume: 70, intent: "commercial", targetPath: "/facturation/menuisier" },
   { keyword: "logiciel devis électricité gratuit", volume: 50, intent: "commercial", targetPath: "/facturation/electricien" },
+  // Ajout du 12/11/2026 : climaticien et climatisation (OpenSEO, France)
+  { keyword: "tva climatisation", volume: 1600, intent: "commercial", targetPath: "/guide/tva-travaux" },
+  { keyword: "attestation de capacité fluide frigorigène", volume: 720, intent: "informational", targetPath: "/devenir-a-son-compte/climaticien" },
+  { keyword: "logiciel climatisation", volume: 110, intent: "commercial", targetPath: "/facturation/climaticien" },
+  { keyword: "logiciel clim", volume: 110, intent: "commercial", targetPath: "/facturation/climaticien" },
+  { keyword: "exemple devis climatisation", volume: 90, intent: "informational", targetPath: "/modele/devis-climatisation" },
+  { keyword: "exemple devis climatisation multi-split", volume: 90, intent: "informational", targetPath: "/modele/devis-climatisation" },
+  { keyword: "devenir frigoriste", volume: 90, intent: "informational", targetPath: "/devenir-a-son-compte/climaticien" },
+  { keyword: "logiciel frigoriste", volume: 70, intent: "commercial", targetPath: "/facturation/climaticien" },
+  { keyword: "facture climatisation", volume: 70, intent: "informational", targetPath: "/facturation/climaticien" },
+  { keyword: "exemple devis climatisation gainable", volume: 40, intent: "informational", targetPath: "/modele/devis-climatisation" },
+  { keyword: "devenir installateur climatisation", volume: 40, intent: "informational", targetPath: "/devenir-a-son-compte/climaticien" },
 ]

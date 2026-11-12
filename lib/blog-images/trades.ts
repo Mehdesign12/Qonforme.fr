@@ -1,15 +1,16 @@
 /**
- * Les 11 métiers du bâtiment des pages métier, reconnus dans un titre ou un
+ * Les 12 métiers du bâtiment des pages métier, reconnus dans un titre ou un
  * mot-clé : la scène de la photo (lib/blog-images/prompt.ts) et l'icône de la
  * couverture (lib/blog-images/cover/) en dépendent.
  *
- * Ordre de reconnaissance : le chauffagiste avant le plombier (« pompe à
- * chaleur »). Motifs sur un texte sans accents ni majuscules (`foldText`).
+ * Ordre de reconnaissance : le climaticien avant le chauffagiste (« pompe à
+ * chaleur air/air »), le chauffagiste avant le plombier (« pompe à chaleur »). Motifs sur un texte sans accents ni majuscules (`foldText`).
  *
  * Module pur : navigateur, serveur et tests.
  */
 
 export type TradeId =
+  | "climaticien"
   | "chauffagiste"
   | "plombier"
   | "electricien"
@@ -24,6 +25,7 @@ export type TradeId =
 
 /** Nom courant de chaque métier (listes déroulantes, consignes). */
 export const TRADE_LABELS: Record<TradeId, string> = {
+  climaticien: "climaticien",
   chauffagiste: "chauffagiste",
   plombier: "plombier",
   electricien: "électricien",
@@ -38,6 +40,7 @@ export const TRADE_LABELS: Record<TradeId, string> = {
 }
 
 export const TRADE_KEYS: { id: TradeId; key: RegExp }[] = [
+  { id: "climaticien", key: /climati|frigori|\bclim\b|air\/air|air-air|multi-?split|\bsplit\b|gainable/ },
   { id: "chauffagiste", key: /chauffag|pompe a chaleur|chaudiere|\bpac\b/ },
   { id: "plombier", key: /plomb|sanitaire|chauffe-eau|robinet/ },
   { id: "electricien", key: /electri|irve|borne de recharge|tableau electrique/ },

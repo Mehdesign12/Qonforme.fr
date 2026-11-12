@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, BrickWall, Briefcase, Calculator, Check, ClipboardList, FilePen, FilePlus2, FileText, Hammer, Layers, Mail, PaintRoller, Percent, Receipt, Repeat, Trees, Undo2, UserRound, Wand2, Wrench, Zap, type LucideIcon } from "lucide-react"
+import { ArrowRight, BrickWall, Briefcase, Calculator, Check, ClipboardList, FilePen, FilePlus2, FileText, Hammer, Layers, Mail, PaintRoller, Percent, Receipt, Repeat, Snowflake, Trees, Undo2, UserRound, Wand2, Wrench, Zap, type LucideIcon } from "lucide-react"
 import { MODELES } from "@/lib/pseo/modeles"
 import { ChipLinks, ContentCta, ContentHero, ContentPage, FaqList, LinkCard, SectionHeading, WRAP } from "@/components/content/ui"
 import { TelechargerModele } from "@/components/content/TelechargerModele"
@@ -45,6 +45,7 @@ const MODELE_ICONS: Record<string, LucideIcon> = {
   "devis-maconnerie": BrickWall,
   "devis-plomberie": Wrench,
   "devis-placo": Layers,
+  "devis-climatisation": Snowflake,
   "devis-prestation-service": Briefcase,
   "facture-auto-entrepreneur": UserRound,
   "facture-classique": Receipt,
