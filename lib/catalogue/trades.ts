@@ -21,7 +21,10 @@
  *   espaces verts, fourniture ou installation d'une chaudière susceptible
  *   d'utiliser des combustibles fossiles (art. 279-0 bis, 2 bis et 278-0 bis A,
  *   III, depuis le 01/03/2025, loi n° 2025-127, art. 32), gros équipements
- *   dont la climatisation (CGI, ann. IV, art. 30-00 A), fourniture sans pose.
+ *   dont le climatiseur (CGI, ann. IV, art. 30-00 A : la fourniture, pas la pose), fourniture sans pose.
+ * - Climatisation (vérifié le 12/11/2026) : pompe à chaleur air/air réversible à 5,5 % depuis le
+ *   18/07/2026 sous critères (arrêté du 13 juillet 2026, ann. IV, art. 30-0 D ter, 1° bis) ; sinon
+ *   appareil et pièces à 20 %, pose au taux de 10 % (BOFiP BOI-TVA-LIQ-30-20-90-20 du 09/09/2026).
  * - Le client certifie sur le devis ou la facture que les conditions du taux
  *   réduit sont remplies (art. 279-0 bis, 3 et 278-0 bis A, IV, depuis la loi
  *   n° 2025-127 du 14/02/2025, art. 41, qui a supprimé les attestations).
@@ -138,6 +141,16 @@ export const TRADE_CATALOGUES: Record<TradeId, TradeItem[]> = {
     { id: "radiateur-eau", name: "Pose d'un radiateur à eau chaude", unit: "unité", vat: "travaux" },
     { id: "entretien-chaudiere", name: "Entretien annuel de chaudière", unit: "forfait", vat: "travaux", note: "Entretien sans fourniture ni installation de chaudière : 10 % dans un logement de plus de 2 ans." },
     { id: "desembouage", name: "Désembouage d'un circuit de chauffage", unit: "forfait", vat: "travaux" },
+    ...COMMON,
+  ],
+  climaticien: [
+    { id: "pac-air-air", name: "Pose d'une climatisation réversible (pompe à chaleur air/air), fournie et posée", unit: "unité", vat: "energie", note: "5,5 % depuis le 18 juillet 2026 si l'appareil remplit les critères : classe A++ en mono-split, A+ en multi-split jusqu'à 12 kW, fluide conforme au règlement (UE) 2024/573, gestion à distance. Sinon : appareil à 20 %, pose à 10 %." },
+    { id: "climatiseur-fourniture", name: "Fourniture d'un climatiseur (unités et liaisons) hors critères du 5,5 %", unit: "unité", vat: "normal", note: "20 % : climatiseur et pièces exclus du taux de 10 % (CGI, ann. IV, art. 30-00 A), même dans un logement de plus de 2 ans." },
+    { id: "climatiseur-pose", name: "Pose et raccordement d'un climatiseur (main-d'œuvre)", unit: "forfait", vat: "travaux", note: "La pose reste à 10 % dans un logement de plus de 2 ans : seule la fourniture du climatiseur est exclue." },
+    { id: "liaisons-frigorifiques", name: "Pose des liaisons frigorifiques et de la goulotte", unit: "ml", vat: "travaux" },
+    { id: "mise-en-service", name: "Tirage au vide, contrôle d'étanchéité et mise en service", unit: "forfait", vat: "travaux", note: "Manipulation de fluide frigorigène : réservée à une entreprise titulaire de l'attestation de capacité." },
+    { id: "entretien-clim", name: "Entretien d'une climatisation ou d'une pompe à chaleur", unit: "forfait", vat: "travaux", note: "Obligatoire au moins tous les deux ans de 4 à 70 kW, attestation remise dans les 15 jours (C. environnement, art. R224-44)." },
+    { id: "depose-clim", name: "Dépose d'une ancienne climatisation et récupération du fluide", unit: "forfait", vat: "travaux" },
     ...COMMON,
   ],
   electricien: [

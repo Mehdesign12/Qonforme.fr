@@ -32,7 +32,7 @@ const MAJ: Record<string, string> = {
   "/guide": "2026-10-05",
   "/outils/calculateur-beton": "2026-10-15",
   "/outils/calculateur-pente": "2026-10-15",
-  "/modele": "2026-11-10",
+  "/modele": "2026-11-12",
   "/modele/devis-travaux": "2026-10-16",
   "/modele/devis-electricien": "2026-10-16",
   "/modele/devis-auto-entrepreneur": "2026-11-10",
@@ -42,8 +42,9 @@ const MAJ: Record<string, string> = {
   "/modele/devis-maconnerie": "2026-11-10",
   "/modele/devis-plomberie": "2026-11-10",
   "/modele/devis-placo": "2026-11-10",
+  "/modele/devis-climatisation": "2026-11-12",
   "/modele/lettre-relance-impaye": "2026-10-16",
-  "/facturation": "2026-10-15",
+  "/facturation": "2026-11-12",
   "/logiciel-gestion-batiment": "2026-11-04",
   "/logiciel-devis-gratuit": "2026-11-04",
   "/logiciel-relance-factures-impayees": "2026-11-04",
@@ -52,7 +53,11 @@ const MAJ: Record<string, string> = {
   "/logiciel-situations-travaux": "2026-11-04",
   // 16/10/2026 : title, H1 et introduction des 11 pages métier (MOTS-CLES-COMPACTS-2026-10.md § 0)
   ...Object.fromEntries(METIERS.map((m) => [`/facturation/${m.slug}`, "2026-11-04"])),
+  // 12/11/2026 : page climaticien, liée depuis la page chauffagiste
+  "/facturation/climaticien": "2026-11-12",
+  "/facturation/chauffagiste": "2026-11-12",
   "/devenir-a-son-compte/electricien": "2026-10-15",
+  "/devenir-a-son-compte/climaticien": "2026-11-12",
 }
 
 const jour = (iso: string) => new Date(`${iso}T00:00:00Z`)

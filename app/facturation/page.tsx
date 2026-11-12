@@ -1,10 +1,18 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, KeyRound } from "lucide-react"
+import { ArrowRight, KeyRound, Snowflake, Trees } from "lucide-react"
 import { METIERS } from "@/lib/pseo/metiers"
 import { ContentCta, ContentHero, ContentPage, SectionHeading, WRAP } from "@/components/content/ui"
 import { TRADE_PHOTOS } from "@/components/content/metier"
+
+/** Métiers sans photo : une icône du métier sur la tuile. */
+const TILE_ICONS: Record<string, typeof KeyRound> = { climaticien: Snowflake, paysagiste: Trees }
+
+function TileIcon({ slug }: { slug: string }) {
+  const Icone = TILE_ICONS[slug] ?? KeyRound
+  return <Icone className="h-10 w-10 opacity-60" strokeWidth={1.5} />
+}
 
 export const metadata: Metadata = {
   title: "Logiciel de facturation pour les métiers du bâtiment",
@@ -68,7 +76,7 @@ export default function FacturationIndexPage() {
                         />
                       ) : (
                         <span aria-hidden className="absolute inset-0 grid place-items-center text-q-accent-strong">
-                          <KeyRound className="h-10 w-10 opacity-60" strokeWidth={1.5} />
+                          <TileIcon slug={slug} />
                         </span>
                       )}
                       <span className="absolute bottom-3 left-3 right-3 flex">

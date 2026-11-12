@@ -15,7 +15,7 @@
  *   acompte et arrhes, paiement hors établissement (C. conso L221-10).
  */
 import type { Modele } from "./modeles"
-import { CERTIFICATION_DEVIS_10, CERTIFICATION_RESUME } from "@/lib/legal/certification-tva"
+import { CERTIFICATION_DEVIS_5_5, CERTIFICATION_DEVIS_10, CERTIFICATION_RESUME } from "@/lib/legal/certification-tva"
 import { MENTION_FRANCHISE } from "@/lib/outils/document"
 import { SEUILS_FRANCHISE_TVA } from "@/lib/outils/franchise-tva"
 
@@ -436,6 +436,92 @@ export const MODELES_DEVIS_METIERS: Modele[] = [
       ],
     },
   },
+  {
+    slug: "devis-climatisation",
+    // « exemple devis climatisation » (90/mois), « … multi-split » (90), « … gainable » (40). Sources
+    // vérifiées le 12/11/2026 : arrêté du 13 juillet 2026 (PAC air/air réversible à 5,5 % depuis le
+    // 18/07/2026), BOFiP BOI-TVA-LIQ-30-20-90-20 du 09/09/2026 (appareil exclu du 10 %, pose au
+    // taux réduit), C. environnement R543-99 (attestation de capacité) et R224-44 (entretien).
+    titre: "Exemple de devis climatisation : réversible et multi-split",
+    titreSeo: "Exemple de devis climatisation chiffré (Word, Excel, PDF)",
+    description: "Exemple de devis de climatisation chiffré : clim réversible à 5,5 %, multi-split à 20 % et 10 %, mentions obligatoires et fichiers Word, Excel, PDF.",
+    motsCles: ["exemple devis climatisation", "exemple devis climatisation multi-split", "exemple devis climatisation gainable", "devis climatisation exemple", "modele devis climatisation", "devis pose climatisation"],
+    type: "devis",
+    pourQui: "Climaticiens, frigoristes et chauffagistes qui chiffrent la pose d'une climatisation chez un particulier : unités intérieures et extérieure, liaisons frigorifiques, mise en service, avec le bon taux de TVA.",
+    contenu: contenuTravaux("Appareil détaillé : type (mono-split, multi-split, gainable), puissance, classe énergétique, fluide frigorigène, réversible ou non"),
+    conseils: [
+      "Écrivez sur le devis le type d'installation, la puissance, la classe énergétique et le fluide : c'est ce qui décide du taux de TVA, et ce que le client compare d'un devis à l'autre.",
+      "Depuis le 18 juillet 2026, une climatisation réversible (pompe à chaleur air/air) fixe peut passer à 5,5 % dans un logement de plus de deux ans si elle atteint la classe A++ en mono-split ou A+ en multi-split (jusqu'à 12 kW), utilise un fluide conforme au règlement européen de 2024 et se pilote à distance.",
+      "Sans ces critères, l'appareil et ses pièces (unités, liaisons) sont à 20 % : ils sont exclus du taux de 10 %. La pose, elle, reste à 10 % dans un logement de plus de deux ans. Séparez donc la fourniture et la pose sur deux lignes.",
+      "Pour un gainable, détaillez aussi les gaines, les bouches de soufflage et de reprise et le plénum : même règle de TVA que pour un split.",
+      "La mise en service touche au fluide frigorigène : seule une entreprise qui détient l'attestation de capacité peut la faire. Indiquez aussi la date du premier entretien, dû au plus tard deux ans après la pose.",
+      ARRHES,
+    ],
+    mentionsSpecifiques: [
+      "Appareil : [marque ou équivalent], puissance [ ] kW, classe énergétique [ ], fluide [ ], réversible",
+      "Attestation de capacité de l'entreprise pour les fluides frigorigènes : n° [X], délivrée par [organisme]",
+      "Assurance décennale : [Assureur], contrat n° [X], couverture : France métropolitaine",
+      CERTIFICATION_DEVIS_5_5,
+    ],
+    telechargement: "exemple-devis-climatisation",
+    exemple: {
+      titre: "Pose d'une climatisation réversible mono-split dans un séjour",
+      contexte: "Exemple fictif : pompe à chaleur air/air réversible de 3,5 kW, classe A++, pilotable à distance, posée dans une maison achevée depuis plus de deux ans, pour un particulier : TVA à 5,5 % sur la fourniture et la pose. Les prix illustrent la méthode ; ce ne sont pas des prix de marché.",
+      lignes: [
+        { designation: "Déplacement et visite technique", quantite: 1, unite: "forfait", prixUnitaireHT: 40 },
+        { designation: "Pompe à chaleur air/air réversible 3,5 kW, classe A++, unité extérieure et unité murale (marque ou équivalent), fournie", quantite: 1, unite: "lot", prixUnitaireHT: 1450 },
+        { designation: "Support mural et plots antivibratiles de l'unité extérieure", quantite: 1, unite: "u", prixUnitaireHT: 85 },
+        { designation: "Liaisons frigorifiques isolées, câble et goulotte, fournies et posées", quantite: 5, unite: "ml", prixUnitaireHT: 48 },
+        { designation: "Évacuation des condensats", quantite: 1, unite: "forfait", prixUnitaireHT: 60 },
+        { designation: "Pose des unités et raccordement électrique depuis le tableau", quantite: 6, unite: "h", prixUnitaireHT: 55 },
+        { designation: "Tirage au vide, contrôle d'étanchéité, mise en service et fiche d'intervention", quantite: 1, unite: "forfait", prixUnitaireHT: 180 },
+      ],
+      tauxTva: 5.5,
+      acomptePourcent: 30,
+      conditions: [
+        "Devis gratuit, valable un mois.",
+        "Travaux réalisés en une journée, dans les 30 jours qui suivent la signature.",
+        "Appareil réversible de classe A++ (mono-split), fluide frigorigène conforme au règlement (UE) 2024/573, connecté pour une gestion à distance : TVA à 5,5 % (arrêté du 13 juillet 2026).",
+        "Premier entretien à prévoir au plus tard deux ans après la mise en service ; attestation d'entretien remise dans les quinze jours de la visite.",
+        "Taux horaire pour un travail supplémentaire accepté par avenant : 55,00 € HT, soit 58,03 € TTC.",
+        "Déchets : emballages et chutes de liaisons, déposés en déchèterie (nom et adresse à indiquer), coût compris dans la ligne de pose.",
+        ACOMPTE_30,
+        `${CERTIFICATION_RESUME} Le client certifie aussi qu'il s'agit de travaux de rénovation énergétique.`,
+        DECENNALE,
+        BON_POUR_ACCORD,
+      ],
+    },
+    autresExemples: [
+      {
+        titre: "Un second exemple :",
+        accent: "climatisation multi-split hors critères.",
+        exemple: {
+          titre: "Pose d'une climatisation bi-split réversible de classe A",
+          contexte: "Exemple fictif : unité extérieure de 5 kW et deux unités murales dans deux chambres, classe A (sous le seuil A+ du multi-split), dans une maison achevée depuis plus de deux ans, pour un particulier. Le taux de 5,5 % ne s'applique pas : l'appareil et ses pièces sont à 20 %, la pose à 10 %. Les prix illustrent la méthode ; ce ne sont pas des prix de marché.",
+          lignes: [
+            { designation: "Unité extérieure bi-split 5 kW et deux unités murales, classe A (marque ou équivalent), fournies", quantite: 1, unite: "lot", prixUnitaireHT: 2300, tauxTva: 20 },
+            { designation: "Liaisons frigorifiques isolées et câble, fournis", quantite: 12, unite: "ml", prixUnitaireHT: 22, tauxTva: 20 },
+            { designation: "Déplacement", quantite: 1, unite: "forfait", prixUnitaireHT: 40, tauxTva: 10 },
+            { designation: "Pose des liaisons, goulotte et percements des murs", quantite: 12, unite: "ml", prixUnitaireHT: 25, tauxTva: 10 },
+            { designation: "Pose des unités et raccordement électrique depuis le tableau", quantite: 10, unite: "h", prixUnitaireHT: 55, tauxTva: 10 },
+            { designation: "Tirage au vide, contrôle d'étanchéité, mise en service et fiche d'intervention", quantite: 1, unite: "forfait", prixUnitaireHT: 220, tauxTva: 10 },
+          ],
+          tauxTva: 10,
+          acomptePourcent: 30,
+          conditions: [
+            "Devis gratuit, valable un mois.",
+            "Travaux réalisés en deux jours, dans les 30 jours qui suivent la signature.",
+            "Appareil et pièces (unités, liaisons) : TVA à 20 %, exclus du taux de 10 % (CGI, ann. IV, art. 30-00 A). Pose et mise en service : 10 %, logement achevé depuis plus de deux ans.",
+            "Premier entretien à prévoir au plus tard deux ans après la mise en service.",
+            ACOMPTE_30,
+            CERTIFICATION_RESUME,
+            DECENNALE,
+            BON_POUR_ACCORD,
+          ],
+        },
+      },
+    ],
+  },
 ]
 
 /** Page « exemple de devis » de chaque métier qui en a une (liens des pages métier et « s'installer »). */
@@ -443,6 +529,7 @@ export const EXEMPLE_DEVIS_PAR_METIER: Record<string, { href: string; label: str
   electricien: { href: "/modele/devis-electricien", label: "Exemple de devis d'électricien" },
   plombier: { href: "/modele/devis-plomberie", label: "Exemple de devis de plomberie" },
   chauffagiste: { href: "/modele/devis-plomberie", label: "Exemple de devis de plomberie" },
+  climaticien: { href: "/modele/devis-climatisation", label: "Exemple de devis de climatisation" },
   macon: { href: "/modele/devis-maconnerie", label: "Exemple de devis de maçonnerie" },
   peintre: { href: "/modele/devis-peinture", label: "Exemple de devis de peinture" },
   plaquiste: { href: "/modele/devis-placo", label: "Exemple de devis placo" },

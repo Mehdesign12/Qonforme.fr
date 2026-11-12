@@ -275,6 +275,32 @@ export const INSTALLATIONS: Installation[] = [
     ],
     fiche: { label: "Service-public.gouv.fr, « Chauffagiste : conditions d'accès et d'exercice en France »", href: "https://entreprendre.service-public.gouv.fr/vosdroits/F39033" },
   },
+  {
+    // Sources vérifiées le 12/11/2026 : service-public F39053 (climaticien) ; C. environnement,
+    // art. R543-99 (attestation de capacité), R543-106 (attestation d'aptitude), R224-44 à
+    // R224-44-5 et arrêté du 24 juillet 2020 (entretien) ; arrêté du 13 juillet 2026 et BOFiP
+    // BOI-TVA-LIQ-30-20-90-20 du 09/09/2026 (TVA).
+    slug: "climaticien",
+    metier: "climaticien",
+    titreSeo: "Devenir climaticien à son compte : étapes et obligations",
+    description: "Devenir climaticien ou frigoriste à son compte : diplôme ou expérience, attestation de capacité, statut, décennale, TVA de la clim, étape par étape.",
+    motsCles: ["devenir climaticien à son compte", "devenir frigoriste", "devenir installateur climatisation", "climaticien auto entrepreneur", "frigoriste auto entrepreneur", "attestation de capacité fluide frigorigène"],
+    intro: "Le climaticien, souvent aussi frigoriste, pose et entretient les climatisations et les pompes à chaleur air/air : split, multi-split, gainable. C'est un métier du froid, où presque chaque intervention touche à des fluides frigorigènes, avec leurs règles propres.",
+    diplome: "CAP installateur en froid et conditionnement d'air",
+    assurance: "La décennale est obligatoire avant le premier chantier de construction, avec une responsabilité civile professionnelle pour les dommages causés pendant vos interventions. Vérifiez que la climatisation figure dans les activités déclarées à votre assureur.",
+    tva: "Climatisation réversible (pompe à chaleur air/air) qui remplit les critères, dans un logement achevé depuis plus de deux ans : 5,5 % depuis le 18 juillet 2026. Autre climatiseur : appareil à 20 %, pose à 10 % dans un logement de plus de deux ans. Neuf et locaux professionnels : 20 %.",
+    specificites: [
+      { titre: "L'attestation de capacité", texte: "Pour mettre en service, recharger ou vidanger un circuit, votre entreprise doit détenir une attestation de capacité, délivrée par un organisme accrédité et valable cinq ans. Chaque technicien qui manipule les fluides a en plus une attestation d'aptitude." },
+      { titre: "Les fluides frigorigènes", texte: "Vous récupérez le fluide d'une installation déposée au lieu de le relâcher, et vous déclarez chaque année les quantités de fluides que vous avez manipulées." },
+      { titre: "L'entretien tous les deux ans", texte: "Une climatisation ou une pompe à chaleur de 4 à 70 kW s'entretient au moins tous les deux ans. Le technicien remet une attestation d'entretien dans les quinze jours : un contrat d'entretien est une bonne base de chiffre d'affaires régulier." },
+    ],
+    faq: [
+      { question: "Quel diplôme pour devenir climaticien à son compte ?", reponse: "Un CAP installateur en froid et conditionnement d'air, un brevet professionnel ou un titre de même niveau inscrit au RNCP. À défaut, trois ans d'expérience effective dans le métier, attestés par la chambre de métiers et de l'artisanat. Sans qualification, l'exercice est puni de 7 500 € d'amende." },
+      { question: "Comment obtenir l'attestation de capacité pour les fluides frigorigènes ?", reponse: "Vous la demandez à un organisme accrédité par le Cofrac, avec l'identité de l'entreprise, les catégories d'activités visées, l'outillage et les techniciens qui ont leur attestation d'aptitude, et l'engagement de déclarer chaque année les quantités de fluides. Elle est valable cinq ans." },
+      { question: "Climaticien ou frigoriste : quelle différence ?", reponse: "Le climaticien pose et entretient des climatisations et des pompes à chaleur chez les particuliers et dans les bureaux ; le frigoriste travaille aussi sur le froid commercial et industriel (chambres froides, vitrines). Les deux manipulent des fluides frigorigènes et ont besoin d'une attestation de capacité." },
+    ],
+    fiche: { label: "Service-public.gouv.fr, « Climaticien : conditions d'accès et d'exercice en France »", href: "https://entreprendre.service-public.gouv.fr/vosdroits/F39053" },
+  },
 ]
 
 export function getInstallationBySlug(slug: string): Installation | undefined {
