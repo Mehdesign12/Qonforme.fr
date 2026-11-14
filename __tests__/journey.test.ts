@@ -72,6 +72,7 @@ describe("branchement dans le code", () => {
     expect(read("components/quotes/NewQuoteForm.tsx")).toContain('trackJourney("quote_created"')
     expect(read("components/invoices/NewInvoiceForm.tsx")).toContain('trackJourney("invoice_created"')
     expect(read("components/invoices/InvoiceDetail.tsx")).toContain('trackJourney("invoice_sent")')
+    expect(read("app/(app)/quotes/[id]/page.tsx")).toContain('trackJourney("quote_pdf_downloaded"')
     expect(read("app/(app)/quotes/[id]/page.tsx")).toContain('trackJourney("quote_sent")')
   })
 })
