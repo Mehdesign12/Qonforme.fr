@@ -20,7 +20,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
   Check, CheckCircle2, ChevronLeft, ChevronRight, CircleCheck, CircleX, Clock, Copy, Download, FileText, Info,
-  FilePen, Loader2, MoreHorizontal, Pencil, Printer, RefreshCw, Send, Trash2, Undo2, X, type LucideIcon,
+  Eye, FilePen, Loader2, MoreHorizontal, Pencil, PenLine, Printer, RefreshCw, Send, Trash2, Undo2, X, type LucideIcon,
 } from "lucide-react"
 import { DocStatusPill, INVOICE_PILLS, Initials, Kpi, KpiGrid, StatusPill, initialsOf } from "@/components/app/kit"
 import { SetCrumb } from "@/components/layout/crumb"
@@ -137,7 +137,10 @@ export interface QuoteDetailBusy {
   convert?: boolean
 }
 
-type ModalKey = "send" | "accept" | "reject" | "delete" | "convert" | "revise" | "more"
+type ModalKey = "send" | "accept" | "reject" | "delete" | "convert" | "revise" | "more" | "pdfSent" | "acceptInvoice"
+
+/** Fenêtre ouverte par la page : après le téléchargement du PDF, ou à l'arrivée depuis l'email de suivi (`?accepte=1`). */
+export type QuotePrompt = "pdf" | "accept"
 
 /* ------------------------------------------------------------------ */
 /* Vue                                                                 */
@@ -157,7 +160,12 @@ export function QuoteDetailView({
   conversionBlocked,
   openSend = false,
   onSendOpened,
+  prompt = null,
+  onPromptOpened,
 }: {
+  /** Fenêtre « Envoyez-le plutôt par Qonforme » (après le PDF) ou « … a accepté le devis ? » (email de suivi). */
+  prompt?: QuotePrompt | null
+  onPromptOpened?: () => void
   /** Arrivée depuis l'éditeur (client sans email, `?send=1`) : la fenêtre d'envoi s'ouvre et demande l'adresse. */
   openSend?: boolean
   onSendOpened?: () => void
@@ -188,6 +196,11 @@ export function QuoteDetailView({
     setModal("send")
     onSendOpened?.()
   }, [openSend]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!prompt) return
+    setModal(prompt === "pdf" ? "pdfSent" : "acceptInvoice")
+    onPromptOpened?.()
+  }, [prompt]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const s = quote.status
   const left = daysLeft(quote, today)
@@ -209,6 +222,19 @@ export function QuoteDetailView({
   const setStatus = async (status: "sent" | "accepted" | "rejected") => {
     const ok = await actions.onSetStatus(status)
     if (ok || demo) setModal(null)
+  }
+  // « Je l'ai déjà envoyé moi-même » : le devis entre dans le parcours (suivi, relance, facture)
+  const markSentByHand = async () => {
+    const ok = await actions.onSetStatus("sent")
+    if (ok || demo) setModal(null)
+  }
+  // Arrivée depuis l'email de suivi : accepté (brouillon : envoyé d'abord), puis facture préparée
+  const acceptAndInvoice = async () => {
+    if (s === "draft" && !(await actions.onSetStatus("sent"))) return
+    if (s !== "accepted" && !(await actions.onSetStatus("accepted"))) return
+    if (quote.converted || conversionBlocked) { setModal(null); return }
+    await actions.onConvert()
+    setModal(null)
   }
   const convert = async () => {
     await actions.onConvert()
@@ -749,6 +775,58 @@ export function QuoteDetailView({
       </QuoteModal>
 
       <QuoteModal
+        open={modal === "pdfSent"}
+        onOpenChange={(o) => !o && closeModal()}
+        compact={compact}
+        title="Envoyez-le plutôt par Qonforme."
+        description={`PDF téléchargé : ${quote.quote_number}.pdf`}
+        cancelLabel="Fermer"
+        actions={[
+          { label: clientName ? `Envoyer à ${clientName}` : "Envoyer par Qonforme", icon: <Send aria-hidden />, variant: "primary", onClick: () => setModal("send") },
+          { label: "Je l'ai déjà envoyé moi-même", icon: busy.status ? <Loader2 className="animate-spin" aria-hidden /> : <Check aria-hidden />, variant: "secondary", onClick: markSentByHand, disabled: busy.status },
+        ]}
+      >
+        <p className="text-[15px] leading-normal text-[var(--q-text-3)]">
+          Le PDF part sans suivi. Par Qonforme, votre client reçoit un email avec le PDF et un lien :
+        </p>
+        <ul className="flex flex-col gap-3">
+          {[
+            { icon: Eye, title: "Vous voyez quand il l'ouvre", text: "Ses consultations du devis apparaissent dans le suivi." },
+            { icon: PenLine, title: "Il signe en ligne", text: "Depuis son téléphone. Avec Essentiel." },
+            { icon: FileText, title: "La facture en un clic", text: "Une fois le devis accepté, rien à retaper." },
+          ].map((b) => (
+            <li key={b.title} className="flex items-start gap-3">
+              <span className="q-glyph size-6 shrink-0 text-[var(--q-accent)]"><b.icon aria-hidden /></span>
+              <span className="flex flex-col gap-0.5">
+                <strong className="text-[15px] font-semibold text-[var(--q-ink)]">{b.title}</strong>
+                <span className="text-[13.5px] text-[var(--q-text-4)]">{b.text}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </QuoteModal>
+
+      <QuoteModal
+        open={modal === "acceptInvoice"}
+        onOpenChange={(o) => !o && closeModal()}
+        compact={compact}
+        title={`${clientName ?? "Votre client"} a accepté le devis ?`}
+        description={`${quote.quote_number} · ${formatCurrency(quote.total_ttc)}`}
+        cancelLabel="Pas encore"
+        actions={[
+          quote.converted || conversionBlocked || s === "accepted"
+            ? { label: "Marquer accepté", icon: busy.status ? <Loader2 className="animate-spin" aria-hidden /> : <Check aria-hidden />, variant: "primary", onClick: acceptAndInvoice, disabled: busy.status || s === "accepted" }
+            : { label: "Marquer accepté et créer la facture", icon: busy.status || busy.convert ? <Loader2 className="animate-spin" aria-hidden /> : <FileText aria-hidden />, variant: "primary", onClick: acceptAndInvoice, disabled: busy.status || busy.convert },
+        ]}
+      >
+        <InfoNote>
+          {quote.converted || conversionBlocked || s === "accepted"
+            ? "Le devis passe en « Accepté »."
+            : "Le devis passe en « Accepté » et une facture en brouillon est préparée avec ses lignes. Rien n'est envoyé : vous la relisez d'abord."}
+        </InfoNote>
+      </QuoteModal>
+
+      <QuoteModal
         open={modal === "reject"}
         onOpenChange={(o) => !o && closeModal()}
         compact={compact}
@@ -1095,8 +1173,9 @@ type ModalAction = {
 }
 
 function QuoteModal({
-  open, onOpenChange, compact, title, description, children, actions,
+  open, onOpenChange, compact, title, description, children, actions, cancelLabel = "Annuler",
 }: {
+  cancelLabel?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   compact: boolean
@@ -1134,7 +1213,7 @@ function QuoteModal({
           {children && <div className="flex flex-col gap-3">{children}</div>}
           <div className="flex flex-col gap-2.5 pt-1">
             {actions.map((a) => btn(a, true))}
-            <SheetClose render={<button type="button" className="q-btn q-btn-ghost h-11 w-full text-[15px]" />}>Annuler</SheetClose>
+            <SheetClose render={<button type="button" className="q-btn q-btn-ghost h-11 w-full text-[15px]" />}>{cancelLabel}</SheetClose>
           </div>
         </SheetContent>
       </Sheet>
@@ -1150,7 +1229,7 @@ function QuoteModal({
         </div>
         <div className="flex flex-col gap-3.5 px-[22px] py-[18px]">{children}</div>
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--q-line-soft)] bg-[var(--q-surface-2)] px-[22px] py-4">
-          <DialogClose render={<button type="button" className="q-btn q-btn-ghost q-btn-sm" />}>Annuler</DialogClose>
+          <DialogClose render={<button type="button" className="q-btn q-btn-ghost q-btn-sm" />}>{cancelLabel}</DialogClose>
           {[...actions].reverse().map((a) => btn(a, false))}
         </div>
       </DialogContent>

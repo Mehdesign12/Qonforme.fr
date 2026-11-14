@@ -46,6 +46,7 @@ import { runPlanningReminders } from "@/lib/planning/reminders"
 import { runAllConnections } from "@/lib/pa/run"
 import { runWeeklyLinkChecks } from "@/lib/affiliation/admin"
 import { expireGrantedPlans } from "@/lib/admin/grant"
+import { runQuoteFollowups } from "@/lib/quotes/followup"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -126,6 +127,17 @@ export async function GET(request: NextRequest) {
       job_name: "affiliation-links",
       status: "ok",
       results: linkChecks,
+      duration_ms: Date.now() - startedAt,
+    })
+  }
+
+  // Suivi des devis : « Le devis … a-t-il été accepté ? » (lib/quotes/followup.ts), indépendant des tables du démarrage
+  const followups = await runQuoteFollowups(admin, now)
+  if (followups.sent > 0 || followups.errors.length > 0) {
+    await admin.from("cron_logs").insert({
+      job_name: "quote-followup",
+      status: followups.errors.length > 0 ? "error" : "ok",
+      results: followups,
       duration_ms: Date.now() - startedAt,
     })
   }
