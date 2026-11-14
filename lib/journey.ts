@@ -35,6 +35,8 @@ export type JourneyEvents = {
   /** Document envoyé par email au client. */
   quote_sent: Record<never, never>
   invoice_sent: Record<never, never>
+  /** PDF d'un devis téléchargé depuis sa fiche (`status` : statut du devis à ce moment, liste fermée). Mesure qui repart avec le PDF au lieu d'envoyer par Qonforme. */
+  quote_pdf_downloaded: { status: "draft" | "sent" | "accepted" | "other" }
   /** Envoi refusé : l'identité de l'entreprise (SIREN, adresse) n'est pas complète. */
   send_blocked: { reason: "company_required" }
 }

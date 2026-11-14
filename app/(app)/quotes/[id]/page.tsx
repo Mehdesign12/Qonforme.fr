@@ -171,6 +171,8 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
     try {
       await downloadPdf(`/api/quotes/${params.id}/pdf`, `${quote.quote_number}.pdf`)
       toast.success("PDF téléchargé")
+      const st = quote.status
+      trackJourney("quote_pdf_downloaded", { status: st === "draft" || st === "sent" || st === "accepted" ? st : "other" })
     } catch (e) { toast.error(e instanceof PdfDownloadError ? e.message : "Erreur lors du téléchargement") }
     finally { setFlag("pdf", false) }
   }
