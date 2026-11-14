@@ -35,6 +35,15 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     const buffer = await generateQuotePdf({ quote, company })
 
+    // Premier téléchargement : gardé pour l'email de suivi à l'artisan (lib/quotes/followup.ts).
+    // Jamais bloquant : colonne absente (migration 20261114) ou erreur = PDF servi quand même.
+    if (!quote.pdf_downloaded_at) {
+      try {
+        await supabase.from("quotes").update({ pdf_downloaded_at: new Date().toISOString() })
+          .eq("id", id).eq("user_id", user.id).is("pdf_downloaded_at", null)
+      } catch { /* sans effet sur le PDF */ }
+    }
+
     return new Response(new Uint8Array(buffer), {
       status: 200,
       headers: {

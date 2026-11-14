@@ -24,6 +24,17 @@ import { useQuoteBilling } from "@/components/artisan/useQuoteBilling"
 import { conversionBlockedBy } from "@/lib/artisan/quote-billing"
 import { snapshotOf } from "@/lib/legal/mentions"
 import { trackJourney } from "@/lib/journey"
+import type { QuotePrompt } from "@/components/quotes/QuoteDetailView"
+
+/** Vrai la première fois pour ce devis sur cet appareil (stockage local relu sans confiance). */
+function firstPdfPrompt(id: string): boolean {
+  try {
+    const key = `q_pdf_prompt_${id}`
+    if (window.localStorage.getItem(key)) return false
+    window.localStorage.setItem(key, "1")
+  } catch { /* stockage indisponible : la fenêtre s'affiche quand même */ }
+  return true
+}
 import { pickDiscountFields } from "@/lib/documents/discounts"
 
 /* ------------------------------------------------------------------ */
@@ -87,7 +98,11 @@ const STATUS_LABELS: Record<QuoteStatus, string> = {
 export default function QuoteDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   // Arrivée depuis l'éditeur, client sans email : la fenêtre d'envoi s'ouvre et demande l'adresse
-  const sendRequested = useSearchParams().get("send") === "1"
+  const search = useSearchParams()
+  const sendRequested = search.get("send") === "1"
+  // Arrivée depuis l'email de suivi « Le devis … a-t-il été accepté ? » (lib/quotes/followup.ts)
+  const acceptRequested = search.get("accepte") === "1"
+  const [prompt, setPrompt] = useState<QuotePrompt | null>(null)
   const [today] = useState(todayISO)
   const [quote, setQuote]     = useState<Quote | null>(null)
   const [company, setCompany] = useState<QuoteDetailCompany | null>(null)
@@ -173,6 +188,8 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
       toast.success("PDF téléchargé")
       const st = quote.status
       trackJourney("quote_pdf_downloaded", { status: st === "draft" || st === "sent" || st === "accepted" ? st : "other" })
+      // Brouillon : « Envoyez-le plutôt par Qonforme », une fois par devis sur cet appareil
+      if (st === "draft" && firstPdfPrompt(params.id)) setPrompt("pdf")
     } catch (e) { toast.error(e instanceof PdfDownloadError ? e.message : "Erreur lors du téléchargement") }
     finally { setFlag("pdf", false) }
   }
@@ -377,6 +394,8 @@ export default function QuoteDetailPage({ params }: { params: { id: string } }) 
     <PaywallDialog open={sig.paywall} onOpenChange={sig.setPaywall} reason="signature" nextPath={`/quotes/${params.id}`} />
     <PaywallDialog open={artisan.paywall} onOpenChange={artisan.setPaywall} reason="artisan" nextPath={`/quotes/${params.id}`} />
     <QuoteDetailView
+      prompt={prompt ?? (acceptRequested && (quote.status === "draft" || quote.status === "sent") ? "accept" : null)}
+      onPromptOpened={() => { setPrompt(null); if (acceptRequested) router.replace(`/quotes/${params.id}`) }}
       openSend={sendRequested}
       onSendOpened={() => router.replace(`/quotes/${params.id}`)}
       quote={data}

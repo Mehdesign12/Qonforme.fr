@@ -42,6 +42,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   manual_first_quote: "À la main · premier devis",
   manual_quote_send: "À la main · envoyer son devis",
   manual_free: "À la main · email libre",
+  quote_followup: "Suivi · devis accepté ?",
 }
 
 export const templateLabel = (t: string) => TEMPLATE_LABELS[t] ?? t
